@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, EventType
+from rekep.enums import MIC, EventType, Protocol
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -58,7 +58,6 @@ from rekep.fix.message import (
     render_fix_value,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.fix.rules import NO_PROTOCOL
 from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
@@ -67,6 +66,7 @@ from rekep.market.ticker import SymbolTicker
 from rekep.text.message import SESSION_FIELDS, Message
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
 
 
 @functools.cache
@@ -213,6 +213,7 @@ class FixMsg(Message):
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
+        self.protocol = Protocol.from_str(self.protocol)
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if self.unmap:
@@ -226,7 +227,7 @@ class FixMsg(Message):
         ).into_str()
         if (
             self.protocolversion is None
-            and self.protocolcode == NO_PROTOCOL
+            and self.protocol is Protocol.OTHER
             and (self.beginstring or self.entries or self.unmap)
         ):
             evidence: list[tuple[str, Any]] = []
@@ -239,8 +240,8 @@ class FixMsg(Message):
             if version is not None:
                 self.protocolversion = version
                 self.protocolversionsource = source
-                if self.protocolcode == NO_PROTOCOL:
-                    self.protocolcode = "FIX"
+                if self.protocol is Protocol.OTHER:
+                    self.protocol = Protocol.FIX
 
     def identify(self) -> FixMsg:
         """Give the parsed event the identities its registry projection earns."""
@@ -290,7 +291,7 @@ class FixMsg(Message):
     message: str | None = None
     """Payload text; null where parsed columns retain every field."""
 
-    protocolcode: Annotated[str, Field.column("Protocol Code")] = NO_PROTOCOL
+    protocol: Protocol = Protocol.OTHER
     """Which protocol the line carries; OTHER is a line that carries none."""
 
     # Without it nothing downstream can tell a real transaction time from a
@@ -304,7 +305,7 @@ class FixMsg(Message):
     # time a second versioned protocol appeared. Resolved once, at the message
     # stage, so nothing downstream re-derives it.
     protocolversion: Annotated[str | None, Field.column("Protocol Version")] = None
-    """Which version of `protocolcode` the line is read under; null when unresolved."""
+    """Which version of `protocol` the line is read under; null when unresolved."""
 
     # Null because the message carried no version, or null because nothing
     # tried? A consumer cannot tell the two apart from the value, and they are
@@ -1106,13 +1107,13 @@ class FixMsg(Message):
             )
             protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugincode"))
             direction = codec.rules.into_arrow_direction_array(messages, protocols)
-            stored_protocols = columns.get("protocolcode")
+            stored_protocols = columns.get("protocol")
             if stored_protocols is not None:
                 protocols = pyarrow.compute.if_else(
                     carries_text,
                     protocols,
                     pyarrow.compute.fill_null(
-                        stored_protocols.cast(pyarrow.string(), safe=False), NO_PROTOCOL
+                        stored_protocols.cast(_PROTOCOL_CODE, safe=False), Protocol.OTHER
                     ),
                 )
             stored_direction = columns.get("direction")
@@ -1127,10 +1128,10 @@ class FixMsg(Message):
                     Message.into_field().into_arrow_schema().field("direction"), direction
                 )
         else:
-            protocols = columns.get("protocolcode")
+            protocols = columns.get("protocol")
             if protocols is None:
                 raise ValueError(
-                    "a projected Message batch needs protocolcode; reparse the "
+                    "a projected Message batch needs protocol; reparse the "
                     "messages before dropping message"
                 )
         from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch
@@ -1214,7 +1215,7 @@ class FixMsg(Message):
         )
         columns.update(
             {
-                "protocolcode": protocols,
+                "protocol": protocols,
                 "protocolversion": protocolversion,
                 "protocolversionsource": protocolversionsource,
                 "entries": entries,
@@ -1484,7 +1485,7 @@ class FixMsg(Message):
             "unixsource",
             "sourceurl",
             "sourcerownum",
-            "protocolcode",
+            "protocol",
             "protocolversion",
             "msgtype",
             "entries",

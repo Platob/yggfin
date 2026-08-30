@@ -9,6 +9,7 @@ import pyarrow
 import pyarrow.compute as compute
 
 from rekep.entries import ENTRIES
+from rekep.enums import Protocol
 from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import COLUMNS, TYPES
 from rekep.fix.fields import cast_arrow_fix
@@ -31,7 +32,7 @@ def into_flat_fixmsg_batch(
         or entries.null_count
         or not _supports(codec)
         or protocols.null_count
-        or not compute.all(compute.equal(protocols, "FIX"), min_count=0).as_py()
+        or not compute.all(compute.equal(protocols, Protocol.FIX), min_count=0).as_py()
     ):
         return None
     items = compute.list_flatten(entries)
@@ -96,7 +97,7 @@ def into_flat_fixmsg_batch(
     output = dict(columns)
     output.update(
         {
-            "protocolcode": protocols,
+            "protocol": protocols,
             "protocolversion": protocolversion,
             "protocolversionsource": protocolversionsource,
             "entries": residual,
@@ -142,7 +143,7 @@ def flat_fixmsg_positions(
             value_set=pyarrow.array(sorted(codec.null_values), pyarrow.string()),
         )
         good = compute.and_(good, compute.invert(compute.fill_null(absent, True)))
-    eligible = compute.and_(compute.is_valid(entries), compute.equal(protocols, "FIX"))
+    eligible = compute.and_(compute.is_valid(entries), compute.equal(protocols, Protocol.FIX))
     invalid_rows = _marked_rows(parents, compute.invert(good), rows)
     eligible = compute.and_(eligible, compute.invert(invalid_rows))
     eligible = compute.and_(eligible, compute.invert(_duplicate_rows(parents, tags, rows)))
@@ -172,7 +173,7 @@ def _supports(codec: Any) -> bool:
     """Whether the codec has exactly the behavior this specialization mirrors."""
     from rekep.fix.transcribe import FixCodec
 
-    rule = codec.rules.rule("FIX")
+    rule = codec.rules.rule(Protocol.FIX)
     return (
         type(codec) is FixCodec
         and not bool(codec.fields)

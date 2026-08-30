@@ -38,7 +38,7 @@ batch it:
 4. lifts declared fields and structured components;
 5. derives the venue, transaction time and identities.
 
-`Message.eventtype`, `Message.msgtype`, and `Message.protocolcode` pass through
+`Message.eventtype`, `Message.msgtype`, and `Message.protocol` pass through
 this conversion; the FIX stage does not classify the message a second time.
 
 Repeated tags and wire order remain in `entries`. A resolved entry records the
@@ -87,6 +87,6 @@ metadata is read by `parse_messages` because `eventtype` is part of `Message`, s
 changing that metadata requires rebuilding `logs.messages`, while other
 dictionary changes can rerun only this stage.
 
-The projected conversion requires the `msgtype`, `entries` and
-`protocolcode` columns of the [Message contract](../../contracts/index.md),
-and refuses a source without them rather than reporting an empty run.
+The projected conversion requires the `msgtype`, `entries` and `protocol`
+columns of the [Message contract](../../contracts/index.md), and refuses a
+source without them rather than reporting an empty run.

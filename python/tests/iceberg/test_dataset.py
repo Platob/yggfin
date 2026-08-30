@@ -20,6 +20,7 @@ from pyiceberg.transforms import BucketTransform, IdentityTransform
 
 from rekep import Convertible, Entry, Field, FixMsg, Message, StructField, TextFile, scalar
 from rekep.arrow_file_io import ArrowFileIO
+from rekep.enums import Protocol
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
@@ -107,7 +108,7 @@ FIX_LINE = FixMsg(
     threadname="t",
     plugincode="d",
     message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
-    protocolcode="FIX",
+    protocol=Protocol.FIX,
     entries=[],
     parties=[
         Party(partyid="BUYSIDE", partyidsource="D", partyrole=1),
@@ -2116,7 +2117,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     stored = logs.read_arrow_table(FixMsg.into_field())
     assert stored.num_rows == 1, "the same line upserts onto itself"
     row = stored.to_pylist()[0]
-    assert row["protocolcode"] == "FIX"
+    assert Protocol.from_int(row["protocol"]) is Protocol.FIX
     assert row["entries"] == []
     assert [party["partyid"] for party in row["parties"]] == ["BUYSIDE", "XPAR"]
     assert row["msgseqnum"] == 7 and row["sendercompid"] == "BUYSIDE"
@@ -2164,12 +2165,16 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
     """Pin PyIceberg's loss of the outer `list<struct>` validity bitmap."""
     quiet = FixMsg(unix=1, hash=1, xhash=1, message="heartbeat emitted")
     bridged = FixMsg(
-        unix=2, hash=2, xhash=2, message="toBridge #", protocolcode="FIXML", entries=[]
+        unix=2, hash=2, xhash=2, message="toBridge #", protocol=Protocol.FIXML, entries=[]
     )
     logs.append_arrow_table(log_table(quiet, bridged, FIX_LINE))
 
     stored = logs.read_arrow_table(FixMsg.into_field()).sort_by("unix")
-    assert stored.column("protocolcode").to_pylist() == ["OTHER", "FIXML", "FIX"]
+    assert [Protocol.from_int(code).code for code in stored.column("protocol").to_pylist()] == [
+        "OTHER",
+        "FIXML",
+        "FIX",
+    ]
     # PyIceberg's projection currently rebuilds list<struct> without its outer
     # validity bitmap, so an absent pair/component list reads as empty. The
     # parser-level contract still pins null versus empty before this boundary.

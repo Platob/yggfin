@@ -20,6 +20,7 @@ import rekep.fix.columns
 import rekep.fix.rules
 import rekep.market.fix
 from rekep import Field, FixMsg, scalar
+from rekep.enums import Protocol
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, SORT_KEY
 from rekep.fix import (
     CACHE_DIRECTORY,
@@ -27,7 +28,6 @@ from rekep.fix import (
     COMMON,
     DEFAULT_SOURCES,
     FLAT,
-    NO_PROTOCOL,
     QUOTE,
     SESSION,
     FixRegistry,
@@ -129,14 +129,15 @@ def test_every_codec_a_rule_may_name_is_one_the_parser_reads() -> None:
     assert {rule.codec for rule in Rules().rules} <= set(CODECS)
 
 
-def test_the_name_for_no_protocol_is_one_constant_and_not_three() -> None:
+def test_the_name_for_no_protocol_is_one_member_and_not_three() -> None:
     """`OTHER` is the fall-through rule's protocol, a parsed line's default and
-    the value the `protocolcode` column holds for most of a capture. Spelled out at
-    each of those it would be three constants, and only one of them published.
+    the value the `protocol` column holds for most of a capture. Spelled out at
+    each of those it would be three constants; it is one member of the
+    vocabulary that column stores.
     """
-    assert Rule().protocol == NO_PROTOCOL
-    assert FixMsg().protocolcode == NO_PROTOCOL
-    assert Rules().rule("nothing declares this").protocol == NO_PROTOCOL
+    assert Rule().protocol is Protocol.OTHER
+    assert FixMsg().protocol is Protocol.OTHER
+    assert Rules().rule("nothing declares this").protocol is Protocol.OTHER
 
 
 def test_the_reader_of_a_fix_timestamp_is_one_function_under_every_spelling() -> None:

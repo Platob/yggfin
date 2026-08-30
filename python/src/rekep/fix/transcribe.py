@@ -16,6 +16,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.entries import ENTRIES, ENTRY_PARTS, TAG, Entry
 from rekep.entries import IS_TAG as _IS_TAG
+from rekep.enums import Protocol
 from rekep.fields import Field, column_name, column_names, encoded_key
 from rekep.fields.arrays import groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
@@ -51,7 +52,7 @@ from rekep.fix.message import (
     stored_entry_separators,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.fix.rules import NO_PROTOCOL, Rules
+from rekep.fix.rules import Rules
 
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
 #: a line writes the field whose payload is another message.
@@ -330,13 +331,15 @@ class FixCodec(Convertible):
 
     # -- the seam -----------------------------------------------------------
 
-    def into_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
+    def into_pairs(self, messages: Any, protocol: Protocol | str | int = Protocol.OTHER) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""
         return self.drop_null_values(
             self.into_payload_pairs(self.into_raw_pairs(messages, protocol))
         )
 
-    def into_pairs_from_entries(self, entries: Any, protocol: str = NO_PROTOCOL) -> Any:
+    def into_pairs_from_entries(
+        self, entries: Any, protocol: Protocol | str | int = Protocol.OTHER
+    ) -> Any:
         """Apply one protocol rule to generic arguments without reading text again."""
         rows = len(entries)
         rule = self.rules.rule(protocol)
@@ -422,7 +425,7 @@ class FixCodec(Convertible):
             _RAW_PAIRS,
         )
 
-    def into_raw_pairs(self, messages: Any, protocol: str = NO_PROTOCOL) -> Any:
+    def into_raw_pairs(self, messages: Any, protocol: Protocol | str | int = Protocol.OTHER) -> Any:
         """Parsed pairs before configured null spellings are removed."""
         compute = pyarrow.compute
         if not len(messages):
@@ -923,12 +926,12 @@ class FixCodec(Convertible):
     # -- versions -----------------------------------------------------------
 
     def version_of(
-        self, message: str | None, protocol: str = NO_PROTOCOL
+        self, message: str | None, protocol: Protocol | str | int = Protocol.OTHER
     ) -> tuple[str | None, str]:
         """Which FIX version a message is read under, and where that came from."""
         if message:
-            parse_protocol = protocol
-            if protocol == NO_PROTOCOL:
+            parse_protocol = Protocol.from_str(protocol)
+            if parse_protocol is Protocol.OTHER:
                 parse_protocol = self.rules.into_arrow_protocol_array(
                     pyarrow.array([message], pyarrow.string())
                 )[0].as_py()
@@ -943,25 +946,31 @@ class FixCodec(Convertible):
             )
         return None, NO_SOURCE
 
-    def versions_of(self, messages: Any, protocol: str = NO_PROTOCOL) -> pyarrow.Array:
+    def versions_of(
+        self, messages: Any, protocol: Protocol | str | int = Protocol.OTHER
+    ) -> pyarrow.Array:
         """Resolved version per row, after parsing each row's actual separator."""
         if isinstance(messages, pyarrow.ChunkedArray):
             messages = messages.combine_chunks()
-        if protocol != NO_PROTOCOL:
-            return self.versions_of_pairs(self.into_pairs(messages, protocol), protocol)
+        declared = Protocol.from_str(protocol)
+        if declared is not Protocol.OTHER:
+            return self.versions_of_pairs(self.into_pairs(messages, declared), declared)
         if not len(messages):
             return pyarrow.array([], pyarrow.string())
         groups = list(groups_of(self.rules.into_arrow_protocol_array(messages)))
         parts, positions = [], []
-        for category, where in groups:
-            pairs = self.into_pairs(pyarrow.compute.take(messages, where), category.as_py())
-            parts.append(self.versions_of_pairs(pairs, NO_PROTOCOL))
+        for code, where in groups:
+            pairs = self.into_pairs(pyarrow.compute.take(messages, where), code.as_py())
+            parts.append(self.versions_of_pairs(pairs, Protocol.OTHER))
             positions.append(where)
         return scattered(parts, positions)
 
-    def versions_of_pairs(self, pairs: Any, protocol: str = NO_PROTOCOL) -> pyarrow.Array:
+    def versions_of_pairs(
+        self, pairs: Any, protocol: Protocol | str | int = Protocol.OTHER
+    ) -> pyarrow.Array:
         """Resolved application version per parsed row."""
-        named = self.rules.rule(protocol).named if protocol != NO_PROTOCOL else None
+        declared = Protocol.from_str(protocol)
+        named = self.rules.rule(declared).named if declared is not Protocol.OTHER else None
         begins, application, default_application = _version_columns(pairs, named)
         compute = pyarrow.compute
         is_fixt = compute.fill_null(

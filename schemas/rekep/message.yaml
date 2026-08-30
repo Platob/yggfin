@@ -131,10 +131,11 @@ fields:
   type: string
   description: Payload after the fixed log header, with continuation lines folded in.
   fix: {display: Message}
-- name: protocolcode
-  type: string
+- name: protocol
+  type: int64
   description: Protocol syntax detected without interpreting its fields.
-  fix: {display: Protocol Code}
+  fix: {display: Protocol}
+  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right}
 - name: beginstring
   type: string
   nullable: true

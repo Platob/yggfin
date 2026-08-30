@@ -133,8 +133,8 @@ class KeyCounts(Convertible):
         if not len(messages):
             return self
         protocols = self.rules.into_arrow_protocol_array(messages, plugins)
-        for category, where in groups_of(protocols):
-            protocol = category.as_py()
+        for code, where in groups_of(protocols):
+            protocol = code.as_py()
             if self.rules.rule(protocol).named is None:
                 continue
             selected = compute.take(messages, where)

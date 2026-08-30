@@ -560,7 +560,7 @@ MESSAGE_COLUMNS = [
     "threadname",
     "plugincode",
     "message",
-    "protocolcode",
+    "protocol",
     *SESSION_COLUMNS,
     "entries",
     "direction",
@@ -600,6 +600,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("vhash").type == pyarrow.int64()
     assert schema.field("xhash").type == pyarrow.int64()
     assert schema.field("eventtype").type == pyarrow.int64()
+    assert schema.field("protocol").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
 
 

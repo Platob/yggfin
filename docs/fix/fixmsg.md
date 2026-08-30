@@ -32,8 +32,9 @@ than tokenizing the payload again. A batch arriving from Iceberg carries
 `parse_fix` projects `message` away and filling it back in would invent text
 the reader deliberately left behind.
 
-Classification uses the codec's rules; the stored `protocolcode` fills only
-the rows those rules call `OTHER`.
+Classification uses the codec's rules; the stored
+[`protocol`](../enums/protocol.md) fills only the rows those rules call
+`OTHER`.
 
 ```yaml
 # Discard operational traffic before argument tokenization; empty retains it.

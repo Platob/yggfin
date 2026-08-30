@@ -7,8 +7,8 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.enums.codes import Direction
-from rekep.fix import NO_PROTOCOL, Rule, Rules
+from rekep.enums.codes import Direction, Protocol
+from rekep.fix import Rule, Rules
 from rekep.fix.rules import (
     CODEC_ANCHORS,
     CODEC_KEYS,
@@ -54,16 +54,34 @@ DEFAULT = Rules.into_default()
 
 
 def protocols_of(*messages: str | None) -> list[str]:
-    """The protocol each message carries, through the one classifier."""
-    return DEFAULT.into_arrow_protocol_array(pyarrow.array(messages, pyarrow.string())).to_pylist()
+    """The protocol each message carries, spelled out, through the one classifier.
+
+    The column holds packed codes, so reading them back as their spellings is
+    both what a consumer does and a round trip of the packing.
+    """
+    return spelled(DEFAULT.into_arrow_protocol_array(pyarrow.array(messages, pyarrow.string())))
+
+
+def spelled(protocols: pyarrow.Array) -> list[str]:
+    """One protocol column read back as the names it packs."""
+    return [Protocol.from_int(code).code for code in protocols.to_pylist()]
+
+
+def packed(*protocols: str | None) -> pyarrow.Array:
+    """One protocol column as the classifier writes it: packed codes, never names."""
+    return pyarrow.array(
+        [None if name is None else int(Protocol.from_str(name)) for name in protocols],
+        pyarrow.int64(),
+    )
 
 
 def test_the_default_set_is_the_built_ins_in_order() -> None:
     """The three shapes lead, so a FIX frame saying "heartbeat" stays a frame."""
     assert len(DEFAULT_RULES) == EXPECTED_RULES
-    assert [rule.protocol for rule in DEFAULT.rules] == ["FIX", "FIXML", "UL", "MISC", "OTHER"]
+    assert [rule.protocol.code for rule in DEFAULT.rules] == ["FIX", "FIXML", "UL", "MISC", "OTHER"]
     assert len({rule.protocol for rule in DEFAULT_RULES}) == EXPECTED_PROTOCOLS
-    assert OTHER.protocol == NO_PROTOCOL
+    assert {rule.protocol for rule in DEFAULT_RULES} == set(Protocol) - {Protocol.UNKNOWN}
+    assert OTHER.protocol is Protocol.OTHER
     assert [rule.codec for rule in DEFAULT.rules] == [*SHAPES, "none", "none"]
 
 
@@ -107,7 +125,7 @@ def test_the_shape_decides_the_protocol_and_msgtype_stays_its_own(
     frame with a named payload beside it is FIXML; a bare named document is UL
     whatever its `MSGTYPE` says. The discriminator survives all three."""
     parsed = Message.parse_arrow(pyarrow.array([message], pyarrow.string()))
-    assert parsed["protocolcode"].to_pylist() == [expected]
+    assert spelled(parsed["protocol"]) == [expected]
     assert parsed["msgtype"].to_pylist() == [msgtype]
 
 
@@ -128,14 +146,14 @@ def test_a_value_full_of_digits_is_still_a_value() -> None:
 def test_the_scalar_row_and_the_column_agree() -> None:
     """One classifier: a row built from text answers what its batch answers."""
     for line, expected in LINES.items():
-        assert Message(message=line).protocolcode == expected
+        assert Message(message=line).protocol.code == expected
 
 
 def test_a_declared_pattern_decides_instead_of_the_shape() -> None:
     """Which is what lets a session rule sit in front of the general one."""
     rules = Rules(rules=[Rule(protocol="SESSION", pattern=r"35=0", codec="fix"), *DEFAULT_RULES])
     line = "recv 8=FIX.4.4|35=0|10=017|"
-    assert rules.into_arrow_protocol_array(pyarrow.array([line])).to_pylist() == ["SESSION"]
+    assert spelled(rules.into_arrow_protocol_array(pyarrow.array([line]))) == ["SESSION"]
     assert protocols_of(line) == ["FIX"], "and the default set still says FIX"
 
 
@@ -145,7 +163,7 @@ def test_a_pattern_rule_needs_no_shape() -> None:
         rules=[Rule(protocol="OPS", pattern=joined_pattern(r"\bready\b", r"\bstopped\b")), OTHER]
     )
     messages = pyarrow.array(["service ready", "service stopped", "service busy"])
-    assert rules.into_arrow_protocol_array(messages).to_pylist() == ["OPS", "OPS", NO_PROTOCOL]
+    assert spelled(rules.into_arrow_protocol_array(messages)) == ["OPS", "OPS", "OTHER"]
 
 
 def test_joined_pattern_scopes_a_branch_s_leading_flags() -> None:
@@ -156,9 +174,9 @@ def test_joined_pattern_scopes_a_branch_s_leading_flags() -> None:
     assert joined == r"(?i:ready)|(?:stopped)"
     rules = Rules(rules=[Rule(protocol="OPS", pattern=joined), OTHER])
     lines = ["service READY", "service STOPPED", "service stopped"]
-    assert rules.into_arrow_protocol_array(pyarrow.array(lines)).to_pylist() == [
+    assert spelled(rules.into_arrow_protocol_array(pyarrow.array(lines))) == [
         "OPS",
-        NO_PROTOCOL,
+        "OTHER",
         "OPS",
     ]
     assert joined_pattern("", r"x", "") == r"(?:x)", "empty branches are no branches"
@@ -173,26 +191,26 @@ def test_joined_branches_keep_their_named_groups_apart() -> None:
     assert joined == r"(?:(?P<j0_v>ready))|(?:(?P<j1_v>stopped))"
     rules = Rules(rules=[Rule(protocol="OWN", pattern=joined), OTHER])
     lines = ["ready", "stopped", "busy"]
-    assert rules.into_arrow_protocol_array(pyarrow.array(lines)).to_pylist() == [
+    assert spelled(rules.into_arrow_protocol_array(pyarrow.array(lines))) == [
         "OWN",
         "OWN",
-        NO_PROTOCOL,
+        "OTHER",
     ]
     assert joined_pattern(r"(?P<v>x)") == r"(?:(?P<v>x))"
 
 
 def test_dot_does_not_cross_a_newline_unless_the_pattern_requests_it() -> None:
     messages = pyarrow.array(["a\nb"])
-    for pattern, expected in ((r"a.b", NO_PROTOCOL), (r"(?s)a.b", "OWN")):
+    for pattern, expected in ((r"a.b", "OTHER"), (r"(?s)a.b", "OWN")):
         rules = Rules(rules=[Rule(protocol="OWN", pattern=pattern)])
-        assert rules.into_arrow_protocol_array(messages).to_pylist() == [expected]
+        assert spelled(rules.into_arrow_protocol_array(messages)) == [expected]
 
 
 def test_the_misc_rule_recognises_known_operational_lines() -> None:
     assert protocols_of("heartbeat 7", "connection established", "opaque status") == [
         "MISC",
         "MISC",
-        NO_PROTOCOL,
+        "OTHER",
     ]
     assert DEFAULT.rule("MISC") == MISC
 
@@ -217,20 +235,20 @@ def test_a_null_message_is_other_rather_than_null() -> None:
     protocols = DEFAULT.into_arrow_protocol_array(
         pyarrow.array([None, "heartbeat"], pyarrow.string())
     )
-    assert protocols.to_pylist() == [NO_PROTOCOL, "MISC"]
+    assert protocols.to_pylist() == [int(Protocol.OTHER), int(Protocol.MISC)]
     assert protocols.null_count == 0
 
 
 def test_an_empty_pattern_matches_every_nonnull_message() -> None:
     rules = Rules(rules=[Rule(protocol="ALL")])
     messages = pyarrow.array([None, ""])
-    assert rules.into_arrow_protocol_array(messages).to_pylist() == [NO_PROTOCOL, "ALL"]
+    assert spelled(rules.into_arrow_protocol_array(messages)) == ["OTHER", "ALL"]
 
 
 def test_no_rows_is_no_rows() -> None:
     protocols = DEFAULT.into_arrow_protocol_array(pyarrow.array([], pyarrow.string()))
     assert len(protocols) == 0
-    assert protocols.type == pyarrow.string()
+    assert protocols.type == pyarrow.int64()
 
     directions = DEFAULT.into_arrow_direction_array(pyarrow.array([], pyarrow.string()), protocols)
     assert len(directions) == 0
@@ -251,7 +269,7 @@ def test_direction_is_a_closed_packed_vocabulary() -> None:
 def test_every_structured_protocol_reads_direction_the_same_way() -> None:
     """One anchor per codec, so a verb answers in front of any of the three."""
     assert set(CODEC_ANCHORS) == set(SHAPES)
-    assert set(DEFAULT._anchors()) == {"FIX", "FIXML", "UL"}
+    assert set(DEFAULT._anchors()) == {Protocol.FIX, Protocol.FIXML, Protocol.UL}
 
 
 def test_direction_words_produce_packed_codes_before_the_payload() -> None:
@@ -267,7 +285,7 @@ def test_direction_words_produce_packed_codes_before_the_payload() -> None:
         ],
         pyarrow.string(),
     )
-    protocols = pyarrow.array(["FIX", "FIX", "FIX", "FIX", "OTHER", "UL", "FIX"])
+    protocols = packed("FIX", "FIX", "FIX", "FIX", "OTHER", "UL", "FIX")
 
     directions = DEFAULT.into_arrow_direction_array(messages, protocols)
 
@@ -284,7 +302,7 @@ def test_direction_words_produce_packed_codes_before_the_payload() -> None:
 
 
 def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
-    protocols = ["FIX", NO_PROTOCOL, "FIXML", "UL", NO_PROTOCOL, "SBE", None]
+    protocols = ["FIX", "OTHER", "FIXML", "UL", "OTHER", "SBE", None]
     eventtypes = [
         EventType.ORDER,
         EventType.MISC,
@@ -308,7 +326,7 @@ def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
         UNKNOWN_CATEGORY,
     ]
     vector = DEFAULT.into_arrow_category_array(
-        pyarrow.array(protocols),
+        packed(*protocols),
         pyarrow.array([None if eventtype is None else int(eventtype) for eventtype in eventtypes]),
     )
     assert vector.to_pylist() == scalar
@@ -323,7 +341,7 @@ def test_categories_agree_on_codes_no_member_spells() -> None:
     for protocol in (None, "FIX"):
         scalar = [DEFAULT.category_of(protocol, eventtype) for eventtype in eventtypes]
         vector = DEFAULT.into_arrow_category_array(
-            pyarrow.array([protocol] * len(eventtypes), pyarrow.string()),
+            packed(*[protocol] * len(eventtypes)),
             pyarrow.array(eventtypes, pyarrow.int64()),
         )
         assert vector.to_pylist() == scalar
@@ -336,13 +354,13 @@ def test_a_rule_may_be_told_apart_by_its_plugin() -> None:
     messages = pyarrow.array([None, "a", "b"])
     plugins = pyarrow.array(["ULBridge", "ULBridge", "other"])
     protocols = rules.into_arrow_protocol_array(messages, plugins)
-    assert protocols.to_pylist() == [NO_PROTOCOL, "BRIDGE", NO_PROTOCOL]
+    assert spelled(protocols) == ["OTHER", "BRIDGE", "OTHER"]
 
 
 def test_a_rule_naming_a_plugin_with_no_plugin_column_does_not_match() -> None:
     """A rule that cannot be evaluated is not a rule that matched."""
     rules = Rules(rules=[Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$")])
-    assert rules.into_arrow_protocol_array(pyarrow.array(["a"])).to_pylist() == [NO_PROTOCOL]
+    assert spelled(rules.into_arrow_protocol_array(pyarrow.array(["a"]))) == ["OTHER"]
 
 
 def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
@@ -350,13 +368,34 @@ def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
     assert CODEC_KEYS[DEFAULT.rule("FIX").codec] is False
     assert CODEC_KEYS[DEFAULT.rule("FIXML").codec] is True
     assert CODEC_KEYS[DEFAULT.rule("UL").codec] is True
-    assert DEFAULT.rule(NO_PROTOCOL).named is None, "and OTHER is not read at all"
+    assert DEFAULT.rule(Protocol.OTHER).named is None, "and OTHER is not read at all"
 
 
 def test_an_unknown_protocol_reads_back_as_other() -> None:
     """A batch may carry a name this set has lost, and it still has to be read."""
     assert DEFAULT.rule("SBE") is OTHER
     assert DEFAULT.rule("") is OTHER
+    assert DEFAULT.rule("a name no column could hold") is OTHER
+
+
+def test_a_slice_is_read_back_by_the_code_its_column_stores() -> None:
+    """Which is how the batch path asks: `groups_of` yields packed codes."""
+    assert DEFAULT.rule(int(Protocol.FIX)).codec == "fix"
+    assert DEFAULT.rule(Protocol.MISC) == MISC
+    assert DEFAULT.rule(int(Protocol.from_str("SBE"))) is OTHER
+
+
+def test_a_protocol_is_an_open_vocabulary_of_eight_ascii_bytes() -> None:
+    """A desk's own name is a code without a release here -- up to the width
+    the column stores, and a rule that names a wider one is refused rather
+    than quietly collapsing onto `UNKNOWN` beside every other over-long name."""
+    own = Rule(protocol="venue", codec="ul")
+    assert own.protocol is Protocol.from_str("VENUE")
+    assert int(own.protocol) == int.from_bytes(b"VENUE\0\0\0", "big", signed=True)
+    with pytest.raises(ValueError, match="eight printable ASCII bytes"):
+        Rule(protocol="VENUEBRIDGE")
+    with pytest.raises(ValueError, match="no protocol name"):
+        Rule(protocol="")
 
 
 def test_a_rule_set_round_trips_as_a_document(tmp_path: Path) -> None:
@@ -364,6 +403,14 @@ def test_a_rule_set_round_trips_as_a_document(tmp_path: Path) -> None:
     path = tmp_path / "rules.yml"
     DEFAULT.into_yaml(path)
     assert Rules.from_yaml(path) == DEFAULT
+
+
+def test_a_written_rule_spells_its_protocol_rather_than_packing_it() -> None:
+    """The document is hand-edited, and a packed code is nineteen digits of
+    nothing to whoever opens the file."""
+    assert DEFAULT.rules[0].into_dict()["protocol"] == "FIX"
+    assert b"protocol: FIX\n" in DEFAULT.into_yaml()
+    assert Rules.from_dict({"rules": [{"protocol": "VENUE"}]}).rules[0].protocol.code == "VENUE"
 
 
 def test_configured_entry_separator_candidates_round_trip_as_literals() -> None:
@@ -394,7 +441,7 @@ def test_a_loaded_rule_set_overrides_the_default(tmp_path: Path) -> None:
     assert protocols_of(line) == ["UL"]
     assert loaded.rule("OWN").separator == "|"
     protocols = loaded.into_arrow_protocol_array(pyarrow.array([line, "prose"]))
-    assert protocols.to_pylist() == ["OWN", NO_PROTOCOL]
+    assert spelled(protocols) == ["OWN", "OTHER"]
 
 
 def test_a_rule_is_a_field_class_like_every_other_declaration() -> None:
@@ -403,3 +450,4 @@ def test_a_rule_is_a_field_class_like_every_other_declaration() -> None:
     assert Rule.into_field().names[:2] == ["protocol", "pattern"]
     assert Rule.into_field().field("plugin_pattern").nullable
     assert not Rule.into_field().field("protocol").nullable
+    assert Rule.into_field().field("protocol").dtype == Protocol.into_arrow_type().index_type

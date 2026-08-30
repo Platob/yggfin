@@ -82,6 +82,7 @@ nav:
       - ASCII codes: enums/ascii-codes.md
       - Messages:
           - Direction: enums/direction.md
+          - Protocol: enums/protocol.md
       - Events:
           - Event type: enums/event-type.md
           - State: enums/state.md

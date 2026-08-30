@@ -15,8 +15,8 @@ import pytest
 
 import rekep
 from rekep.entries import ENTRIES, ENTRY_PARTS
+from rekep.enums import Protocol
 from rekep.fix import (
-    NO_PROTOCOL,
     FixCodec,
     FixRegistry,
     NanocondaSource,
@@ -908,17 +908,17 @@ def test_a_capture_carrying_no_absent_field_is_retyped_and_not_rebuilt(codec: Fi
 
 def test_a_rule_that_reads_nothing_gives_nulls_and_not_empty_maps(codec: FixCodec) -> None:
     messages = pyarrow.array(["prose", "more prose"])
-    parsed = codec.into_pairs(messages, NO_PROTOCOL)
+    parsed = codec.into_pairs(messages, Protocol.OTHER)
     assert parsed.to_pylist() == [None, None]
     assert pyarrow.types.is_map(parsed.type)
 
 
 def test_the_codec_reads_each_protocol_the_way_its_rule_says(codec: FixCodec) -> None:
     """The name is the whole address: the batch carries it, the rule is ours."""
-    for line, expected in ((BRIDGE, "UL"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
+    for line, expected in ((BRIDGE, Protocol.UL), ("8=FIX.4.2|35=D|10=203|", Protocol.FIX)):
         assert Rules.into_default().into_arrow_protocol_array(
             pyarrow.array([line])
-        ).to_pylist() == [expected]
+        ).to_pylist() == [int(expected)]
         assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
 

@@ -9,7 +9,7 @@ from rekep import Message
 line = "8=FIX.4.4|35=8|49=VENUE|56=DESK|34=7|52=20260101-10:00:00.000|11=C1|55=BTC-USD|54=1|10=000"
 row = Message.from_text(line, message=line, sourceurl="s3://logs/capture.log", sourcerownum=1)
 
-print(row.protocolcode, row.msgtype, row.msgseqnum, row.sendercompid, row.targetcompid)
+print(row.protocol, row.msgtype, row.msgseqnum, row.sendercompid, row.targetcompid)
 print([(entry.tag, entry.value) for entry in row.entries])
 ```
 
@@ -20,19 +20,20 @@ FIX 8 7 VENUE DESK
 
 !!! warning "`message=` is what makes the syntax columns answer"
 
-    `protocolcode`, `eventtype` and `direction` are read off the raw text, not
+    `protocol`, `eventtype` and `direction` are read off the raw text, not
     off the pairs. Staged without it, direction stays `UNKNOWN` and the FIX
     codec does not claim the row.
 
     ```python
-    Message.from_text(line).protocolcode            # 'OTHER'
-    Message.from_text(line, message=line).protocolcode  # 'FIX'
+    Message.from_text(line).protocol                # Protocol.OTHER
+    Message.from_text(line, message=line).protocol  # Protocol.FIX
     ```
 
 ## Three protocols
 
-`protocolcode` says which grammar the payload is written in, and the keys
-decide it -- never the values, and never a MsgType.
+`protocol` says which grammar the payload is written in, and the keys decide
+it -- never the values, and never a MsgType. It stores a
+[`Protocol`](../enums/protocol.md) code, not the text.
 
 | code | what the payload's keys are |
 | --- | --- |

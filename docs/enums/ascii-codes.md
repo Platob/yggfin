@@ -96,6 +96,7 @@ so every code is its own band.
 | [AssetKind](asset-kind.md) | `Ascii64` | `int64` | closed |
 | [MarketKind](market-kind.md) | `Ascii64` | `int64` | closed |
 | [OptionKind](option-kind.md) | `Ascii64` | `int64` | closed |
+| [Protocol](protocol.md) | `Ascii64` | `int64` | open |
 | [Direction](direction.md) | `Ascii32` | `int32` | closed |
 | [MIC](mic.md) | `Ascii32` | `int32` | open |
 | [Currency](currency.md) | `Ascii32` | `int32` | open |
@@ -104,5 +105,5 @@ so every code is its own band.
 
 A **closed** set answers only on the codes it compiles, which keeps a Python
 answer and a pushed code-set filter on the same rows. An **open** one —
-`MIC`, `Currency` — registers a code it meets, and even there only an exact
-round trip of the stored bytes registers.
+`Protocol`, `MIC`, `Currency` — registers a code it meets, and even there only
+an exact round trip of the stored bytes registers.

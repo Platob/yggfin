@@ -7,9 +7,9 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message, txhash
-from rekep.enums import Direction
+from rekep.enums import Direction, Protocol
 from rekep.fields import DISPLAY, column_name
-from rekep.fix import ENTRIES, NO_PROTOCOL, FixRegistry, Party
+from rekep.fix import ENTRIES, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
 from rekep.fix.fields import fix_field
 from rekep.market import HASH, MIC, BookIterator, Event, EventType
@@ -44,13 +44,20 @@ ENVELOPE = [
     "reason",
 ]
 SOURCE: list[str] = []
+
+
+def _protocols(batch: pyarrow.RecordBatch | pyarrow.Table) -> list[str]:
+    """The `protocol` column spelled out, registered names included."""
+    return [Protocol.from_int(code).code for code in batch.column("protocol").to_pylist()]
+
+
 LINE = [
     "sourceurl",
     "sourcerownum",
     "threadname",
     "plugincode",
     "message",
-    "protocolcode",
+    "protocol",
     "beginstring",
     "bodylength",
     "msgtype",
@@ -272,9 +279,13 @@ def test_the_lifted_header_arrives_as_text_and_is_typed_here() -> None:
 def test_a_line_always_says_which_protocol_it_carries() -> None:
     """`OTHER` is an answer and not a missing one -- it is most of a capture --
     so the column is NOT NULL and the fall-through is what a line starts as."""
-    assert not FixMsg.into_field().field("protocolcode").nullable
-    assert FixMsg.into_field().field("protocolcode").dtype == pyarrow.string()
-    assert FixMsg().protocolcode == NO_PROTOCOL
+    member = FixMsg.into_field().field("protocol")
+    assert not member.nullable and member.dtype == pyarrow.int64()
+    assert member.metadata["enum:name"] == "Protocol"
+    assert member.metadata["enum:encoding"] == "ascii-big-endian"
+    assert member.metadata["enum:byte_width"] == "8"
+    assert "enum:pattern" not in member.metadata, "a rule's name is the feed's to spell"
+    assert FixMsg().protocol is Protocol.OTHER
 
 
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
@@ -546,7 +557,7 @@ def test_the_translator_links_its_dictionary_onto_its_message(registry: FixRegis
 def test_scalar_parsing_resolves_the_fix_version_once_on_the_message() -> None:
     row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|10=000")
 
-    assert row.protocolcode == "FIX"
+    assert row.protocol is Protocol.FIX
     assert row.protocolversion == "4.4"
     assert row.protocolversionsource == "begin_string"
 
@@ -706,7 +717,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     )
     batch = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
 
-    assert batch.column("protocolcode")[0].as_py() == "UL"
+    assert Protocol.from_int(batch.column("protocol")[0].as_py()) is Protocol.UL
     altids = batch.column("securityaltid")[0].as_py()
     assert [(entry["securityaltid"], entry["securityaltidsource"]) for entry in altids] == [
         ("US0378331005", "4"),
@@ -943,7 +954,7 @@ def test_a_row_round_trips_as_a_document() -> None:
         threadname="t",
         plugincode="d",
         message="m",
-        protocolcode="FIX",
+        protocol=Protocol.FIX,
         entries=[_stored(11, "ClOrdID", one) for one in ("ORD-1", "ORD-1-again")]
         + [_stored(0, "ISINCODE", one) for one in ("FAKE-ISIN-0001", "FAKE-ISIN-0002")],
         code="TTF",
@@ -1042,7 +1053,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         "ISINCODE",
     ], "only the discriminator answers to a rendered header name"
     assert raw.column("msgseqnum").to_pylist() == ["7", None, None], "text, until this stage"
-    assert raw.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert _protocols(raw) == ["FIX", "UL", "OTHER"]
     assert "OrigClOrdID" not in raw.schema.names
 
     parsed = FixMsg.from_message_batch(raw, codec)
@@ -1052,7 +1063,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         int(EventType.EXECUTION),
         int(EventType.MISC),
     ]
-    assert parsed.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER"]
+    assert _protocols(parsed) == ["FIX", "UL", "OTHER"]
     assert parsed.column("protocolversion").to_pylist() == ["4.4", "4.4", None]
     assert parsed.column("msgtype").to_pylist() == ["D", "8", None]
     assert parsed.column("msgseqnum").to_pylist() == [7, None, None]
@@ -1102,8 +1113,8 @@ def test_fixmsg_projection_does_not_need_the_raw_message(
         raw.select([name for name in raw.schema.names if name != "message"]), codec
     )
 
-    assert whole.column("protocolcode").to_pylist() == ["FIXML", "FIXML"]
-    assert projected.column("protocolcode").equals(whole.column("protocolcode"))
+    assert _protocols(whole) == ["FIXML", "FIXML"]
+    assert projected.column("protocol").equals(whole.column("protocol"))
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
     assert projected.column("message").null_count == projected.num_rows
@@ -1122,16 +1133,16 @@ def test_staged_protocol_matching_the_codec_survives_projection(
     registry: FixRegistry,
 ) -> None:
     raw = _raw_batch(Message(message="8=FIX.4.4|35=UL|#MSGTYPE=D|#CLORDID=A|10=000|"))
-    at = raw.schema.get_field_index("protocolcode")
+    at = raw.schema.get_field_index("protocol")
     staged = codec.rules.into_arrow_protocol_array(raw.column("message"), raw.column("plugincode"))
     raw = raw.set_column(at, raw.schema.field(at), staged)
 
     whole = FixMsg.from_message_batch(raw, codec)
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
-    assert whole.column("protocolcode").to_pylist() == ["FIXML"]
+    assert _protocols(whole) == ["FIXML"]
     assert whole.column("clordid").to_pylist() == ["A"]
-    assert projected.column("protocolcode").equals(whole.column("protocolcode"))
+    assert projected.column("protocol").equals(whole.column("protocol"))
     assert projected.column("clordid").equals(whole.column("clordid"))
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
@@ -1146,7 +1157,7 @@ def test_wire_discriminator_without_begin_string_survives_projection(
     whole = FixMsg.from_message_batch(raw, codec)
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
-    assert raw.column("protocolcode").to_pylist() == ["FIX"]
+    assert _protocols(raw) == ["FIX"]
     assert [(entry["key"], entry["value"]) for entry in whole.column("entries")[0].as_py()] == [
         ("11", "A")
     ]
@@ -1877,7 +1888,7 @@ def test_fixml_decodes_a_named_value_inside_its_wire_envelope(
 
     parsed = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
 
-    assert parsed.column("protocolcode").to_pylist() == ["FIXML"]
+    assert _protocols(parsed) == ["FIXML"]
     assert parsed.column("msgtype").to_pylist() == ["UL"]
     assert parsed.column("protocolversion").to_pylist() == ["4.2"]
     assert parsed.column("exectype").to_pylist() == ["2"]
@@ -1892,14 +1903,14 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
         message="RouteMessage : BEGINSTRING=FIX.4.4|ACCOUNT=807768.001"
         "|MSGTYPE=D|CLORDID=PL024819|SIDE=1"
     )
-    assert echo.protocolcode == "UL"
+    assert echo.protocol is Protocol.UL
     heartbeat = Message(message="heartbeat emitted seq=7")
-    assert heartbeat.protocolcode == "MISC"
+    assert heartbeat.protocol is Protocol.MISC
     wrapped = Message(message="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
-    assert wrapped.protocolcode == "FIXML"
+    assert wrapped.protocol is Protocol.FIXML
 
     batch = FixMsg.from_message_batch(_raw_batch(echo, heartbeat, wrapped), codec)
-    assert batch.column("protocolcode").to_pylist() == ["UL", "MISC", "FIXML"]
+    assert _protocols(batch) == ["UL", "MISC", "FIXML"]
     assert batch.column("clordid").to_pylist()[0] == "PL024819", "promoted, not dropped"
     assert batch.column("account").to_pylist()[0] == "807768.001"
     assert batch.column("msgtype").to_pylist()[0] == "D"
@@ -1910,9 +1921,9 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     # rescued row still keeps its arguments and its identities -- both were
     # simply null while the row read as OTHER.
     bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
-    assert bare.protocolcode == "UL"
+    assert bare.protocol is Protocol.UL
     lone = FixMsg.from_message_batch(_raw_batch(bare), codec)
-    assert lone.column("protocolcode").to_pylist() == ["UL"]
+    assert _protocols(lone) == ["UL"]
     assert lone.column("entries").to_pylist() == [[]]
     assert [(entry["key"], entry["value"]) for entry in lone.column("unmap").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),
@@ -1968,15 +1979,15 @@ def test_direction_reads_the_verb_before_the_payload(
     # A named document has an anchor of its own, so a verb in front of one
     # answers exactly as it does in front of a frame.
     named = Message(message="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
-    assert named.protocolcode == "UL"
+    assert named.protocol is Protocol.UL
     document = FixMsg.from_message_batch(_raw_batch(named), codec)
-    assert document.column("protocolcode").to_pylist() == ["UL"]
+    assert _protocols(document) == ["UL"]
     assert document.column("direction").to_pylist() == [int(Direction.SENT)]
 
     # A projected row reparsed without its raw message keeps the resolved
     # answer: direction is the message stage's fact, and nothing recomputes
     # it where the text that carried the verb is gone.
-    projected = Message(message="", protocolcode="FIX", direction=Direction.SENT).into_row()
+    projected = Message(message="", protocol=Protocol.FIX, direction=Direction.SENT).into_row()
     projected["message"] = None
     projected["entries"] = [{"tag": 8, "key": "8", "value": "FIX.4.4"}]
     again = FixMsg.from_message_batch(
@@ -2230,7 +2241,7 @@ def test_a_mixed_protocol_batch_keeps_every_row_where_it_stood(codec: FixCodec) 
     ]
     batch = FixMsg.from_message_batch(_raw_batch(*(Message(message=line) for line in lines)), codec)
 
-    assert batch.column("protocolcode").to_pylist() == ["FIX", "UL", "OTHER", "FIXML", "UL"]
+    assert _protocols(batch) == ["FIX", "UL", "OTHER", "FIXML", "UL"]
     assert batch.column("symbol").to_pylist() == ["AAPL", "AAPL", None, "MSFT", None]
     assert batch.column("clordid").to_pylist() == [None, None, None, "C1", "C2"]
     one_by_one = [

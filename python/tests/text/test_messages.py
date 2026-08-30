@@ -8,7 +8,8 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.fix import NO_PROTOCOL, FixCodec, FixRegistry, Rule, Rules
+from rekep.enums import Protocol
+from rekep.fix import FixCodec, FixRegistry, Rule, Rules
 from rekep.fix.columns import COLUMNS
 from rekep.fix.message import render_fix_value
 from rekep.market.event import HOUR, SECOND
@@ -238,7 +239,7 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
         "protocolversion",
         "Parties",
     } & set(raw_table.schema.names)
-    assert {"protocolcode", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
+    assert {"protocol", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
     assert "CheckSum" not in raw_table.schema.names, "the boundary is not one of the lifted"
     # Protocol-neutral: this stage reads no numbers and no clocks, so every
     # lifted column is stored as the text the payload spelled.
@@ -263,13 +264,13 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
 
 def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) -> None:
     assert table.num_rows == EXPECTED_RECORDS
-    assert table.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS
+    assert _protocols(table) == EXPECTED_PROTOCOLS
 
 
 def test_the_stored_column_and_a_rebuilt_row_agree(table: pyarrow.Table) -> None:
     """One classifier, so a row rebuilt from its text answers what the batch did."""
     rebuilt = [Message(message=one) for one in table.column("message").to_pylist()]
-    assert [row.protocolcode for row in rebuilt] == table.column("protocolcode").to_pylist()
+    assert [row.protocol.code for row in rebuilt] == _protocols(table)
 
 
 # -- what a line carries -----------------------------------------------------
@@ -458,8 +459,8 @@ def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -
 def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:
     """A marker inside a `Text <58>` value is prose, so the frame stays numbered."""
     quoted = "8=FIX.4.4|35=8|58=see #A=1 and #B=2|10=1|"
-    assert Message(message=quoted).protocolcode == "FIX"
-    assert Message(message="8=FIX.4.2|35=ULX|#A=1|#B=2").protocolcode == "FIXML", (
+    assert Message(message=quoted).protocol is Protocol.FIX
+    assert Message(message="8=FIX.4.2|35=ULX|#A=1|#B=2").protocol is Protocol.FIXML, (
         "and marked keys of its own make the same frame mixed"
     )
 
@@ -474,7 +475,7 @@ def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) 
 def test_a_line_carrying_no_message_has_no_pairs_at_all(table: pyarrow.Table) -> None:
     """Null, not an empty list: it was never a message and sent no session."""
     for row, protocol in enumerate(EXPECTED_PROTOCOLS):
-        if protocol != NO_PROTOCOL:
+        if protocol != "OTHER":
             continue
         assert table.column("entries")[row].as_py() is None
         assert table.column("unmap")[row].as_py() is None
@@ -737,7 +738,7 @@ def test_the_capture_reparses_to_the_same_instants(
     ) as again:
         written = _parsed(again.read_arrow_table(), codec)
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
-    assert written.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS
+    assert _protocols(written) == EXPECTED_PROTOCOLS
     # Named rather than left to a `KeyError` from the loop below: a column the
     # flat layer declares and the shape does not is a missing column, and it
     # should fail as one.
@@ -754,7 +755,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     Rules(
         rules=[
             Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="ul"),
-            Rules.into_default().rule(NO_PROTOCOL),
+            Rules.into_default().rule(Protocol.OTHER),
         ]
     ).into_yaml(path)
     own = FixCodec(registry=codec.registry, rules=Rules.from_yaml(path))
@@ -764,9 +765,9 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
         protocol_rules=own.rules,
     ) as log:
         table = _parsed(log.read_arrow_table(), own)
-    found = table.column("protocolcode").to_pylist()
+    found = _protocols(table)
     assert found[BRIDGE] == "BRIDGE", "the plugin decides now, not the message"
-    assert found[PIPED] == NO_PROTOCOL, "and the wire messages are nobody's protocol"
+    assert found[PIPED] == "OTHER", "and the wire messages are nobody's protocol"
     assert found[REJECTED] == "BRIDGE", "including the bridge's own prose line"
     assert table.column("entries")[PIPED].as_py() is None
     assert _lifted(table, PIPED) == len(WIRE_HEADER), (
@@ -789,7 +790,7 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
         protocol_rules=quiet.rules,
     ) as log:
         table = _parsed(log.read_arrow_table(), quiet)
-    assert table.column("protocolcode").to_pylist() == [NO_PROTOCOL] * EXPECTED_RECORDS
+    assert _protocols(table) == ["OTHER"] * EXPECTED_RECORDS
     assert table.column("entries").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("parties").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("symbol").to_pylist() == [None] * EXPECTED_RECORDS
@@ -943,7 +944,7 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
     )
     table = _parsed(files.read_arrow_table(), codec)
     assert table.num_rows == EXPECTED_RECORDS * 2
-    assert table.column("protocolcode").to_pylist() == EXPECTED_PROTOCOLS * 2
+    assert _protocols(table) == EXPECTED_PROTOCOLS * 2
     assert _named(table.column("unmap")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert _named(table.column("unmap")[EXPECTED_RECORDS + BRIDGE]) == BRIDGE_RAW_PAIRS
     _assert_no_semantic_columns(table, BRIDGE)
@@ -1113,6 +1114,15 @@ def _one_line(path: Path, codec: FixCodec, plugin: str, message: str) -> pyarrow
     return _lines(path, codec, plugin, [message])
 
 
+def _protocols(table: pyarrow.Table) -> list[str]:
+    """The `protocol` column spelled out, registered names included.
+
+    Not `Protocol.into_arrow_array`: that renders the compiled members, and an
+    open vocabulary's point is that a rule set may name one it does not carry.
+    """
+    return [Protocol.from_int(code).code for code in table.column("protocol").to_pylist()]
+
+
 def _parsed(messages: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
     """Convert raw Message batches through the public FixMsg boundary."""
     return pyarrow.Table.from_batches(
@@ -1133,9 +1143,9 @@ def _parsed_lines(codec: FixCodec, *lines: str) -> pyarrow.Table:
         messages.schema.get_field_index("eventtype"), "eventtype", parsed["eventtype"]
     )
     messages = messages.set_column(
-        messages.schema.get_field_index("protocolcode"),
-        "protocolcode",
-        parsed["protocolcode"],
+        messages.schema.get_field_index("protocol"),
+        "protocol",
+        parsed["protocol"],
     )
     return _parsed(messages, codec)
 
@@ -1299,7 +1309,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     assert "entries" in staged.schema.names
     assert staged.column("msgtype").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
-    assert staged.column("protocolcode").to_pylist() == ["FIX", "UL", "MISC", "OTHER"]
+    assert _protocols(staged) == ["FIX", "UL", "MISC", "OTHER"]
     # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
     # the first field the header lift left behind.
     assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [
@@ -1340,7 +1350,7 @@ def test_fix_conversion_never_parses_the_raw_message_again(
     class CountingCodec(FixCodec):
         parsed_rows = 0
 
-        def into_pairs(self, messages, protocol=NO_PROTOCOL):
+        def into_pairs(self, messages, protocol=Protocol.OTHER):
             self.parsed_rows += len(messages)
             return super().into_pairs(messages, protocol)
 
@@ -1361,7 +1371,7 @@ def test_the_redirection_sends_one_input_to_all_three_tables(
     """
     rules = Rules()
     categories = rules.into_arrow_category_array(
-        resolved.column("protocolcode").combine_chunks(),
+        resolved.column("protocol").combine_chunks(),
         resolved.column("eventtype").combine_chunks(),
     )
     assert categories.to_pylist() == ["market", "market", "misc", "misc"]

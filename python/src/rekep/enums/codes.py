@@ -268,6 +268,38 @@ class OptionKind(Ascii64):
     CALL = "CALL", 200
 
 
+class Protocol(Ascii64):
+    """Which protocol a line carries, as an eight-byte ASCII name.
+
+    Open, because the vocabulary belongs to the logs and not to this package:
+    `rekep.fix.rules` ships the five below, and a desk whose rule names its
+    own bridge stores that name as a code without a release here. Eight bytes
+    is the ceiling a rule's name has to fit.
+    """
+
+    UNKNOWN = 0
+    """No name resolved; a rule declaring one is a configuration error."""
+
+    FIX = "FIX"
+    """Numbered FIX tags alone."""
+
+    FIXML = "FIXML"
+    """Numbered tags and named keys together."""
+
+    UL = "UL"
+    """Named keys alone."""
+
+    MISC = "MISC"
+    """Operational traffic whose vocabulary is known but carries no message."""
+
+    OTHER = "OTHER"
+    """The fall-through: a line no rule recognised."""
+
+    @classmethod
+    def _registers_unknown(cls) -> bool:
+        return True
+
+
 class State(Ascii64):
     """Event lifecycle, ordered by completion.
 

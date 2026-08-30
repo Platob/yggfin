@@ -22,6 +22,7 @@ from rekep.enums import (
     EventType,
     MarketKind,
     OptionKind,
+    Protocol,
     Side,
     State,
     TimeInForce,
@@ -52,6 +53,7 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         EventType,
         MarketKind,
         OptionKind,
+        Protocol,
         Side,
         State,
         TimeInForce,
@@ -78,6 +80,19 @@ def test_a_valid_unlisted_mic_registers_once_and_round_trips_from_storage() -> N
     assert first is MIC.from_str("21XX")
     assert MIC.from_int(int(first)) is first
     assert first.code == "21XX", "digits are valid ISO 10383 code characters"
+
+
+def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
+    """The vocabulary belongs to the logs: the shipped names are compiled, and
+    a desk's own rule name registers on the same eight bytes every one uses."""
+    assert int(Protocol.FIX) == int.from_bytes(b"FIX".ljust(8, b"\0"), "big")
+    assert Protocol.FIX.code == Protocol.FIX.into_fix() == str(Protocol.FIX) == "FIX"
+    own = Protocol.from_str(" venue ")
+    assert own is Protocol.from_str("VENUE")
+    assert Protocol.from_int(int(own)) is own
+    assert int(Protocol.FIX) < int(Protocol.FIXML), "and the codes order as the names do"
+    assert Protocol.from_str("VENUEBRIDGE") is Protocol.UNKNOWN, "eight bytes is the ceiling"
+    assert Protocol.from_int(-1) is Protocol.UNKNOWN
 
 
 def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
@@ -239,6 +254,18 @@ DIRECTION_CODES = {
     "RECV": 1_380_270_934,
 }
 
+#: The same, for the protocol a parsed line carries. Only the names this
+#: package ships: an open vocabulary's registered codes are the feed's, and a
+#: feed's own name is pinned by the rule document that declares it.
+PROTOCOL_CODES = {
+    "UNKNOWN": 0,
+    "FIX": int.from_bytes(b"FIX".ljust(8, b"\0"), "big"),
+    "FIXML": int.from_bytes(b"FIXML".ljust(8, b"\0"), "big"),
+    "UL": int.from_bytes(b"UL".ljust(8, b"\0"), "big"),
+    "MISC": int.from_bytes(b"MISC".ljust(8, b"\0"), "big"),
+    "OTHER": int.from_bytes(b"OTHER".ljust(8, b"\0"), "big"),
+}
+
 
 def test_the_state_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in State} == STATE_CODES
@@ -250,6 +277,10 @@ def test_the_side_codes_are_the_ones_on_disk() -> None:
 
 def test_the_direction_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in Direction} == DIRECTION_CODES
+
+
+def test_the_protocol_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in Protocol} == PROTOCOL_CODES
 
 
 def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:

@@ -20,7 +20,7 @@ The package, a FIX registry and a catalog have to exist first:
 Each [`Message`](../../products/message.md) row carries the recording time in
 `unix` with its `unixpartition`, `sourceurl` and the 1-based physical
 `sourcerownum`, `threadname` and `plugincode` from the configured header,
-the unsplit payload in `message`, the syntax-only `protocolcode`, residual
+the unsplit payload in `message`, the syntax-only `protocol`, residual
 ordered `entries` with repeated keys retained, the unambiguous `MsgType` and
 registry-mapped `eventtype`. `vhash` and `xhash` are the XXH3-64 identity of
 the exact UTF-8 payload; `hash` anchors that value to `unix`.
@@ -144,11 +144,11 @@ allocation.
 
 The standard header — `BeginString`, `BodyLength`, `MsgType`, `MsgSeqNum`,
 `SenderCompID`, `TargetCompID`, `SendingTime` — is lifted out of `entries`
-into columns of its own, beside `protocolcode` and the early `eventtype`. A
+into columns of its own, beside `protocol` and the early `eventtype`. A
 lifted column is read back out of `entries` wherever it is empty, so a row
 that carried the field only in the list still answers.
 
-`parse_fix` refuses a source missing `MsgType`, `entries` or `protocolcode`
+`parse_fix` refuses a source missing `MsgType`, `entries` or `protocol`
 rather than reporting an empty successful run. There is no migration: a table
 without those columns is rebuilt.
 
