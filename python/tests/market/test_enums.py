@@ -23,6 +23,7 @@ from rekep.enums import (
     MarketKind,
     OptionKind,
     Protocol,
+    SecurityIDSource,
     Side,
     State,
     TimeInForce,
@@ -54,6 +55,7 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         MarketKind,
         OptionKind,
         Protocol,
+        SecurityIDSource,
         Side,
         State,
         TimeInForce,
@@ -318,6 +320,47 @@ MIC_CODES = {
     "XJSE": int.from_bytes(b"XJSE", "big"),
 }
 
+#: The same, for the scheme an identifier is issued under. The codes are
+#: this package's -- four bytes cannot hold
+#: `FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER` -- while the wire values they
+#: answer to stay the dictionary's, which `FIX_CODED` below checks.
+SECURITY_ID_SOURCE_CODES = {
+    "UNKNOWN": 0,
+    "CUSIP": int.from_bytes(b"CUSP".ljust(4, b"\0"), "big"),
+    "SEDOL": int.from_bytes(b"SEDL".ljust(4, b"\0"), "big"),
+    "QUIK": int.from_bytes(b"QUIK".ljust(4, b"\0"), "big"),
+    "ISIN": int.from_bytes(b"ISIN".ljust(4, b"\0"), "big"),
+    "RIC": int.from_bytes(b"RIC".ljust(4, b"\0"), "big"),
+    "ISO_CURRENCY": int.from_bytes(b"CCY".ljust(4, b"\0"), "big"),
+    "ISO_COUNTRY": int.from_bytes(b"CTRY".ljust(4, b"\0"), "big"),
+    "EXCHANGE_SYMBOL": int.from_bytes(b"EXCH".ljust(4, b"\0"), "big"),
+    "CTA": int.from_bytes(b"CTA".ljust(4, b"\0"), "big"),
+    "BLOOMBERG": int.from_bytes(b"BBG".ljust(4, b"\0"), "big"),
+    "WERTPAPIER": int.from_bytes(b"WKN".ljust(4, b"\0"), "big"),
+    "DUTCH": int.from_bytes(b"DUTC".ljust(4, b"\0"), "big"),
+    "VALOREN": int.from_bytes(b"VALO".ljust(4, b"\0"), "big"),
+    "SICOVAM": int.from_bytes(b"SICO".ljust(4, b"\0"), "big"),
+    "BELGIAN": int.from_bytes(b"BELG".ljust(4, b"\0"), "big"),
+    "COMMON": int.from_bytes(b"COMN".ljust(4, b"\0"), "big"),
+    "CLEARING_HOUSE": int.from_bytes(b"CLRH".ljust(4, b"\0"), "big"),
+    "ISDA_FPML_SPEC": int.from_bytes(b"ISDA".ljust(4, b"\0"), "big"),
+    "OPRA": int.from_bytes(b"OPRA".ljust(4, b"\0"), "big"),
+    "ISDA_FPML_URL": int.from_bytes(b"FPML".ljust(4, b"\0"), "big"),
+    "LETTER_OF_CREDIT": int.from_bytes(b"LOC".ljust(4, b"\0"), "big"),
+    "MARKETPLACE": int.from_bytes(b"MKTP".ljust(4, b"\0"), "big"),
+    "MARKIT_RED_ENTITY": int.from_bytes(b"RDEC".ljust(4, b"\0"), "big"),
+    "MARKIT_RED_PAIR": int.from_bytes(b"RDPC".ljust(4, b"\0"), "big"),
+    "CFTC_COMMODITY": int.from_bytes(b"CFTC".ljust(4, b"\0"), "big"),
+    "ISDA_COMMODITY": int.from_bytes(b"ICRP".ljust(4, b"\0"), "big"),
+    "FIGI": int.from_bytes(b"FIGI".ljust(4, b"\0"), "big"),
+    "LEI": int.from_bytes(b"LEI".ljust(4, b"\0"), "big"),
+    "SYNTHETIC": int.from_bytes(b"SYNT".ljust(4, b"\0"), "big"),
+    "FIDESSA": int.from_bytes(b"FIDM".ljust(4, b"\0"), "big"),
+    "INDEX_NAME": int.from_bytes(b"INDX".ljust(4, b"\0"), "big"),
+    "UNIFORM_SYMBOL": int.from_bytes(b"UNIF".ljust(4, b"\0"), "big"),
+    "DIGITAL_TOKEN": int.from_bytes(b"DTI".ljust(4, b"\0"), "big"),
+}
+
 DIRECTION_CODES = {
     "UNKNOWN": 0,
     "SENT": 1_397_050_964,
@@ -351,6 +394,22 @@ def test_the_direction_codes_are_the_ones_on_disk() -> None:
 
 def test_the_protocol_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in Protocol} == PROTOCOL_CODES
+
+
+def test_the_security_id_source_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in SecurityIDSource} == SECURITY_ID_SOURCE_CODES
+
+
+def test_a_scheme_the_dictionary_does_not_enumerate_registers_itself() -> None:
+    """A desk's own reference system is a scheme like any other, and the
+    dictionary cannot know it -- so the vocabulary is open, and the code it
+    stores is the one it was handed."""
+    own = SecurityIDSource.from_str("desk")
+
+    assert own.code == "DESK"
+    assert SecurityIDSource.from_int(int(own)) is own
+    assert own not in set(SecurityIDSource), "and it is not a compiled member"
+    assert SecurityIDSource.from_str("TOOLONG") is SecurityIDSource.UNKNOWN
 
 
 def test_the_mic_codes_are_the_ones_on_disk() -> None:
@@ -399,7 +458,12 @@ def test_no_two_members_share_a_fix_character(declared: type) -> None:
 #: FIX field says whether a row is an order or a book -- and the other two are
 #: read from several tags at once. `AssetKind` is not here either: its letters
 #: are ISO 10962's, and `CFICode <461>` enumerates nothing.
-FIX_CODED = ((Side, "Side"), (TimeInForce, "TimeInForce"), (OptionKind, "PutOrCall"))
+FIX_CODED = (
+    (Side, "Side"),
+    (TimeInForce, "TimeInForce"),
+    (OptionKind, "PutOrCall"),
+    (SecurityIDSource, "SecurityIDSource"),
+)
 
 
 @pytest.mark.parametrize(

@@ -100,10 +100,11 @@ so every code is its own band.
 | [Direction](direction.md) | `Ascii32` | `int32` | closed |
 | [MIC](mic.md) | `Ascii32` | `int32` | open |
 | [Currency](currency.md) | `Ascii32` | `int32` | open |
+| [SecurityIDSource](security-id-source.md) | `Ascii32` | `int32` | open |
 | [Side](side.md) | `Ascii32` | `int32` | closed |
 | [TimeInForce](time-in-force.md) | `Ascii32` | `int32` | closed |
 
 A **closed** set answers only on the codes it compiles, which keeps a Python
 answer and a pushed code-set filter on the same rows. An **open** one —
-`Protocol`, `MIC`, `Currency` — registers a code it meets, and even there only
-an exact round trip of the stored bytes registers.
+`Protocol`, `MIC`, `Currency`, `SecurityIDSource` — registers a code it meets,
+and even there only an exact round trip of the stored bytes registers.

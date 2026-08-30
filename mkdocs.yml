@@ -90,6 +90,7 @@ nav:
           - Asset kind: enums/asset-kind.md
           - Market identifier: enums/mic.md
           - Currency: enums/currency.md
+          - Security ID source: enums/security-id-source.md
           - Option kind: enums/option-kind.md
       - Market:
           - Side: enums/side.md

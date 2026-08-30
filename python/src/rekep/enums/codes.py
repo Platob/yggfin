@@ -732,6 +732,103 @@ class Currency(Ascii32):
     XXX = "XXX"
 
 
+class SecurityIDSource(Ascii32):
+    """Which scheme a `SecurityID <48>` is issued under, as a four-byte code.
+
+    Open, because a desk's own reference system is a scheme like any other and
+    the dictionary cannot know it. The thirty-three the dictionary does
+    enumerate are compiled under short codes: their spellings run to
+    `FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER` and a stored code is four bytes,
+    so the name is the spelling and the code is what a column holds. The wire
+    values stay the dictionary's -- `FIX_FIELD` names the field they are read
+    from, so tag 22's codes are not written down a second time here.
+    """
+
+    FIX_FIELD = enum.nonmember("SecurityIDSource")
+
+    UNKNOWN = 0
+    """No scheme was stated, so the identifier beside it names its own."""
+
+    CUSIP = "CUSP"
+    SEDOL = "SEDL"
+    QUIK = "QUIK"
+    ISIN = "ISIN"
+    """ISO 6166, and the one scheme this package asks about by name."""
+    RIC = "RIC"
+    ISO_CURRENCY = "CCY"
+    ISO_COUNTRY = "CTRY"
+    EXCHANGE_SYMBOL = "EXCH"
+    CTA = "CTA"
+    BLOOMBERG = "BBG"
+    WERTPAPIER = "WKN"
+    DUTCH = "DUTC"
+    VALOREN = "VALO"
+    SICOVAM = "SICO"
+    BELGIAN = "BELG"
+    COMMON = "COMN"
+    CLEARING_HOUSE = "CLRH"
+    ISDA_FPML_SPEC = "ISDA"
+    OPRA = "OPRA"
+    ISDA_FPML_URL = "FPML"
+    LETTER_OF_CREDIT = "LOC"
+    MARKETPLACE = "MKTP"
+    MARKIT_RED_ENTITY = "RDEC"
+    MARKIT_RED_PAIR = "RDPC"
+    CFTC_COMMODITY = "CFTC"
+    ISDA_COMMODITY = "ICRP"
+    FIGI = "FIGI"
+    LEI = "LEI"
+    SYNTHETIC = "SYNT"
+    FIDESSA = "FIDM"
+    INDEX_NAME = "INDX"
+    UNIFORM_SYMBOL = "UNIF"
+    DIGITAL_TOKEN = "DTI"
+
+    @classmethod
+    def _registers_unknown(cls) -> bool:
+        return True
+
+    @classmethod
+    def _built_in_aliases(cls) -> dict[str, str]:
+        """The dictionary's spelling for each scheme, so a value finds its member.
+
+        `from_fix` matches a dictionary value to a member by the spellings that
+        value declares, and those are the long names above the codes. Without
+        this bridge every wire code would answer `UNKNOWN` -- and these are the
+        only place the long spellings appear, because the codes are what a
+        column stores.
+        """
+        return {
+            "ISINNumber": "ISIN",
+            "RICCode": "RIC",
+            "ISOCurrencyCode": "ISO_CURRENCY",
+            "ISOCountryCode": "ISO_COUNTRY",
+            "ExchangeSymbol": "EXCHANGE_SYMBOL",
+            "ConsolidatedTapeAssociation": "CTA",
+            "BloombergSymbol": "BLOOMBERG",
+            "Wertpapier": "WERTPAPIER",
+            "Dutch": "DUTCH",
+            "Valoren": "VALOREN",
+            "Sicovam": "SICOVAM",
+            "Belgian": "BELGIAN",
+            "Common": "COMMON",
+            "ClearingHouse": "CLEARING_HOUSE",
+            "ISDAFpMLSpecification": "ISDA_FPML_SPEC",
+            "OptionPriceReportingAuthority": "OPRA",
+            "ISDAFpMLURL": "ISDA_FPML_URL",
+            "LetterOfCredit": "LETTER_OF_CREDIT",
+            "MarketplaceAssignedIdentifier": "MARKETPLACE",
+            "MARKIT_RED_ENTITY_CLIP": "MARKIT_RED_ENTITY",
+            "MARKIT_RED_PAIR_CLIP": "MARKIT_RED_PAIR",
+            "CFTC_COMMODITY_CODE": "CFTC_COMMODITY",
+            "ISDA_COMMODITY_REFERENCE_PRICE": "ISDA_COMMODITY",
+            "FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER": "FIGI",
+            "LEGAL_ENTITY_IDENTIFIER": "LEI",
+            "FIDESSA_INSTRUMENT_MNEMONIC": "FIDESSA",
+            "DIGITAL_TOKEN_IDENTIFIER": "DIGITAL_TOKEN",
+        }
+
+
 class Side(Ascii32):
     """Direction stored as a four-byte ASCII mnemonic."""
 
