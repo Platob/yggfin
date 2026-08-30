@@ -32,8 +32,6 @@ from rekep.fix.columns import (
     ISIN_CODE,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
-    id_scheme,
-    id_schemes,
 )
 from rekep.fix.components import (
     LEGS,
@@ -211,12 +209,6 @@ class FixMsg(Message):
             "quotereqid",
             "symbolticker",
         )
-
-    @classmethod
-    @functools.cache
-    def into_identifier_columns(cls) -> tuple[str, ...]:
-        """Parsed identifier columns retained in `altids`, in lookup order."""
-        return tuple(stored for stored, _, _ in IDENTIFIER_FIELDS)
 
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
@@ -1989,23 +1981,6 @@ def _pair_identity(key: Any) -> tuple[str, int | str]:
     """Stable resolved identity for duplicate selection."""
     text = str(key)
     return ("tag", int(text)) if _numeric_key(text) else ("name", column_name(text))
-
-
-def _id_source(value: Any) -> str:
-    """An identifier scheme, as the wire value the dictionary gives it.
-
-    A value the dictionary already spells as a wire code comes back unchanged,
-    so this is safe on either spelling.
-    """
-    text = "" if value is None else str(value)
-    scheme = id_scheme(text)
-    return _scheme_values().get(scheme, text) if scheme else text
-
-
-@functools.cache
-def _scheme_values() -> Mapping[str, str]:
-    """`{scheme name: its wire value}` -- the inverse of `id_schemes()`."""
-    return MappingProxyType({name: value for value, name in id_schemes().items()})
 
 
 @functools.cache

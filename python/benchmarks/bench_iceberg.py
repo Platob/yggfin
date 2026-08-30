@@ -1,4 +1,4 @@
-"""Benchmark the pipeline that matters: a log parsed and streamed into Iceberg."""
+"""Focused Iceberg commits, scans, merges and maintenance over a parsed log."""
 
 from __future__ import annotations
 
@@ -195,18 +195,20 @@ def write_case(
         seconds, _ = timed(write)
         report = {"seconds": seconds, "rows": table.num_rows, **stats(target)}
         report["stored"] = target.read_arrow_table().num_rows
+        # A merge replaces the rows whose keys match, so a preloaded half is
+        # already in the count; anything else stored what it was given.
+        expected = table.num_rows if preload is None else max(table.num_rows, preload.num_rows)
+        assert report["stored"] == expected, report
         return report
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
 
-def monotonic_insert_case(table: pyarrow.Table, commit_rows: int, *, shortcut: bool) -> dict:
-    """Insert increasing chunks with or without the exact-upper-bound shortcut."""
+def monotonic_insert_case(table: pyarrow.Table, commit_rows: int) -> dict:
+    """Insert increasing chunks the way a chronological stream commits them."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-insert-"))
     try:
         target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
-        if not shortcut:
-            target.__dict__["_insert_span"] = lambda chunk, join, reference, partition: None
 
         def write() -> None:
             for start in range(0, table.num_rows, commit_rows):
@@ -230,9 +232,13 @@ def read_case(target: IcebergDataset, *, row_filter: Any, columns: Any, schema: 
         selected_fields=tuple(columns) if columns else ("*",),
     )
     planned = len(list(scan.plan_files()))
+    reference = target.read_arrow_table(schema, row_filter=row_filter, columns=columns)
     seconds, table = timed(
         lambda: target.read_arrow_table(schema, row_filter=row_filter, columns=columns)
     )
+    # A projection or a pushed filter must not change what comes back, so the
+    # answer is settled before the number is.
+    assert table.equals(reference), (row_filter, columns)
     return {"seconds": seconds, "rows": table.num_rows, "planned": planned}
 
 
@@ -274,12 +280,6 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
             ("merge, half stored", "merge", commit, True, "optimised", half, True)
         )
     if not quick:
-        # The same work through pyiceberg's own `Table.upsert`. On a slice, not
-        # the whole table: its scan filter carries one term per incoming row, so
-        # the full sweep would take hours (see `merge_arrow_table`).
-        configurations.append(
-            ("merge, official (1/100th)", "merge", None, True, "optimised", half, False)
-        )
         for commit in (50_000, None):
             configurations.extend(
                 [
@@ -290,9 +290,8 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
             )
 
     for label, mode, commit, partitioned, props, preload, planned in configurations:
-        written = table.slice(0, table.num_rows // 100) if "official" in label else table
         report = write_case(
-            written,
+            table,
             mode=mode,
             commit_row_size=commit,
             partitioned=partitioned,
@@ -310,30 +309,22 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
 
 
 def sweep_insert(rows: int, repeat: int) -> None:
-    """Chronological insert commits, with the previous planned path beside them."""
+    """What a chronological stream's insert commits cost."""
     rows = min(rows, 100_000)
     commit_rows = max(rows // 6, 1)
     table = tick_rows(rows)
-    monotonic_insert_case(table.slice(0, min(rows, 1_000)), commit_rows, shortcut=False)
-    results: dict[str, list[dict[str, Any]]] = {"planned": [], "bounded": []}
-    for trial in range(repeat):
-        order = (False, True) if trial % 2 == 0 else (True, False)
-        for shortcut in order:
-            results["bounded" if shortcut else "planned"].append(
-                monotonic_insert_case(table, commit_rows, shortcut=shortcut)
-            )
-    expected = None
+    # Every row lands, once, before any of them is timed.
+    warmed = monotonic_insert_case(table, commit_rows)
+    assert warmed["rows"] == rows, warmed
+    runs = [monotonic_insert_case(table, commit_rows) for _ in range(repeat)]
+    assert all(run["rows"] == rows for run in runs), runs
+    best = min(runs, key=lambda run: run["seconds"])
     print(f"\n== monotonic insert: {rows:,} rows, {commit_rows:,} per commit ==")
     header(("case", "best sec", "rows/s", "files", "manif", "snaps"), (12, 10, 11, 7, 6, 6))
-    for name, runs in results.items():
-        best = min(runs, key=lambda run: run["seconds"])
-        cost = tuple(best[key] for key in ("rows", "files", "manifests", "snapshots"))
-        expected = cost if expected is None else expected
-        assert cost == expected, (name, cost, expected)
-        print(
-            f"{name:>12} {best['seconds']:>10.3f} {rows / best['seconds']:>11,.0f} "
-            f"{best['files']:>7} {best['manifests']:>6} {best['snapshots']:>6}"
-        )
+    print(
+        f"{'bounded':>12} {best['seconds']:>10.3f} {rows / best['seconds']:>11,.0f} "
+        f"{best['files']:>7} {best['manifests']:>6} {best['snapshots']:>6}"
+    )
 
 
 def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
@@ -709,6 +700,8 @@ def sweep_maintain(rows: int, days: int) -> None:
             target = built(tmp / f"settle-{label[:8]}")
             target.append_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
             runs = [target.compact(min_files=2) for _ in range(3)]
+            assert runs[1:] == [0, 0], (label, runs)
+            assert target.refresh().read_arrow_table().num_rows == rows, label
             print(
                 f"{label:>30} {runs[0]:>8,} {runs[1]:>8,} {runs[2]:>8,} "
                 f"{target.refresh().read_arrow_table().num_rows:>10,}"
@@ -838,6 +831,8 @@ def sweep_backfill(rows: int, days: int) -> None:
             ranges = _key_ranges(replay, ["at", "h64"])
             plan = target.scan_plan(ranges)
             seconds, inserted = timed(functools.partial(target.insert_arrow_table, replay, True))
+            assert inserted == 0, (label, inserted)
+            assert plan["files"] + plan["skipped"] == stored, (label, plan)
             print(
                 f"{label:>30} {plan['files']:>8} {plan['skipped']:>8} "
                 f"{seconds:>9.2f} {inserted:>9,}"

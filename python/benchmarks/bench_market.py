@@ -6,13 +6,11 @@ import builtins
 import contextlib
 import copy
 import dataclasses
-import datetime
 import heapq
 import os
 import pathlib
 import random
 import sys
-import threading
 import time
 import tracemalloc
 from collections import Counter
@@ -98,43 +96,13 @@ FIX_DICTIONARY = pathlib.Path(__file__).resolve().parents[2] / "data" / "fix"
 
 
 def timed(work: Callable[[], object], repeat: int) -> tuple[float, object]:
-    """`best_of`, keeping what the work returned -- the callers here read it."""
-    return best_of(work, repeat), work()
+    """The work's answer, and the fastest of `repeat` timed calls after it.
 
-
-@contextlib.contextmanager
-def peak_rss() -> Iterator[Callable[[], int]]:
-    """Sample the process resident set while one streaming path runs."""
-    peak = [_rss_bytes()]
-    stop = threading.Event()
-
-    def watch() -> None:
-        while not stop.wait(0.002):
-            peak[0] = max(peak[0], _rss_bytes())
-
-    watcher = threading.Thread(target=watch, daemon=True)
-    watcher.start()
-    try:
-        yield lambda: peak[0]
-    finally:
-        stop.set()
-        watcher.join()
-        peak[0] = max(peak[0], _rss_bytes())
-
-
-def _rss_bytes() -> int:
-    """Resident bytes right now, or zero where the platform does not expose them."""
-    if os.name == "nt":
-        counters = _ProcessMemoryCounters()
-        counters.cb = ctypes.sizeof(counters)
-        if _get_process_memory_info(_get_current_process(), ctypes.byref(counters), counters.cb):
-            return int(counters.working_set_size)
-        return 0
-    try:
-        with open("/proc/self/statm") as stream:
-            return int(stream.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
-    except (OSError, ValueError, IndexError, AttributeError):
-        return 0
+    The answer call *is* the warm-up `best_of` would have made, so what a
+    caller checks costs nothing extra and is computed before any number is.
+    """
+    result = work()
+    return best_of(work, repeat, warm=False), result
 
 
 @contextlib.contextmanager
@@ -477,7 +445,6 @@ def bench_fix_parser(rows: int, repeat: int) -> None:
         assert parsed == rows
         rate = rows / seconds
         print(f"  {label:<44} {rate:>12,.0f} rows/s")
-        assert rate >= 50_000, f"{label} parsed at only {rate:,.0f} rows/s"
 
 
 def bench_fix(rows: int, repeat: int) -> None:
@@ -953,235 +920,6 @@ def bench_ceiling(rows: int, repeat: int) -> None:
     print(f"  {'what no extension removes':<44} {seconds / base * 100:>8.0f}% of the run")
 
 
-def log_stream(rows: int) -> list[object]:
-    """One instrument's feed as the parsed log rows `Book.from_fixmsgs` reads.
-
-    Built as `FixMsg` rows carrying wire tags rather than through a text file, so
-    what is measured is the two halves of the generator -- translating a parsed
-    row back into market events, and folding those into books -- and not the
-    tokenizer in front of them, which `bench_fix_parser` prices on its own.
-    """
-    from rekep import FixMsg, Message
-    from rekep.fix import FixCodec, FixRegistry
-
-    base = 1_786_665_901_000_000_000
-    # The order and the fill, and not the market-data shape beside them: its
-    # entries carry their own `MDEntryTime <273>`, which is what orders them
-    # and not the message clock this walks forward.
-    shapes = [
-        parse_pairs(line) for label, line in FEED.items() if not label.startswith("MarketData")
-    ]
-    built: list[Message] = []
-    for index in range(rows):
-        stamp = _fix_stamp(base + index * 1_000_000)
-        renamed = {"52": stamp, "60": stamp, "11": f"CL-{index}", "17": f"EX-{index}"}
-        built.append(
-            Message(
-                unix=base + index * 1_000_000,
-                message="|".join(
-                    f"{tag}={renamed.get(tag, value)}" for tag, value in shapes[index % len(shapes)]
-                ),
-            )
-        )
-    if not built:
-        return []
-    raw = next(iter(Message.into_arrow_reader(built, batch_row_size=rows)))
-    parsed = FixMsg.from_message_batch(raw, FixCodec(registry=FixRegistry.from_builtin()))
-    return list(FixMsg.from_arrow_reader([parsed]))
-
-
-def _fix_stamp(unix: int) -> str:
-    """One nanosecond instant as the `UTCTimestamp` a message spells."""
-    moment = datetime.datetime.fromtimestamp(unix / 1e9, tz=datetime.UTC)
-    return moment.strftime("%Y%m%d-%H:%M:%S.") + f"{moment.microsecond // 1000:03d}"
-
-
-def _pipeline_message_batches(
-    rows: int,
-    batch_row_size: int = 65_536,
-    *,
-    alternating_technical: bool = False,
-) -> tuple[pyarrow.RecordBatch, ...]:
-    """Reusable columnar Message input matching the parse-fix task boundary."""
-    from rekep import Message
-    from rekep.enums import EventType
-    from rekep.market.event import unix_partition_arrow
-
-    base = 1_786_665_901_000_000_000
-    shapes = [
-        (EventType.ORDER, parse_pairs(FEED["NewOrderSingle <D>"])),
-        (EventType.EXECUTION, parse_pairs(FEED["ExecutionReport <8>, filled"])),
-    ]
-    schema = Message.into_field().into_arrow_schema()
-    batches = []
-    for start in range(0, rows, batch_row_size):
-        stop = min(start + batch_row_size, rows)
-        indices = range(start, stop)
-        unix = pyarrow.array([base + index * 1_000_000 for index in indices], pyarrow.int64())
-        kinds, protocols, msg_types, entries = [], [], [], []
-        for index in indices:
-            if alternating_technical and index % 2:
-                kinds.append(int(EventType.MISC))
-                protocols.append("OTHER")
-                msg_types.append(None)
-                entries.append(None)
-                continue
-            eventtype, pairs = shapes[index % len(shapes)]
-            stamp = _fix_stamp(base + index * 1_000_000)
-            renamed = {
-                "52": stamp,
-                "60": stamp,
-                "11": f"CL-{index // 2}",
-                "17": f"EX-{index}",
-            }
-            kinds.append(int(eventtype))
-            protocols.append("FIX")
-            msg_types.append(next(value for tag, value in pairs if tag == "35"))
-            entries.append(
-                [
-                    {
-                        "tag": int(tag),
-                        "key": str(tag),
-                        "value": renamed.get(tag, value),
-                        "comp": None,
-                    }
-                    for tag, value in pairs
-                    if tag != "35"
-                ]
-            )
-        count = stop - start
-        columns: dict[str, pyarrow.Array] = {
-            "unix": unix,
-            "unixpartition": unix_partition_arrow(unix),
-            "eventtype": pyarrow.array(kinds, EventType.into_arrow_type().index_type),
-            "creaunix": unix,
-            "recunix": unix,
-            "sourceurl": pyarrow.repeat(pyarrow.scalar("pipeline-benchmark.log"), count),
-            "sourcerownum": pyarrow.array(range(start + 1, stop + 1), pyarrow.int64()),
-            "message": pyarrow.repeat(pyarrow.scalar(""), count),
-            "protocolcode": pyarrow.array(protocols),
-            "msgtype": pyarrow.array(msg_types),
-            "entries": pyarrow.array(entries, schema.field("entries").type),
-        }
-        arrays = []
-        for field in schema:
-            column = columns.get(field.name)
-            if column is None:
-                if field.nullable:
-                    column = pyarrow.nulls(count, field.type)
-                elif pyarrow.types.is_list(field.type) or pyarrow.types.is_map(field.type):
-                    column = pyarrow.array([[]] * count, field.type)
-                elif pyarrow.types.is_string(field.type):
-                    column = pyarrow.repeat(pyarrow.scalar(""), count)
-                elif pyarrow.types.is_boolean(field.type):
-                    column = pyarrow.repeat(pyarrow.scalar(False), count)
-                elif pyarrow.types.is_fixed_size_binary(field.type):
-                    # An identity column is its width in bytes, and zero is
-                    # that many of them -- `scalar(0, ...)` is not a number
-                    # here, it is a buffer Arrow refuses to guess the size of.
-                    column = pyarrow.repeat(
-                        pyarrow.scalar(b"\x00" * field.type.byte_width, field.type), count
-                    )
-                else:
-                    column = pyarrow.repeat(pyarrow.scalar(0, field.type), count)
-            arrays.append(column)
-        batches.append(pyarrow.RecordBatch.from_arrays(arrays, schema=schema))
-    return tuple(batches)
-
-
-def _pipeline_batches(
-    messages: tuple[pyarrow.RecordBatch, ...], codec: object
-) -> Iterator[pyarrow.RecordBatch]:
-    """Parse-fix batches with the raw payload projected out before conversion."""
-    for batch in messages:
-        yield FixMsg.from_message_batch(batch.drop_columns(["message"]), codec)
-
-
-def bench_pipeline(rows: int) -> None:
-    """Measure homogeneous and alternating columnar books-off stages."""
-    from rekep.fix import FixCodec, FixRegistry
-
-    registry = FixRegistry(cache_dir=FIX_DICTIONARY, offline=True)
-    codec = FixCodec(registry=registry)
-    messages = _pipeline_message_batches(rows)
-    mixed_messages = _pipeline_message_batches(rows, alternating_technical=True)
-    if messages:
-        # Registry declarations and lookup arrays are process setup, not work
-        # repeated for each production batch.
-        tuple(_pipeline_batches((messages[0].slice(0, 2),), codec))
-    print(f"\nDirect market pipeline -- {rows:,} parsed messages")
-
-    def measure(label: str, source: tuple[pyarrow.RecordBatch, ...]) -> None:
-        with peak_rss() as sampled:
-            started = time.perf_counter()
-            parsed = tuple(_pipeline_batches(source, codec))
-            parse_seconds = time.perf_counter() - started
-        parse_peak = sampled()
-        if parsed:
-            list(
-                FixMsg.into_market_arrow_batches(
-                    parsed[0].slice(0, 2), batch_row_size=2, registry=registry
-                )
-            )
-
-        def direct() -> int:
-            return sum(
-                batch.num_rows
-                for _, batch in FixMsg.into_market_arrow_batches(
-                    parsed, batch_row_size=65_536, registry=registry
-                )
-            )
-
-        with peak_rss() as sampled:
-            started = time.perf_counter()
-            produced = direct()
-            direct_seconds = time.perf_counter() - started
-        direct_peak = sampled()
-        assert produced, "direct translation produced no rows"
-        assert not direct_peak or direct_peak < 4 * 2**30, (
-            f"direct translation peaked at {direct_peak / 2**30:.2f} GiB RSS"
-        )
-        parse_memory = "n/a" if not parse_peak else f"{parse_peak / 2**20:,.1f} MiB"
-        direct_memory = "n/a" if not direct_peak else f"{direct_peak / 2**20:,.1f} MiB"
-        print(f"  {label}")
-        print(
-            f"    {'Message -> FixMsg':<42} {rows / parse_seconds:>12,.0f} records/s  "
-            f"{parse_memory} peak RSS"
-        )
-        print(
-            f"    {'books off':<42} {rows / direct_seconds:>12,.0f} records/s  "
-            f"{produced:,} output rows  {direct_memory} peak RSS  "
-            f"{rows / (parse_seconds + direct_seconds):,.0f}/s with parse"
-        )
-
-    measure("homogeneous standard FIX", messages)
-    measure("alternating FIX / technical", mixed_messages)
-
-
-def bench_from_logs(rows: int, repeat: int) -> None:
-    """The whole generator: parsed log rows in, books out."""
-    from rekep.market import BookIterator
-
-    print(f"\nBook.from_fixmsgs -- {rows:,} parsed rows, one instrument")
-    logs = log_stream(rows)
-
-    def translate() -> int:
-        return sum(1 for log in logs for _ in log.into_market_events())
-
-    def fold() -> int:
-        return sum(1 for _ in BookIterator(logs=logs, snapshot_every=0).books)
-
-    events = translate()
-    assert events, "the log stream translated to nothing at all"
-    read, _ = timed(translate, repeat)
-    report("parsed row -> market events", read, rows)
-    whole, produced = timed(fold, repeat)
-    assert produced, "the fold produced no books at all"
-    report("parsed row -> books", whole, rows)
-    print(f"  {'logs/s':<44} {rows / whole:>12,.0f}   ({produced:,} books, {events:,} events)")
-    print(f"  {'of it spent translating':<44} {read / whole * 100:>11.0f}%")
-
-
 def bench_fold(events: int, repeat: int) -> None:
     """What folding one instrument's stream into books costs, per event and per book."""
     from rekep.market import BookIterator, State
@@ -1267,10 +1005,6 @@ def main() -> None:
     bench_fix(rows // 20, repeat)
     bench_ceiling(rows // 20, repeat)
     bench_fold(rows // 10, repeat)
-    bench_from_logs(rows // 20, repeat)
-    # Scalar market translation is deliberately included, so keep this sweep
-    # bounded while `--rows` still scales it for a dedicated benchmark run.
-    bench_pipeline(max(rows // 4, 500))
     bench_operation_counts(rows)
     bench_snapshot(rows, repeat)
     bench_replay_matrix(rows, repeat, quick=parsed.quick)

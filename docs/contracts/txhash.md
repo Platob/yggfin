@@ -25,18 +25,3 @@ reversible through `micros_of` and `vhash_of`. Both inputs must fit signed
 `couple128_arrow` performs the same composition over `int64` columns. It emits
 the stored fixed-width bytes directly and produces the same value as
 `couple128` row by row.
-
-## Narrow hashes
-
-```python
-from rekep.txhash import digest_of, h64, seconds_of, xxh32_of
-
-value = h64(1_700_000_000, b"payload")
-assert seconds_of(value) == 1_700_000_000
-assert digest_of(value) == xxh32_of(b"payload")
-```
-
-`h64` remains the separate seconds-over-XXH32 contract for callers that need
-one `int64`. Its high signed `int32` stores epoch seconds and its low 32 bits
-store the payload digest. `h64_arrow`, `seconds_arrow`, and `digest_arrow`
-provide the matching Arrow operations.

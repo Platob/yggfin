@@ -1462,7 +1462,7 @@ class StructField(Field):
                     f"one row has only {shortest}; pad the rows or declare fewer members"
                 )
             positions = {member.name: index for index, member in enumerate(self.fields)}
-            return lambda name: arrays.list_column(array, positions[name])
+            return lambda name: pyarrow.compute.list_element(array, positions[name])
         return None
 
     def cast_arrow_columns(

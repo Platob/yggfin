@@ -1090,10 +1090,6 @@ class FixCodec(Convertible):
             )
         return self._named
 
-    def parties_of(self, version: str | None = None) -> Parties:
-        """Version-aware Parties extractor, cached with the tag index."""
-        return self.component_of("parties", version)  # type: ignore[return-value]
-
     def component_of(self, column: str, version: str | None = None) -> ComponentGroup:
         """Version-aware extractor for one structured component, cached per version."""
         built = self.into_components()[column]

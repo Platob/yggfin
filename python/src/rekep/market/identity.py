@@ -14,11 +14,8 @@ import xxhash
 
 from rekep import txhash
 
-#: How many bytes one persisted event hash is.
-HASH_WIDTH = txhash.WIDE_WIDTH
-
 #: The Arrow type of a time-anchored event hash.
-HASH = pyarrow.binary(HASH_WIDTH)
+HASH = pyarrow.binary(txhash.WIDE_WIDTH)
 
 #: The immutable wire protocol implemented here and in `docs/contracts/identity.md`.
 IDENTITY_PROTOCOL = "rekep-identity-v1"

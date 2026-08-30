@@ -102,17 +102,23 @@ EXPECTED_WIRE_COMMON = 4
 SENT_AT = datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def codec() -> FixCodec:
+    """One codec for the file: it snapshots the dictionary and is never mutated.
+
+    Module-scoped because the first `into_lifted_columns` on a version plans
+    every column it can lift and memoizes that on the codec -- two seconds,
+    once, against two seconds per test.
+    """
     return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def pairs() -> pyarrow.Array:
     return parse_arrow_array(pyarrow.array([BRIDGE]))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def wire_tags(codec: FixCodec) -> pyarrow.Array:
     """`WIRE` as `entries`, which is what `into_lifted_columns` is handed."""
     return codec.into_entries(parse_arrow_array(pyarrow.array([WIRE])), "4.2")
@@ -567,7 +573,7 @@ def test_mixed_case_wire_fixt_matches_the_scalar_reading(codec: FixCodec) -> Non
     assert codec.version_of(messages[0].as_py(), "FIX")[0] == "5.0.SP2"
 
 
-def test_automatic_vector_version_detection_categorises_like_the_scalar(codec: FixCodec) -> None:
+def test_automatic_vector_version_detection_matches_the_scalar(codec: FixCodec) -> None:
     messages = pyarrow.array(
         [
             "8=FIX.4.2|35=D|",
@@ -1246,7 +1252,7 @@ PARTIES_WIRE = (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def packaged() -> FixCodec:
     """A codec over the registry the wheel carries, and nothing else."""
     return FixCodec(registry=FixRegistry.from_builtin())
@@ -1391,7 +1397,7 @@ def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
     assert {component.name for component in registry.components("4.2")} == package_components
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        assert packaged.parties_of("4.2")._member_names == {}
+        assert packaged.component_of("parties", "4.2")._member_names == {}
 
 
 def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: Path) -> None:
@@ -1405,7 +1411,7 @@ def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: 
     bare = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
     bare._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
     codec = FixCodec(registry=bare)
-    extractor = codec.parties_of("4.4")
+    extractor = codec.component_of("parties", "4.4")
     assert extractor._member_names == {}
     assert _party_rows(codec, PARTIES_WIRE, "4.4") is None
 

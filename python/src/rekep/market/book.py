@@ -335,19 +335,6 @@ class Book(MarketEvent):
 
         return pyarrow.RecordBatchReader.from_batches(schema, batches())
 
-    def into_deltas(self) -> Iterator[Order]:
-        """Order state transitions carried by this book delta."""
-        return iter(self.deltas)
-
-    def into_executions(self) -> Iterator[Execution]:
-        """Complete execution rows carried by this book delta."""
-        return iter(self.executions)
-
-    def into_alive(self) -> Iterator[Order]:
-        """Complete living orders carried by a recovery snapshot."""
-        yield from self.bidalive
-        yield from self.askalive
-
     def forget_delta(self) -> None:
         """A picture keeps levels but clears its event deltas."""
         MarketEvent.forget_delta(self)

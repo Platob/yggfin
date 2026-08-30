@@ -231,11 +231,6 @@ def map_column(array: pyarrow.Array, key: str) -> pyarrow.Array:
     return pyarrow.compute.map_lookup(array, query_key=query, occurrence="first")
 
 
-def list_column(array: pyarrow.Array, index: int) -> pyarrow.Array:
-    """Element `index` of every row of a list-like."""
-    return pyarrow.compute.list_element(array, index)
-
-
 def interleave(
     columns: list[pyarrow.Array | pyarrow.ChunkedArray], length: int
 ) -> tuple[pyarrow.Array, pyarrow.Array]:

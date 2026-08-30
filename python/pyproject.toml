@@ -48,12 +48,10 @@ dev = [
     "ruff>=0.6",
     "rekep[iceberg,polars,yaml]",
 ]
-# What the benchmarks race the shipped implementations against, and nothing
-# else. Neither is imported by `src/`: a candidate that loses a race must not
-# leave a runtime dependency behind, and one that wins earns its place in
-# `[project.dependencies]` by an argument, not by having been benchmarked.
+# What the benchmarks race the shipped implementations against. `polars` is
+# shipped as an extra and `bench_iceberg` races the export this package selects
+# against a forced one; nothing here is imported by `src/`.
 bench = [
-    "numpy>=1.26",
     "polars>=1.36",
 ]
 

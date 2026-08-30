@@ -56,11 +56,6 @@ def report(
     print(f"  {label:<{LABEL}} {seconds * 1000:8.2f} ms{per_row}{ratio}")
 
 
-def rate(label: str, count: float, seconds: float, unit: str = "rows/s") -> None:
-    """One throughput line, in the same columns `report` prints."""
-    print(f"  {label:<{LABEL}} {count / seconds:>12,.0f} {unit}")
-
-
 def parser(
     description: str,
     *,

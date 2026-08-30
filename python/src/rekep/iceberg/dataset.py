@@ -3165,21 +3165,6 @@ def _ensure_name_mapping(transaction: Any) -> None:
     transaction.set_properties(**{TableProperties.DEFAULT_NAME_MAPPING: mapping.model_dump_json()})
 
 
-def _identity_partitions(table: Any) -> tuple[tuple[str, str], ...] | None:
-    """Current `(partition field, source column)` pairs when all are identities."""
-    from pyiceberg.transforms import IdentityTransform
-
-    spec = table.spec()
-    if spec.is_unpartitioned():
-        return None
-    identities = tuple(
-        (field.name, table.schema().find_column_name(field.source_id))
-        for field in spec.fields
-        if isinstance(field.transform, IdentityTransform)
-    )
-    return identities if len(identities) == len(spec.fields) else None
-
-
 def _requiring_columns(
     source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], columns: Sequence[str]
 ) -> pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch]:

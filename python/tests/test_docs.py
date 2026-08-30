@@ -175,7 +175,7 @@ _OUTSIDE = (
 def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) -> None:
     """The ```text after a fence is a claim about this checkout, and a claim
     nothing runs is one a rename or a changed default quietly falsifies -- the
-    `properties_of` block on the Iceberg page printed a dict that had gained a
+    `into_properties` block on the Iceberg page printed a dict that had gained a
     key.
 
     Fences carry forward, so stdout does too: the block after fence *n* is the

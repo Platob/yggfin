@@ -150,11 +150,12 @@ SENT
 ```
 
 `UNKNOWN` is most rows — bridge re-log lines repeat a payload without repeating
-the verb, and no answer beats a guessed one. The patterns are
-`rekep.fix.rules.DIRECTION_PATTERNS`. It resolves at the message stage, where
-the raw line and its protocol reading last coexist; the FIX stage re-resolves
-any row still carrying its text and keeps the stored answer where `parse_fix`
-projected the text away.
+the verb, and no answer beats a guessed one. The verb has to open before the
+first token the row's protocol could start with, which
+`rekep.fix.rules.CODEC_ANCHORS` spells per codec. It resolves at the message
+stage, where the raw line and its protocol reading last coexist; the FIX stage
+re-resolves any row still carrying its text and keeps the stored answer where
+`parse_fix` projected the text away.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. There the named discriminator and named flat fields are

@@ -275,7 +275,7 @@ class State(Ascii64):
     sorts exactly as the lifecycle does: `21NEW` before `41FILLED`, every
     live state below every terminal one. "Still live" and "finished" are
     rank questions, and a storage scan filters on the code sets
-    `ranked_at_least`, `ranked_below` and `ranked_between` spell -- or on a
+    `ranked_at_least` and `ranked_below` spell -- or on a
     range, which the ordering now makes honest.
     """
 

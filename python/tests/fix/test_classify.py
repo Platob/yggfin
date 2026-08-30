@@ -8,6 +8,7 @@ and a real value would be neither needed nor safe here.
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pyarrow
@@ -50,13 +51,19 @@ def registry() -> FixRegistry:
     return FixRegistry(cache_dir=PUBLISHED, offline=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def counts() -> KeyCounts:
+    """The capture counted once for the file; nothing here counts into it."""
     return count_files(str(FIXTURES), pattern="bridge_keys.txt")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def report(counts: KeyCounts, registry: FixRegistry) -> KeyReport:
+    """One classification of those counts. Frozen, and read by every test.
+
+    The tests that *apply* a report take `editable` instead, a writable copy of
+    the dictionary -- applying changes the registry, never the report.
+    """
     return classify(counts, registry)
 
 
@@ -269,10 +276,20 @@ def test_the_report_is_json_and_carries_names_and_counts_only(report: KeyReport)
 # -- and into the registry ---------------------------------------------------
 
 
+@pytest.fixture(scope="module")
+def archive(tmp_path_factory: pytest.TempPathFactory, registry: FixRegistry) -> Path:
+    """The published dictionary written out once, for `editable` to copy.
+
+    Writing it is the expensive half and the bytes are the same every time;
+    what a test needs of its own is the store it then edits.
+    """
+    return Path(registry.into_zip(tmp_path_factory.mktemp("published") / "fix.zip"))
+
+
 @pytest.fixture
-def editable(tmp_path: Path, registry: FixRegistry) -> FixRegistry:
+def editable(tmp_path: Path, archive: Path) -> FixRegistry:
     """A writable copy of the published dictionary, for the apply path."""
-    return FixRegistry(cache_dir=registry.into_zip(tmp_path / "fix.zip"), offline=True)
+    return FixRegistry(cache_dir=shutil.copy(archive, tmp_path / "fix.zip"), offline=True)
 
 
 def test_nothing_is_applied_unless_it_is_asked_for(
