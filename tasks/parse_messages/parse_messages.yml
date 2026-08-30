@@ -3,6 +3,7 @@ notebook: parse_messages.ipynb
 parameters:
   project_root: .
   # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
+  # `s3a://` and `s3n://` name the same object with the same settings.
   source: data/capture
   # MsgType metadata maps values to EventType codes before protocol translation.
   fix_dictionary: data/fix

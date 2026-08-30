@@ -92,7 +92,6 @@ STATES = [
 #: The width `State` declares for its own column, which is what a stored
 #: lifecycle column is: a packed ASCII mnemonic, not a small ordinal.
 STATE_WIDTH = State.into_arrow_type().index_type
-FIX_DICTIONARY = pathlib.Path(__file__).resolve().parents[2] / "data" / "fix"
 
 
 def timed(work: Callable[[], object], repeat: int) -> tuple[float, object]:

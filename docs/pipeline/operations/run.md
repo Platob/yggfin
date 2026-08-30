@@ -1,6 +1,6 @@
 # End-to-end run
 
-A correctness run measured 2026-08-29 executes the five notebook tasks against
+A correctness run measured 2026-08-30 executes the five notebook tasks against
 the checked-in message fixture and a fresh local Iceberg warehouse, then
 replays the same input. Throughput measurements live on
 [Benchmarks](../../storage/benchmarks.md).

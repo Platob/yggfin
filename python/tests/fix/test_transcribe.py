@@ -1546,7 +1546,7 @@ def test_a_payload_that_really_is_xml_is_left_exactly_as_it_was(
 
 
 def test_a_payload_that_is_not_pairs_at_all_is_left_alone(packaged: FixCodec) -> None:
-    """One `a=b` is a sentence, not a message -- the same rule `FIXML_PATTERN` applies."""
+    """One `a=b` is a sentence, not a message -- the same rule `MARKED_VECTOR` applies."""
     for payload in ("nothing here at all", "onlyone=value"):
         message = SOH.join(["8=FIX.4.4", "35=8", f"213={payload}", "10=000"]) + SOH
         assert ("213", payload) in _payload(packaged, message)

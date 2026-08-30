@@ -8,9 +8,13 @@ cd python
 uv run python benchmarks/bench_cast.py --quick
 uv run python benchmarks/bench_text_file.py --quick
 uv run python benchmarks/bench_fix.py --quick
+uv run python benchmarks/bench_fix_registry.py --quick
 uv run python benchmarks/bench_market.py --quick
 uv run python benchmarks/bench_iceberg.py --quick
 ```
+
+All six finish in about four minutes together, which is what makes running
+them a normal part of a change rather than an occasion.
 
 | page | path | script |
 | --- | --- | --- |
@@ -26,27 +30,26 @@ configurations.
 
 ## Latest quick run
 
-2026-08-25, Linux 6.18, Python 3.12.3, PyArrow 25.0.1, `--quick` throughout.
+2026-08-30, Linux 6.18, Python 3.12.3, PyArrow 25.0.1, `--quick` throughout.
 Directional, not comparable across machines.
 
 | path | fixture | result |
 | --- | ---: | ---: |
-| Line to header columns | 50,000 lines | 798,965 lines/s |
-| Wire parse, vectorised | 10,000 rows | 230,364–511,920 rows/s |
-| Rendered parse, vectorised | 10,000 rows | 120,751–214,143 rows/s |
-| Key column to tags, named keys | 112,500 keys, 6,071 names | 51.3M keys/s |
-| Recursive Arrow reshape | 50,000 rows | 315.7M rows/s |
-| Wire line to market events | 100 messages of each shape | 8,179 / 5,525 / 2,281 rows/s |
-| Book summary, 10 levels/side | 200 books | 404,040 books/s |
-| Stateful book fold | 200 events | 17,832 books/s |
-| Replay shape matrix | 1,000–2,000 events | 5,941–11,803 events/s |
-| Snapshot / recovery | 2,000 orders, 100 levels | 16.7 ms / 4.4 ms |
-| Iceberg append | 5,000 rows, 4 partitions | 37,332–37,819 rows/s |
-| Iceberg merge, all new | 5,000 rows | 21,936–22,186 rows/s |
-| Iceberg merge, half stored | 5,000 rows | 984–992 rows/s |
+| Line to header columns | 50,000 lines | 745,392 lines/s |
+| Wire parse, vectorised | 10,000 rows | 175,927 rows/s |
+| Rendered parse, vectorised | 10,000 rows | 53,314 rows/s |
+| Key column to tags, named keys | 112,500 keys, 6,133 names | 52.4M keys/s |
+| Recursive Arrow reshape | 50,000 rows | 314.4M rows/s |
+| Book summary, 10 levels/side | 200 books | 304,538 books/s |
+| Stateful book fold | 200 events | 10,623 books/s |
+| Replay shape matrix | 1,000–2,000 events | 6,422–6,993 events/s |
+| Snapshot / recovery | 2,000 orders, 100 levels | 16.9 ms / 19.3 ms |
+| Iceberg append | 5,000 rows, 4 partitions | 45,623–47,007 rows/s |
+| Iceberg merge, all new | 5,000 rows | 12,029–15,022 rows/s |
+| Iceberg merge, half stored | 5,000 rows | 15,131–20,631 rows/s |
 
-Exact half-stored upserts are the clearest scale-up target; prefer append and
-monotonic insert where their semantics fit.
+Append remains the fastest write by a wide margin; prefer it and monotonic
+insert where their semantics fit.
 
 ## Where the parse stages spend their time
 

@@ -102,6 +102,20 @@ Raw `Message.entries` is always a list. A `FixMsg` carrying no recognized
 message has null `entries`; a parsed message with no residue has an empty one.
 The `MsgType` discriminator is promoted to `msgtype` and never duplicated here.
 
+Every field a row keeps lands in exactly one of three places, and never two:
+
+| where | what goes there |
+| --- | --- |
+| a typed column | a field the registry names and the row states once |
+| `entries` | a field the registry knows that a column cannot hold alone |
+| `unmap` | a key the registry has no record of |
+
+A component's members leave `entries` with the component. A field written
+twice under both spellings is one field when the two agree and stays two
+entries when they do not, because choosing between them would be a guess.
+`unmap` is null where every key resolved, rather than an empty list of the
+fields that did not.
+
 ## Reading one row
 
 `get` reads promoted columns and `entries` through the same accessor, by
@@ -160,8 +174,8 @@ re-resolves any row still carrying its text and keeps the stored answer where
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. The wrapper names the envelope and the payload names the message,
 so the rendered discriminator is the row's MsgType. Its flat fields are read
-beside the numeric ones under the one rule below; indexed group members are
-never treated as duplicates.
+beside the numeric ones under [Ordered residue](#ordered-residue)'s one rule;
+indexed group members are never treated as duplicates.
 
 ## Stored categories
 
