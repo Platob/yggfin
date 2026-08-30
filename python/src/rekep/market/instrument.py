@@ -6,10 +6,13 @@ import dataclasses
 import datetime
 import functools
 from collections.abc import Iterable, Iterator, Mapping
+from types import MappingProxyType
 from typing import Annotated, Any
 
 import pyarrow
+import pyarrow.compute as compute
 
+from rekep import txhash
 from rekep.enums import (
     Ascii32,
     AssetKind,
@@ -20,11 +23,21 @@ from rekep.enums import (
     Side,
 )
 from rekep.fields import Field, scalar
+from rekep.fields.arrays import build_list, list_parts, null_mask, sequence, struct_columns
 from rekep.fix.columns import ISIN_SCHEME, isin_identity
 from rekep.fix.registry import FixRegistry
-from rekep.market.event import UNIX, Event, _declared_value_parts
+from rekep.market.event import UNIX, Event, _declared_value_parts, unix_partition_arrow
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import HASH, NIL, hash_bytes_of, hash_of
+from rekep.market.identity import (
+    HASH,
+    NIL,
+    arrow_of,
+    framed_arrow,
+    hash_arrow,
+    hash_bytes_arrow,
+    hash_bytes_of,
+    hash_of,
+)
 from rekep.market.ticker import SymbolTicker
 
 
@@ -100,29 +113,71 @@ class Leg(MarketConvertible):
                 self.currency = ticker.currency
         self.xhash = hash_of(self.symbolticker) if self.symbolticker else NIL
 
+    @classmethod
+    def from_fix_arrow(
+        cls,
+        source: pyarrow.Array | Mapping[str, Any],
+        rows: int | None = None,
+        *,
+        registry: FixRegistry | None = None,
+    ) -> pyarrow.StructArray:
+        """Normalize FIX leg columns as one market-leg struct."""
+        columns = struct_columns(source) if isinstance(source, pyarrow.Array) else dict(source)
+        rows = _row_count(columns) if rows is None else rows
+        ticker = SymbolTicker.into_arrow_array(columns, rows, registry)
+        currency = _enum_arrow(columns.get("currency"), rows, Currency, "from_fix", nullable=True)
+        kind = _classified_arrow(columns.get("cficode"), columns.get("securitytype"), rows)
+        pair_currency = SymbolTicker.currency_arrow(ticker)
+        kind = compute.if_else(
+            compute.and_(compute.equal(kind, 0), compute.is_valid(pair_currency)),
+            pyarrow.scalar(int(AssetKind.CURRENCY), pyarrow.int64()),
+            kind,
+        )
+        currency = compute.coalesce(currency, pair_currency)
+        values: dict[str, Any] = {
+            "xhash": hash_arrow(ticker),
+            "symbolticker": ticker,
+            "symbol": compute.fill_null(_text(columns.get("symbol"), rows), ""),
+            "side": _enum_arrow(columns.get("side"), rows, Side, "from_fix"),
+            "ratio": columns.get("ratio", columns.get("ratioqty")),
+            "kind": kind,
+            "securityid": _text(columns.get("securityid"), rows),
+            "securityidsource": _text(columns.get("securityidsource"), rows),
+            "cficode": _text(columns.get("cficode"), rows),
+            "securitytype": _text(columns.get("securitytype"), rows),
+            "securityexchange": _text(columns.get("securityexchange"), rows),
+            "currency": currency,
+            "contractmultiplier": columns.get("contractmultiplier"),
+            "maturitydate": _maturity_arrow(
+                columns.get("maturitydate"), columns.get("maturitymonthyear"), rows
+            ),
+            "strikeprice": columns.get("strikeprice"),
+            "putorcall": _enum_arrow(
+                columns.get("putorcall"), rows, OptionKind, "from_fix", integer_is_fix=True
+            ),
+        }
+        return _struct_of(cls, values, rows)
+
 
 @scalar(slots=True)
-class Instrument(Event):
-    """One flat reference-data record for a canonical ticker."""
-
-    unix: Annotated[int, Field(metadata=UNIX), Field.sort_key()] = 0
-    """When the reference facts were observed, in nanoseconds since the epoch."""
-
-    hash: Annotated[int, Field(dtype=HASH)] = NIL
-    """Time-anchored composition of `unix` and `vhash`."""
+class Instrument(MarketConvertible):
+    """FIX instrument facts independent of any event that carried them."""
 
     @classmethod
     @functools.cache
-    def into_event_type(cls) -> EventType:
-        """Instrument records use one event kind."""
-        return EventType.INSTRUMENT
+    def into_redirects(cls) -> Mapping[Any, str]:
+        """Generic conversions from parsed rows and reference updates."""
+        from rekep.text.fixmsg import FixMsg
 
-    # Not a partition: bucketing a hash splits every hour into as many files as
-    # buckets, and the hour already prunes the read this would prune.
-    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
-    """Digest of `symbolticker`; zero when the ticker is empty."""
+        return MappingProxyType(
+            {
+                **MarketConvertible.into_redirects(),
+                InstrumentUpdate: "update",
+                FixMsg: "fixmsg",
+            }
+        )
 
-    symbolticker: Annotated[str, Field.primary_key(), Field.column("SymbolTicker")] = ""
+    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical spelling selected from the FIX instrument identifiers."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -193,18 +248,15 @@ class Instrument(Event):
     """The legs of a multileg instrument, in the order the venue sent them."""
 
     def __post_init__(self) -> None:
-        """Normalize facts and derive identity from the canonical ticker."""
+        """Normalize facts and settle the canonical ticker once."""
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
-        # Before the ticker, which is built from the pair. The group-carried
-        # ISIN follows it, because `altids` is filled by then and an identifier
-        # the message stated outright outranks one read out of a group.
         self.securityid, self.securityidsource, self.isincode = isin_identity(
             self.securityid, self.securityidsource, self.isincode
         )
-        if self.isincode is None:
-            self.isincode = self.into_isin()
+        if self.securityid and self.securityidsource is SecurityIDSource.ISIN:
+            self.isincode = self.securityid
         ticker = SymbolTicker.from_values(
             symbolticker=self.symbolticker,
             symbol=self.symbol,
@@ -219,30 +271,16 @@ class Instrument(Event):
             if self.currency is None:
                 self.currency = ticker.currency
 
-        self.xhash = self.into_xhash()
-        self.code = self.symbolticker
-        Event.__post_init__(self)
-        self._materialize_life_code()
-
-    def into_isin(self) -> str | None:
-        """The ISO 6166 identifier this instrument carries, from either place."""
-        if self.securityid and self.securityidsource is SecurityIDSource.ISIN:
-            return self.securityid
-        return (self.altids or {}).get(ISIN_SCHEME)
+    @property
+    def xhash(self) -> int:
+        """Digest of `symbolticker`; zero when the ticker is empty."""
+        return hash_of(self.symbolticker) if self.symbolticker else NIL
 
     def enriched_with(self, other: Instrument) -> Instrument | None:
-        """This record plus facts only the other observation knows."""
-        filled = {}
-        merged_altids = dict(self.altids)
-        for key, value in other.altids.items():
-            merged_altids.setdefault(key, value)
-        if merged_altids != self.altids:
-            filled["altids"] = merged_altids
-        event_members = set(Event.into_field().names)
+        """These facts plus values only the other observation knows."""
+        filled: dict[str, Any] = {}
         for member in dataclasses.fields(self):
             name = member.name
-            if name in event_members or name == "xhash":
-                continue
             mine, theirs = getattr(self, name), getattr(other, name)
             if theirs in (None, "", NIL) or theirs == mine:
                 continue
@@ -254,42 +292,315 @@ class Instrument(Event):
                 filled[name] = theirs
         if not filled:
             return None
-        return dataclasses.replace(self, **filled, vhash=NIL, hash=NIL)
+        return dataclasses.replace(self, **filled)
 
-    def into_xhash(self) -> int:
-        """The canonical ticker's identity, or zero when absent."""
-        return hash_of(self.symbolticker) if self.symbolticker else NIL
+    @classmethod
+    def from_fix_arrow(
+        cls,
+        source: pyarrow.RecordBatch | Mapping[str, Any],
+        rows: int | None = None,
+        *,
+        registry: FixRegistry | None = None,
+    ) -> pyarrow.StructArray:
+        """Normalize promoted FIX columns as one nested component."""
+        columns = (
+            {name: source.column(name) for name in source.schema.names}
+            if isinstance(source, pyarrow.RecordBatch)
+            else dict(source)
+        )
+        rows = (
+            source.num_rows
+            if isinstance(source, pyarrow.RecordBatch)
+            else (_row_count(columns) if rows is None else rows)
+        )
+        nested = columns.get("instrument")
+        if nested is not None:
+            if isinstance(nested, pyarrow.ChunkedArray):
+                nested = nested.combine_chunks()
+            if nested.null_count < rows:
+                return cls.into_field().cast_arrow_array(nested)
+        identifiers = _identifier_arrow(columns, rows)
+        columns.update(identifiers)
+        ticker = SymbolTicker.into_arrow_array(columns, rows, registry)
+        currency = _enum_arrow(columns.get("currency"), rows, Currency, "from_fix", nullable=True)
+        pair_currency = SymbolTicker.currency_arrow(ticker)
+        kind = _classified_arrow(columns.get("cficode"), columns.get("securitytype"), rows)
+        kind = compute.if_else(
+            compute.and_(compute.equal(kind, 0), compute.is_valid(pair_currency)),
+            pyarrow.scalar(int(AssetKind.CURRENCY), pyarrow.int64()),
+            kind,
+        )
+        values: dict[str, Any] = {
+            "symbolticker": ticker,
+            "symbol": compute.fill_null(_text(columns.get("symbol"), rows), ""),
+            "kind": kind,
+            "securityid": identifiers["securityid"],
+            "securityidsource": _enum_arrow(
+                identifiers["securityidsource"],
+                rows,
+                SecurityIDSource,
+                "from_str",
+                nullable=True,
+            ),
+            "isincode": identifiers["isincode"],
+            "securitytype": _text(columns.get("securitytype"), rows),
+            "cficode": _text(columns.get("cficode"), rows),
+            "securityexchange": _text(columns.get("securityexchange"), rows),
+            "currency": compute.coalesce(currency, pair_currency),
+            "contractmultiplier": columns.get("contractmultiplier"),
+            "minpriceincrement": columns.get("minpriceincrement"),
+            "roundlot": columns.get("roundlot"),
+            "maturitydate": _maturity_arrow(
+                columns.get("maturitydate"), columns.get("maturitymonthyear"), rows
+            ),
+            "strikeprice": columns.get("strikeprice"),
+            "putorcall": _enum_arrow(
+                columns.get("putorcall"), rows, OptionKind, "from_fix", integer_is_fix=True
+            ),
+            "securitydesc": _text(columns.get("securitydesc"), rows),
+            "legs": _legs_arrow(columns.get("legs"), rows, registry),
+        }
+        return _struct_of(cls, values, rows)
+
+    @classmethod
+    def from_update(cls, source: InstrumentUpdate) -> Instrument:
+        """Extract the component carried by one reference-data update."""
+        if not isinstance(source, InstrumentUpdate):
+            raise TypeError(f"source must be InstrumentUpdate, got {type(source).__name__}")
+        return source.instrument
+
+    @classmethod
+    def from_update_arrow_batch(cls, source: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
+        """Project update rows back to the component schema without row materialization."""
+        batch = InstrumentUpdate.into_field().cast_arrow_batch(source)
+        component = batch.column("instrument")
+        return pyarrow.RecordBatch.from_arrays(
+            [component.field(index) for index in range(component.type.num_fields)],
+            schema=cls.into_field().into_arrow_schema(),
+        )
+
+    @classmethod
+    def from_fixmsg(
+        cls,
+        source: Any,
+        *,
+        registry: FixRegistry | None = None,
+    ) -> Instrument | None:
+        """Build the first component carried by one parsed FIX row."""
+        update = next(InstrumentUpdate.from_fixmsgs((source,), registry=registry), None)
+        return None if update is None else update.instrument
+
+    @classmethod
+    def from_fix_events(cls, source: Any) -> Instrument:
+        """Build one component from a FIX translator's scoped entry view."""
+        get = source.get
+        cfi = get("CFICode")
+        securitytype = get("SecurityType")
+        altids = source._security_altids
+        built = cls.from_entries(
+            source._event_entries,
+            registry=source.registry,
+            version=source.version,
+            kind=_classified(cfi, securitytype),
+            isincode=altids.get(ISIN_SCHEME),
+            maturitydate=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
+        )
+        built.legs = _normalized_legs(source, built.legs or source._declared_legs())
+        parent = source.__dict__.get("_parent_reference")
+        if parent is None:
+            promoted = source._versioned_message.instrument
+            return promoted.enriched_with(built) or promoted
+        if not built.symbolticker:
+            return parent
+        fallback = dataclasses.replace(parent, legs=None)
+        enriched = built.enriched_with(fallback)
+        if enriched is None:
+            return built
+        # Header identifiers participate in ticker selection; settle the
+        # combined facts once instead of retaining the child-only spelling.
+        return dataclasses.replace(enriched, symbolticker="")
+
+
+@scalar(slots=True)
+class InstrumentUpdate(Event):
+    """One observed version of an instrument component."""
+
+    @classmethod
+    @functools.cache
+    def into_redirects(cls) -> Mapping[Any, str]:
+        """Generic event conversions plus the event-free component."""
+        return MappingProxyType({**Event.into_redirects(), Instrument: "instrument"})
+
+    unix: Annotated[int, Field(metadata=UNIX)] = 0
+    """When the reference facts were observed, in nanoseconds since the epoch."""
+
+    hash: Annotated[int, Field(dtype=HASH), Field.sort_key()] = NIL
+    """Time-anchored composition of `unix` and `vhash`."""
+
+    # A current-reference table replaces one lifecycle at a time. The nested
+    # ticker cannot be an Iceberg identifier field, so its stable digest is the
+    # top-level key every engine can merge on.
+    xhash: Annotated[int, Field.primary_key(dtype=pyarrow.int64())] = NIL
+    """Digest of `instrument.symbolticker`; zero when the ticker is empty."""
+
+    # Last because Iceberg counts nested leaves in declaration order for the
+    # bounds it collects; see docs/market/index.md.
+    instrument: Instrument = dataclasses.field(default_factory=Instrument)
+    """Reference facts observed by this update."""
+
+    def __post_init__(self) -> None:
+        """Make the envelope identity agree with its component."""
+        if not isinstance(self.instrument, Instrument):
+            self.instrument = Instrument.from_dict(self.instrument)
+        self.xhash = self.instrument.xhash
+        self.code = self.instrument.symbolticker
+        Event.__post_init__(self)
+        self._materialize_life_code()
+
+    @classmethod
+    @functools.cache
+    def into_event_type(cls) -> EventType:
+        """Reference-data updates use one event kind."""
+        return EventType.INSTRUMENT
+
+    @classmethod
+    def from_instrument(
+        cls,
+        source: Instrument,
+        *,
+        unix: int = 0,
+        creaunix: int | None = None,
+        recunix: int | None = None,
+        **event_values: Any,
+    ) -> InstrumentUpdate:
+        """Wrap one component in its observation envelope."""
+        if not isinstance(source, Instrument):
+            source = Instrument.from_dict(source)
+        return cls(
+            instrument=source,
+            unix=unix,
+            creaunix=unix if creaunix is None else creaunix,
+            recunix=unix if recunix is None else recunix,
+            **event_values,
+        )
+
+    @classmethod
+    def from_fixmsg(
+        cls,
+        source: Any,
+        *,
+        registry: FixRegistry | None = None,
+        **overrides: Any,
+    ) -> InstrumentUpdate | None:
+        """Build the first reference update carried by one parsed FIX row."""
+        from rekep.text.fixmsg import FixMsg
+
+        if not isinstance(source, FixMsg):
+            raise TypeError(f"source must be FixMsg, got {type(source).__name__}")
+        update = next(cls.from_fixmsgs((source,), registry=registry), None)
+        if update is None or not overrides:
+            return update
+        explicit_identity = "vhash" in overrides or "hash" in overrides
+        if not explicit_identity:
+            overrides.update(vhash=NIL, hash=NIL)
+        updated = dataclasses.replace(update, **overrides)
+        return updated if explicit_identity else updated.identify()
+
+    @classmethod
+    def from_instrument_arrow_batch(
+        cls,
+        source: pyarrow.RecordBatch | pyarrow.StructArray,
+        *,
+        unix: Any = 0,
+        creaunix: Any | None = None,
+        recunix: Any | None = None,
+    ) -> pyarrow.RecordBatch:
+        """Wrap component columns in identified update envelopes with Arrow kernels."""
+        if isinstance(source, pyarrow.RecordBatch):
+            component_batch = Instrument.into_field().cast_arrow_batch(source)
+            component = pyarrow.StructArray.from_arrays(
+                component_batch.columns, fields=list(component_batch.schema)
+            )
+            rows = component_batch.num_rows
+        elif isinstance(source, pyarrow.StructArray):
+            rows = len(source)
+            raw = pyarrow.RecordBatch.from_arrays(
+                [source.field(index) for index in range(source.type.num_fields)],
+                names=[source.type.field(index).name for index in range(source.type.num_fields)],
+            )
+            component_batch = Instrument.into_field().cast_arrow_batch(raw)
+            component = pyarrow.StructArray.from_arrays(
+                component_batch.columns, fields=list(component_batch.schema)
+            )
+        else:
+            raise TypeError(
+                f"source must be RecordBatch or StructArray, got {type(source).__name__}"
+            )
+
+        clock = _broadcast(unix, rows, pyarrow.int64())
+        ticker = compute.struct_field(component, "symbolticker")
+        xhash = hash_arrow(ticker)
+        field = cls.into_field()
+        values = _default_columns(field, rows)
+        values.update(
+            {
+                "unix": clock,
+                "unixpartition": unix_partition_arrow(clock),
+                "eventtype": _broadcast(int(EventType.INSTRUMENT), rows, pyarrow.int64()),
+                "creaunix": (
+                    clock if creaunix is None else _broadcast(creaunix, rows, pyarrow.int64())
+                ),
+                "recunix": clock if recunix is None else _broadcast(recunix, rows, pyarrow.int64()),
+                "xhash": xhash,
+                "code": ticker,
+                "instrument": component,
+            }
+        )
+        values["vhash"] = _update_vhash_arrow(cls, values, component)
+        values["hash"] = txhash.couple128_arrow(cls._clock_micros(clock), values["vhash"])
+        return pyarrow.RecordBatch.from_arrays(
+            [field.field(name).cast_arrow_array(values[name]) for name in field.names],
+            schema=field.into_arrow_schema(),
+        )
 
     def life_code(self) -> str:
-        """The canonical ticker that names this reference record."""
-        return self.symbolticker
+        """The canonical ticker that names this reference lifecycle."""
+        return self.instrument.symbolticker
 
     def life_parts(self) -> tuple[Any, ...]:
-        """An instrument identity exists only when its canonical ticker does."""
+        """An instrument lifecycle exists only when its ticker does."""
         return (hash_bytes_of(self.xhash),) if self.xhash else ()
 
     def version_parts(self) -> tuple[Any, ...]:
-        """Current declared reference values in the framed hash domain."""
-        event_members = set(Event.into_field().names)
-        values = {
-            member.name: getattr(self, member.name)
-            for member in type(self).into_field().fields
-            if member.name not in event_members
-        }
-        return (*Event.version_parts(self), *_declared_value_parts(values))
+        """Envelope values followed by the complete component declaration."""
+        return (*Event.version_parts(self), *_declared_value_parts(self.instrument))
+
+    def enriched_with(self, other: InstrumentUpdate) -> InstrumentUpdate | None:
+        """This update plus facts only the other observation knows."""
+        instrument = self.instrument.enriched_with(other.instrument)
+        if instrument is None:
+            return None
+        return dataclasses.replace(self, instrument=instrument, vhash=NIL, hash=NIL)
 
     @classmethod
-    def from_events(cls, events: Iterable[Any]) -> Iterator[Instrument]:
-        """Flat reference records merged from transient market-event facts."""
+    def from_events(cls, events: Iterable[Any]) -> Iterator[InstrumentUpdate]:
+        """Reference updates merged from transient market-event facts."""
 
-        def observed() -> Iterator[Instrument | None]:
+        def observed() -> Iterator[InstrumentUpdate | None]:
             for event in events:
                 instrument = event.into_instrument()
-                if instrument is not None and instrument.unix != event.unix:
-                    instrument = dataclasses.replace(instrument, unix=event.unix, hash=NIL)
-                yield instrument
+                yield (
+                    None
+                    if instrument is None
+                    else cls.from_instrument(
+                        instrument,
+                        unix=event.unix,
+                        creaunix=event.creaunix,
+                        recunix=event.recunix,
+                    )
+                )
 
-        return _flat_instruments(observed())
+        return cls.enriched(observed())
 
     @classmethod
     def from_fixmsgs(
@@ -297,63 +608,441 @@ class Instrument(Event):
         logs: Iterable[Any],
         *,
         registry: FixRegistry | None = None,
-    ) -> Iterator[Instrument]:
-        """Flat reference records merged from parsed FIX messages."""
+    ) -> Iterator[InstrumentUpdate]:
+        """Reference updates merged from parsed FIX messages."""
 
-        def observed() -> Iterator[Instrument]:
+        def observed() -> Iterator[InstrumentUpdate]:
             for log in logs:
-                yield from log.into_instruments(registry=registry)
+                translated = log.into_fix_events(registry=registry)
+                for reader in translated._instrument_readers():
+                    instrument = Instrument.from_fix_events(reader)
+                    if instrument.symbolticker:
+                        yield cls.from_instrument(
+                            instrument,
+                            unix=reader.unix,
+                            creaunix=reader.unix,
+                            recunix=reader.recunix or reader.unix,
+                        )
 
-        return _flat_instruments(observed())
+        return cls.enriched(observed())
+
+    @classmethod
+    def enriched(cls, observed: Iterable[InstrumentUpdate | None]) -> Iterator[InstrumentUpdate]:
+        """One deterministically enriched update per canonical ticker."""
+        # Input order owns conflicts; later observations fill gaps but never
+        # revise facts already stated by the first observation.
+        order: list[str] = []
+        records: dict[str, InstrumentUpdate] = {}
+        for update in observed:
+            if update is None or not update.instrument.symbolticker:
+                continue
+            update.identify()
+            ticker = update.instrument.symbolticker
+            known = records.get(ticker)
+            if known is None:
+                order.append(ticker)
+                records[ticker] = update
+                continue
+            if known.vhash == update.vhash:
+                continue
+            instrument = known.instrument.enriched_with(update.instrument)
+            if instrument is not None:
+                records[ticker] = dataclasses.replace(
+                    known, instrument=instrument, vhash=NIL, hash=NIL
+                ).identify()
+        yield from (records[ticker] for ticker in order)
+
+    @classmethod
+    def versioned(
+        cls,
+        observed: Iterable[InstrumentUpdate],
+        stored: Mapping[int | str, InstrumentUpdate],
+    ) -> Iterator[InstrumentUpdate]:
+        """Observations that add a fact to the stored lifecycle."""
+        for row in observed:
+            known = stored.get(row.xhash) or stored.get(row.instrument.symbolticker)
+            if known is not None and known.vhash == row.vhash:
+                continue
+            enriched = row if known is None else known.enriched_with(row)
+            if enriched is not None:
+                yield enriched.identify()
 
 
-def versioned(
-    observed: Iterable[Instrument],
-    stored: Mapping[str, Instrument],
-) -> Iterator[Instrument]:
-    """Each observation that says something `stored` does not already say.
+#: `SecurityType <167>` fallbacks for feeds that send no CFI code.
+SECURITY_TYPES: dict[str, AssetKind] = {
+    "CS": AssetKind.EQUITY,
+    "PS": AssetKind.EQUITY,
+    "MF": AssetKind.FUND,
+    "FUT": AssetKind.FUTURE,
+    "OPT": AssetKind.OPTION,
+    "OOF": AssetKind.OPTION,
+    "OOP": AssetKind.OPTION,
+    "OOC": AssetKind.OPTION,
+    "WAR": AssetKind.WARRANT,
+    "MLEG": AssetKind.MULTILEG,
+    "CDS": AssetKind.SWAP,
+    "IRS": AssetKind.SWAP,
+    "FXSWAP": AssetKind.SWAP,
+    "FXSPOT": AssetKind.CURRENCY,
+    "FXFWD": AssetKind.FORWARD,
+    "FXNDF": AssetKind.FORWARD,
+    "FORWARD": AssetKind.FORWARD,
+    "CASH": AssetKind.CURRENCY,
+    "REPO": AssetKind.REPO,
+    "BUYSELL": AssetKind.REPO,
+    "SECLOAN": AssetKind.LOAN,
+    "SECPLEDGE": AssetKind.LOAN,
+    "TERM": AssetKind.LOAN,
+    "RVLV": AssetKind.LOAN,
+    "RVLVTRM": AssetKind.LOAN,
+    "BRIDGE": AssetKind.LOAN,
+    "SWING": AssetKind.LOAN,
+    "CORP": AssetKind.DEBT,
+    "CB": AssetKind.DEBT,
+    "TBOND": AssetKind.DEBT,
+    "TNOTE": AssetKind.DEBT,
+    "TBILL": AssetKind.DEBT,
+    "TIPS": AssetKind.DEBT,
+    "MUNI": AssetKind.DEBT,
+    "GO": AssetKind.DEBT,
+    "REV": AssetKind.DEBT,
+    "MTN": AssetKind.DEBT,
+    "CP": AssetKind.DEBT,
+    "CD": AssetKind.DEBT,
+    "ABS": AssetKind.DEBT,
+    "MBS": AssetKind.DEBT,
+    "CMO": AssetKind.DEBT,
+    "FRN": AssetKind.DEBT,
+    "EUCORP": AssetKind.DEBT,
+    "EUSOV": AssetKind.DEBT,
+    "BRADY": AssetKind.DEBT,
+}
 
-    The whole versioning rule for reference data, in one place rather than in
-    whichever job happens to write the table. An observation whose `vhash`
-    matches the stored record states the same facts and is not a version;
-    anything else is the stored record *enriched* with what the observation
-    adds, which keeps the earlier facts and earns a new `hash` under the same
-    `symbolticker`. An observation that adds nothing to a record already
-    holding more than it is dropped rather than written back thinner.
 
-    `stored` is what the table holds for the tickers in this batch, keyed by
-    `symbolticker`: empty for a table that does not exist yet, which makes
-    every observation the first version of its ticker.
-    """
-    for row in observed:
-        known = stored.get(row.symbolticker)
-        if known is not None and known.vhash == row.vhash:
-            continue
-        enriched = row if known is None else known.enriched_with(row)
-        if enriched is not None:
-            yield enriched.identify()
+def _classified(cfi: str | None, securitytype: str | None) -> AssetKind:
+    """Instrument kind from the ISO CFI category, then FIX SecurityType."""
+    if cfi:
+        found = AssetKind.from_cfi(cfi[:1])
+        if found is not AssetKind.UNKNOWN:
+            return found
+    if securitytype:
+        return SECURITY_TYPES.get(securitytype.strip().upper(), AssetKind.UNKNOWN)
+    return AssetKind.UNKNOWN
 
 
-def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrument]:
-    """One deterministically enriched record per canonical ticker."""
-    # Input order owns conflicts; later observations fill gaps but never revise facts.
-    order: list[str] = []
-    records: dict[str, Instrument] = {}
-    for instrument in observed:
-        if instrument is None or not instrument.symbolticker:
-            continue
-        instrument.identify()
-        ticker = instrument.symbolticker
-        known = records.get(ticker)
-        if known is None:
-            order.append(ticker)
-            records[ticker] = instrument
-            continue
-        if known.vhash == instrument.vhash:
-            continue
-        enriched = known.enriched_with(instrument)
-        if enriched is not None:
-            records[ticker] = enriched.identify()
-    # Identified where it was stored, and nothing has touched it since, so
-    # there is nothing here to give an identity to.
-    yield from (records[ticker] for ticker in order)
+def _month_year(text: str | None) -> datetime.date | None:
+    """`MaturityMonthYear <200>` as the first or explicitly stated day."""
+    if not text:
+        return None
+    trimmed = text.strip()
+    if len(trimmed) < 6 or not trimmed[:6].isdigit():
+        return None
+    day = trimmed[6:8]
+    try:
+        return datetime.date(int(trimmed[:4]), int(trimmed[4:6]), int(day) if day.isdigit() else 1)
+    except ValueError:
+        return None
+
+
+def _date(text: str | None) -> datetime.date | None:
+    """One FIX local-market date, or no value when malformed."""
+    if not text:
+        return None
+    try:
+        return datetime.date.fromisoformat(text.replace("-", "")[:8])
+    except ValueError:
+        try:
+            return datetime.datetime.strptime(text[:8], "%Y%m%d").date()
+        except ValueError:
+            return None
+
+
+def _normalized_legs(source: Any, legs: list[Leg] | None) -> list[Leg] | None:
+    """Apply CFI classification and month-year fallback to parsed legs."""
+    if not legs:
+        return legs
+    entries = source._group("NoLegs")
+    normalized: list[Leg] = []
+    for index, leg in enumerate(legs):
+        entry = entries[index] if index < len(entries) else {}
+        changes: dict[str, Any] = {}
+        if leg.kind is AssetKind.UNKNOWN:
+            changes["kind"] = _classified(entry.get("LegCFICode"), entry.get("LegSecurityType"))
+        if leg.maturitydate is None:
+            maturity = _month_year(entry.get("LegMaturityMonthYear"))
+            if maturity is not None:
+                changes["maturitydate"] = maturity
+        normalized.append(dataclasses.replace(leg, **changes) if changes else leg)
+    return normalized
+
+
+def _row_count(columns: Mapping[str, Any]) -> int:
+    """Length shared by a mapping of Arrow columns."""
+    for column in columns.values():
+        if isinstance(column, pyarrow.ChunkedArray | pyarrow.Array):
+            return len(column)
+    return 0
+
+
+def _broadcast(value: Any, rows: int, dtype: pyarrow.DataType) -> pyarrow.Array:
+    """One scalar or already-vector value as exactly `rows` values of `dtype`."""
+    if rows == 0:
+        return pyarrow.array([], type=dtype)
+    if isinstance(value, pyarrow.ChunkedArray):
+        value = value.combine_chunks()
+    if isinstance(value, pyarrow.Array):
+        if len(value) != rows:
+            raise ValueError(f"expected {rows} rows, got {len(value)}")
+        return value if value.type == dtype else value.cast(dtype, safe=False)
+    if isinstance(value, list | tuple):
+        if len(value) != rows:
+            raise ValueError(f"expected {rows} rows, got {len(value)}")
+        return pyarrow.array(value, type=dtype)
+    scalar = value if isinstance(value, pyarrow.Scalar) else pyarrow.scalar(value, type=dtype)
+    if scalar.type != dtype:
+        scalar = scalar.cast(dtype)
+    return pyarrow.repeat(scalar, rows)
+
+
+def _text(column: Any, rows: int) -> pyarrow.Array:
+    """Trimmed UTF-8, with an absent input represented by nulls."""
+    if column is None:
+        return pyarrow.nulls(rows, pyarrow.string())
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    if not isinstance(column, pyarrow.Array):
+        column = _broadcast(column, rows, pyarrow.string())
+    elif column.type != pyarrow.string():
+        column = column.cast(pyarrow.string(), safe=False)
+    return compute.utf8_trim_whitespace(column)
+
+
+def _mapped_arrow(
+    column: Any,
+    rows: int,
+    convert: Any,
+    dtype: pyarrow.DataType,
+    *,
+    nullable: bool = False,
+) -> pyarrow.Array:
+    """Apply a parser once per distinct spelling and take the results by index."""
+    source = _text(column, rows)
+    unique = compute.unique(source)
+    converted = pyarrow.array(
+        [None if value is None else convert(value) for value in unique.to_pylist()],
+        type=dtype,
+    )
+    result = compute.take(converted, compute.index_in(source, value_set=unique))
+    return result if nullable else compute.fill_null(result, pyarrow.scalar(0, dtype))
+
+
+def _enum_arrow(
+    column: Any,
+    rows: int,
+    enum_type: type[Any],
+    parser: str,
+    *,
+    nullable: bool = False,
+    integer_is_fix: bool = False,
+) -> pyarrow.Array:
+    """FIX spellings or already-packed codes as one enum storage column."""
+    dtype = enum_type.into_arrow_type().index_type
+    if column is None:
+        return pyarrow.nulls(rows, dtype) if nullable else _broadcast(0, rows, dtype)
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    if (
+        isinstance(column, pyarrow.Array)
+        and pyarrow.types.is_integer(column.type)
+        and not integer_is_fix
+    ):
+        cast = column.cast(dtype, safe=False)
+        return cast if nullable else compute.fill_null(cast, pyarrow.scalar(0, dtype))
+    read = getattr(enum_type, parser)
+    return _mapped_arrow(column, rows, lambda value: int(read(value)), dtype, nullable=nullable)
+
+
+def _classified_arrow(cfi: Any, securitytype: Any, rows: int) -> pyarrow.Array:
+    """Vectorized CFI classification with `SecurityType` as its fallback."""
+    dtype = AssetKind.into_arrow_type().index_type
+    cfi_kind = _mapped_arrow(
+        cfi,
+        rows,
+        lambda value: int(AssetKind.from_cfi(value[:1])) if value else 0,
+        dtype,
+    )
+    fallback = _mapped_arrow(
+        securitytype,
+        rows,
+        lambda value: int(SECURITY_TYPES.get(value.strip().upper(), AssetKind.UNKNOWN)),
+        dtype,
+    )
+    return compute.if_else(compute.equal(cfi_kind, 0), fallback, cfi_kind)
+
+
+def _maturity_arrow(date: Any, monthyear: Any, rows: int) -> pyarrow.Array:
+    """FIX maturity date, with the older month-resolution spelling as fallback."""
+    dtype = pyarrow.date32()
+
+    def parsed(column: Any, convert: Any) -> pyarrow.Array:
+        if column is None:
+            return pyarrow.nulls(rows, dtype)
+        if isinstance(column, pyarrow.ChunkedArray):
+            column = column.combine_chunks()
+        if isinstance(column, pyarrow.Array) and pyarrow.types.is_date(column.type):
+            return column.cast(dtype, safe=False)
+        return _mapped_arrow(column, rows, convert, dtype, nullable=True)
+
+    return compute.coalesce(parsed(date, _date), parsed(monthyear, _month_year))
+
+
+def _identifier_arrow(columns: Mapping[str, Any], rows: int) -> dict[str, pyarrow.Array]:
+    """Normalize the primary identifier pair and the ISIN carried beside it."""
+    identifier = _text(columns.get("securityid"), rows)
+    source_column = columns.get("securityidsource")
+    source = (
+        _broadcast(source_column, rows, pyarrow.int32())
+        if isinstance(source_column, (pyarrow.Array, pyarrow.ChunkedArray))
+        and pyarrow.types.is_integer(source_column.type)
+        else _text(source_column, rows)
+    )
+    isin = _text(columns.get("isincode"), rows)
+    source_codes = _enum_arrow(source, rows, SecurityIDSource, "from_str", nullable=True)
+    stated_isin = compute.fill_null(compute.equal(source_codes, int(SecurityIDSource.ISIN)), False)
+    isin = compute.if_else(compute.and_(stated_isin, compute.is_null(isin)), identifier, isin)
+
+    alternatives = columns.get("securityaltid")
+    if alternatives is not None:
+        if isinstance(alternatives, pyarrow.ChunkedArray):
+            alternatives = alternatives.combine_chunks()
+        _, entries = list_parts(alternatives)
+        if len(entries):
+            parents = compute.list_parent_indices(alternatives).cast(pyarrow.int64())
+            schemes = compute.struct_field(entries, "securityaltidsource")
+            scheme_codes = _enum_arrow(
+                schemes, len(entries), SecurityIDSource, "from_str", nullable=True
+            )
+            keep = compute.fill_null(compute.equal(scheme_codes, int(SecurityIDSource.ISIN)), False)
+            matched_parents = compute.filter(parents, keep)
+            matched_values = compute.filter(
+                _text(compute.struct_field(entries, "securityaltid"), len(entries)), keep
+            )
+            first = compute.index_in(sequence(rows), value_set=matched_parents)
+            isin = compute.coalesce(isin, compute.take(matched_values, first))
+
+    from_isin = compute.and_(compute.is_valid(isin), compute.is_null(identifier))
+    identifier = compute.if_else(from_isin, isin, identifier)
+    source_codes = compute.if_else(
+        from_isin,
+        pyarrow.scalar(int(SecurityIDSource.ISIN), source_codes.type),
+        source_codes,
+    )
+    return {
+        "securityid": identifier,
+        "securityidsource": source_codes,
+        "isincode": isin,
+    }
+
+
+def _legs_arrow(source: Any, rows: int, registry: FixRegistry | None = None) -> pyarrow.Array:
+    """FIX leg entries normalized inside the component's declared list type."""
+    dtype = Instrument.into_field().field("legs").dtype
+    if source is None:
+        return pyarrow.nulls(rows, dtype)
+    if isinstance(source, pyarrow.ChunkedArray):
+        source = source.combine_chunks()
+    if source.type == dtype:
+        return source
+    sizes, entries = list_parts(source)
+    normalized = Leg.from_fix_arrow(entries, len(entries), registry=registry)
+    return build_list(dtype, sizes, normalized, null_mask(source))
+
+
+def _struct_of(
+    cls: type[MarketConvertible], values: Mapping[str, Any], rows: int
+) -> pyarrow.StructArray:
+    """Class-declared struct assembled from normalized member columns."""
+    field = cls.into_field()
+    defaults = cls().into_row()
+    columns: list[pyarrow.Array] = []
+    for member in field.fields:
+        value = values.get(member.name)
+        if value is None:
+            if member.nullable:
+                columns.append(pyarrow.nulls(rows, member.dtype))
+                continue
+            value = defaults[member.name]
+        if not isinstance(value, pyarrow.Array | pyarrow.ChunkedArray):
+            value = _broadcast(value, rows, member.dtype)
+        columns.append(member.cast_arrow_array(value))
+    return pyarrow.StructArray.from_arrays(columns, fields=field.arrow_fields)
+
+
+def _default_columns(field: Any, rows: int) -> dict[str, pyarrow.Array]:
+    """One update's declared defaults broadcast without constructing source rows."""
+    if rows == 0:
+        return {member.name: pyarrow.array([], type=member.dtype) for member in field.fields}
+    defaults = InstrumentUpdate().into_row()
+    return {
+        member.name: pyarrow.repeat(pyarrow.scalar(defaults[member.name], type=member.dtype), rows)
+        for member in field.fields
+    }
+
+
+def _joined_frames(*frames: Any) -> pyarrow.Array:
+    """Raw identity-frame segments concatenated without framing them again."""
+    return compute.binary_join_element_wise(
+        *frames,
+        pyarrow.scalar(b"", pyarrow.binary()),
+        null_handling="replace",
+        null_replacement=b"",
+    )
+
+
+def _declared_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
+    """Arrow equivalent of `_declared_value_parts`, including nested lists."""
+    kind = values.type
+    if pyarrow.types.is_struct(kind):
+        parts: list[Any] = [framed_arrow(True, kind.num_fields)[0]]
+        for index in range(kind.num_fields):
+            parts.extend(
+                (
+                    framed_arrow(kind.field(index).name)[0],
+                    _declared_frame_arrow(compute.struct_field(values, index)),
+                )
+            )
+        framed = _joined_frames(*parts)
+        if values.null_count:
+            framed = compute.if_else(compute.is_valid(values), framed, framed_arrow(None)[0])
+        return framed
+    if pyarrow.types.is_list(kind) or pyarrow.types.is_large_list(kind):
+        sizes, items = list_parts(values)
+        item_frames = _declared_frame_arrow(items)
+        grouped = build_list(pyarrow.list_(pyarrow.binary()), sizes, item_frames)
+        payload = compute.binary_join(grouped, pyarrow.scalar(b"", pyarrow.binary()))
+        framed = _joined_frames(framed_arrow(True, sizes), payload)
+        if values.null_count:
+            framed = compute.if_else(compute.is_valid(values), framed, framed_arrow(None)[0])
+        return framed
+    if pyarrow.types.is_date(kind):
+        values = values.cast(pyarrow.string())
+    return framed_arrow(values)
+
+
+def _update_vhash_arrow(
+    cls: type[InstrumentUpdate], values: Mapping[str, pyarrow.Array], component: pyarrow.Array
+) -> pyarrow.Array:
+    """`InstrumentUpdate.version_parts` over whole columns."""
+    event = framed_arrow(
+        cls.__name__,
+        arrow_of(values["xhash"]),
+        values["eventtype"],
+        values["state"],
+        values["mic"],
+        0,
+        values["code"],
+        values["reason"],
+        True,
+        0,
+    )
+    return hash_bytes_arrow(_joined_frames(event, _declared_frame_arrow(component)))

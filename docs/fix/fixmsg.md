@@ -82,10 +82,11 @@ print(FixMsg.from_message_batch([staged]).to_pylist()[0]["parties"])
 [{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3}]
 ```
 
-`Parties`, `TrdRegTimestamps`, `SideTrdRegTS`, `SecurityAltID` and `Legs`
-each carry the members they declare and nothing else. What a component does
-not project stays in `entries`, under the key the wire carried — one residual
-for the row, not a second one on every entry.
+`Instrument`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS` and
+`SecurityAltID` each carry the members they declare and nothing else. The
+instrument's `legs` stay inside that component. What a component does not
+project stays in `entries`, under the key the wire carried — one residual for
+the row, not a second one on every entry.
 
 ## Ordered residue
 
@@ -195,5 +196,6 @@ Registry-declared technical MsgTypes and plugins enter no FIX table. Both
 scans project `message` out, so every resulting `FixMsg.message` is null.
 
 Market readers consume only `fix.market`, ordered by
-`(unix, msgseqnum, hash)`. `parse_fix` derives flat Instrument records from
-that captured stream and writes them directly to `market.instruments`.
+`(unix, msgseqnum, hash)`. Each row carries its reference facts in the final
+`instrument` struct. `parse_instruments` turns those components into
+`InstrumentUpdate` events in `market.instruments`.

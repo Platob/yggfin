@@ -50,7 +50,8 @@ Core properties:
 - streamed local and `pyarrow.fs` text input;
 - registry-driven, cross-version FIX metadata;
 - stable cross-language XXH3 `int64` identities;
-- immutable event histories and flat Instrument reference data;
+- immutable event histories and `InstrumentUpdate` reference data with nested
+  `Instrument` facts;
 - deterministic partition-aware Iceberg reads and bounded writes;
 - six checked contracts under `schemas/rekep/`.
 

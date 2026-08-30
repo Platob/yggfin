@@ -168,14 +168,36 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     """The count is taken off the declaration and pinned, so a column that left
     the contract cannot take the printed number quietly with it.
 
-    `entries` is the one line the renderer has to spell out of a nested type,
-    and `checksum` pins the folded spelling of a FIX name, so together they
-    cover the shape.
+    `entries` and `instrument` make the renderer spell both kinds of nested
+    type, and `checksum` pins the folded spelling of a FIX name, so together
+    they cover the shape.
     """
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
-    assert len(FixMsg.into_field().names) == 126
-    assert "FixMsg: 126 columns, builds" in printed
+    field = FixMsg.into_field()
+    assert len(field.names) == 109
+    assert field.names[-1] == "instrument"
+    assert field.field("instrument").names == [
+        "symbolticker",
+        "symbol",
+        "kind",
+        "securityid",
+        "securityidsource",
+        "isincode",
+        "securitytype",
+        "cficode",
+        "securityexchange",
+        "currency",
+        "contractmultiplier",
+        "minpriceincrement",
+        "roundlot",
+        "maturitydate",
+        "strikeprice",
+        "putorcall",
+        "securitydesc",
+        "legs",
+    ]
+    assert "FixMsg: 109 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unixpartition: int32  [partition identity]" in printed
     assert (
@@ -184,6 +206,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
         "  [nullable]"
     ) in printed
     assert "parties: list<item: struct<partyid: string" in printed
+    assert "instrument: struct<symbolticker: string not null" in printed
     assert "checksum: string  [nullable]" in printed
     assert "primary keys: ['unix', 'hash']" in printed
 

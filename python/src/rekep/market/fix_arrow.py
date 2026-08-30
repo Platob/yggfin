@@ -32,6 +32,7 @@ from rekep.market.identity import (
     hash_arrow,
     hash_bytes_arrow,
 )
+from rekep.market.instrument import Instrument
 from rekep.market.orders import Execution, Order
 from rekep.market.ticker import SymbolTicker
 
@@ -142,7 +143,7 @@ def flat_market_parts(
     """Translate a flat batch and retain each output row's source position."""
     if set(declared) - {"registry", "fix_version"} or not batch.num_rows:
         return None
-    columns = {name: batch.column(name) for name in batch.schema.names}
+    columns = _with_instrument_columns({name: batch.column(name) for name in batch.schema.names})
     msg_type = columns.get("msgtype")
     version = columns.get("protocolversion")
     entries = columns.get("entries")
@@ -334,6 +335,7 @@ def _eligible_market_rows(
     columns: Mapping[str, pyarrow.Array], tags: MarketTags, rows: int
 ) -> pyarrow.Array:
     """Identify rows for which the flat translator mirrors scalar semantics."""
+    columns = _with_instrument_columns(columns)
     eligible = pyarrow.repeat(pyarrow.scalar(True), rows)
     entries = columns["entries"]
     for name in _COMPONENT_EXCLUSIONS:
@@ -403,6 +405,26 @@ def _duplicate_market_rows(parents: pyarrow.Array, tags: pyarrow.Array, rows: in
     return compute.is_in(sequence(rows), value_set=compute.take(valid_parents, found))
 
 
+def _with_instrument_columns(
+    columns: Mapping[str, pyarrow.Array],
+) -> dict[str, pyarrow.Array]:
+    """Expose nested component members to the field reader without copying them."""
+    found = dict(columns)
+    instrument = found.get("instrument")
+    if instrument is None:
+        return found
+    if isinstance(instrument, pyarrow.ChunkedArray):
+        instrument = instrument.combine_chunks()
+    for field in instrument.type:
+        member = compute.struct_field(instrument, field.name)
+        if pyarrow.types.is_string(member.type) or pyarrow.types.is_large_string(member.type):
+            member = compute.if_else(compute.equal(member, ""), None, member)
+        elif pyarrow.types.is_integer(member.type):
+            member = compute.if_else(compute.equal(member, 0), None, member)
+        found.setdefault(field.name, member)
+    return found
+
+
 class _Values:
     """Typed column views over one FixMsg batch."""
 
@@ -413,7 +435,7 @@ class _Values:
         tags: MarketTags,
         rows: int,
     ):
-        self.columns = columns
+        self.columns = _with_instrument_columns(columns)
         self.rows = rows
         requested = tuple((tags.tags[name], name) for name in _READ_FIELDS if name in tags.tags)
         self.residual = FieldAccess.first_arrow_fields(entries, requested, rows)
@@ -475,23 +497,35 @@ class _Shared:
         )
         self.altids = FixMsg.altids_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
-        currency = values.text("Currency")
-        self.currency, self.pxunit = _currencies(currency)
+        stated_currency, stated_unit = _currencies(values.text("Currency"))
+        component_currency = values.columns.get("currency")
+        if component_currency is None:
+            self.currency, self.pxunit = stated_currency, stated_unit
+        else:
+            component_currency, component_unit = _currencies(component_currency)
+            self.currency = compute.coalesce(component_currency, stated_currency)
+            self.pxunit = compute.if_else(
+                compute.equal(component_unit, ""), stated_unit, component_unit
+            )
 
     def take(self, value: pyarrow.Array, where: pyarrow.Array) -> pyarrow.Array:
         return compute.take(value, where)
 
 
 def _ticker_array(values: _Values, tags: MarketTags) -> pyarrow.Array:
-    """Canonical tickers from the FIX columns this market reader resolves."""
-    columns = {
-        "symbolticker": values.columns["symbolticker"],
-        "symbol": values.text("Symbol"),
-        "securityid": values.text("SecurityID"),
-        "securityidsource": values.text("SecurityIDSource"),
-        "securityexchange": values.text("SecurityExchange"),
-    }
-    return SymbolTicker.into_arrow_array(columns, values.rows, tags.registry)
+    """Canonical ticker normalized by the component that owns its parts."""
+    component = Instrument.from_fix_arrow(
+        {
+            "symbolticker": values.columns.get("symbolticker"),
+            "symbol": values.text("Symbol"),
+            "securityid": values.text("SecurityID"),
+            "securityidsource": values.text("SecurityIDSource"),
+            "securityexchange": values.text("SecurityExchange"),
+        },
+        values.rows,
+        registry=tags.registry,
+    )
+    return compute.struct_field(component, "symbolticker")
 
 
 def _orders(
@@ -1148,6 +1182,15 @@ def _mapping_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
 
 
 def _currencies(source: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
+    if pyarrow.types.is_integer(source.type):
+        currency = source.cast(_code_type(Currency.UNKNOWN), safe=False)
+        unique = compute.drop_null(compute.unique(currency))
+        if not len(unique):
+            return currency, pyarrow.repeat(pyarrow.scalar(""), len(source))
+        units = pyarrow.array([Currency.from_int(value.as_py()).into_str() for value in unique])
+        return currency, compute.fill_null(
+            compute.take(units, compute.index_in(currency, value_set=unique)), ""
+        )
     unique = compute.drop_null(compute.unique(source))
     if not len(unique):
         return pyarrow.nulls(len(source), _code_type(Currency.UNKNOWN)), pyarrow.repeat(

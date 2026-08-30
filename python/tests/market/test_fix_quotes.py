@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rekep import FixCodec, FixMsg, Message
 from rekep.fix import FixRegistry
-from rekep.market import BookIterator, EventType, MarketKind, Order, Side, State
+from rekep.market import BookIterator, EventType, InstrumentUpdate, MarketKind, Order, Side, State
 from rekep.market.fix import FixEvents, unix_of
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -197,10 +197,11 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
 
 def test_nested_mass_quote_sets_project_each_instrument_once_in_wire_order() -> None:
     registry = FixRegistry(cache_dir=FIX_DATA)
-    found = list(
-        FixEvents.from_text(
-            mass_quote(registry), registry=registry, fix_version="4.4"
-        ).into_instruments()
-    )
+    found = [
+        update.instrument
+        for update in InstrumentUpdate.from_fixmsgs(
+            [FixMsg.from_text(mass_quote(registry))], registry=registry
+        )
+    ]
 
     assert [instrument.symbol for instrument in found] == ["AAPL", "MSFT", "NVDA"]

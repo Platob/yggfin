@@ -26,8 +26,8 @@ The field name is the full table identifier; `logs.namespace` is `"fix"`.
 
 ```python
 reader = logs.read_arrow_reader(
-    row_filter="Symbol = 'IBM'",
-    columns=["unix", "hash", "msgseqnum", "symbol"],
+    row_filter="msgtype = 'D'",
+    columns=["unix", "hash", "msgseqnum", "msgtype"],
     order_by=["unix", "msgseqnum", "hash"],
     snapshot_id=None,
     branch="root",
@@ -37,21 +37,22 @@ print(reader.schema.names)
 
 def rows():
     """One fresh reader per call: a stream is consumed by whoever reads it."""
-    return logs.read_arrow_reader(columns=["unix", "hash", "msgseqnum", "symbol"])
+    return logs.read_arrow_reader(columns=["unix", "hash", "msgseqnum", "msgtype"])
 ```
 
 ```text
-['unix', 'hash', 'msgseqnum', 'symbol']
+['unix', 'hash', 'msgseqnum', 'msgtype']
 ```
 
 Every `order_by` column must be projected — sorting on one the reader will not
 hand back is refused rather than dropped, so `MsgSeqNum` is in `columns` here.
 
 Filters and projections reach scan planning. Ordered reads sort planned
-partition paths deterministically, stream one partition at a time, and rely on
-the declared in-file sort order. This bounds merge state and preserves event
-order without materializing the table. Unordered reads remain the store's
-native stream.
+partition paths deterministically and stream one partition at a time. A file
+whose recorded sort order starts with the requested keys joins the direct
+merge; any other file is externally sorted through bounded local IPC runs and
+a multi-pass merge. This preserves event order without materializing the
+table. Unordered reads remain the store's native stream.
 
 A table that was never written reads as no rows under the shape asked for,
 rather than raising: on the first interval of a fresh catalog every stage
@@ -90,10 +91,9 @@ insert plans, reads, and commits one touched partition at a time. Deletes use
 the matched stored row's source values, so their exact predicate cannot reach
 the same key in another partition.
 
-The default physical sort order starts with partition source columns before the
-declared sort keys. A transformed partition already decides file placement;
-ordering its source within that file keeps useful timestamp, truncated-value,
-or bucket-source locality instead of recording a constant transformed value.
+The default physical sort order is exactly the declared sort keys. Partition
+transforms decide file placement independently and add no implicit sort
+column.
 
 A complete partition replacement applies the table's transforms with Arrow,
 stages bounded local Parquet files, then copies them through the table's
@@ -115,9 +115,9 @@ partition is rejected. Writes are incremental: complete groups committed
 before a later source or ordering error remain committed.
 
 Replacements accumulate toward `commit_row_size`; the default is 1,000,000
-rows and `0` groups the whole ordered stream into one transaction. The same
-setting caps each staged Parquet file, so an individual partition may exceed
-it without having to fit in memory.
+rows and the value must be positive so every transaction remains bounded. The
+same setting caps each staged Parquet file, so an individual partition may
+exceed it without having to fit in memory.
 
 Renaming, retyping or narrowing a column is not an additive Iceberg
 evolution and no merge migrates one: recreate or rewrite the table, on every
@@ -143,7 +143,7 @@ logs = IcebergDataset(
     catalog="local",
     properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file://warehouse"},
 )
-print(logs.read_arrow_reader().schema.field("symbol").type)
+print(logs.read_arrow_reader().schema.field("msgtype").type)
 ```
 
 ```text
@@ -306,6 +306,8 @@ catalog_properties:
   s3.request-timeout: "60.0"      # seconds
   s3.role-arn: arn:aws:iam::123456789012:role/rekep-writer
   s3.role-session-name: rekep
+# A custom KMS key belongs in the bucket default. Do not add
+# `s3.sse.type: kms` or `s3.sse.key` here: Arrow cannot send their headers.
 ```
 
 Verify what any of them become:
@@ -398,6 +400,10 @@ aws s3api put-bucket-encryption --bucket rekep-warehouse \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":
     {"SSEAlgorithm":"aws:kms","KMSMasterKeyID":"arn:aws:kms:eu-west-1:111122223333:key/…"}}]}'
 ```
+
+`KMSMasterKeyID` is the custom-key setting. Do not translate it into
+`s3.sse.type: kms` plus `s3.sse.key` in `catalog_properties`: those Iceberg
+names ask for per-request headers that this FileIO cannot send.
 
 Per-*request* encryption is not available. `pyarrow.fs.S3FileSystem` has no
 parameter for it and drops an `x-amz-server-side-encryption` handed to

@@ -431,7 +431,7 @@ def _needs_compatible_polars_arrow(dtype: pyarrow.DataType) -> bool:
 def arrow_chunks(
     source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], row_size: int | None
 ) -> Iterator[pyarrow.Table]:
-    """Group a stream into tables of at least `row_size` rows.
+    """Group a stream into tables of at most `row_size` rows.
 
     **A batch is not a unit of work downstream.** A store that commits per call
     -- Iceberg lands a file and a snapshot each time -- would turn a stream of
@@ -439,6 +439,8 @@ def arrow_chunks(
     first and commits once per chunk. `None` means the whole stream is one
     chunk, which is the atomic write and the one that costs the most memory.
     """
+    if row_size is not None and row_size <= 0:
+        raise ValueError("row_size must be positive")
     batches: list[pyarrow.RecordBatch] = []
     rows = 0
     schema = source.schema if isinstance(source, pyarrow.RecordBatchReader) else None
@@ -446,11 +448,16 @@ def arrow_chunks(
         if not batch.num_rows:
             continue
         schema = schema or batch.schema
-        batches.append(batch)
-        rows += batch.num_rows
-        if row_size and rows >= row_size:
-            yield pyarrow.Table.from_batches(batches, schema)
-            batches, rows = [], 0
+        offset = 0
+        while offset < batch.num_rows:
+            available = batch.num_rows - offset
+            take = available if row_size is None else min(available, row_size - rows)
+            batches.append(batch.slice(offset, take))
+            rows += take
+            offset += take
+            if row_size is not None and rows == row_size:
+                yield pyarrow.Table.from_batches(batches, schema)
+                batches, rows = [], 0
     if batches:
         yield pyarrow.Table.from_batches(batches, schema)
 

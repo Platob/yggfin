@@ -483,6 +483,8 @@ def group_pairs(
     entries: list[list[tuple[str, str]]] = []
     seen: set[str] = set()
     for tag, value in after:
+        if _is_checksum(tag):
+            break
         if tag == delimiter:
             if len(entries) == count:
                 break
@@ -517,10 +519,14 @@ def group_segment_pairs(
         count = int(pairs[count_at][1])
     except (TypeError, ValueError):
         count = 0
-    starts = [index for index in range(count_at + 1, len(pairs)) if pairs[index][0] == delimiter]
+    trailer = next(
+        (index for index in range(count_at + 1, len(pairs)) if _is_checksum(pairs[index][0])),
+        len(pairs),
+    )
+    starts = [index for index in range(count_at + 1, trailer) if pairs[index][0] == delimiter]
     selected = starts[: max(count, 0)]
     entries = [
-        list(pairs[start : starts[index + 1] if index + 1 < len(starts) else len(pairs)])
+        list(pairs[start : starts[index + 1] if index + 1 < len(starts) else trailer])
         for index, start in enumerate(selected)
     ]
     if not with_prefix:

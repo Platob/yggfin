@@ -7,7 +7,7 @@ fields:
   type: int64
   description: When the event happened, in whole nanoseconds since the epoch.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  iceberg: {primary_key: 'true', sort_key: asc}
+  iceberg: {primary_key: 'true'}
   fix: {display: Unix}
 - name: unixpartition
   type: int32
@@ -45,7 +45,7 @@ fields:
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
-  iceberg: {primary_key: 'true'}
+  iceberg: {primary_key: 'true', sort_key: asc}
   fix: {display: Hash}
 - name: vhash
   type: int64

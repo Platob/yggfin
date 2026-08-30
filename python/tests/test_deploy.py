@@ -38,12 +38,11 @@ def test_the_fix_tables_are_the_routers_own_categories() -> None:
     assert deployed == routed
 
 
-def test_event_tables_lead_with_the_window_they_are_scanned_by() -> None:
-    """`unix` first, because every read of an event table is a window over it."""
-    assert EVENT_SORT[0] == "unix"
-    assert FIX_SORT[0] == "unix"
+def test_event_tables_use_the_time_anchored_hash_as_their_only_sort_key() -> None:
+    assert EVENT_SORT == ("hash",)
+    assert FIX_SORT == ("hash",)
     for shape in TABLES:
-        assert shape.sort_by is None or shape.sort_by[0] == "unix"
+        assert shape.sort_by in (None, EVENT_SORT, FIX_SORT)
 
 
 def test_deploying_a_table_the_pipeline_does_not_write_is_refused() -> None:
@@ -83,13 +82,14 @@ def test_a_deployed_table_records_the_sort_order_it_declared(tmp_path: Path) -> 
         ordered = [schema.find_column_name(field.source_id) for field in table.sort_order().fields]
         assert tuple(ordered) == FIX_SORT
         assert store.namespace_exists("fix")
-        # The reference table takes its own declared key, not the event window.
+        # The reference table takes its own declared key, which is the same
+        # time-anchored identity used by every event table.
         instruments = store.load_table("market.instruments")
         keys = instruments.schema()
         ordered = [
             keys.find_column_name(field.source_id) for field in instruments.sort_order().fields
         ]
-        assert ordered and ordered != list(EVENT_SORT)
+        assert tuple(ordered) == EVENT_SORT
     finally:
         store.close()
 

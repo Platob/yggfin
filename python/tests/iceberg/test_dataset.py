@@ -18,7 +18,17 @@ from pyiceberg.conversions import from_bytes
 from pyiceberg.expressions import EqualTo
 from pyiceberg.transforms import BucketTransform, IdentityTransform
 
-from rekep import Convertible, Entry, Field, FixMsg, Message, StructField, TextFile, scalar
+from rekep import (
+    Convertible,
+    Entry,
+    Field,
+    FixMsg,
+    Instrument,
+    Message,
+    StructField,
+    TextFile,
+    scalar,
+)
 from rekep.arrow_file_io import ArrowFileIO
 from rekep.enums import Protocol
 from rekep.fix import Party
@@ -26,6 +36,7 @@ from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
 from rekep.iceberg.fields import INFERRED_METRICS
 from rekep.market import EventType
+from rekep.urls import S3
 
 from ..conftest import catalog_properties
 
@@ -124,7 +135,7 @@ FIX_LINE = FixMsg(
     possdupflag=True,
     signature=b"\x00sealed",
     checksum="203",
-    symbol="TTF",
+    instrument=Instrument(symbol="TTF"),
     clordid="ORD-1",
     side="1",
     orderqty=1200.0,
@@ -390,7 +401,7 @@ def test_an_ordered_read_merges_overlapping_commits_before_applying_its_limit(
     ordered = catalog.dataset("trading.timed", field=Timed.into_field())
     commits = [(1, 4, 7), (2, 5, 8), (0, 3, 6, 9)]
     for values in commits:
-        ordered.append_arrow_table(timed(*values), commit_row_size=0)
+        ordered.append_arrow_table(timed(*values), commit_row_size=1_000_000)
 
     field = ordered.iceberg_table.schema().find_field("unix")
     files = [task.file for task in ordered.iceberg_table.scan().plan_files()]
@@ -409,7 +420,7 @@ def test_an_ordered_read_merges_overlapping_commits_before_applying_its_limit(
 def test_an_ordered_read_accepts_equal_adjacent_sort_values(tmp_path: Path) -> None:
     catalog = IcebergCatalog(name="repeated", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.repeated_timed", field=RepeatedTimed.into_field())
-    dataset.append_arrow_table(repeated_timed(7, 7), commit_row_size=0)
+    dataset.append_arrow_table(repeated_timed(7, 7), commit_row_size=1_000_000)
 
     found = dataset.read_arrow_reader(order_by="unix").read_all()
 
@@ -423,7 +434,7 @@ def test_closing_a_partial_ordered_limit_releases_the_scan(
 
     catalog = IcebergCatalog(name="partial", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.partial_timed", field=Timed.into_field())
-    dataset.append_arrow_table(timed(0, 1, 2, 3), commit_row_size=0)
+    dataset.append_arrow_table(timed(0, 1, 2, 3), commit_row_size=1_000_000)
     original = module._task_batches
     released = []
 
@@ -457,7 +468,7 @@ def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
         (second, (1, 2)),
         (first, (2, 3)),
     ):
-        ordered.append_arrow(partitioned_timed(day, *values), commit_row_size=0)
+        ordered.append_arrow(partitioned_timed(day, *values), commit_row_size=1_000_000)
 
     scan = ordered.iceberg_table.scan()
     planned = list(scan.plan_files())
@@ -543,7 +554,7 @@ def test_an_ordered_read_preserves_sequence_across_equal_time_commits(tmp_path: 
                 [dict(zip(("unix", "seq", "payload"), row, strict=True)) for row in rows],
                 schema=schema,
             ),
-            commit_row_size=0,
+            commit_row_size=1_000_000,
         )
 
     found = ordered.read_arrow_reader(order_by=("unix", "seq")).read_all()
@@ -563,14 +574,14 @@ def test_an_ordered_read_preserves_sequence_across_equal_time_commits(tmp_path: 
     assert found.column("payload").to_pylist() == ["new", "cancel", "fill", "next"]
 
 
-def test_a_nullable_secondary_key_is_null_last_then_uses_the_stable_fallback(
+def test_an_ordered_read_sorts_a_different_physical_layout_explicitly(
     tmp_path: Path,
 ) -> None:
     catalog = IcebergCatalog(name="nullable-sequence", properties=catalog_properties(tmp_path))
     ordered = catalog.dataset(
         "trading.nullable_sequence",
         field=NullableSequence.into_field(),
-        sort_by=["unix", "seq", "hash"],
+        sort_by=["hash"],
     )
     schema = NullableSequence.into_field().into_arrow_schema()
     for rows in (
@@ -582,17 +593,60 @@ def test_a_nullable_secondary_key_is_null_last_then_uses_the_stable_fallback(
                 [dict(zip(("unix", "seq", "hash", "payload"), row, strict=True)) for row in rows],
                 schema=schema,
             ),
-            commit_row_size=0,
+            commit_row_size=1_000_000,
         )
 
     found = ordered.read_arrow_reader(order_by=("unix", "seq", "hash")).read_all()
 
+    assert ordered.sort_columns() == ["hash"]
     assert found.column("payload").to_pylist() == [
         "first",
         "second",
         "unknown-1",
         "unknown-2",
     ]
+
+
+def test_an_external_order_uses_bounded_merge_fan_in(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each sort pass retains one batch from only its configured run fan-in."""
+    from rekep.iceberg import dataset as module
+
+    catalog = IcebergCatalog(name="bounded-sort", properties=catalog_properties(tmp_path))
+    ordered = catalog.dataset(
+        "trading.bounded_sort",
+        field=NullableSequence.into_field(),
+        sort_by=["hash"],
+        table_properties={"write.parquet.row-group-limit": "1"},
+    )
+    schema = NullableSequence.into_field().into_arrow_schema()
+    ordered.append_arrow_table(
+        pyarrow.Table.from_pydict(
+            {
+                "unix": [8, 0, 7, 1, 6, 2, 5, 3, 4],
+                "seq": [0] * 9,
+                "hash": list(range(9)),
+                "payload": [str(index) for index in range(9)],
+            },
+            schema=schema,
+        ),
+        commit_row_size=1_000_000,
+    )
+    merged: list[int] = []
+    original = module._merge_batch_streams
+
+    def bounded(streams: Sequence[Any], columns: Sequence[tuple[str, str]]) -> Any:
+        merged.append(len(streams))
+        return original(streams, columns)
+
+    monkeypatch.setattr(module, "SORT_MERGE_FAN_IN", 2)
+    monkeypatch.setattr(module, "_merge_batch_streams", bounded)
+
+    found = ordered.read_arrow_reader(order_by=("unix", "seq", "hash")).read_all()
+
+    assert found.column("unix").to_pylist() == list(range(9))
+    assert len(merged) > 1 and max(merged) == 2
 
 
 def test_a_nearly_right_batch_is_cast_on_the_way_in(dataset: IcebergDataset) -> None:
@@ -869,7 +923,7 @@ def test_an_interrupt_after_commit_keeps_partitioned_files_live(
 
     monkeypatch.setattr(Transaction, "commit_transaction", committed_then_interrupted)
     with pytest.raises(KeyboardInterrupt):
-        dataset.append_arrow_table(quotes(2), commit_row_size=0)
+        dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
 
     stored = dataset.refresh().read_arrow_table()
     assert stored.num_rows == 2
@@ -891,7 +945,7 @@ def test_a_snapshot_construction_interrupt_removes_partition_stages(
 
     monkeypatch.setattr(_FastAppendFiles, "append_data_file", interrupted)
     with pytest.raises(KeyboardInterrupt):
-        dataset.append_arrow_table(quotes(2), commit_row_size=0)
+        dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
 
     assert _iceberg_artifacts(dataset) == before
 
@@ -901,7 +955,7 @@ def test_a_refused_partitioned_merge_removes_rewrites_and_avro(
 ) -> None:
     from pyiceberg.table import Transaction
 
-    dataset.append_arrow_table(quotes(2), commit_row_size=0)
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
     before = _iceberg_artifacts(dataset)
 
     def refused(_transaction: Transaction) -> None:
@@ -909,7 +963,7 @@ def test_a_refused_partitioned_merge_removes_rewrites_and_avro(
 
     monkeypatch.setattr(Transaction, "commit_transaction", refused)
     with pytest.raises(RuntimeError, match="catalog refused"):
-        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=0)
+        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=1_000_000)
 
     assert _iceberg_artifacts(dataset) == before
     assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
@@ -930,7 +984,7 @@ def test_a_refused_unpartitioned_merge_removes_rewrites_and_avro(
     schema = FlatQuote.into_field().into_arrow_schema()
     dataset.append_arrow_table(
         pyarrow.Table.from_pydict({"symbol": ["S0", "S1"], "size": [0, 1]}, schema=schema),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     before = _iceberg_artifacts(dataset)
 
@@ -942,7 +996,7 @@ def test_a_refused_unpartitioned_merge_removes_rewrites_and_avro(
         dataset.overwrite_arrow_table(
             pyarrow.Table.from_pydict({"symbol": ["S0"], "size": [2]}, schema=schema),
             merge_by=True,
-            commit_row_size=0,
+            commit_row_size=1_000_000,
         )
 
     assert _iceberg_artifacts(dataset) == before
@@ -953,7 +1007,7 @@ def test_a_metadata_write_followed_by_catalog_refusal_leaves_no_artifact(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     catalog = dataset.iceberg_catalog
-    dataset.append_arrow_table(quotes(2), commit_row_size=0)
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
     before = _iceberg_artifacts(dataset)
     write = catalog._write_metadata
 
@@ -963,7 +1017,7 @@ def test_a_metadata_write_followed_by_catalog_refusal_leaves_no_artifact(
 
     monkeypatch.setattr(catalog, "_write_metadata", wrote_then_refused)
     with pytest.raises(RuntimeError, match="refused after metadata"):
-        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=0)
+        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=1_000_000)
 
     assert _iceberg_artifacts(dataset) == before
     assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
@@ -978,7 +1032,7 @@ def test_a_custom_file_io_metadata_refusal_leaves_no_artifact(
     }
     catalog = IcebergCatalog(name="custom-refusal", properties=properties)
     dataset = catalog.dataset("t.custom_refusal", field=Quote.into_field())
-    dataset.append_arrow_table(quotes(2), commit_row_size=0)
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
     before = _iceberg_artifacts(dataset)
     write = catalog.catalog._write_metadata
 
@@ -988,7 +1042,7 @@ def test_a_custom_file_io_metadata_refusal_leaves_no_artifact(
 
     monkeypatch.setattr(catalog.catalog, "_write_metadata", wrote_then_refused)
     with pytest.raises(RuntimeError, match="refused after metadata"):
-        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=0)
+        dataset.overwrite_arrow_table(quotes(1, "XETR"), merge_by=True, commit_row_size=1_000_000)
 
     assert _iceberg_artifacts(dataset) == before
     assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
@@ -1000,7 +1054,7 @@ def test_a_refused_manifest_merge_removes_superseded_avro(
     from pyiceberg.table import Transaction
 
     dataset.set_properties({"commit.manifest.min-count-to-merge": "2"})
-    dataset.append_arrow_table(quotes(1), commit_row_size=0)
+    dataset.append_arrow_table(quotes(1), commit_row_size=1_000_000)
     before = _iceberg_artifacts(dataset)
 
     def refused(_transaction: Transaction) -> None:
@@ -1008,7 +1062,7 @@ def test_a_refused_manifest_merge_removes_superseded_avro(
 
     monkeypatch.setattr(Transaction, "commit_transaction", refused)
     with pytest.raises(RuntimeError, match="catalog refused"):
-        dataset.append_arrow_table(other_day(1), commit_row_size=0)
+        dataset.append_arrow_table(other_day(1), commit_row_size=1_000_000)
 
     assert _iceberg_artifacts(dataset) == before
 
@@ -1028,7 +1082,7 @@ def test_a_snapshot_construction_failure_removes_direct_writer_outputs(
     schema = FlatQuote.into_field().into_arrow_schema()
     dataset.append_arrow_table(
         pyarrow.Table.from_pydict({"symbol": ["S0", "S1"], "size": [0, 1]}, schema=schema),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     before = _iceberg_artifacts(dataset)
 
@@ -1040,7 +1094,7 @@ def test_a_snapshot_construction_failure_removes_direct_writer_outputs(
         dataset.overwrite_arrow_table(
             pyarrow.Table.from_pydict({"symbol": ["S0"], "size": [2]}, schema=schema),
             merge_by=True,
-            commit_row_size=0,
+            commit_row_size=1_000_000,
         )
 
     assert _iceberg_artifacts(dataset) == before
@@ -1226,7 +1280,7 @@ def test_an_interleaved_partition_stream_is_refused_before_its_pending_commit(
 
     with pytest.raises(ValueError, match="recurs after another partition"):
         dataset.overwrite_arrow_reader(
-            replacement.to_reader(max_chunksize=1), merge_by=False, commit_row_size=0
+            replacement.to_reader(max_chunksize=1), merge_by=False, commit_row_size=1_000_000
         )
 
     assert len(dataset.iceberg_table.history()) == before
@@ -1383,9 +1437,9 @@ def test_a_transformed_partition_scopes_identity_without_joining_on_its_source(
             schema=schema,
         )
     )
-    assert [str(field.transform) for field in daily.iceberg_table.sort_order().fields] == [
-        "identity"
-    ], "the source orders rows inside files; day(at) already chooses the file"
+    assert not daily.iceberg_table.sort_order().fields, (
+        "a partition chooses the file and does not silently become its physical order"
+    )
 
     daily.overwrite_arrow_table(
         pyarrow.Table.from_pydict(
@@ -1650,7 +1704,7 @@ def test_a_day_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path) -> N
     )
     with pytest.raises(ValueError, match="recurs after another partition"):
         daily.overwrite_arrow_reader(
-            recurring.to_reader(max_chunksize=1), merge_by=False, commit_row_size=0
+            recurring.to_reader(max_chunksize=1), merge_by=False, commit_row_size=1_000_000
         )
     assert len(daily.iceberg_table.history()) == history
 
@@ -1724,7 +1778,7 @@ def test_a_bucket_partition_is_staged_without_inverting_its_hash(tmp_path: Path)
     )
     with pytest.raises(ValueError, match="recurs after another partition"):
         bucketed.overwrite_arrow_reader(
-            recurring.to_reader(max_chunksize=1), merge_by=False, commit_row_size=0
+            recurring.to_reader(max_chunksize=1), merge_by=False, commit_row_size=1_000_000
         )
     assert len(bucketed.iceberg_table.history()) == history
 
@@ -1769,7 +1823,7 @@ def test_a_truncated_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path
     )
     with pytest.raises(ValueError, match="recurs after another partition"):
         truncated.overwrite_arrow_reader(
-            recurring.to_reader(max_chunksize=1), merge_by=False, commit_row_size=0
+            recurring.to_reader(max_chunksize=1), merge_by=False, commit_row_size=1_000_000
         )
     assert len(truncated.iceberg_table.history()) == history
 
@@ -1982,9 +2036,9 @@ def test_monotonic_inserts_plan_only_at_the_equal_boundary(
     )
     assert scans == 0, "an empty table and two strictly later chunks need no plan"
 
-    target.append_arrow_table(timed(5, 6), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(timed(5, 6), merge_by=True, commit_row_size=1_000_000)
     assert scans == 1, "equal to the upper bound may be a replay and must be checked"
-    target.append_arrow_table(timed(7, 8), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(timed(7, 8), merge_by=True, commit_row_size=1_000_000)
     assert scans == 1, "the exact bound advances after the checked insert"
 
     monkeypatch.setattr(table, "scan", original)
@@ -2057,9 +2111,9 @@ def test_descending_monotonic_inserts_advance_the_lower_frontier(
     )
     assert scans == 0
 
-    target.append_arrow_table(descending_timed(3, 2), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(descending_timed(3, 2), merge_by=True, commit_row_size=1_000_000)
     assert scans == 1, "the equal boundary is still checked"
-    target.append_arrow_table(descending_timed(1, 0), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(descending_timed(1, 0), merge_by=True, commit_row_size=1_000_000)
     assert scans == 1, "the checked lower frontier advances"
 
     monkeypatch.setattr(table, "scan", original)
@@ -2072,12 +2126,12 @@ def test_a_direct_table_write_invalidates_the_insert_upper_bound(tmp_path: Path)
     """A same-handle write outside the wrapper must not make a later key look new."""
     catalog = IcebergCatalog(name="mixed", properties=catalog_properties(tmp_path))
     target = catalog.dataset("trading.timed", field=Timed.into_field())
-    target.append_arrow_table(timed(0, 1), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(timed(0, 1), merge_by=True, commit_row_size=1_000_000)
     target.iceberg_table.append(timed(100))
-    target.append_arrow_table(timed(50), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(timed(50), merge_by=True, commit_row_size=1_000_000)
     snapshots = len(target.iceberg_table.snapshots())
 
-    target.append_arrow_table(timed(100), merge_by=True, commit_row_size=0)
+    target.append_arrow_table(timed(100), merge_by=True, commit_row_size=1_000_000)
 
     assert len(target.iceberg_table.snapshots()) == snapshots, "the replay commits nothing"
     assert target.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 50, 100]
@@ -2089,12 +2143,12 @@ def test_a_stale_monotonic_writer_cannot_bypass_an_external_commit(tmp_path: Pat
 
     catalog = IcebergCatalog(name="concurrent", properties=catalog_properties(tmp_path))
     writer = catalog.dataset("trading.timed", field=Timed.into_field())
-    writer.append_arrow_table(timed(0), merge_by=True, commit_row_size=0)
+    writer.append_arrow_table(timed(0), merge_by=True, commit_row_size=1_000_000)
     other = catalog.dataset("trading.timed", field=Timed.into_field())
-    other.append_arrow_table(timed(100), commit_row_size=0)
+    other.append_arrow_table(timed(100), commit_row_size=1_000_000)
 
     with pytest.raises(CommitFailedException, match="branch main has changed"):
-        writer.append_arrow_table(timed(100), merge_by=True, commit_row_size=0)
+        writer.append_arrow_table(timed(100), merge_by=True, commit_row_size=1_000_000)
 
     assert writer.refresh().read_arrow_table().sort_by("unix").column("unix").to_pylist() == [
         0,
@@ -2109,7 +2163,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMsg.into_field().names) == 126
+    assert len(FixMsg.into_field().names) == 109
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -2121,7 +2175,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     assert row["entries"] == []
     assert [party["partyid"] for party in row["parties"]] == ["BUYSIDE", "XPAR"]
     assert row["msgseqnum"] == 7 and row["sendercompid"] == "BUYSIDE"
-    assert row["symbol"] == "TTF" and row["clordid"] == "ORD-1"
+    assert row["instrument"]["symbol"] == "TTF" and row["clordid"] == "ORD-1"
     assert row["orderqty"] == 1200.0
     assert row["possdupflag"] is True
     assert row["signature"] == b"\x00sealed", "binary keeps its leading zero byte"
@@ -2194,7 +2248,7 @@ def test_the_stored_fields_keep_their_required_members(
     assert required == {"tag", "key", "value"}
 
 
-def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:
+def test_the_leaf_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> None:
     """Iceberg bounds the first `write.metadata.metrics.max-inferred-column
     -defaults` leaves in pre-order, 100 by default, and flattening the message
     took this shape past that. So the budget stopped being one the table can
@@ -2210,7 +2264,7 @@ def test_the_flattened_columns_are_inside_the_bounds_budget(logs: IcebergDataset
     """
     logs.append_arrow_table(log_table(FIX_LINE))
     leaves = FixMsg.into_field().leaf_names()
-    assert len(leaves) == 153
+    assert len(leaves) == 155
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]
@@ -2492,7 +2546,7 @@ def test_an_unpartitioned_table_compacts(tmp_path: Path) -> None:
     for index in range(4):
         flat.append_arrow(
             pyarrow.Table.from_pydict({"symbol": [f"S{index}"], "size": [index]}, schema=schema),
-            commit_row_size=0,
+            commit_row_size=1_000_000,
         )
     before = flat.read_arrow_table().num_rows
     assert flat.compaction_plan(min_files=2) == [(None, 4)], "the whole table, as one part"
@@ -2536,7 +2590,7 @@ def test_a_transformed_partition_settles(tmp_path: Path) -> None:
                 },
                 schema=schema,
             ),
-            commit_row_size=0,
+            commit_row_size=1_000_000,
         )
     assert str(daily.iceberg_table.spec().fields[0].transform) == "day", "not an identity"
     before = daily.read_arrow_table().num_rows
@@ -2550,7 +2604,7 @@ def test_a_transformed_partition_settles(tmp_path: Path) -> None:
 
     daily.append_arrow(
         pyarrow.Table.from_pydict({"symbol": ["U"], "at": [base]}, schema=schema),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     assert daily.compact(min_files=2) > 0, "and a commit since unsettles it again"
 
@@ -2582,8 +2636,8 @@ def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: st
         return pyarrow.Table.from_pydict({"part": [part], "size": [size]}, schema=schema)
 
     for index in range(3):
-        parted.append_arrow(rows(value, index), commit_row_size=0)
-    parted.append_arrow(rows("untouched", 99), commit_row_size=0)
+        parted.append_arrow(rows(value, index), commit_row_size=1_000_000)
+    parted.append_arrow(rows("untouched", 99), commit_row_size=1_000_000)
     before = sorted(parted.read_arrow_table().to_pylist(), key=lambda row: row["size"])
     others = {file["file_path"] for file in parted.refresh().data_files().to_pylist()}
 
@@ -2598,12 +2652,12 @@ def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: st
 def test_compaction_settles_on_a_branch(dataset: IcebergDataset) -> None:
     """The plan came from main whatever branch the rewrite went to."""
     for _ in range(3):
-        dataset.append_arrow(quotes(2), commit_row_size=0)
+        dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     table = dataset.get_or_create_table()
     table.manage_snapshots().create_branch(table.current_snapshot().snapshot_id, "work").commit()
     dataset.refresh()
     for index in range(3):
-        dataset.append_arrow(quotes(2, f"v{index}"), branch="work", commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), branch="work", commit_row_size=1_000_000)
     assert dataset.compact(min_files=2, branch="work") > 0
     assert dataset.compact(min_files=2, branch="work") == 0, "it settles on the branch"
     assert dataset.compaction_plan(min_files=2, branch="work") == []
@@ -2613,7 +2667,7 @@ def test_compaction_settles_on_a_branch(dataset: IcebergDataset) -> None:
 def test_a_filtered_compaction_marks_nothing(dataset: IcebergDataset) -> None:
     """A caller's filter may cover a fraction of a partition; the rest still needs it."""
     for _ in range(3):
-        dataset.append_arrow(quotes(2), commit_row_size=0)
+        dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     assert dataset.compact(row_filter="symbol = 'S0'") > 0
     assert dataset.compaction_marks() == {}
     assert dataset.compaction_plan(min_files=2) != [], "the partition is still planned"
@@ -2672,7 +2726,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
         pyarrow.Table.from_pydict(
             {"symbol": ["A"], "venue": [{"mic": "XPAR"}]}, schema=narrow_schema
         ),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     assert quotes_.add_fields(wide) == ["venue.country"]
     assert quotes_.add_fields(wide) == [], "nothing new, so no commit"
@@ -2682,7 +2736,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
             {"symbol": ["B"], "venue": [{"mic": "XLON", "country": "GB"}]},
             schema=wide.into_arrow_schema(),
         ),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     stored = sorted(quotes_.refresh().read_arrow_table().to_pylist(), key=lambda row: row["symbol"])
     assert stored[1]["venue"] == {"mic": "XLON", "country": "GB"}, "the value survived the write"
@@ -2964,10 +3018,118 @@ def test_a_write_commits_in_chunks_of_the_datasets_own_size(dataset: IcebergData
     assert len(dataset.iceberg_table.history()) == 3, "the dataset's size, with no call saying so"
 
 
-def test_a_call_overrides_the_datasets_commit_size(dataset: IcebergDataset) -> None:
-    dataset.commit_row_size = 2
-    dataset.append_arrow_reader(quotes(6).to_reader(max_chunksize=1), commit_row_size=0)
-    assert len(dataset.iceberg_table.history()) == 1, "0 means one commit for the stream"
+def test_commit_row_size_must_bound_the_stream(dataset: IcebergDataset) -> None:
+    with pytest.raises(ValueError, match="commit_row_size must be positive"):
+        dataset.append_arrow_reader(quotes(6).to_reader(max_chunksize=1), commit_row_size=0)
+
+
+class _CommitBoundedBatches:
+    """A source that refuses to get one commit ahead of the writer."""
+
+    def __init__(self, source: pyarrow.Table, rows: int) -> None:
+        self.batches = iter(source.to_batches(max_chunksize=1))
+        self.rows = rows
+        self.completed = 0
+        self.consumed = 0
+        self.max_uncommitted = 0
+
+    def __iter__(self) -> "_CommitBoundedBatches":
+        return self
+
+    def __next__(self) -> pyarrow.RecordBatch:
+        uncommitted = self.consumed - self.completed * self.rows
+        if uncommitted >= self.rows:
+            pytest.fail("the writer consumed beyond its commit-sized bound")
+        batch = next(self.batches)
+        self.consumed += batch.num_rows
+        self.max_uncommitted = max(self.max_uncommitted, uncommitted + batch.num_rows)
+        return batch
+
+    def read_all(self) -> None:
+        pytest.fail("a streamed Iceberg write must not collect its source")
+
+
+def _streaming_dataset(
+    backend: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[IcebergDataset, str]:
+    """The same SQL catalog with local or S3 table bytes."""
+    properties = catalog_properties(tmp_path, backend)
+    target = IcebergDataset(
+        field=Quote.into_field("trading.streamed"),
+        catalog=f"streamed-{backend}",
+        properties=properties,
+    )
+    if backend == "local":
+        target.get_or_create_table()
+        return target, "file:"
+
+    remote = pyarrow.fs._MockFileSystem()
+    remote.create_dir("bucket/metadata", recursive=True)
+    remote.create_dir("bucket/data/day=2026-08-14", recursive=True)
+    original = ArrowFileIO._initialize_fs
+
+    def initialized(
+        self: ArrowFileIO, scheme: str, netloc: str | None = None
+    ) -> pyarrow.fs.FileSystem:
+        return remote if scheme in S3 else original(self, scheme, netloc)
+
+    monkeypatch.setattr(ArrowFileIO, "_initialize_fs", initialized)
+    target.create_with_field(
+        target.field,
+        location="s3://bucket/tables/streamed",
+        properties={
+            "write.data.path": "s3://bucket/data",
+            "write.metadata.path": "s3://bucket/metadata",
+        },
+    )
+    return target, "s3://bucket/data/"
+
+
+@pytest.mark.parametrize("backend", ["local", "s3"])
+@pytest.mark.parametrize("mode", ["append", "upsert"])
+def test_stream_writes_commit_before_consuming_the_next_chunk(
+    backend: str,
+    mode: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dataset, data_prefix = _streaming_dataset(backend, tmp_path, monkeypatch)
+    if mode == "upsert":
+        dataset.append_arrow_table(quotes(6, "before"), commit_row_size=1_000_000)
+    source = _CommitBoundedBatches(quotes(6, "after"), rows=2)
+    before = len(dataset.iceberg_table.history())
+
+    if mode == "append":
+        original = dataset._append_chunk
+
+        def append_chunk(table: Any, chunk: pyarrow.Table, *args: Any, **kwargs: Any) -> None:
+            assert chunk.num_rows <= source.rows
+            original(table, chunk, *args, **kwargs)
+            source.completed += 1
+
+        monkeypatch.setattr(dataset, "_append_chunk", append_chunk)
+        assert dataset.append_arrow_reader(source, merge_by=False, commit_row_size=2) == 6
+    else:
+        original_merge = dataset.merge_arrow_table
+
+        def merge_chunk(chunk: pyarrow.Table, *args: Any, **kwargs: Any) -> tuple[int, int]:
+            assert chunk.num_rows <= source.rows
+            result = original_merge(chunk, *args, **kwargs)
+            source.completed += 1
+            return result
+
+        monkeypatch.setattr(dataset, "merge_arrow_table", merge_chunk)
+        dataset.overwrite_arrow_reader(source, merge_by=True, commit_row_size=2)
+
+    assert source.max_uncommitted == 2
+    assert source.completed == 3
+    # Each changed upsert chunk records its delete and append snapshots in one transaction.
+    expected_snapshots = 6 if mode == "upsert" else 3
+    assert len(dataset.iceberg_table.history()) == before + expected_snapshots
+    assert all(
+        path.startswith(data_prefix)
+        for path in dataset.data_files().column("file_path").to_pylist()
+    )
 
 
 def test_a_created_table_carries_the_commit_properties(dataset: IcebergDataset) -> None:
@@ -3027,12 +3189,12 @@ def test_a_snapshot_id_and_a_branch_together_are_refused(dataset: IcebergDataset
     default branch is not the same thing -- an explicit snapshot id is how a
     caller reads past it.
     """
-    dataset.append_arrow(quotes(2), commit_row_size=0)
+    dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     table = dataset.get_or_create_table()
     first = table.current_snapshot().snapshot_id
     table.manage_snapshots().create_branch(first, "dev").commit()
     dataset.refresh()
-    dataset.append_arrow(quotes(1, "later"), commit_row_size=0)
+    dataset.append_arrow(quotes(1, "later"), commit_row_size=1_000_000)
 
     with pytest.raises(ValueError, match="two different states"):
         dataset.read_arrow_table(snapshot_id=first, branch="dev")
@@ -3052,8 +3214,8 @@ def test_scan_plan_does_not_plan_the_table_twice(
     Iceberg records that per snapshot. Measured on 17 files: 15.6 ms for the
     pair against 3.7 ms for the filtered plan alone."""
     for index in range(4):
-        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
-    dataset.append_arrow(other_day(2), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
+    dataset.append_arrow(other_day(2), commit_row_size=1_000_000)
     plans: list[object] = []
     original = IcebergDataset._planned
     monkeypatch.setattr(
@@ -3072,11 +3234,11 @@ def test_scan_plan_does_not_plan_the_table_twice(
 def test_scan_plan_counts_the_state_it_was_asked_about(dataset: IcebergDataset) -> None:
     """A snapshot id and a branch each name a state of their own, and the total
     a filter is measured against has to be that state's, not the table's now."""
-    dataset.append_arrow(quotes(2), commit_row_size=0)
+    dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     early = dataset.iceberg_table.current_snapshot().snapshot_id
     dataset.create_branch("dev")
     for index in range(3):
-        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     assert dataset.scan_plan("day = '2026-08-14'")["total_files"] == 4
     assert dataset.scan_plan("day = '2026-08-14'", snapshot_id=early)["total_files"] == 1
     assert dataset.scan_plan("day = '2026-08-14'", branch="dev")["total_files"] == 1
@@ -3375,7 +3537,7 @@ def test_an_insert_reaches_a_branch_cut_before_a_key_was_renamed(
     name -- and this was the one verb that asked for the new one by name.
     `Could not find column: 'key'`, on a branch every other verb reads and
     writes happily."""
-    dataset.append_arrow(quotes(3), commit_row_size=0)
+    dataset.append_arrow(quotes(3), commit_row_size=1_000_000)
     dataset.create_branch("dev")
     with dataset.iceberg_table.update_schema() as update:
         update.rename_column("symbol", "ticker")
@@ -3406,7 +3568,7 @@ def test_an_insert_onto_a_branch_without_the_key_column_is_all_new(
     column the scan fell back to."""
     from rekep.iceberg import dataset as module
 
-    dataset.append_arrow(quotes(3), commit_row_size=0)
+    dataset.append_arrow(quotes(3), commit_row_size=1_000_000)
     monkeypatch.setattr(module.IcebergDataset, "_selected", lambda self, target, scan: {})
     assert dataset.insert_arrow_table(quotes(3), ["symbol"]) == 3
     assert dataset.read_arrow_table().num_rows == 6
@@ -3432,7 +3594,7 @@ def test_a_reader_opens_no_more_files_than_it_reads_ahead(
 
     monkeypatch.setattr(module, "_read_ahead", lambda: 2)
     for index in range(6):
-        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     opened.clear()
     reader = dataset.read_arrow_reader()
     assert reader.read_next_batch().num_rows > 0
@@ -3450,7 +3612,7 @@ def test_a_limit_is_the_readers_and_not_each_groups(
 
     monkeypatch.setattr(module, "_read_ahead", lambda: 1)
     for index in range(4):
-        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     found = dataset.read_arrow_reader(row_filter="size >= 0", limit=3).read_all()
     assert found.num_rows == 3
 
@@ -3494,11 +3656,11 @@ def test_a_limited_read_over_a_null_partition_returns_its_rows(tmp_path: Path) -
     schema = Trade.into_field().into_arrow_schema()
     trades.append_arrow(
         pyarrow.Table.from_pydict({"venue": ["XNYS"] * 10, "size": list(range(10))}, schema=schema),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     trades.append_arrow(
         pyarrow.Table.from_pydict({"venue": [None] * 10, "size": list(range(10))}, schema=schema),
-        commit_row_size=0,
+        commit_row_size=1_000_000,
     )
     table = trades.refresh().iceberg_table
     row_filter = "venue != 'XPAR'"
@@ -3758,7 +3920,7 @@ def test_optimize_can_skip_the_sweep(
         lambda table, directory: (listed.append(directory), original(table, directory))[1],
     )
     for index in range(4):
-        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     report = dataset.optimize(min_files=2, remove_orphans=False)
     assert report["rewritten"] > 0 and report["deleted"] == 0
     assert listed == [], "not one directory resolved, so not one listed"
@@ -3792,7 +3954,7 @@ def test_writes_leave_maintenance_to_explicit_calls(dataset: IcebergDataset) -> 
 
 def test_compaction_aliases_settle_under_the_physical_root(dataset: IcebergDataset) -> None:
     for index in range(3):
-        dataset.append_arrow(quotes(2, f"v{index}"), branch="master", commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), branch="master", commit_row_size=1_000_000)
     assert dataset.compact(branch="master") > 0
     assert dataset.compact(branch="root") == 0
     assert dataset.compaction_marks()
@@ -3806,7 +3968,7 @@ def test_compaction_stops_when_there_is_nothing_left_to_gain(dataset: IcebergDat
     """A part that legitimately needs several files must not be rewritten forever."""
     dataset.table_properties = {"write.target-file-size-bytes": str(16 * 1024)}
     for index in range(6):
-        dataset.append_arrow(quotes(4, f"venue{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(4, f"venue{index}"), commit_row_size=1_000_000)
     assert dataset.compact(min_files=2) > 0
     files = dataset.refresh().data_files().num_rows
     assert dataset.compact(min_files=2) == 0, "the second pass has nothing to do"
@@ -3818,18 +3980,18 @@ def test_new_data_makes_a_compacted_partition_worth_planning_again(
     dataset: IcebergDataset,
 ) -> None:
     for _ in range(3):
-        dataset.append_arrow(quotes(2), commit_row_size=0)
+        dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     dataset.compact(min_files=2)
     assert dataset.compaction_plan(min_files=2) == []
     for _ in range(2):
-        dataset.append_arrow(quotes(2, "XETR"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, "XETR"), commit_row_size=1_000_000)
     assert dataset.compaction_plan(min_files=2) != []
 
 
 def test_the_compacted_parts_are_marked(dataset: IcebergDataset) -> None:
     """In a table property, which expiry cannot delete -- `optimize` expires."""
     for _ in range(2):
-        dataset.append_arrow(quotes(2), commit_row_size=0)
+        dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     dataset.compact(min_files=2)
     marks = dataset.compaction_marks()
     assert marks, "how a compacted part is recognised later"
@@ -4039,7 +4201,7 @@ def test_a_backfill_plans_the_files_it_lands_in(tmp_path: Path) -> None:
         for band in range(10)
     ]
     for commit in commits:
-        ticks.append_arrow(commit, commit_row_size=0)
+        ticks.append_arrow(commit, commit_row_size=1_000_000)
     assert ticks.refresh().data_files().num_rows == 10
 
     replay = pyarrow.concat_tables([commits[1], commits[8]])
@@ -4054,7 +4216,7 @@ def test_a_backfill_plans_the_files_it_lands_in(tmp_path: Path) -> None:
 def test_a_merge_past_the_limit_still_finds_every_stored_row(dataset: IcebergDataset) -> None:
     """A range is a superset, so what it plans must still hold every match."""
     rows = quotes(400)
-    dataset.append_arrow(rows, commit_row_size=0)
+    dataset.append_arrow(rows, commit_row_size=1_000_000)
     updated = rows.set_column(
         rows.schema.get_field_index("venue"),
         rows.schema.field("venue"),
@@ -4071,7 +4233,7 @@ def test_a_merge_past_the_limit_still_finds_every_stored_row(dataset: IcebergDat
 def test_cleanup_sweeps_metadata_as_well_as_data(dataset: IcebergDataset) -> None:
     """A stream fills the metadata directory faster than the data one."""
     for index in range(8):
-        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=1_000_000)
     dataset.compact(min_files=2)
     location = local(dataset.iceberg_table.location())
     before = len(list((location / "metadata").rglob("*")))
@@ -4085,7 +4247,7 @@ def test_cleanup_sweeps_metadata_as_well_as_data(dataset: IcebergDataset) -> Non
 
 def test_cleanup_deletes_expired_snapshot_manifest_lists(dataset: IcebergDataset) -> None:
     for index in range(4):
-        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=1_000_000)
     expired = dataset.iceberg_table.snapshots()[:-1]
     manifest_lists = [local(snapshot.manifest_list) for snapshot in expired]
     assert manifest_lists and all(path.exists() for path in manifest_lists)
@@ -4099,7 +4261,7 @@ def test_cleanup_deletes_expired_snapshot_manifest_lists(dataset: IcebergDataset
 def test_every_retained_snapshot_still_reads_after_a_sweep(dataset: IcebergDataset) -> None:
     """The one thing a metadata sweep may never break."""
     for index in range(6):
-        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=1_000_000)
     dataset.cleanup(retain=3, orphan_age=datetime.timedelta(seconds=0))
     dataset.refresh()
     for snapshot in dataset.iceberg_table.snapshots():
@@ -4108,7 +4270,7 @@ def test_every_retained_snapshot_still_reads_after_a_sweep(dataset: IcebergDatas
 
 def test_a_sweep_can_leave_metadata_alone(dataset: IcebergDataset) -> None:
     for index in range(4):
-        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"venue{index}"), commit_row_size=1_000_000)
     location = local(dataset.iceberg_table.location())
     before = {path for path in (location / "metadata").rglob("*")}
     dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0), metadata=False)
@@ -4141,7 +4303,7 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
     )
     quotes_ = catalog.dataset("trading.quotes", field=Quote.into_field())
     for _ in range(3):
-        quotes_.append_arrow(quotes(2), commit_row_size=0)
+        quotes_.append_arrow(quotes(2), commit_row_size=1_000_000)
     stored = quotes_.read_arrow_table().num_rows
     location = quotes_.get_or_create_table().location()
     assert not location.startswith("file://"), "the odd spelling survived into the location"
@@ -4160,7 +4322,7 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
         table_properties={"write.data.path": elsewhere.as_uri()},
     )
     for index in range(4):
-        quotes_.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        quotes_.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     quotes_.compact(min_files=2)
     stored = quotes_.refresh().read_arrow_table().num_rows
     written = len(list(elsewhere.rglob("*.parquet")))
@@ -4196,7 +4358,7 @@ def test_a_sweep_survives_a_data_path_that_contains_the_metadata(tmp_path: Path)
         table_properties={"write.data.path": location},
     )
     for index in range(3):
-        quotes_.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        quotes_.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     table = quotes_.refresh().iceberg_table
     assert quotes_._metadata_path(table).startswith(quotes_._data_path(table)), (
         "the point of the fixture: one directory inside the other"
@@ -4217,7 +4379,7 @@ def test_a_sweep_finishes_when_an_orphan_is_already_gone(dataset: IcebergDataset
     """Another sweeper between the listing and the delete. Raising there would
     abandon every orphan after it and throw away the report of the ones before."""
     for index in range(4):
-        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        dataset.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     dataset.compact(min_files=2)
     dataset.cleanup(retain=1, remove_orphans=False)
     orphans = dataset._orphans(datetime.timedelta(seconds=0), metadata=True)
@@ -4330,7 +4492,7 @@ def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
     properties = catalog_properties(tmp_path)
     catalog = IcebergCatalog(name="shared", properties=properties)
     catalog.dataset("trading.quotes", field=Quote.into_field()).append_arrow(
-        quotes(2), commit_row_size=0
+        quotes(2), commit_row_size=1_000_000
     )
     sweeper = IcebergCatalog(name="shared", properties=properties).dataset(
         "trading.quotes", field=Quote.into_field()
@@ -4341,7 +4503,7 @@ def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
         "trading.quotes", field=Quote.into_field()
     )
     for index in range(3):
-        other.append_arrow(quotes(2, f"v{index}"), commit_row_size=0)
+        other.append_arrow(quotes(2, f"v{index}"), commit_row_size=1_000_000)
     stored = other.read_arrow_table().num_rows
 
     report = sweeper.cleanup(retain=10, orphan_age=datetime.timedelta(seconds=0))
@@ -4359,7 +4521,7 @@ def test_a_sweep_keeps_the_files_only_the_metadata_names(dataset: IcebergDataset
     """
     from pyiceberg.table.statistics import StatisticsFile
 
-    dataset.append_arrow(quotes(2), commit_row_size=0)
+    dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     table = dataset.get_or_create_table()
     metadata = local(table.location()) / "metadata"
     puffin = metadata / "stats.puffin"
@@ -4386,7 +4548,7 @@ def test_a_sweep_keeps_the_files_only_the_metadata_names(dataset: IcebergDataset
 
 
 def test_optimize_does_not_rewrite_properties_it_already_set(dataset: IcebergDataset) -> None:
-    dataset.append_arrow(quotes(2), commit_row_size=0)
+    dataset.append_arrow(quotes(2), commit_row_size=1_000_000)
     dataset.optimize()
     versions = len(dataset.refresh().iceberg_table.metadata.metadata_log)
     dataset.optimize()
@@ -4399,7 +4561,7 @@ def test_optimize_does_not_rewrite_properties_it_already_set(dataset: IcebergDat
 def test_sorting_a_commit_changes_the_order_not_the_rows(dataset: IcebergDataset) -> None:
     dataset.sort_by = ["size"]
     rows = quotes(6).sort_by([("size", "descending")])
-    dataset.append_arrow(rows, commit_row_size=0)
+    dataset.append_arrow(rows, commit_row_size=1_000_000)
     stored = dataset.read_arrow_table()
     assert stored.num_rows == 6
     assert sorted(stored.column("size").to_pylist()) == sorted(rows.column("size").to_pylist())
@@ -4420,7 +4582,7 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
             properties=catalog_properties(tmp_path),
             sort_by=sort_by,
         )
-        target.append_arrow(quotes(50).sort_by([("size", "descending")]), commit_row_size=0)
+        target.append_arrow(quotes(50).sort_by([("size", "descending")]), commit_row_size=1_000_000)
         found = target.read_arrow_table(row_filter="size >= 40").to_pylist()
         answers.append(sorted(found, key=str))
     assert answers[0] == answers[1]
@@ -4666,11 +4828,10 @@ def test_partition_staging_honours_descending_sort_and_nulls_last(tmp_path: Path
         "t.descending",
         field=DescendingTick.into_field(),
     )
-    dataset.append_arrow_table(descending_ticked([1, None, 3, 2]), commit_row_size=0)
+    dataset.append_arrow_table(descending_ticked([1, None, 3, 2]), commit_row_size=1_000_000)
 
     table = dataset.iceberg_table
     assert [(field.direction, field.null_order) for field in table.sort_order().fields] == [
-        (SortDirection.ASC, NullOrder.NULLS_LAST),
         (SortDirection.DESC, NullOrder.NULLS_LAST),
         (SortDirection.ASC, NullOrder.NULLS_LAST),
     ]
@@ -4685,8 +4846,8 @@ def test_a_descending_ordered_read_merges_commits_and_applies_its_limit(tmp_path
         "t.descending_read",
         field=DescendingTick.into_field(),
     )
-    dataset.append_arrow_table(descending_ticked([5, None, 1]), commit_row_size=0)
-    dataset.append_arrow_table(descending_ticked([4, None, 2]), commit_row_size=0)
+    dataset.append_arrow_table(descending_ticked([5, None, 1]), commit_row_size=1_000_000)
+    dataset.append_arrow_table(descending_ticked([4, None, 2]), commit_row_size=1_000_000)
 
     found = dataset.read_arrow_reader(order_by=("at", "descending"), limit=5).read_all()
 
@@ -4699,8 +4860,8 @@ def test_ordered_read_does_not_concatenate_file_local_special_tails(
 ) -> None:
     catalog = IcebergCatalog(name="special-read", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.special_read", field=FloatingTick.into_field())
-    dataset.append_arrow_table(floating_ticked([1.0, special], 0), commit_row_size=0)
-    dataset.append_arrow_table(floating_ticked([2.0, special], 2), commit_row_size=0)
+    dataset.append_arrow_table(floating_ticked([1.0, special], 0), commit_row_size=1_000_000)
+    dataset.append_arrow_table(floating_ticked([2.0, special], 2), commit_row_size=1_000_000)
 
     found = dataset.read_arrow_reader(order_by="value").read_all().column("value").to_pylist()
 
@@ -4714,7 +4875,7 @@ def test_ordered_read_does_not_concatenate_file_local_special_tails(
 def test_a_snapshot_order_does_not_inherit_a_newer_table_direction(tmp_path: Path) -> None:
     catalog = IcebergCatalog(name="sort-evolution", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.sort_evolution", field=Ticked.into_field())
-    dataset.append_arrow_table(ticked([(1, 0), (2, 0), (3, 0)]), commit_row_size=0)
+    dataset.append_arrow_table(ticked([(1, 0), (2, 0), (3, 0)]), commit_row_size=1_000_000)
     snapshot_id = dataset.iceberg_table.current_snapshot().snapshot_id
     with dataset.iceberg_table.update_sort_order() as update:
         update.desc("at", IdentityTransform())
@@ -4746,7 +4907,7 @@ def test_an_interrupt_after_commit_keeps_unpartitioned_files_live(
 
     monkeypatch.setattr(Transaction, "commit_transaction", committed_then_interrupted)
     with pytest.raises(KeyboardInterrupt):
-        dataset.append_arrow_table(ticked([(1, 0), (2, 0)]), commit_row_size=0)
+        dataset.append_arrow_table(ticked([(1, 0), (2, 0)]), commit_row_size=1_000_000)
 
     assert dataset.refresh().read_arrow_table().column("at").to_pylist() == [1, 2]
 
@@ -4840,7 +5001,7 @@ def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
         dataset.get_or_create_table().transaction().set_properties(
             **{"write.parquet.row-group-limit": "8192"}
         ).commit_transaction()
-        dataset.refresh().append_arrow(shuffled, merge_by=True, commit_row_size=0)
+        dataset.refresh().append_arrow(shuffled, merge_by=True, commit_row_size=1_000_000)
         groups = touched = 0
         floor = rows - rows // 10
         for task in dataset.refresh().iceberg_table.scan().plan_files():
@@ -4904,4 +5065,5 @@ def test_a_wide_batch_transcribes_the_same_as_a_narrow_one(logs: IcebergDataset)
     from_wide = FixMsg.from_message_batch(wide)
 
     assert from_wide.to_pylist() == from_narrow.to_pylist()
-    assert str(from_wide.schema.field("symbol").type) == "string", "and lands narrow either way"
+    instrument = from_wide.schema.field("instrument").type
+    assert str(instrument.field("symbol").type) == "string", "and lands narrow either way"

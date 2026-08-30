@@ -12,7 +12,7 @@ import pytest
 
 from rekep.fix.columns import ISIN_SCHEME, id_scheme
 from rekep.market import AssetKind, Currency, FixEvents, Instrument, Leg, OptionKind, Side
-from rekep.market.fix import SECURITY_TYPES, _classified, _month_year
+from rekep.market.instrument import SECURITY_TYPES, _classified, _month_year
 
 
 def instrument_of(line: str) -> Instrument:
@@ -47,27 +47,22 @@ def test_an_identifier_in_no_scheme_is_not_an_isin() -> None:
     assert instrument_of(f"{HEAD}|55=AAPL|48=037833100|22=1").isincode is None
 
 
-def test_every_alternative_identifier_is_kept_under_the_scheme_that_issued_it() -> None:
-    """Reference schemes use registry names and lifecycle aliases use field names."""
+def test_only_the_reference_identifier_the_component_declares_is_promoted() -> None:
+    """The lossless alternative-identifier group stays on the FIX message."""
     found = instrument_of(
         f"{HEAD}|55=AAPL|454=3|455=US0378331005|456=4|455=037833100|456=1|455=AAPL.OQ|456=5"
     )
-    assert found.altids == {
-        "clordid": "CL-1",
-        "ISINNumber": "US0378331005",
-        "CUSIP": "037833100",
-        "RICCode": "AAPL.OQ",
-    }
+    assert found.isincode == "US0378331005"
+    assert "altids" not in Instrument.into_field().names
 
 
-def test_a_scheme_this_build_has_never_seen_keeps_the_character_it_came_as() -> None:
-    """The only honest key left for it, and better than dropping the identifier."""
+def test_an_unknown_alternative_scheme_does_not_change_the_component() -> None:
     found = instrument_of(f"{HEAD}|55=AAPL|454=1|455=whatever|456=Z")
-    assert found.altids == {"clordid": "CL-1", "Z": "whatever"}
+    assert found.symbolticker == "AAPL" and found.isincode is None
 
 
-def test_an_instrument_without_reference_alternatives_keeps_lifecycle_altids() -> None:
-    assert instrument_of(f"{HEAD}|55=AAPL").altids == {"clordid": "CL-1"}
+def test_lifecycle_identifiers_are_not_reference_facts() -> None:
+    assert "clordid" not in Instrument.into_field().names
 
 
 def test_the_two_identifier_source_tags_share_one_enumeration() -> None:

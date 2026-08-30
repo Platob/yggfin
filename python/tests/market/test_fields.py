@@ -27,6 +27,7 @@ from rekep.market import (
     Event,
     Execution,
     Instrument,
+    InstrumentUpdate,
     Leg,
     MarketEvent,
     Order,
@@ -43,7 +44,7 @@ from rekep.market.fields import (
     unkeyed,
 )
 
-SHAPES = (Instrument, MarketEvent, Order, Book)
+SHAPES = (InstrumentUpdate, MarketEvent, Order, Book)
 
 #: Every list flavour, because a walk that spelled them all `list` would narrow
 #: a 64-bit offset and drop a width without saying so.
@@ -97,7 +98,7 @@ def test_hash_widths_match_their_roles() -> None:
     assert Leg.into_field().field("xhash").dtype == pyarrow.int64()
     parenthash = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
     linkedhashes = pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
-    for shape in (Event, Instrument, MarketEvent, Order, Execution, Book):
+    for shape in (Event, InstrumentUpdate, MarketEvent, Order, Execution, Book):
         field = shape.into_field()
         assert field.field("prevhash").dtype == HASH, shape.__name__
         assert field.field("parenthash").dtype == parenthash, shape.__name__
@@ -125,9 +126,14 @@ def test_every_market_code_column_of_every_shape_matches_its_enum() -> None:
             )
 
 
-def test_the_instrument_is_one_flat_event_contract() -> None:
-    assert Instrument.into_field().primary_keys() == ["symbolticker"]
-    assert Instrument.into_field().partition_keys() == {"unixpartition": "identity"}
+def test_the_instrument_component_is_nested_in_its_update_envelope() -> None:
+    assert Instrument.into_field().primary_keys() == []
+    assert Instrument.into_field().partition_keys() == {}
+    update = InstrumentUpdate.into_field()
+    assert update.primary_keys() == ["xhash"]
+    assert update.partition_keys() == {"unixpartition": "identity"}
+    assert update.names[-1] == "instrument"
+    assert not update.field("instrument").primary_keys()
     for shape in (Book, Order, MarketEvent):
         assert "instrument" not in shape.into_field().names
 
@@ -138,7 +144,7 @@ def test_the_shape_that_owns_the_table_keeps_its_own_keys() -> None:
         assert shape.into_field().primary_keys(), shape.__name__
     assert Book.into_field().primary_keys() == ["unix", "hash"]
     assert Book.into_field().partition_keys() == {"unixpartition": "identity"}
-    assert Book.into_field().sort_keys() == {"unix": "asc"}
+    assert Book.into_field().sort_keys() == {"hash": "asc"}
 
 
 @pytest.mark.parametrize("flavour", FLAVOURS, ids=lambda build: build.__name__)

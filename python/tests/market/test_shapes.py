@@ -9,12 +9,22 @@ import pyarrow
 import pytest
 
 from rekep.fields import Field
-from rekep.market import HASH, Book, Event, Execution, Instrument, Level, MarketEvent, Order
+from rekep.market import (
+    HASH,
+    Book,
+    Event,
+    Execution,
+    Instrument,
+    InstrumentUpdate,
+    Level,
+    MarketEvent,
+    Order,
+)
 from rekep.text import FixMsg
 
 EVENTS = (Order, Execution, Book)
-SHAPES = (*EVENTS, Instrument, Level)
-HOT_ROWS = (Event, MarketEvent, FixMsg, Instrument, Order, Execution, Book, Level)
+SHAPES = (*EVENTS, Instrument, InstrumentUpdate, Level)
+HOT_ROWS = (Event, MarketEvent, FixMsg, InstrumentUpdate, Order, Execution, Book, Level)
 
 #: The envelope every event carries, in the order it carries it. Pinned, because
 #: a column inserted in the middle moves every one after it -- and a reader that
@@ -82,9 +92,8 @@ def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
-def test_every_event_is_laid_out_in_time_inside_its_partition(shape: type) -> None:
-    """Sorted by `unix` is what makes a time range a few files rather than all of them."""
-    assert shape.into_field().sort_keys() == {"unix": "asc"}
+def test_every_event_is_laid_out_by_its_time_anchored_identity(shape: type) -> None:
+    assert shape.into_field().sort_keys() == {"hash": "asc"}
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
@@ -293,7 +302,7 @@ FILTERED = {
         "bidpx",
         "askpx",
     ),
-    Instrument: ("xhash", "symbolticker", "kind"),
+    InstrumentUpdate: ("hash", "xhash"),
 }
 
 

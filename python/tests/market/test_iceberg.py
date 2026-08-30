@@ -14,7 +14,7 @@ import pyarrow
 import pytest
 
 from rekep.fields import StructField
-from rekep.market import HASH, Book, Execution, Instrument, MarketEvent, Order
+from rekep.market import HASH, Book, Execution, Instrument, InstrumentUpdate, MarketEvent, Order
 from rekep.market.event import SECOND
 
 from ..conftest import catalog_properties
@@ -22,7 +22,7 @@ from .conftest import UNIX, batch
 
 pytest.importorskip("pyiceberg")
 
-SHAPES = (MarketEvent, Order, Execution, Book, Instrument)
+SHAPES = (MarketEvent, Order, Execution, Book, Instrument, InstrumentUpdate)
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -85,14 +85,11 @@ def test_the_partition_is_the_hour_and_only_the_hour() -> None:
         assert "[" not in partition.name, "a partition name becomes a directory name"
 
 
-def test_the_table_is_laid_out_in_time_inside_the_partition() -> None:
-    """The partition scope precedes the event time used for range pruning."""
+def test_hash_is_the_only_physical_sort_key() -> None:
+    """Its high half is the event clock, and its low half breaks clock ties."""
     schema = Order.into_field().into_iceberg_schema()
     order = Order.into_field().into_iceberg_sort_order(schema)
-    assert [schema.find_column_name(field.source_id) for field in order.fields] == [
-        "unixpartition",
-        "unix",
-    ]
+    assert [schema.find_column_name(field.source_id) for field in order.fields] == ["hash"]
     assert all(str(field.transform) == "identity" for field in order.fields)
     assert all(field.direction.name.lower() == "asc" for field in order.fields)
 
@@ -122,6 +119,7 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     assert read.column("hash").type == HASH, "and the identifier kept its stored width"
     written = [task.file for task in dataset.iceberg_table.scan().plan_files()]
     assert {one.partition[0] for one in written} == {unixpartition}
+    assert {one.sort_order_id for one in written} == {dataset.iceberg_table.sort_order().order_id}
     assert all(f"unixpartition={unixpartition}" in one.file_path for one in written), (
         "the second-scale partition value keeps paths compact"
     )

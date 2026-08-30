@@ -480,7 +480,12 @@ def test_append_arrow_picks_the_method_by_what_it_is(keyed: MemoryDataset) -> No
 
 def test_chunks_group_a_stream_by_row_count() -> None:
     chunks = list(arrow_chunks(iter([rows(3), rows(3), rows(3)]), 4))
-    assert [chunk.num_rows for chunk in chunks] == [6, 3], "a chunk closes once it is big enough"
+    assert [chunk.num_rows for chunk in chunks] == [4, 4, 1]
+
+
+def test_chunks_refuse_an_unbounded_row_size() -> None:
+    with pytest.raises(ValueError, match="row_size must be positive"):
+        list(arrow_chunks(iter([rows(1)]), 0))
 
 
 def test_chunks_take_the_schema_from_a_reader() -> None:

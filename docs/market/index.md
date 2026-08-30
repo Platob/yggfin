@@ -6,7 +6,7 @@ Market tables store immutable event versions. `vhash` identifies its value,
 ordered lifecycle hashes relating order, execution and book rows —
 deduplicated, and never pointing at the event's own lifecycle.
 
-Each product has its own page: [Instrument](../products/instrument.md),
+Each product has its own page: [Instrument update](../products/instrument.md),
 [Order](../products/order.md), [Execution](../products/execution.md),
 [Book](../products/book.md). This page is what they share.
 
@@ -117,6 +117,12 @@ seconds as a signed `int32`, while `unix` keeps the instant in nanoseconds.
 The shorter value avoids nine meaningless zeroes in partition paths without
 changing hourly cardinality, and covers 1901-12-13 21:00 UTC inclusive to
 2038-01-19 04:00 UTC exclusive.
+
+Reference-data nested members stay declared last. Iceberg counts leaf columns
+in declaration order for the bounds it collects, so an earlier struct could
+push a flat filter column past the cutoff. `FixMsg.instrument`,
+`InstrumentUpdate.instrument`, and the component's `legs` therefore follow
+their flat siblings.
 
 `symbolticker` is deliberately not a second partition. The case for
 bucketing it is real — the hour prunes time, not instrument — so it was

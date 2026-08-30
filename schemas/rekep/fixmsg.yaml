@@ -7,7 +7,7 @@ fields:
   type: int64
   description: When the event happened, in whole nanoseconds since the epoch.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  iceberg: {primary_key: 'true', sort_key: asc}
+  iceberg: {primary_key: 'true'}
   fix: {display: Unix}
 - name: unixpartition
   type: int32
@@ -45,7 +45,7 @@ fields:
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
-  iceberg: {primary_key: 'true'}
+  iceberg: {primary_key: 'true', sort_key: asc}
   fix: {display: Hash}
 - name: vhash
   type: int64
@@ -426,11 +426,6 @@ fields:
       nullable: true
       description: Same as TrdRegTimestampOrigin Text which identifies the origin i.e. system which was used to generate the time stamp for the Traded Regulatory timestamp value
       fix: {tag: '1014', type: String, name: SideTrdRegTimestampSrc, display: SideTrdRegTimestampSrc}
-- name: isincode
-  type: string
-  nullable: true
-  description: ISIN carried by the rendered ISINCODE field.
-  fix: {type: String, name: ISINCODE, display: ISINCode}
 - name: parentclordid
   type: string
   nullable: true
@@ -456,86 +451,6 @@ fields:
   nullable: true
   description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.'
   fix: {tag: '213', type: data, name: XmlData, display: XmlData}
-- name: symbolticker
-  type: string
-  description: Canonical spelling derived from the FIX instrument identifiers.
-  fix: {display: SymbolTicker}
-- name: symbol
-  type: string
-  nullable: true
-  description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
-  fix: {tag: '55', type: String, name: Symbol, display: Symbol}
-- name: securityid
-  type: string
-  nullable: true
-  description: Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.
-  fix: {tag: '48', type: String, name: SecurityID, display: SecurityID}
-- name: securityidsource
-  type: int32
-  nullable: true
-  description: Identifies class or source of the SecurityID (48) value. Required if SecurityID is specified. 100+ are reserved for private security identifications
-  fix: {tag: '22', type: String, name: SecurityIDSource, display: SecurityIDSource}
-  enum: {name: SecurityIDSource, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1129665360":"CUSIP","1397048396":"SEDOL","1364543819":"QUIK","1230195022":"ISIN","1380532992":"RIC","1128487168":"ISO_CURRENCY","1129599577":"ISO_COUNTRY","1163412296":"EXCHANGE_SYMBOL","1129595136":"CTA","1111639808":"BLOOMBERG","1464552960":"WERTPAPIER","1146442819":"DUTCH","1447119951":"VALOREN","1397310287":"SICOVAM","1111837767":"BELGIAN","1129270606":"COMMON","1129075272":"CLEARING_HOUSE","1230193729":"ISDA_FPML_SPEC","1330664001":"OPRA","1179667788":"ISDA_FPML_URL","1280262912":"LETTER_OF_CREDIT","1296782416":"MARKETPLACE","1380205891":"MARKIT_RED_ENTITY","1380208707":"MARKIT_RED_PAIR","1128682563":"CFTC_COMMODITY","1229148752":"ISDA_COMMODITY","1179207497":"FIGI","1279609088":"LEI","1398361684":"SYNTHETIC","1179206733":"FIDESSA","1229866072":"INDEX_NAME","1431193926":"UNIFORM_SYMBOL","1146374400":"DIGITAL_TOKEN"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"BELGIAN":"BELG","BLOOMBERG":"BBG","Belgian":"BELGIAN","BloombergSymbol":"BLOOMBERG","CFTC_COMMODITY":"CFTC","CFTC_COMMODITY_CODE":"CFTC_COMMODITY","CLEARING_HOUSE":"CLRH","COMMON":"COMN","CUSIP":"CUSP","ClearingHouse":"CLEARING_HOUSE","Common":"COMMON","ConsolidatedTapeAssociation":"CTA","DIGITAL_TOKEN":"DTI","DIGITAL_TOKEN_IDENTIFIER":"DIGITAL_TOKEN","DUTCH":"DUTC","Dutch":"DUTCH","EXCHANGE_SYMBOL":"EXCH","ExchangeSymbol":"EXCHANGE_SYMBOL","FIDESSA":"FIDM","FIDESSA_INSTRUMENT_MNEMONIC":"FIDESSA","FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER":"FIGI","INDEX_NAME":"INDX","ISDAFpMLSpecification":"ISDA_FPML_SPEC","ISDAFpMLURL":"ISDA_FPML_URL","ISDA_COMMODITY":"ICRP","ISDA_COMMODITY_REFERENCE_PRICE":"ISDA_COMMODITY","ISDA_FPML_SPEC":"ISDA","ISDA_FPML_URL":"FPML","ISINNumber":"ISIN","ISOCountryCode":"ISO_COUNTRY","ISOCurrencyCode":"ISO_CURRENCY","ISO_COUNTRY":"CTRY","ISO_CURRENCY":"CCY","LEGAL_ENTITY_IDENTIFIER":"LEI","LETTER_OF_CREDIT":"LOC","LetterOfCredit":"LETTER_OF_CREDIT","MARKETPLACE":"MKTP","MARKIT_RED_ENTITY":"RDEC","MARKIT_RED_ENTITY_CLIP":"MARKIT_RED_ENTITY","MARKIT_RED_PAIR":"RDPC","MARKIT_RED_PAIR_CLIP":"MARKIT_RED_PAIR","MarketplaceAssignedIdentifier":"MARKETPLACE","OptionPriceReportingAuthority":"OPRA","RICCode":"RIC","SEDOL":"SEDL","SICOVAM":"SICO","SYNTHETIC":"SYNT","Sicovam":"SICOVAM","UNIFORM_SYMBOL":"UNIF","VALOREN":"VALO","Valoren":"VALOREN","WERTPAPIER":"WKN","Wertpapier":"WERTPAPIER"}', fix_aliases: '{"1":"CUSP","2":"SEDL","3":"QUIK","4":"ISIN","5":"RIC","6":"CCY","7":"CTRY","8":"EXCH","9":"CTA","A":"BBG","B":"WKN","C":"DUTC","D":"VALO","E":"SICO","F":"BELG","G":"COMN","H":"CLRH","I":"ISDA","J":"OPRA","K":"FPML","L":"LOC","M":"MKTP","N":"RDEC","P":"RDPC","Q":"CFTC","R":"ICRP","S":"FIGI","T":"LEI","U":"SYNT","V":"FIDM","W":"INDX","X":"UNIF","Y":"DTI"}'}
-- name: securitytype
-  type: string
-  nullable: true
-  description: 'Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties.'
-  fix: {tag: '167', type: String, name: SecurityType, display: SecurityType}
-- name: cficode
-  type: string
-  nullable: true
-  description: Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments. A subset of possible values applicable to FIX usage are identified in "Appendix 6-D CFICode Usage - ISO 10962 Classification of Financial Instruments (CFI code)"
-  fix: {tag: '461', type: String, name: CFICode, display: CFICode}
-- name: securityexchange
-  type: string
-  nullable: true
-  description: 'Market used to help identify a security. Valid values: See "Appendix 6-C"'
-  fix: {tag: '207', type: Exchange, name: SecurityExchange, display: SecurityExchange}
-- name: currency
-  type: string
-  nullable: true
-  description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
-  fix: {tag: '15', type: Currency, name: Currency, display: Currency}
-- name: maturitydate
-  type: timestamp[us]
-  nullable: true
-  description: Date of maturity.
-  fix: {tag: '541', type: LocalMktDate, name: MaturityDate, display: MaturityDate}
-- name: maturitymonthyear
-  type: string
-  nullable: true
-  description: 'Can be used with standardized derivatives vs. the MaturityDate (54) field. Month and Year of the maturity (used for standardized futures and options). Format: YYYYMM (e.g. 199903) YYYYMMDD (e.g. 20030323) YYYYMMwN (e.g. 200303w) for week A specific date or can be appended to the MaturityMonthYear. For instance, if multiple standard products exist that mature in the same Year and Month, but actually mature at a different time, a value can be appended, such as "w" or "w2" to indicate week as opposed to week 2 expiration. Likewise, the date (0-3) can be appended to indicate a specific expiration (maturity date).'
-  fix: {tag: '200', type: MonthYear, name: MaturityMonthYear, display: MaturityMonthYear}
-- name: strikeprice
-  type: double
-  nullable: true
-  description: Strike Price for an Option.
-  fix: {tag: '202', type: Price, name: StrikePrice, display: StrikePrice}
-- name: putorcall
-  type: int32
-  nullable: true
-  description: Indicates whether an option contract is a put or call
-  fix: {tag: '201', type: int, name: PutOrCall, display: PutOrCall}
-- name: contractmultiplier
-  type: double
-  nullable: true
-  description: Specifies the ratio or multiply factor to convert from "nominal" units (e.g. contracts) to total units (e.g. shares) (e.g. 1.0, 100, 1000, etc). Applicable For Fixed Income, Convertible Bonds, Derivatives, etc. In general quantities for all calsses should be expressed in the basic unit of the instrument, e.g. shares for equities, norminal or par amount for bonds, currency for foreign exchange. When quantity is expressed in contracts, e.g. financing transactions and bond trade reporting, ContractMutliplier should contain the number of units in one contract and can be omitted if the multiplier is the default amount for the instrument, i.e. 1,000 par of bonds, 1,000,000 par for financing transactions.
-  fix: {tag: '231', type: float, name: ContractMultiplier, display: ContractMultiplier}
-- name: minpriceincrement
-  type: double
-  nullable: true
-  description: Minimum price increase for a given exchange-traded Instrument
-  fix: {tag: '969', type: float, name: MinPriceIncrement, display: MinPriceIncrement}
-- name: roundlot
-  type: double
-  nullable: true
-  description: The trading lot size of a security
-  fix: {tag: '561', type: Qty, name: RoundLot, display: RoundLot}
-- name: securitydesc
-  type: string
-  nullable: true
-  description: Can be used to provide an optional textual description for a financial instrument.
-  fix: {tag: '107', type: String, name: SecurityDesc, display: SecurityDesc}
 - name: account
   type: string
   nullable: true
@@ -739,81 +654,181 @@ fields:
       nullable: true
       description: 'Identifies class or source of the SecurityAltID (455) value. Required if SecurityAltID is specified. Valid values: Same valid values as the SecurityIDSource (22) field'
       fix: {tag: '456', type: String, name: SecurityAltIDSource, display: SecurityAltIDSource}
-- name: legs
-  type: list
-  nullable: true
-  description: FIX InstrmtLegGrp entries -- a multileg's legs; null when absent.
-  fix: {component: Legs, display: Legs}
-  item:
-    type: struct
-    fields:
-    - name: symbol
-      type: string
-      nullable: true
-      description: Multileg instrument's individual security's Symbol. See Symbol (55) field for description
-      fix: {tag: '600', type: String, name: LegSymbol, display: LegSymbol}
-    - name: securityid
-      type: string
-      nullable: true
-      description: Multileg instrument's individual security's SecurityID. See SecurityID (48) field for description
-      fix: {tag: '602', type: String, name: LegSecurityID, display: LegSecurityID}
-    - name: securityidsource
-      type: string
-      nullable: true
-      description: Multileg instrument's individual security's SecurityIDSource. See SecurityIDSource (22) field for description
-      fix: {tag: '603', type: String, name: LegSecurityIDSource, display: LegSecurityIDSource}
-    - name: securitytype
-      type: string
-      nullable: true
-      description: Refer to definition of SecurityType(167)
-      fix: {tag: '609', type: String, name: LegSecurityType, display: LegSecurityType}
-    - name: cficode
-      type: string
-      nullable: true
-      description: Multileg instrument's individual security's CFICode. See CFICode (461) field for description
-      fix: {tag: '608', type: String, name: LegCFICode, display: LegCFICode}
-    - name: securityexchange
-      type: string
-      nullable: true
-      description: Multileg instrument's individual security's SecurityExchange. See SecurityExchange (207) field for description
-      fix: {tag: '616', type: Exchange, name: LegSecurityExchange, display: LegSecurityExchange}
-    - name: maturitydate
-      type: timestamp[us]
-      nullable: true
-      description: Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description
-      fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate, display: LegMaturityDate}
-    - name: maturitymonthyear
-      type: string
-      nullable: true
-      description: Multileg instrument's individual security's MaturityMonthYear. See MaturityMonthYear (200) field for description
-      fix: {tag: '610', type: MonthYear, name: LegMaturityMonthYear, display: LegMaturityMonthYear}
-    - name: strikeprice
-      type: double
-      nullable: true
-      description: Multileg instrument's individual security's StrikePrice. See StrikePrice (202) field for description
-      fix: {tag: '612', type: Price, name: LegStrikePrice, display: LegStrikePrice}
-    - name: putorcall
-      type: int32
-      nullable: true
-      description: Refer to definition of PutOrCall(201)
-      fix: {tag: '1358', type: int, name: LegPutOrCall, display: LegPutOrCall}
-    - name: contractmultiplier
-      type: double
-      nullable: true
-      description: Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier (23) field for description
-      fix: {tag: '614', type: float, name: LegContractMultiplier, display: LegContractMultiplier}
-    - name: currency
-      type: string
-      nullable: true
-      description: Currency associated with a particular Leg's quantity
-      fix: {tag: '556', type: Currency, name: LegCurrency, display: LegCurrency}
-    - name: side
-      type: string
-      nullable: true
-      description: The side of this individual leg (multileg security). See Side (54) field for description and values
-      fix: {tag: '624', type: char, name: LegSide, display: LegSide}
-    - name: ratioqty
-      type: double
-      nullable: true
-      description: The ratio of quantity for this individual leg relative to the entire multileg security.
-      fix: {tag: '623', type: float, name: LegRatioQty, display: LegRatioQty}
+- name: instrument
+  type: struct
+  description: FIX Instrument facts, with InstrmtLegGrp retained inside the component.
+  fix: {display: Instrument}
+  fields:
+  - name: symbolticker
+    type: string
+    description: Canonical spelling selected from the FIX instrument identifiers.
+    fix: {display: SymbolTicker}
+  - name: symbol
+    type: string
+    description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
+    fix: {tag: '55', type: String, name: Symbol, display: Symbol}
+  - name: kind
+    type: int64
+    description: What it settles as, read from the first character of the CFI code.
+    fix: {display: Kind}
+    enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","4846246242730115072":"CASH","4994867235166683136":"EQUITY","4919411096516820992":"DEBT","5068043009640103936":"FUND","4851874686865130329":"CURRENCY","4850180317955512576":"COMMODITY","5282234477571997696":"INDEX","4919428642901065728":"DERIVATIVE","5068049681104568320":"FUTURE","5715160600973017088":"OPTION","6005340439975034880":"SWAP","6287397068022371328":"WARRANT","5066358640526640128":"FORWARD","6004514729347007488":"STRUCTURED","6003388760686067712":"SPREAD","5572444038831555911":"MULTILEG","4774188662740221952":"BASKET","5064665298347705600":"FINANCING","5928232784735764480":"REPO","5498685473305919488":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}'}
+  - name: securityid
+    type: string
+    nullable: true
+    description: Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.
+    fix: {tag: '48', type: String, name: SecurityID, display: SecurityID}
+  - name: securityidsource
+    type: int32
+    nullable: true
+    description: Identifies class or source of the SecurityID (48) value. Required if SecurityID is specified. 100+ are reserved for private security identifications
+    fix: {tag: '22', type: String, name: SecurityIDSource, display: SecurityIDSource}
+    enum: {name: SecurityIDSource, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1129665360":"CUSIP","1397048396":"SEDOL","1364543819":"QUIK","1230195022":"ISIN","1380532992":"RIC","1128487168":"ISO_CURRENCY","1129599577":"ISO_COUNTRY","1163412296":"EXCHANGE_SYMBOL","1129595136":"CTA","1111639808":"BLOOMBERG","1464552960":"WERTPAPIER","1146442819":"DUTCH","1447119951":"VALOREN","1397310287":"SICOVAM","1111837767":"BELGIAN","1129270606":"COMMON","1129075272":"CLEARING_HOUSE","1230193729":"ISDA_FPML_SPEC","1330664001":"OPRA","1179667788":"ISDA_FPML_URL","1280262912":"LETTER_OF_CREDIT","1296782416":"MARKETPLACE","1380205891":"MARKIT_RED_ENTITY","1380208707":"MARKIT_RED_PAIR","1128682563":"CFTC_COMMODITY","1229148752":"ISDA_COMMODITY","1179207497":"FIGI","1279609088":"LEI","1398361684":"SYNTHETIC","1179206733":"FIDESSA","1229866072":"INDEX_NAME","1431193926":"UNIFORM_SYMBOL","1146374400":"DIGITAL_TOKEN"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"BELGIAN":"BELG","BLOOMBERG":"BBG","Belgian":"BELGIAN","BloombergSymbol":"BLOOMBERG","CFTC_COMMODITY":"CFTC","CFTC_COMMODITY_CODE":"CFTC_COMMODITY","CLEARING_HOUSE":"CLRH","COMMON":"COMN","CUSIP":"CUSP","ClearingHouse":"CLEARING_HOUSE","Common":"COMMON","ConsolidatedTapeAssociation":"CTA","DIGITAL_TOKEN":"DTI","DIGITAL_TOKEN_IDENTIFIER":"DIGITAL_TOKEN","DUTCH":"DUTC","Dutch":"DUTCH","EXCHANGE_SYMBOL":"EXCH","ExchangeSymbol":"EXCHANGE_SYMBOL","FIDESSA":"FIDM","FIDESSA_INSTRUMENT_MNEMONIC":"FIDESSA","FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER":"FIGI","INDEX_NAME":"INDX","ISDAFpMLSpecification":"ISDA_FPML_SPEC","ISDAFpMLURL":"ISDA_FPML_URL","ISDA_COMMODITY":"ICRP","ISDA_COMMODITY_REFERENCE_PRICE":"ISDA_COMMODITY","ISDA_FPML_SPEC":"ISDA","ISDA_FPML_URL":"FPML","ISINNumber":"ISIN","ISOCountryCode":"ISO_COUNTRY","ISOCurrencyCode":"ISO_CURRENCY","ISO_COUNTRY":"CTRY","ISO_CURRENCY":"CCY","LEGAL_ENTITY_IDENTIFIER":"LEI","LETTER_OF_CREDIT":"LOC","LetterOfCredit":"LETTER_OF_CREDIT","MARKETPLACE":"MKTP","MARKIT_RED_ENTITY":"RDEC","MARKIT_RED_ENTITY_CLIP":"MARKIT_RED_ENTITY","MARKIT_RED_PAIR":"RDPC","MARKIT_RED_PAIR_CLIP":"MARKIT_RED_PAIR","MarketplaceAssignedIdentifier":"MARKETPLACE","OptionPriceReportingAuthority":"OPRA","RICCode":"RIC","SEDOL":"SEDL","SICOVAM":"SICO","SYNTHETIC":"SYNT","Sicovam":"SICOVAM","UNIFORM_SYMBOL":"UNIF","VALOREN":"VALO","Valoren":"VALOREN","WERTPAPIER":"WKN","Wertpapier":"WERTPAPIER"}', fix_aliases: '{"1":"CUSP","2":"SEDL","3":"QUIK","4":"ISIN","5":"RIC","6":"CCY","7":"CTRY","8":"EXCH","9":"CTA","A":"BBG","B":"WKN","C":"DUTC","D":"VALO","E":"SICO","F":"BELG","G":"COMN","H":"CLRH","I":"ISDA","J":"OPRA","K":"FPML","L":"LOC","M":"MKTP","N":"RDEC","P":"RDPC","Q":"CFTC","R":"ICRP","S":"FIGI","T":"LEI","U":"SYNT","V":"FIDM","W":"INDX","X":"UNIF","Y":"DTI"}'}
+  - name: isincode
+    type: string
+    nullable: true
+    description: ISO 6166 identifier, wherever the message carried it; null when it did not.
+    metadata: {iso: '6166'}
+    fix: {display: ISINCode}
+  - name: securitytype
+    type: string
+    nullable: true
+    description: 'Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties.'
+    fix: {tag: '167', type: String, name: SecurityType, display: SecurityType}
+  - name: cficode
+    type: string
+    nullable: true
+    description: Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments. A subset of possible values applicable to FIX usage are identified in "Appendix 6-D CFICode Usage - ISO 10962 Classification of Financial Instruments (CFI code)"
+    fix: {tag: '461', type: String, name: CFICode, display: CFICode}
+  - name: securityexchange
+    type: string
+    nullable: true
+    description: 'Market used to help identify a security. Valid values: See "Appendix 6-C"'
+    fix: {tag: '207', type: Exchange, name: SecurityExchange, display: SecurityExchange}
+  - name: currency
+    type: int32
+    nullable: true
+    description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
+    fix: {tag: '15', type: Currency, name: Currency, display: Currency}
+    enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
+  - name: contractmultiplier
+    type: double
+    nullable: true
+    description: Specifies the ratio or multiply factor to convert from "nominal" units (e.g. contracts) to total units (e.g. shares) (e.g. 1.0, 100, 1000, etc). Applicable For Fixed Income, Convertible Bonds, Derivatives, etc. In general quantities for all calsses should be expressed in the basic unit of the instrument, e.g. shares for equities, norminal or par amount for bonds, currency for foreign exchange. When quantity is expressed in contracts, e.g. financing transactions and bond trade reporting, ContractMutliplier should contain the number of units in one contract and can be omitted if the multiplier is the default amount for the instrument, i.e. 1,000 par of bonds, 1,000,000 par for financing transactions.
+    fix: {tag: '231', type: float, name: ContractMultiplier, display: ContractMultiplier}
+  - name: minpriceincrement
+    type: double
+    nullable: true
+    description: Minimum price increase for a given exchange-traded Instrument
+    fix: {tag: '969', type: float, name: MinPriceIncrement, display: MinPriceIncrement}
+  - name: roundlot
+    type: double
+    nullable: true
+    description: The trading lot size of a security
+    fix: {tag: '561', type: Qty, name: RoundLot, display: RoundLot}
+  - name: maturitydate
+    type: date32[day]
+    nullable: true
+    description: Date of maturity.
+    fix: {tag: '541', type: LocalMktDate, name: MaturityDate, display: MaturityDate}
+  - name: strikeprice
+    type: double
+    nullable: true
+    description: Strike Price for an Option.
+    fix: {tag: '202', type: Price, name: StrikePrice, display: StrikePrice}
+  - name: putorcall
+    type: int64
+    description: Indicates whether an option contract is a put or call
+    fix: {tag: '201', type: int, name: PutOrCall, display: PutOrCall}
+    enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}
+  - name: securitydesc
+    type: string
+    nullable: true
+    description: Can be used to provide an optional textual description for a financial instrument.
+    fix: {tag: '107', type: String, name: SecurityDesc, display: SecurityDesc}
+  - name: legs
+    type: list
+    nullable: true
+    description: The legs of a multileg instrument, in the order the venue sent them.
+    fix: {display: Legs}
+    item:
+      type: struct
+      fix: {display: Item}
+      fields:
+      - name: xhash
+        type: int64
+        description: The instrument this leg is of, derived the same way any other one is.
+        fix: {display: Xhash}
+      - name: symbolticker
+        type: string
+        description: Canonical instrument spelling derived from the leg's FIX identifiers.
+        fix: {display: SymbolTicker}
+      - name: symbol
+        type: string
+        description: Multileg instrument's individual security's Symbol. See Symbol (55) field for description
+        fix: {tag: '600', type: String, name: LegSymbol, display: LegSymbol}
+      - name: side
+        type: int32
+        description: The side of this individual leg (multileg security). See Side (54) field for description and values
+        fix: {tag: '624', type: char, name: LegSide, display: LegSide}
+        enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
+      - name: ratio
+        type: double
+        nullable: true
+        description: The ratio of quantity for this individual leg relative to the entire multileg security.
+        fix: {tag: '623', type: float, name: LegRatioQty, display: LegRatioQty}
+      - name: kind
+        type: int64
+        description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType <609>`.
+        fix: {display: Kind}
+        enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","4846246242730115072":"CASH","4994867235166683136":"EQUITY","4919411096516820992":"DEBT","5068043009640103936":"FUND","4851874686865130329":"CURRENCY","4850180317955512576":"COMMODITY","5282234477571997696":"INDEX","4919428642901065728":"DERIVATIVE","5068049681104568320":"FUTURE","5715160600973017088":"OPTION","6005340439975034880":"SWAP","6287397068022371328":"WARRANT","5066358640526640128":"FORWARD","6004514729347007488":"STRUCTURED","6003388760686067712":"SPREAD","5572444038831555911":"MULTILEG","4774188662740221952":"BASKET","5064665298347705600":"FINANCING","5928232784735764480":"REPO","5498685473305919488":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}'}
+      - name: securityid
+        type: string
+        nullable: true
+        description: Multileg instrument's individual security's SecurityID. See SecurityID (48) field for description
+        fix: {tag: '602', type: String, name: LegSecurityID, display: LegSecurityID}
+      - name: securityidsource
+        type: string
+        nullable: true
+        description: Multileg instrument's individual security's SecurityIDSource. See SecurityIDSource (22) field for description
+        fix: {tag: '603', type: String, name: LegSecurityIDSource, display: LegSecurityIDSource}
+      - name: cficode
+        type: string
+        nullable: true
+        description: Multileg instrument's individual security's CFICode. See CFICode (461) field for description
+        fix: {tag: '608', type: String, name: LegCFICode, display: LegCFICode}
+      - name: securitytype
+        type: string
+        nullable: true
+        description: Refer to definition of SecurityType(167)
+        fix: {tag: '609', type: String, name: LegSecurityType, display: LegSecurityType}
+      - name: securityexchange
+        type: string
+        nullable: true
+        description: Multileg instrument's individual security's SecurityExchange. See SecurityExchange (207) field for description
+        fix: {tag: '616', type: Exchange, name: LegSecurityExchange, display: LegSecurityExchange}
+      - name: currency
+        type: int32
+        nullable: true
+        description: Currency associated with a particular Leg's quantity
+        fix: {tag: '556', type: Currency, name: LegCurrency, display: LegCurrency}
+        enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
+      - name: contractmultiplier
+        type: double
+        nullable: true
+        description: Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier (23) field for description
+        fix: {tag: '614', type: float, name: LegContractMultiplier, display: LegContractMultiplier}
+      - name: maturitydate
+        type: date32[day]
+        nullable: true
+        description: Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description
+        fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate, display: LegMaturityDate}
+      - name: strikeprice
+        type: double
+        nullable: true
+        description: Multileg instrument's individual security's StrikePrice. See StrikePrice (202) field for description
+        fix: {tag: '612', type: Price, name: LegStrikePrice, display: LegStrikePrice}
+      - name: putorcall
+        type: int64
+        description: Refer to definition of PutOrCall(201)
+        fix: {tag: '1358', type: int, name: LegPutOrCall, display: LegPutOrCall}
+        enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}

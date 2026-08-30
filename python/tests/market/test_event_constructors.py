@@ -8,8 +8,7 @@ import pytest
 
 from rekep.entries import Entry
 from rekep.enums import Currency, EventType, OptionKind, Side, TimeInForce
-from rekep.fix.components import Leg as FixLeg
-from rekep.market import Execution, Instrument, Order
+from rekep.market import Execution, Instrument, Leg, Order
 from rekep.text import FixMsg
 
 
@@ -82,22 +81,24 @@ def test_subclass_declarations_select_their_abstract_market_slots() -> None:
 def test_promoted_components_convert_by_their_declared_fix_fields() -> None:
     source = FixMsg(
         unix=31,
-        symbol="SPREAD",
-        legs=[
-            FixLeg(
-                symbol="LEG-A",
-                side="1",
-                ratioqty=2,
-                currency="USD",
-                maturitydate=datetime.date(2027, 3, 19),
-                putorcall=1,
-            )
-        ],
+        instrument=Instrument(
+            symbol="SPREAD",
+            legs=[
+                Leg(
+                    symbol="LEG-A",
+                    side=Side.BUY,
+                    ratio=2,
+                    currency="USD",
+                    maturitydate=datetime.date(2027, 3, 19),
+                    putorcall=OptionKind.CALL,
+                )
+            ],
+        ),
     )
 
-    built = Instrument.from_(source)
+    built = Instrument.from_fixmsg(source)
 
-    assert built.unix == 31 and built.symbolticker == "SPREAD"
+    assert built is not None and built.symbolticker == "SPREAD"
     assert built.legs is not None and len(built.legs) == 1
     leg = built.legs[0]
     assert (leg.symbol, leg.ratio, leg.maturitydate) == (
@@ -119,9 +120,9 @@ def test_indexed_raw_entries_build_nested_declared_components() -> None:
         Entry.of(tag=624, value="1", comp="Strategies[1].NoLegs[0]"),
     ]
 
-    built = Instrument.from_entries(entries, version="4.4", unix=41)
+    built = Instrument.from_entries(entries, version="4.4")
 
-    assert built.unix == 41 and built.symbolticker == "SPREAD"
+    assert built.symbolticker == "SPREAD"
     assert built.legs is not None
     assert [(leg.symbol, leg.side, leg.ratio) for leg in built.legs] == [
         ("LEG-A", Side.SELL, 3.0),

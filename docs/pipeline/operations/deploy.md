@@ -163,12 +163,14 @@ aws s3api create-bucket --bucket rekep-warehouse \
   --region eu-west-1 --create-bucket-configuration LocationConstraint=eu-west-1
 aws s3api put-bucket-encryption --bucket rekep-warehouse \
   --server-side-encryption-configuration \
-  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+  '{"Rules":[{"ApplyServerSideEncryptionByDefault":
+    {"SSEAlgorithm":"aws:kms","KMSMasterKeyID":"arn:aws:kms:eu-west-1:111122223333:key/…"}}]}'
 aws s3api get-bucket-location --bucket rekep-warehouse
 ```
 
-Encryption is the bucket's own default; `s3.sse.*` is refused rather than
-ignored — see
+`KMSMasterKeyID` selects the custom key for every object the pipeline writes.
+Encryption is the bucket's own default; `s3.sse.type: kms` and `s3.sse.key`
+are refused rather than ignored — see
 [Encryption at rest](../../storage/iceberg.md#encryption-at-rest).
 
 **2. Put the dictionary and the capture where the workers can read them.**
@@ -191,6 +193,7 @@ catalog_properties:
   warehouse: s3://rekep-warehouse/rekep
   glue.region: eu-west-1   # where the catalog lives
   s3.region: eu-west-1     # where the warehouse bucket lives
+  # Do not add `s3.sse.type` or `s3.sse.key`; the bucket rule above owns KMS.
 ```
 
 A registry on a bucket is fetched **once** and kept under

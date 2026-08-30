@@ -40,10 +40,11 @@ only a MsgType event-metadata change rebuilds it, because that changes its
 stored `eventtype`.
 
 `parse_instruments` reads the rows `parse_fix` wrote to `fix.market` and
-versions `market.instruments` from them, keyed by `symbolticker`. It is a
-second reader of that table rather than a second writer of it: the FIX stage
-owns translation, the clock and the ticker, and holds no rule about how
-reference data is versioned.
+versions `market.instruments` from their nested `Instrument` components. One
+current `InstrumentUpdate` is keyed by `xhash`, with `instrument.symbolticker`
+as its readable identity. It is a second reader of that table rather than a
+second writer of it: the FIX stage owns translation and the clock, while the
+model owns ticker derivation and reference-data versioning.
 
 `books: false` skips the fold and writes only the Order and Execution events
 each FIX message carries -- and so creates no snapshots, no synthetic

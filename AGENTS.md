@@ -192,10 +192,11 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage
   scan pushes the finite code set `ranked_at_least` names.
-- Nest nothing a reader filters on. Keep instrument identity and book summary
-  values flat.
-- `Instrument` is flat reference data keyed by canonical `symbolticker`, with
-  `xhash = hash_of(symbolticker)`. It has no versions or snapshots.
+- Nest nothing a reader filters on. `InstrumentUpdate.xhash` keeps the nested
+  instrument's identity flat; book summary values stay flat too.
+- `Instrument` is the event-free FIX component of reference facts, nested in
+  `FixMsg` and `InstrumentUpdate`. `InstrumentUpdate` is the latest persisted
+  reference event, keyed by `xhash = hash_of(instrument.symbolticker)`.
 - FIX transcription preserves repeated tags and wire order in lists, not maps.
 - The registry owns FIX names, types, descriptions, tags, and values across
   versions. Hard-code only normalization rules the registry cannot express.
@@ -225,12 +226,11 @@ parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
                                                `-> flatten_executions
 ```
 
-`parse_fix` owns FIX translation, the resolved `unix` clock and the
-`symbolticker` mapping, and holds no rule about reference data.
+`parse_fix` owns FIX translation and the resolved `unix` clock. It nests the
+`Instrument` component, whose class owns ticker and ISIN derivation.
 `parse_instruments` reads the rows it wrote and versions
-`market.instruments` from them; the versioning rule itself is
-`rekep.market.versioned`, in the package, because two jobs writing that
-table must not disagree about what a version is.
+`market.instruments` through `InstrumentUpdate.versioned`, so every caller
+uses the same enrichment and versioning rule.
 
 With `parse_market.books: false`, the market task bypasses Book construction
 and writes the FIX-carried Order and Execution rows itself; the two flatten

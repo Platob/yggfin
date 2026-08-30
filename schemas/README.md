@@ -13,7 +13,11 @@ order.yaml
 
 Each file is one Arrow `Field` document with exact types, order, nullability,
 keys, partitioning, descriptions, enum members, FIX metadata, and Iceberg ids.
-Every contract is version 1.
+`fixmsg.yaml` carries reference facts in its final `instrument` struct;
+`instrument.yaml` is the flat `InstrumentUpdate` event envelope followed by
+the same `Instrument` struct. Those two structs and `Instrument.legs` stay
+last in their owners so Iceberg's default column bounds still cover the flat
+leaves. Every contract is version 1.
 
 ```python
 from rekep import Field

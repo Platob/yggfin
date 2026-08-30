@@ -81,7 +81,7 @@ The DAG resolves those relative paths beneath `REKEP_ROOT`. This is useful for
 a single-host test, but the checkout must be writable and the catalog cannot
 coordinate distributed workers.
 
-For production, replace the catalog block consistently in all six YAML files,
+For production, replace the catalog block consistently in all seven YAML files,
 including `tasks/optimize_iceberg/optimize_iceberg.yml`.
 The shipped Glue/S3 example is:
 
@@ -93,6 +93,8 @@ catalog_properties:
   glue.region: eu-west-1
   s3.region: eu-west-1
   # glue.id: "123456789012"  # Optional cross-account catalog ID.
+  # A custom KMS key belongs in the bucket default; `s3.sse.type: kms` and
+  # `s3.sse.key` are refused because Arrow cannot send their request headers.
 ```
 
 Install `pyiceberg[glue]` for this catalog and provide AWS credentials through

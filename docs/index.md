@@ -67,7 +67,7 @@ it does not own deployment-specific jobs.
 ## One record end to end
 
 ```python
-from rekep import FixMsg, Message
+from rekep import FixMsg, InstrumentUpdate, Message
 from rekep.market import Book, Execution, Order
 
 line = (
@@ -97,7 +97,7 @@ order = next(event for event in events if isinstance(event, Order))
 execution = next(event for event in events if isinstance(event, Execution))
 
 # market.instruments and market.books
-instrument = fixmsg.into_instrument(fix_version="4.4")
+instrument = next(InstrumentUpdate.from_fixmsgs([fixmsg])).instrument
 book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
 
 assert message.MsgType == fixmsg.MsgType == "8"

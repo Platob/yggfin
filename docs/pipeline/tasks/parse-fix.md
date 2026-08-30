@@ -36,7 +36,7 @@ batch it:
 2. infers the FIX application version;
 3. resolves names, tags, types and configured value spellings;
 4. lifts declared fields and structured components;
-5. derives the venue, transaction time and identities.
+5. derives the transaction time and nests the `Instrument` component.
 
 `Message.eventtype`, `Message.msgtype`, and `Message.protocol` pass through
 this conversion; the FIX stage does not classify the message a second time.
@@ -64,20 +64,21 @@ both streams: stored `entries` already carry what transcription needs.
 The source interval is filtered on `Message.unix`, the recording clock. The
 resulting `FixMsg.unix` may instead come from a regulatory timestamp,
 `TransactTime`, market-data entry time, sending time, or finally the recording
-clock. Output tables are sorted by `(unix, msgseqnum, hash)`.
+clock. Output tables record `hash` as their sole Iceberg sort key; downstream
+readers request transaction-time order explicitly.
 
 ## The base the next stages key on
 
-This stage owns two derivations everything downstream reads as given: the
-transaction clock, resolved to `unix`, and the canonical instrument spelling,
-mapped to `symbolticker`. It reports how well it managed both -- `unixsource`
-counts which rung answered per row, `tickered` counts the rows that carry a
-ticker at all -- so a run that hands on a weak base says so here rather than
-having it discovered two tables later.
+This stage owns the transaction clock, resolved to `unix`. The nested
+`Instrument` class owns ticker derivation, and `instrument.symbolticker` is
+the canonical spelling downstream receives. The task reports how well it
+managed both -- `unixsource` counts which rung answered per row, `tickered`
+counts the rows that carry a ticker at all -- so a run that hands on a weak
+base says so here rather than having it discovered two tables later.
 
 Reference data is *not* written here. [`parse_instruments`](parse-instruments.md)
 reads the rows this stage wrote and versions `market.instruments` from them, so
-no instrument-versioning rule lives in the FIX stage.
+no instrument enrichment or versioning rule lives in the FIX stage.
 
 ## Configuration
 

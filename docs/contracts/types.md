@@ -60,13 +60,9 @@ source, derivation, or null meaning; omit anything already obvious from the
 name and type.
 
 Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `FixMsg`,
-`Instrument`, `Leg`, `Order`, `Execution`, `Book`, and `Level` therefore have
-no per-instance `__dict__`; transient private slots stay out of Arrow and
-document conversion.
-
-On the measured Python 3.12 runtime, shallow instance storage fell from 3,376
-to 904 bytes for `FixMsg`, from 1,632 to 360 bytes for `Instrument`, and from
-1,632 to 424 bytes for `Order` and `Execution`.
+`Instrument`, `InstrumentUpdate`, `Leg`, `Order`, `Execution`, `Book`, and
+`Level` therefore have no per-instance `__dict__`; transient private slots
+stay out of Arrow and document conversion.
 
 ## Reading an instant
 

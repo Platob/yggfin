@@ -173,7 +173,7 @@ def write_case(
         target = dataset(root, partitioned=partitioned, properties=properties or {})
         target.plan_merges = plan_merges
         if preload is not None:  # something for a merge to match against
-            target.append_arrow(preload, commit_row_size=0)
+            target.append_arrow(preload, commit_row_size=1_000_000)
         # A merge mode is an overwrite; every other mode is putting rows in,
         # which is what `append_arrow` is -- the two are not one call with a
         # flag any more, so neither is the measurement.
@@ -213,7 +213,7 @@ def monotonic_insert_case(table: pyarrow.Table, commit_rows: int) -> dict:
         def write() -> None:
             for start in range(0, table.num_rows, commit_rows):
                 target.append_arrow_table(
-                    table.slice(start, commit_rows), merge_by=True, commit_row_size=0
+                    table.slice(start, commit_rows), merge_by=True, commit_row_size=1_000_000
                 )
 
         seconds, _ = timed(write)
@@ -257,7 +257,7 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
     table = parsed(path)
     # One throwaway write first: the first configuration would otherwise pay for
     # importing pyiceberg, opening the catalog and warming the page cache.
-    write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
+    write_case(table.slice(0, 1_000), mode="append", commit_row_size=1_000_000)
     print(f"\n== write: {table.num_rows:,} rows over {days} days ==")
     header(
         ("case", "commit rows", "seconds", "rows/s", "files", "manif", "snaps", "stored"),
@@ -332,7 +332,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
     try:
         target = catalog(root).dataset("bench.quotes", field=Quote.into_field()).create_with()
-        target.append_arrow_table(table, commit_row_size=0)
+        target.append_arrow_table(table, commit_row_size=1_000_000)
         plan = target.scan_plan("day = '2026-08-14'")
         report = {
             "rows": target.records or 0,
@@ -553,7 +553,7 @@ def sweep_fs(rows: int, days: int) -> None:
         table = parsed(path)
         # One throwaway write, so the first case is not also paying for
         # importing pyiceberg and opening the first catalog.
-        write_case(table.slice(0, 1_000), mode="append", commit_row_size=0)
+        write_case(table.slice(0, 1_000), mode="append", commit_row_size=1_000_000)
         chunk = max(table.num_rows // 8, 1)
         half = table.slice(0, table.num_rows // 2)
         hour = table.column("unixpartition")[0].as_py()
@@ -583,7 +583,7 @@ def sweep_fs(rows: int, days: int) -> None:
                 report("merge, all new", seconds)
 
                 target = fresh(tmp, f"h{cached}", cached)
-                target.append_arrow(half, commit_row_size=0)
+                target.append_arrow(half, commit_row_size=1_000_000)
                 counts.clear()
                 seconds, _ = timed(
                     lambda: target.overwrite_arrow(
@@ -593,7 +593,7 @@ def sweep_fs(rows: int, days: int) -> None:
                 report("merge, half stored", seconds)
 
                 target = fresh(tmp, f"i{cached}", cached)
-                target.append_arrow(table, commit_row_size=0)
+                target.append_arrow(table, commit_row_size=1_000_000)
                 counts.clear()
                 seconds, _ = timed(
                     lambda: target.append_arrow(
@@ -819,7 +819,7 @@ def sweep_backfill(rows: int, days: int) -> None:
             for band in range(20)
         ]
         for commit in commits:
-            target.append_arrow(commit, commit_row_size=0)
+            target.append_arrow(commit, commit_row_size=1_000_000)
         stored = target.refresh().data_files().num_rows
         print(f"\n== backfill: {stored} files of {per:,} rows, keys clustered per file ==")
         header(("case", "planned", "skipped", "seconds", "inserted"), (30, 8, 8, 9, 9))

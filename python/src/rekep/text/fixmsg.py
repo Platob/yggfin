@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, Direction, EventType, Protocol, SecurityIDSource
+from rekep.enums import MIC, Direction, EventType, Protocol
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -29,19 +29,14 @@ from rekep.fix.columns import (
     DECLARED,
     ENTRIES,
     IDENTIFIER_FIELDS,
-    ISIN_CODE,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
-    SECURITY_ID_SOURCE,
-    isin_identity,
 )
 from rekep.fix.components import (
-    LEGS,
     PARTIES,
     SECURITY_ALT_IDS,
     SIDE_TRD_REG_TIMESTAMPS,
     TRD_REG_TIMESTAMPS,
-    Leg,
     Party,
     SideTrdRegTimestamp,
     TrdRegTimestamp,
@@ -64,7 +59,7 @@ from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
-from rekep.market.ticker import SymbolTicker
+from rekep.market.instrument import Instrument
 from rekep.text.message import SESSION_FIELDS, Message
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
@@ -113,6 +108,21 @@ def _component_groups() -> tuple[tuple[str, str, type[Any]], ...]:
 #: The parsed columns that hold one structured component each. What
 #: `FixMsg.into_first_values` checks before taking its flat shortcut.
 COMPONENT_COLUMNS: tuple[str, ...] = tuple(FixCodec.into_components())
+
+
+def _component_value(message: FixMsg, name: str) -> Any:
+    """One structured FIX column, including legs nested in the instrument."""
+    if name == "legs":
+        return message.instrument.legs
+    return getattr(message, name, None)
+
+
+def _promoted_value(message: FixMsg, name: str) -> Any:
+    """One promoted FIX value from the envelope or nested instrument."""
+    if hasattr(message, name):
+        return getattr(message, name)
+    value = getattr(message.instrument, name, None)
+    return None if value in ("", 0) else value
 
 
 @functools.lru_cache(maxsize=8)
@@ -234,7 +244,6 @@ class FixMsg(Message):
             "quoteentryid",
             "quoteid",
             "quotereqid",
-            "symbolticker",
         )
 
     def __post_init__(self) -> None:
@@ -251,16 +260,8 @@ class FixMsg(Message):
             self.unmap = [Entry.from_stored(entry) for entry in self.unmap]
         else:
             self.unmap = None
-        # Before the ticker, which is built from the pair: an ISIN a bridge
-        # rendered as its own field is an identifier like any other.
-        self.securityid, self.securityidsource, self.isincode = isin_identity(
-            self.securityid, self.securityidsource, self.isincode
-        )
-        self.symbolticker = (
-            SymbolTicker.from_str(self.symbolticker)
-            if self.symbolticker
-            else SymbolTicker.from_fixmsg(self)
-        ).into_str()
+        if not isinstance(self.instrument, Instrument):
+            self.instrument = Instrument.from_dict(self.instrument)
         if (
             self.protocolversion is None
             and self.protocol is Protocol.OTHER
@@ -290,8 +291,6 @@ class FixMsg(Message):
         if self.entries is not None or self.unmap is not None:
             retained = list(_stored_pairs(self._residual_entries()))
             checksum = str(_tag_of("CheckSum"))
-            # Partitioning separates fields that preceded the trailer; restore
-            # its framing position before the raw transcription reads it again.
             staged_values["entries"] = [
                 *[pair for pair in retained if str(pair[0]) != checksum],
                 *[pair for pair in retained if str(pair[0]) == checksum],
@@ -301,6 +300,16 @@ class FixMsg(Message):
         parsed = type(self).from_message_batch(
             [Message(**staged_values)], type(self).into_codec(self.registry)
         )
+
+        # A typed component is already a promoted reading. Retained entries
+        # may fill what it omitted, but cannot replace a fact already lifted
+        # out of those entries. Re-identify the combined row once so the
+        # envelope hashes exactly the component it now carries.
+        parsed_component = Instrument.from_dict(parsed.column("instrument")[0].as_py())
+        component = self.instrument.enriched_with(parsed_component) or self.instrument
+        columns = {name: parsed.column(name) for name in parsed.schema.names}
+        columns["instrument"] = Instrument.into_arrow_batch((component,)).to_struct_array()
+        parsed = type(self).identified(columns, parsed.schema, 1, self.registry)
 
         def value(name: str) -> Any:
             return parsed.column(name)[0].as_py()
@@ -312,7 +321,7 @@ class FixMsg(Message):
         self.code = value("code")
         self.altids = dict(value("altids") or ())
         self.reason = value("reason")
-        self.symbolticker = value("symbolticker")
+        self.instrument = Instrument.from_dict(value("instrument"))
         self.vhash = value("vhash")
         self.hash = hash_int_of(value("hash")) or NIL
         self.xhash = value("xhash")
@@ -386,9 +395,6 @@ class FixMsg(Message):
         ),
     ] = None
     """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
-
-    isincode: Annotated[str | None, ISIN_CODE, Field.column("ISINCode")] = None
-    """ISIN carried by a rendered `ISINCODE` field."""
 
     parentclordid: Annotated[str | None, PARENT_CL_ORD_ID] = None
     """Client order identity of the parent in a replace chain, bridge-rendered."""
@@ -515,56 +521,6 @@ class FixMsg(Message):
     signature: Annotated[bytes | None, DECLARED["Signature"]] = None
     """`Signature <89>`, as the bytes it is."""
 
-    # What was traded.
-
-    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
-    """Canonical spelling derived from the FIX instrument identifiers."""
-
-    symbol: Annotated[str | None, DECLARED["Symbol"]] = None
-    """`Symbol <55>`: ticker symbol."""
-
-    securityid: Annotated[str | None, DECLARED["SecurityID"]] = None
-    """`SecurityID <48>`, under the scheme `SecurityIDSource` names."""
-
-    securityidsource: Annotated[SecurityIDSource | None, SECURITY_ID_SOURCE] = None
-    """`SecurityIDSource <22>`: which scheme `SecurityID` is in, as its code."""
-
-    securitytype: Annotated[str | None, DECLARED["SecurityType"]] = None
-    """`SecurityType <167>`."""
-
-    cficode: Annotated[str | None, DECLARED["CFICode"]] = None
-    """`CFICode <461>`: what kind of instrument it is, as ISO 10962 spells it."""
-
-    securityexchange: Annotated[str | None, DECLARED["SecurityExchange"]] = None
-    """`SecurityExchange <207>`: the market the instrument is listed on."""
-
-    currency: Annotated[str | None, DECLARED["Currency"]] = None
-    """`Currency <15>`, which is what the prices below are in."""
-
-    maturitydate: Annotated[datetime.date | None, DECLARED["MaturityDate"]] = None
-    """`MaturityDate <541>`, the day a dated contract expires."""
-
-    maturitymonthyear: Annotated[str | None, DECLARED["MaturityMonthYear"]] = None
-    """`MaturityMonthYear <200>`, the older spelling of the same expiry."""
-
-    strikeprice: Annotated[float | None, DECLARED["StrikePrice"]] = None
-    """`StrikePrice <202>`, in `currency`."""
-
-    putorcall: Annotated[int | None, DECLARED["PutOrCall"]] = None
-    """`PutOrCall <201>`: 0 is a put and 1 is a call."""
-
-    contractmultiplier: Annotated[float | None, DECLARED["ContractMultiplier"]] = None
-    """`ContractMultiplier <231>`, how many units one contract carries."""
-
-    minpriceincrement: Annotated[float | None, DECLARED["MinPriceIncrement"]] = None
-    """`MinPriceIncrement <969>`, the venue's tick."""
-
-    roundlot: Annotated[float | None, DECLARED["RoundLot"]] = None
-    """`RoundLot <561>`, the tradable unit."""
-
-    securitydesc: Annotated[str | None, DECLARED["SecurityDesc"]] = None
-    """`SecurityDesc <107>`, the venue's own words for the contract."""
-
     # Who asked, and under which identifiers.
 
     account: Annotated[str | None, DECLARED["Account"]] = None
@@ -689,7 +645,7 @@ class FixMsg(Message):
     quoteentryid: Annotated[str | None, DECLARED["QuoteEntryID"]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
 
-    # Last, and lists: what the instrument's two repeating groups carry. Last
+    # Last, and nested: what the instrument's repeating groups carry. Last
     # because Iceberg counts leaf columns in declaration order for the bounds
     # it collects, and this contract already crosses that cutoff -- a nested
     # member declared earlier would push flat columns past it. The three
@@ -704,14 +660,8 @@ class FixMsg(Message):
     ] = None
     """FIX SecAltIDGrp entries -- every other identifier; null when absent."""
 
-    legs: Annotated[
-        list[Leg] | None,
-        Field(
-            dtype=LEGS,
-            metadata={"fix:component": "Legs"},
-        ),
-    ] = None
-    """FIX InstrmtLegGrp entries -- a multileg's legs; null when absent."""
+    instrument: Instrument = dataclasses.field(default_factory=Instrument)
+    """FIX Instrument facts, with InstrmtLegGrp retained inside the component."""
 
     @classmethod
     def from_text(
@@ -860,12 +810,12 @@ class FixMsg(Message):
         promoted_entries = [
             Entry.of(tag=int(tag), key=str(tag), value=value)
             for name, tag in type(self).into_tagged_columns()
-            if (value := getattr(self, name, None)) is not None
+            if (value := _promoted_value(self, name)) is not None
         ]
         promoted_entries.extend(
             Entry.of(key=spelled, value=value)
             for name, spelled in type(self).into_named_columns()
-            if (value := getattr(self, name, None)) is not None
+            if (value := _promoted_value(self, name)) is not None
         )
         promoted = [(entry.spelling, entry.value) for entry in promoted_entries]
         promoted_resolved = access.tagged_pairs(promoted)
@@ -879,7 +829,7 @@ class FixMsg(Message):
 
         component_fields: list[tuple[str, Entry]] = []
         for column, count_name, row_type in _component_groups():
-            entries = getattr(self, column, None)
+            entries = _component_value(self, column)
             if entries is None:
                 continue
             count = _tag_of(count_name)
@@ -909,8 +859,20 @@ class FixMsg(Message):
                 promoted_entries = [*promoted_entries[:at], *promoted_entries[at + 1 :]]
                 stored_resolved = access.tagged_pairs(stored)
 
-        fields = [*promoted_entries, *component_records, *stored_entries]
-        pairs = [*promoted, *components, *stored]
+        # A constructed trailer follows every field projected from columns,
+        # including nested components. A retained trailer keeps its place in
+        # the raw suffix: fields written behind it are evidence, not body.
+        checksum = str(_tag_of("CheckSum"))
+        trailer_at = [index for index, pair in enumerate(promoted) if pair[0] == checksum]
+        trailer_entries = [promoted_entries[index] for index in trailer_at]
+        trailer = [promoted[index] for index in trailer_at]
+        promoted_entries = [
+            entry for index, entry in enumerate(promoted_entries) if index not in trailer_at
+        ]
+        promoted = [pair for index, pair in enumerate(promoted) if index not in trailer_at]
+
+        fields = [*promoted_entries, *component_records, *trailer_entries, *stored_entries]
+        pairs = [*promoted, *components, *trailer, *stored]
         resolved = access.tagged_pairs(pairs)
         named = {
             _pair_identity(pair[0])
@@ -944,6 +906,7 @@ class FixMsg(Message):
         protected = (
             [False] * len(promoted)
             + [True] * len(components)
+            + [False] * len(trailer)
             + [
                 _component_key(pair[0]) or (group_at is not None and index >= group_at)
                 for index, pair in enumerate(stored)
@@ -990,7 +953,7 @@ class FixMsg(Message):
         does. None when a component column or a rendered entry survives on
         this row, which is what sends a reader down the canonical projection.
         """
-        if any(getattr(self, name, None) is not None for name in COMPONENT_COLUMNS):
+        if any(_component_value(self, name) is not None for name in COMPONENT_COLUMNS):
             return None
         if self.unmap is not None:
             return None
@@ -1003,12 +966,12 @@ class FixMsg(Message):
         stored_tags = {tag for tag, _ in stored}
         found: dict[str, Any] = {}
         for name, tag in type(self).into_tagged_columns():
-            value = getattr(self, name, None)
+            value = _promoted_value(self, name)
             if value is None or tag in stored_tags:
                 continue
             found[tag] = render_fix_value(resolver.canonical_value(tag, value))
         for name, spelling in type(self).into_named_columns():
-            value = getattr(self, name, None)
+            value = _promoted_value(self, name)
             if value is not None:
                 found[spelling] = render_fix_value(resolver.canonical_value(spelling, value))
         for tag, value in stored:
@@ -1041,7 +1004,7 @@ class FixMsg(Message):
         """`(attribute, registry spelling)` for lifted columns FIX never numbered."""
         return tuple(
             (member.name, spelled)
-            for member in cls.into_field().fields
+            for member in (*cls.into_field().fields, *Instrument.into_field().fields)
             if not member.fix.get("tag") and (spelled := member.fix.get("name"))
         )
 
@@ -1453,8 +1416,7 @@ class FixMsg(Message):
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
-        columns.update(_identifier_arrow(columns, rows))
-        columns["symbolticker"] = SymbolTicker.into_arrow_array(columns, rows, registry)
+        columns["instrument"] = Instrument.from_fix_arrow(columns, rows, registry=registry)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
@@ -1465,8 +1427,6 @@ class FixMsg(Message):
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
-        # After the ticker, which reads the scheme as the wire spelled it.
-        columns["securityidsource"] = _scheme_arrow(columns.get("securityidsource"), rows)
         linked = compute.not_equal(columns["code"], "")
         columns["xhash"] = compute.if_else(
             linked, cls.hash_arrow(columns["code"]), columns["vhash"]
@@ -1517,10 +1477,25 @@ class FixMsg(Message):
             compute.is_null(stored) if stored is not None else pyarrow.repeat(True, rows),
             compute.is_null(unmapped) if unmapped is not None else pyarrow.repeat(True, rows),
         )
+        incoming = columns.get("vhash")
+        raw_message = columns.get("message")
+        carries_raw = (
+            pyarrow.repeat(False, rows)
+            if raw_message is None
+            else compute.fill_null(compute.greater(compute.binary_length(raw_message), 0), False)
+        )
+        carries_identity = (
+            pyarrow.repeat(False, rows)
+            if incoming is None
+            else compute.and_(
+                compute.is_valid(incoming),
+                compute.not_equal(incoming, pyarrow.scalar(NIL, pyarrow.int64())),
+            )
+        )
+        unread = compute.and_(unread, compute.or_(carries_raw, carries_identity))
         if not compute.any(unread, min_count=0).as_py():
             return digests
-        recomputed = hash_bytes_arrow(_digest_text(columns.get("message"), rows))
-        incoming = columns.get("vhash")
+        recomputed = hash_bytes_arrow(_digest_text(raw_message, rows))
         raw = (
             recomputed
             if incoming is None
@@ -1538,7 +1513,12 @@ class FixMsg(Message):
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         """Best readable lifecycle identifier available in parsed FIX columns."""
-        return _first_text(columns, cls.into_code_columns(), rows)
+        found = _first_text(columns, cls.into_code_columns(), rows)
+        instrument = columns.get("instrument")
+        if instrument is None:
+            return found
+        ticker = pyarrow.compute.struct_field(instrument, "symbolticker")
+        return pyarrow.compute.if_else(pyarrow.compute.equal(found, ""), ticker, found)
 
     @classmethod
     def altids_arrow(
@@ -1625,7 +1605,7 @@ class FixMsg(Message):
         """
         return tuple(
             (member.name, tag)
-            for member in cls.into_field().fields
+            for member in (*cls.into_field().fields, *Instrument.into_field().fields)
             if (tag := member.fix.get("tag")) is not None
         )
 
@@ -1839,22 +1819,6 @@ class FixMsg(Message):
             if pending_rows[event_type]:
                 yield event_type, combined(event_type)
 
-    def into_instruments(self, **declared: Any) -> Iterator[Any]:
-        """Yield grouped instrument facts, or one declared row projection."""
-        translated = tuple(self.into_fix_events(**declared).into_instruments())
-        if translated:
-            yield from translated
-            return
-        from rekep.market.instrument import Instrument
-
-        instrument = Instrument.from_(self, **declared)
-        if instrument.symbolticker:
-            yield instrument
-
-    def into_instrument(self, **declared: Any) -> Any | None:
-        """Build the first instrument carried by this row, when any."""
-        return next(self.into_instruments(**declared), None)
-
 
 def _take_record_batch(batch: pyarrow.RecordBatch, where: pyarrow.Array) -> pyarrow.RecordBatch:
     """Take rows while retaining the source schema and its metadata."""
@@ -1896,62 +1860,6 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
         if found.null_count == 0:
             break
     return compute.fill_null(found, "")
-
-
-def _identifier_arrow(columns: Mapping[str, Any], rows: int) -> dict[str, Any]:
-    """`isin_identity` over a batch: the pair and the flat ISIN, each filled.
-
-    Text on both sides, because the ticker built next reads the scheme as the
-    wire spelled it; `_scheme_arrow` packs the column afterwards.
-    """
-    compute = pyarrow.compute
-    identifier = _text_or_null(columns.get("securityid"), rows)
-    source = _text_or_null(columns.get("securityidsource"), rows)
-    isin = _text_or_null(columns.get("isincode"), rows)
-    if isin.null_count == rows and identifier.null_count == rows:
-        return {}
-    wire = pyarrow.repeat(pyarrow.scalar(SecurityIDSource.ISIN.into_fix()), rows)
-    from_isin = compute.and_(compute.is_valid(isin), compute.is_null(identifier))
-    stated = compute.fill_null(
-        compute.equal(_scheme_codes(source, rows), int(SecurityIDSource.ISIN)), False
-    )
-    return {
-        "securityid": compute.if_else(from_isin, isin, identifier),
-        "securityidsource": compute.if_else(from_isin, wire, source),
-        "isincode": compute.if_else(compute.and_(stated, compute.is_null(isin)), identifier, isin),
-    }
-
-
-def _text_or_null(column: Any, rows: int) -> pyarrow.Array:
-    """One column as trimmed text, with an absent one a column of nulls."""
-    if column is None:
-        return pyarrow.nulls(rows, pyarrow.string())
-    if isinstance(column, pyarrow.ChunkedArray):
-        column = column.combine_chunks()
-    return pyarrow.compute.utf8_trim_whitespace(column.cast(pyarrow.string(), safe=False))
-
-
-def _scheme_codes(source: pyarrow.Array, rows: int) -> pyarrow.Array:
-    """Wire spellings as packed `SecurityIDSource` codes, one read per value."""
-    compute = pyarrow.compute
-    unique = compute.unique(source)
-    if not len(unique):
-        return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), rows)
-    codes = pyarrow.array(
-        # Null stays null: an absent tag 22 is a scheme the message did not
-        # state, which is not the same fact as one it stated and nothing names.
-        [
-            None if not value else int(SecurityIDSource.from_str(value))
-            for value in unique.to_pylist()
-        ],
-        pyarrow.int32(),
-    )
-    return compute.take(codes, compute.index_in(source, value_set=unique))
-
-
-def _scheme_arrow(column: Any, rows: int) -> pyarrow.Array:
-    """The stored `securityidsource` column: a code, never the wire spelling."""
-    return _scheme_codes(_text_or_null(column, rows), rows)
 
 
 def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
@@ -2047,14 +1955,28 @@ def _component_fields(
     members = tuple(row_type.into_field().fields)
     for entry in entries:
         values = entry if isinstance(entry, Mapping) else None
+        entry_fields = (
+            {}
+            if values is not None
+            else {
+                int(field.fix["tag"]): field.name
+                for field in type(entry).into_field().fields
+                if field.fix.get("tag") is not None
+            }
+        )
         for index, member in enumerate(members):
+            tag = int(member.fix["tag"])
+            projected = entry_fields.get(tag, member.name)
             value = (
-                values.get(member.name) if values is not None else getattr(entry, member.name, None)
+                values.get(member.name, values.get(projected))
+                if values is not None
+                else getattr(entry, projected, None)
             )
             if index == 0 and value is None:
                 raise ValueError(f"{row_type.__name__} entry lacks delimiter {member.name!r}")
+            if value == 0 and member.nullable:
+                continue
             if value is not None:
-                tag = int(member.fix["tag"])
                 fields.append((str(tag), Entry.of(tag=tag, key=str(tag), value=value)))
     return fields
 
@@ -2171,6 +2093,8 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
         return pyarrow.repeat("", rows)
     if isinstance(column, pyarrow.ChunkedArray):
         column = column.combine_chunks()
+    if pyarrow.types.is_struct(column.type):
+        return _member_text(column)
     if pyarrow.types.is_list(column.type) or pyarrow.types.is_map(column.type):
         return _stored_text(column, rows)
     return compute.fill_null(column.cast(pyarrow.string(), safe=False), "")

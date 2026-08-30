@@ -90,7 +90,7 @@ fields.
 `fix.unknown` table was needed. It resolved `unix` from `SendingTime` on the 2
 market rows and fell back to the recording clock on the other 9, and 3 of the
 11 rows carried a `symbolticker`. The replay wrote nothing at any stage: 11
-FixMsg rows skipped, and the one canonical Instrument record unchanged.
+FixMsg rows skipped, and the one canonical `InstrumentUpdate` unchanged.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
@@ -104,9 +104,10 @@ FixMsg rows skipped, and the one canonical Instrument record unchanged.
 
 ## Sampled output
 
-The flat Instrument table holds one `TTF` record keyed by `symbolticker`,
-versioned out of `fix.market` by `parse_instruments`. `fix.market` itself
-contains only captured rows.
+The InstrumentUpdate table holds one `TTF` component keyed by its top-level
+`xhash`, versioned out of `fix.market` by `parse_instruments`. Its readable
+identity is nested at `instrument.symbolticker`; `fix.market` itself contains
+only captured rows.
 
 | Product | Selected rows |
 | --- | --- |
@@ -122,9 +123,9 @@ the fill and remaining quantity without inventing a missing order price.
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage.svg#only-dark)
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage-light.svg#only-light)
 
-Event products are keyed `(unix, hash)`; Instrument is keyed by
-`symbolticker`. All six contracts are sorted by `unix` and partitioned on
-`unixpartition` alone.
+Event products are keyed `(unix, hash)` except `InstrumentUpdate`, whose
+current row is keyed by `xhash`. All six contracts are sorted by `hash` and
+partitioned on `unixpartition` alone.
 
 `schemas/rekep/` is the portable source. Arrow owns types and metadata between
 stages, Iceberg owns table ids and snapshots, and the

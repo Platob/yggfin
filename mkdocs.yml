@@ -68,7 +68,7 @@ nav:
           - Message: products/message.md
           - FixMsg: products/fixmsg.md
       - Market:
-          - Instrument: products/instrument.md
+          - Instrument update: products/instrument.md
           - Order: products/order.md
           - Execution: products/execution.md
           - Book: products/book.md

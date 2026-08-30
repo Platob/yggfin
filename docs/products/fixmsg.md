@@ -13,18 +13,19 @@ line = (
 staged = Message.from_text(line, message=line)
 row = FixMsg.from_message_batch([staged]).to_pylist()[0]
 
-for name in ("protocolversion", "symbol", "side", "lastpx", "ordstatus", "unix", "unixsource"):
+for name in ("protocolversion", "side", "lastpx", "ordstatus", "unix", "unixsource"):
     print(f"{name:17} {row[name]!r}")
+print(f"{'instrument.symbol':17} {row['instrument']['symbol']!r}")
 ```
 
 ```text
 protocolversion   '4.4'
-symbol            'BTC-USD'
 side              '1'
 lastpx            100.25
 ordstatus         '2'
 unix              1767261600000000000
 unixsource        'TransactTime'
+instrument.symbol 'BTC-USD'
 ```
 
 !!! note "Batch transcribes; scalar lifts"
@@ -35,8 +36,8 @@ unixsource        'TransactTime'
     leaves the body in `entries`, which is what `into_market_events` reads.
 
     ```python
-    FixMsg.from_text(line).msgtype   # '8'
-    FixMsg.from_text(line).symbol    # None -- body stays in entries
+    FixMsg.from_text(line).msgtype              # '8'
+    FixMsg.from_text(line).instrument.symbol    # '' -- body stays in entries
     ```
 
 `unixsource` names which rung answered, so a transaction time and a print

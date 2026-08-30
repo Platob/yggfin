@@ -30,6 +30,6 @@ than on a range of the stored value.
 | `QUOTE` | `QUOTE` | 5860677713446043648 | 120 | A quote instruction or response. |
 | `FACT` | `FACT` | 5062401484197462016 | 200 | Band floor for occurrences. |
 | `EXECUTION` | `EXECUTED` | 4996819942064276804 | 210 | A trade or execution fact. |
-| `INSTRUMENT` | `INSTRMT` | 5282251034575328256 | 220 | An observed Instrument reference record. |
+| `INSTRUMENT` | `INSTRMT` | 5282251034575328256 | 220 | An observed InstrumentUpdate reference event. |
 | `STATE` | `STATE` | 6004496033382400000 | 300 | Band floor for state snapshots. |
 | `BOOK` | `BOOK` | 4778124913204527104 | 320 | An order-book delta or snapshot. |

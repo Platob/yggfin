@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from rekep import Execution, Field, FixMsg, Instrument, Message, Order
+from rekep import Execution, Field, FixMsg, InstrumentUpdate, Message, Order
 from rekep import enums as rekep_enums
 from rekep.enums.ascii_codes import Ascii32
 from rekep.fix import FixRegistry
@@ -22,7 +22,7 @@ from rekep.text.message import SESSION_FIELDS
 PRODUCTS: tuple[tuple[type, str, str, str | None], ...] = (
     (Message, "message", "text", None),
     (FixMsg, "fixmsg", "text", "message"),
-    (Instrument, "instrument", "market", "fixmsg"),
+    (InstrumentUpdate, "instrument", "market", "fixmsg"),
     (Order, "order", "market", "fixmsg"),
     (Execution, "execution", "market", "fixmsg"),
     (Book, "book", "market", "order"),

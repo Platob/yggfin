@@ -126,13 +126,7 @@ class Event(MarketConvertible):
         """Event kind fixed by this concrete shape."""
         return EventType.UNKNOWN
 
-    # Sorted on, as well as keyed and partitioned by the hour it falls in.
-    # A sort order does not decide which file a row lands in -- the partition
-    # does -- it decides where inside the file, which is what narrows the
-    # column's min/max in a manifest from "everything this file holds" to a
-    # real range. A time filter then reads a few row groups instead of all of
-    # them, and that is the filter every reader of an event stream writes.
-    unix: Annotated[int, Field.primary_key(metadata=UNIX), Field.sort_key()] = 0
+    unix: Annotated[int, Field.primary_key(metadata=UNIX)] = 0
     """When the event happened, in whole nanoseconds since the epoch."""
 
     # Denormalised from `unix` rather than partitioned with an `hour`
@@ -182,7 +176,9 @@ class Event(MarketConvertible):
     snapunix: Annotated[int | None, Field(metadata=UNIX), Field.column("SnapUnix")] = None
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
-    hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
+    # The high half is `unix` in whole microseconds, so this one physical order
+    # keeps time locality and orders equal clocks by their value identity.
+    hash: Annotated[int, Field.primary_key(dtype=HASH), Field.sort_key()] = NIL
     """Time-anchored composition of `unix` and `vhash`."""
 
     vhash: Annotated[int, Field(dtype=pyarrow.int64()), Field.column("ValueHash")] = NIL

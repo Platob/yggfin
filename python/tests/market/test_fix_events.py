@@ -17,6 +17,9 @@ from rekep.market import (
     AssetKind,
     Currency,
     Execution,
+    Instrument,
+    InstrumentUpdate,
+    Leg,
     MarketKind,
     OptionKind,
     Order,
@@ -584,17 +587,15 @@ def test_an_entry_id_is_the_lifecycle_when_the_venue_gives_one() -> None:
 # -- what a message says about the instrument --------------------------------
 
 
-def test_instrument_altids_hold_lifecycle_and_reference_identifiers() -> None:
+def test_instrument_update_keeps_only_declared_reference_facts() -> None:
     line = (
         "8=FIX.4.4|35=8|37=ORD-9|11=CL-7|55=AAPL|"
         "454=1|455=US0378331005|456=4|60=20260821-10:00:00|10=000"
     )
-    scalar = next(reader(line).into_instruments())
-    assert scalar.altids == {
-        "orderid": "ORD-9",
-        "clordid": "CL-7",
-        "ISINNumber": "US0378331005",
-    }
+    update = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)]))
+    assert update.instrument.isincode == "US0378331005"
+    assert update.altids == {}
+    assert "altids" not in Instrument.into_field().names
 
 
 def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> None:
@@ -1062,7 +1063,7 @@ def test_a_fragment_with_no_version_remains_raw() -> None:
     reader = FixEvents(message=FixMsg.from_pairs([("11", "CL-1"), ("54", "1")]))
     assert reader.version is None
     assert list(reader) == []
-    assert list(reader.into_instruments()) == []
+    assert list(InstrumentUpdate.from_fixmsgs([reader.message])) == []
 
 
 # -- the instrument an entry is about ----------------------------------------
@@ -1084,15 +1085,11 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     which are read off the pairs and never reached an entry before."""
     reader = FixEvents.from_text(IDENTIFIED, venue="XCME")
     found = list(reader)
-    header = next(reader.into_instruments())
+    header = next(InstrumentUpdate.from_fixmsgs([reader.message])).instrument
     assert len(found) == 2
     for one in found:
         instrument = one.into_instrument()
-        assert instrument is header, "one message, one instrument"
-        assert instrument.altids == {
-            "mdentryid": "L1",
-            "ISINNumber": "US0378331005",
-        }
+        assert instrument == header, "one message, one instrument component"
         assert instrument.isincode == "US0378331005"
 
 
@@ -1123,7 +1120,9 @@ def test_instrument_projection_reads_every_md_entry_without_building_events(
         raise AssertionError("reference extraction must not construct market events")
 
     monkeypatch.setattr(FixEvents, "_event", refused)
-    found = list(FixEvents.from_text(line, venue="XCME").into_instruments())
+    found = [
+        update.instrument for update in InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)])
+    ]
 
     assert [instrument.symbol for instrument in found] == ["BTC-USD", "ETH-USD"]
     assert len({instrument.xhash for instrument in found}) == 2
@@ -1137,33 +1136,33 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
     entries live, and the instrument they build must equal the one the same
     wire line builds through the scalar fallback.
     """
-    from rekep.fix.components import Leg as LegEntry
     from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
 
     stored = FixMsg(
         beginstring="FIX.4.4",
         msgtype="d",
-        symbol="SPREAD",
         protocolversion="4.4",
         securityaltid=[
             SecurityAltIDEntry(securityaltid="US0378331005", securityaltidsource="4"),
             SecurityAltIDEntry(securityaltid="037833100", securityaltidsource="1"),
         ],
-        legs=[
-            LegEntry(
-                symbol="AAPL",
-                side="1",
-                ratioqty=1.0,
-                maturitydate=datetime.date(2027, 1, 15),
-                strikeprice=150.5,
-            ),
-            LegEntry(symbol="MSFT", side="2", ratioqty=2.0, currency="USD"),
-        ],
+        instrument=Instrument(
+            symbol="SPREAD",
+            isincode="US0378331005",
+            legs=[
+                Leg(
+                    symbol="AAPL",
+                    side=Side.BUY,
+                    ratio=1.0,
+                    maturitydate=datetime.date(2027, 1, 15),
+                    strikeprice=150.5,
+                ),
+                Leg(symbol="MSFT", side=Side.SELL, ratio=2.0, currency="USD"),
+            ],
+        ),
     )
-    reader = FixEvents(message=stored)
-    instrument = next(reader.into_instruments())
+    instrument = next(InstrumentUpdate.from_fixmsgs([stored])).instrument
 
-    assert instrument.altids == {"ISINNumber": "US0378331005", "CUSIP": "037833100"}
     assert instrument.isincode == "US0378331005"
     assert [(leg.symbol, leg.side, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", Side.BUY, 1.0),
@@ -1178,7 +1177,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
         "600=MSFT|624=2|623=2|556=USD"
     )
-    assert instrument == next(FixEvents.from_text(wire).into_instruments())
+    assert instrument == next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(wire)])).instrument
 
 
 def test_a_two_sided_trade_capture_report_is_one_execution_per_side() -> None:
@@ -1239,9 +1238,7 @@ def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
         (Side.SELL, "O-SELL"),
     ]
     assert {one.tradeid for one in events} == {"M-9"}
-    instrument = next(
-        iter(FixMsg.from_text(line).into_fix_events(fix_version="4.4").into_instruments())
-    )
+    instrument = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)])).instrument
     assert [leg.symbol for leg in instrument.legs] == ["EUR/USD-NEAR", "EUR/USD-FAR"]
 
 

@@ -12,7 +12,6 @@ from typing import Any, TypeVar
 from rekep.convert import Convertible
 from rekep.enums import (
     MIC,
-    AssetKind,
     EventType,
     MarketKind,
     Side,
@@ -26,7 +25,7 @@ from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
-from rekep.market.instrument import Instrument, Leg, _flat_instruments
+from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
 from rekep.market.transacted import TRANSACTED, Transacted, resolve
 from rekep.text.fixmsg import FixMsg
@@ -721,12 +720,6 @@ class FixEvents(Convertible):
                 seeded = self.state_of("OrdStatus", seeded)
             yield self._order(seeded)
 
-    def into_instruments(self) -> Iterator[Instrument]:
-        """One flat record per canonical ticker in the message."""
-        if self.version is None:
-            return
-        yield from _flat_instruments(reader._reference for reader in self._instrument_readers())
-
     def _instrument_readers(self) -> Iterator[FixEvents]:
         """Entry projections when present, otherwise the message header."""
         handler = self.dictionary.handlers.get(self._message_kind)
@@ -1112,36 +1105,8 @@ class FixEvents(Convertible):
 
     @functools.cached_property
     def _reference(self) -> Instrument:
-        """The generic Instrument projection with market-only normalizations."""
-        get = self.get
-        cfi = get("CFICode")
-        securitytype = get("SecurityType")
-        altids = {
-            **self._versioned_message.altids,
-            **self._identifier_altids,
-            **self._security_altids,
-        }
-        built = Instrument.from_(
-            self._versioned_message,
-            registry=self.registry,
-            unix=self.unix,
-            kind=_classified(cfi, securitytype),
-            altids=altids,
-            maturitydate=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
-        )
-        built.legs = self._normalized_legs(built.legs or self._declared_legs())
-        parent = self.__dict__.get("_parent_reference")
-        if parent is None:
-            return built
-        if not built.symbolticker:
-            return parent
-        fallback = dataclasses.replace(parent, altids={}, legs=None)
-        enriched = built.enriched_with(fallback)
-        if enriched is None:
-            return built
-        # Header identifiers participate in canonical ticker selection. Clear
-        # the child-only result so the combined declared facts choose once.
-        return dataclasses.replace(enriched, symbolticker="")
+        """The component projection owned by its declaration."""
+        return Instrument.from_fix_events(self)
 
     @functools.cached_property
     def _versioned_message(self) -> FixMsg:
@@ -1208,24 +1173,6 @@ class FixEvents(Convertible):
             if self.access.tag_text(group) in keys
         ]
         return bool(outer_at) and min(outer_at) < group_at
-
-    def _normalized_legs(self, legs: list[Leg] | None) -> list[Leg] | None:
-        """Apply CFI classification and month-year fallback to generic legs."""
-        if not legs:
-            return legs
-        entries = self._group("NoLegs")
-        normalized: list[Leg] = []
-        for index, leg in enumerate(legs):
-            entry = entries[index] if index < len(entries) else {}
-            changes: dict[str, Any] = {}
-            if leg.kind is AssetKind.UNKNOWN:
-                changes["kind"] = _classified(entry.get("LegCFICode"), entry.get("LegSecurityType"))
-            if leg.maturitydate is None:
-                maturity = _month_year(entry.get("LegMaturityMonthYear"))
-                if maturity is not None:
-                    changes["maturitydate"] = maturity
-            normalized.append(dataclasses.replace(leg, **changes) if changes else leg)
-        return normalized
 
     def _group_entries(self, name: str) -> list[list[tuple[str, str]]]:
         """One repeating group under its configured count tag or rendered name."""
@@ -1421,100 +1368,6 @@ class FixEvents(Convertible):
         }
 
 
-#: `SecurityType <167>` to what an instrument settles as, for the venues that
-#: send no `CFICode <461>`. FIX enumerates a hundred and eighteen of these and
-#: most of them are one kind of bond, so this maps the **bands** rather than
-#: the list: a value not here classifies as nothing, which is what `UNKNOWN`
-#: is for and better than a guess. Read off the dictionary in `data/fix.zip`,
-#: and checked against it by `tests/market/test_fix.py`.
-SECURITY_TYPES: dict[str, AssetKind] = {
-    # Equity
-    "CS": AssetKind.EQUITY,
-    "PS": AssetKind.EQUITY,
-    # Collective investment
-    "MF": AssetKind.FUND,
-    # Derivatives
-    "FUT": AssetKind.FUTURE,
-    "OPT": AssetKind.OPTION,
-    "OOF": AssetKind.OPTION,
-    "OOP": AssetKind.OPTION,
-    "OOC": AssetKind.OPTION,
-    "WAR": AssetKind.WARRANT,
-    "MLEG": AssetKind.MULTILEG,
-    # Swaps, which FIX spells one per underlying
-    "CDS": AssetKind.SWAP,
-    "IRS": AssetKind.SWAP,
-    "FXSWAP": AssetKind.SWAP,
-    # Currency
-    "FXSPOT": AssetKind.CURRENCY,
-    "FXFWD": AssetKind.FORWARD,
-    "FXNDF": AssetKind.FORWARD,
-    "FORWARD": AssetKind.FORWARD,
-    "CASH": AssetKind.CURRENCY,
-    # Financing
-    "REPO": AssetKind.REPO,
-    "BUYSELL": AssetKind.REPO,
-    "SECLOAN": AssetKind.LOAN,
-    "SECPLEDGE": AssetKind.LOAN,
-    "TERM": AssetKind.LOAN,
-    "RVLV": AssetKind.LOAN,
-    "RVLVTRM": AssetKind.LOAN,
-    "BRIDGE": AssetKind.LOAN,
-    "SWING": AssetKind.LOAN,
-    # Debt: the long tail, by what a reader would call it
-    "CORP": AssetKind.DEBT,
-    "CB": AssetKind.DEBT,
-    "TBOND": AssetKind.DEBT,
-    "TNOTE": AssetKind.DEBT,
-    "TBILL": AssetKind.DEBT,
-    "TIPS": AssetKind.DEBT,
-    "MUNI": AssetKind.DEBT,
-    "GO": AssetKind.DEBT,
-    "REV": AssetKind.DEBT,
-    "MTN": AssetKind.DEBT,
-    "CP": AssetKind.DEBT,
-    "CD": AssetKind.DEBT,
-    "ABS": AssetKind.DEBT,
-    "MBS": AssetKind.DEBT,
-    "CMO": AssetKind.DEBT,
-    "FRN": AssetKind.DEBT,
-    "EUCORP": AssetKind.DEBT,
-    "EUSOV": AssetKind.DEBT,
-    "BRADY": AssetKind.DEBT,
-}
-
-
-def _classified(cfi: str | None, securitytype: str | None) -> AssetKind:
-    """What an instrument settles as, from its CFI code or from FIX's own word.
-
-    The CFI first, because ISO 10962's category letter *is* what `AssetKind` is
-    coded on and it classifies exactly. `SecurityType <167>` after it, because
-    a venue that sends no CFI very often sends `CS`, `FUT` or `OPT` instead --
-    and a reading that stopped at the CFI left every one of those `UNKNOWN`.
-    """
-    if cfi:
-        found = AssetKind.from_cfi(cfi[:1])
-        if found is not AssetKind.UNKNOWN:
-            return found
-    if securitytype:
-        return SECURITY_TYPES.get(securitytype.strip().upper(), AssetKind.UNKNOWN)
-    return AssetKind.UNKNOWN
-
-
-def _month_year(text: str | None) -> datetime.date | None:
-    """`MaturityMonthYear <200>` as a date -- the first of the month it names."""
-    if not text:
-        return None
-    trimmed = text.strip()
-    if len(trimmed) < 6 or not trimmed[:6].isdigit():
-        return None
-    day = trimmed[6:8]
-    try:
-        return datetime.date(int(trimmed[:4]), int(trimmed[4:6]), int(day) if day.isdigit() else 1)
-    except ValueError:
-        return None
-
-
 def unix_value(value: Any, day: int | None = None) -> int | None:
     """FIX text or a typed parsed-log clock as epoch nanoseconds."""
     if isinstance(value, datetime.datetime):
@@ -1565,11 +1418,3 @@ def _integer(text: Any) -> int | None:
         return int(text)
     except ValueError:
         return None
-
-
-def _date(text: str | None) -> datetime.date | None:
-    """A FIX `LocalMktDate` or `UTCDateOnly` as a date."""
-    stamped = unix_of(text)
-    if stamped is None:
-        return None
-    return datetime.date.fromordinal(stamped // (SECONDS_A_DAY * NANOS) + EPOCH_ORDINAL)

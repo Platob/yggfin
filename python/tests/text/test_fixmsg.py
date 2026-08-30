@@ -22,7 +22,19 @@ from rekep.fix.columns import (
     column_metadata,
 )
 from rekep.fix.fields import fix_field
-from rekep.market import HASH, MIC, BookIterator, Event, EventType
+from rekep.market import (
+    HASH,
+    MIC,
+    AssetKind,
+    BookIterator,
+    Currency,
+    Event,
+    EventType,
+    Instrument,
+    InstrumentUpdate,
+    OptionKind,
+    Side,
+)
 from rekep.market.event import HOUR, SECOND
 from rekep.text import Entry
 from rekep.text.fixmsg import _UNDIGESTED
@@ -60,6 +72,18 @@ SOURCE: list[str] = []
 def _protocols(batch: pyarrow.RecordBatch | pyarrow.Table) -> list[str]:
     """The `protocol` column spelled out, registered names included."""
     return [Protocol.from_int(code).code for code in batch.column("protocol").to_pylist()]
+
+
+def _instrument_column(
+    batch: pyarrow.RecordBatch | pyarrow.Table, name: str
+) -> pyarrow.ChunkedArray | pyarrow.Array:
+    """One member of the nested instrument component."""
+    return pyarrow.compute.struct_field(batch.column("instrument"), name)
+
+
+def _instruments(*messages: FixMsg) -> list[Instrument]:
+    """Components carried by parsed messages through the class-owned API."""
+    return [update.instrument for update in InstrumentUpdate.from_fixmsgs(messages)]
 
 
 LINE = [
@@ -110,7 +134,6 @@ MESSAGE = [
     "parties",
     "trdregtimestamps",
     "sidetrdregts",
-    "isincode",
     "parentclordid",
     "parentorderid",
 ]
@@ -119,7 +142,7 @@ MESSAGE = [
 #: that cutoff -- a list declared earlier would push flat columns past it.
 TRAILING_COMPONENTS = [
     "securityaltid",
-    "legs",
+    "instrument",
 ]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
@@ -192,16 +215,28 @@ FLAT_COLUMNS = [column for _, column in FLAT]
 _FIX_ADDED_COLUMNS = [
     column for column in FLAT_COLUMNS if column not in set(ENVELOPE + SOURCE + LINE + MESSAGE)
 ]
-_SYMBOL_AT = _FIX_ADDED_COLUMNS.index("symbol")
-ADDED_COLUMNS = [
-    *_FIX_ADDED_COLUMNS[:_SYMBOL_AT],
-    "symbolticker",
-    *_FIX_ADDED_COLUMNS[_SYMBOL_AT:],
-]
+_INSTRUMENT_COLUMNS = {
+    "symbol",
+    "securityid",
+    "securityidsource",
+    "securitytype",
+    "cficode",
+    "securityexchange",
+    "currency",
+    "maturitydate",
+    "maturitymonthyear",
+    "strikeprice",
+    "putorcall",
+    "contractmultiplier",
+    "minpriceincrement",
+    "roundlot",
+    "securitydesc",
+}
+ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTRUMENT_COLUMNS]
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 34
 EXPECTED_FLAT_COLUMNS = 85
-EXPECTED_LOG_COLUMNS = 126
+EXPECTED_LOG_COLUMNS = 109
 
 
 @pytest.fixture(scope="module")
@@ -437,7 +472,7 @@ def test_the_digest_is_every_column_but_the_clocks_and_the_identities() -> None:
     named = set(FixMsg.into_digest_columns())
 
     assert named == set(FixMsg.into_field().names) - _UNDIGESTED
-    assert {"clordid", "price", "side", "orderqty", "parties", "legs"} <= named, (
+    assert {"clordid", "price", "side", "orderqty", "parties", "instrument"} <= named, (
         "a lifted field is content"
     )
     assert not named & {"unix", "recunix", "hash", "vhash", "xhash", "message"}
@@ -726,14 +761,12 @@ def test_instrument_groups_resolve_into_their_structured_columns(
         ("US0378331005", "4"),
         ("037833100", "1"),
     ]
-    legs = batch.column("legs")[0].as_py()
-    assert [(entry["symbol"], entry["side"], entry["ratioqty"]) for entry in legs] == [
-        ("AAPL", "1", 1.0),
-        ("MSFT", "2", 2.0),
+    legs = _instrument_column(batch, "legs")[0].as_py()
+    assert [(entry["symbol"], entry["side"], entry["ratio"]) for entry in legs] == [
+        ("AAPL", int(Side.BUY), 1.0),
+        ("MSFT", int(Side.SELL), 2.0),
     ]
-    assert legs[0]["maturitydate"] == datetime.datetime(2027, 1, 15), (
-        "a FIX date projects as an instant, like every other temporal datatype"
-    )
+    assert legs[0]["maturitydate"] == datetime.date(2027, 1, 15)
     assert [(entry["key"], entry["value"]) for entry in batch.column("entries")[0].as_py()] == [
         ("LegQty", "9")
     ], "a member no column projects stays in `entries`, and nothing is stored twice"
@@ -745,9 +778,8 @@ def test_instrument_groups_resolve_into_their_structured_columns(
     ]
     assert [dict(entry).get("600") for entry in map(dict, stored.group(555))] == ["AAPL", "MSFT"]
 
-    instrument = next(iter(stored.into_fix_events().into_instruments()))
-    direct = next(iter(FixMsg.from_text(line, "|").into_fix_events().into_instruments()))
-    assert instrument.altids == {"ISINNumber": "US0378331005", "CUSIP": "037833100"}
+    (instrument,) = _instruments(stored)
+    (direct,) = _instruments(FixMsg.from_text(line, "|"))
     assert instrument.isincode == "XS123", "the primary ISIN outranks the alternative"
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
@@ -756,23 +788,25 @@ def test_instrument_groups_resolve_into_their_structured_columns(
     assert instrument == direct, "the resolved columns and the pair walk agree"
 
 
-def test_flat_instrument_keeps_lifecycle_altids() -> None:
-    instrument = FixMsg(symbol="AAPL", altids={"clordid": "C1"}).into_instrument()
+def test_nested_instrument_does_not_absorb_lifecycle_altids() -> None:
+    message = FixMsg(instrument=Instrument(symbol="AAPL"), altids={"clordid": "C1"})
 
-    assert instrument is not None
-    assert instrument.altids == {"clordid": "C1"}
+    assert message.instrument.symbolticker == "AAPL"
+    assert message.altids == {"clordid": "C1"}
+    assert "altids" not in Instrument.into_field().names
 
 
 def test_instrument_projection_prefers_promoted_values_and_fills_from_entries() -> None:
-    instrument = FixMsg(
+    message = FixMsg(
         unix=23,
         protocolversion="4.4",
-        symbol="PROMOTED",
+        instrument=Instrument(symbol="PROMOTED"),
         entries=[(55, "RESIDUAL"), (107, "reference facts")],
-    ).into_instrument()
+    )
+    (update,) = InstrumentUpdate.from_fixmsgs([message])
+    instrument = update.instrument
 
-    assert instrument is not None
-    assert (instrument.unix, instrument.symbol, instrument.securitydesc) == (
+    assert (update.unix, instrument.symbol, instrument.securitydesc) == (
         23,
         "PROMOTED",
         "reference facts",
@@ -799,16 +833,14 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     assert [(entry["securityaltid"], entry["securityaltidsource"]) for entry in altids] == [
         ("US0378331005", "4"),
     ]
-    legs = batch.column("legs")[0].as_py()
-    assert [(entry["symbol"], entry["side"], entry["ratioqty"]) for entry in legs] == [
-        ("AAPL", "1", 1.0),
-        ("MSFT", "2", 2.0),
+    legs = _instrument_column(batch, "legs")[0].as_py()
+    assert [(entry["symbol"], entry["side"], entry["ratio"]) for entry in legs] == [
+        ("AAPL", int(Side.BUY), 1.0),
+        ("MSFT", int(Side.SELL), 2.0),
     ]
 
-    instrument = next(
-        iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
-    )
-    assert instrument.altids == {"ISINNumber": "US0378331005"}
+    (instrument,) = _instruments(FixMsg.from_dict(batch.to_pylist()[0]))
+    assert instrument.isincode == "US0378331005"
     assert [(leg.symbol, leg.side.name, leg.ratio) for leg in instrument.legs] == [
         ("AAPL", "BUY", 1.0),
         ("MSFT", "SELL", 2.0),
@@ -837,11 +869,9 @@ def test_an_entry_scoped_alt_id_group_stays_with_its_entry(
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line, "|")
-    found = [(one.symbol, one.altids) for one in stored.into_fix_events().into_instruments()]
-    assert found == [
-        (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
-    ]
-    assert found == [("BTC-USD", {}), ("ETH-USD", {"ISINNumber": "US0378331005"})]
+    found = [(one.symbol, one.isincode) for one in _instruments(stored)]
+    assert found == [(one.symbol, one.isincode) for one in _instruments(direct)]
+    assert found == [("BTC-USD", None), ("ETH-USD", "US0378331005")]
 
 
 def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
@@ -860,22 +890,9 @@ def test_a_quote_entry_scoped_alt_id_group_stays_with_its_entry(
 
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line, "|")
-    found = [(one.symbol, one.altids) for one in stored.into_fix_events().into_instruments()]
-    assert found == [
-        (one.symbol, one.altids) for one in direct.into_fix_events().into_instruments()
-    ]
-    assert found == [
-        ("AAA", {"quoteentryid": "E1", "quoteid": "Q1", "quotesetid": "S1"}),
-        (
-            "BBB",
-            {
-                "quoteentryid": "E2",
-                "quoteid": "Q1",
-                "quotesetid": "S1",
-                "CUSIP": "037833100",
-            },
-        ),
-    ]
+    found = [(one.symbol, one.securityid) for one in _instruments(stored)]
+    assert found == [(one.symbol, one.securityid) for one in _instruments(direct)]
+    assert found == [("AAA", None), ("BBB", None)]
 
 
 def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
@@ -893,13 +910,11 @@ def test_a_4_3_row_answers_from_the_column_and_from_entries_at_once(
     assert [entry["securityaltid"] for entry in batch.column("securityaltid")[0].as_py()] == [
         "US0378331005"
     ]
-    assert batch.column("legs")[0].as_py() is None
+    assert _instrument_column(batch, "legs")[0].as_py() is None
     assert 555 in [entry["tag"] for entry in batch.column("entries")[0].as_py()]
 
-    instrument = next(
-        iter(FixMsg.from_dict(batch.to_pylist()[0]).into_fix_events().into_instruments())
-    )
-    assert instrument.altids == {"ISINNumber": "US0378331005"}
+    (instrument,) = _instruments(FixMsg.from_dict(batch.to_pylist()[0]))
+    assert instrument.isincode == "US0378331005"
     assert [(leg.symbol, leg.side.name) for leg in instrument.legs] == [
         ("AAPL", "BUY"),
         ("MSFT", "SELL"),
@@ -1038,7 +1053,7 @@ def test_a_row_round_trips_as_a_document() -> None:
         + [_stored(0, "ISINCODE", one) for one in ("FAKE-ISIN-0001", "FAKE-ISIN-0002")],
         code="TTF",
         msgseqnum=7,
-        symbol="TTF",
+        instrument=Instrument(symbol="TTF"),
         sendingtime=datetime.datetime.fromtimestamp(1_755_163_800.123, tz=datetime.UTC),
         possdupflag=True,
         checksum="010",
@@ -1147,9 +1162,9 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
     assert parsed.column("msgtype").to_pylist() == ["D", "8", None]
     assert parsed.column("msgseqnum").to_pylist() == [7, None, None]
     assert parsed.column("origclordid").to_pylist() == ["ROOT", "OLD", None]
-    assert parsed.column("cficode").to_pylist() == ["EXXXXX", None, None]
+    assert _instrument_column(parsed, "cficode").to_pylist() == ["EXXXXX", None, None]
     assert parsed.column("avgpx").to_pylist() == [12.5, None, None]
-    assert parsed.column("isincode").to_pylist() == [None, "XX0000084733", None]
+    assert _instrument_column(parsed, "isincode").to_pylist() == [None, "XX0000084733", None]
     assert parsed.column("parties").to_pylist()[0] == [
         {"partyid": "BUYSIDE", "partyidsource": "D", "partyrole": 1}
     ]
@@ -1408,7 +1423,7 @@ def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
 
     assert activated == [False, True]
     assert translated.column("clordid").to_pylist() == ["A", None]
-    assert translated.column("symbol").to_pylist() == ["IBM", None]
+    assert _instrument_column(translated, "symbol").to_pylist() == ["IBM", ""]
     assert [entry["tag"] for entry in translated.column("entries")[1].as_py()] == [11, 55, 10]
     assert translated.column("unmap")[1].as_py() is None
 
@@ -1644,7 +1659,7 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
 
     parsed = FixMsg.from_message_batch(raw, codec)
 
-    assert parsed.column("symbol").to_pylist() == [None, None]
+    assert _instrument_column(parsed, "symbol").to_pylist() == ["", ""]
     assert parsed.column("sendingtime").to_pylist() == [None, None]
     assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("entries")[0].as_py())
 
@@ -1657,7 +1672,7 @@ def test_fixmsg_consumes_a_hash_delimited_wire_message(
     parsed = FixMsg.from_message_batch(raw, codec)
 
     assert parsed.column("msgtype").to_pylist() == ["D"]
-    assert parsed.column("symbol").to_pylist() == ["TTF"]
+    assert _instrument_column(parsed, "symbol").to_pylist() == ["TTF"]
 
 
 def test_a_hybrid_frame_reads_named_and_numeric_fields_together(codec: FixCodec) -> None:
@@ -1680,7 +1695,7 @@ def test_a_hybrid_frame_reads_named_and_numeric_fields_together(codec: FixCodec)
     residual = parsed.column("unmap")[0].as_py()
 
     assert parsed.column("msgtype").to_pylist() == ["D"]
-    assert parsed.column("symbol").to_pylist() == [None]
+    assert _instrument_column(parsed, "symbol").to_pylist() == [""]
     assert [(entry["tag"], entry["value"]) for entry in parsed.column("entries")[0].as_py()] == [
         (55, "wire"),
         (55, "named"),
@@ -1748,7 +1763,9 @@ def test_staged_wire_conversion_drops_message_markers_before_fix_rules(
     assert parsed.column("side").to_pylist() == ["1", "2"], (
         "read as the mixed message it is, both spellings reach one column"
     )
-    assert parsed.column("symbol").to_pylist() == expected_columns["symbol"].to_pylist()
+    assert (
+        _instrument_column(parsed, "symbol").to_pylist() == expected_columns["symbol"].to_pylist()
+    )
     assert parsed.column("entries").to_pylist() == [[], []]
 
 
@@ -1793,7 +1810,8 @@ def test_the_flat_layer_is_the_session_layer_and_what_a_trading_log_is_made_of()
 def test_fix_names_do_not_alias_the_generic_event_envelope() -> None:
     assert {tag: COLUMNS[tag] for tag in RAW_TAGS} == RAW_TAGS
     assert set(RAW_TAGS.values()).isdisjoint(Event.into_field().names)
-    assert {"code", *RAW_TAGS.values()} <= set(FixMsg.into_field().names)
+    assert {"code", "msgseqnum"} <= set(FixMsg.into_field().names)
+    assert "symbol" in FixMsg.into_field().field("instrument").names
     assert FixMsg.into_field().field("MsgSeqNum").fix["tag"] == "34"
 
 
@@ -1841,6 +1859,8 @@ def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(
     is the dictionary's to say -- not this package's, and not a reading of the
     fixture that happens to parse."""
     for tag, column in FLAT:
+        if column in _INSTRUMENT_COLUMNS:
+            continue  # normalized under the component contract, checked below
         declared = registry.field(tag).dtype
         if pyarrow.types.is_timestamp(declared):
             continue  # a clock's width and zone are the test below
@@ -1863,17 +1883,20 @@ def test_an_isin_fills_the_identifier_pair_from_either_side(codec: FixCodec) -> 
 
     batch = FixMsg.from_message_batch(_raw_batch(Message(message=wire)), codec)
 
-    assert batch.column("securityid").to_pylist() == ["US0378331005"]
-    assert batch.column("isincode").to_pylist() == ["US0378331005"], "the pair fills the field"
+    assert _instrument_column(batch, "securityid").to_pylist() == ["US0378331005"]
+    assert _instrument_column(batch, "isincode").to_pylist() == ["US0378331005"], (
+        "the pair fills the field"
+    )
     assert [
-        SecurityIDSource.from_int(code) for code in batch.column("securityidsource").to_pylist()
+        SecurityIDSource.from_int(code)
+        for code in _instrument_column(batch, "securityidsource").to_pylist()
     ] == [SecurityIDSource.ISIN]
 
     # The other direction, where the bridge rendered the ISIN as its own field
     # and the row carried no tag 48 at all.
-    bridged = FixMsg(isincode="XX0000084733", symbol="TTF")
-    assert bridged.securityid == "XX0000084733"
-    assert bridged.securityidsource is SecurityIDSource.ISIN
+    bridged = FixMsg(instrument=Instrument(isincode="XX0000084733", symbol="TTF"))
+    assert bridged.instrument.securityid == "XX0000084733"
+    assert bridged.instrument.securityidsource is SecurityIDSource.ISIN
 
 
 def test_a_scheme_the_message_never_stated_stays_absent(codec: FixCodec) -> None:
@@ -1883,15 +1906,15 @@ def test_a_scheme_the_message_never_stated_stays_absent(codec: FixCodec) -> None
         _raw_batch(Message(message="8=FIX.4.4|35=D|55=TTF|10=000|")), codec
     )
 
-    assert batch.column("securityidsource").to_pylist() == [None]
-    assert batch.column("securityid").to_pylist() == [None]
+    assert _instrument_column(batch, "securityidsource").to_pylist() == [None]
+    assert _instrument_column(batch, "securityid").to_pylist() == [None]
 
 
 def test_a_coded_flat_column_states_its_own_width() -> None:
     """The exception the check above steps over, spelled out rather than
     assumed: a coded column is the width its vocabulary declares."""
     for column, declared in CODED_COLUMNS.items():
-        member = FixMsg.into_field().field(column)
+        member = FixMsg.into_field().field("instrument").field(column)
         assert member.dtype == declared.into_arrow_type().index_type, column
         assert member.nullable, f"{column}: a scheme nobody stated is absent, not UNKNOWN"
         assert member.metadata["enum:name"] == declared.__name__, column
@@ -1908,9 +1931,13 @@ def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
             tag
         )
     for tag in dictated - set(STAMPS):
-        assert FixMsg.into_field().field(COLUMNS[tag]).dtype == pyarrow.timestamp("us"), (
-            f"{tag} is a date the dictionary types as an instant, and carries no zone"
-        )
+        column = COLUMNS[tag]
+        if column in _INSTRUMENT_COLUMNS:
+            assert Instrument.into_field().field(column).dtype == pyarrow.date32()
+        else:
+            assert FixMsg.into_field().field(column).dtype == pyarrow.timestamp("us"), (
+                f"{tag} is a date the dictionary types as an instant, and carries no zone"
+            )
 
 
 def test_timestamp_projection_is_naive_until_the_fix_documentation_says_utc() -> None:
@@ -1932,14 +1959,23 @@ def test_every_flat_column_admits_absence() -> None:
     """Whether a FIX field is required belongs to the message that carries it."""
     blank = FixMsg()
     for column in FLAT_COLUMNS:
+        if column in _INSTRUMENT_COLUMNS:
+            continue
         assert FixMsg.into_field().field(column).nullable, column
         assert getattr(blank, column) is None, column
+    component = blank.instrument
+    for member in Instrument.into_field().fields:
+        value = getattr(component, member.name)
+        if member.nullable:
+            assert value is None, member.name
 
 
 def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
     registry: FixRegistry,
 ) -> None:
     for tag, column in FLAT:
+        if column in _INSTRUMENT_COLUMNS:
+            continue
         expected = registry.scalar(tag)
         actual = FixMsg.into_field().field(column)
         assert actual.name == column_name(expected.name), column
@@ -2007,9 +2043,11 @@ def test_the_two_fields_the_standard_header_lift_leaves_alone() -> None:
 
 
 def test_rendered_isincode_keeps_its_source_identity() -> None:
-    field = FixMsg.into_field().field("isincode")
+    field = FixMsg.into_field().field("instrument").field("isincode")
     assert field.dtype == pyarrow.string()
-    assert field.fix == {"name": "ISINCODE", "type": "String", "display": "ISINCode"}
+    assert field.fix.display == "ISINCode"
+    assert field.metadata["iso"] == "6166"
+    assert not field.fix.tag, "the value is derived from either FIX identifier location"
 
 
 def test_fixml_decodes_a_named_value_inside_its_wire_envelope(
@@ -2155,17 +2193,19 @@ INSTRUMENT_NAMED = (
 
 #: What a typed row must carry for either spelling.
 INSTRUMENT_COLUMNS = {
+    "symbolticker": "XNAS:AAPL",
     "symbol": "AAPL",
+    "kind": int(AssetKind.OPTION),
     "securityid": "US0378331005",
-    "securityidsource": SecurityIDSource.ISIN,
+    "securityidsource": int(SecurityIDSource.ISIN),
+    "isincode": "US0378331005",
     "securitytype": "OPT",
     "cficode": "OCASPS",
     "securityexchange": "XNAS",
-    "currency": "USD",
-    "maturitydate": datetime.datetime(2026, 12, 18),
-    "maturitymonthyear": "202612",
+    "currency": int(Currency.USD),
+    "maturitydate": datetime.date(2026, 12, 18),
     "strikeprice": 150.5,
-    "putorcall": 1,
+    "putorcall": int(OptionKind.CALL),
     "contractmultiplier": 100.0,
     "securitydesc": "Apple Dec26 150 Call",
 }
@@ -2178,8 +2218,7 @@ def test_an_instrument_reaches_typed_columns_however_it_is_spelled(
     """Numbered and named spellings resolve to one identity, so one column."""
     batch = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
     for name, expected in INSTRUMENT_COLUMNS.items():
-        assert batch.column(name)[0].as_py() == expected, name
-    assert batch.column("symbolticker")[0].as_py() == "XNAS:AAPL"
+        assert _instrument_column(batch, name)[0].as_py() == expected, name
     assert batch.column("mic")[0].as_py() == int(MIC.from_str("XNAS"))
 
 
@@ -2191,8 +2230,8 @@ def test_alternate_identifiers_and_legs_are_structured_entries(codec: FixCodec) 
         (entry["securityaltid"], entry["securityaltidsource"])
         for entry in batch.column("securityaltid")[0].as_py()
     ] == [("BBG000B9XRY4", "A"), ("037833100", "1")]
-    legs = batch.column("legs")[0].as_py()
-    assert [(leg["symbol"], leg["securityidsource"], leg["ratioqty"]) for leg in legs] == [
+    legs = _instrument_column(batch, "legs")[0].as_py()
+    assert [(leg["symbol"], leg["securityidsource"], leg["ratio"]) for leg in legs] == [
         ("AAPL", "4", 1.0),
         ("MSFT", None, 2.0),
     ], "a member the second leg omits is null there and not the first leg's"
@@ -2212,7 +2251,9 @@ def test_a_market_entrys_instrument_stays_in_that_entry(codec: FixCodec) -> None
 
     assert batch.column("securityaltid")[0].as_py() is None
     assert 455 in {entry["tag"] for entry in batch.column("entries")[0].as_py()}
-    assert batch.column("symbol")[0].as_py() == "AAPL", "the message's own field still lifts"
+    assert _instrument_column(batch, "symbol")[0].as_py() == "AAPL", (
+        "the message's own field still lifts"
+    )
 
 
 def test_every_entry_has_exactly_one_destination(codec: FixCodec) -> None:
@@ -2224,7 +2265,11 @@ def test_every_entry_has_exactly_one_destination(codec: FixCodec) -> None:
     line = INSTRUMENT_WIRE.replace("|10=000", "|9998=audit|VENUEOWNFIELD=kept|10=000")
     batch = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
 
-    promoted = {name for name in INSTRUMENT_COLUMNS if batch.column(name)[0].as_py() is not None}
+    promoted = {
+        name
+        for name in INSTRUMENT_COLUMNS
+        if _instrument_column(batch, name)[0].as_py() is not None
+    }
     residual = {entry["key"] for entry in batch.column("entries")[0].as_py()}
     unmapped = {entry["key"] for entry in batch.column("unmap")[0].as_py()}
 
@@ -2286,13 +2331,13 @@ def test_a_conflicting_numeric_and_named_copy_stays_visible(codec: FixCodec) -> 
         (55, "AAPL"),
         (55, "MSFT"),
     ]
-    assert conflict.column("symbol")[0].as_py() is None, "and neither is promoted"
+    assert _instrument_column(conflict, "symbol")[0].as_py() == "", "and neither is promoted"
 
     agreed = FixMsg.from_message_batch(
         _raw_batch(Message(message="8=FIX.4.4|35=D|55=AAPL|SYMBOL=AAPL|10=000")), codec
     )
 
-    assert agreed.column("symbol")[0].as_py() == "AAPL"
+    assert _instrument_column(agreed, "symbol")[0].as_py() == "AAPL"
     assert agreed.column("entries")[0].as_py() == [], "one field, written twice, is one field"
 
 
@@ -2332,7 +2377,7 @@ def test_a_missing_group_count_and_a_malformed_continuation_stay_visible(
 
     broken = "8=FIX.4.4|35=d|55=AAPL|454=|455=|10=000"
     survived = FixMsg.from_message_batch(_raw_batch(Message(message=broken)), codec)
-    assert survived.column("symbol")[0].as_py() == "AAPL"
+    assert _instrument_column(survived, "symbol")[0].as_py() == "AAPL"
 
 
 def test_the_scalar_row_and_the_batch_lift_the_same_instrument(codec: FixCodec) -> None:
@@ -2351,8 +2396,10 @@ def test_the_scalar_row_and_the_batch_lift_the_same_instrument(codec: FixCodec) 
     assert scalar.get("MaturityDate").raw == "20261218"
     identified = scalar.identify()
     for name, expected in INSTRUMENT_COLUMNS.items():
-        assert batch.column(name)[0].as_py() == expected, name
-    assert identified.symbolticker == batch.column("symbolticker")[0].as_py()
+        assert _instrument_column(batch, name)[0].as_py() == expected, name
+    assert (
+        identified.instrument.symbolticker == _instrument_column(batch, "symbolticker")[0].as_py()
+    )
     assert identified.vhash == batch.column("vhash")[0].as_py()
 
 
@@ -2377,7 +2424,13 @@ def test_a_mixed_protocol_batch_keeps_every_row_where_it_stood(codec: FixCodec) 
     batch = FixMsg.from_message_batch(_raw_batch(*(Message(message=line) for line in lines)), codec)
 
     assert _protocols(batch) == ["FIX", "UL", "OTHER", "FIXML", "UL"]
-    assert batch.column("symbol").to_pylist() == ["AAPL", "AAPL", None, "MSFT", None]
+    assert _instrument_column(batch, "symbol").to_pylist() == [
+        "AAPL",
+        "AAPL",
+        "",
+        "MSFT",
+        "",
+    ]
     assert batch.column("clordid").to_pylist() == [None, None, None, "C1", "C2"]
     one_by_one = [
         FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec).to_pylist()[0]

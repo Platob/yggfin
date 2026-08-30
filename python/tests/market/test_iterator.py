@@ -11,7 +11,6 @@ import pytest
 
 from rekep import FixCodec, Message, txhash
 from rekep.fix import FixFieldValue, FixRegistry, record_copy
-from rekep.fix.columns import ISIN_SCHEME
 from rekep.market import (
     MIC,
     AssetKind,
@@ -21,6 +20,7 @@ from rekep.market import (
     EventType,
     Execution,
     Instrument,
+    InstrumentUpdate,
     MarketEvent,
     MarketKind,
     Order,
@@ -85,7 +85,7 @@ def test_sorted_logs_feed_books_without_a_task_adapter() -> None:
     log = FixMsg(
         unix=BASE,
         msgtype="D",
-        symbol="BTC-USD",
+        instrument=Instrument(symbol="BTC-USD"),
         clordid="B1",
         side="1",
         ordtype="2",
@@ -221,7 +221,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
             unixsource="TransactTime",
             beginstring="FIX.4.4",
             msgtype=message_type,
-            symbol="BTC-USD",
+            instrument=Instrument(symbol="BTC-USD"),
             mic=MIC.from_str("XCME"),
             **given,
         )
@@ -377,7 +377,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
             unixsource="TransactTime",
             beginstring="FIX.4.4",
             msgtype=message_type,
-            symbol="ETH-USD",
+            instrument=Instrument(symbol="ETH-USD"),
             mic=MIC.from_str("XPAR"),
             **given,
         )
@@ -504,7 +504,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
             unix=BASE + offset,
             beginstring="FIX.4.4",
             msgtype=message_type,
-            symbol="ETH-USD",
+            instrument=Instrument(symbol="ETH-USD"),
             mic=MIC.from_str("XPAR"),
             **given,
         )
@@ -696,7 +696,7 @@ def test_flat_fix_arrow_keeps_trade_revision_order_state_unknown(
         unix=BASE,
         protocolversion="4.4",
         msgtype="8",
-        symbol="AAPL",
+        instrument=Instrument(symbol="AAPL"),
         orderid="ORDER-1",
         clordid="CLIENT-1",
         execid="EXEC-1",
@@ -815,26 +815,23 @@ def test_an_identifier_beside_a_symbol_changes_no_ticker() -> None:
     assert bare.xhash == identified.xhash
 
 
-def test_instrument_altids_hold_reference_schemes_and_lifecycle_fields() -> None:
+def test_instrument_enrichment_keeps_reference_facts_only() -> None:
     known = Instrument(
         symbol="ABC",
-        altids={ISIN_SCHEME: "FR0000120271", "clordid": "CLIENT-1"},
+        isincode="FR0000120271",
     )
     observed = Instrument(
         symbol="ABC",
-        altids={"CUSIP": "012345678", "clordid": "CLIENT-2"},
+        securitydesc="completed facts",
     )
 
     enriched = known.enriched_with(observed)
 
-    assert known.into_isin() == "FR0000120271"
+    assert known.isincode == "FR0000120271"
     assert enriched is not None
-    assert enriched.altids == {
-        ISIN_SCHEME: "FR0000120271",
-        "clordid": "CLIENT-1",
-        "CUSIP": "012345678",
-    }
-    assert [field.name for field in Instrument.into_field().fields].count("altids") == 1
+    assert enriched.isincode == "FR0000120271"
+    assert enriched.securitydesc == "completed facts"
+    assert "altids" not in Instrument.into_field().names
 
 
 def test_a_security_id_only_instrument_uses_its_scheme_ticker() -> None:
@@ -855,8 +852,8 @@ def test_two_symbol_spellings_of_one_security_id_are_two_tickers() -> None:
         securityidsource="4",
     )
 
-    instruments = list(
-        Instrument.from_events(
+    updates = list(
+        InstrumentUpdate.from_events(
             [
                 order(BASE, first, Side.BID, 100.0, 1.0, "B1"),
                 order(BASE + 1, second, Side.BID, 99.0, 1.0, "B2"),
@@ -864,6 +861,7 @@ def test_two_symbol_spellings_of_one_security_id_are_two_tickers() -> None:
         )
     )
 
+    instruments = [update.instrument for update in updates]
     assert [known.symbolticker for known in instruments] == ["BTC-USD", "XBT-USD"]
     assert instruments[0].symbol == "BTC-USD"
 
@@ -984,7 +982,7 @@ def test_repeated_reference_facts_produce_one_flat_instrument() -> None:
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
         order(BASE + 20, BTC, Side.BID, 98.0, 5.0, "B3"),
     ]
-    (known,) = Instrument.from_events(events)
+    (known,) = InstrumentUpdate.from_events(events)
     assert known.unix == BASE
 
 
@@ -993,10 +991,11 @@ def test_later_reference_facts_fill_one_flat_instrument() -> None:
         order(BASE, BTC, Side.BID, 100.0, 5.0, "B1"),
         order(BASE + 10, BTC_RICH, Side.BID, 99.0, 5.0, "B2"),
     ]
-    (known,) = Instrument.from_events(events)
+    (known,) = InstrumentUpdate.from_events(events)
     assert known.unix == BASE
-    assert known.cficode == "FFICSX" and known.kind is AssetKind.FUTURE
-    assert known.currency is Currency.USD
+    assert known.instrument.cficode == "FFICSX"
+    assert known.instrument.kind is AssetKind.FUTURE
+    assert known.instrument.currency is Currency.USD
     assert known.xhash == BTC.xhash
 
 
@@ -1007,8 +1006,8 @@ def test_learning_never_retracts_what_was_already_known() -> None:
         order(BASE, BTC_RICH, Side.BID, 100.0, 5.0, "B1"),
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
     ]
-    (only,) = Instrument.from_events(events)
-    assert only.cficode == "FFICSX"
+    (only,) = InstrumentUpdate.from_events(events)
+    assert only.instrument.cficode == "FFICSX"
 
 
 # -- the hourly grid ----------------------------------------------------------
@@ -2062,7 +2061,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
         unixsource="TransactTime",
         beginstring="FIX.4.4",
         msgtype="D",
-        symbol="ETH-USD",
+        instrument=Instrument(symbol="ETH-USD"),
         mic=MIC.from_str("XPAR"),
         clordid="C-1",
         side="1",
@@ -2119,7 +2118,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         unixsource="TransactTime",
         beginstring="FIX.4.4",
         msgtype="D",
-        symbol="ETH-USD",
+        instrument=Instrument(symbol="ETH-USD"),
         mic=MIC.from_str("XPAR"),
         clordid="C-1",
         side="1",
@@ -2145,7 +2144,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
         unixsource="TransactTime",
         beginstring="FIX.4.4",
         msgtype="AE",
-        symbol="ETH-USD",
+        instrument=Instrument(symbol="ETH-USD"),
         mic=MIC.from_str("XPAR"),
         execid="E-1",
         side="2",

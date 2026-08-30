@@ -6,7 +6,7 @@ and a market product until a fold gives it state.
 ```mermaid
 flowchart LR
   T[log text] --> M[Message] --> F[FixMsg]
-  F --> I[Instrument]
+  F --> I[InstrumentUpdate]
   F --> O[Order]
   F --> E[Execution]
   O --> B[Book]
@@ -16,14 +16,14 @@ flowchart LR
 | --- | --- | --- |
 | [Message](message.md) | one log line, tokenized | `Message.from_text` |
 | [FixMsg](fixmsg.md) | one line transcribed under the registry | `FixMsg.from_message_batch` |
-| [Instrument](instrument.md) | one flat reference-data record | `Instrument.from_fixmsgs` |
+| [Instrument update](instrument.md) | one current reference-data event | `InstrumentUpdate.from_fixmsgs` |
 | [Order](order.md) | one version of one order | `FixMsg.into_market_events` |
 | [Execution](execution.md) | one fill, correction or cancellation | `FixMsg.into_market_events` |
 | [Book](book.md) | both sides of one book, flat | `BookIterator.from_events` |
 
-Every event product is keyed `(unix, hash)`; Instrument is keyed by
-`symbolticker`. All six are sorted by `unix` and partitioned on
-`unixpartition` alone:
+Every event product is keyed `(unix, hash)` except `InstrumentUpdate`, whose
+current row is keyed by `xhash`. All six are sorted by `hash` and partitioned
+on `unixpartition` alone:
 
 ```bash
 rekep fields load --target schemas/rekep/order.yaml | tail -2

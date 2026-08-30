@@ -58,9 +58,12 @@ class SymbolTicker:
         version = message.resolved_version(registry)
         access = FieldAccess.of(registry, version)
         entries = (*(message.entries or ()), *(message.unmap or ()))
+        instrument = getattr(message, "instrument", None)
 
         def read(name: str) -> Any:
-            value = getattr(message, column_name(name), None)
+            value = getattr(instrument, column_name(name), None)
+            if value in (None, ""):
+                value = getattr(message, column_name(name), None)
             if value not in (None, ""):
                 return value
             reading = access.reading(entries, name)
@@ -74,7 +77,8 @@ class SymbolTicker:
             registry=registry,
             version=version,
         )
-        return found if found.symbolticker else cls.from_str(message.symbolticker)
+        ticker = getattr(instrument, "symbolticker", "") or getattr(message, "symbolticker", "")
+        return found if found.symbolticker else cls.from_str(ticker)
 
     @classmethod
     def from_entries(

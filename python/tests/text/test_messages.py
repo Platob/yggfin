@@ -59,12 +59,57 @@ EXPECTED_PROTOCOLS = [
 #: three members each, so a parser that lost one cannot move both sides.
 EXPECTED_BRIDGE_PAIRS = 15
 
-#: Where each column of the flat layer lands, derived from the module that
-#: declares it. The count and the uniqueness of it are pinned in
-#: `tests/fix/test_columns.py` and the hop group's absence in
-#: `tests/fix/test_transcribe.py`, so a tag quietly leaving the list cannot
-#: take its column's assertions here with it.
-FLAT_NAMES = (*COLUMNS.values(), "isincode")
+#: FIX fields carried by the nested instrument component. Both maturity tags
+#: settle in one `maturitydate` leaf, because the component owns that
+#: normalization rather than publishing two spellings of one fact.
+INSTRUMENT_SOURCE_NAMES = frozenset(
+    {
+        "symbol",
+        "securityid",
+        "securityidsource",
+        "securitytype",
+        "cficode",
+        "securityexchange",
+        "currency",
+        "contractmultiplier",
+        "minpriceincrement",
+        "roundlot",
+        "maturitydate",
+        "maturitymonthyear",
+        "strikeprice",
+        "putorcall",
+        "securitydesc",
+    }
+)
+
+#: Source-bearing leaves of the nested component. `symbolticker` and `kind`
+#: are derived, while legs are a structured component rather than one lifted
+#: scalar, so none of the three belongs in flat-field accounting.
+INSTRUMENT_PROMOTED_NAMES = (
+    "symbol",
+    "securityid",
+    "securityidsource",
+    "isincode",
+    "securitytype",
+    "cficode",
+    "securityexchange",
+    "currency",
+    "contractmultiplier",
+    "minpriceincrement",
+    "roundlot",
+    "maturitydate",
+    "strikeprice",
+    "putorcall",
+    "securitydesc",
+)
+
+#: Where each promoted scalar lands, derived from the module that declares
+#: the flat FIX layer. Nested members remain in this accounting so moving the
+#: instrument under one struct cannot make a source field disappear quietly.
+TOP_LEVEL_PROMOTED_NAMES = tuple(
+    name for name in COLUMNS.values() if name not in INSTRUMENT_SOURCE_NAMES
+)
+PROMOTED_NAMES = (*TOP_LEVEL_PROMOTED_NAMES, *INSTRUMENT_PROMOTED_NAMES)
 
 #: The standard header the *raw* stage lifts out of `entries` into columns of
 #: its own, tag by column name. Spelled out rather than imported from
@@ -278,7 +323,7 @@ def test_the_stored_column_and_a_rebuilt_row_agree(table: pyarrow.Table) -> None
 
 def test_a_wire_message_yields_its_body_and_nothing_around_it(table: pyarrow.Table) -> None:
     """The line has a prefix *and* a suffix, and neither is in the message."""
-    assert table.column("symbol")[PIPED].as_py() == "TTF"
+    assert _instrument_column(table, "symbol")[PIPED].as_py() == "TTF"
     assert table.column("side")[PIPED].as_py() == "1"
     assert table.column("price")[PIPED].as_py() == 41.25, "`44=41.2500` is a Price, so a number"
     # `52` used to sit here too, as the sidecar an instant column cannot spell
@@ -287,7 +332,7 @@ def test_a_wire_message_yields_its_body_and_nothing_around_it(table: pyarrow.Tab
     assert _tagged(table.column("entries")[PIPED]) == [(44, "41.2500")]
     assert _keys(table.column("entries")[PIPED]) == ["Price"]
     assert _named(table.column("entries")[PIPED]) == []
-    around = str([table.column(name)[PIPED].as_py() for name in FLAT_NAMES])
+    around = str([_promoted_column(table, name)[PIPED].as_py() for name in PROMOTED_NAMES])
     assert "sending" not in around and "queued" not in around
 
 
@@ -429,10 +474,10 @@ def test_a_bridge_message_in_a_fix_envelope_keeps_both_halves(table: pyarrow.Tab
     """
     assert table.column("beginstring")[WRAPPED].as_py() == "FIX.4.2", "the wire header survives"
     assert table.column("msgtype")[WRAPPED].as_py() == "UL"
-    assert table.column("symbol")[WRAPPED].as_py() == "TTF", "and so do the names"
+    assert _instrument_column(table, "symbol")[WRAPPED].as_py() == "TTF", "and so do the names"
     assert table.column("side")[WRAPPED].as_py() == "1"
     assert table.column("orderqty")[WRAPPED].as_py() == 1200.0
-    assert table.column("isincode")[WRAPPED].as_py() == "XX0000084733"
+    assert _instrument_column(table, "isincode")[WRAPPED].as_py() == "XX0000084733"
     assert _named(table.column("entries")[WRAPPED]) == []
 
 
@@ -477,7 +522,7 @@ def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> No
 def test_versionless_names_are_all_kept_and_never_guessed(table: pyarrow.Table) -> None:
     assert _named(table.column("unmap")[BRIDGE]) == BRIDGE_RAW_PAIRS
     assert _keys(table.column("unmap")[BRIDGE]) == [key for key, _ in BRIDGE_RAW_PAIRS]
-    assert table.column("isincode")[BRIDGE].as_py() is None
+    assert _instrument_column(table, "isincode")[BRIDGE].as_py() is None
     _assert_no_semantic_columns(table, BRIDGE)
 
 
@@ -570,7 +615,7 @@ def test_the_header_lift_stops_at_the_checksum_it_is_measured_against(
 
 def test_a_wire_message_lands_what_it_traded_in_columns(table: pyarrow.Table) -> None:
     """The other half of the flat layer: what a desk queries a fill by."""
-    assert table.column("symbol")[SOHED].as_py() == "TTF"
+    assert _instrument_column(table, "symbol")[SOHED].as_py() == "TTF"
     assert table.column("orderid")[SOHED].as_py() == "ORD-0000038106"
     assert table.column("execid")[SOHED].as_py() == "EXE-0000091233"
     assert table.column("ordstatus")[SOHED].as_py() == "1"
@@ -658,12 +703,12 @@ def test_a_tag_is_lifted_only_where_it_occurs_once_in_its_own_line(
         (44, "42.50"),
     ], "every occurrence of a repeated tag, in wire order"
     assert parsed.column("price")[0].as_py() is None, "no one price is the multi-leg order's"
-    assert parsed.column("symbol")[0].as_py() is None, "nor one unambiguous symbol"
+    assert _instrument_column(parsed, "symbol")[0].as_py() == "", "nor one unambiguous symbol"
     assert parsed.column("msgseqnum")[0].as_py() == 8, "while what was written once still lifted"
     assert parsed.column("msgtype")[0].as_py() == "AB"
 
     assert _tagged(parsed.column("entries")[1]) == [], "and the line beside it lifted all of it"
-    assert parsed.column("symbol")[1].as_py() == "TTF"
+    assert _instrument_column(parsed, "symbol")[1].as_py() == "TTF"
     assert parsed.column("price")[1].as_py() == 41.25
     assert parsed.column("msgseqnum")[1].as_py() == 9
 
@@ -748,12 +793,14 @@ def test_the_capture_reparses_to_the_same_instants(
         written = _parsed(again.read_arrow_table(), codec)
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
     assert _protocols(written) == EXPECTED_PROTOCOLS
-    # Named rather than left to a `KeyError` from the loop below: a column the
-    # flat layer declares and the shape does not is a missing column, and it
-    # should fail as one.
-    assert set(FLAT_NAMES) <= set(written.schema.names)
-    for name in FLAT_NAMES:
+    # Named rather than left to a `KeyError` from the loops below: every flat
+    # envelope leaf and every nested instrument leaf has one declared home.
+    assert set(TOP_LEVEL_PROMOTED_NAMES) <= set(written.schema.names)
+    assert set(INSTRUMENT_PROMOTED_NAMES) <= set(written.schema.field("instrument").type.names)
+    assert not set(INSTRUMENT_PROMOTED_NAMES) & set(written.schema.names)
+    for name in TOP_LEVEL_PROMOTED_NAMES:
         assert written.column(name).to_pylist() == table.column(name).to_pylist(), name
+    assert written.column("instrument").to_pylist() == table.column("instrument").to_pylist()
 
 
 # -- what a rule set decides -------------------------------------------------
@@ -785,7 +832,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     assert table.column("msgtype")[PIPED].as_py() == "D"
     assert table.column("beginstring")[PIPED].as_py() == "FIX.4.2"
     assert table.column("checksum")[PIPED].as_py() is None, "the trailer was never lifted"
-    assert table.column("symbol")[PIPED].as_py() is None, "and no rule read the body"
+    assert _instrument_column(table, "symbol")[PIPED].as_py() == "", "and no rule read the body"
 
 
 def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
@@ -802,8 +849,8 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
     assert _protocols(table) == ["OTHER"] * EXPECTED_RECORDS
     assert table.column("entries").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("parties").to_pylist() == [None] * EXPECTED_RECORDS
-    assert table.column("symbol").to_pylist() == [None] * EXPECTED_RECORDS
-    assert table.column("isincode").to_pylist() == [None] * EXPECTED_RECORDS
+    assert _instrument_column(table, "symbol").to_pylist() == [""] * EXPECTED_RECORDS
+    assert _instrument_column(table, "isincode").to_pylist() == [None] * EXPECTED_RECORDS
     assert table.column("code").to_pylist() == [""] * EXPECTED_RECORDS
     assert table.column("msgtype").null_count < EXPECTED_RECORDS
     # The header is not the rule set's to withhold: it was lifted upstream of
@@ -820,11 +867,8 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
     assert table.column("checksum").null_count == EXPECTED_RECORDS, (
         "the trailer is nobody's header, so nothing lifted it"
     )
-    assert all(
-        table.column(name).null_count == EXPECTED_RECORDS
-        for name in FLAT_NAMES
-        if name not in set(LIFTED_HEADER.values())
-    )
+    for row in range(EXPECTED_RECORDS):
+        _assert_no_semantic_columns(table, row)
 
 
 def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
@@ -844,7 +888,7 @@ def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
     sparse = SparseCodec(registry=codec.registry)
     parsed = _one_line(tmp_path / "sparse.txt", sparse, "FixSession", "8=FIX.4.4|35=D|34=7|55=TTF|")
 
-    assert parsed.column("symbol")[0].as_py() is None
+    assert _instrument_column(parsed, "symbol")[0].as_py() == ""
     assert parsed.column("parties")[0].as_py() is None
     # `8` and `34` are gone from the list and `55` is not: a codec that lifts
     # nothing cannot suppress the header, because the raw stage lifted it
@@ -1003,8 +1047,31 @@ def test_absent_values_never_reach_a_column(tmp_path: Path, codec: FixCodec) -> 
 
 
 def _lifted(table: pyarrow.Table, row: int) -> int:
-    """How many flat columns that row filled."""
-    return sum(table.column(name)[row].as_py() is not None for name in FLAT_NAMES)
+    """How many promoted source leaves that row filled, nested or flat."""
+    top_level = sum(
+        table.column(name)[row].as_py() is not None for name in TOP_LEVEL_PROMOTED_NAMES
+    )
+    instrument = 0
+    for name in INSTRUMENT_PROMOTED_NAMES:
+        value = _instrument_column(table, name)[row].as_py()
+        if value is None or (name == "symbol" and value == ""):
+            continue
+        if name == "putorcall" and value == 0:
+            continue
+        instrument += 1
+    return top_level + instrument
+
+
+def _instrument_column(table: pyarrow.Table, name: str) -> pyarrow.ChunkedArray:
+    """One leaf of the nested FIX instrument component."""
+    return pyarrow.compute.struct_field(table.column("instrument"), name)
+
+
+def _promoted_column(table: pyarrow.Table, name: str) -> pyarrow.ChunkedArray:
+    """One promoted scalar at its stored envelope or instrument location."""
+    if name in INSTRUMENT_PROMOTED_NAMES:
+        return _instrument_column(table, name)
+    return table.column(name)
 
 
 def _audit_pairs(
@@ -1014,7 +1081,9 @@ def _audit_pairs(
     found = []
     for tag, raw in pairs:
         column = COLUMNS.get(tag)
-        typed = None if column is None else table.column(column)[row].as_py()
+        if column == "maturitymonthyear":
+            column = "maturitydate"
+        typed = None if column is None else _promoted_column(table, column)[row].as_py()
         if typed is not None and render_fix_value(typed) != raw:
             found.append((tag, raw))
     return found

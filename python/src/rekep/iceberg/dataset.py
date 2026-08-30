@@ -101,6 +101,11 @@ MERGE_RANGE_BANDS = 8
 #: groups of 50 in 0.23x, and groups of 1.6 in 4.4x.
 MERGE_GROUP_GAIN = 8
 
+#: Maximum sorted runs merged in memory during one external-sort pass. Each
+#: run contributes one scan batch, so the fan-in bounds memory independently
+#: of how many row groups or files a partition holds.
+SORT_MERGE_FAN_IN = 16
+
 #: Rows a commit carries when nothing says otherwise. A stream that commits per
 #: batch lands a file and a snapshot per batch, and every later scan pays for
 #: both; one that never commits until the end holds the whole stream in memory.
@@ -199,9 +204,9 @@ class IcebergDataset(Dataset):
 
     #: Rows one commit carries when a write does not name a size. Iceberg lands
     #: a file and a snapshot per commit, so this is the knob that decides how
-    #: much a later scan has to plan; pass `commit_row_size=0` to a write for
-    #: one commit over the whole stream.
-    commit_row_size: int | None = DEFAULT_COMMIT_ROW_SIZE
+    #: much a later scan has to plan. It stays positive because an unbounded
+    #: commit would retain the whole input stream before writing anything.
+    commit_row_size: int = DEFAULT_COMMIT_ROW_SIZE
 
     #: Columns each chunk is sorted by before it is written. None means the
     #: shape's own `sort_key()` declarations, because a table that records a
@@ -238,6 +243,8 @@ class IcebergDataset(Dataset):
         if not field.name:
             raise ValueError("an Iceberg dataset field must name its table")
         self.field = field
+        if self.commit_row_size is None or self.commit_row_size <= 0:
+            raise ValueError("commit_row_size must be positive")
         if self.branch in ROOT_BRANCHES:
             self.branch = None
         configured_expiry = self.table_properties.get(SNAPSHOT_MAX_AGE)
@@ -466,7 +473,7 @@ class IcebergDataset(Dataset):
         branch: str | None = None,
         order_by: str | Sequence[str | tuple[str, str]] | None = None,
     ) -> pyarrow.RecordBatchReader:
-        """Stream the table, optionally merging files on lexicographic sort keys.
+        """Stream the table, optionally sorting and merging on lexicographic keys.
 
         A bare `order_by` name is ascending; `(name, "descending")` requests
         the opposite explicitly, so snapshot reads never guess from newer
@@ -654,6 +661,7 @@ class IcebergDataset(Dataset):
             # An upsert or an unconditional append can put a key beyond an
             # insert-only writer's known maximum. Its cheap monotonic proof is no
             # longer complete after either operation.
+            rows = self._commit_rows(commit_row_size)
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
@@ -668,7 +676,7 @@ class IcebergDataset(Dataset):
                     source,
                     schema,
                     merge_by,
-                    commit_row_size,
+                    rows,
                     branch=branch,
                     properties=properties,
                 )
@@ -682,7 +690,6 @@ class IcebergDataset(Dataset):
             reader = self.target_field(schema).cast_arrow_reader(source)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
-            rows = self.commit_row_size if commit_row_size is None else commit_row_size
             for chunk in arrow_chunks(reader, rows):
                 chunk = self.sorted(chunk)
                 if self.plan_merges or partitions:
@@ -735,6 +742,7 @@ class IcebergDataset(Dataset):
         reader: pyarrow.RecordBatchReader | None = None
         delegated = False
         try:
+            rows = self._commit_rows(commit_row_size)
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
@@ -744,7 +752,7 @@ class IcebergDataset(Dataset):
                     source,
                     schema,
                     merge_by,
-                    commit_row_size,
+                    rows,
                     branch=branch,
                     properties=properties,
                 )
@@ -756,9 +764,7 @@ class IcebergDataset(Dataset):
             reader = self.target_field(schema).cast_arrow_reader(required)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
-            rows = self.commit_row_size if commit_row_size is None else commit_row_size
             snapshot = properties or {}
-            file_rows = rows or DEFAULT_COMMIT_ROW_SIZE
             pending: list[_StagedPartition] = []
             pending_rows = 0
 
@@ -769,7 +775,7 @@ class IcebergDataset(Dataset):
                 self._overwrite_partitions(table, pending, reference, snapshot, stager)
                 pending, pending_rows = [], 0
 
-            with _PartitionStager(table, self.sort_fields(), file_rows) as stager:
+            with _PartitionStager(table, self.sort_fields(), rows) as stager:
                 for staged in _staged_partition_stream(reader, partitions, stager):
                     pending.append(staged)
                     pending_rows += staged.rows
@@ -1124,12 +1130,12 @@ class IcebergDataset(Dataset):
         """Append a stream, inserting only the keys the table does not hold yet."""
         reader: pyarrow.RecordBatchReader | None = None
         try:
+            rows = self._commit_rows(commit_row_size)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
             reader = self.target_field(schema).cast_arrow_reader(source)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
-            rows = self.commit_row_size if commit_row_size is None else commit_row_size
             snapshot = properties or {}
             if not join:
                 self.__dict__.pop("_insert_upper", None)
@@ -1341,6 +1347,13 @@ class IcebergDataset(Dataset):
             return chunk
         return chunk.sort_by(fields)
 
+    def _commit_rows(self, requested: int | None) -> int:
+        """The positive row bound one streaming commit may retain."""
+        rows = self.commit_row_size if requested is None else requested
+        if rows is None or rows <= 0:
+            raise ValueError("commit_row_size must be positive")
+        return rows
+
     def sort_fields(self) -> list[tuple[str, str]]:
         """Physical Arrow sort fields, with normalized directions."""
         table = self.__dict__.get("iceberg_table")
@@ -1353,11 +1366,9 @@ class IcebergDataset(Dataset):
             return [(name, "ascending") for name in self.sort_by]
         else:
             shape = self.field
-            declared = {
-                **dict.fromkeys(shape.partition_keys(), "ascending"),
-                **shape.sort_keys(),
-            }
-            return [(name, _sort_direction(direction)) for name, direction in declared.items()]
+            return [
+                (name, _sort_direction(direction)) for name, direction in shape.sort_keys().items()
+            ]
         return [
             (name, _sort_direction(direction))
             for name, direction in (shape.sort_keys().items() if shape is not None else ())
@@ -1978,10 +1989,11 @@ def _ordered_reader(
     tasks: Iterable[Any],
     columns: Sequence[tuple[str, str]],
 ) -> pyarrow.RecordBatchReader:
-    """Read partition paths in order, merging their sorted files on `columns`.
+    """Read partition paths in order, sorting and merging files on `columns`.
 
     Iceberg sort orders describe file layout, not result order. Plans may list
     newer manifests first, so a stateful consumer cannot use plan order.
+    A file with another recorded layout is externally sorted in bounded runs.
     Partitions are independent storage streams: finish one canonical path
     before opening the next, and merge overlapping file ranges only within it.
     """
@@ -2060,7 +2072,10 @@ def _ordered_reader(
 def _sorted_task_batches(
     scan: Any, task: Any, columns: Sequence[tuple[str, str]]
 ) -> Iterator[pyarrow.RecordBatch]:
-    """One file's batches, refusing a table that only claims to be sorted."""
+    """One file in requested order, externally sorted when its layout differs."""
+    if not _task_is_sorted_on(scan, task, columns):
+        yield from _externally_sorted_task_batches(scan, task, columns)
+        return
     previous = None
     with _planned_reader(scan, [task]) as reader:
         for batch in reader:
@@ -2085,6 +2100,14 @@ def _merge_task_batches(
 ) -> Iterator[pyarrow.RecordBatch]:
     """K-way merge overlapping sorted files, moving slices rather than rows."""
     streams = [iter(_sorted_task_batches(scan, task, columns)) for task in tasks]
+    yield from _merge_batch_streams(streams, columns)
+
+
+def _merge_batch_streams(
+    streams: Sequence[Iterator[pyarrow.RecordBatch]],
+    columns: Sequence[tuple[str, str]],
+) -> Iterator[pyarrow.RecordBatch]:
+    """K-way merge sorted batch streams without copying their rows."""
     batches: list[pyarrow.RecordBatch | None] = [None] * len(streams)
     offsets = [0] * len(streams)
 
@@ -2125,6 +2148,107 @@ def _merge_task_batches(
             close = getattr(stream, "close", None)
             if close is not None:
                 close()
+
+
+def _task_is_sorted_on(
+    scan: Any,
+    task: Any,
+    columns: Sequence[tuple[str, str]],
+) -> bool:
+    """Whether a data file records `columns` as a physical sort prefix."""
+    order_id = task.file.sort_order_id
+    if order_id is None:
+        return False
+    order = next(
+        (one for one in scan.table_metadata.sort_orders if one.order_id == order_id),
+        None,
+    )
+    if order is None:
+        return False
+    from pyiceberg.table.sorting import NullOrder, SortDirection
+    from pyiceberg.transforms import IdentityTransform
+
+    recorded = []
+    schema = scan.projection()
+    for field in order.fields:
+        name = schema.find_column_name(field.source_id)
+        if (
+            not name
+            or "." in name
+            or not isinstance(field.transform, IdentityTransform)
+            or field.null_order != NullOrder.NULLS_LAST
+        ):
+            return False
+        direction = "descending" if field.direction == SortDirection.DESC else "ascending"
+        recorded.append((name, direction))
+        if len(recorded) == len(columns):
+            break
+    return tuple(recorded) == tuple(columns)
+
+
+def _externally_sorted_task_batches(
+    scan: Any,
+    task: Any,
+    columns: Sequence[tuple[str, str]],
+) -> Iterator[pyarrow.RecordBatch]:
+    """Sort one file through bounded Arrow IPC runs on local disk."""
+    with tempfile.TemporaryDirectory(prefix="rekep-iceberg-sort-") as directory:
+        runs: list[str] = []
+        schema = None
+        with _planned_reader(scan, [task]) as reader:
+            schema = reader.schema
+            for index, batch in enumerate(reader):
+                if not batch.num_rows:
+                    continue
+                table = pyarrow.Table.from_batches([batch], schema=reader.schema)
+                if not _in_sort_order(table, columns):
+                    table = table.sort_by(list(columns))
+                path = os.path.join(directory, f"0-{index}.arrow")
+                _write_ipc_batches(path, reader.schema, table.to_batches())
+                runs.append(path)
+        if not runs or schema is None:
+            return
+
+        generation = 1
+        while len(runs) > 1:
+            merged: list[str] = []
+            for index in range(0, len(runs), SORT_MERGE_FAN_IN):
+                group = runs[index : index + SORT_MERGE_FAN_IN]
+                if len(group) == 1:
+                    merged.append(group[0])
+                    continue
+                target = os.path.join(directory, f"{generation}-{index // SORT_MERGE_FAN_IN}.arrow")
+                streams = [iter(_ipc_batches(path)) for path in group]
+                _write_ipc_batches(target, schema, _merge_batch_streams(streams, columns))
+                for path in group:
+                    os.unlink(path)
+                merged.append(target)
+            runs = merged
+            generation += 1
+        yield from _ipc_batches(runs[0])
+
+
+def _write_ipc_batches(
+    path: str,
+    schema: pyarrow.Schema,
+    batches: Iterable[pyarrow.RecordBatch],
+) -> None:
+    """Write one external-sort run without collecting its batches."""
+    import pyarrow.ipc
+
+    with pyarrow.ipc.new_file(path, schema) as writer:
+        for batch in batches:
+            writer.write_batch(batch)
+
+
+def _ipc_batches(path: str) -> Iterator[pyarrow.RecordBatch]:
+    """Stream one Arrow IPC sort run and release its mapping."""
+    import pyarrow.ipc
+
+    with pyarrow.memory_map(path, "r") as source:
+        reader = pyarrow.ipc.open_file(source)
+        for index in range(reader.num_record_batches):
+            yield reader.get_batch(index)
 
 
 @functools.total_ordering
@@ -3629,7 +3753,7 @@ def _staged_data_file(table: Any, local: str, target: str, partition: Mapping[st
         file_format=FileFormat.PARQUET,
         partition=_partition_key(table, partition).partition,
         file_size_in_bytes=os.path.getsize(local),
-        sort_order_id=None,
+        sort_order_id=table.sort_order().order_id or None,
         spec_id=table.metadata.default_spec_id,
         equality_ids=None,
         key_metadata=None,

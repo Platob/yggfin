@@ -107,7 +107,7 @@ def pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
 
 def merge(pair: tuple[IcebergDataset, IcebergDataset], chunk: pyarrow.Table, **kwargs) -> None:
     for dataset in pair:
-        dataset.overwrite_arrow(chunk, merge_by=True, commit_row_size=0, **kwargs)
+        dataset.overwrite_arrow(chunk, merge_by=True, commit_row_size=1_000_000, **kwargs)
 
 
 # -- the merge --------------------------------------------------------------
@@ -129,7 +129,7 @@ def test_monotonic_insert_shortcut_agrees_with_pyiceberg_across_the_literal_limi
         built.append(catalog.dataset("trading.ordered", field=Ordered.into_field()).create_with())
     ours, theirs = built
     for chunk in (ordered(0, MERGE_IN_LIMIT), ordered(MERGE_IN_LIMIT, MERGE_IN_LIMIT + 1)):
-        ours.append_arrow_table(chunk, merge_by=True, commit_row_size=0)
+        ours.append_arrow_table(chunk, merge_by=True, commit_row_size=1_000_000)
         theirs.iceberg_table.upsert(chunk, join_cols=["unix", "hash"])
 
     assert ours.read_arrow_table().sort_by("unix").to_pylist() == (
@@ -147,7 +147,7 @@ def test_monotonic_insert_shortcut_agrees_with_pyiceberg_across_the_literal_limi
 def test_a_merge_of_entirely_new_keys_agrees(pair) -> None:
     """The case the planning exists for: nothing can match, so nothing is read."""
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 100), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 100), commit_row_size=1_000_000)
     merge(pair, quotes(100, 100))
     ours, theirs = pair
     assert ours.read_arrow_table().num_rows == 200
@@ -161,7 +161,7 @@ def test_new_exact_keys_inside_stored_bounds_agree_at_the_literal_limit(pair, co
     stored = rows.take(pyarrow.array(range(0, count * 2, 2)))
     incoming = rows.take(pyarrow.array(range(1, count * 2, 2)))
     for dataset in pair:
-        dataset.append_arrow(stored, commit_row_size=0)
+        dataset.append_arrow(stored, commit_row_size=1_000_000)
 
     merge(pair, incoming)
     ours, theirs = pair
@@ -177,7 +177,7 @@ def test_new_exact_keys_inside_stored_bounds_agree_at_the_literal_limit(pair, co
 def test_a_merge_of_unchanged_rows_agrees(pair) -> None:
     """Re-ingesting the same lines must not duplicate them -- or rewrite them."""
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 60), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 60), commit_row_size=1_000_000)
     merge(pair, quotes(0, 60))
     ours, theirs = pair
     assert ours.read_arrow_table().num_rows == 60
@@ -186,7 +186,7 @@ def test_a_merge_of_unchanged_rows_agrees(pair) -> None:
 
 def test_a_merge_that_updates_values_agrees(pair) -> None:
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 60, "XPAR"), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 60, "XPAR"), commit_row_size=1_000_000)
     merge(pair, quotes(0, 60, "XETR"))
     ours, theirs = pair
     stored = ours.read_arrow_table()
@@ -197,7 +197,7 @@ def test_a_merge_that_updates_values_agrees(pair) -> None:
 def test_a_half_matching_merge_agrees(pair) -> None:
     """The interesting one: some rows update, some insert, in one chunk."""
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 80, "XPAR"), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 80, "XPAR"), commit_row_size=1_000_000)
     merge(pair, quotes(40, 80, "XETR"))
     ours, theirs = pair
     stored = ours.read_arrow_table()
@@ -207,7 +207,7 @@ def test_a_half_matching_merge_agrees(pair) -> None:
 
 def test_a_merge_across_partitions_agrees(pair) -> None:
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 90, "XPAR", days=3), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 90, "XPAR", days=3), commit_row_size=1_000_000)
     merge(pair, quotes(45, 90, "XETR", days=3))
     ours, theirs = pair
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
@@ -216,29 +216,29 @@ def test_a_merge_across_partitions_agrees(pair) -> None:
 def test_a_streamed_merge_agrees_with_a_single_one(pair) -> None:
     """Chunking changes how many commits happen, never what is stored."""
     ours, theirs = pair
-    ours.append_arrow(quotes(0, 120, "XPAR"), commit_row_size=0)
-    theirs.append_arrow(quotes(0, 120, "XPAR"), commit_row_size=0)
+    ours.append_arrow(quotes(0, 120, "XPAR"), commit_row_size=1_000_000)
+    theirs.append_arrow(quotes(0, 120, "XPAR"), commit_row_size=1_000_000)
     ours.overwrite_arrow_reader(
         iter(quotes(60, 120, "XETR").to_batches(max_chunksize=25)),
         merge_by=True,
         commit_row_size=25,
     )
-    theirs.overwrite_arrow(quotes(60, 120, "XETR"), merge_by=True, commit_row_size=0)
+    theirs.overwrite_arrow(quotes(60, 120, "XETR"), merge_by=True, commit_row_size=1_000_000)
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
 
 
 def test_a_merge_on_named_columns_agrees(pair) -> None:
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 40, "XPAR"), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 40, "XPAR"), commit_row_size=1_000_000)
     for dataset in pair:
-        dataset.overwrite_arrow(quotes(20, 40, "XETR"), merge_by=["seq"], commit_row_size=0)
+        dataset.overwrite_arrow(quotes(20, 40, "XETR"), merge_by=["seq"], commit_row_size=1_000_000)
     ours, theirs = pair
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
 
 
 def test_a_merge_on_a_branch_agrees(pair) -> None:
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 40), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 40), commit_row_size=1_000_000)
         dataset.create_branch("dev")
     merge(pair, quotes(20, 40, "XETR"), branch="dev")
     ours, theirs = pair
@@ -253,12 +253,12 @@ def test_duplicate_source_keys_are_refused_by_both(pair) -> None:
     ours, theirs = pair
     for dataset in (ours, theirs):
         with pytest.raises(ValueError, match="[Dd]uplicate"):
-            dataset.overwrite_arrow(doubled, merge_by=True, commit_row_size=0)
+            dataset.overwrite_arrow(doubled, merge_by=True, commit_row_size=1_000_000)
 
 
 def test_the_report_says_what_moved(pair) -> None:
     ours, _ = pair
-    ours.append_arrow(quotes(0, 40, "XPAR"), commit_row_size=0)
+    ours.append_arrow(quotes(0, 40, "XPAR"), commit_row_size=1_000_000)
     assert ours.merge_arrow_table(quotes(20, 40, "XETR"), True) == (20, 20)
     assert ours.merge_arrow_table(quotes(20, 40, "XETR"), True) == (0, 0), "nothing changed"
 
@@ -341,7 +341,7 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     """
     catalog = IcebergCatalog(name="evolved", properties=catalog_properties(tmp_path, "evolved"))
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
-    dataset.append_arrow(quotes(0, 3), commit_row_size=0)
+    dataset.append_arrow(quotes(0, 3), commit_row_size=1_000_000)
     table = dataset.get_or_create_table()
     snapshot = table.current_snapshot().snapshot_id
     table.manage_snapshots().create_branch(snapshot, "old").commit()
@@ -603,11 +603,11 @@ def test_a_duplicate_outside_the_chunks_keys_does_not_abort_the_merge(pair) -> N
     """
     ours, theirs = pair
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 300, days=3), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 300, days=3), commit_row_size=1_000_000)
         # A key the chunk below never touches, stored twice.
         stray = quotes(900, 1)
-        dataset.append_arrow(stray, commit_row_size=0)
-        dataset.append_arrow(stray, commit_row_size=0)
+        dataset.append_arrow(stray, commit_row_size=1_000_000)
+        dataset.append_arrow(stray, commit_row_size=1_000_000)
     chunk = quotes(0, 300, "XETR", days=3)
     assert len(chunk) > 200, "past MERGE_IN_LIMIT, so the filter is a range"
     merge(pair, chunk)
@@ -630,10 +630,10 @@ def test_a_stored_duplicate_is_refused_either_side_of_the_limit(pair, keys: int)
     """
     ours, _ = pair
     doubled = quotes(0, keys)
-    ours.append_arrow(doubled, commit_row_size=0)
-    ours.append_arrow(doubled, commit_row_size=0)  # every key now stored twice
+    ours.append_arrow(doubled, commit_row_size=1_000_000)
+    ours.append_arrow(doubled, commit_row_size=1_000_000)  # every key now stored twice
     with pytest.raises(ValueError, match="[Dd]uplicate"):
-        ours.overwrite_arrow(quotes(0, keys, "XETR"), merge_by=True, commit_row_size=0)
+        ours.overwrite_arrow(quotes(0, keys, "XETR"), merge_by=True, commit_row_size=1_000_000)
 
 
 def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
@@ -653,7 +653,7 @@ def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
     # One commit per key range, so the files carry disjoint bounds -- which is
     # what makes a range predicate able to skip any of them at all.
     for start in range(0, 1_000, 200):
-        dataset.append_arrow(quotes(start, 200), commit_row_size=0)
+        dataset.append_arrow(quotes(start, 200), commit_row_size=1_000_000)
 
     updates = quotes(0, 250, "XETR")  # 250 keys: past the 200-literal ceiling
     exact = create_match_filter(updates, ["seq"])
@@ -933,8 +933,10 @@ def test_a_nested_column_does_not_stop_a_merge(tmp_path: Path) -> None:
     """Arrow refuses a map as join payload, so no join may carry one."""
     ours, theirs = nested_pair(tmp_path)
     for dataset in (ours, theirs):
-        dataset.append_arrow(nested_rows(range(4), 1), commit_row_size=0)
-        dataset.overwrite_arrow(nested_rows(range(2, 6), 9), merge_by=True, commit_row_size=0)
+        dataset.append_arrow(nested_rows(range(4), 1), commit_row_size=1_000_000)
+        dataset.overwrite_arrow(
+            nested_rows(range(2, 6), 9), merge_by=True, commit_row_size=1_000_000
+        )
     assert ours.read_arrow_table().num_rows == 6
     assert sorted(ours.read_arrow_table().column("size").to_pylist()) == sorted(
         theirs.read_arrow_table().column("size").to_pylist()
@@ -981,8 +983,8 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
     )
     catalog = IcebergCatalog(name="zero", properties=catalog_properties(tmp_path, "zero"))
     dataset = catalog.dataset("trading.levels", field=Level.into_field())
-    dataset.append_arrow(stored, commit_row_size=0)
-    dataset.overwrite_arrow(incoming, merge_by=["price"], commit_row_size=0)
+    dataset.append_arrow(stored, commit_row_size=1_000_000)
+    dataset.overwrite_arrow(incoming, merge_by=["price"], commit_row_size=1_000_000)
     rows = dataset.refresh().read_arrow_table()
     assert rows.num_rows == keys, "one row per price, not two for the zero"
     assert set(rows.column("size").to_pylist()) == {2}, "and every one of them updated"
@@ -1010,7 +1012,7 @@ def test_signed_zero_source_keys_are_duplicates(tmp_path: Path) -> None:
     dataset = catalog.dataset("trading.levels", field=Level.into_field())
 
     with pytest.raises(ValueError, match="Duplicate rows found in source dataset"):
-        dataset.overwrite_arrow(rows, merge_by=["price"], commit_row_size=0)
+        dataset.overwrite_arrow(rows, merge_by=["price"], commit_row_size=1_000_000)
     assert dataset.read_arrow_table().num_rows == 0
 
 
@@ -1136,8 +1138,8 @@ def test_a_merge_through_a_partition_transform_agrees(event_pair) -> None:
     """
     ours, theirs = event_pair
     for dataset in event_pair:
-        dataset.append_arrow(events(range(60), 0), commit_row_size=0)
-        dataset.overwrite_arrow(events(range(30, 90), 1), merge_by=True, commit_row_size=0)
+        dataset.append_arrow(events(range(60), 0), commit_row_size=1_000_000)
+        dataset.overwrite_arrow(events(range(30, 90), 1), merge_by=True, commit_row_size=1_000_000)
     order = [("at", "ascending")]
     assert ours.read_arrow_table().num_rows == 90, "merged, not duplicated"
     assert (
@@ -1150,7 +1152,7 @@ def test_a_transformed_partition_prunes_a_read(event_pair) -> None:
     """The point of `day(at)`: a day's filter opens a day's files."""
     ours, _ = event_pair
     for start in range(0, 90, 30):
-        ours.append_arrow(events(range(start, start + 30), 0), commit_row_size=0)
+        ours.append_arrow(events(range(start, start + 30), 0), commit_row_size=1_000_000)
     plan = ours.scan_plan("at >= '2026-01-02T00:00:00' and at < '2026-01-03T00:00:00'")
     assert plan["skipped"] > 0, "a day is one partition, not the whole table"
     assert plan["files"] < plan["total_files"]
@@ -1182,7 +1184,7 @@ def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path, keys: int) -> None:
     catalog = IcebergCatalog(name="nan", properties=catalog_properties(tmp_path, "nan"))
     dataset = catalog.dataset("trading.levels", field=Level.into_field())
     stored = pyarrow.Table.from_pydict({"price": prices, "size": [1] * len(prices)}, schema=schema)
-    dataset.append_arrow(stored, commit_row_size=0)
+    dataset.append_arrow(stored, commit_row_size=1_000_000)
     chunk = pyarrow.Table.from_pydict({"price": prices, "size": [2] * len(prices)}, schema=schema)
     with pytest.raises(ValueError, match="NaN"):
         dataset.merge_arrow_table(chunk, ["price"])
@@ -1201,9 +1203,12 @@ def test_the_snapshot_log_the_two_paths_leave_is_the_same(pair) -> None:
     ours, theirs = pair
     theirs.plan_merges = False
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 6), commit_row_size=0)
+        dataset.append_arrow(quotes(0, 6), commit_row_size=1_000_000)
         dataset.overwrite_arrow(
-            quotes(3, 6, "XETR"), merge_by=True, commit_row_size=0, properties={"job": "abc"}
+            quotes(3, 6, "XETR"),
+            merge_by=True,
+            commit_row_size=1_000_000,
+            properties={"job": "abc"},
         )
     counted = ("added-records", "deleted-records", "job")
 
@@ -1255,14 +1260,14 @@ def test_a_merge_after_a_rename_compares_the_column_that_was_renamed(tmp_path: P
     """
     catalog = IcebergCatalog(name="renamed", properties=catalog_properties(tmp_path, "renamed"))
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
-    dataset.append_arrow(quotes(0, 4), commit_row_size=0)
+    dataset.append_arrow(quotes(0, 4), commit_row_size=1_000_000)
     with dataset.get_or_create_table().update_schema() as update:
         update.rename_column("venue", "market")
     dataset.refresh()
     dataset.field = dataset.table_field
     same = dataset.read_arrow_table()
     before = len(dataset.iceberg_table.snapshots())
-    dataset.overwrite_arrow(same, merge_by=["symbol", "day", "seq"], commit_row_size=0)
+    dataset.overwrite_arrow(same, merge_by=["symbol", "day", "seq"], commit_row_size=1_000_000)
     dataset.refresh()
     assert dataset.read_arrow_table().sort_by("seq").to_pylist() == same.sort_by("seq").to_pylist()
     assert len(dataset.iceberg_table.snapshots()) == before, "nothing changed, so nothing committed"

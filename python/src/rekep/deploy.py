@@ -22,16 +22,16 @@ from typing import Any
 from rekep.fields import StructField
 from rekep.fix.rules import MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY
 from rekep.iceberg import IcebergCatalog
-from rekep.market import Book, Execution, Instrument, Order
+from rekep.market import Book, Execution, InstrumentUpdate, Order
 from rekep.text import FixMsg, Message
 
-#: How an event table is laid out: its key, most selective part first. A scan
-#: is a window over `unix`, so `unix` leads; `hash` only breaks the tie.
-EVENT_SORT: tuple[str, ...] = ("unix", "hash")
+#: Event files follow their byte-ordered identity; its leading clock preserves
+#: event order while keeping one declared sort key in every storage engine.
+EVENT_SORT: tuple[str, ...] = ("hash",)
 
-#: A captured FIX message sorts by its sequence number within the instant,
-#: because that is the order the session put it on the wire in.
-FIX_SORT: tuple[str, ...] = ("unix", "msgseqnum", "hash")
+#: Parsed FIX tables use the same physical order. A time-ordered consumer asks
+#: for `(unix, msgseqnum, hash)` explicitly and the bounded reader supplies it.
+FIX_SORT: tuple[str, ...] = EVENT_SORT
 
 
 @dataclasses.dataclass(frozen=True)
@@ -63,7 +63,7 @@ TABLES: tuple[Deployed, ...] = (
     Deployed(f"fix.{MARKET_CATEGORY}", FixMsg, FIX_SORT),
     Deployed(f"fix.{MISC_CATEGORY}", FixMsg, FIX_SORT),
     Deployed(f"fix.{UNKNOWN_CATEGORY}", FixMsg, FIX_SORT),
-    Deployed("market.instruments", Instrument, None),
+    Deployed("market.instruments", InstrumentUpdate, None),
     Deployed("market.books", Book),
     Deployed("market.orders", Order),
     Deployed("market.executions", Execution),

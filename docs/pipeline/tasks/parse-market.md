@@ -58,8 +58,8 @@ each market event.
 
 Snapshot generation, terminal-state handling, one-day inactivity expiry, and
 internal rejection reasons belong to the shared event and book models rather
-than the notebook. Direct mode skips captured Instrument events and keeps the
-instrument facts carried by each translated FIX message.
+than the notebook. Direct mode skips captured `InstrumentUpdate` events and
+keeps the `Instrument` facts carried by each translated FIX message.
 
 The adjacent `parse_market.yml` sets the FIX dictionary, mode, all three
 targets, snapshot cadence, lateness, live-order age, side bound, catalog, and
@@ -73,6 +73,5 @@ nested deltas; in direct mode they are the translated rows written here.
 
 The separate `flatten` mapping is downstream work: it carries those nested
 counts in book mode and stays zero in direct mode, where no flatten task is
-needed. A positive `commit_row_size` bounds direct-event Arrow batches; zero
-retains the explicit whole-stream atomic-commit behavior and drains each event
-type only at the end.
+needed. `commit_row_size` must be positive and bounds direct-event Arrow
+batches and storage commits.

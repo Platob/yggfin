@@ -105,7 +105,7 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
 def market_pipeline() -> None:
     messages = notebook_task("parse_messages", "tasks/parse_messages/parse_messages.yml")
     parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
-    reference = notebook_task(
+    instrument_updates = notebook_task(
         "parse_instruments", "tasks/parse_instruments/parse_instruments.yml"
     )
     market = notebook_task("parse_market", "tasks/parse_market/parse_market.yml")
@@ -125,7 +125,7 @@ def market_pipeline() -> None:
         output=parsed.output,
         then={"parse_instruments": "routed.market", "parse_market": "routed.market"},
     )
-    fix_route >> [reference, market]
+    fix_route >> [instrument_updates, market]
 
     market_route = after_notebook.override(task_id="route_market")(
         output=market.output,

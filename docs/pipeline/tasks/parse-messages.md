@@ -38,9 +38,9 @@ requires a rebuild, because it changes stored `eventtype`.
 
 Value identity hashes `message` alone — no composite frame, source path or row
 number — so identical payloads share `vhash` and `xhash` across captures.
-`hash` changes with the recording time. The table sorts by `(unix, hash)` and
-partitions from that time, so a later parser may move its own event time
-without changing which source interval owns the row.
+`hash` changes with the recording time. The table sorts by `hash` alone and
+partitions from `unix`, so a later parser may move its own event time without
+changing which source interval owns the row.
 
 ## Reading
 

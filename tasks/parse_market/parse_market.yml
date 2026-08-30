@@ -26,6 +26,8 @@ parameters:
   #   glue.region: eu-west-1   # where the catalog lives
   #   s3.region: eu-west-1     # where the warehouse bucket lives
   #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
+  # A custom KMS key belongs in the bucket default. `s3.sse.type: kms` and
+  # `s3.sse.key` are refused because Arrow cannot send their request headers.
   catalog: rekep
   catalog_properties:
     type: sql

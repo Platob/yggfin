@@ -3,6 +3,7 @@ import pytest
 
 from rekep.entries import Entry
 from rekep.enums import AssetKind, Currency, SecurityIDSource
+from rekep.market import Instrument
 from rekep.market.ticker import SymbolTicker
 from rekep.text.fixmsg import FixMsg
 
@@ -12,10 +13,12 @@ def test_the_readable_symbol_precedes_the_security_identifier() -> None:
     the instrument, under the venue that named it."""
     message = FixMsg(
         protocolversion="4.2",
-        securityexchange="xnas",
-        securityidsource="4",
-        securityid="US0378331005",
-        symbol="AAPL",
+        instrument=Instrument(
+            securityexchange="xnas",
+            securityidsource="4",
+            securityid="US0378331005",
+            symbol="AAPL",
+        ),
     )
 
     ticker = SymbolTicker.from_fixmsg(message)
