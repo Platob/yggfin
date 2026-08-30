@@ -13,6 +13,7 @@ import pyarrow.compute
 from rekep.entries import ENTRIES as ENTRIES
 from rekep.entries import TAG as TAG
 from rekep.entries import Entry as Entry
+from rekep.enums import SecurityIDSource
 from rekep.fields import Field, column_name
 from rekep.fix.fields import UTC_DATATYPES
 from rekep.fix.registry import FixRegistry
@@ -437,11 +438,40 @@ def id_scheme(value: Any) -> str:
     return declared.symbols.get(text) or declared.symbols.get(declared.encode(text), "")
 
 
+def isin_identity(
+    securityid: Any, securityidsource: Any, isincode: Any
+) -> tuple[Any, SecurityIDSource | None, Any]:
+    """The identifier pair and the flat ISIN, each filled from the other.
+
+    An ISIN reaches a row two ways -- `SecurityID <48>` under the source tag 22
+    calls ISIN, or a bridge's own rendered `ISINCODE` -- and which one a feed
+    wrote is not a reader's business. Filled here rather than at each reader
+    because the ticker is built from the pair: a row carrying only the second
+    had no identifier at all, and fell back to its symbol.
+    """
+    scheme = SecurityIDSource.from_str(securityidsource) if securityidsource else None
+    identifier = securityid or None
+    isin = isincode or None
+    if isin and (identifier is None or (scheme is None and identifier == isin)):
+        # Or where the two agree and nothing named a scheme: an identifier that
+        # *is* the row's ISIN is issued under ISIN, whichever field carried it.
+        return isin, SecurityIDSource.ISIN, isin
+    if identifier is not None and scheme is SecurityIDSource.ISIN:
+        return identifier, scheme, isin or identifier
+    return identifier, scheme, isin
+
+
 NAMESPACE_FIELDS: Mapping[str, Field] = namespace_columns(_REGISTRY)
 NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 
 #: The ones the parsed log declares by name, kept as names so `FixMsg` can
 #: annotate its columns with them.
+#: `SecurityIDSource <22>` with the type left to the column that declares it.
+#: The standard types the field `String`; this package reads its thirty-three
+#: codes as one code, and `DECLARED` would hand back the standard's width.
+SECURITY_ID_SOURCE: Field = _REGISTRY.scalar("SecurityIDSource", dtype=None)
+SECURITY_ID_SOURCE.fix.display = SECURITY_ID_SOURCE.fix.canonical
+
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]
 PARENT_CL_ORD_ID: Field = NAMESPACE_FIELDS["ParentClOrdID"]
 PARENT_ORDER_ID: Field = NAMESPACE_FIELDS["ParentOrderID"]

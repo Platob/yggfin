@@ -20,7 +20,7 @@ from typing import Any, Self
 import pyarrow
 import pyarrow.compute as compute
 
-from rekep.enums import MIC, AssetKind, Currency
+from rekep.enums import MIC, AssetKind, Currency, SecurityIDSource
 from rekep.fields import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.registry import FixRegistry
@@ -341,8 +341,15 @@ def _forex_symbol_arrow(values: pyarrow.Array) -> pyarrow.Array:
 
 
 def _scheme_name(registry: FixRegistry, version: str | None, value: Any) -> str:
-    """Registry name for one `SecurityIDSource` spelling."""
-    source = str(value or "").strip()
+    """Registry name for one `SecurityIDSource` spelling.
+
+    Through the code first, so a member, a wire value and the dictionary's own
+    symbol all reach one name -- and a ticker keeps spelling the scheme the way
+    the dictionary does, whatever the column beside it stores.
+    """
+    scheme = SecurityIDSource.from_str(value)
+    source = scheme.into_fix() if scheme is not SecurityIDSource.UNKNOWN else str(value or "")
+    source = source.strip()
     if not source:
         return ""
     try:

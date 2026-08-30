@@ -7,7 +7,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message, txhash
-from rekep.enums import Direction, Protocol
+from rekep.enums import Direction, Protocol, SecurityIDSource
 from rekep.fields import DISPLAY, column_name
 from rekep.fix import ENTRIES, FixRegistry, Party
 from rekep.fix.columns import COLUMNS, COMMON, DECLARATIONS, FLAT, SESSION, STAMPS, _physical_type
@@ -1834,7 +1834,57 @@ def test_every_flat_column_is_the_type_the_dictionary_gives_its_tag(
         declared = registry.field(tag).dtype
         if pyarrow.types.is_timestamp(declared):
             continue  # a clock's width and zone are the test below
+        if column in CODED_COLUMNS:
+            continue  # a field read as a code states its own width, below
         assert FixMsg.into_field().field(column).dtype == declared, column
+
+
+#: Flat columns this package reads as a packed code rather than as the text the
+#: standard types them. One so far: `SecurityIDSource <22>` is `String` to the
+#: dictionary and thirty-three single-character codes in practice.
+CODED_COLUMNS = {"securityidsource": SecurityIDSource}
+
+
+def test_an_isin_fills_the_identifier_pair_from_either_side(codec: FixCodec) -> None:
+    """`SecurityIDSource <22>` calls ISIN `4`, so an ISIN is `SecurityID <48>`
+    under that scheme whichever field carried it -- a bridge's own `ISINCODE`
+    or the tag pair -- and each fills the other."""
+    wire = "8=FIX.4.4|35=D|48=US0378331005|22=4|55=AAPL|10=000|"
+
+    batch = FixMsg.from_message_batch(_raw_batch(Message(message=wire)), codec)
+
+    assert batch.column("securityid").to_pylist() == ["US0378331005"]
+    assert batch.column("isincode").to_pylist() == ["US0378331005"], "the pair fills the field"
+    assert [
+        SecurityIDSource.from_int(code) for code in batch.column("securityidsource").to_pylist()
+    ] == [SecurityIDSource.ISIN]
+
+    # The other direction, where the bridge rendered the ISIN as its own field
+    # and the row carried no tag 48 at all.
+    bridged = FixMsg(isincode="XX0000084733", symbol="TTF")
+    assert bridged.securityid == "XX0000084733"
+    assert bridged.securityidsource is SecurityIDSource.ISIN
+
+
+def test_a_scheme_the_message_never_stated_stays_absent(codec: FixCodec) -> None:
+    """Absent is not `UNKNOWN`: one says the message was silent, the other that
+    it named a scheme nothing recognises."""
+    batch = FixMsg.from_message_batch(
+        _raw_batch(Message(message="8=FIX.4.4|35=D|55=TTF|10=000|")), codec
+    )
+
+    assert batch.column("securityidsource").to_pylist() == [None]
+    assert batch.column("securityid").to_pylist() == [None]
+
+
+def test_a_coded_flat_column_states_its_own_width() -> None:
+    """The exception the check above steps over, spelled out rather than
+    assumed: a coded column is the width its vocabulary declares."""
+    for column, declared in CODED_COLUMNS.items():
+        member = FixMsg.into_field().field(column)
+        assert member.dtype == declared.into_arrow_type().index_type, column
+        assert member.nullable, f"{column}: a scheme nobody stated is absent, not UNKNOWN"
+        assert member.metadata["enum:name"] == declared.__name__, column
 
 
 def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
@@ -1885,7 +1935,11 @@ def test_every_flat_column_keeps_the_registry_name_metadata_and_description(
         assert actual.name == column_name(expected.name), column
         assert actual.fix["name"] == expected.name, column
         assert actual.fix.display == expected.name, column
-        assert actual.metadata == {**expected.metadata, DISPLAY: expected.name}, column
+        # Minus the `enum:` block: the registry knows `SecurityIDSource <22>`
+        # as text, and reading its thirty-three codes as one code is this
+        # package's statement about the field, not the dictionary's.
+        stored = {k: v for k, v in actual.metadata.items() if not k.startswith("enum:")}
+        assert stored == {**expected.metadata, DISPLAY: expected.name}, column
         assert actual.description == expected.description, column
 
 
@@ -2091,7 +2145,7 @@ INSTRUMENT_NAMED = (
 INSTRUMENT_COLUMNS = {
     "symbol": "AAPL",
     "securityid": "US0378331005",
-    "securityidsource": "4",
+    "securityidsource": SecurityIDSource.ISIN,
     "securitytype": "OPT",
     "cficode": "OCASPS",
     "securityexchange": "XNAS",

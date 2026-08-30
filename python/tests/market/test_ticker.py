@@ -2,7 +2,7 @@ import pyarrow
 import pytest
 
 from rekep.entries import Entry
-from rekep.enums import AssetKind, Currency
+from rekep.enums import AssetKind, Currency, SecurityIDSource
 from rekep.market.ticker import SymbolTicker
 from rekep.text.fixmsg import FixMsg
 
@@ -100,6 +100,21 @@ def test_fx_ticker_preserves_a_known_venue() -> None:
     assert ticker.kind is AssetKind.CURRENCY
     assert ticker.currency is Currency.NOK
     assert SymbolTicker.from_str(str(ticker)) == ticker
+
+
+def test_a_scheme_is_stored_as_a_code_and_still_spelled_by_the_dictionary() -> None:
+    """The column holds four bytes; the ticker keeps the dictionary's name, so
+    reading the scheme as a code moved no stored ticker."""
+    ticker = SymbolTicker.from_entries(
+        [
+            Entry(key="SecurityIDSource", value="4"),
+            Entry(key="SecurityID", value="US0378331005"),
+        ]
+    )
+
+    assert str(ticker) == "ISINNumber:US0378331005"
+    assert SecurityIDSource.from_str("4") is SecurityIDSource.ISIN
+    assert str(SecurityIDSource.ISIN) == "ISIN", "which is what a column stores"
 
 
 def test_an_identifier_without_its_scheme_is_no_rung_at_all() -> None:

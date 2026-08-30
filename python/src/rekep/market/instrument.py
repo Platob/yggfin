@@ -16,10 +16,11 @@ from rekep.enums import (
     Currency,
     EventType,
     OptionKind,
+    SecurityIDSource,
     Side,
 )
 from rekep.fields import Field, scalar
-from rekep.fix.columns import ISIN_SCHEME, id_scheme
+from rekep.fix.columns import ISIN_SCHEME, isin_identity
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import UNIX, Event, _declared_value_parts
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -135,8 +136,8 @@ class Instrument(Event):
     securityid: Annotated[str | None, fix_tag("SecurityID")] = None
     """Identifier in the scheme `securityidsource` names -- an ISIN, a CUSIP, a FIGI."""
 
-    securityidsource: Annotated[str | None, fix_tag("SecurityIDSource")] = None
-    """Which scheme `securityid` is in, as FIX numbers them (`4` is ISIN)."""
+    securityidsource: Annotated[SecurityIDSource | None, fix_tag("SecurityIDSource")] = None
+    """Which scheme `securityid` is in, as its code; `ISIN` is FIX's `4`."""
 
     # Flat, and derived from whichever of the two places FIX carries it in --
     # `SecurityID <48>` under source `4`, or an entry of the `NoSecurityAltID
@@ -198,6 +199,14 @@ class Instrument(Event):
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
+        # Before the ticker, which is built from the pair. The group-carried
+        # ISIN follows it, because `altids` is filled by then and an identifier
+        # the message stated outright outranks one read out of a group.
+        self.securityid, self.securityidsource, self.isincode = isin_identity(
+            self.securityid, self.securityidsource, self.isincode
+        )
+        if self.isincode is None:
+            self.isincode = self.into_isin()
         ticker = SymbolTicker.from_entries(
             (
                 ("SymbolTicker", self.symbolticker),
@@ -213,8 +222,7 @@ class Instrument(Event):
                 self.kind = ticker.kind
             if self.currency is None:
                 self.currency = ticker.currency
-        if self.isincode is None:
-            self.isincode = self.into_isin()
+
         self.xhash = self.into_xhash()
         self.code = self.symbolticker
         Event.__post_init__(self)
@@ -222,7 +230,7 @@ class Instrument(Event):
 
     def into_isin(self) -> str | None:
         """The ISO 6166 identifier this instrument carries, from either place."""
-        if self.securityid and id_scheme(self.securityidsource) == ISIN_SCHEME:
+        if self.securityid and self.securityidsource is SecurityIDSource.ISIN:
             return self.securityid
         return (self.altids or {}).get(ISIN_SCHEME)
 

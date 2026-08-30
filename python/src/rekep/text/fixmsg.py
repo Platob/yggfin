@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, Direction, EventType, Protocol
+from rekep.enums import MIC, Direction, EventType, Protocol, SecurityIDSource
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -32,6 +32,8 @@ from rekep.fix.columns import (
     ISIN_CODE,
     PARENT_CL_ORD_ID,
     PARENT_ORDER_ID,
+    SECURITY_ID_SOURCE,
+    isin_identity,
 )
 from rekep.fix.components import (
     LEGS,
@@ -249,6 +251,11 @@ class FixMsg(Message):
             self.unmap = [Entry.from_stored(entry) for entry in self.unmap]
         else:
             self.unmap = None
+        # Before the ticker, which is built from the pair: an ISIN a bridge
+        # rendered as its own field is an identifier like any other.
+        self.securityid, self.securityidsource, self.isincode = isin_identity(
+            self.securityid, self.securityidsource, self.isincode
+        )
         self.symbolticker = (
             SymbolTicker.from_str(self.symbolticker)
             if self.symbolticker
@@ -519,8 +526,8 @@ class FixMsg(Message):
     securityid: Annotated[str | None, DECLARED["SecurityID"]] = None
     """`SecurityID <48>`, under the scheme `SecurityIDSource` names."""
 
-    securityidsource: Annotated[str | None, DECLARED["SecurityIDSource"]] = None
-    """`SecurityIDSource <22>`: which scheme `SecurityID` is in -- `4` is ISIN."""
+    securityidsource: Annotated[SecurityIDSource | None, SECURITY_ID_SOURCE] = None
+    """`SecurityIDSource <22>`: which scheme `SecurityID` is in, as its code."""
 
     securitytype: Annotated[str | None, DECLARED["SecurityType"]] = None
     """`SecurityType <167>`."""
@@ -1478,6 +1485,7 @@ class FixMsg(Message):
         from rekep.market.transacted import resolve_arrow
 
         compute = pyarrow.compute
+        columns.update(_identifier_arrow(columns, rows))
         columns["symbolticker"] = SymbolTicker.into_arrow_array(columns, rows, registry)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
@@ -1489,6 +1497,8 @@ class FixMsg(Message):
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
+        # After the ticker, which reads the scheme as the wire spelled it.
+        columns["securityidsource"] = _scheme_arrow(columns.get("securityidsource"), rows)
         linked = compute.not_equal(columns["code"], "")
         columns["xhash"] = compute.if_else(
             linked, cls.hash_arrow(columns["code"]), columns["vhash"]
@@ -1918,6 +1928,62 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
         if found.null_count == 0:
             break
     return compute.fill_null(found, "")
+
+
+def _identifier_arrow(columns: Mapping[str, Any], rows: int) -> dict[str, Any]:
+    """`isin_identity` over a batch: the pair and the flat ISIN, each filled.
+
+    Text on both sides, because the ticker built next reads the scheme as the
+    wire spelled it; `_scheme_arrow` packs the column afterwards.
+    """
+    compute = pyarrow.compute
+    identifier = _text_or_null(columns.get("securityid"), rows)
+    source = _text_or_null(columns.get("securityidsource"), rows)
+    isin = _text_or_null(columns.get("isincode"), rows)
+    if isin.null_count == rows and identifier.null_count == rows:
+        return {}
+    wire = pyarrow.repeat(pyarrow.scalar(SecurityIDSource.ISIN.into_fix()), rows)
+    from_isin = compute.and_(compute.is_valid(isin), compute.is_null(identifier))
+    stated = compute.fill_null(
+        compute.equal(_scheme_codes(source, rows), int(SecurityIDSource.ISIN)), False
+    )
+    return {
+        "securityid": compute.if_else(from_isin, isin, identifier),
+        "securityidsource": compute.if_else(from_isin, wire, source),
+        "isincode": compute.if_else(compute.and_(stated, compute.is_null(isin)), identifier, isin),
+    }
+
+
+def _text_or_null(column: Any, rows: int) -> pyarrow.Array:
+    """One column as trimmed text, with an absent one a column of nulls."""
+    if column is None:
+        return pyarrow.nulls(rows, pyarrow.string())
+    if isinstance(column, pyarrow.ChunkedArray):
+        column = column.combine_chunks()
+    return pyarrow.compute.utf8_trim_whitespace(column.cast(pyarrow.string(), safe=False))
+
+
+def _scheme_codes(source: pyarrow.Array, rows: int) -> pyarrow.Array:
+    """Wire spellings as packed `SecurityIDSource` codes, one read per value."""
+    compute = pyarrow.compute
+    unique = compute.unique(source)
+    if not len(unique):
+        return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), rows)
+    codes = pyarrow.array(
+        # Null stays null: an absent tag 22 is a scheme the message did not
+        # state, which is not the same fact as one it stated and nothing names.
+        [
+            None if not value else int(SecurityIDSource.from_str(value))
+            for value in unique.to_pylist()
+        ],
+        pyarrow.int32(),
+    )
+    return compute.take(codes, compute.index_in(source, value_set=unique))
+
+
+def _scheme_arrow(column: Any, rows: int) -> pyarrow.Array:
+    """The stored `securityidsource` column: a code, never the wire spelling."""
+    return _scheme_codes(_text_or_null(column, rows), rows)
 
 
 def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
