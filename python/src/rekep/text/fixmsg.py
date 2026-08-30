@@ -1078,39 +1078,30 @@ class FixMsg(Message):
         columns.update(_session_batch_columns(columns))
         messages = columns.get("message")
         if messages is not None:
-            protocols = codec.categorise(messages, columns.get("plugincode"))
+            # Protocol and direction are both read off the raw line, so both are
+            # answered here and by the same rule: a row that still carries its
+            # text is classified again under *this* codec's rules -- the ones it
+            # is then parsed with -- and a row whose text a projection dropped
+            # keeps the answer the message stage stored, because there is no
+            # other. Direction is written back onto the batch, appended where
+            # the batch has no such column, so the fast path's slices carry it.
+            carries_text = pyarrow.compute.fill_null(
+                pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
+            )
+            protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugincode"))
+            direction = codec.rules.into_arrow_direction_array(messages, protocols)
             stored_protocols = columns.get("protocolcode")
             if stored_protocols is not None:
-                # The message stage classified these same rows once, from
-                # syntax the rules cannot always see: a rendered payload whose
-                # `MSGTYPE=` discriminator is real but whose `#` markers are
-                # not there carries genuine bridge data the `FIXML_PATTERN`
-                # alone would drop into OTHER unread. The stored reading fills
-                # only what the recompute could not name -- never the other
-                # way around, because the rules also see what the syntax probe
-                # cannot: a `35=UL` wrapper without `MSGTYPE=` is stored FIX
-                # but must parse under the bridge's named codec, and known
-                # operational vocabulary is MISC only here.
                 protocols = pyarrow.compute.if_else(
-                    pyarrow.compute.equal(protocols, NO_PROTOCOL),
+                    carries_text,
+                    protocols,
                     pyarrow.compute.fill_null(
                         stored_protocols.cast(pyarrow.string(), safe=False), NO_PROTOCOL
                     ),
-                    protocols,
                 )
-            # Direction reads the verb before the payload, so it is resolved
-            # here, where the classification saying which token opens the
-            # payload was just computed -- and written back onto the batch,
-            # appended where the batch has no such column, so the partial
-            # fast path's slices carry it too. Only a row that
-            # still has its text answers fresh: a projected row dropped the
-            # message, and the stored answer is the only one there is.
-            direction = codec.rules.into_arrow_direction_array(messages, protocols)
             stored_direction = columns.get("direction")
             if stored_direction is not None:
-                direction = pyarrow.compute.if_else(
-                    pyarrow.compute.is_valid(messages), direction, stored_direction
-                )
+                direction = pyarrow.compute.if_else(carries_text, direction, stored_direction)
             columns["direction"] = direction
             if "direction" in batch.schema.names:
                 at = batch.schema.get_field_index("direction")

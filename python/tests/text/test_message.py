@@ -179,8 +179,8 @@ def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
     lines = [
         "Receiving : 8=FIX.4.4|35=D|11=C1|10=000",
         "Sending : 8=FIX.4.4|35=8|37=O1|39=0|10=000",
-        # A rendered line the probe reads as FIXML but no rule pattern anchors:
-        # an unanchored verb answers nothing rather than from anywhere.
+        # A named document has an anchor of its own, so a verb in front of one
+        # answers exactly as it does in front of a frame.
         "Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5",
         # The verb inside a payload value is prose, not movement.
         "toBridge #MSGTYPE=8|#CLORDID=C5|#TEXT=order sent to market",
@@ -190,7 +190,7 @@ def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
     assert parsed["direction"].to_pylist() == [
         int(Direction.RECV),
         int(Direction.SENT),
-        int(Direction.UNKNOWN),
+        int(Direction.SENT),
         int(Direction.UNKNOWN),
         int(Direction.UNKNOWN),
     ]

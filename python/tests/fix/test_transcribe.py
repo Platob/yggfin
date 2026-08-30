@@ -909,8 +909,10 @@ def test_a_rule_that_reads_nothing_gives_nulls_and_not_empty_maps(codec: FixCode
 
 def test_the_codec_reads_each_protocol_the_way_its_rule_says(codec: FixCodec) -> None:
     """The name is the whole address: the batch carries it, the rule is ours."""
-    for line, expected in ((BRIDGE, "FIXML"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
-        assert Rules.into_default().categorise(line).protocol == expected
+    for line, expected in ((BRIDGE, "UL"), ("8=FIX.4.2|35=D|10=203|", "FIX")):
+        assert Rules.into_default().into_arrow_protocol_array(
+            pyarrow.array([line])
+        ).to_pylist() == [expected]
         assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
 

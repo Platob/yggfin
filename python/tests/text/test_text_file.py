@@ -10,8 +10,9 @@ import pyarrow.fs
 import pytest
 from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 
+import rekep.text.entries as entries
 import rekep.text.text_file as text_file_module
-from rekep import Dataset, Entry, Field, FixCodec, FixMsg, FixRegistry, Message, txhash
+from rekep import Dataset, Field, FixCodec, FixMsg, FixRegistry, Message, txhash
 from rekep.enums import EventType
 from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
@@ -845,6 +846,19 @@ def test_message_regexes_count_unicode_characters_not_utf8_bytes(tmp_path: Path)
     assert table.column("message").to_pylist() == ["é", "😀"]
 
 
+def _counting_splitter(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """How many rows reach the key/value splitter, one entry per call."""
+    parsed: list[int] = []
+    original = entries.parse_arrow
+
+    def counted(messages):  # noqa: ANN001, ANN202 - observes the parser boundary
+        parsed.append(len(messages))
+        return original(messages)
+
+    monkeypatch.setattr(entries, "parse_arrow", counted)
+    return parsed
+
+
 def test_message_and_time_filters_run_before_entry_parsing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -855,14 +869,7 @@ def test_message_and_time_filters_run_before_entry_parsing(
         ("2026-08-14 00:05:03.000", "kept C=3"),
         ("2026-08-14 00:05:04.000", "at-end D=4"),
     )
-    parsed: list[int] = []
-    original = Entry.parse_arrow.__func__
-
-    def counted(cls, messages):  # noqa: ANN001, ANN202 - wraps the class method
-        parsed.append(len(messages))
-        return original(cls, messages)
-
-    monkeypatch.setattr(Entry, "parse_arrow", classmethod(counted))
+    parsed = _counting_splitter(monkeypatch)
     table = log.read_arrow_table(
         exclude_regexes=(r"^hidden",),
         start_unix=unix_of("2026-08-14 00:05:02.000"),
@@ -883,14 +890,7 @@ def test_msgtype_filters_run_before_entry_parsing(
         ("2026-08-14 00:05:03.000", "8=FIX.4.4|35=D|11=kept|"),
         ("2026-08-14 00:05:04.000", "plain diagnostic"),
     )
-    parsed: list[int] = []
-    original = Entry.parse_arrow.__func__
-
-    def counted(cls, messages):  # noqa: ANN001, ANN202 - observes the parser boundary
-        parsed.append(len(messages))
-        return original(cls, messages)
-
-    monkeypatch.setattr(Entry, "parse_arrow", classmethod(counted))
+    parsed = _counting_splitter(monkeypatch)
     table = log.read_arrow_table(exclude_msgtypes=("0", "1"))
 
     assert table.column("msgtype").to_pylist() == ["D", None]

@@ -18,7 +18,15 @@ from rekep.fields.arrays import (
     scattered,
     sequence,
 )
-from rekep.fix.message import BEGIN_VECTOR, FIXML_VECTOR, split_payload_arrow
+from rekep.fix.message import (
+    BEGIN_STRING,
+    BEGIN_VECTOR,
+    FIX_MSG_TYPE_PATTERN,
+    MARKED_VECTOR,
+    NAMED_MSG_TYPE_PATTERN,
+    split_payload_arrow,
+)
+from rekep.fix.rules import joined_pattern
 
 # A generic argument name. Capture its marker so `Entry` can remove it while
 # preserving that normalization for protocol-specific conversion.
@@ -50,8 +58,18 @@ _TOKEN = rf"(?s)^{_WS}*(?P<key>{_KEY}){_WS}*=(?P<value>.*?){_WS}*$"
 _DEFAULT_SEPARATOR = "\x01"
 
 
+#: What makes a row worth tokenising: two delimiter-separated assignments, or
+#: an envelope or a discriminator that says a frame opens here even where it
+#: carries one field. Prose and stack traces have neither, and keeping them out
+#: of the splitter is what makes a capture full of them cheap -- finding one
+#: token is deliberately cheaper than splitting a whole payload.
+_STRUCTURED = joined_pattern(
+    _STRUCTURED_PAIRS, BEGIN_STRING, FIX_MSG_TYPE_PATTERN, NAMED_MSG_TYPE_PATTERN
+)
+
+
 def looks_structured_arrow(messages):
-    """Which rows contain two delimiter-separated assignments."""
+    """Which rows carry a payload at all."""
     if isinstance(messages, pyarrow.ChunkedArray):
         return pyarrow.chunked_array(
             [looks_structured_arrow(chunk) for chunk in messages.chunks],
@@ -59,7 +77,40 @@ def looks_structured_arrow(messages):
         )
     text = pyarrow.compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
     return pyarrow.compute.fill_null(
-        pyarrow.compute.match_substring_regex(text, _STRUCTURED_PAIRS), False
+        pyarrow.compute.match_substring_regex(text, _STRUCTURED), False
+    )
+
+
+def payload_arrow(messages):
+    """`parse_arrow` over the rows that carry a payload; the rest come back empty.
+
+    The gate is not only an optimisation. A capture is mostly prose, splitting a
+    megabyte of it is the expensive half of a parse, and one `seq=1092` inside a
+    log line is a sentence rather than a message -- so a row with no payload
+    carries no arguments and, having no keys, no protocol either.
+    """
+    compute = pyarrow.compute
+    if isinstance(messages, pyarrow.ChunkedArray):
+        return pyarrow.chunked_array(
+            [payload_arrow(chunk) for chunk in messages.chunks], type=ENTRIES
+        )
+    rows = len(messages)
+    if not rows:
+        return pyarrow.array([], type=ENTRIES)
+    carried = looks_structured_arrow(messages)
+    if compute.all(carried, min_count=0).as_py():
+        return parse_arrow(messages)
+    empty = pyarrow.scalar([], ENTRIES)
+    if not compute.any(carried, min_count=0).as_py():
+        return pyarrow.repeat(empty, rows)
+    positions = sequence(rows)
+    carried_at = compute.filter(positions, carried)
+    return scattered(
+        [
+            parse_arrow(compute.take(messages, carried_at)),
+            pyarrow.repeat(empty, rows - len(carried_at)),
+        ],
+        [carried_at, compute.filter(positions, compute.invert(carried))],
     )
 
 
@@ -161,7 +212,7 @@ def _from_message_start(text: pyarrow.Array) -> pyarrow.Array:
     """
     compute = pyarrow.compute
     begun = compute.struct_field(compute.extract_regex(text, BEGIN_VECTOR), "msg")
-    bridged = compute.struct_field(compute.extract_regex(text, FIXML_VECTOR), "msg")
+    bridged = compute.struct_field(compute.extract_regex(text, MARKED_VECTOR), "msg")
     return compute.coalesce(begun, bridged, text)
 
 
@@ -211,7 +262,13 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
         found = compute.find_substring_regex(text, rf"{re.escape(separator)}{_WS}*{_ASSIGNMENT}")
         selected = compute.and_(
             compute.and_(compute.greater_equal(found, 0), compute.equal(found, punctuation)),
-            compute.and_(compute.less(assignments, found), compute.less(hashes, 0)),
+            compute.and_(
+                compute.less(assignments, found),
+                # A marker behind the first delimiter is inside a value -- a
+                # `Text <58>` quoting `#A=1` -- and reading it as the row's
+                # separator cost the frame every field it had.
+                compute.or_(compute.less(hashes, 0), compute.less(punctuation, hashes)),
+            ),
         )
         common = compute.if_else(selected, pyarrow.scalar(separator), common)
     return common

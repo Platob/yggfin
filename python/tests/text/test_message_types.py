@@ -5,6 +5,7 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
+import rekep.text.entries as entries
 from rekep.enums import EventType
 from rekep.text import Entry, Message
 
@@ -116,7 +117,7 @@ def test_named_message_types_use_the_same_registry_mapping() -> None:
     found = parsed("MsgType=8|Text=rendered|", "#MSGTYPE=W|#Text=marked|")
 
     assert found["msgtype"].to_pylist() == ["8", "W"]
-    assert found["protocolcode"].to_pylist() == ["FIXML", "FIXML"]
+    assert found["protocolcode"].to_pylist() == ["UL", "UL"]
     assert found["eventtype"].to_pylist() == [
         int(EventType.EXECUTION),
         int(EventType.BOOK),
@@ -127,7 +128,7 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["msgtype"].to_pylist() == ["D"]
-    assert found["protocolcode"].to_pylist() == ["FIXML"]
+    assert found["protocolcode"].to_pylist() == ["FIXML"], "tags and names together"
     assert found["beginstring"].to_pylist() == ["FIX.4.4"]
     residual = found["entries"].to_pylist()[0]
     assert [entry["key"] for entry in residual] == ["SIDE"]
@@ -256,10 +257,10 @@ def test_chunk_boundaries_keep_types_and_arguments_aligned() -> None:
 
 
 def test_unstructured_long_rows_never_enter_the_key_value_splitter(monkeypatch) -> None:
-    def unexpected(cls, messages):
+    def unexpected(messages):
         raise AssertionError(f"split {len(messages)} rows")
 
-    monkeypatch.setattr(Entry, "parse_arrow", classmethod(unexpected))
+    monkeypatch.setattr(entries, "parse_arrow", unexpected)
     found = Message.parse_arrow(pyarrow.array(["x" * 1_000_000, "diagnostic A=1"]), EVENT_TYPES)
 
     assert found["eventtype"].to_pylist() == [int(EventType.MISC), int(EventType.MISC)]
@@ -287,10 +288,14 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
     class Classifier:
         seen: list[str] = []
 
-        def into_arrow_protocol_array(self, messages, plugins):
+        def into_arrow_protocol_array(self, messages, plugins, entries):
             self.seen.extend(messages.to_pylist())
             assert plugins.to_pylist() == ["bridge", "fix"]
+            assert len(entries) == len(messages)
             return pyarrow.array(["FIX"] * len(messages))
+
+        def into_arrow_direction_array(self, messages, protocols):
+            return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(messages))
 
     classifier = Classifier()
     found = Message.parse_arrow(

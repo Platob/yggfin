@@ -233,6 +233,13 @@ class Entry(Convertible, Mapping[str, Any]):
         return parse_arrow(messages)
 
     @classmethod
+    def payload_arrow(cls, messages: Any) -> Any:
+        """The entries of every row that carries a payload; the rest empty."""
+        from rekep.text.entries import payload_arrow
+
+        return payload_arrow(messages)
+
+    @classmethod
     def pop_arrow(
         cls,
         stored: Any,
