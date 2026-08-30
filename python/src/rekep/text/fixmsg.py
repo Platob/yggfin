@@ -217,7 +217,10 @@ class FixMsg(Message):
         # `Event.__post_init__` and not Message's, so nothing else reads them
         # off a spelling. A column takes the code, never the word.
         self.direction = Direction.from_str(self.direction)
+        _supplied = self.protocol
         self.protocol = Protocol.from_str(self.protocol)
+        if self.protocol is Protocol.UNKNOWN and _supplied not in (None, Protocol.OTHER):
+            raise ValueError(f"{_supplied!r} is no protocol name")
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
         if self.unmap:

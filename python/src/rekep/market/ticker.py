@@ -187,13 +187,17 @@ class SymbolTicker:
     ) -> Self:
         source = str(securityidsource or "").strip()
         scheme = _scheme_name(registry, version, source) or source
+        readable = _readable_symbol(str(symbol or ""))
         value = _format_symbolticker(
             str(securityexchange or ""),
             scheme,
             str(securityid or ""),
             str(symbol or ""),
         )
-        return cls.from_str(value)
+        # Not `from_str`: these parts are already the ones it would go looking
+        # for, and re-reading the spelling would let a symbol carrying a colon
+        # -- `4:X` -- come back as the scheme and identifier it looks like.
+        return cls._from_formatted(value, readable)
 
     @classmethod
     def _from_formatted(cls, value: str, symbol: str | None = None) -> Self:

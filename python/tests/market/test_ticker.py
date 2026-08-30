@@ -158,6 +158,13 @@ def test_private_identifier_source_is_preserved() -> None:
     ), "and a symbol beside it still leads"
 
 
+def test_a_symbol_carrying_a_colon_stays_a_symbol() -> None:
+    """The builder holds the parts, so it never re-reads its own spelling --
+    which would take `4:X` for the scheme and identifier it looks like."""
+    assert str(SymbolTicker.from_entries([Entry(key="Symbol", value="4:X")])) == "4:X"
+    assert str(SymbolTicker.from_entries([Entry(key="Symbol", value="BRN:JAN26")])) == "BRN:JAN26"
+
+
 def test_parse_cache_is_bounded_and_reuses_a_ticker() -> None:
     one = SymbolTicker.from_str("EUR/NOK")
     other = SymbolTicker.from_str("EUR/NOK")

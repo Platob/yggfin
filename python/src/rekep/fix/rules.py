@@ -305,7 +305,7 @@ class Rules(Convertible):
         for rule in reversed(self.rules):
             hit = _hit(rule, text, plugin_text, shapes)
             found = compute.if_else(hit, pyarrow.scalar(rule.protocol, _PROTOCOL_CODE), found)
-        return found.cast(_PROTOCOL_CODE, safe=False)
+        return found
 
     def into_arrow_direction_array(self, messages: Any, protocols: Any) -> pyarrow.Array:
         """Packed transport direction read before the payload.

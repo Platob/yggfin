@@ -764,22 +764,19 @@ class _Side:
         return cached
 
     def order_value_identity(self) -> tuple[tuple[int, ...], bytes]:
-        """Ordered live value hashes and their cached v1 frames."""
+        """Ordered live value hashes and their cached v1 frames.
+
+        `order_vhashes` above fills every live level's hashes, and `_moved`
+        drops a level's two caches together with the side's, so only the
+        frames can still be missing here.
+        """
         vhashes = self.order_vhashes()
         encoded = self._order_frame_cache
         if encoded is None:
-            frames = []
             for level in self.alive:
-                level_vhashes = level.vhashes
-                if level_vhashes is None:
-                    level_vhashes = level.vhashes = tuple(
-                        self.orders[x].vhash for x in self._resting_members(level)
-                    )
-                level_frame = level.frame
-                if level_frame is None:
-                    level_frame = level.frame = vhashes_frame(level_vhashes)
-                frames.append(level_frame)
-            encoded = self._order_frame_cache = b"".join(frames)
+                if level.frame is None:
+                    level.frame = vhashes_frame(level.vhashes)
+            encoded = self._order_frame_cache = b"".join(level.frame for level in self.alive)
         return vhashes, encoded
 
     @staticmethod
