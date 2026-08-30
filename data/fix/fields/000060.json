@@ -22,7 +22,7 @@
    "type": "int32",
    "versions": "[\"*\"]",
    "column": "unixpartition",
-   "display": "Unix Partition"
+   "display": "UnixPartition"
   }
  },
  "30002": {
@@ -35,7 +35,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "eventtype",
-   "display": "Event Type"
+   "display": "EventType"
   }
  },
  "30003": {
@@ -48,7 +48,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "creaunix",
-   "display": "Crea Unix"
+   "display": "CreaUnix"
   }
  },
  "30004": {
@@ -61,7 +61,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "recunix",
-   "display": "Rec Unix"
+   "display": "RecUnix"
   }
  },
  "30005": {
@@ -74,7 +74,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "expunix",
-   "display": "Exp Unix"
+   "display": "ExpUnix"
   }
  },
  "30006": {
@@ -87,7 +87,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "snapunix",
-   "display": "Snap Unix"
+   "display": "SnapUnix"
   }
  },
  "30007": {
@@ -113,7 +113,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "vhash",
-   "display": "Value Hash"
+   "display": "ValueHash"
   }
  },
  "30009": {
@@ -139,7 +139,7 @@
    "type": "String",
    "versions": "[\"*\"]",
    "column": "prevhash",
-   "display": "Prev Hash"
+   "display": "PrevHash"
   }
  },
  "30011": {
@@ -152,7 +152,7 @@
    "type": "int64",
    "versions": "[\"*\"]",
    "column": "prevunix",
-   "display": "Prev Unix"
+   "display": "PrevUnix"
   }
  },
  "30012": {
@@ -165,7 +165,7 @@
    "type": "String",
    "versions": "[\"*\"]",
    "column": "parenthash",
-   "display": "Parent Hash"
+   "display": "ParentHash"
   },
   "item": {
    "type": "fixed_size_binary[16]"
@@ -181,7 +181,7 @@
    "type": "MultipleValueString",
    "versions": "[\"*\"]",
    "column": "linkedhashes",
-   "display": "Linked Hashes"
+   "display": "LinkedHashes"
   },
   "item": {
    "type": "int64"
@@ -236,7 +236,7 @@
    "type": "String",
    "versions": "[\"*\"]",
    "column": "altids",
-   "display": "Alt IDs"
+   "display": "AltIDs"
   },
   "key": {
    "type": "string"
@@ -281,7 +281,7 @@
    "type": "String",
    "versions": "[\"*\"]",
    "column": "symbolticker",
-   "display": "Symbol Ticker"
+   "display": "SymbolTicker"
   }
  },
  "30021": {
@@ -371,7 +371,7 @@
    "type": "String",
    "versions": "[\"*\"]",
    "column": "pxunit",
-   "display": "Px Unit"
+   "display": "PxUnit"
   }
  },
  "30025": {
@@ -384,7 +384,7 @@
    "type": "String",
    "versions": "[\"*\"]",
    "column": "qtyunit",
-   "display": "Qty Unit"
+   "display": "QtyUnit"
   }
  },
  "30026": {

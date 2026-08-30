@@ -139,16 +139,16 @@ class Message(Event):
         """Contract metadata published with raw-message schemas."""
         return _CONTRACT_METADATA
 
-    sourceurl: Annotated[str, Field.column("Source URL")] = ""
+    sourceurl: Annotated[str, Field.column("SourceURL")] = ""
     """Path of the log the row came from, as its filesystem addresses it."""
 
-    sourcerownum: Annotated[int, Field.column("Source Rownum")] = 0
+    sourcerownum: Annotated[int, Field.column("SourceRownum")] = 0
     """1-based physical line number of the header; 0 when not read from a file."""
 
-    threadname: Annotated[str, Field.column("Thread Name")] = ""
+    threadname: Annotated[str, Field.column("ThreadName")] = ""
     """Contents of the first bracketed header field."""
 
-    plugincode: Annotated[str, Field.column("Plugin Code")] = ""
+    plugincode: Annotated[str, Field.column("PluginCode")] = ""
     """Contents of the second bracketed header field."""
 
     message: str = ""

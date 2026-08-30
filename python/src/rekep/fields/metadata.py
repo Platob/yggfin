@@ -468,8 +468,9 @@ class FixMetadata(ProtocolMetadata):
     type = _Text()
     name = _Text()
     #: What this field is called for a reader: the dictionary's own spelling
-    #: where FIX has one, title case where it does not. The column's own name
-    #: is folded, so this is the half the fold throws away -- recorded once
+    #: where FIX has one, and the same shape where it does not -- capitalised
+    #: word by word and run together, never spaced. The column's own name is
+    #: folded, so this is the half the fold throws away -- recorded once
     #: rather than guessed at by every consumer that has to print it.
     display = _Text()
     version = _Text()

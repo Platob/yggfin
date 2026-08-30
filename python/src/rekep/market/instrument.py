@@ -35,7 +35,7 @@ class Leg(MarketConvertible):
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """The instrument this leg is of, derived the same way any other one is."""
 
-    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical instrument spelling derived from the leg's FIX identifiers."""
 
     symbol: Annotated[str, fix_tag("LegSymbol")] = ""
@@ -122,7 +122,7 @@ class Instrument(Event):
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
     """Digest of `symbolticker`; zero when the ticker is empty."""
 
-    symbolticker: Annotated[str, Field.primary_key(), Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.primary_key(), Field.column("SymbolTicker")] = ""
     """Canonical spelling selected from the FIX instrument identifiers."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -142,7 +142,7 @@ class Instrument(Event):
     # <454>` group. Flat because it is what a human looks an instrument up by
     # and what a reference-data join keys on, and neither can reach into a map
     # on any engine below Arrow.
-    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), Field.column("ISIN Code")] = (
+    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), Field.column("ISINCode")] = (
         None
     )
     """ISO 6166 identifier, wherever the message carried it; null when it did not."""

@@ -333,20 +333,20 @@ class FixMsg(Message):
     # Without it nothing downstream can tell a real transaction time from a
     # print time, and that distinction is the whole point of resolving one.
     # Empty means no clock answered at all, which is a row with no time.
-    unixsource: Annotated[str, Field.column("Unix Source")] = ""
+    unixsource: Annotated[str, Field.column("UnixSource")] = ""
     """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
 
     # One column, not a FIX-specific one: every protocol with versions has a
     # version, and a `fix_version` beside it would duplicate itself the first
     # time a second versioned protocol appeared. Resolved once, at the message
     # stage, so nothing downstream re-derives it.
-    protocolversion: Annotated[str | None, Field.column("Protocol Version")] = None
+    protocolversion: Annotated[str | None, Field.column("ProtocolVersion")] = None
     """Which version of `protocol` the line is read under; null when unresolved."""
 
     # Null because the message carried no version, or null because nothing
     # tried? A consumer cannot tell the two apart from the value, and they are
     # different facts about the row.
-    protocolversionsource: Annotated[str, Field.column("Protocol Version Source")] = NO_SOURCE
+    protocolversionsource: Annotated[str, Field.column("ProtocolVersionSource")] = NO_SOURCE
     """What resolved `protocolversion`: a BeginString, an application version, or nothing."""
 
     msgseqnum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
@@ -387,7 +387,7 @@ class FixMsg(Message):
     ] = None
     """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
 
-    isincode: Annotated[str | None, ISIN_CODE, Field.column("ISIN Code")] = None
+    isincode: Annotated[str | None, ISIN_CODE, Field.column("ISINCode")] = None
     """ISIN carried by a rendered `ISINCODE` field."""
 
     parentclordid: Annotated[str | None, PARENT_CL_ORD_ID] = None
@@ -517,7 +517,7 @@ class FixMsg(Message):
 
     # What was traded.
 
-    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical spelling derived from the FIX instrument identifiers."""
 
     symbol: Annotated[str | None, DECLARED["Symbol"]] = None

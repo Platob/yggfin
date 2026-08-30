@@ -154,7 +154,7 @@ class Event(MarketConvertible):
     unixpartition: Annotated[
         int,
         Field.partition_key(dtype=pyarrow.int32(), derived_from="unix", metadata=UNIX_PARTITION),
-        Field.column("Unix Partition"),
+        Field.column("UnixPartition"),
     ] = 0
     """`unix`'s hour boundary in whole epoch seconds; the partition value."""
 
@@ -162,16 +162,16 @@ class Event(MarketConvertible):
     # anything else, and Iceberg's column bounds are collected in pre-order.
     # Constant within one table, where run-length and dictionary encoding
     # collapse it to nothing.
-    eventtype: Annotated[EventType, Field.column("Event Type")] = EventType.UNKNOWN
+    eventtype: Annotated[EventType, Field.column("EventType")] = EventType.UNKNOWN
     """Which kind of event this is -- the one column a union of the tables needs."""
 
-    creaunix: Annotated[int, Field(metadata=UNIX), Field.column("Crea Unix")] = 0
+    creaunix: Annotated[int, Field(metadata=UNIX), Field.column("CreaUnix")] = 0
     """When the event was created, upstream of anything that carried it."""
 
-    recunix: Annotated[int, Field(metadata=UNIX), Field.column("Rec Unix")] = 0
+    recunix: Annotated[int, Field(metadata=UNIX), Field.column("RecUnix")] = 0
     """When the event was written down here; deliberately not part of `hash`."""
 
-    expunix: Annotated[int | None, Field(metadata=UNIX), Field.column("Exp Unix")] = None
+    expunix: Annotated[int | None, Field(metadata=UNIX), Field.column("ExpUnix")] = None
     """When the event stops being true -- an order's expiry, a quote's staleness."""
 
     # A snapshot's own `unix` is when the picture was taken, because that is
@@ -179,13 +179,13 @@ class Event(MarketConvertible):
     # picture *of* would otherwise be lost: `snapunix` keeps it, so "as of when"
     # and "taken when" are both on the row and a stale snapshot is one
     # subtraction rather than a join against whatever it snapshotted.
-    snapunix: Annotated[int | None, Field(metadata=UNIX), Field.column("Snap Unix")] = None
+    snapunix: Annotated[int | None, Field(metadata=UNIX), Field.column("SnapUnix")] = None
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
     hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
     """Time-anchored composition of `unix` and `vhash`."""
 
-    vhash: Annotated[int, Field(dtype=pyarrow.int64()), Field.column("Value Hash")] = NIL
+    vhash: Annotated[int, Field(dtype=pyarrow.int64()), Field.column("ValueHash")] = NIL
     """XXH3-64 of the framed value parts, with every clock excluded."""
 
     xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
@@ -194,7 +194,7 @@ class Event(MarketConvertible):
     linkedhashes: Annotated[
         list[int],
         Field(dtype=_LINKED_HASHES_TYPE),
-        Field.column("Linked Hashes"),
+        Field.column("LinkedHashes"),
     ] = dataclasses.field(default_factory=list)
     """Related lifecycle identities, with the primary match first."""
 
@@ -207,20 +207,20 @@ class Event(MarketConvertible):
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
 
-    altids: Annotated[dict[str, str], Field(dtype=ALTIDS_TYPE), Field.column("Alt IDs")] = (
+    altids: Annotated[dict[str, str], Field(dtype=ALTIDS_TYPE), Field.column("AltIDs")] = (
         dataclasses.field(default_factory=dict)
     )
     """Other identifiers keyed by reference scheme or lifecycle field name."""
 
-    prevunix: Annotated[int | None, Field(metadata=UNIX), Field.column("Prev Unix")] = None
+    prevunix: Annotated[int | None, Field(metadata=UNIX), Field.column("PrevUnix")] = None
     """When the previous version happened, so dwell time is a subtraction."""
 
-    prevhash: Annotated[int | None, Field(dtype=HASH), Field.column("Prev Hash")] = None
+    prevhash: Annotated[int | None, Field(dtype=HASH), Field.column("PrevHash")] = None
     """The previous version's hash; null on the first version."""
 
     # `parenthash` values are distinct from `linkedhashes` lifecycle relations.
     parenthash: Annotated[
-        list[int] | None, Field(dtype=_PARENT_HASH_TYPE), Field.column("Parent Hash")
+        list[int] | None, Field(dtype=_PARENT_HASH_TYPE), Field.column("ParentHash")
     ] = None
     """Every event this one was built from, in the order they were combined."""
 
@@ -636,7 +636,7 @@ class MarketEvent(Event):
     # every hour into as many files as buckets while the hour itself already
     # prunes the read -- more small files for a filter that was already exact.
     instrumentxhash: Annotated[
-        int, Field(dtype=pyarrow.int64()), Field.column("Instrument Xhash")
+        int, Field(dtype=pyarrow.int64()), Field.column("InstrumentXhash")
     ] = NIL
     """Canonical Instrument identity used to join market rows."""
 
@@ -655,7 +655,7 @@ class MarketEvent(Event):
     # bucket[16] -- slower, not faster -- while the file count went 72 to 576
     # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
     # every consumer writes went 24 ms to 165 to 320. See docs/market/index.md.
-    symbolticker: Annotated[str, Field.column("Symbol Ticker")] = ""
+    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical spelling of the instrument `instrumentxhash` names; empty when unstated."""
 
     kind: MarketKind = MarketKind.UNKNOWN
@@ -667,7 +667,7 @@ class MarketEvent(Event):
     px: Annotated[float | None, fix_tag("Price")] = None
     """The price on this row, in `pxunit`; what it means is the subclass's to say."""
 
-    prevpx: Annotated[float | None, Field.column("Prev Px")] = None
+    prevpx: Annotated[float | None, Field.column("PrevPx")] = None
     """Price on the immediately preceding lifecycle version; null on the first."""
 
     # Ours, and so carrying no FIX tag: it normalises `PriceType <423>`, which
@@ -676,7 +676,7 @@ class MarketEvent(Event):
     # is not. NOT NULL with an empty placeholder: a
     # producer always knows how it quotes, and a column widened later is a
     # column every reader written before the widening has to re-handle.
-    pxunit: Annotated[str, Field.column("Px Unit")] = ""
+    pxunit: Annotated[str, Field.column("PxUnit")] = ""
     """How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated."""
 
     currency: Annotated[Currency | None, fix_tag("Currency")] = None
@@ -685,10 +685,10 @@ class MarketEvent(Event):
     qty: Annotated[float | None, fix_tag("OrderQty")] = None
     """The quantity on this row, in `qtyunit`; what it means is the subclass's to say."""
 
-    prevqty: Annotated[float | None, Field.column("Prev Qty")] = None
+    prevqty: Annotated[float | None, Field.column("PrevQty")] = None
     """Quantity on the immediately preceding lifecycle version; null on the first."""
 
-    qtyunit: Annotated[str, Field.column("Qty Unit")] = ""
+    qtyunit: Annotated[str, Field.column("QtyUnit")] = ""
     """How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated."""
 
     # Carried rather than derived after persistence because the multiplier is
@@ -696,7 +696,7 @@ class MarketEvent(Event):
     notional: float | None = None
     """`px * qty * multiplier` in the instrument's currency, as the producer computed it."""
 
-    prevnotional: Annotated[float | None, Field.column("Prev Notional")] = None
+    prevnotional: Annotated[float | None, Field.column("PrevNotional")] = None
     """Notional on the immediately preceding lifecycle version; null on the first."""
 
     # Free-form protocol metadata stays separate from declared columns.

@@ -14,34 +14,34 @@ fields:
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: Unix Partition}
+  fix: {display: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: Event Type}
+  fix: {display: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Crea Unix}
+  fix: {display: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Rec Unix}
+  fix: {display: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Exp Unix}
+  fix: {display: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Snap Unix}
+  fix: {display: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
@@ -50,7 +50,7 @@ fields:
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: Value Hash}
+  fix: {display: ValueHash}
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
@@ -58,7 +58,7 @@ fields:
 - name: linkedhashes
   type: list
   description: Related lifecycle identities, with the primary match first.
-  fix: {display: Linked Hashes}
+  fix: {display: LinkedHashes}
   item:
     type: int64
 - name: version
@@ -77,7 +77,7 @@ fields:
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: Alt IDs}
+  fix: {display: AltIDs}
   key:
     type: string
   value:
@@ -87,17 +87,17 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Prev Unix}
+  fix: {display: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: Prev Hash}
+  fix: {display: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: Parent Hash}
+  fix: {display: ParentHash}
   item:
     type: fixed_size_binary[16]
 - name: mic
@@ -114,19 +114,19 @@ fields:
 - name: sourceurl
   type: string
   description: Path of the log the row came from, as its filesystem addresses it.
-  fix: {display: Source URL}
+  fix: {display: SourceURL}
 - name: sourcerownum
   type: int64
   description: 1-based physical line number of the header; 0 when not read from a file.
-  fix: {display: Source Rownum}
+  fix: {display: SourceRownum}
 - name: threadname
   type: string
   description: Contents of the first bracketed header field.
-  fix: {display: Thread Name}
+  fix: {display: ThreadName}
 - name: plugincode
   type: string
   description: Contents of the second bracketed header field.
-  fix: {display: Plugin Code}
+  fix: {display: PluginCode}
 - name: message
   type: string
   description: Payload after the fixed log header, with continuation lines folded in.

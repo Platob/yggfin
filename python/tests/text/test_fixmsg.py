@@ -1997,7 +1997,7 @@ def test_the_two_fields_the_standard_header_lift_leaves_alone() -> None:
 def test_rendered_isincode_keeps_its_source_identity() -> None:
     field = FixMsg.into_field().field("isincode")
     assert field.dtype == pyarrow.string()
-    assert field.fix == {"name": "ISINCODE", "type": "String", "display": "ISIN Code"}
+    assert field.fix == {"name": "ISINCODE", "type": "String", "display": "ISINCode"}
 
 
 def test_fixml_decodes_a_named_value_inside_its_wire_envelope(

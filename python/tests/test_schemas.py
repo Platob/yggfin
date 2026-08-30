@@ -91,7 +91,7 @@ def test_published_contracts_have_no_nested_table_keys() -> None:
 _CONTAINER_PARTS = frozenset({"item", "key", "value"})
 
 #: Reader-facing names whose words are intentionally fuller than the folded column.
-_COLUMN_DISPLAYS = {"unmap": "Unmapped", "vhash": "Value Hash"}
+_COLUMN_DISPLAYS = {"unmap": "Unmapped", "vhash": "ValueHash"}
 
 
 def _columns(field: Field) -> list[Field]:
@@ -157,14 +157,26 @@ def test_a_registry_lookup_ignores_case_and_not_the_letters() -> None:
     assert FixMsg.into_field().field("MsgType") is FixMsg.into_field().field("msgtype")
 
 
-def test_a_display_is_the_words_a_fold_removed() -> None:
-    """`display_name` restores the separators the fold dropped, and keeps an
-    acronym an acronym rather than title-casing it into a word."""
-    assert display_name("source_url") == "Source URL"
+def test_a_display_capitalises_the_words_a_fold_removed_without_spacing_them() -> None:
+    """`display_name` restores the word boundaries the fold dropped as capitals,
+    and keeps an acronym an acronym rather than capitalising it into a word.
+
+    Capitals and not spaces, because a display is the spelling of a FIX field
+    and no FIX field carries a space: `SourceURL` reads as one name the way
+    `SecurityID` does, and `Source URL` reads as two.
+    """
+    assert display_name("source_url") == "SourceURL"
     assert display_name("prevbidpx") == "Prevbidpx", "nothing said where the words were"
-    assert display_name("prev_bid_px") == "Prev Bid Px"
-    assert display_name("alt_ids") == "Alt IDs"
+    assert display_name("prev_bid_px") == "PrevBidPx"
+    assert display_name("alt_ids") == "AltIDs"
     assert display_name("mic") == "MIC"
     assert display_name("SecurityID") == "SecurityID", "a name that spells itself is kept"
     for name in ("source_url", "alt_ids", "mic", "SecurityID"):
         assert column_name(display_name(name)) == column_name(name)
+
+
+@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
+def test_no_published_display_carries_a_space(path: Path) -> None:
+    """A column says what it is called the way a FIX field does: one word."""
+    for member in _columns(Field.from_(str(path))):
+        assert " " not in member.fix.display, f"{path.name}: {member.name}"

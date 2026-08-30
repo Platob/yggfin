@@ -111,9 +111,10 @@ The fold is also the match: a spelling resolves against the FIX registry by
 what it folds to, so `MsgType`, `msgtype` and `MSGTYPE` are one field.
 
 Every column carries `fix:display`, the name a reader is shown -- the
-dictionary's spelling for a FIX column, `display_name`'s title case for
-everything else. `tests/test_schemas.py` holds both halves for every published
-contract.
+dictionary's spelling for a FIX column, `display_name`'s capitalised run-on
+spelling for everything else. No display carries a space, because no FIX field
+name does: `SourceURL`, not `Source URL`. `tests/test_schemas.py` holds both
+halves for every published contract.
 
 A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
 `clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is

@@ -56,9 +56,10 @@ against the FIX registry rather than three.
 
 What the fold throws away is kept, not lost. Every column carries
 `fix: { display: ... }` — the name a reader is shown. A FIX column displays
-the dictionary's own spelling (`OrigClOrdID`); every other column displays
-title case with acronyms preserved (`sourceurl` → `Source URL`, `altids` →
-`Alt IDs`, `mic` → `MIC`).
+the dictionary's own spelling (`OrigClOrdID`); every other column displays the
+same shape, capitalised word by word and run together with acronyms preserved
+(`sourceurl` → `SourceURL`, `altids` → `AltIDs`, `mic` → `MIC`). No display
+carries a space, because no FIX field name does.
 
 ```python
 from rekep import Field
@@ -71,7 +72,7 @@ for name in ("clordid", "px", "unixpartition"):
 ```text
 clordid          ClOrdID
 px               Price
-unixpartition    Unix Partition
+unixpartition    UnixPartition
 ```
 
 A column that reads a FIX field is named after that field, so a reader who

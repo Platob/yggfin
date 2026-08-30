@@ -14,34 +14,34 @@ fields:
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: Unix Partition}
+  fix: {display: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: Event Type}
+  fix: {display: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Crea Unix}
+  fix: {display: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Rec Unix}
+  fix: {display: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Exp Unix}
+  fix: {display: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Snap Unix}
+  fix: {display: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and the live book's `vhash`.
@@ -50,7 +50,7 @@ fields:
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: Value Hash}
+  fix: {display: ValueHash}
 - name: xhash
   type: int64
   description: Identity of the thing across every version of it -- the lifecycle.
@@ -58,7 +58,7 @@ fields:
 - name: linkedhashes
   type: list
   description: Related lifecycle identities, with the primary match first.
-  fix: {display: Linked Hashes}
+  fix: {display: LinkedHashes}
   item:
     type: int64
 - name: version
@@ -77,7 +77,7 @@ fields:
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: Alt IDs}
+  fix: {display: AltIDs}
   key:
     type: string
   value:
@@ -87,17 +87,17 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Prev Unix}
+  fix: {display: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: Prev Hash}
+  fix: {display: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: Parent Hash}
+  fix: {display: ParentHash}
   item:
     type: fixed_size_binary[16]
 - name: mic
@@ -114,11 +114,11 @@ fields:
 - name: instrumentxhash
   type: int64
   description: Canonical Instrument identity used to join market rows.
-  fix: {display: Instrument Xhash}
+  fix: {display: InstrumentXhash}
 - name: symbolticker
   type: string
   description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-  fix: {display: Symbol Ticker}
+  fix: {display: SymbolTicker}
 - name: kind
   type: int64
   description: Standard market semantic, independent of its protocol spelling.
@@ -138,11 +138,11 @@ fields:
   type: double
   nullable: true
   description: Price on the immediately preceding lifecycle version; null on the first.
-  fix: {display: Prev Px}
+  fix: {display: PrevPx}
 - name: pxunit
   type: string
   description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-  fix: {display: Px Unit}
+  fix: {display: PxUnit}
 - name: currency
   type: int32
   nullable: true
@@ -158,11 +158,11 @@ fields:
   type: double
   nullable: true
   description: Quantity on the immediately preceding lifecycle version; null on the first.
-  fix: {display: Prev Qty}
+  fix: {display: PrevQty}
 - name: qtyunit
   type: string
   description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-  fix: {display: Qty Unit}
+  fix: {display: QtyUnit}
 - name: notional
   type: double
   nullable: true
@@ -172,7 +172,7 @@ fields:
   type: double
   nullable: true
   description: Notional on the immediately preceding lifecycle version; null on the first.
-  fix: {display: Prev Notional}
+  fix: {display: PrevNotional}
 - name: metadata
   type: map
   nullable: true
@@ -197,12 +197,12 @@ fields:
   type: double
   nullable: true
   description: Most recent filled execution price observed by this book.
-  fix: {display: Exec Px}
+  fix: {display: ExecPx}
 - name: prevexecpx
   type: double
   nullable: true
   description: Execution price on the preceding book version.
-  fix: {display: Prev Exec Px}
+  fix: {display: PrevExecPx}
 - name: imbalance
   type: double
   nullable: true
@@ -212,54 +212,54 @@ fields:
   type: double
   nullable: true
   description: Best bid; also `px - spread / 2`.
-  fix: {display: Bid Px}
+  fix: {display: BidPx}
 - name: prevbidpx
   type: double
   nullable: true
   description: Best bid on the preceding book version.
-  fix: {display: Prev Bid Px}
+  fix: {display: PrevBidPx}
 - name: bidqty
   type: double
   nullable: true
   description: Quantity at the best bid.
-  fix: {display: Bid Qty}
+  fix: {display: BidQty}
 - name: prevbidqty
   type: double
   nullable: true
   description: Best-bid quantity on the preceding book version.
-  fix: {display: Prev Bid Qty}
+  fix: {display: PrevBidQty}
 - name: biddepth
   type: int32
   description: How many levels are live on the buy side.
-  fix: {display: Bid Depth}
+  fix: {display: BidDepth}
 - name: askpx
   type: double
   nullable: true
   description: Best offer; also `px + spread / 2`.
-  fix: {display: Ask Px}
+  fix: {display: AskPx}
 - name: prevaskpx
   type: double
   nullable: true
   description: Best offer on the preceding book version.
-  fix: {display: Prev Ask Px}
+  fix: {display: PrevAskPx}
 - name: askqty
   type: double
   nullable: true
   description: Quantity at the best offer.
-  fix: {display: Ask Qty}
+  fix: {display: AskQty}
 - name: prevaskqty
   type: double
   nullable: true
   description: Best-offer quantity on the preceding book version.
-  fix: {display: Prev Ask Qty}
+  fix: {display: PrevAskQty}
 - name: askdepth
   type: int32
   description: How many levels are live on the sell side.
-  fix: {display: Ask Depth}
+  fix: {display: AskDepth}
 - name: bidlevels
   type: list
   description: Changed buy levels on deltas; every live buy level on snapshots, best first.
-  fix: {display: Bid Levels}
+  fix: {display: BidLevels}
   item:
     type: struct
     fix: {display: Item}
@@ -275,7 +275,7 @@ fields:
 - name: asklevels
   type: list
   description: Changed sell levels on deltas; every live sell level on snapshots, best first.
-  fix: {display: Ask Levels}
+  fix: {display: AskLevels}
   item:
     type: struct
     fix: {display: Item}
@@ -307,34 +307,34 @@ fields:
       description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
       metadata: {unit: second, epoch: '1970-01-01'}
       iceberg: {derived_from: unix}
-      fix: {display: Unix Partition}
+      fix: {display: UnixPartition}
     - name: eventtype
       type: int64
       description: Which kind of event this is -- the one column a union of the tables needs.
-      fix: {display: Event Type}
+      fix: {display: EventType}
       enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
     - name: creaunix
       type: int64
       description: When the event was created, upstream of anything that carried it.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Crea Unix}
+      fix: {display: CreaUnix}
     - name: recunix
       type: int64
       description: When the event was written down here; deliberately not part of `hash`.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Rec Unix}
+      fix: {display: RecUnix}
     - name: expunix
       type: int64
       nullable: true
       description: When the event stops being true -- an order's expiry, a quote's staleness.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Exp Unix}
+      fix: {display: ExpUnix}
     - name: snapunix
       type: int64
       nullable: true
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Snap Unix}
+      fix: {display: SnapUnix}
     - name: hash
       type: fixed_size_binary[16]
       description: Time-anchored composition of `unix` and `vhash`.
@@ -342,7 +342,7 @@ fields:
     - name: vhash
       type: int64
       description: XXH3-64 of the framed value parts, with every clock excluded.
-      fix: {display: Value Hash}
+      fix: {display: ValueHash}
     - name: xhash
       type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
@@ -350,7 +350,7 @@ fields:
     - name: linkedhashes
       type: list
       description: Related lifecycle identities, with the primary match first.
-      fix: {display: Linked Hashes}
+      fix: {display: LinkedHashes}
       item:
         type: int64
     - name: version
@@ -369,7 +369,7 @@ fields:
     - name: altids
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
-      fix: {display: Alt IDs}
+      fix: {display: AltIDs}
       key:
         type: string
       value:
@@ -379,17 +379,17 @@ fields:
       nullable: true
       description: When the previous version happened, so dwell time is a subtraction.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Prev Unix}
+      fix: {display: PrevUnix}
     - name: prevhash
       type: fixed_size_binary[16]
       nullable: true
       description: The previous version's hash; null on the first version.
-      fix: {display: Prev Hash}
+      fix: {display: PrevHash}
     - name: parenthash
       type: list
       nullable: true
       description: Every event this one was built from, in the order they were combined.
-      fix: {display: Parent Hash}
+      fix: {display: ParentHash}
       item:
         type: fixed_size_binary[16]
     - name: mic
@@ -406,11 +406,11 @@ fields:
     - name: instrumentxhash
       type: int64
       description: Canonical Instrument identity used to join market rows.
-      fix: {display: Instrument Xhash}
+      fix: {display: InstrumentXhash}
     - name: symbolticker
       type: string
       description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-      fix: {display: Symbol Ticker}
+      fix: {display: SymbolTicker}
     - name: kind
       type: int64
       description: Standard market semantic, independent of its protocol spelling.
@@ -430,11 +430,11 @@ fields:
       type: double
       nullable: true
       description: Price on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Px}
+      fix: {display: PrevPx}
     - name: pxunit
       type: string
       description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-      fix: {display: Px Unit}
+      fix: {display: PxUnit}
     - name: currency
       type: int32
       nullable: true
@@ -450,11 +450,11 @@ fields:
       type: double
       nullable: true
       description: Quantity before this transition, reconstructed when no prior Order was observed.
-      fix: {display: Prev Qty}
+      fix: {display: PrevQty}
     - name: qtyunit
       type: string
       description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-      fix: {display: Qty Unit}
+      fix: {display: QtyUnit}
     - name: notional
       type: double
       nullable: true
@@ -464,7 +464,7 @@ fields:
       type: double
       nullable: true
       description: Notional on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Notional}
+      fix: {display: PrevNotional}
     - name: metadata
       type: map
       nullable: true
@@ -489,7 +489,7 @@ fields:
       type: double
       nullable: true
       description: Current quantity hidden from the displayed book; null when unstated.
-      fix: {display: Hidden Qty}
+      fix: {display: HiddenQty}
     - name: vwap
       type: double
       nullable: true
@@ -558,34 +558,34 @@ fields:
       description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
       metadata: {unit: second, epoch: '1970-01-01'}
       iceberg: {derived_from: unix}
-      fix: {display: Unix Partition}
+      fix: {display: UnixPartition}
     - name: eventtype
       type: int64
       description: Which kind of event this is -- the one column a union of the tables needs.
-      fix: {display: Event Type}
+      fix: {display: EventType}
       enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
     - name: creaunix
       type: int64
       description: When the event was created, upstream of anything that carried it.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Crea Unix}
+      fix: {display: CreaUnix}
     - name: recunix
       type: int64
       description: When the event was written down here; deliberately not part of `hash`.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Rec Unix}
+      fix: {display: RecUnix}
     - name: expunix
       type: int64
       nullable: true
       description: When the event stops being true -- an order's expiry, a quote's staleness.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Exp Unix}
+      fix: {display: ExpUnix}
     - name: snapunix
       type: int64
       nullable: true
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Snap Unix}
+      fix: {display: SnapUnix}
     - name: hash
       type: fixed_size_binary[16]
       description: Time-anchored composition of `unix` and `vhash`.
@@ -593,7 +593,7 @@ fields:
     - name: vhash
       type: int64
       description: XXH3-64 of the framed value parts, with every clock excluded.
-      fix: {display: Value Hash}
+      fix: {display: ValueHash}
     - name: xhash
       type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
@@ -601,7 +601,7 @@ fields:
     - name: linkedhashes
       type: list
       description: Related lifecycle identities, with the primary match first.
-      fix: {display: Linked Hashes}
+      fix: {display: LinkedHashes}
       item:
         type: int64
     - name: version
@@ -620,7 +620,7 @@ fields:
     - name: altids
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
-      fix: {display: Alt IDs}
+      fix: {display: AltIDs}
       key:
         type: string
       value:
@@ -630,17 +630,17 @@ fields:
       nullable: true
       description: When the previous version happened, so dwell time is a subtraction.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Prev Unix}
+      fix: {display: PrevUnix}
     - name: prevhash
       type: fixed_size_binary[16]
       nullable: true
       description: The previous version's hash; null on the first version.
-      fix: {display: Prev Hash}
+      fix: {display: PrevHash}
     - name: parenthash
       type: list
       nullable: true
       description: Every event this one was built from, in the order they were combined.
-      fix: {display: Parent Hash}
+      fix: {display: ParentHash}
       item:
         type: fixed_size_binary[16]
     - name: mic
@@ -657,11 +657,11 @@ fields:
     - name: instrumentxhash
       type: int64
       description: Canonical Instrument identity used to join market rows.
-      fix: {display: Instrument Xhash}
+      fix: {display: InstrumentXhash}
     - name: symbolticker
       type: string
       description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-      fix: {display: Symbol Ticker}
+      fix: {display: SymbolTicker}
     - name: kind
       type: int64
       description: Standard market semantic, independent of its protocol spelling.
@@ -681,11 +681,11 @@ fields:
       type: double
       nullable: true
       description: Price on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Px}
+      fix: {display: PrevPx}
     - name: pxunit
       type: string
       description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-      fix: {display: Px Unit}
+      fix: {display: PxUnit}
     - name: currency
       type: int32
       nullable: true
@@ -701,11 +701,11 @@ fields:
       type: double
       nullable: true
       description: Quantity on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Qty}
+      fix: {display: PrevQty}
     - name: qtyunit
       type: string
       description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-      fix: {display: Qty Unit}
+      fix: {display: QtyUnit}
     - name: notional
       type: double
       nullable: true
@@ -715,7 +715,7 @@ fields:
       type: double
       nullable: true
       description: Notional on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Notional}
+      fix: {display: PrevNotional}
     - name: metadata
       type: map
       nullable: true
@@ -799,7 +799,7 @@ fields:
 - name: bidalive
   type: list
   description: Complete living bid orders, populated only on snapshots.
-  fix: {display: Bid Alive}
+  fix: {display: BidAlive}
   item:
     type: struct
     fix: {display: Item}
@@ -815,34 +815,34 @@ fields:
       description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
       metadata: {unit: second, epoch: '1970-01-01'}
       iceberg: {derived_from: unix}
-      fix: {display: Unix Partition}
+      fix: {display: UnixPartition}
     - name: eventtype
       type: int64
       description: Which kind of event this is -- the one column a union of the tables needs.
-      fix: {display: Event Type}
+      fix: {display: EventType}
       enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
     - name: creaunix
       type: int64
       description: When the event was created, upstream of anything that carried it.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Crea Unix}
+      fix: {display: CreaUnix}
     - name: recunix
       type: int64
       description: When the event was written down here; deliberately not part of `hash`.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Rec Unix}
+      fix: {display: RecUnix}
     - name: expunix
       type: int64
       nullable: true
       description: When the event stops being true -- an order's expiry, a quote's staleness.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Exp Unix}
+      fix: {display: ExpUnix}
     - name: snapunix
       type: int64
       nullable: true
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Snap Unix}
+      fix: {display: SnapUnix}
     - name: hash
       type: fixed_size_binary[16]
       description: Time-anchored composition of `unix` and `vhash`.
@@ -850,7 +850,7 @@ fields:
     - name: vhash
       type: int64
       description: XXH3-64 of the framed value parts, with every clock excluded.
-      fix: {display: Value Hash}
+      fix: {display: ValueHash}
     - name: xhash
       type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
@@ -858,7 +858,7 @@ fields:
     - name: linkedhashes
       type: list
       description: Related lifecycle identities, with the primary match first.
-      fix: {display: Linked Hashes}
+      fix: {display: LinkedHashes}
       item:
         type: int64
     - name: version
@@ -877,7 +877,7 @@ fields:
     - name: altids
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
-      fix: {display: Alt IDs}
+      fix: {display: AltIDs}
       key:
         type: string
       value:
@@ -887,17 +887,17 @@ fields:
       nullable: true
       description: When the previous version happened, so dwell time is a subtraction.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Prev Unix}
+      fix: {display: PrevUnix}
     - name: prevhash
       type: fixed_size_binary[16]
       nullable: true
       description: The previous version's hash; null on the first version.
-      fix: {display: Prev Hash}
+      fix: {display: PrevHash}
     - name: parenthash
       type: list
       nullable: true
       description: Every event this one was built from, in the order they were combined.
-      fix: {display: Parent Hash}
+      fix: {display: ParentHash}
       item:
         type: fixed_size_binary[16]
     - name: mic
@@ -914,11 +914,11 @@ fields:
     - name: instrumentxhash
       type: int64
       description: Canonical Instrument identity used to join market rows.
-      fix: {display: Instrument Xhash}
+      fix: {display: InstrumentXhash}
     - name: symbolticker
       type: string
       description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-      fix: {display: Symbol Ticker}
+      fix: {display: SymbolTicker}
     - name: kind
       type: int64
       description: Standard market semantic, independent of its protocol spelling.
@@ -938,11 +938,11 @@ fields:
       type: double
       nullable: true
       description: Price on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Px}
+      fix: {display: PrevPx}
     - name: pxunit
       type: string
       description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-      fix: {display: Px Unit}
+      fix: {display: PxUnit}
     - name: currency
       type: int32
       nullable: true
@@ -958,11 +958,11 @@ fields:
       type: double
       nullable: true
       description: Quantity before this transition, reconstructed when no prior Order was observed.
-      fix: {display: Prev Qty}
+      fix: {display: PrevQty}
     - name: qtyunit
       type: string
       description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-      fix: {display: Qty Unit}
+      fix: {display: QtyUnit}
     - name: notional
       type: double
       nullable: true
@@ -972,7 +972,7 @@ fields:
       type: double
       nullable: true
       description: Notional on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Notional}
+      fix: {display: PrevNotional}
     - name: metadata
       type: map
       nullable: true
@@ -997,7 +997,7 @@ fields:
       type: double
       nullable: true
       description: Current quantity hidden from the displayed book; null when unstated.
-      fix: {display: Hidden Qty}
+      fix: {display: HiddenQty}
     - name: vwap
       type: double
       nullable: true
@@ -1050,7 +1050,7 @@ fields:
 - name: askalive
   type: list
   description: Complete living ask orders, populated only on snapshots.
-  fix: {display: Ask Alive}
+  fix: {display: AskAlive}
   item:
     type: struct
     fix: {display: Item}
@@ -1066,34 +1066,34 @@ fields:
       description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
       metadata: {unit: second, epoch: '1970-01-01'}
       iceberg: {derived_from: unix}
-      fix: {display: Unix Partition}
+      fix: {display: UnixPartition}
     - name: eventtype
       type: int64
       description: Which kind of event this is -- the one column a union of the tables needs.
-      fix: {display: Event Type}
+      fix: {display: EventType}
       enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
     - name: creaunix
       type: int64
       description: When the event was created, upstream of anything that carried it.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Crea Unix}
+      fix: {display: CreaUnix}
     - name: recunix
       type: int64
       description: When the event was written down here; deliberately not part of `hash`.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Rec Unix}
+      fix: {display: RecUnix}
     - name: expunix
       type: int64
       nullable: true
       description: When the event stops being true -- an order's expiry, a quote's staleness.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Exp Unix}
+      fix: {display: ExpUnix}
     - name: snapunix
       type: int64
       nullable: true
       description: '`unix` of the event this is a snapshot of; null when it is not one.'
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Snap Unix}
+      fix: {display: SnapUnix}
     - name: hash
       type: fixed_size_binary[16]
       description: Time-anchored composition of `unix` and `vhash`.
@@ -1101,7 +1101,7 @@ fields:
     - name: vhash
       type: int64
       description: XXH3-64 of the framed value parts, with every clock excluded.
-      fix: {display: Value Hash}
+      fix: {display: ValueHash}
     - name: xhash
       type: int64
       description: Identity of the thing across every version of it -- the lifecycle.
@@ -1109,7 +1109,7 @@ fields:
     - name: linkedhashes
       type: list
       description: Related lifecycle identities, with the primary match first.
-      fix: {display: Linked Hashes}
+      fix: {display: LinkedHashes}
       item:
         type: int64
     - name: version
@@ -1128,7 +1128,7 @@ fields:
     - name: altids
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
-      fix: {display: Alt IDs}
+      fix: {display: AltIDs}
       key:
         type: string
       value:
@@ -1138,17 +1138,17 @@ fields:
       nullable: true
       description: When the previous version happened, so dwell time is a subtraction.
       metadata: {unit: ns, epoch: '1970-01-01'}
-      fix: {display: Prev Unix}
+      fix: {display: PrevUnix}
     - name: prevhash
       type: fixed_size_binary[16]
       nullable: true
       description: The previous version's hash; null on the first version.
-      fix: {display: Prev Hash}
+      fix: {display: PrevHash}
     - name: parenthash
       type: list
       nullable: true
       description: Every event this one was built from, in the order they were combined.
-      fix: {display: Parent Hash}
+      fix: {display: ParentHash}
       item:
         type: fixed_size_binary[16]
     - name: mic
@@ -1165,11 +1165,11 @@ fields:
     - name: instrumentxhash
       type: int64
       description: Canonical Instrument identity used to join market rows.
-      fix: {display: Instrument Xhash}
+      fix: {display: InstrumentXhash}
     - name: symbolticker
       type: string
       description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-      fix: {display: Symbol Ticker}
+      fix: {display: SymbolTicker}
     - name: kind
       type: int64
       description: Standard market semantic, independent of its protocol spelling.
@@ -1189,11 +1189,11 @@ fields:
       type: double
       nullable: true
       description: Price on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Px}
+      fix: {display: PrevPx}
     - name: pxunit
       type: string
       description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-      fix: {display: Px Unit}
+      fix: {display: PxUnit}
     - name: currency
       type: int32
       nullable: true
@@ -1209,11 +1209,11 @@ fields:
       type: double
       nullable: true
       description: Quantity before this transition, reconstructed when no prior Order was observed.
-      fix: {display: Prev Qty}
+      fix: {display: PrevQty}
     - name: qtyunit
       type: string
       description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-      fix: {display: Qty Unit}
+      fix: {display: QtyUnit}
     - name: notional
       type: double
       nullable: true
@@ -1223,7 +1223,7 @@ fields:
       type: double
       nullable: true
       description: Notional on the immediately preceding lifecycle version; null on the first.
-      fix: {display: Prev Notional}
+      fix: {display: PrevNotional}
     - name: metadata
       type: map
       nullable: true
@@ -1248,7 +1248,7 @@ fields:
       type: double
       nullable: true
       description: Current quantity hidden from the displayed book; null when unstated.
-      fix: {display: Hidden Qty}
+      fix: {display: HiddenQty}
     - name: vwap
       type: double
       nullable: true
