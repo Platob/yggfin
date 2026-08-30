@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Annotated, Any
 
 import pyarrow
@@ -305,6 +305,33 @@ class Instrument(Event):
                 yield from log.into_instruments(registry=registry)
 
         return _flat_instruments(observed())
+
+
+def versioned(
+    observed: Iterable[Instrument],
+    stored: Mapping[str, Instrument],
+) -> Iterator[Instrument]:
+    """Each observation that says something `stored` does not already say.
+
+    The whole versioning rule for reference data, in one place rather than in
+    whichever job happens to write the table. An observation whose `vhash`
+    matches the stored record states the same facts and is not a version;
+    anything else is the stored record *enriched* with what the observation
+    adds, which keeps the earlier facts and earns a new `hash` under the same
+    `symbolticker`. An observation that adds nothing to a record already
+    holding more than it is dropped rather than written back thinner.
+
+    `stored` is what the table holds for the tickers in this batch, keyed by
+    `symbolticker`: empty for a table that does not exist yet, which makes
+    every observation the first version of its ticker.
+    """
+    for row in observed:
+        known = stored.get(row.symbolticker)
+        if known is not None and known.vhash == row.vhash:
+            continue
+        enriched = row if known is None else known.enriched_with(row)
+        if enriched is not None:
+            yield enriched.identify()
 
 
 def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrument]:

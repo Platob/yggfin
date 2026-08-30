@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_fix also writes flat Instrument records directly. Book order and execution lists flatten into their own tables.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions flat Instrument records. Book order and execution lists flatten into their own tables.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
@@ -95,7 +95,7 @@
   <text class="small" x="1485" y="532">market.executions</text>
 
   <path class="flow" d="M400 330 C455 290 475 250 525 250"/>
-  <text class="edge-label" x="465" y="230">parse_fix writes flat records</text>
+  <text class="edge-label" x="465" y="230">parse_instruments versions flat records</text>
 
   <path class="flow" d="M400 410 C475 440 475 540 525 555"/>
   <text class="edge-label" x="440" y="468">fix.market flows to BookIterator</text>

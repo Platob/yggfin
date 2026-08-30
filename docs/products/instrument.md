@@ -40,5 +40,5 @@ when those facts are otherwise absent.
      data-registry-source="../../assets/fix-registry.json"
      data-sample="8=FIX.4.4|35=d|49=VENUE|56=DESK|34=2|52=20260101-09:00:00.000|55=BTC-USD|48=BTCUSD|22=8|167=FXSPOT|15=USD|207=XCME|60=20260101-09:00:00.000|10=000"></div>
 
-Written directly to `market.instruments` by
-[parse FIX](../pipeline/tasks/parse-fix.md).
+Versioned into `market.instruments` by
+[parse instruments](../pipeline/tasks/parse-instruments.md).

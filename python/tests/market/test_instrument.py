@@ -8,7 +8,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FixRegistry
-from rekep.market import AssetKind, Currency, Instrument, Leg
+from rekep.market import AssetKind, Currency, Instrument, Leg, versioned
 from rekep.market.identity import NIL, hash_of
 from rekep.text import FixMsg
 
@@ -262,3 +262,39 @@ def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
         securitydesc="Apple Inc",
     )
     assert bare.xhash == enriched.xhash
+
+
+def test_a_stored_record_only_gains_a_version_when_a_fact_is_added() -> None:
+    """The versioning rule, whichever job writes the table.
+
+    Restating a record writes nothing; adding a fact writes a new version of
+    the same ticker; observing *less* than is stored writes nothing either --
+    a thinner observation must not overwrite a fuller record.
+    """
+    stored = Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD", unix=10).identify()
+    by_ticker = {stored.symbolticker: stored}
+
+    restated = Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD", unix=20)
+    thinner = Instrument(symbol="AAPL", securityexchange="XNAS", unix=20)
+    fuller = Instrument(
+        symbol="AAPL", securityexchange="XNAS", currency="USD", roundlot=100.0, unix=20
+    )
+
+    assert list(versioned([restated.identify()], by_ticker)) == []
+    assert list(versioned([thinner.identify()], by_ticker)) == []
+
+    (written,) = versioned([fuller.identify()], by_ticker)
+    assert written.symbolticker == stored.symbolticker
+    assert written.xhash == stored.xhash, "a version does not move the lifecycle"
+    assert written.roundlot == 100.0 and written.currency is Currency.USD
+    assert written.vhash != stored.vhash and written.hash != stored.hash
+
+
+def test_an_unknown_ticker_is_its_own_first_version() -> None:
+    """An empty lookup is a table that holds nothing yet, not a refusal."""
+    observed = [
+        Instrument(symbol="AAPL", securityexchange="XNAS").identify(),
+        Instrument(symbol="MSFT", securityexchange="XNAS").identify(),
+    ]
+
+    assert [row.symbolticker for row in versioned(observed, {})] == ["XNAS:AAPL", "XNAS:MSFT"]

@@ -218,12 +218,17 @@ configuration. Airflow executes the notebooks through its Papermill provider.
 The supported graph is:
 
 ```text
-parse_messages -> parse_fix -> parse_market -> flatten_orders
-                      |             `-------> flatten_executions
-                      `------------> market.instruments
+parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
+                             `-> parse_market -+-> flatten_orders
+                                               `-> flatten_executions
 ```
 
-`parse_fix` writes flat Instrument records directly to `market.instruments`.
+`parse_fix` owns FIX translation, the resolved `unix` clock and the
+`symbolticker` mapping, and holds no rule about reference data.
+`parse_instruments` reads the rows it wrote and versions
+`market.instruments` from them; the versioning rule itself is
+`rekep.market.versioned`, in the package, because two jobs writing that
+table must not disagree about what a version is.
 
 With `parse_market.books: false`, the market task bypasses Book construction
 and writes the FIX-carried Order and Execution rows itself; the two flatten

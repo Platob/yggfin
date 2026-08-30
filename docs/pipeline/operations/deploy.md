@@ -201,7 +201,7 @@ rekep fields load --target schemas/rekep/message.yaml | tail -2
 
 ## 4. Run
 
-[End-to-end run](run.md) has the six commands in dependency order.
+[End-to-end run](run.md) has the seven commands in dependency order.
 [Airflow](airflow.md) has the scheduled deployment.
 
 ## Build and publish

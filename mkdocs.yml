@@ -120,6 +120,7 @@ nav:
       - Tasks:
           - Parse messages: pipeline/tasks/parse-messages.md
           - Parse FIX: pipeline/tasks/parse-fix.md
+          - Parse instruments: pipeline/tasks/parse-instruments.md
           - Parse market: pipeline/tasks/parse-market.md
           - Flatten orders: pipeline/tasks/flatten-orders.md
           - Flatten executions: pipeline/tasks/flatten-executions.md

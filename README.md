@@ -33,9 +33,9 @@ zero-copy.
 The project workflow is intentionally outside the package:
 
 ```text
-parse_messages -> parse_fix -> parse_market -> flatten_orders
-                      |             `-------> flatten_executions
-                      `------------> market.instruments
+parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
+                             `-> parse_market -+-> flatten_orders
+                                               `-> flatten_executions
 ```
 
 `parse_market` can instead set `books: false` and write FIX-carried orders and

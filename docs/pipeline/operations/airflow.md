@@ -27,10 +27,12 @@ flowchart TD
     PF --> XM[(fix.misc)]
     PF --> XU[(fix.unknown)]
     PF --> FM[(fix.market)]
-    PF --> IM[(market.instruments)]
     PF --> RF{route_fix}
+    RF -->|routed.market > 0| PI[parse_instruments]
     RF -->|routed.market > 0| PK[parse_market]
+    FM --> PI
     FM --> PK
+    PI --> IM[(market.instruments)]
     PK --> RK{route_market}
     RK -->|flatten.orders > 0| FO[flatten_orders]
     RK -->|flatten.executions > 0| FE[flatten_executions]
@@ -115,7 +117,7 @@ Keep the table wiring aligned across the documents:
 | --- | --- | --- |
 | `parse_messages` | `logs.messages` | `parse_fix` |
 | `parse_fix` | `fix.market` | `parse_market` |
-| `parse_fix` | `market.instruments` | terminal reference table |
+| `parse_instruments` | `market.instruments` | terminal reference table |
 | `parse_market` in book mode | `market.books` | both flatteners |
 | `parse_market` in direct mode | `market.orders`, `market.executions` | terminal tables |
 

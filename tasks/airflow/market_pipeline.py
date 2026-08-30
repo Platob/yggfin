@@ -105,6 +105,9 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
 def market_pipeline() -> None:
     messages = notebook_task("parse_messages", "tasks/parse_messages/parse_messages.yml")
     parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
+    reference = notebook_task(
+        "parse_instruments", "tasks/parse_instruments/parse_instruments.yml"
+    )
     market = notebook_task("parse_market", "tasks/parse_market/parse_market.yml")
     orders = notebook_task("flatten_orders", "tasks/flatten_orders/flatten_orders.yml")
     executions = notebook_task(
@@ -116,11 +119,13 @@ def market_pipeline() -> None:
     )
     messages_route >> parsed
 
+    # Both read `fix.market`, neither writes what the other reads, so they run
+    # side by side on the one count that says the table gained rows.
     fix_route = after_notebook.override(task_id="route_fix")(
         output=parsed.output,
-        then={"parse_market": "routed.market"},
+        then={"parse_instruments": "routed.market", "parse_market": "routed.market"},
     )
-    fix_route >> market
+    fix_route >> [reference, market]
 
     market_route = after_notebook.override(task_id="route_market")(
         output=market.output,

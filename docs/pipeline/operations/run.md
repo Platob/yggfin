@@ -1,6 +1,6 @@
 # End-to-end run
 
-A correctness run measured 2026-08-30 executes the five notebook tasks against
+A correctness run measured 2026-08-30 executes the six notebook tasks against
 the checked-in message fixture and a fresh local Iceberg warehouse, then
 replays the same input. Throughput measurements live on
 [Benchmarks](../../storage/benchmarks.md).
@@ -43,6 +43,10 @@ uv run --project python --group runner rekep task run \
   --output parse_fix.executed.ipynb
 
 uv run --project python --group runner rekep task run \
+  tasks/parse_instruments/parse_instruments.yml \
+  --output parse_instruments.executed.ipynb
+
+uv run --project python --group runner rekep task run \
   tasks/parse_market/parse_market.yml \
   --output parse_market.executed.ipynb
 
@@ -70,14 +74,17 @@ fields.
 | Notebook | First run | Replay writes |
 | --- | --- | ---: |
 | `parse_messages` | 11 read, 11 written | 0 |
-| `parse_fix` | 11 read; 11 FixMsg and 1 Instrument written | 0 |
+| `parse_fix` | 11 read, 11 FixMsg written | 0 |
+| `parse_instruments` | 1 observed, 1 written | 0 |
 | `parse_market` | 2 Books written; 2 Orders and 1 Execution nested | 0 |
 | `flatten_orders` | 2 projected, 2 written | 0 |
 | `flatten_executions` | 1 projected, 1 written | 0 |
 
 `parse_fix` routed 2 rows to `fix.market` and 9 to `fix.misc`; no
-`fix.unknown` table was needed. The replay reported 12 skips: the 11 FixMsg
-rows and the one canonical Instrument record.
+`fix.unknown` table was needed. It resolved `unix` from `SendingTime` on the 2
+market rows and fell back to the recording clock on the other 9, and 3 of the
+11 rows carried a `symbolticker`. The replay wrote nothing at any stage: 11
+FixMsg rows skipped, and the one canonical Instrument record unchanged.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
@@ -91,8 +98,9 @@ rows and the one canonical Instrument record.
 
 ## Sampled output
 
-The flat Instrument table holds one `TTF` record keyed by `symbolticker`, with
-`xhash = -5992726579138353958`. `fix.market` contains only captured rows.
+The flat Instrument table holds one `TTF` record keyed by `symbolticker`,
+versioned out of `fix.market` by `parse_instruments`. `fix.market` itself
+contains only captured rows.
 
 | Product | Selected rows |
 | --- | --- |

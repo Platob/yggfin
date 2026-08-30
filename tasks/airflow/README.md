@@ -33,6 +33,7 @@ relevant table.
 
 ```text
 parse_messages -> route_messages -> parse_fix -> route_fix
+                                                +-> parse_instruments
                                                 `-> parse_market -> route_market
                                                                     +-> flatten_orders
                                                                     `-> flatten_executions
