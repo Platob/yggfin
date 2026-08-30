@@ -2,7 +2,7 @@
 
 A caller holds a field one of four ways -- a numeric tag (``770``), a canonical
 name (``TrdRegTimestampType``), a component path
-(``NoTrdRegTimestamps[0].trdregtimestamp``) or a namespace-qualified key
+(``NoTrdRegTimestamps[0].trdregtimestamp``) or a whole vendor key
 (``TECH.CLIENTID``) -- and every one of them resolves here, against one rule
 table, to the same reading. The scalar execution is this module; the columnar
 one is `TagIndex` (fix/transcribe.py), which reads the same rules in Arrow

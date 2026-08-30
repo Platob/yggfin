@@ -1,0 +1,54 @@
+{
+ "name": "RekepMarket",
+ "versions": [
+  "*"
+ ],
+ "declaration": {
+  "name": "RekepMarket",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RekepMarket"
+  },
+  "fields": [
+   {
+    "name": "REKEP.Px",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30022"
+    }
+   },
+   {
+    "name": "REKEP.Qty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30023"
+    }
+   },
+   {
+    "name": "REKEP.PxUnit",
+    "type": "string",
+    "fix": {
+     "tag": "30024"
+    }
+   },
+   {
+    "name": "REKEP.QtyUnit",
+    "type": "string",
+    "fix": {
+     "tag": "30025"
+    }
+   },
+   {
+    "name": "REKEP.Notional",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30026"
+    }
+   }
+  ]
+ }
+}

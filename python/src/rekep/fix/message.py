@@ -547,7 +547,7 @@ def rendered_keys(
     """`(marker, key)` for every token of every line, flattened, in kernels.
 
     What a capture *spells*, which a parse deliberately does not keep: named
-    mode sheds the `#`, and the two namespaces a bridge writes -- `#Side`
+    mode sheds the `#`, and the two spellings a bridge writes -- `#Side`
     before enrichment and `Side` after -- are then indistinguishable. A group
     index is dropped, because `NOPARTYIDS[0]` and `[1]` are one name twice.
     """

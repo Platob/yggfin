@@ -60,7 +60,7 @@
   // What a query matched, best first, exactly as `FixRegistry.search` ranks it:
   // an identity -- a tag, a MsgType, a name, part of one -- and only then the
   // record's own prose. Searching a whole record for the text is what buried
-  // `Side` behind `Account` and `Currency`: 280 of 6,074 fields carry "side"
+  // `Side` behind `Account` and `Currency`: 4,343 of 6,101 fields carry "side"
   // somewhere in their JSON.
   const IDENTIFIED = 3;
   const BY_TEXT = 4;

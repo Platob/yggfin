@@ -266,7 +266,7 @@ class Counting:
 
 
 def test_a_single_tag_lookup_deserializes_one_shard() -> None:
-    """Over the published dictionary: fourteen shards, and a tag reads one."""
+    """Over the published dictionary: fifteen shards, and a tag reads one."""
     registry = FixRegistry(cache_dir=PUBLISHED, offline=True)
     counted = Counting(registry._documents)
     registry.__dict__["_documents"] = counted

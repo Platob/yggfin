@@ -105,7 +105,7 @@ The `MsgType` discriminator is promoted to `msgtype` and never duplicated here.
 ## Reading one row
 
 `get` reads promoted columns and `entries` through the same accessor, by
-numeric tag, canonical name, component path or namespace-qualified key:
+numeric tag, canonical name, component path or whole vendor key:
 
 ```python
 from rekep import FixMsg

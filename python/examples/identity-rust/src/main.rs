@@ -1,6 +1,10 @@
 use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64_with_seed;
 
+type ValueHash = i64;
+type LifecycleHash = i64;
+type AnchoredHash = i128;
+
 #[derive(Deserialize)]
 struct Corpus {
     protocol: String,
@@ -88,15 +92,15 @@ fn into_hex(value: &[u8]) -> String {
     value.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn couple128(micros: i64, vhash: i64) -> i128 {
+fn couple128(micros: i64, vhash: ValueHash) -> AnchoredHash {
     ((micros as i128) << 64) | ((vhash as u64) as i128)
 }
 
-fn micros_of(value: i128) -> i64 {
+fn micros_of(value: AnchoredHash) -> i64 {
     (value >> 64) as i64
 }
 
-fn vhash_of(value: i128) -> i64 {
+fn vhash_of(value: AnchoredHash) -> ValueHash {
     value as i64
 }
 
@@ -134,11 +138,19 @@ fn main() {
         assert_eq!(digest as i64, vector.signed_i64, "{} signed", vector.name);
     }
     let micros = 1_700_000_000_000_000_i64;
-    let vhash = -4_872_843_452_109_876_543_i64;
+    let vhash: ValueHash = -4_872_843_452_109_876_543;
+    let xhash: LifecycleHash = 7_239_864_127_593_011_337;
     let hash = couple128(micros, vhash);
+    let prevhash: AnchoredHash = hash;
+    let linkedhashes: Vec<LifecycleHash> = vec![xhash];
     assert_eq!(micros_of(hash), micros);
     assert_eq!(vhash_of(hash), vhash);
     assert_eq!(i128::from_be_bytes(hash.to_be_bytes()), hash);
+    assert_eq!(std::mem::size_of::<ValueHash>(), 8);
+    assert_eq!(std::mem::size_of::<LifecycleHash>(), 8);
+    assert_eq!(std::mem::size_of::<AnchoredHash>(), 16);
+    assert_eq!(prevhash.to_be_bytes(), hash.to_be_bytes());
+    assert_eq!(linkedhashes, vec![xhash]);
 
     println!(
         "{}: {} raw + {} framed vectors and event-hash composition match",

@@ -346,7 +346,7 @@ class ComponentRecord(Convertible):
     def into_field(
         self,
         version: str,
-        types: Mapping[str, Any] | None = None,
+        fields: Mapping[str, Field] | None = None,
         components: Mapping[str, ComponentRecord] | None = None,
     ) -> Field | None:
         """This component's declaration as one Arrow field, or None for a version
@@ -361,7 +361,7 @@ class ComponentRecord(Convertible):
         """
         if not self.declares(version):
             return None
-        members = _component_fields(self.declaration, types or {}, components or {}, frozenset())
+        members = _component_fields(self.declaration, fields or {}, components or {}, frozenset())
         return Field(
             name=column_name(self.name),
             dtype=pyarrow.struct([member.into_arrow_field() for member in members]),
@@ -449,7 +449,7 @@ class ComponentRecord(Convertible):
 
 def _component_fields(
     declared: Field,
-    types: Mapping[str, Any],
+    fields: Mapping[str, Field],
     components: Mapping[str, ComponentRecord],
     seen: frozenset[str],
 ) -> list[Field]:
@@ -462,12 +462,17 @@ def _component_fields(
     """
     built: list[Field] = []
     for member in quickfix.members_of(declared):
+        field = fields.get(column_name(member.name))
+        name = column_name(member.name)
+        if field is not None and field.fix.column:
+            name = field.fix.column
+        display = field.fix.display if field is not None and field.fix.display else member.name
         if quickfix.is_group(member):
             entry = quickfix.entry_of(member)
-            item = _component_fields(entry, types, components, seen)
+            item = _component_fields(entry, fields, components, seen)
             built.append(
                 Field(
-                    name=column_name(member.name),
+                    name=name,
                     dtype=pyarrow.list_(
                         Field(
                             name=column_name(entry.name),
@@ -477,7 +482,7 @@ def _component_fields(
                         ).into_arrow_field()
                     ),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name, "fix:display": member.name},
+                    metadata={"fix:name": member.name, "fix:display": display},
                 )
             )
         elif quickfix.is_reference(member):
@@ -485,14 +490,14 @@ def _component_fields(
             nested = components.get(key)
             if nested is None or key in seen:
                 continue
-            built.extend(_component_fields(nested.declaration, types, components, seen | {key}))
+            built.extend(_component_fields(nested.declaration, fields, components, seen | {key}))
         else:
             built.append(
                 Field(
-                    name=column_name(member.name),
-                    dtype=types.get(column_name(member.name)) or pyarrow.string(),
+                    name=name,
+                    dtype=field.dtype if field is not None else pyarrow.string(),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name, "fix:display": member.name},
+                    metadata={"fix:name": member.name, "fix:display": display},
                 )
             )
     return built

@@ -21,6 +21,7 @@ import pytest
 from rekep.fix import FIX_SCALARS, FixRegistry
 from rekep.fix.columns import _ORDER
 from rekep.fix.entries import ANY_VERSION
+from rekep.fix.fields import fix_field
 from rekep.fix.publish import (
     CONFLICT_BASELINE,
     FIXMSG_FIELDS,
@@ -30,8 +31,15 @@ from rekep.fix.publish import (
     beyond_baseline,
     missing_from,
     publish_builtin,
+    publish_full,
 )
 from rekep.fix.quickfix import members_of
+from rekep.fix.rekep import (
+    REKEP_COMPONENT_NAMES,
+    REKEP_FIELD_DECLARATIONS,
+    REKEP_TAGS,
+    rekep_is_registered,
+)
 from rekep.fix.store import NAMED_FILE, SHARD_SPAN, ConflictReport, shard_name
 from rekep.market.fix import CARRIED_FIELDS, market_tags
 
@@ -70,7 +78,9 @@ def records() -> dict[str, dict[str, object]]:
 #: reading, and the protocol's own nested under `fix`. The same document a
 #: component declaration and `schemas/rekep/*.yaml` are written in, which is
 #: the whole reason there is no second codec for a field record.
-FIELD_KEYS = frozenset({"name", "type", "nullable", "description", "fix"})
+FIELD_KEYS = frozenset(
+    {"name", "type", "nullable", "description", "fix", "fields", "item", "key", "value"}
+)
 
 #: The `fix:` keys whose value is itself a document, packed into one string
 #: because Arrow field metadata is bytes to bytes.
@@ -108,14 +118,16 @@ VERSIONS: list[str] = INDEX["versions"]
 #: zero", so a rebuild that lost half the dictionary and still produced a
 #: readable store fails here.
 #:
-#: Fourteen tag shards and `named.json`, against 6074 field documents before
-#: the records were made cross-version: the tag space is sparse, so 87 of the
-#: 101 possible shards hold nothing and are simply absent.
-EXPECTED_FIELD_DOCUMENTS = 15
-EXPECTED_FIELD_RECORDS = 6074
-EXPECTED_COMPONENT_FILES = 899
+#: Fifteen tag shards and `named.json`: the standard occupies fourteen sparse
+#: shards and rekep's frozen 30000 range occupies one more.
+EXPECTED_FIELD_DOCUMENTS = 16
+EXPECTED_FIELD_RECORDS = 6101
+EXPECTED_COMPONENT_FILES = 907
 #: Of which these are messages: a message is a component that arrives under a MsgType.
-EXPECTED_MESSAGE_FILES = 170
+EXPECTED_MESSAGE_FILES = 176
+
+REKEP_TAG_VALUES = frozenset(REKEP_TAGS.values())
+REKEP_COMPONENTS = frozenset(REKEP_COMPONENT_NAMES)
 
 #: The collapse report, committed beside the dictionary it describes.
 CONFLICTS = DATA.parent / "fix-conflicts.json"
@@ -204,7 +216,11 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
         assert fix["tag"] not in tags, f"{key} repeats a tag"
         assert fix["tag"] == key, "a record is filed under its own tag"
         tags.add(fix["tag"])
-        assert set(fix["versions"]) <= set(VERSIONS), key
+        if int(key) in REKEP_TAG_VALUES:
+            assert fix["versions"] == [ANY_VERSION], key
+            assert str(record["name"]).startswith("REKEP."), key
+        else:
+            assert set(fix["versions"]) <= set(VERSIONS), key
     assert vendor == 3, "ISINCODE and the parent identities the log gives columns"
     assert stored_fix(held["ISINCODE"])["column"] == "isincode", (
         "a declared column is stored folded, the way the lift names it"
@@ -217,7 +233,12 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     for key, record in held.items():
         fix = stored_fix(record)
         if "tag" in fix:
-            assert str(record["name"]).isalnum(), key
+            name = str(record["name"])
+            assert (
+                name.removeprefix("REKEP.").isalnum()
+                if int(fix["tag"]) in REKEP_TAG_VALUES
+                else name.isalnum()
+            ), key
             assert all(str(alias["name"]).isalnum() for alias in fix.get("aliases", ())), key
         assert all(str(name).isalnum() for name in fix.get("msgtypes", ())), key
         assert all(str(name).isalnum() for name in fix.get("components", ())), key
@@ -329,7 +350,9 @@ def test_a_version_carries_what_its_pages_say(version: str, registry: FixRegistr
     Every field carries a type, so that is a ratio.
     Prose is an exact published count: see `EXPECTED_DESCRIBED`.
     """
-    fields = registry.fields(version)
+    fields = [
+        member for member in registry.fields(version) if member.fix.tag not in REKEP_TAG_VALUES
+    ]
     typed = sum(1 for member in fields if member.fix.get("type"))
     described = sum(1 for member in fields if member.description)
     enumerated = sum(1 for member in fields if member.fix.get("values"))
@@ -371,8 +394,24 @@ def test_the_archive_is_what_publishing_it_produces(tmp_path: Path) -> None:
     one field then shows up as a change, and a rebuild that changes nothing
     shows up as nothing.
     """
-    rebuilt = FixRegistry(cache_dir=DATA, retries=0).into_zip(tmp_path / "fix.zip")
+    rebuilt = publish_full(DATA, tmp_path / "fix.zip")
     assert rebuilt.read_bytes() == DATA.read_bytes()
+
+
+def test_full_publication_registers_rekep_in_a_clean_store(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    registry = FixRegistry(cache_dir=source, offline=True)
+    venue = fix_field("VenueField", 49999, "String")
+    venue.fix.versions = ("9.1",)
+    registry.add_field(venue)
+
+    target = publish_full(source, tmp_path / "full.zip")
+    stored = FixRegistry(cache_dir=source, offline=True)
+    archived = FixRegistry(cache_dir=target, offline=True)
+
+    assert stored.field(49999).name == archived.field(49999).name == "VenueField"
+    assert rekep_is_registered(stored)
+    assert rekep_is_registered(archived)
 
 
 def test_a_projection_is_a_small_exact_offline_registry(
@@ -419,18 +458,17 @@ def test_the_builtin_projection_matches_the_published_versions(
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
-    # Derived from `publish.PROJECTED`, then pinned: 181 keys resolve to 180
-    # records, because `FutSettDate` and `SettlDate` are one tag under two
-    # spellings and the collapse keeps the older one as an alias. Three records
-    # are vendor fields FIX never numbered.
-    assert len(builtin.tags()) == 181
-    assert len(builtin.field_records()) == 180
+    # Derived from `publish.PROJECTED`, then pinned: 181 standard keys resolve
+    # to 180 records, and the package adds its 27 frozen field identities.
+    assert len(builtin.tags()) == 208
+    assert len(builtin.field_records()) == 207
     assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
+    package_tags = set(REKEP_TAGS.values())
     selected = {
         int(tag)
         for version in registry.versions
         for member in builtin.fields(version)
-        if (tag := member.fix.get("tag"))
+        if (tag := member.fix.get("tag")) and int(tag) not in package_tags
     }
     named = {
         member.name
@@ -445,7 +483,14 @@ def test_the_builtin_projection_matches_the_published_versions(
             for member in registry.fields(version)
             if (int(tag) in selected if (tag := member.fix.get("tag")) else member.name in named)
         ]
-        assert builtin.fields(version) == expected, version
+        packaged = builtin.fields(version)
+        assert [member for member in packaged if member.fix.tag not in package_tags] == expected, (
+            version
+        )
+        assert [member.name for member in packaged if member.fix.tag in package_tags] == [
+            f"REKEP.{name}"
+            for _column, name, _datatype, _display, _description in REKEP_FIELD_DECLARATIONS
+        ]
     # A field FIX never numbered holds for every version and sorts after the
     # numbered ones, so the named identities are the tail of the newest
     # version too.
@@ -454,6 +499,13 @@ def test_the_builtin_projection_matches_the_published_versions(
         "ParentClOrdID",
         "ParentOrderID",
     ]
+
+
+def test_full_and_builtin_registries_match_the_rekep_declarations(
+    registry: FixRegistry,
+) -> None:
+    assert rekep_is_registered(registry)
+    assert rekep_is_registered(FixRegistry.from_builtin())
 
 
 def test_the_builtin_projection_is_what_publishing_it_produces(tmp_path: Path) -> None:
@@ -502,12 +554,25 @@ def test_the_builtin_projection_carries_the_component_declarations(
     assert parties.name == "Parties"
     assert [member.name for member in members_of(parties)] == ["NoPartyIDs"]
     assert members_of(parties)[0].fix.tag == 453
+    package_components = set(REKEP_COMPONENT_NAMES[:2])
     for version in registry.versions:
         assert builtin.components_available(version), version
-        assert builtin.components(version) == registry.components(version), version
-    declared = {version for version in registry.versions if builtin.components(version)}
+        declared = builtin.components(version)
+        assert [one for one in declared if one.name not in package_components] == (
+            [one for one in registry.components(version) if one.name not in package_components]
+        ), version
+        assert {one.name for one in declared if one.name in package_components} == (
+            package_components
+        ), version
+    declared = {
+        version
+        for version in registry.versions
+        if any(
+            component.name not in package_components for component in builtin.components(version)
+        )
+    }
     assert declared == {"4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2", "FIXT1.1"}
-    assert {"4.0", "4.1", "4.2"}.isdisjoint(declared), "no component existed before 4.3"
+    assert {"4.0", "4.1", "4.2"}.isdisjoint(declared), "no standard component existed before 4.3"
 
 
 def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
@@ -607,7 +672,11 @@ def test_the_published_dictionary_pins_source_coverage_and_provenance(
         "onixs": {"primary": 43, "fields": 1495},
         "quickfix": {"primary": 4576, "fields": 6066},
     }
-    standard = [entry for entry in registry.field_records().values() if entry.fix.tag is not None]
+    standard = [
+        entry
+        for entry in registry.field_records().values()
+        if entry.fix.tag is not None and entry.fix.tag not in REKEP_TAG_VALUES
+    ]
     assert all(entry.fix.source == entry.fix.sources[0] for entry in standard)
 
 

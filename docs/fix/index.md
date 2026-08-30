@@ -123,6 +123,7 @@ Records live in tag-range shards of five hundred, named by the shard index:
 versions.json         the version list, each version's session layer,
                       and which versions have had their spec read
 fields/000000.json    tags 0-499
+fields/000060.json    tags 30000-30499, rekep package vocabulary
 fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
 fields/named.json     the fields FIX never numbered
 components/parties.json          one component
@@ -131,9 +132,9 @@ components/new_order_single.json a message
 
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
 no lookup table and no scan, and `registry.lookup(54)` deserializes one shard
-rather than the dictionary. The tag space is sparse (nothing between 2999 and
-40000), and an empty shard is simply absent: fourteen shards answer for six
-thousand fields.
+rather than the dictionary. The tag space is sparse, and an empty shard is
+simply absent: fifteen shards hold 6,098 tagged fields and `named.json` holds
+three rendered fields.
 
 JSON, and measured: every process importing this package parses a projection of
 the dictionary, where pure-Python YAML costs 25 seconds to read against a tenth
@@ -337,11 +338,10 @@ Protocol-specific code should normalize values, not duplicate registry tables.
 
 ### What the wheel carries
 
-`data/fix.zip` is the whole dictionary and stays beside the repository. The
-wheel ships `rekep/fix/registry.zip`, a projection of it holding the keys
-`rekep.fix.publish.PROJECTED` names -- numbered tags, the fields FIX never
-numbered that the log gives a column, and every version's declarations,
-messages included, whole.
+`data/fix.zip` is the whole dictionary plus rekep's 27 frozen fields and stays
+beside the repository. The wheel ships `rekep/fix/registry.zip`: the standard
+keys `rekep.fix.publish.PROJECTED` names, those same package fields, and every
+version's declarations, messages included, whole.
 
 A component says where a repeating group starts and ends, so a projection that
 selected its members alongside the fields would end the group somewhere else,
@@ -576,7 +576,7 @@ separator.
 
 ## Repeated readings
 
-A rendered line carries two namespaces -- `#Side` as a field arrived and
+A rendered line carries two spellings -- `#Side` as a field arrived and
 `Side` after enrichment -- and on a third to a half of a real capture's lines
 some fields appear in both.
 
@@ -600,7 +600,7 @@ one of four ways, and every one of them resolves to the same reading:
 | numeric tag | `770` |
 | canonical name | `TrdRegTimestampType` |
 | component path | `NoTrdRegTimestamps[0].TrdRegTimestamp` |
-| namespace-qualified key | `TECH.CLIENTID` |
+| whole vendor key | `TECH.CLIENTID` |
 
 ```python
 from rekep import FixMsg
@@ -628,7 +628,7 @@ call site knowing there was anything to resolve.
 
 A group entry answers a bare name -- `PartyID` finds `NoPartyIDs[0].PartyID`,
 because the group is *where* the field sits and not what it is -- while a
-vendor namespace does not: `TECH.CLIENTID` is its own field, and reading it as
+vendor key does not: `TECH.CLIENTID` is its own field, and reading it as
 `CLIENTID` would file an enrichment value under a standard field.
 
 The rules are declared once and executed twice. `TagIndex` resolves whole

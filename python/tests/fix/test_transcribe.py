@@ -39,6 +39,7 @@ from rekep.fix.columns import (
 from rekep.fix.fields import fix_field
 from rekep.fix.message import stored_entry_separators
 from rekep.fix.quickfix import members_of
+from rekep.fix.rekep import REKEP_COMPONENT_NAMES
 from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
@@ -272,7 +273,7 @@ def test_only_an_indexed_container_is_split_from_its_key(codec: FixCodec) -> Non
     assert [(entry["comp"], entry["key"]) for entry in found] == [
         (None, "TECH.CLIENTID"),
         ("NOPARTYIDS[0]", "PARTYID"),
-    ], "`TECH` names nothing this version declares; `NOPARTYIDS` names a group"
+    ], "`TECH` is part of a whole key; indexed `NOPARTYIDS[0]` is a location"
 
 
 def test_the_split_key_still_spells_the_key_the_line_wrote(codec: FixCodec) -> None:
@@ -289,12 +290,7 @@ def test_the_split_key_still_spells_the_key_the_line_wrote(codec: FixCodec) -> N
 
 
 def test_a_vendor_namespace_does_not_borrow_the_tag_its_tail_names(codec: FixCodec) -> None:
-    """`TECH.CLIENTID` is not `ClientID <109>`; `NoPartyIDs[0].PartyID` is `PartyID`.
-
-    What tells them apart is whether the container in front names something
-    this version declares -- a component, a group, a field -- and `TECH` names
-    nothing.
-    """
+    """Only an indexed lead exposes its terminal key to registry resolution."""
     parsed = parse_arrow_array(
         pyarrow.array(["#TECH.CLIENTID=ACCT-TEST-01|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A"]),
         "|",
@@ -1344,7 +1340,14 @@ def _party_rows(codec: FixCodec, message: str, version: str) -> list[dict[str, o
 def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCodec) -> None:
     """The regression, at the registry: `components()` was empty for every version."""
     registry = packaged.registry
-    declared = [version for version in registry.versions if registry.components(version)]
+    package_components = set(REKEP_COMPONENT_NAMES[:2])
+    declared = [
+        version
+        for version in registry.versions
+        if any(
+            component.name not in package_components for component in registry.components(version)
+        )
+    ]
     assert declared == ["5.0.SP2", "5.0.SP1", "5.0", "4.4", "4.3", "FIXT1.1"]
     assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
 
@@ -1381,7 +1384,9 @@ def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
     """4.0 through 4.2 predate the component, and the store says so rather than
     being silent about it -- so this is an answer, not a degraded one."""
     registry = packaged.registry
-    assert registry.components_available("4.2") and not registry.components("4.2")
+    package_components = set(REKEP_COMPONENT_NAMES[:2])
+    assert registry.components_available("4.2")
+    assert {component.name for component in registry.components("4.2")} == package_components
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         assert packaged.parties_of("4.2")._member_names == {}
@@ -1403,13 +1408,13 @@ def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: 
     assert _party_rows(codec, PARTIES_WIRE, "4.4") is None
 
 
-# -- the two namespaces a bridge writes --------------------------------------
+# -- the two spellings a bridge writes ---------------------------------------
 
 
 def test_a_fact_written_twice_is_still_lifted_when_both_readings_agree(
     packaged: FixCodec,
 ) -> None:
-    """A third to a half of a real capture's lines carry both namespaces.
+    """A third to a half of a real capture's lines carry both spellings.
 
     Enrichment writes `#Side` as the field arrived and `Side` as it left, and
     refusing to lift a key that repeats dropped every such field out of its

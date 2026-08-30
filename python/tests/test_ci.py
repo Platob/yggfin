@@ -95,6 +95,7 @@ def test_the_release_publishes_rekep_before_the_full_registry() -> None:
     names = [step.get("name") for step in steps]
     assert "uv build --no-sources" in commands["Build rekep"]
     assert "fix-registry.zip" in commands["Build full FIX registry"]
+    assert "publish_full" in commands["Build full FIX registry"]
     assert "UV_PUBLISH_CHECK_URL" in commands["Check Artifactory configuration"]
     assert "uv publish --no-attestations" in commands["Publish rekep"]
     registry = commands["Publish full FIX registry"]

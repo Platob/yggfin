@@ -48,7 +48,9 @@ a partial write.
 
 ```bash
 rekep fix registry scrape --output data/fix
-rekep fix registry dump --store data/fix --output data/fix.zip
+cd python
+uv run python -c "from rekep.fix.publish import publish_full; \
+publish_full('../data/fix', '../data/fix.zip')"
 ```
 
 See the [registry internals](index.md) for bootstrap and storage rules, or

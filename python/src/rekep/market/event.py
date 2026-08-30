@@ -79,7 +79,7 @@ _SOURCE_IDENTITY_MEMBERS = frozenset(
 
 _MISSING = object()
 
-#: What `altids` holds: lifecycle aliases beside `code`, such as `cl_ord_id`
+#: What `altids` holds: lifecycle aliases beside `code`, such as `clordid`
 #: and `execid`. Instrument identity has `instrumentxhash` and
 #: `symbolticker`; mixing it into this map lets unrelated events match.
 ALTIDS_TYPE = pyarrow.map_(

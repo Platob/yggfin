@@ -224,6 +224,27 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
     assert merged.altids == {"RICCode": "AAPL.O", "CUSIP": "037833100"}
 
 
+def test_repeated_reference_values_are_detected_by_vhash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Clock-only repeats have the same value hash and need no field comparison."""
+
+    class Source:
+        @staticmethod
+        def into_instruments(**_declared: object):
+            return iter((Instrument(unix=1, symbol="AAPL"), Instrument(unix=2, symbol="AAPL")))
+
+    def unexpected(_self: Instrument, _other: Instrument) -> None:
+        pytest.fail("equal value hashes reached field-by-field enrichment")
+
+    monkeypatch.setattr(Instrument, "enriched_with", unexpected)
+
+    (found,) = Instrument.from_fixmsgs([Source()])
+
+    assert found.unix == 1
+    assert found.vhash == Instrument(unix=2, symbol="AAPL").identify().vhash
+
+
 def test_reference_data_that_arrives_later_does_not_move_the_identity() -> None:
     """A tick or a maturity learnt afterwards is not part of the key, deliberately:
     an identity that moved when a field was enriched would break every join to it."""

@@ -1,0 +1,163 @@
+{
+ "name": "RekepHeader",
+ "versions": [
+  "*"
+ ],
+ "declaration": {
+  "name": "RekepHeader",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RekepHeader"
+  },
+  "fields": [
+   {
+    "name": "REKEP.Unix",
+    "type": "string",
+    "fix": {
+     "tag": "30000"
+    }
+   },
+   {
+    "name": "REKEP.UnixPartition",
+    "type": "string",
+    "fix": {
+     "tag": "30001"
+    }
+   },
+   {
+    "name": "REKEP.EventType",
+    "type": "string",
+    "fix": {
+     "tag": "30002"
+    }
+   },
+   {
+    "name": "REKEP.CreaUnix",
+    "type": "string",
+    "fix": {
+     "tag": "30003"
+    }
+   },
+   {
+    "name": "REKEP.RecUnix",
+    "type": "string",
+    "fix": {
+     "tag": "30004"
+    }
+   },
+   {
+    "name": "REKEP.ExpUnix",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30005"
+    }
+   },
+   {
+    "name": "REKEP.SnapUnix",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30006"
+    }
+   },
+   {
+    "name": "REKEP.Hash",
+    "type": "string",
+    "fix": {
+     "tag": "30007"
+    }
+   },
+   {
+    "name": "REKEP.VHash",
+    "type": "string",
+    "fix": {
+     "tag": "30008"
+    }
+   },
+   {
+    "name": "REKEP.XHash",
+    "type": "string",
+    "fix": {
+     "tag": "30009"
+    }
+   },
+   {
+    "name": "REKEP.PrevHash",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30010"
+    }
+   },
+   {
+    "name": "REKEP.PrevUnix",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30011"
+    }
+   },
+   {
+    "name": "REKEP.ParentHash",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30012"
+    }
+   },
+   {
+    "name": "REKEP.LinkedHashes",
+    "type": "string",
+    "fix": {
+     "tag": "30013"
+    }
+   },
+   {
+    "name": "REKEP.Version",
+    "type": "string",
+    "fix": {
+     "tag": "30014"
+    }
+   },
+   {
+    "name": "REKEP.State",
+    "type": "string",
+    "fix": {
+     "tag": "30015"
+    }
+   },
+   {
+    "name": "REKEP.Code",
+    "type": "string",
+    "fix": {
+     "tag": "30016"
+    }
+   },
+   {
+    "name": "REKEP.AltIDs",
+    "type": "string",
+    "fix": {
+     "tag": "30017"
+    }
+   },
+   {
+    "name": "REKEP.MIC",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30018"
+    }
+   },
+   {
+    "name": "REKEP.Reason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30019"
+    }
+   }
+  ]
+ }
+}

@@ -899,7 +899,7 @@ def test_a_wire_message_still_refuses_a_bracketed_key() -> None:
 
 
 def test_rendered_keys_keeps_the_marker_a_parse_sheds() -> None:
-    """`#Side` and `Side` are two namespaces, and a parse deliberately loses which."""
+    """`#Side` and `Side` are two spellings, and a parse deliberately loses which."""
     line = "toBridge #ISINCODE=FAKE-ISIN-0001|#SIDE=1|SIDE=1|#NOPARTYIDS[0].PARTYID=PARTY-TEST-A"
     marker, keys = rendered_keys(pyarrow.array([line]), "|", named=True)
     assert list(zip(marker.to_pylist(), keys.to_pylist(), strict=True)) == [

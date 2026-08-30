@@ -103,8 +103,8 @@ jobs:
         run: uv build --no-sources
       - name: Build full FIX registry
         run: >-
-          uv run python -c "from rekep.fix import FixRegistry;
-          FixRegistry(cache_dir='../data/fix', offline=True).into_zip('dist/fix-registry.zip')"
+          uv run python -c "from rekep.fix.publish import publish_full;
+          publish_full('../data/fix', 'dist/fix-registry.zip')"
       - name: Publish rekep
         run: uv publish --no-attestations dist/rekep-*.whl dist/rekep-*.tar.gz
       - name: Publish full FIX registry

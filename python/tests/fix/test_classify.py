@@ -101,7 +101,7 @@ def test_counting_is_by_name_and_never_by_value() -> None:
 
 
 def test_a_name_written_both_ways_is_counted_both_ways(counts: KeyCounts) -> None:
-    """`#Foo` and `Foo` are one name and two namespaces, and both are the data.
+    """`#Foo` and `Foo` are one name and two spellings, and both are the data.
 
     Asymmetric on purpose: a few names appear as both, a larger set only
     marked, and another set only bare. A report that summed them would say

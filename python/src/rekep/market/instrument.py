@@ -311,13 +311,16 @@ def _flat_instruments(observed: Iterable[Instrument | None]) -> Iterator[Instrum
     for instrument in observed:
         if instrument is None or not instrument.symbolticker:
             continue
+        instrument.identify()
         ticker = instrument.symbolticker
         known = records.get(ticker)
         if known is None:
             order.append(ticker)
             records[ticker] = instrument
             continue
+        if known.vhash == instrument.vhash:
+            continue
         enriched = known.enriched_with(instrument)
         if enriched is not None:
-            records[ticker] = enriched
+            records[ticker] = enriched.identify()
     yield from (records[ticker].identify() for ticker in order)

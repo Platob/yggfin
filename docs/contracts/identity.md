@@ -45,11 +45,10 @@ bytes -- `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
 `prevhash` has the same width and `parenthash` is a list of those values. The
 [time-anchored hash contract](txhash.md) defines the reversible composition.
 
-A lifecycle identity used as a part of another identity enters the frame as
-its sign-extended sixteen-byte representation, never as an integer. Value
-hashes nested in a Book frame use their native signed `int64` payload. This
-preserves the `rekep-identity-v1` lifecycle frame while its columns use
-`int64` storage.
+A lifecycle identity used to construct another lifecycle enters the frame as
+its sign-extended sixteen-byte representation. Related identities in
+`linkedhashes` and value hashes nested in a Book frame use their native signed
+`int64` payloads.
 
 ## Scalar payloads
 

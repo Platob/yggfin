@@ -337,6 +337,7 @@ fields:
   fix: {display: Unmapped}
   item:
     type: struct
+    fix: {display: Item}
     fields:
     - name: tag
       type: int32

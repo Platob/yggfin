@@ -1,0 +1,25 @@
+{
+ "name": "REKEP.Message",
+ "versions": [
+  "*"
+ ],
+ "declaration": {
+  "name": "REKEP.Message",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "REKEP.Message",
+   "msgtype": "URM"
+  },
+  "fields": [
+   {
+    "name": "RekepHeader",
+    "type": "struct",
+    "fix": {
+     "component": "RekepHeader"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

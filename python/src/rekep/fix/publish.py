@@ -1,21 +1,22 @@
-"""What the wheel's own FIX registry holds, and the one call that rebuilds it.
+"""What the published FIX registries hold, and the calls that rebuild them.
 
-The published dictionary (`data/fix.zip`) is the whole standard and is far too
-large to ship in a wheel; `rekep/fix/registry.zip` is a projection of it. A
-projection is only as good as its key list, so the list lives here as data --
-reviewable, diffable, and checked by a test against what the package actually
-looks up, rather than being retyped into a shell command each time the artifact
-is rebuilt.
+The published dictionary (`data/fix.zip`) is the whole standard plus rekep's
+frozen vocabulary and is far too large to ship in a wheel;
+`rekep/fix/registry.zip` is its standard-field projection plus that vocabulary.
+The projection key list lives here as reviewable data and is checked against
+what the package actually looks up.
 """
 
 from __future__ import annotations
 
 import os
 import pathlib
+import tempfile
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
 from rekep.fix.registry import FixRegistry
+from rekep.fix.rekep import register_rekep
 from rekep.fix.store import ConflictReport
 
 #: How many identities the published dictionary collapses, per part, today.
@@ -238,7 +239,8 @@ BRIDGE_FIELDS: tuple[str, ...] = (
 #: Selected by name, because a name is all such a field has.
 NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID")
 
-#: Every key the packaged projection selects, in declaration order.
+#: Every standard key the packaged projection selects, in declaration order.
+#: `register_rekep` adds the 27 package-owned identities after this selection.
 PROJECTED: tuple[str, ...] = tuple(
     dict.fromkeys((*FIXMSG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
 )
@@ -250,7 +252,19 @@ def publish_builtin(
 ) -> pathlib.Path | str:
     """Rebuild the wheel's registry from the published dictionary, and name it."""
     registry = FixRegistry(cache_dir=source, offline=True)
-    return registry.into_projection(target, PROJECTED)
+    with tempfile.TemporaryDirectory(prefix="rekep-fix-projection-") as scratch:
+        staged = registry.into_projection(pathlib.Path(scratch) / "registry.zip", PROJECTED)
+        projected = register_rekep(FixRegistry(cache_dir=staged, offline=True))
+        return projected.into_zip(target)
+
+
+def publish_full(
+    source: str | os.PathLike[str],
+    target: str | os.PathLike[str],
+) -> pathlib.Path | str:
+    """Register rekep's vocabulary and publish the complete offline registry."""
+    registry = register_rekep(FixRegistry(cache_dir=source, offline=True))
+    return registry.into_zip(target)
 
 
 def missing_from(registry: FixRegistry, keys: Sequence[str] = PROJECTED) -> list[str]:

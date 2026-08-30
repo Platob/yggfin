@@ -1,0 +1,403 @@
+{
+ "30000": {
+  "name": "REKEP.Unix",
+  "type": "int64",
+  "nullable": true,
+  "description": "Event time in whole nanoseconds since the epoch.",
+  "fix": {
+   "tag": "30000",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "unix",
+   "display": "Unix"
+  }
+ },
+ "30001": {
+  "name": "REKEP.UnixPartition",
+  "type": "int32",
+  "nullable": true,
+  "description": "Hour boundary of `unix` in whole epoch seconds.",
+  "fix": {
+   "tag": "30001",
+   "type": "int32",
+   "versions": "[\"*\"]",
+   "column": "unixpartition",
+   "display": "Unix Partition"
+  }
+ },
+ "30002": {
+  "name": "REKEP.EventType",
+  "type": "int64",
+  "nullable": true,
+  "description": "Packed rekep event-kind code.",
+  "fix": {
+   "tag": "30002",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "eventtype",
+   "display": "Event Type"
+  }
+ },
+ "30003": {
+  "name": "REKEP.CreaUnix",
+  "type": "int64",
+  "nullable": true,
+  "description": "Creation time in whole nanoseconds since the epoch.",
+  "fix": {
+   "tag": "30003",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "creaunix",
+   "display": "Crea Unix"
+  }
+ },
+ "30004": {
+  "name": "REKEP.RecUnix",
+  "type": "int64",
+  "nullable": true,
+  "description": "Recording time in whole nanoseconds since the epoch.",
+  "fix": {
+   "tag": "30004",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "recunix",
+   "display": "Rec Unix"
+  }
+ },
+ "30005": {
+  "name": "REKEP.ExpUnix",
+  "type": "int64",
+  "nullable": true,
+  "description": "Expiry time in whole nanoseconds since the epoch.",
+  "fix": {
+   "tag": "30005",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "expunix",
+   "display": "Exp Unix"
+  }
+ },
+ "30006": {
+  "name": "REKEP.SnapUnix",
+  "type": "int64",
+  "nullable": true,
+  "description": "Source event time for a snapshot in whole epoch nanoseconds.",
+  "fix": {
+   "tag": "30006",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "snapunix",
+   "display": "Snap Unix"
+  }
+ },
+ "30007": {
+  "name": "REKEP.Hash",
+  "type": "fixed_size_binary[16]",
+  "nullable": true,
+  "description": "Time-anchored composition of `unix` and `vhash`.",
+  "fix": {
+   "tag": "30007",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "hash",
+   "display": "Hash"
+  }
+ },
+ "30008": {
+  "name": "REKEP.VHash",
+  "type": "int64",
+  "nullable": true,
+  "description": "Clock-free XXH3-64 value digest.",
+  "fix": {
+   "tag": "30008",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "vhash",
+   "display": "Value Hash"
+  }
+ },
+ "30009": {
+  "name": "REKEP.XHash",
+  "type": "int64",
+  "nullable": true,
+  "description": "Stable lifecycle identity.",
+  "fix": {
+   "tag": "30009",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "xhash",
+   "display": "Xhash"
+  }
+ },
+ "30010": {
+  "name": "REKEP.PrevHash",
+  "type": "fixed_size_binary[16]",
+  "nullable": true,
+  "description": "Hash of the preceding lifecycle version.",
+  "fix": {
+   "tag": "30010",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "prevhash",
+   "display": "Prev Hash"
+  }
+ },
+ "30011": {
+  "name": "REKEP.PrevUnix",
+  "type": "int64",
+  "nullable": true,
+  "description": "Event time of the preceding lifecycle version.",
+  "fix": {
+   "tag": "30011",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "prevunix",
+   "display": "Prev Unix"
+  }
+ },
+ "30012": {
+  "name": "REKEP.ParentHash",
+  "type": "list",
+  "nullable": true,
+  "description": "Ordered hashes of source events.",
+  "fix": {
+   "tag": "30012",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "parenthash",
+   "display": "Parent Hash"
+  },
+  "item": {
+   "type": "fixed_size_binary[16]"
+  }
+ },
+ "30013": {
+  "name": "REKEP.LinkedHashes",
+  "type": "list",
+  "nullable": true,
+  "description": "Ordered related lifecycle identities.",
+  "fix": {
+   "tag": "30013",
+   "type": "MultipleValueString",
+   "versions": "[\"*\"]",
+   "column": "linkedhashes",
+   "display": "Linked Hashes"
+  },
+  "item": {
+   "type": "int64"
+  }
+ },
+ "30014": {
+  "name": "REKEP.Version",
+  "type": "int64",
+  "nullable": true,
+  "description": "Zero-based lifecycle version number.",
+  "fix": {
+   "tag": "30014",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "version",
+   "display": "Version"
+  }
+ },
+ "30015": {
+  "name": "REKEP.State",
+  "type": "int64",
+  "nullable": true,
+  "description": "Packed ranked lifecycle state.",
+  "fix": {
+   "tag": "30015",
+   "type": "int64",
+   "versions": "[\"*\"]",
+   "column": "state",
+   "display": "State"
+  }
+ },
+ "30016": {
+  "name": "REKEP.Code",
+  "type": "string",
+  "nullable": true,
+  "description": "Readable lifecycle identifier.",
+  "fix": {
+   "tag": "30016",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "code",
+   "display": "Code"
+  }
+ },
+ "30017": {
+  "name": "REKEP.AltIDs",
+  "type": "map",
+  "nullable": true,
+  "description": "Other identifiers keyed by scheme or lifecycle field.",
+  "fix": {
+   "tag": "30017",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "altids",
+   "display": "Alt IDs"
+  },
+  "key": {
+   "type": "string"
+  },
+  "value": {
+   "type": "string"
+  }
+ },
+ "30018": {
+  "name": "REKEP.MIC",
+  "type": "int32",
+  "nullable": true,
+  "description": "ISO 10383 market identifier code.",
+  "fix": {
+   "tag": "30018",
+   "type": "int32",
+   "versions": "[\"*\"]",
+   "column": "mic",
+   "display": "MIC"
+  }
+ },
+ "30019": {
+  "name": "REKEP.Reason",
+  "type": "string",
+  "nullable": true,
+  "description": "Reason the event was rejected or could not be interpreted.",
+  "fix": {
+   "tag": "30019",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "reason",
+   "display": "Reason"
+  }
+ },
+ "30020": {
+  "name": "REKEP.SymbolTicker",
+  "type": "string",
+  "nullable": true,
+  "description": "Canonical instrument spelling.",
+  "fix": {
+   "tag": "30020",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "symbolticker",
+   "display": "Symbol Ticker"
+  }
+ },
+ "30021": {
+  "name": "REKEP.Unmap",
+  "type": "list",
+  "nullable": true,
+  "description": "Payload entries the registry did not resolve; null when all resolved.",
+  "fix": {
+   "tag": "30021",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "unmap",
+   "display": "Unmapped"
+  },
+  "item": {
+   "type": "struct",
+   "fields": [
+    {
+     "name": "tag",
+     "type": "int32",
+     "description": "Numeric identity written or resolved; zero while unresolved.",
+     "fix": {
+      "display": "Tag"
+     }
+    },
+    {
+     "name": "key",
+     "type": "string",
+     "description": "Whole field spelling outside an indexed container.",
+     "fix": {
+      "display": "Key"
+     }
+    },
+    {
+     "name": "value",
+     "type": "string",
+     "description": "Text after the first equals sign; an empty value is empty text.",
+     "fix": {
+      "display": "Value"
+     }
+    },
+    {
+     "name": "comp",
+     "type": "string",
+     "nullable": true,
+     "description": "Indexed container prefix.",
+     "fix": {
+      "display": "Comp"
+     }
+    }
+   ]
+  }
+ },
+ "30022": {
+  "name": "REKEP.Px",
+  "type": "double",
+  "nullable": true,
+  "description": "Price in `pxunit`.",
+  "fix": {
+   "tag": "30022",
+   "type": "double",
+   "versions": "[\"*\"]",
+   "column": "px",
+   "display": "Px"
+  }
+ },
+ "30023": {
+  "name": "REKEP.Qty",
+  "type": "double",
+  "nullable": true,
+  "description": "Quantity in `qtyunit`.",
+  "fix": {
+   "tag": "30023",
+   "type": "double",
+   "versions": "[\"*\"]",
+   "column": "qty",
+   "display": "Qty"
+  }
+ },
+ "30024": {
+  "name": "REKEP.PxUnit",
+  "type": "string",
+  "nullable": true,
+  "description": "Unit in which `px` is expressed.",
+  "fix": {
+   "tag": "30024",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "pxunit",
+   "display": "Px Unit"
+  }
+ },
+ "30025": {
+  "name": "REKEP.QtyUnit",
+  "type": "string",
+  "nullable": true,
+  "description": "Unit in which `qty` is expressed.",
+  "fix": {
+   "tag": "30025",
+   "type": "String",
+   "versions": "[\"*\"]",
+   "column": "qtyunit",
+   "display": "Qty Unit"
+  }
+ },
+ "30026": {
+  "name": "REKEP.Notional",
+  "type": "double",
+  "nullable": true,
+  "description": "Producer-computed `px * qty * multiplier`.",
+  "fix": {
+   "tag": "30026",
+   "type": "double",
+   "versions": "[\"*\"]",
+   "column": "notional",
+   "display": "Notional"
+  }
+ }
+}

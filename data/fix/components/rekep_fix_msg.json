@@ -1,0 +1,40 @@
+{
+ "name": "REKEP.FixMsg",
+ "versions": [
+  "*"
+ ],
+ "declaration": {
+  "name": "REKEP.FixMsg",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "REKEP.FixMsg",
+   "msgtype": "URF"
+  },
+  "fields": [
+   {
+    "name": "RekepHeader",
+    "type": "struct",
+    "fix": {
+     "component": "RekepHeader"
+    },
+    "fields": []
+   },
+   {
+    "name": "REKEP.SymbolTicker",
+    "type": "string",
+    "fix": {
+     "tag": "30020"
+    }
+   },
+   {
+    "name": "REKEP.Unmap",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "30021"
+    }
+   }
+  ]
+ }
+}

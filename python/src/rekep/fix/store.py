@@ -3,9 +3,9 @@
 One layout. Fields live in shards of five hundred tags under `fields/`, named
 by the shard index, so the file holding a tag is arithmetic -- no index, no
 lookup table, no scan -- and a single-tag lookup reads one document rather than
-the dictionary. The tag space is sparse (nothing between 2999 and 40000), and
-an empty shard is simply absent: fourteen files answer for six thousand fields.
-Fields FIX never numbered have no tag to shard on and share `fields/named.json`.
+the dictionary. The tag space is sparse, and an empty shard is simply absent:
+fifteen files hold 6,098 tagged fields. Fields FIX never numbered have no tag
+to shard on and share `fields/named.json`, which holds three records.
 
 Components stay one document per identity under `components/`, because they are
 keyed by name and there is no arithmetic to do.
@@ -76,9 +76,9 @@ STORED = "stored"
 DECLARED = "declared"
 
 #: How many tags one shard holds, and where the fields FIX never numbered go.
-#: Five hundred: wide enough that the populated ranges are fourteen files
+#: Five hundred: wide enough that the populated ranges are fifteen files
 #: rather than a hundred, narrow enough that a single-tag lookup parses a few
-#: hundred records instead of six thousand.
+#: hundred records instead of all 6,101.
 SHARD_SPAN = 500
 NAMED_FILE = f"{FIELDS}/named{DOCUMENT_SUFFIX}"
 

@@ -1,0 +1,40 @@
+{
+ "name": "REKEP.Order",
+ "versions": [
+  "*"
+ ],
+ "declaration": {
+  "name": "REKEP.Order",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "REKEP.Order",
+   "msgtype": "URO"
+  },
+  "fields": [
+   {
+    "name": "RekepHeader",
+    "type": "struct",
+    "fix": {
+     "component": "RekepHeader"
+    },
+    "fields": []
+   },
+   {
+    "name": "REKEP.SymbolTicker",
+    "type": "string",
+    "fix": {
+     "tag": "30020"
+    }
+   },
+   {
+    "name": "RekepMarket",
+    "type": "struct",
+    "fix": {
+     "component": "RekepMarket"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

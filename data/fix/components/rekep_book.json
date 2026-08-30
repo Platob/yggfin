@@ -1,0 +1,40 @@
+{
+ "name": "REKEP.Book",
+ "versions": [
+  "*"
+ ],
+ "declaration": {
+  "name": "REKEP.Book",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "REKEP.Book",
+   "msgtype": "URB"
+  },
+  "fields": [
+   {
+    "name": "RekepHeader",
+    "type": "struct",
+    "fix": {
+     "component": "RekepHeader"
+    },
+    "fields": []
+   },
+   {
+    "name": "REKEP.SymbolTicker",
+    "type": "string",
+    "fix": {
+     "tag": "30020"
+    }
+   },
+   {
+    "name": "RekepMarket",
+    "type": "struct",
+    "fix": {
+     "component": "RekepMarket"
+    },
+    "fields": []
+   }
+  ]
+ }
+}

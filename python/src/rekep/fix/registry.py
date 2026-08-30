@@ -28,7 +28,7 @@ import pyarrow.fs
 
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
-from rekep.fields import Field, newest_rank
+from rekep.fields import Field, column_name, newest_rank
 from rekep.fields.metadata import encoded_key, values_of
 from rekep.filesystems import local_path, read_bytes, resolve, write_bytes
 from rekep.fix.entries import (
@@ -222,8 +222,7 @@ _NO_TAG = 1 << 31
 
 
 def builtin_projection() -> str:
-    """Where the packaged projection lives: 180 of the dictionary's 6,074 field
-    records, and every one of its 900 components.
+    """Where the packaged standard projection and rekep vocabulary live.
 
     `rekep.fix.publish` calls it a projection because that is what it is -- it
     parses common traffic and misses the long tail -- and nothing here ever
@@ -618,13 +617,18 @@ class FixRegistry(Convertible):
     @classmethod
     @cache
     def from_builtin(cls, cache_ttl: float = 0.0) -> Self:
-        """The packaged field projection, offline and shared by declarations.
+        """The packaged standard projection and rekep vocabulary.
 
         `cache_ttl` above zero makes this registry check its age against the
         configured sources before serving -- which needs the network, so it also lifts
         `offline`. Zero, the default, is the packaged copy and nothing else.
         """
-        return cls(cache_dir=builtin_projection(), offline=not cache_ttl, cache_ttl=cache_ttl)
+        from rekep.fix.rekep import rekep_is_registered
+
+        registry = cls(cache_dir=builtin_projection(), offline=not cache_ttl, cache_ttl=cache_ttl)
+        if not rekep_is_registered(registry):
+            raise RuntimeError("the packaged FIX registry lacks rekep's declared vocabulary")
+        return registry
 
     @classmethod
     def scrape(
@@ -1697,7 +1701,7 @@ class FixRegistry(Convertible):
         entry = self.merged_component(name)
         return entry.into_field(
             self._spelling(version),
-            types=self._component_types(version),
+            fields=self._component_fields_by_name(version),
             components={found.folded: found for found in self._entries[1].values()},
         )
 
@@ -1717,10 +1721,10 @@ class FixRegistry(Convertible):
         projected = self.component_field(name, version)
         return None if projected is None else projected.into_dataclass(projected.fix.component)
 
-    def _component_types(self, version: str) -> dict[str, Any]:
-        """`{folded FIX member name: Arrow type}` for one version projection."""
+    def _component_fields_by_name(self, version: str) -> dict[str, Field]:
+        """`{folded FIX member name: field}` for one version projection."""
         return {
-            fold(member.name): member.dtype
+            column_name(member.name): member
             for member in self.fields(self._spelling(version))
             if member.dtype is not None
         }

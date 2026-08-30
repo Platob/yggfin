@@ -328,7 +328,7 @@ class FixMsg(Message):
     entries: list[Entry] | None = None
     """Unlifted fields and lossless raw audit sidecars for typed columns."""
 
-    unmap: Annotated[list[Entry] | None, Field(dtype=ENTRIES), Field.column("Unmapped")] = None
+    unmap: Annotated[list[Entry] | None, Field.column("Unmapped")] = None
     """Registry-unresolved entries partition payload with `entries`; null means all resolved."""
 
     parties: Annotated[

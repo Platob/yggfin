@@ -287,6 +287,7 @@ def test_a_stored_field_always_says_what_it_is() -> None:
     unmap = FixMsg.into_field().field("unmap")
     assert entries.dtype == unmap.dtype == ENTRIES
     assert pyarrow.types.is_list(entries.dtype)
+    assert entries.item.fix["display"] == unmap.item.fix["display"] == "Item"
     assert entries.item.nullable is False
     assert entries.item.field("tag").nullable is False
     assert entries.item.field("key").nullable is False

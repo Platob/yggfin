@@ -225,7 +225,7 @@ def test_add_builds_one_identity_from_answered_questions(store: Offline) -> None
 
 
 def test_a_field_fix_never_numbered_is_added_by_leaving_the_tag_blank(store: Offline) -> None:
-    _run(store, "add", "TECH.CLIENTID", "", "*", "String", "", "tech_client_id", "y", "quit")
+    _run(store, "add", "TECH.CLIENTID", "", "*", "String", "", "techclientid", "y", "quit")
     entry = store.resolve("TECH.CLIENTID")
     assert entry.fix.tag is None and record_kind(entry) == "namespace"
 

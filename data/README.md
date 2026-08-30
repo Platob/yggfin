@@ -7,6 +7,7 @@ compressed copy. Runtime jobs can therefore stay offline.
 data/fix/versions.json          the version list, session layers, and which
                                 versions have had their spec read
 data/fix/fields/000000.json     tags 0-499, one cross-version record each
+data/fix/fields/000060.json     tags 30000-30499, rekep package vocabulary
 data/fix/fields/000080.json     tags 40000-40499, the 5.0.SP2 extension pack
 data/fix/fields/named.json      the fields FIX never numbered
 data/fix/components/parties.json  one component, declared as a Field
@@ -18,8 +19,8 @@ A field's record is cross-version by nature: one tag, one reading, and
 `versions` -- the list of versions that declare it. Shards hold five hundred
 tags each and are named by the shard index, so the document holding a tag is
 `tag // 500` and nothing has to be looked up; the tag space is sparse, so
-fourteen shards answer for six thousand fields and the empty ranges are simply
-absent. A lookup for one tag reads one shard.
+fifteen shards hold 6,098 tagged fields and `named.json` holds three rendered
+fields. Empty ranges are absent, and a lookup for one tag reads one shard.
 
 Three ordered sources fill it. Nanoconda supplies the first reading and the
 symbolic name of every enumerated value. OnixS fills missing prose, values and
@@ -58,7 +59,7 @@ standard tagged field and refuses to move a column already assigned:
 ```bash
 cd python
 uv run rekep fix registry promote --store ../data/fix \
-    --name TECH.CLIENTID --column tech_client_id
+    --name TECH.CLIENTID --column techclientid
 uv run rekep fix registry check --store ../data/fix
 ```
 
@@ -76,13 +77,13 @@ several hours:
 cd python
 uv run rekep fix registry scrape --output ../data/fix \
     --conflicts ../data/fix-conflicts.json
-uv run python -c "from rekep.fix import FixRegistry; \
-FixRegistry(cache_dir='../data/fix', offline=True).into_zip('../data/fix.zip')"
+uv run python -c "from rekep.fix.publish import publish_full; \
+publish_full('../data/fix', '../data/fix.zip')"
 ```
 
-Then rebuild the projection the wheel ships, which selects the keys
-`rekep.fix.publish.PROJECTED` names and carries every declaration, the
-messages included:
+Then rebuild the projection the wheel ships. It selects the standard keys
+`rekep.fix.publish.PROJECTED` names, adds rekep's 27 frozen fields, and carries
+every declaration, messages included:
 
 ```bash
 cd python
