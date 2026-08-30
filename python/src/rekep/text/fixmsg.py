@@ -504,6 +504,30 @@ class FixMsg(Message):
     currency: Annotated[str | None, DECLARED["Currency"]] = None
     """`Currency <15>`, which is what the prices below are in."""
 
+    maturitydate: Annotated[datetime.date | None, DECLARED["MaturityDate"]] = None
+    """`MaturityDate <541>`, the day a dated contract expires."""
+
+    maturitymonthyear: Annotated[str | None, DECLARED["MaturityMonthYear"]] = None
+    """`MaturityMonthYear <200>`, the older spelling of the same expiry."""
+
+    strikeprice: Annotated[float | None, DECLARED["StrikePrice"]] = None
+    """`StrikePrice <202>`, in `currency`."""
+
+    putorcall: Annotated[int | None, DECLARED["PutOrCall"]] = None
+    """`PutOrCall <201>`: 0 is a put and 1 is a call."""
+
+    contractmultiplier: Annotated[float | None, DECLARED["ContractMultiplier"]] = None
+    """`ContractMultiplier <231>`, how many units one contract carries."""
+
+    minpriceincrement: Annotated[float | None, DECLARED["MinPriceIncrement"]] = None
+    """`MinPriceIncrement <969>`, the venue's tick."""
+
+    roundlot: Annotated[float | None, DECLARED["RoundLot"]] = None
+    """`RoundLot <561>`, the tradable unit."""
+
+    securitydesc: Annotated[str | None, DECLARED["SecurityDesc"]] = None
+    """`SecurityDesc <107>`, the venue's own words for the contract."""
+
     # Who asked, and under which identifiers.
 
     account: Annotated[str | None, DECLARED["Account"]] = None
@@ -1318,7 +1342,12 @@ class FixMsg(Message):
     def _prefer_named_entries(
         source: Any, resolved: Any, group_count_tags: Collection[int] = ()
     ) -> Any:
-        """Drop flat numeric copies shadowed by named fields of one identity.
+        """Drop a flat numeric copy a named field of one identity repeats.
+
+        A wrapper re-renders its own payload, so `54=1` beside `Side=1` is one
+        field written twice and the rendered spelling is what the row keeps.
+        Two *different* values are not a repetition but a conflict, and both
+        stay: which of them the sender meant is not this stage's to decide.
 
         Indexed component members remain repetitions: their shared tag does
         not make two group entries duplicates.
@@ -1369,9 +1398,23 @@ class FixMsg(Message):
                 compute.greater_equal(positions, compute.take(first_counts, parents)), False
             )
             numeric = compute.and_(numeric, compute.invert(protected))
+        # The first named occurrence of an identity is what a numeric copy is
+        # compared against: `named_values` and `named_identities` come off one
+        # mask, so `index_in` indexes both.
+        values = compute.struct_field(entries, "value")
+        named_values = compute.filter(values, named)
+        repeated = compute.fill_null(
+            compute.equal(
+                values, compute.take(named_values, compute.index_in(identities, named_identities))
+            ),
+            False,
+        )
         duplicate = compute.and_(
             numeric,
-            compute.fill_null(compute.is_in(identities, value_set=named_identities), False),
+            compute.and_(
+                compute.fill_null(compute.is_in(identities, value_set=named_identities), False),
+                repeated,
+            ),
         )
         if not compute.any(duplicate, min_count=0).as_py():
             return resolved

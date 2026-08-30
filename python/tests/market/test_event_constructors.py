@@ -85,12 +85,12 @@ def test_promoted_components_convert_by_their_declared_fix_fields() -> None:
         symbol="SPREAD",
         legs=[
             FixLeg(
-                legsymbol="LEG-A",
-                legside="1",
-                legratioqty=2,
-                legcurrency="USD",
-                legmaturitydate=datetime.date(2027, 3, 19),
-                legputorcall=1,
+                symbol="LEG-A",
+                side="1",
+                ratioqty=2,
+                currency="USD",
+                maturitydate=datetime.date(2027, 3, 19),
+                putorcall=1,
             )
         ],
     )

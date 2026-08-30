@@ -1151,13 +1151,13 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         ],
         legs=[
             LegEntry(
-                legsymbol="AAPL",
-                legside="1",
-                legratioqty=1.0,
-                legmaturitydate=datetime.date(2027, 1, 15),
-                legstrikeprice=150.5,
+                symbol="AAPL",
+                side="1",
+                ratioqty=1.0,
+                maturitydate=datetime.date(2027, 1, 15),
+                strikeprice=150.5,
             ),
-            LegEntry(legsymbol="MSFT", legside="2", legratioqty=2.0, legcurrency="USD"),
+            LegEntry(symbol="MSFT", side="2", ratioqty=2.0, currency="USD"),
         ],
     )
     reader = FixEvents(message=stored)

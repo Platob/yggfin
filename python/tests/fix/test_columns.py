@@ -26,7 +26,7 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 #: Derived from the module, then pinned, so a tag added or dropped fails here
 #: rather than quietly changing the shape of every stored log.
 EXPECTED_SESSION = 33
-EXPECTED_COMMON = 26
+EXPECTED_COMMON = 34
 EXPECTED_QUOTE = 18
 
 
@@ -93,11 +93,16 @@ def test_no_common_field_is_really_session_layer(registry: FixRegistry) -> None:
 def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
     registry: FixRegistry,
 ) -> None:
-    """The physical UTC projection and registry timestamp types agree."""
+    """The physical UTC projection and registry timestamp types agree.
+
+    `STAMPS` is the four clocks FIX documents in UTC, not every lifted
+    timestamp: a `LocalMktDate` such as `MaturityDate <541>` is an instant to
+    the dictionary and a day to a reader, and it is stored without a zone.
+    """
     for tag in STAMPS:
         assert registry.field(tag).dtype == pyarrow.timestamp("ns"), tag
     timestamps = {tag for tag, _ in FLAT if registry.field(tag).dtype == pyarrow.timestamp("ns")}
-    assert timestamps == STAMPS, "and every lifted timestamp is in it"
+    assert STAMPS <= timestamps, "and every documented clock is a lifted timestamp"
 
 
 # -- a model annotates by name, and the tag stays in the dictionary -----------

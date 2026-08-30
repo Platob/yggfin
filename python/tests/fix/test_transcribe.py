@@ -1038,10 +1038,10 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
 ) -> None:
     """One column per declared tag, typed from the registry declaration."""
     columns, _ = codec.into_lifted_columns(wire_tags, "4.2")
-    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 26, 18), (
+    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 34, 18), (
         "the session layer, shared components, then quote fields"
     )
-    assert len(FLAT) == 77
+    assert len(FLAT) == 85
     namespaced = {field.name for field in NAMESPACE_COLUMNS.values()}
     assert set(columns) == set(COLUMNS.values()) | namespaced, (
         "one pass lifts both kinds, so it answers with both"

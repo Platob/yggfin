@@ -70,7 +70,9 @@ def test_fix_transcribe_uses_the_published_registry_in_both_directions() -> None
     assert "protocolOf" in script
     assert "structureOf" in script
     assert "expandPayloadPairs" in script
-    assert '"fix-wrapper"' in script
+    assert all(f'code: "{code}"' in script for code in ("FIX", "FIXML", "UL")), (
+        "the page classifies by the three shapes rekep.fix.rules classifies by"
+    )
     assert 'return marked || "#"' in script
     assert "stylesheets/fix-transcribe.css" in config
     assert "javascripts/fix-transcribe.js" in config

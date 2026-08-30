@@ -158,9 +158,10 @@ re-resolves any row still carrying its text and keeps the stored answer where
 `parse_fix` projected the text away.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
-`MSGTYPE`. There the named discriminator and named flat fields are
-authoritative, so numeric copies of the same registry identities are removed;
-indexed group members are never treated as duplicates.
+`MSGTYPE`. The wrapper names the envelope and the payload names the message,
+so the rendered discriminator is the row's MsgType. Its flat fields are read
+beside the numeric ones under the one rule below; indexed group members are
+never treated as duplicates.
 
 ## Stored categories
 

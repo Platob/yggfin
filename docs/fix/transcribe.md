@@ -1,7 +1,7 @@
 # Transcribe FIX
 
-Decode or encode FIX, FIXML, and FIX-wrapped FIXML in the browser. Pair order,
-repeating groups, and unknown values are preserved.
+Decode or encode FIX, FIXML and UL in the browser. Pair order, repeating
+groups, and unknown values are preserved.
 
 <div class="fix-registry fix-transcribe" data-fix-transcribe
      data-source="../../assets/fix-registry.json" data-registry="../registry/">
@@ -64,8 +64,8 @@ repeating groups, and unknown values are preserved.
           <div class="fix-transcribe__samples" aria-label="Decode examples">
             <span>Examples</span>
             <button type="button" data-decode-sample="fix">FIX</button>
+            <button type="button" data-decode-sample="ul">UL</button>
             <button type="button" data-decode-sample="fixml">FIXML</button>
-            <button type="button" data-decode-sample="fixml-wire">FIXML wire</button>
           </div>
         </div>
 
@@ -192,9 +192,9 @@ repeating groups, and unknown values are preserved.
           </div>
           <div class="fix-transcribe__samples" aria-label="Encode examples">
             <span>Examples</span>
-            <button type="button" data-encode-sample="fix">FIX</button>
+            <button type="button" data-encode-sample="ul">UL</button>
+            <button type="button" data-encode-sample="ul-marked">UL marked</button>
             <button type="button" data-encode-sample="fixml">FIXML</button>
-            <button type="button" data-encode-sample="fixml-wire">FIXML wire</button>
           </div>
         </div>
 
