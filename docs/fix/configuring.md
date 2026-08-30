@@ -79,7 +79,7 @@ the keys each payload holds, then known operational traffic as `MISC`, then
 everything else as `OTHER`. `entry_separator` fixes one indexed-entry
 delimiter; `extra_entry_separators` extends literal auto-detection for that
 protocol. A rule's `protocol` is a [`Protocol`](../enums/protocol.md) code, so
-a name of its own is at most eight printable ASCII bytes and a longer one is
+a name of its own is at most eight bytes of `[A-Z0-9._-]` and anything else is
 refused when the rule set is read.
 
 ## Which event a payload represents

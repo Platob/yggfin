@@ -45,9 +45,9 @@ class Ascii32(enum.IntEnum):
     column dump reads back as its spelling. The set is closed by default: a
     stored integer is a compiled code or it is `UNKNOWN`, which keeps a
     Python answer and a pushed code-set filter on the same rows. A
-    vocabulary that learns codes at runtime (`MIC`, `Currency`) opts in
-    through `_registers_unknown`, and even there only an exact round trip of
-    the stored bytes registers.
+    vocabulary that learns codes at runtime (`Protocol`, `MIC`, `Currency`)
+    opts in through `_registers_unknown`, and even there only an exact round
+    trip of the stored bytes registers.
     """
 
     BYTE_WIDTH = enum.nonmember(4)

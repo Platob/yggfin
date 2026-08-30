@@ -14,8 +14,10 @@ Which grammar a payload is written in, decided by the keys it holds and never
 by their values. The vocabulary belongs to the logs rather than to this
 package: [`rekep.fix.rules`](../fix/configuring.md#which-lines-carry-a-message)
 ships the five below, and a rule naming its own bridge stores that name
-without a release here. Eight bytes is the ceiling such a name has to fit, and
-a rule declaring a wider one is refused rather than stored as `UNKNOWN`.
+without a release here. Up to eight bytes of `[A-Z0-9._-]` is the shape such a
+name has to fit -- the shape a code reads back as, so one name never packs as
+two -- and a rule declaring anything else is refused rather than stored as
+`UNKNOWN`.
 
 `Message.protocol` and `FixMsg.protocol` are the columns that hold it. A line
 no rule recognised is `OTHER`, which is most of a capture, so the column is

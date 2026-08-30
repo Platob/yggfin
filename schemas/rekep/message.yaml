@@ -105,7 +105,7 @@ fields:
   nullable: true
   description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
   fix: {display: MIC}
-  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
+  enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
@@ -135,7 +135,7 @@ fields:
   type: int64
   description: Protocol syntax detected without interpreting its fields.
   fix: {display: Protocol}
-  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right}
+  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
 - name: beginstring
   type: string
   nullable: true

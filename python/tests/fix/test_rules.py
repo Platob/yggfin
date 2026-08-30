@@ -272,6 +272,35 @@ def test_every_structured_protocol_reads_direction_the_same_way() -> None:
     assert set(DEFAULT._anchors()) == {Protocol.FIX, Protocol.FIXML, Protocol.UL}
 
 
+def test_an_in_or_out_marker_is_a_direction_and_the_same_letters_in_prose_are_not() -> None:
+    """A bridge that marks the way with `IN`/`OUT` says it as plainly as one
+    that spells `Receiving`. The marker is the line or a bracket opening on it
+    and a delimiter closing it, because the same two letters are also English,
+    a route endpoint and half a session name -- and one of those in front of
+    the opposite verb would turn a right answer into no answer at all."""
+    marked = [
+        ("IN 8=FIX.4.4|35=D|11=A|10=000|", Direction.RECV),
+        ("OUT >> 8=FIX.4.4|35=D|11=B|10=000|", Direction.SENT),
+        ("[IN] 8=FIX.4.4|35=D|11=C|10=000|", Direction.RECV),
+        ("incoming 8=FIX.4.4|35=D|11=D|10=000|", Direction.RECV),
+        ("outbound 8=FIX.4.4|35=D|11=E|10=000|", Direction.SENT),
+        # The same letters, not marking anything -- and each of these carries
+        # the opposite verb, so a looser rule would answer UNKNOWN here.
+        ("sending in session 3 >> 8=FIX.4.4|35=D|11=F|10=000|", Direction.SENT),
+        ("Received out of order 8=FIX.4.4|35=8|11=G|10=000|", Direction.RECV),
+        ("Receiving from direct:out 8=FIX.4.4|35=8|11=H|10=000|", Direction.RECV),
+        # And no marker at all is no answer, however the letters fall.
+        ("[MCFID-IN-XPAR] 8=FIX.4.4|35=D|11=I|10=000|", Direction.UNKNOWN),
+        ("(INFO) [Fix_In] 8=FIX.4.4|35=D|11=J|10=000|", Direction.UNKNOWN),
+        ("[IN] [OUT] 8=FIX.4.4|35=D|11=K|10=000|", Direction.UNKNOWN),
+    ]
+    messages = pyarrow.array([line for line, _ in marked], pyarrow.string())
+
+    directions = DEFAULT.into_arrow_direction_array(messages, packed(*["FIX"] * len(marked)))
+
+    assert directions.to_pylist() == [int(expected) for _, expected in marked]
+
+
 def test_direction_words_produce_packed_codes_before_the_payload() -> None:
     messages = pyarrow.array(
         [
@@ -392,7 +421,7 @@ def test_a_protocol_is_an_open_vocabulary_of_eight_ascii_bytes() -> None:
     own = Rule(protocol="venue", codec="ul")
     assert own.protocol is Protocol.from_str("VENUE")
     assert int(own.protocol) == int.from_bytes(b"VENUE\0\0\0", "big", signed=True)
-    with pytest.raises(ValueError, match="eight printable ASCII bytes"):
+    with pytest.raises(ValueError, match=r"eight bytes of \[A-Z0-9"):
         Rule(protocol="VENUEBRIDGE")
     with pytest.raises(ValueError, match="no protocol name"):
         Rule(protocol="")

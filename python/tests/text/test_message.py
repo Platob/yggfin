@@ -759,6 +759,10 @@ def test_a_row_carrying_its_text_answers_the_syntax_columns_either_way() -> None
 
     assert Message.from_text(line, message=line).protocol is Protocol.FIX
     assert Message(message=line).protocol is Protocol.FIX
+    # The sentinel is the member, so a caller spelling the default still gets
+    # the reading rather than keeping the word it passed in.
+    assert Message(message=line, protocol="other").protocol is Protocol.FIX
+    assert Message(message=line, protocol="ul").protocol is Protocol.UL
     # Without the text there is nothing to read a syntax column off.
     assert Message.from_text(line).protocol is Protocol.OTHER
 

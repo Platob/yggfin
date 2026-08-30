@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, EventType, Protocol
+from rekep.enums import MIC, Direction, EventType, Protocol
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -213,6 +213,10 @@ class FixMsg(Message):
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
+        # Both packed enums Message declares, because this reaches
+        # `Event.__post_init__` and not Message's, so nothing else reads them
+        # off a spelling. A column takes the code, never the word.
+        self.direction = Direction.from_str(self.direction)
         self.protocol = Protocol.from_str(self.protocol)
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]

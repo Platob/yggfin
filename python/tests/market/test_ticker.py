@@ -7,7 +7,9 @@ from rekep.market.ticker import SymbolTicker
 from rekep.text.fixmsg import FixMsg
 
 
-def test_security_identifier_precedes_the_readable_symbol() -> None:
+def test_the_readable_symbol_precedes_the_security_identifier() -> None:
+    """First rung of the ladder: what the desk, the venue and a reader all call
+    the instrument, under the venue that named it."""
     message = FixMsg(
         protocolversion="4.2",
         securityexchange="xnas",
@@ -18,8 +20,23 @@ def test_security_identifier_precedes_the_readable_symbol() -> None:
 
     ticker = SymbolTicker.from_fixmsg(message)
 
-    assert str(ticker) == "XNAS:ISINNumber:US0378331005"
+    assert str(ticker) == "XNAS:AAPL"
     assert ticker.into_str() == str(ticker)
+    assert SymbolTicker.from_str(str(ticker)) == ticker
+
+
+def test_the_identifier_is_the_rung_for_a_line_carrying_no_symbol() -> None:
+    """Second rung, and the whole reason the first one is not the only one."""
+    ticker = SymbolTicker.from_entries(
+        [
+            Entry(key="SecurityExchange", value="xnas"),
+            Entry(key="SecurityIDSource", value="4"),
+            Entry(key="SecurityID", value="US0378331005"),
+        ],
+        version="4.2",
+    )
+
+    assert str(ticker) == "XNAS:ISINNumber:US0378331005"
     assert SymbolTicker.from_str(str(ticker)) == ticker
 
 
@@ -85,17 +102,24 @@ def test_fx_ticker_preserves_a_known_venue() -> None:
     assert SymbolTicker.from_str(str(ticker)) == ticker
 
 
-def test_identifier_without_a_source_falls_back_to_symbol() -> None:
-    ticker = SymbolTicker.from_entries(
-        [
-            Entry(key="SecurityID", value="US0378331005"),
-            Entry(key="Symbol", value="AAPL"),
-        ]
+def test_an_identifier_without_its_scheme_is_no_rung_at_all() -> None:
+    """`US0378331005` and `037833100` are one instrument under two schemes, so
+    an identifier missing its own cannot say which it holds."""
+    assert (
+        str(
+            SymbolTicker.from_entries(
+                [
+                    Entry(key="SecurityID", value="US0378331005"),
+                    Entry(key="Symbol", value="AAPL"),
+                ]
+            )
+        )
+        == "AAPL"
     )
-
-    assert str(ticker) == "AAPL"
-    assert ticker.kind is AssetKind.UNKNOWN
-    assert ticker.currency is None
+    bare = SymbolTicker.from_entries([Entry(key="SecurityID", value="US0378331005")])
+    assert str(bare) == ""
+    assert bare.kind is AssetKind.UNKNOWN
+    assert bare.currency is None
 
 
 @pytest.mark.parametrize("symbol", ["", "[N/A]"])
@@ -115,12 +139,23 @@ def test_private_identifier_source_is_preserved() -> None:
         [
             Entry(key="SecurityIDSource", value="VENUE"),
             Entry(key="SecurityID", value="PRIVATE-1"),
-            Entry(key="Symbol", value="DISPLAY"),
         ]
     )
 
     assert str(ticker) == "VENUE:PRIVATE-1"
     assert SymbolTicker.from_str(str(ticker)) == ticker
+    assert (
+        str(
+            SymbolTicker.from_entries(
+                [
+                    Entry(key="SecurityIDSource", value="VENUE"),
+                    Entry(key="SecurityID", value="PRIVATE-1"),
+                    Entry(key="Symbol", value="DISPLAY"),
+                ]
+            )
+        )
+        == "DISPLAY"
+    ), "and a symbol beside it still leads"
 
 
 def test_parse_cache_is_bounded_and_reuses_a_ticker() -> None:
@@ -142,7 +177,7 @@ def test_arrow_tickers_follow_the_scalar_canonical_spelling() -> None:
     found = SymbolTicker.into_arrow_array(columns, 3)
 
     assert found.to_pylist() == [
-        "XNAS:ISINNumber:US0378331005",
+        "XNAS:AAPL",
         "XPAR:EUR/NOK",
         "ABC/XYZ",
     ]

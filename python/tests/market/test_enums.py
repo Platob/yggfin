@@ -93,6 +93,20 @@ def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
     assert int(Protocol.FIX) < int(Protocol.FIXML), "and the codes order as the names do"
     assert Protocol.from_str("VENUEBRIDGE") is Protocol.UNKNOWN, "eight bytes is the ceiling"
     assert Protocol.from_int(-1) is Protocol.UNKNOWN
+    # `_canonical` upper-cases, so a stored lower-case spelling must not read
+    # back as a second member beside the one `from_str` folds to.
+    assert Protocol.from_int(Protocol._pack("fix")) is Protocol.UNKNOWN
+    assert Protocol.from_str("FIX4.2").code == "FIX4.2", "a version in the name still packs"
+
+
+def test_a_compiled_venue_renders_in_a_column_where_a_learnt_one_cannot() -> None:
+    """Which is the whole reason the common venues are compiled: `from_int`
+    names any well-formed code, but the column renderer only knows the members
+    the class declares, and the two must not disagree on the same bytes."""
+    stored = pyarrow.array([int(MIC.XPAR), int(MIC.from_str("ABCD"))], pyarrow.int32())
+
+    assert [MIC.from_int(code).code for code in stored.to_pylist()] == ["XPAR", "ABCD"]
+    assert MIC.into_arrow_array(stored).to_pylist() == ["XPAR", None]
 
 
 def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
@@ -147,6 +161,12 @@ def test_a_vocabulary_that_does_not_band_is_its_own_band() -> None:
     assert Side.BUY.band is Side.BUY
     assert Currency.USD.band is Currency.USD
     assert MIC.XOFF.band is MIC.XOFF
+    # One compiled code lands on a hundred boundary by arithmetic accident, so
+    # `_bands` reads it as a floor. Pinned rather than avoided: `band` asks
+    # "what does this code broadly mean", which no venue vocabulary answers,
+    # and dropping a real exchange over a modulus would be the worse trade.
+    assert int(MIC.XCBT) % MIC.WIDTH == 0
+    assert MIC.from_str("XCBU").band is MIC.XCBT
     assert State.FILLED.band is State.DONE, "while a ranked one still bands"
     assert TimeInForce.IOC.band is TimeInForce.IMMEDIATE, "ranks are what band, not width"
 
@@ -248,6 +268,56 @@ SIDE_CODES = {
     "UNDISCLOSED": int.from_bytes(b"UNDS", "big"),
 }
 
+#: The same, for the venue a row belongs to: the operating MICs this package
+#: compiles. A registered code is the feed's own and is pinned by nothing
+#: here, because nothing here declares it.
+MIC_CODES = {
+    "UNKNOWN": 0,
+    "XOFF": int.from_bytes(b"XOFF", "big"),
+    "XXXX": int.from_bytes(b"XXXX", "big"),
+    "XPAR": int.from_bytes(b"XPAR", "big"),
+    "XAMS": int.from_bytes(b"XAMS", "big"),
+    "XBRU": int.from_bytes(b"XBRU", "big"),
+    "XLIS": int.from_bytes(b"XLIS", "big"),
+    "XMIL": int.from_bytes(b"XMIL", "big"),
+    "XDUB": int.from_bytes(b"XDUB", "big"),
+    "XOSL": int.from_bytes(b"XOSL", "big"),
+    "XETR": int.from_bytes(b"XETR", "big"),
+    "XFRA": int.from_bytes(b"XFRA", "big"),
+    "XLON": int.from_bytes(b"XLON", "big"),
+    "XSWX": int.from_bytes(b"XSWX", "big"),
+    "XMAD": int.from_bytes(b"XMAD", "big"),
+    "XSTO": int.from_bytes(b"XSTO", "big"),
+    "XCSE": int.from_bytes(b"XCSE", "big"),
+    "XHEL": int.from_bytes(b"XHEL", "big"),
+    "XWBO": int.from_bytes(b"XWBO", "big"),
+    "XEUR": int.from_bytes(b"XEUR", "big"),
+    "XLME": int.from_bytes(b"XLME", "big"),
+    "IFEU": int.from_bytes(b"IFEU", "big"),
+    "XNYS": int.from_bytes(b"XNYS", "big"),
+    "XNAS": int.from_bytes(b"XNAS", "big"),
+    "ARCX": int.from_bytes(b"ARCX", "big"),
+    "BATS": int.from_bytes(b"BATS", "big"),
+    "XCBO": int.from_bytes(b"XCBO", "big"),
+    "IEXG": int.from_bytes(b"IEXG", "big"),
+    "XCME": int.from_bytes(b"XCME", "big"),
+    "XCBT": int.from_bytes(b"XCBT", "big"),
+    "XNYM": int.from_bytes(b"XNYM", "big"),
+    "XCEC": int.from_bytes(b"XCEC", "big"),
+    "IFUS": int.from_bytes(b"IFUS", "big"),
+    "XTSE": int.from_bytes(b"XTSE", "big"),
+    "XTKS": int.from_bytes(b"XTKS", "big"),
+    "XHKG": int.from_bytes(b"XHKG", "big"),
+    "XSES": int.from_bytes(b"XSES", "big"),
+    "XASX": int.from_bytes(b"XASX", "big"),
+    "XSHG": int.from_bytes(b"XSHG", "big"),
+    "XSHE": int.from_bytes(b"XSHE", "big"),
+    "XKRX": int.from_bytes(b"XKRX", "big"),
+    "XNSE": int.from_bytes(b"XNSE", "big"),
+    "XBOM": int.from_bytes(b"XBOM", "big"),
+    "XJSE": int.from_bytes(b"XJSE", "big"),
+}
+
 DIRECTION_CODES = {
     "UNKNOWN": 0,
     "SENT": 1_397_050_964,
@@ -281,6 +351,13 @@ def test_the_direction_codes_are_the_ones_on_disk() -> None:
 
 def test_the_protocol_codes_are_the_ones_on_disk() -> None:
     assert {member.name: int(member) for member in Protocol} == PROTOCOL_CODES
+
+
+def test_the_mic_codes_are_the_ones_on_disk() -> None:
+    assert {member.name: int(member) for member in MIC} == MIC_CODES
+    assert all(member.name == member.code for member in MIC if member.code), (
+        "a MIC member is spelled by the code it is"
+    )
 
 
 def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:

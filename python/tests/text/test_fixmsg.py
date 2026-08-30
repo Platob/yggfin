@@ -284,8 +284,25 @@ def test_a_line_always_says_which_protocol_it_carries() -> None:
     assert member.metadata["enum:name"] == "Protocol"
     assert member.metadata["enum:encoding"] == "ascii-big-endian"
     assert member.metadata["enum:byte_width"] == "8"
-    assert "enum:pattern" not in member.metadata, "a rule's name is the feed's to spell"
+    assert member.metadata["enum:pattern"] == "[A-Z0-9._-]{1,8}"
     assert FixMsg().protocol is Protocol.OTHER
+
+
+def test_a_parsed_row_takes_its_packed_codes_off_whatever_spelled_them() -> None:
+    """`FixMsg.__post_init__` reaches `Event`'s and not `Message`'s, so the two
+    packed enums the raw row declares are read here or nowhere -- and a column
+    that got the word rather than the code cannot be built at all."""
+    row = FixMsg(unix=1, hash=1, xhash=1, message="x", protocol="fix", direction="sent")
+
+    assert row.protocol is Protocol.FIX
+    assert row.direction is Direction.SENT
+    assert FixMsg(protocol=int(Protocol.UL)).protocol is Protocol.UL
+    # Tolerant where `Rule` refuses: a declaration is read once and a bad one
+    # is a configuration error, while a row path has to survive its input.
+    assert FixMsg(protocol="VENUEBRIDGE").protocol is Protocol.UNKNOWN
+    built = FixMsg.into_arrow_array([row])
+    assert built.field("direction").to_pylist() == [int(Direction.SENT)]
+    assert built.field("protocol").to_pylist() == [int(Protocol.FIX)]
 
 
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
@@ -2046,7 +2063,7 @@ def test_an_instrument_reaches_typed_columns_however_it_is_spelled(
     batch = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
     for name, expected in INSTRUMENT_COLUMNS.items():
         assert batch.column(name)[0].as_py() == expected, name
-    assert batch.column("symbolticker")[0].as_py() == "XNAS:ISINNumber:US0378331005"
+    assert batch.column("symbolticker")[0].as_py() == "XNAS:AAPL"
     assert batch.column("mic")[0].as_py() == int(MIC.from_str("XNAS"))
 
 

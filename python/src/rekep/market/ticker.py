@@ -119,28 +119,20 @@ class SymbolTicker:
         symbol = _text_array(columns.get("symbol"), rows)
         exchange = _text_array(columns.get("securityexchange"), rows)
 
-        scheme = _scheme_arrow(source, selected)
         venue = _mic_arrow(exchange)
-        identifier = compute.and_(_present(securityid), _present(scheme))
-        qualified = compute.binary_join_element_wise(scheme, securityid, ":")
+        scheme = _scheme_arrow(source, selected)
+        readable = _readable_symbol_arrow(symbol)
         qualified = compute.if_else(
-            _present(venue),
-            compute.binary_join_element_wise(venue, qualified, ":"),
-            qualified,
-        )
-
-        readable = compute.if_else(
-            compute.equal(compute.utf8_lower(symbol), "[n/a]"),
+            compute.and_(_present(securityid), _present(scheme)),
+            compute.binary_join_element_wise(scheme, securityid, ":"),
             pyarrow.scalar(""),
-            symbol,
         )
-        readable = _forex_symbol_arrow(readable)
-        readable = compute.if_else(
-            compute.and_(_present(venue), _present(readable)),
-            compute.binary_join_element_wise(venue, readable, ":"),
-            readable,
+        found = compute.if_else(_present(readable), readable, qualified)
+        found = compute.if_else(
+            compute.and_(_present(venue), _present(found)),
+            compute.binary_join_element_wise(venue, found, ":"),
+            found,
         )
-        found = compute.if_else(identifier, qualified, readable)
         stored = _canonical_arrow(_text_array(columns.get("symbolticker"), rows))
         return compute.if_else(_present(found), found, stored)
 
@@ -225,20 +217,42 @@ class SymbolTicker:
 
 @functools.lru_cache(maxsize=_CACHE_SIZE)
 def _format_symbolticker(mic: str, scheme: str, securityid: str, symbol: str) -> str:
-    """Format one normalized FIX identity tuple."""
+    """The first rung a row can fill, under the venue that named it.
+
+    `Symbol <55>` leads: it is what the desk, the venue and a reader all call
+    the instrument, and a capture that carries one carries it on every line an
+    identifier appears on. The qualified identifier is the rung for the lines
+    that carry no symbol at all.
+    """
     venue = _mic_name(mic)
-    identifier = securityid.strip()
-    if identifier and scheme:
-        return ":".join(part for part in (venue, scheme, identifier) if part)
+    for rung in (_readable_symbol(symbol), _qualified_identifier(scheme, securityid)):
+        if rung:
+            return ":".join(part for part in (venue, rung) if part)
+    return ""
+
+
+def _readable_symbol(symbol: str) -> str:
+    """One `Symbol <55>` as a ticker spells it; empty where it names nothing.
+
+    `[N/A]` is a feed writing "no symbol" in the field rather than leaving it
+    out, so it is the same absence as an empty one.
+    """
     readable = symbol.strip()
-    if readable.casefold() == "[n/a]":
-        readable = ""
-    if not readable:
+    if not readable or readable.casefold() == "[n/a]":
         return ""
     pair = _forex_pair(readable)
-    if pair is not None:
-        readable = f"{pair[0].code}/{pair[1].code}"
-    return ":".join(part for part in (venue, readable) if part)
+    return f"{pair[0].code}/{pair[1].code}" if pair is not None else readable
+
+
+def _qualified_identifier(scheme: str, securityid: str) -> str:
+    """`SCHEME:SecurityID`, or empty without both.
+
+    An identifier alone is not one: `US0378331005` and `037833100` name the
+    same instrument under two schemes, and a ticker missing the scheme cannot
+    say which it holds.
+    """
+    identifier = securityid.strip()
+    return f"{scheme}:{identifier}" if identifier and scheme else ""
 
 
 def _mic_name(value: Any) -> str:
@@ -294,6 +308,14 @@ def _mic_arrow(values: pyarrow.Array) -> pyarrow.Array:
         compute.not_equal(rendered, MIC.XXXX.code),
     )
     return compute.if_else(valid, rendered, pyarrow.scalar(""))
+
+
+def _readable_symbol_arrow(values: pyarrow.Array) -> pyarrow.Array:
+    """`_readable_symbol` over a column: `[N/A]` blanked, FX settled."""
+    named = compute.if_else(
+        compute.equal(compute.utf8_lower(values), "[n/a]"), pyarrow.scalar(""), values
+    )
+    return _forex_symbol_arrow(named)
 
 
 def _forex_symbol_arrow(values: pyarrow.Array) -> pyarrow.Array:

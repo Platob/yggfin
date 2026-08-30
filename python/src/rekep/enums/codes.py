@@ -273,9 +273,15 @@ class Protocol(Ascii64):
 
     Open, because the vocabulary belongs to the logs and not to this package:
     `rekep.fix.rules` ships the five below, and a desk whose rule names its
-    own bridge stores that name as a code without a release here. Eight bytes
-    is the ceiling a rule's name has to fit.
+    own bridge stores that name as a code without a release here. Eight
+    upper-case bytes is the shape such a name has to fit.
     """
+
+    #: The canonical shape, and so also what a stored code may read back as:
+    #: `_canonical` upper-cases, so admitting a lower-case spelling here would
+    #: let one name pack as two codes -- `from_str` folding to `FIX` while
+    #: `from_int` registered `fix` beside it.
+    _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9._-]{1,8}$"))
 
     UNKNOWN = 0
     """No name resolved; a rule declaring one is a configuration error."""
@@ -296,8 +302,16 @@ class Protocol(Ascii64):
     """The fall-through: a line no rule recognised."""
 
     @classmethod
+    def _valid(cls, text: str) -> bool:
+        return bool(cls._PATTERN.fullmatch(text))
+
+    @classmethod
     def _registers_unknown(cls) -> bool:
         return True
+
+    @classmethod
+    def schema_metadata(cls) -> dict[str, str]:
+        return {**super().schema_metadata(), "pattern": "[A-Z0-9._-]{1,8}"}
 
 
 class State(Ascii64):
@@ -501,6 +515,113 @@ class MIC(Ascii32):
 
     XXXX = "XXXX"
     """No market, including an unlisted instrument."""
+
+    # The venues a capture keeps meeting, compiled rather than left to
+    # registration. Which ones: the **operating** MIC of a primary listing
+    # book, plus the listed-derivatives complexes those books clear through.
+    # Operating and not segment, because `XPAR` is where a Euronext Paris
+    # trade belongs whichever book inside it printed, and a segment list is
+    # the half of ISO 10383 that churns.
+    #
+    # Compiling is not decoration. `into_arrow_array` renders the compiled
+    # members and nulls everything else, so before this every real venue in a
+    # `mic` column read back as null while `from_int` named it -- the scalar
+    # reader and the column renderer disagreeing on the same bytes. Only
+    # compiled codes reach the `enum:values` a contract publishes, and only
+    # they are safe from the eviction the learnt-code registry does.
+    #
+    # No stored value moves: a code packs from its own bytes, so a venue that
+    # registered yesterday is the same integer compiled today. A venue missing
+    # here costs one registration; a wrong code here is a stored value nobody
+    # can correct, which is what keeps this list to venues, not vendors.
+
+    # -- Europe
+    XPAR = "XPAR"
+    """Euronext Paris."""
+    XAMS = "XAMS"
+    """Euronext Amsterdam."""
+    XBRU = "XBRU"
+    """Euronext Brussels."""
+    XLIS = "XLIS"
+    """Euronext Lisbon."""
+    XMIL = "XMIL"
+    """Euronext Milan."""
+    XDUB = "XDUB"
+    """Euronext Dublin."""
+    XOSL = "XOSL"
+    """Euronext Oslo Bors."""
+    XETR = "XETR"
+    """Deutsche Boerse Xetra."""
+    XFRA = "XFRA"
+    """Frankfurt Stock Exchange."""
+    XLON = "XLON"
+    """London Stock Exchange."""
+    XSWX = "XSWX"
+    """SIX Swiss Exchange."""
+    XMAD = "XMAD"
+    """Bolsa de Madrid."""
+    XSTO = "XSTO"
+    """Nasdaq Stockholm."""
+    XCSE = "XCSE"
+    """Nasdaq Copenhagen."""
+    XHEL = "XHEL"
+    """Nasdaq Helsinki."""
+    XWBO = "XWBO"
+    """Wiener Boerse."""
+    XEUR = "XEUR"
+    """Eurex."""
+    XLME = "XLME"
+    """London Metal Exchange."""
+    IFEU = "IFEU"
+    """ICE Futures Europe."""
+
+    # -- The Americas
+    XNYS = "XNYS"
+    """New York Stock Exchange."""
+    XNAS = "XNAS"
+    """Nasdaq."""
+    ARCX = "ARCX"
+    """NYSE Arca."""
+    BATS = "BATS"
+    """Cboe BZX."""
+    XCBO = "XCBO"
+    """Cboe Options Exchange."""
+    IEXG = "IEXG"
+    """Investors Exchange."""
+    XCME = "XCME"
+    """Chicago Mercantile Exchange."""
+    XCBT = "XCBT"
+    """Chicago Board of Trade."""
+    XNYM = "XNYM"
+    """New York Mercantile Exchange."""
+    XCEC = "XCEC"
+    """Commodity Exchange."""
+    IFUS = "IFUS"
+    """ICE Futures U.S."""
+    XTSE = "XTSE"
+    """Toronto Stock Exchange."""
+
+    # -- Asia-Pacific, and the rest
+    XTKS = "XTKS"
+    """Tokyo Stock Exchange."""
+    XHKG = "XHKG"
+    """Hong Kong Exchanges."""
+    XSES = "XSES"
+    """Singapore Exchange."""
+    XASX = "XASX"
+    """Australian Securities Exchange."""
+    XSHG = "XSHG"
+    """Shanghai Stock Exchange."""
+    XSHE = "XSHE"
+    """Shenzhen Stock Exchange."""
+    XKRX = "XKRX"
+    """Korea Exchange."""
+    XNSE = "XNSE"
+    """National Stock Exchange of India."""
+    XBOM = "XBOM"
+    """BSE India."""
+    XJSE = "XJSE"
+    """Johannesburg Stock Exchange."""
 
     @classmethod
     def _valid(cls, text: str) -> bool:

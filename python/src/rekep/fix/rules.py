@@ -53,16 +53,23 @@ CODEC_KEYS: dict[str, bool | None] = {"fix": False, "fixml": True, "ul": True, "
 _PROTOCOL_CODE = Protocol.into_arrow_type().index_type
 
 #: How a bridge says which way a payload moved -- `Receiving : 8=FIX...`,
-#: `Sending : ...`, `Message received:` -- counted only where the verb opens
-#: the line before the payload's own first token, so prose inside a FIX
-#: `Text <58>` or a bridge value never answers. Measured on real capture:
-#: every FIX row carries one of these; most FIXML re-log lines carry none, so
-#: direction is best-effort there. `incoming`/`outgoing`/`forward`, bare
-#: `IN`/`OUT` markers and the session-name fields were all investigated on
-#: the same capture and ruled out -- each mislabels enrichment snapshots,
-#: Jolokia metadata or the route's fixed endpoints as movement.
-INBOUND_PATTERN = r"(?i)\b(?:receiv(?:ing|ed))\b"
-OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b"
+#: `Sending : ...`, `Message received:`, `IN 8=FIX...`, `[OUT] ...` -- counted
+#: only where the verb opens the line before the payload's own first token, so
+#: prose inside a FIX `Text <58>` or a bridge value never answers. Measured on
+#: real capture: every FIX row carries one of these; most FIXML re-log lines
+#: carry none, so direction is best-effort there.
+#:
+#: `in`/`out` answer only where the line or a bracket opens on them and a
+#: delimiter closes them, which is the one shape a marker has and none of the
+#: shapes the same letters have otherwise: `sending in session 3` and
+#: `received out of order` are English, `direct:out` is a route endpoint and
+#: `MCFID-IN-XPAR` is a session name. A word boundary is not enough, because a
+#: hyphen is one -- and each of those standing in front of the opposite verb
+#: turns a right answer into UNKNOWN rather than merely adding a wrong one.
+#: `forward` and the session-name fields stay out: each mislabels enrichment
+#: snapshots, Jolokia metadata or the route's fixed endpoints as movement.
+INBOUND_PATTERN = r"(?i)\b(?:receiv(?:ing|ed))\b|(?:^|[\[({<|])in(?:bound|coming)?[ \t\])}>:|]"
+OUTBOUND_PATTERN = r"(?i)\b(?:send(?:ing)?|sent)\b|(?:^|[\[({<|])out(?:bound|going)?[ \t\])}>:|]"
 
 #: Parsed-log target categories. Market rows share one table; known operational
 #: traffic stays separate from lines whose transport is not recognised.
@@ -153,7 +160,7 @@ class Rule(Convertible):
         declared = Protocol.from_str(self.protocol)
         if declared is Protocol.UNKNOWN:
             raise ValueError(
-                f"{self.protocol!r} is no protocol name: eight printable ASCII bytes at most"
+                f"{self.protocol!r} is no protocol name: at most eight bytes of [A-Z0-9._-]"
             )
         self.protocol = declared
         if isinstance(self.extra_entry_separators, str):
