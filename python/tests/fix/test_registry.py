@@ -39,6 +39,7 @@ from rekep.fix import (
     QuickFixSource,
     RegistrySource,
 )
+from rekep.fix import registry as registry_source
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, is_group, members_of
 from rekep.fix.registry import _is_missing, _is_transient, _levenshtein, _wait_for
@@ -76,6 +77,17 @@ class FixtureRegistry(FixRegistry):
 
     fetched: list[str]
 
+    @property
+    def offline(self) -> bool:
+        """A double for the scrape, so it always may: its pages are local.
+
+        The real inference is "was this registry pointed at a store" -- and
+        these are, at a `tmp_path` they are about to fill. Saying so here is
+        what makes them doubles for a registry filling itself rather than for
+        one serving what it was handed.
+        """
+        return False
+
     def __post_init__(self, registry_token: str | None) -> None:
         self.sources = tuple(
             dataclasses.replace(source, field_pause_seconds=0.0) for source in self.sources
@@ -112,12 +124,18 @@ def _refused(url: str, code: int = 429) -> urllib.error.HTTPError:
 class RefusingRegistry(FixRegistry):
     """A registry the site refuses `refusals` times, then serves.
 
-    `_read` is the seam and not `_fetch`, so what runs is the retrying itself.
+    `_read` is the seam and not `_fetch`, so what runs is the retrying itself
+    -- which means the door has to be open, the way it is inside a scrape.
     """
 
     #: How many answers are a refusal, and what every attempt was asked for.
     refusals: int = 2
     asked: list[str]
+
+    @property
+    def offline(self) -> bool:
+        """A double for the transport, so it always may reach one."""
+        return False
 
     def _read(self, request: urllib.request.Request) -> str:
         asked = self.__dict__.setdefault("asked", [])
@@ -634,7 +652,7 @@ def test_scrape_preserves_local_declarations_and_standard_overlays(tmp_path: Pat
             ]
 
     target = tmp_path / "fix"
-    held = FixRegistry(cache_dir=target, offline=True)
+    held = FixRegistry(cache_dir=target)
     msg_type = fix_field("MsgType", 35, "String", version="4.2", values={"D": "Order"})
     msg_type.fix.event_types = {"D": EventType.ORDER}
     side = fix_field("Side", 54, "char", version="4.2")
@@ -670,7 +688,6 @@ def test_rebuild_replaces_source_records_and_keeps_local_declarations(tmp_path: 
     registry = OneVersion(
         cache_dir=tmp_path / "fix",
         sources=(NanocondaSource(),),
-        offline=True,
     )
     side = fix_field("Side", 54, "char", version="4.2")
     side.fix.states = {"1": State.NEW}
@@ -1043,8 +1060,8 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
         "components",
         "versions.json",
     }, "one file per identity, in two folders beside the version index"
-    unpacked = FixRegistry(cache_dir=folder, offline=True)
-    zipped = FixRegistry(cache_dir=archive, offline=True)
+    unpacked = FixRegistry(cache_dir=folder)
+    zipped = FixRegistry(cache_dir=archive)
     assert unpacked.fields_available("4.4") and zipped.fields_available("4.4")
     assert unpacked.versions == zipped.versions
     assert unpacked.field("Side", "4.4") == zipped.field("Side", "4.4")
@@ -1053,7 +1070,7 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
 
 def test_a_file_url_reads_the_original_archive_without_materializing() -> None:
     archive = (PUBLISHED / "fix.zip").resolve()
-    registry = FixRegistry(cache_dir=archive.as_uri(), offline=True)
+    registry = FixRegistry(cache_dir=archive.as_uri())
 
     assert Path(registry._cache_path) == archive
     assert registry.field("Side", "4.4").fix["tag"] == "54"
@@ -1069,7 +1086,7 @@ def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
         with filesystem.open_output_stream(f"registry/{name}") as stream:
             stream.write(source.read_bytes())
 
-    registry = FixRegistry(cache_dir="registry", filesystem=filesystem, offline=True)
+    registry = FixRegistry(cache_dir="registry", filesystem=filesystem)
 
     assert registry.versions
     assert registry.field("Side", "4.4").fix["tag"] == "54"
@@ -1082,29 +1099,39 @@ def test_a_scrape_is_cached_in_an_arrow_filesystem_directory() -> None:
 
     assert registry.field("Side", "4.4").fix["tag"] == "54"
 
-    offline = OfflineRegistry(cache_dir="registry", filesystem=filesystem, offline=True)
+    offline = OfflineRegistry(cache_dir="registry", filesystem=filesystem)
     assert offline.field("Side", "4.4").fix["tag"] == "54"
 
 
-def test_a_remote_archive_is_materialized_once_and_reused() -> None:
-    class CountingFilesystem(pyarrow.fs._MockFileSystem):
-        reads = 0
+def test_a_remote_archive_is_fetched_once_and_kept(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A zip is read by seeking, and seeking over an object store reads it
+    whole every lookup -- so it is copied down once and read from there.
 
-        def open_input_stream(self, path, *args, **kwargs):
-            self.reads += 1
-            return super().open_input_stream(path, *args, **kwargs)
-
-    filesystem = CountingFilesystem()
+    Kept beside the default store rather than in a temporary directory, so the
+    next process reuses this one's copy: pointing `cache_dir` at a bucket is
+    worth it only if the fetch happens once.
+    """
+    monkeypatch.setattr(registry_source, "CACHE_DIRECTORY", tmp_path / "config-fix")
+    filesystem = pyarrow.fs._MockFileSystem()
     filesystem.create_dir("registry")
     with filesystem.open_output_stream("registry/fix.zip") as stream:
         stream.write((PUBLISHED / "fix.zip").read_bytes())
-    registry = FixRegistry(cache_dir="registry/fix.zip", filesystem=filesystem, offline=True)
+    registry = FixRegistry(cache_dir="registry/fix.zip", filesystem=filesystem)
 
     first = registry._cache_path
+    assert Path(first).parent == registry_source.remote_cache()
     assert registry.field("Side", "4.4").fix["tag"] == "54"
     assert registry._cache_path == first
     assert registry.field("Side", "4.4").fix["tag"] == "54"
-    assert filesystem.reads == 1
+
+    # A second registry over the same remote finds the copy rather than the
+    # remote: same path, and no new file beside it.
+    held = sorted(registry_source.remote_cache().iterdir())
+    again = FixRegistry(cache_dir="registry/fix.zip", filesystem=filesystem)
+    assert again._cache_path == first
+    assert sorted(registry_source.remote_cache().iterdir()) == held
 
 
 def test_a_zip_answers_everything_the_directory_answers(dumped: Path, tmp_path: Path) -> None:
@@ -1256,7 +1283,7 @@ def test_a_torn_cache_file_offline_is_reported_and_not_hidden(
     """Offline there is nothing to write over it with, so saying so is all there is."""
     registry.fields("4.4")
     (Path(registry.cache_dir) / SIDE_SHARD).write_text("{ torn")
-    offline = OfflineRegistry(cache_dir=registry.cache_dir, offline=True)
+    offline = OfflineRegistry(cache_dir=registry.cache_dir)
     torn = len(json.loads((Path(registry.cache_dir) / "fields" / "000001.json").read_text()))
     with pytest.warns(RuntimeWarning, match="cannot read"):
         assert len(offline.fields("4.4")) == torn, "the shard that still reads"
@@ -1610,7 +1637,7 @@ def test_a_message_is_declared_and_found_by_its_msgtype(tmp_path: Path) -> None:
 
 def test_group_delimiters_come_off_the_declared_components() -> None:
     """What the market translator segments side and quote-set entries by."""
-    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip", offline=True)
+    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip")
     assert registry.group_delimiters("TrdCapRptSideGrp", ("NoSides",), "4.4") == ("Side",)
     assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoQuoteEntries")) == (
         "QuoteSetID",
@@ -1620,15 +1647,15 @@ def test_group_delimiters_come_off_the_declared_components() -> None:
 
 def test_an_undeclared_group_chain_has_no_delimiters() -> None:
     """None and not a partial answer: the caller falls back whole."""
-    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip", offline=True)
+    registry = FixRegistry(cache_dir=PUBLISHED / "fix.zip")
     assert registry.group_delimiters("NoSuchGrp", ("NoQuoteSets",), "4.4") is None
     assert registry.group_delimiters("QuotSetGrp", ("NoQuoteSets", "NoSuchGrp"), "4.4") is None
 
 
 def test_a_store_without_components_reports_them_unavailable(tmp_path: Path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
-    offline = OfflineRegistry(cache_dir=tmp_path / "fix", offline=True)
+    offline = OfflineRegistry(cache_dir=tmp_path / "fix")
     assert not offline.components_available("4.4")
     assert offline.components("4.4") == []
     with pytest.raises(KeyError, match="Parties"):

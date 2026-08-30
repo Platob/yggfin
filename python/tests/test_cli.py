@@ -276,7 +276,7 @@ def test_from_file_is_what_load_reads_with(tmp_path: Path) -> None:
 @pytest.fixture
 def store(tmp_path: Path) -> Path:
     """A registry holding one synthetic field, in its tag shard."""
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry._store_versions(("9.1",))
     field = fix_field("FakeRole", 90001, "int", version="9.1")
     field.fix.source = "nanoconda"
@@ -287,7 +287,7 @@ def store(tmp_path: Path) -> Path:
 
 def reopened(store: Path) -> FixRegistry:
     """The store as a fresh registry, so a test reads what was written."""
-    return FixRegistry(cache_dir=store, offline=True)
+    return FixRegistry(cache_dir=store)
 
 
 def test_shell_entrypoint_keeps_its_interface_off_stdout(
@@ -692,7 +692,7 @@ def test_registry_components_and_dump_are_scriptable(
     archive = tmp_path / "fix.zip"
     assert run("fix", "registry", "dump", "--store", str(store), "--output", str(archive)) == 0
     assert archive.exists()
-    assert FixRegistry(cache_dir=archive, offline=True).resolve("FakeRole") is not None
+    assert FixRegistry(cache_dir=archive).resolve("FakeRole") is not None
 
 
 def test_scrape_forwards_source_configuration(

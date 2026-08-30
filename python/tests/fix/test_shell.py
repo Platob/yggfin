@@ -38,7 +38,7 @@ def _field(name: str, tag: int, version: str, datatype: str = "String") -> Field
 @pytest.fixture
 def store(tmp_path: Path) -> Offline:
     """A store holding two synthetic fields and one synthetic component."""
-    registry = Offline(cache_dir=tmp_path / "fix", offline=True)
+    registry = Offline(cache_dir=tmp_path / "fix")
     registry._store_versions(("9.1",))
     registry._store_fields(
         "9.1",
@@ -298,7 +298,7 @@ def test_dump_writes_the_store_where_it_is_told(store: Offline, tmp_path: Path) 
     assert not target.exists()
     assert "wrote" in _run(store, f'dump "{target}"', "y", "quit")
     assert target.exists()
-    assert FixRegistry(cache_dir=target, offline=True).field("FakeRole", "9.1").name == "FakeRole"
+    assert FixRegistry(cache_dir=target).field("FakeRole", "9.1").name == "FakeRole"
 
 
 def test_load_opens_another_store_in_the_same_session(store: Offline, tmp_path: Path) -> None:

@@ -184,7 +184,7 @@ def _format_of(target: str | None) -> str:
 
 def _registry(arguments: argparse.Namespace) -> FixRegistry:
     """The store a registry command edits, offline and never scraping."""
-    return FixRegistry(cache_dir=arguments.store, offline=True)
+    return FixRegistry(cache_dir=arguments.store)
 
 
 def _write_json(document: Any) -> None:
@@ -446,7 +446,7 @@ def _field_entry(arguments: argparse.Namespace) -> Field:
 
 def classify_keys(arguments: argparse.Namespace) -> int:
     """Count every key name a capture spells, and say what each one is."""
-    registry = FixRegistry(cache_dir=arguments.store, offline=True)
+    registry = FixRegistry(cache_dir=arguments.store)
     counts = count_files(
         arguments.source,
         pattern=arguments.pattern,
@@ -464,7 +464,7 @@ def classify_keys(arguments: argparse.Namespace) -> int:
 
 def apply_keys(arguments: argparse.Namespace) -> int:
     """Register what a report found, through the registry's own verbs."""
-    registry = FixRegistry(cache_dir=arguments.store, offline=True)
+    registry = FixRegistry(cache_dir=arguments.store)
     report = KeyReport.from_json(arguments.report)
     applied = apply_report(
         registry,

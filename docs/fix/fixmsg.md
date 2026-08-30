@@ -8,7 +8,7 @@ reads it.
 ```python
 from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
 
-registry = FixRegistry(cache_dir="data/fix", offline=True)
+registry = FixRegistry(cache_dir="data/fix")
 source = TextFiles.from_folder(
     "s3://bucket/capture",
     pattern="*.log*",

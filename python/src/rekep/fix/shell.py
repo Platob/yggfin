@@ -567,7 +567,7 @@ class Shell:
             return
         rest = _unquoted(rest)
         with self.console.spinner(f"opening {rest}"):
-            registry = FixRegistry(cache_dir=rest, offline=True)
+            registry = FixRegistry(cache_dir=rest)
             versions = registry.versions
         self.registry = registry
         self.console.ok(f"{rest} {self.console.glyph('arrow')} {len(versions)} versions")
@@ -697,7 +697,7 @@ def shell(
 ) -> int:
     """Open `store` and drive it from a prompt; the exit code the CLI returns."""
     return Shell(
-        registry=FixRegistry(cache_dir=store, offline=True),
+        registry=FixRegistry(cache_dir=store),
         console=console or Console(stream="stderr"),
         reader=reader,
     ).run()

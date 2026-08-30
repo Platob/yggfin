@@ -195,7 +195,7 @@ def test_the_sample_is_the_shape_the_tests_assume() -> None:
 
 @pytest.fixture(scope="module")
 def codec() -> FixCodec:
-    return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
+    return FixCodec(registry=FixRegistry(cache_dir=DATA))
 
 
 @pytest.fixture(scope="module")
@@ -906,7 +906,7 @@ def test_repeating_quote_entries_stay_in_wire_order(tmp_path: Path, codec: FixCo
 def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     tmp_path: Path,
 ) -> None:
-    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True))
+    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path))
     with TextFile.from_path(
         SAMPLE,
         msg_type_event_types=event_types(cold.registry),

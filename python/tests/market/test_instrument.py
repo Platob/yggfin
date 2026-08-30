@@ -164,7 +164,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry(
         (561, "100"),
         (107, "FAKE-DESC"),
     ], "an Arrow round trip keeps every stored field, in wire order"
-    registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
+    registry = FixRegistry(cache_dir=FIX_DATA)
     transcription = {}
     into_instruments = FixMsg.into_instruments
 

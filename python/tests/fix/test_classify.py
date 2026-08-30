@@ -48,7 +48,7 @@ EXPECTED_NAMES = 21
 
 @pytest.fixture(scope="module")
 def registry() -> FixRegistry:
-    return FixRegistry(cache_dir=PUBLISHED, offline=True)
+    return FixRegistry(cache_dir=PUBLISHED)
 
 
 @pytest.fixture(scope="module")
@@ -289,7 +289,7 @@ def archive(tmp_path_factory: pytest.TempPathFactory, registry: FixRegistry) -> 
 @pytest.fixture
 def editable(tmp_path: Path, archive: Path) -> FixRegistry:
     """A writable copy of the published dictionary, for the apply path."""
-    return FixRegistry(cache_dir=shutil.copy(archive, tmp_path / "fix.zip"), offline=True)
+    return FixRegistry(cache_dir=shutil.copy(archive, tmp_path / "fix.zip"))
 
 
 def test_nothing_is_applied_unless_it_is_asked_for(
@@ -364,7 +364,7 @@ def test_a_report_read_back_from_disk_applies_the_same(
     report.into_json(written)
     read = KeyReport.from_json(written)
     assert apply_report(editable, read, aliases=True) == apply_report(
-        FixRegistry(cache_dir=editable.into_zip(tmp_path / "again.zip"), offline=True),
+        FixRegistry(cache_dir=editable.into_zip(tmp_path / "again.zip")),
         report,
         aliases=True,
     )

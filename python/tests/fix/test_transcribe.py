@@ -110,7 +110,7 @@ def codec() -> FixCodec:
     every column it can lift and memoizes that on the codec -- two seconds,
     once, against two seconds per test.
     """
-    return FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
+    return FixCodec(registry=FixRegistry(cache_dir=DATA))
 
 
 @pytest.fixture(scope="module")
@@ -666,7 +666,7 @@ def test_a_protocol_rule_does_not_supply_a_fix_version(codec: FixCodec) -> None:
 
 
 def test_nobody_saying_which_version_is_an_answer_too() -> None:
-    bare = FixCodec(registry=FixRegistry(cache_dir=DATA, offline=True))
+    bare = FixCodec(registry=FixRegistry(cache_dir=DATA))
     assert bare.version_of("toBridge #A=1|#B=2") == (None, NO_SOURCE)
 
 
@@ -714,7 +714,7 @@ def test_a_registry_with_no_cached_version_resolves_nothing_and_raises_nothing(
     tmp_path: Path,
 ) -> None:
     """A cold cache loses the tags, never the capture."""
-    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path, offline=True))
+    cold = FixCodec(registry=FixRegistry(cache_dir=tmp_path))
     pairs = parse_arrow_array(pyarrow.array([BRIDGE]))
     resolved = cold.into_entries(pairs)
     assert _tags(resolved) == [], "no dictionary, so nothing resolves"
@@ -733,7 +733,6 @@ def test_an_offline_registry_never_reaches_the_site(tmp_path: Path) -> None:
     registry = FixRegistry(
         sources=(NanocondaSource(url="http://127.0.0.1:9/nope"),),
         cache_dir=tmp_path,
-        offline=True,
     )
     assert registry.versions == (), "what it holds, rather than an error it never earned"
     assert registry.tags() == {}
@@ -742,7 +741,7 @@ def test_an_offline_registry_never_reaches_the_site(tmp_path: Path) -> None:
 
 def test_an_offline_registry_still_serves_what_it_stored() -> None:
     """Offline is "do not fetch", not "do not answer"."""
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     assert "4.4" in registry.versions
     assert registry.tags("4.4")["symbol"] == 55
 
@@ -1410,7 +1409,7 @@ def test_a_version_whose_store_declares_no_component_extracts_nothing(tmp_path: 
     none -- and guessing the tags there would extract a group the standard
     never had.
     """
-    bare = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    bare = FixRegistry(cache_dir=tmp_path / "fix")
     bare._store_fields("4.4", [fix_field("PartyID", 448, "String", version="4.4")])
     codec = FixCodec(registry=bare)
     extractor = codec.component_of("parties", "4.4")

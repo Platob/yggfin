@@ -310,13 +310,13 @@ class FixCodec(Convertible):
     #: document says otherwise.
     rules: Rules = dataclasses.field(default_factory=Rules)
 
-    #: The dictionary names resolve through, **offline**: the default is the
-    #: user's own cache (`~/.config/fix`), read and never scraped, because a
-    #: parse that met its first bridge line and answered it by fetching seven
-    #: thousand pages mid-batch would be a worse surprise than an unresolved
-    #: name. Point it at `data/fix/` or `data/fix.zip` for the dictionary this repository
-    #: publishes, or hand over `FixRegistry()` to let it scrape.
-    registry: FixRegistry = dataclasses.field(default_factory=lambda: FixRegistry(offline=True))
+    #: The dictionary names resolve through: the packaged projection unless
+    #: `FixRegistry.set_builtin` installed another. A registry serving a store
+    #: never scrapes, because a parse that met its first bridge line and
+    #: answered it by fetching fourteen thousand pages mid-batch would be a
+    #: worse surprise than an unresolved name. Point it at `data/fix/` or
+    #: `data/fix.zip` for the dictionary this repository publishes.
+    registry: FixRegistry = dataclasses.field(default_factory=FixRegistry.from_builtin)
 
     #: Values that mean the field is absent, dropped from the pairs before
     #: anything else looks at them. Empty keeps every pair.

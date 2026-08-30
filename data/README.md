@@ -35,7 +35,7 @@ has a source-supplied symbolic name for each wire value.
 ```python
 from rekep.fix import FixRegistry
 
-registry = FixRegistry(cache_dir="data/fix", offline=True)
+registry = FixRegistry(cache_dir="data/fix")
 field = registry.field("Side", "4.4")
 field.fix.encode("BUY")  # '1'
 ```

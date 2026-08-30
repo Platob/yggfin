@@ -48,7 +48,7 @@ print(len(FixRegistry.from_builtin().field_records()))
     ```python
     from rekep.fix import FixRegistry
 
-    absent = FixRegistry(cache_dir="/no/such/place", offline=True)
+    absent = FixRegistry(cache_dir="/no/such/place")
     print(len(absent.versions), len(absent.field_records()))
     ```
 

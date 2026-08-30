@@ -136,7 +136,7 @@ def test_a_mass_quote_emits_every_quote_entry_side() -> None:
 
 
 def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> None:
-    registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
+    registry = FixRegistry(cache_dir=FIX_DATA)
     line = (
         "8=FIX.4.4|35=i|34=1|296=1|302=SET-1|304=1|295=1|"
         "299=ENTRY-1|55=AAPL|132=100|133=101|134=10|135=11|"
@@ -181,7 +181,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
 
 
 def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
-    registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
+    registry = FixRegistry(cache_dir=FIX_DATA)
     rows = list(FixEvents.from_text(mass_quote(registry), registry=registry, fix_version="4.4"))
 
     assert [(row.symbolticker, row.side, row.orderid, row.px, row.qty) for row in rows] == [
@@ -196,7 +196,7 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
 
 
 def test_nested_mass_quote_sets_project_each_instrument_once_in_wire_order() -> None:
-    registry = FixRegistry(cache_dir=FIX_DATA, offline=True)
+    registry = FixRegistry(cache_dir=FIX_DATA)
     found = list(
         FixEvents.from_text(
             mass_quote(registry), registry=registry, fix_version="4.4"

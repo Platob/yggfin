@@ -183,7 +183,7 @@ midnight in the `timestamp[us, tz=UTC]` column the contract fixes.
 from rekep import FieldRules, FixCodec, FixRegistry
 
 codec = FixCodec(
-    registry=FixRegistry(cache_dir="data/fix", offline=True),
+    registry=FixRegistry(cache_dir="data/fix"),
     fields=FieldRules.from_dict({"rules": [{"field": "9999", "type": "timestamp[us, tz=UTC]"}]}),
 )
 ```

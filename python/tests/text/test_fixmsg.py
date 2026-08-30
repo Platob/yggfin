@@ -207,7 +207,7 @@ EXPECTED_LOG_COLUMNS = 126
 @pytest.fixture(scope="module")
 def registry() -> FixRegistry:
     """The published dictionary. Offline, because this must not test the site."""
-    return FixRegistry(cache_dir=DATA, offline=True)
+    return FixRegistry(cache_dir=DATA)
 
 
 @pytest.fixture(scope="module")
@@ -1340,7 +1340,7 @@ def test_unknown_numeric_fields_follow_the_linked_registry(
     assert scalar.identify().vhash == arrow.column("vhash")[0].as_py()
     assert arrow.column("vhash")[0].as_py() != arrow.column("vhash")[1].as_py()
 
-    custom = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    custom = FixRegistry(cache_dir=tmp_path / "fix")
     venue_audit = fix_field("VenueAudit", 9998, "String", values={"A": "Audit"})
     venue_audit.fix.versions = ("4.4",)
     custom.add_field(venue_audit)

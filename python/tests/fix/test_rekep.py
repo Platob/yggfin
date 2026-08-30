@@ -171,7 +171,7 @@ def test_rekep_component_projection_matches_the_persisted_event_fields() -> None
 
 
 def test_registering_rekep_twice_does_not_mutate_the_store(tmp_path: Path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "registry", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "registry")
     register_rekep(registry)
     revision = registry.revision
     register_rekep(registry)
@@ -179,7 +179,7 @@ def test_registering_rekep_twice_does_not_mutate_the_store(tmp_path: Path) -> No
 
 
 def test_registration_refuses_an_extra_alias(tmp_path: Path) -> None:
-    registry = register_rekep(FixRegistry(cache_dir=tmp_path / "registry", offline=True))
+    registry = register_rekep(FixRegistry(cache_dir=tmp_path / "registry"))
     registry.alias_field("REKEP.Unix", "PackageUnix")
 
     assert not rekep_is_registered(registry)
@@ -188,7 +188,7 @@ def test_registration_refuses_an_extra_alias(tmp_path: Path) -> None:
 
 
 def test_registration_refuses_changed_versions(tmp_path: Path) -> None:
-    registry = register_rekep(FixRegistry(cache_dir=tmp_path / "registry", offline=True))
+    registry = register_rekep(FixRegistry(cache_dir=tmp_path / "registry"))
     stored = registry.field(REKEP_TAG_OFFSET)
     assert stored is not None
     changed = Field.from_dict(stored.into_dict())
@@ -205,7 +205,7 @@ def test_the_builtin_registry_is_read_without_rewriting_its_archive() -> None:
     before = archive.read_bytes(), archive.stat().st_mtime_ns
     FixMsg.into_registry.cache_clear()
     try:
-        FixRegistry.from_builtin.cache_clear()
+        FixRegistry.set_builtin(None)
         FixRegistry.from_builtin()
         assert (archive.read_bytes(), archive.stat().st_mtime_ns) == before
     finally:

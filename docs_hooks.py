@@ -49,7 +49,7 @@ def _write(target: Path, payload: Any) -> None:
 
 def _registry_catalog(root: Path) -> dict[str, Any]:
     """The browser catalog from the registry used by this checkout."""
-    registry = FixRegistry(cache_dir=root / "data" / "fix", offline=True)
+    registry = FixRegistry(cache_dir=root / "data" / "fix")
     return {
         "versions": list(registry.versions),
         "components": [

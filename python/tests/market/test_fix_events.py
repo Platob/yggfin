@@ -896,7 +896,7 @@ def test_pairs_and_a_wire_line_produce_the_same_events() -> None:
 
 def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> None:
     """A custom version must change reads, not only named-pair preprocessing."""
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     fields = (
         ("MsgType", "String"),
         ("Symbol", "String"),
@@ -978,7 +978,7 @@ def _restated(record, states):
 
 
 def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     entry = FixRegistry.from_builtin().field("OrdStatus")
     registry.add_field(_restated(entry, {"0": State.NEW}))
     first = MarketTags.of(registry)
@@ -993,7 +993,7 @@ def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
 
 
 def test_a_sparse_registry_keeps_builtin_trade_exectypes(tmp_path) -> None:
-    tags = MarketTags.of(FixRegistry(cache_dir=tmp_path / "fix", offline=True), "4.4")
+    tags = MarketTags.of(FixRegistry(cache_dir=tmp_path / "fix"), "4.4")
 
     assert tags.execution_states["G"] is State.REPLACED
     assert tags.execution_states["H"] is State.CANCELLED
@@ -1002,7 +1002,7 @@ def test_a_sparse_registry_keeps_builtin_trade_exectypes(tmp_path) -> None:
 
 
 def test_configured_trade_encodings_create_only_execution_fallbacks(tmp_path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     entry = FixRegistry.from_builtin().field("ExecType")
     assert entry is not None
     configured = record_copy(entry)

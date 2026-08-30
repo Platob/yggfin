@@ -409,14 +409,14 @@ def test_the_archive_is_what_publishing_it_produces(tmp_path: Path) -> None:
 
 def test_full_publication_registers_rekep_in_a_clean_store(tmp_path: Path) -> None:
     source = tmp_path / "source"
-    registry = FixRegistry(cache_dir=source, offline=True)
+    registry = FixRegistry(cache_dir=source)
     venue = fix_field("VenueField", 49999, "String")
     venue.fix.versions = ("9.1",)
     registry.add_field(venue)
 
     target = publish_full(source, tmp_path / "full.zip")
-    stored = FixRegistry(cache_dir=source, offline=True)
-    archived = FixRegistry(cache_dir=target, offline=True)
+    stored = FixRegistry(cache_dir=source)
+    archived = FixRegistry(cache_dir=target)
 
     assert stored.field(49999).name == archived.field(49999).name == "VenueField"
     assert rekep_is_registered(stored)
@@ -427,7 +427,7 @@ def test_a_projection_is_a_small_exact_offline_registry(
     registry: FixRegistry, tmp_path: Path
 ) -> None:
     target = registry.into_projection(tmp_path / "projected.zip", ["Side", "QuoteID"])
-    projected = FixRegistry(cache_dir=target, offline=True)
+    projected = FixRegistry(cache_dir=target)
     assert projected.versions == registry.versions
     assert set(projected.tags()) == {"side", "quoteid"}
     for version in projected.versions:

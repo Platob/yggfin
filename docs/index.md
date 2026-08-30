@@ -113,7 +113,7 @@ shapes in Arrow batches, as shown below and in the [pipeline guide](pipeline/ind
 ```python
 from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
 
-registry = FixRegistry(cache_dir="data/fix", offline=True)
+registry = FixRegistry(cache_dir="data/fix")
 
 source = TextFiles.from_folder(
     "logs",

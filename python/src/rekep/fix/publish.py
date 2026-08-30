@@ -251,10 +251,10 @@ def publish_builtin(
     target: str | os.PathLike[str],
 ) -> pathlib.Path | str:
     """Rebuild the wheel's registry from the published dictionary, and name it."""
-    registry = FixRegistry(cache_dir=source, offline=True)
+    registry = FixRegistry(cache_dir=source)
     with tempfile.TemporaryDirectory(prefix="rekep-fix-projection-") as scratch:
         staged = registry.into_projection(pathlib.Path(scratch) / "registry.zip", PROJECTED)
-        projected = register_rekep(FixRegistry(cache_dir=staged, offline=True))
+        projected = register_rekep(FixRegistry(cache_dir=staged))
         return projected.into_zip(target)
 
 
@@ -263,7 +263,7 @@ def publish_full(
     target: str | os.PathLike[str],
 ) -> pathlib.Path | str:
     """Register rekep's vocabulary and publish the complete offline registry."""
-    registry = register_rekep(FixRegistry(cache_dir=source, offline=True))
+    registry = register_rekep(FixRegistry(cache_dir=source))
     return registry.into_zip(target)
 
 

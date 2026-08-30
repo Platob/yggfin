@@ -104,7 +104,7 @@ def test_sorted_logs_feed_books_without_a_task_adapter() -> None:
 def test_book_translation_uses_the_selected_fix_registry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     seen = []
 
     def translated(_message, **declared):
@@ -465,7 +465,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
     ]
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
         for event in message.into_market_events(registry=registry):
@@ -535,7 +535,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
     ]
     schema = FixMsg.into_field().into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist([message.into_row() for message in logs], schema)
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     expected = {Order: [], Execution: []}
     for message in FixMsg.from_arrow_reader([batch]):
         for event in message.into_market_events(registry=registry):
@@ -567,7 +567,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
 
 
 def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> None:
-    registry = FixRegistry(cache_dir=tmp_path / "fix", offline=True)
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
     builtin = FixRegistry.from_builtin()
     msg_type = builtin.field("MsgType")
     ord_status = builtin.field("OrdStatus")
@@ -2056,7 +2056,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     from rekep.fix.components import SecurityAltID as SecurityAltIDEntry
     from rekep.market.fix_arrow import flat_market_positions
 
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     plain = FixMsg(
         unix=BASE + 1,
         unixsource="TransactTime",
@@ -2113,7 +2113,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     """A cancel-reject's OrdStatus, an intent link and settlement facts read
     identically flat and scalar -- and the batch is flat-eligible, so the
     equality is between two live paths and not one falling back."""
-    registry = FixRegistry(cache_dir=DATA, offline=True)
+    registry = FixRegistry(cache_dir=DATA)
     linked = FixMsg(
         unix=BASE + 1,
         unixsource="TransactTime",
