@@ -190,7 +190,7 @@ def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
     assert later.altids == {}
     fill = changed(_execution(unix=30, execid="EX-1", state=State.FILLED, qty=4.0), first)
     assert fill.code == "EX-1", "and never `ORD-1`: an execution is not a version of its order"
-    assert fill.altids == {}
+    assert fill.altids == {"orderroot": "ORD-1"}, "the readable relation survives exact links"
 
 
 def test_an_identifier_already_recorded_is_never_displaced_by_a_later_one() -> None:
@@ -298,14 +298,14 @@ def fill(px: float, qty: float, unix: int, **given: object) -> Execution:
 def test_a_fill_links_itself_to_the_order_it_followed() -> None:
     first = resting()
     done = fill(100.0, 4.0, 20, execid="EX-1").with_previous(first)
-    assert done.linkedhashes == [first.xhash]
+    assert done.linkedhashes == [first.hash]
 
 
-def test_the_matched_order_precedes_other_lifecycle_links() -> None:
+def test_the_matched_order_precedes_other_event_links() -> None:
     first = resting()
     done = fill(100.0, 4.0, 20, execid="EX-1", linkedhashes=[-1]).with_previous(first)
     assert done is not None
-    assert done.linkedhashes == [first.xhash, -1]
+    assert done.linkedhashes == [first.hash, -1]
 
 
 def test_what_is_done_accumulates_across_fills() -> None:
@@ -669,7 +669,7 @@ def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
 
     after.with_previous(done)
 
-    assert done.linkedhashes == [first.xhash]
+    assert done.linkedhashes == [first.hash]
     assert after.code == first.code == "CL-1"
     assert after.xhash == first.xhash
 
@@ -695,7 +695,7 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
 
     assert amended.code == first.code == "CL-1"
     assert done.origclordid == "CL-1"
-    assert done.linkedhashes == [first.xhash]
+    assert done.linkedhashes == [amended.hash]
     assert after.code == "CL-1" and after.xhash == first.xhash
 
 

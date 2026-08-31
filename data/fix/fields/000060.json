@@ -175,7 +175,7 @@
   "name": "REKEP.LinkedHashes",
   "type": "list",
   "nullable": true,
-  "description": "Ordered related lifecycle identities.",
+  "description": "Ordered exact hashes of related event versions.",
   "fix": {
    "tag": "30013",
    "type": "MultipleValueString",
@@ -184,7 +184,7 @@
    "display": "LinkedHashes"
   },
   "item": {
-   "type": "int64"
+   "type": "fixed_size_binary[16]"
   }
  },
  "30014": {

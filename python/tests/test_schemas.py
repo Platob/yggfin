@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pyarrow
 import pytest
 
 from rekep import Field, FixMsg, FixRegistry, Message
@@ -102,6 +103,21 @@ def _columns(field: Field) -> list[Field]:
             found.append(member)
         found.extend(_columns(member))
     return found
+
+
+def test_fix_backed_persisted_dates_are_microsecond_timestamps() -> None:
+    found = [
+        member
+        for shape in PUBLISHED.values()
+        for member in _columns(shape.into_field())
+        if member.fix.get("tag") and pyarrow.types.is_temporal(member.dtype)
+    ]
+    assert found
+    assert all(not pyarrow.types.is_date(member.dtype) for member in found)
+    assert all(
+        not pyarrow.types.is_timestamp(member.dtype) or member.dtype.unit == "us"
+        for member in found
+    )
 
 
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)

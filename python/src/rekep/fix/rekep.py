@@ -91,7 +91,7 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
         "LinkedHashes",
         "MultipleValueString",
         "LinkedHashes",
-        "Ordered related lifecycle identities.",
+        "Ordered exact hashes of related event versions.",
     ),
     ("version", "Version", "int64", "Version", "Zero-based lifecycle version number."),
     ("state", "State", "int64", "State", "Packed ranked lifecycle state."),
@@ -152,7 +152,7 @@ _REKEP_DTYPES: Mapping[str, pyarrow.DataType] = MappingProxyType(
         "hash": pyarrow.binary(16),
         "prevhash": pyarrow.binary(16),
         "parenthash": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
-        "linkedhashes": pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)),
+        "linkedhashes": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
         "altids": pyarrow.map_(
             pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
         ),

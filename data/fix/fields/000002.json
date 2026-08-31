@@ -182,7 +182,7 @@
  },
  "1012": {
   "name": "SideTrdRegTimestamp",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Will be used in a multi-sided message. Traded Regulatory timestamp value Use to store time information required by government regulators or self regulatory organizations such as an exchange or clearing house",
   "fix": {
@@ -1343,7 +1343,7 @@
  },
  "1079": {
   "name": "MaturityTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
   "fix": {
@@ -2182,7 +2182,7 @@
  },
  "1125": {
   "name": "OrigTradeDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Used to preserve original trade date when original trade is being referenced in a subsequent trade transaction such as a transfer",
   "fix": {
@@ -2306,7 +2306,7 @@
  },
  "1132": {
   "name": "TZTransactTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Transact time in the local date-time stamp with a TZ offset to UTC identified",
   "fix": {
@@ -2538,7 +2538,7 @@
  },
  "1145": {
   "name": "EventTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Specific time of event. To be used in combination with EventDate [866]",
   "fix": {
@@ -3753,7 +3753,7 @@
  },
  "1212": {
   "name": "LegMaturityTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
   "fix": {
@@ -3771,7 +3771,7 @@
  },
  "1213": {
   "name": "UnderlyingMaturityTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
   "fix": {
@@ -4465,7 +4465,7 @@
  },
  "1252": {
   "name": "DerivativeMaturityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1252",
@@ -4482,7 +4482,7 @@
  },
  "1253": {
   "name": "DerivativeMaturityTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1253",
@@ -4877,7 +4877,7 @@
  },
  "1276": {
   "name": "DerivativeIssueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1276",
@@ -5085,7 +5085,7 @@
  },
  "1288": {
   "name": "DerivativeEventDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1288",
@@ -5102,7 +5102,7 @@
  },
  "1289": {
   "name": "DerivativeEventTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1289",
@@ -6105,7 +6105,7 @@
  },
  "1345": {
   "name": "UnderlyingLegMaturityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date of maturity.",
   "fix": {
@@ -7165,7 +7165,7 @@
  },
  "1405": {
   "name": "UnderlyingLegMaturityTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of security's maturity expressed in local time with offset to UTC specified",
   "fix": {
@@ -8740,7 +8740,7 @@
  },
  "1492": {
   "name": "ComplexEventStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Specifies the start date of the date range on which a complex event is effective. The start date will be set equal to the end date for single day events such as Bermuda options ComplexEventStartDate must always be less than or equal to ComplexEventEndDate.",
   "fix": {
@@ -8758,7 +8758,7 @@
  },
  "1493": {
   "name": "ComplexEventEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Specifies the end date of the date range on which a complex event is effective. The start date will be set equal to the end date for single day events such as Bermuda options ComplexEventEndDate must always be greater than or equal to ComplexEventStartDate.",
   "fix": {
@@ -8794,7 +8794,7 @@
  },
  "1495": {
   "name": "ComplexEventStartTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Specifies the start time of the time range on which a complex event date is effective. ComplexEventStartTime must always be less than or equal to ComplexEventEndTime.",
   "fix": {
@@ -8812,7 +8812,7 @@
  },
  "1496": {
   "name": "ComplexEventEndTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Specifies the end time of the time range on which a complex event date is effective. ComplexEventEndTime must always be greater than or equal to ComplexEventStartTime.",
   "fix": {

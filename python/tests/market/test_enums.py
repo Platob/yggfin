@@ -98,7 +98,14 @@ def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
     # `_canonical` upper-cases, so a stored lower-case spelling must not read
     # back as a second member beside the one `from_str` folds to.
     assert Protocol.from_int(Protocol._pack("fix")) is Protocol.UNKNOWN
-    assert Protocol.from_str("FIX4.2").code == "FIX4.2", "a version in the name still packs"
+    assert Protocol.from_str("FIX.4.2").code == "FIX4.2"
+    assert Protocol.from_str("FIX.5.0.SP2").code == "FIX5SP2"
+    assert Protocol.from_str("FIXML.5.0.SP2").code == "FXML5SP2"
+    assert Protocol.from_str("FIX5.1SP2") is Protocol.UNKNOWN
+    assert Protocol.from_str("UL5.1SP2").version == "5.1.SP2"
+    assert Protocol.from_str("FIX5SP2").version == "5.0.SP2"
+    assert Protocol.from_str("FXML5SP2").family is Protocol.FIXML
+    assert Protocol.with_version(Protocol.from_str("SBE"), "4.4").code == "SBE"
 
 
 def test_a_compiled_venue_renders_in_a_column_where_a_learnt_one_cannot() -> None:

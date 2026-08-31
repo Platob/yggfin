@@ -81,7 +81,7 @@
  },
  "40505": {
   "name": "LegProvisionOptionExpirationDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40505",
@@ -97,7 +97,7 @@
  },
  "40506": {
   "name": "LegProvisionOptionExpirationTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40506",
@@ -129,7 +129,7 @@
  },
  "40508": {
   "name": "LegProvisionOptionRelevantUnderlyingDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40508",
@@ -241,7 +241,7 @@
  },
  "40515": {
   "name": "LegProvisionOptionRelevantUnderlyingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40515",
@@ -353,7 +353,7 @@
  },
  "40522": {
   "name": "LegProvisionCashSettlPaymentDateRangeFirst",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40522",
@@ -369,7 +369,7 @@
  },
  "40523": {
   "name": "LegProvisionCashSettlPaymentDateRangeLast",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40523",
@@ -385,7 +385,7 @@
  },
  "40524": {
   "name": "LegProvisionCashSettlValueTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40524",
@@ -513,7 +513,7 @@
  },
  "40532": {
   "name": "LegProvisionCashSettlValueDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40532",
@@ -769,7 +769,7 @@
  },
  "40548": {
   "name": "UnderlyingStreamTerminationDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40548",
@@ -881,7 +881,7 @@
  },
  "40555": {
   "name": "UnderlyingStreamTerminationDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40555",
@@ -929,7 +929,7 @@
  },
  "40558": {
   "name": "UnderlyingStreamFirstPeriodStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40558",
@@ -977,7 +977,7 @@
  },
  "40561": {
   "name": "UnderlyingStreamFirstPeriodStartDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40561",
@@ -993,7 +993,7 @@
  },
  "40562": {
   "name": "UnderlyingStreamFirstRegularPeriodStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40562",
@@ -1009,7 +1009,7 @@
  },
  "40563": {
   "name": "UnderlyingStreamFirstCompoundingPeriodEndDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40563",
@@ -1025,7 +1025,7 @@
  },
  "40564": {
   "name": "UnderlyingStreamLastRegularPeriodEndDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40564",
@@ -1377,7 +1377,7 @@
  },
  "40586": {
   "name": "UnderlyingPaymentStreamFirstPaymentDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40586",
@@ -1393,7 +1393,7 @@
  },
  "40587": {
   "name": "UnderlyingPaymentStreamLastRegularPaymentDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40587",
@@ -1665,7 +1665,7 @@
  },
  "40604": {
   "name": "UnderlyingPaymentStreamInitialFixingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40604",
@@ -1777,7 +1777,7 @@
  },
  "40611": {
   "name": "UnderlyingPaymentStreamFixingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40611",
@@ -1905,7 +1905,7 @@
  },
  "40619": {
   "name": "UnderlyingPaymentStreamFutureValueDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40619",
@@ -2513,7 +2513,7 @@
  },
  "40657": {
   "name": "UnderlyingNonDeliverableFixingDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40657",
@@ -2673,7 +2673,7 @@
  },
  "40667": {
   "name": "UnderlyingPaymentScheduleStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40667",
@@ -2689,7 +2689,7 @@
  },
  "40668": {
   "name": "UnderlyingPaymentScheduleEndDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40668",
@@ -2977,7 +2977,7 @@
  },
  "40686": {
   "name": "UnderlyingPaymentScheduleFixingDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40686",
@@ -3105,7 +3105,7 @@
  },
  "40694": {
   "name": "UnderlyingPaymentScheduleFixingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40694",
@@ -3121,7 +3121,7 @@
  },
  "40695": {
   "name": "UnderlyingPaymentScheduleFixingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40695",
@@ -3249,7 +3249,7 @@
  },
  "40703": {
   "name": "UnderlyingPaymentScheduleInterimExchangeDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40703",
@@ -4101,7 +4101,7 @@
  },
  "40756": {
   "name": "PaymentStreamFirstPaymentDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40756",
@@ -4117,7 +4117,7 @@
  },
  "40757": {
   "name": "PaymentStreamLastRegularPaymentDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40757",
@@ -4375,7 +4375,7 @@
  },
  "40773": {
   "name": "PaymentStreamInitialFixingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40773",
@@ -4487,7 +4487,7 @@
  },
  "40780": {
   "name": "PaymentStreamFixingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40780",
@@ -4615,7 +4615,7 @@
  },
  "40788": {
   "name": "PaymentStreamFutureValueDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40788",
@@ -5235,7 +5235,7 @@
  },
  "40826": {
   "name": "NonDeliverableFixingDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40826",
@@ -5317,7 +5317,7 @@
  },
  "40831": {
   "name": "PaymentScheduleStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40831",
@@ -5333,7 +5333,7 @@
  },
  "40832": {
   "name": "PaymentScheduleEndDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40832",
@@ -5622,7 +5622,7 @@
  },
  "40850": {
   "name": "PaymentScheduleFixingDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40850",
@@ -5750,7 +5750,7 @@
  },
  "40858": {
   "name": "PaymentScheduleFixingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40858",
@@ -5766,7 +5766,7 @@
  },
  "40859": {
   "name": "PaymentScheduleFixingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40859",
@@ -5894,7 +5894,7 @@
  },
  "40867": {
   "name": "PaymentScheduleInterimExchangeDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40867",
@@ -6536,7 +6536,7 @@
  },
  "40907": {
   "name": "StreamEffectiveDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40907",
@@ -6648,7 +6648,7 @@
  },
  "40914": {
   "name": "StreamEffectiveDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "40914",

@@ -15,7 +15,7 @@ parameters:
   protocols: null
   # How named fields read, where a job says what the dictionary cannot: a
   # vendor tag that carries an instant, a value spelling only this estate
-  # uses. `type` is an Arrow type (`date32[day]`, `timestamp[us, tz=UTC]`) or
+  # uses. `type` is an Arrow type (`timestamp[s]`, `timestamp[us, tz=UTC]`) or
   # a FIX datatype; `values` maps what a feed writes to what it means.
   #
   # fields:

@@ -97,7 +97,7 @@
  },
  "43006": {
   "name": "UnderlyingRateSpreadStepDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43006",
@@ -225,7 +225,7 @@
  },
  "43014": {
   "name": "UnderlyingReturnRateValuationStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43014",
@@ -305,7 +305,7 @@
  },
  "43019": {
   "name": "UnderlyingReturnRateValuationStartDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43019",
@@ -321,7 +321,7 @@
  },
  "43020": {
   "name": "UnderlyingReturnRateValuationEndDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43020",
@@ -401,7 +401,7 @@
  },
  "43025": {
   "name": "UnderlyingReturnRateValuationEndDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43025",
@@ -769,7 +769,7 @@
  },
  "43048": {
   "name": "UnderlyingReturnRateQuoteTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43048",
@@ -785,7 +785,7 @@
  },
  "43049": {
   "name": "UnderlyingReturnRateQuoteDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43049",
@@ -801,7 +801,7 @@
  },
  "43050": {
   "name": "UnderlyingReturnRateQuoteExpirationTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43050",
@@ -897,7 +897,7 @@
  },
  "43056": {
   "name": "UnderlyingReturnRateValuationTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43056",
@@ -1153,7 +1153,7 @@
  },
  "43072": {
   "name": "UnderlyingReturnRateValuationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43072",
@@ -1217,7 +1217,7 @@
  },
  "43076": {
   "name": "UnderlyingSettlMethodElectionDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43076",
@@ -1313,7 +1313,7 @@
  },
  "43082": {
   "name": "UnderlyingSettlMethodElectionDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43082",
@@ -1345,7 +1345,7 @@
  },
  "43084": {
   "name": "UnderlyingStreamVersionEffectiveDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "43084",

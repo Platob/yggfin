@@ -55,7 +55,7 @@ from rekep.fix.message import (
     render_fix_value,
 )
 from rekep.fix.registry import FixRegistry
-from rekep.fix.transcribe import NO_SOURCE, FixCodec, infer_version_from_pairs
+from rekep.fix.transcribe import FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
@@ -162,6 +162,21 @@ def _promoted_value(message: FixMsg, name: str) -> Any:
     return None if value in ("", 0) else value
 
 
+def _structured_protocol(source: Message, registry: FixRegistry | None) -> Protocol:
+    """Protocol claimed by a direct text or pair constructor's version evidence."""
+    declared = Protocol.from_str(source.protocol)
+    if declared.family is not Protocol.OTHER:
+        return declared
+    evidence: list[tuple[str, Any]] = []
+    if source.beginstring:
+        evidence.append(("8", source.beginstring))
+    if source.applverid:
+        evidence.append(("1128", source.applverid))
+    evidence.extend(_stored_pairs(source.entries))
+    version, _ = infer_version_from_pairs(evidence, registry or FixMsg.into_registry())
+    return Protocol.FIX if version is not None else declared
+
+
 @functools.lru_cache(maxsize=8)
 def _codec_of(registry: FixRegistry, _revision: int) -> FixCodec:
     """One shared codec per dictionary generation, so batches share its memos.
@@ -181,6 +196,11 @@ class FixMsg(Message):
     # content -- the same stored row reads under another feed's dictionary
     # without changing -- so the link is private and never a column.
     __registry: FixRegistry | None = None
+
+    # An explicitly selected registry fragment is reader state. The public
+    # protocol carries the wire version; this private override exists only for
+    # callers that deliberately read the same row under another fragment.
+    __version: str | None = None
 
     # Zero is both a valid explicit creation instant and the stored unknown
     # sentinel. Scalar constructors retain which one the caller supplied so
@@ -216,6 +236,9 @@ class FixMsg(Message):
     def link_registry(self, registry: FixRegistry | None) -> FixMsg:
         """Privately link the dictionary every read on this row resolves through."""
         self.__registry = registry
+        self.protocol = Protocol.with_version(
+            self.protocol, self.resolved_version(registry or type(self).into_registry())
+        )
         self._partition_scalar_entries()
         return self
 
@@ -229,7 +252,9 @@ class FixMsg(Message):
             return
         codec = type(self).into_codec(self.registry)
         stored = pyarrow.array([_stored_entries(self._residual_entries())], type=ENTRIES)
-        entries, unmap = type(self)._partition_entries(stored, codec, self.protocolversion)
+        entries, unmap = type(self)._partition_entries(
+            stored, codec, self.resolved_version(codec.registry)
+        )
         self.entries = [Entry.from_stored(entry) for entry in entries[0].as_py() or ()]
         unresolved = unmap[0].as_py()
         self.unmap = (
@@ -300,6 +325,7 @@ class FixMsg(Message):
         # `Event.__post_init__` and not Message's, so nothing else reads them
         # off a spelling. A column takes the code, never the word.
         self.direction = Direction.from_str(self.direction)
+        unclassified = self.protocol is Protocol.UNKNOWN
         self.protocol = Protocol.from_str(self.protocol)
         if self.entries is not None:
             self.entries = [Entry.from_stored(entry) for entry in self.entries]
@@ -309,23 +335,21 @@ class FixMsg(Message):
             self.unmap = None
         if not isinstance(self.instrument, Instrument):
             self.instrument = Instrument.from_dict(self.instrument)
-        if (
-            self.protocolversion is None
-            and self.protocol is Protocol.OTHER
-            and (self.beginstring or self.entries or self.unmap)
+        embedded_version = self.protocol.version
+        if (embedded_version is None or embedded_version.startswith("FIXT")) and (
+            evidence := self._version_evidence()
         ):
-            evidence: list[tuple[str, Any]] = []
-            if self.beginstring:
-                evidence.append(("8", self.beginstring))
-            if self.applverid:
-                evidence.append(("1128", self.applverid))
-            evidence.extend(_stored_pairs(self._residual_entries()))
-            version, source = infer_version_from_pairs(evidence)
+            version, _ = infer_version_from_pairs(evidence)
             if version is not None:
-                self.protocolversion = version
-                self.protocolversionsource = source
-                if self.protocol is Protocol.OTHER:
-                    self.protocol = Protocol.FIX
+                protocol = Protocol.FIX if unclassified else self.protocol
+                self.protocol = Protocol.with_version(protocol, version)
+            elif self.protocol.version is None and self.beginstring:
+                stated = Protocol.from_str(self.beginstring).version
+                if stated is not None:
+                    protocol = Protocol.FIX if unclassified else self.protocol
+                    self.protocol = Protocol.with_version(protocol, stated)
+        if unclassified and self.protocol is Protocol.UNKNOWN:
+            self.protocol = Protocol.OTHER
 
     def identify(self) -> FixMsg:
         """Give the parsed event the identities its registry projection earns."""
@@ -344,9 +368,10 @@ class FixMsg(Message):
         staged_values["message"] = self.message or ""
         if self.entries is not None or self.unmap is not None:
             retained_entries: Sequence[Any] = self._residual_entries()
-            if self.protocolversion is not None and retained_entries:
+            version = self.resolved_version(codec.registry)
+            if version is not None and retained_entries:
                 stored = pyarrow.array([_stored_entries(retained_entries)], type=ENTRIES)
-                completed = codec.complete_entries(stored, self.protocolversion)[0].as_py()
+                completed = codec.complete_entries(stored, version)[0].as_py()
                 retained_entries = completed or ()
             retained = list(_stored_pairs(retained_entries))
             checksum = str(_tag_of("CheckSum"))
@@ -420,27 +445,14 @@ class FixMsg(Message):
     message: str | None = None
     """Payload text; null where parsed columns retain every field."""
 
-    protocol: Protocol = Protocol.OTHER
-    """Which protocol the line carries; OTHER is a line that carries none."""
+    protocol: Protocol = Protocol.UNKNOWN
+    """Protocol grammar and resolved version; OTHER carries neither."""
 
     # Without it nothing downstream can tell a real transaction time from a
     # print time, and that distinction is the whole point of resolving one.
     # Empty means no clock answered at all, which is a row with no time.
     unixsource: Annotated[str, Field.column("UnixSource")] = ""
     """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
-
-    # One column, not a FIX-specific one: every protocol with versions has a
-    # version, and a `fix_version` beside it would duplicate itself the first
-    # time a second versioned protocol appeared. Resolved once, at the message
-    # stage, so nothing downstream re-derives it.
-    protocolversion: Annotated[str | None, Field.column("ProtocolVersion")] = None
-    """Which version of `protocol` the line is read under; null when unresolved."""
-
-    # Null because the message carried no version, or null because nothing
-    # tried? A consumer cannot tell the two apart from the value, and they are
-    # different facts about the row.
-    protocolversionsource: Annotated[str, Field.column("ProtocolVersionSource")] = NO_SOURCE
-    """What resolved `protocolversion`: a BeginString, an application version, or nothing."""
 
     msgseqnum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
     """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
@@ -782,7 +794,8 @@ class FixMsg(Message):
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from ordered named or numbered fields."""
-        staged = Message(entries=normalized_pairs(pairs, names))
+        entries = normalized_pairs(pairs, names)
+        staged = Message(entries=entries)
         return cls.from_message(staged, registry=registry, **declared)
 
     @classmethod
@@ -806,6 +819,11 @@ class FixMsg(Message):
         values = {
             member.name: getattr(source, member.name) for member in dataclasses.fields(Message)
         }
+        if not isinstance(source, cls):
+            # Raw structured rows have no stored classifier result. Their own
+            # version statement is the explicit FIX claim; a reconstructed
+            # FixMsg's persisted OTHER remains authoritative.
+            values["protocol"] = _structured_protocol(source, registry)
         values.update(
             {
                 "message": source.message or None,
@@ -977,7 +995,7 @@ class FixMsg(Message):
         if not named:
             return fields, pairs, resolved
 
-        group_version = access.version or self.protocolversion
+        group_version = access.version or self.resolved_version(access.registry)
         if access.registry is not None and group_version is None:
             try:
                 group_version = infer_version_from_pairs(stored, access.registry)[0]
@@ -1026,13 +1044,57 @@ class FixMsg(Message):
         return indexed_group_pairs(self.pairs, name)
 
     def resolved_version(self, registry: FixRegistry | None = None) -> str | None:
-        """Which protocol version this row reads under, inferred when unresolved."""
-        if self.protocolversion is not None:
-            return self.protocolversion
-        try:
-            return infer_version_from_pairs(self.pairs, registry or self.registry)[0]
-        except (OSError, ValueError):
+        """The exact registry fragment selected by private or wire evidence."""
+        if self.__version is not None:
+            return self.__version
+        if self.protocol.family is Protocol.OTHER:
             return None
+        embedded = self.protocol.version
+        if embedded is not None and not embedded.startswith("FIXT"):
+            try:
+                return embedded if embedded in (registry or self.registry).versions else None
+            except (OSError, ValueError):
+                return None
+        try:
+            inferred = infer_version_from_pairs(
+                self._version_evidence(), registry or self.registry
+            )[0]
+        except (OSError, ValueError):
+            inferred = None
+        return inferred
+
+    def _version_evidence(self) -> list[tuple[str, Any]]:
+        """Wire version statements, including a persisted FIXT transport token."""
+        evidence: list[tuple[str, Any]] = []
+        if self.beginstring:
+            evidence.append(("8", self.beginstring))
+        elif self.protocol.code == "FIXT1.1":
+            evidence.append(("8", "FIXT.1.1"))
+        if self.applverid:
+            evidence.append(("1128", self.applverid))
+        evidence.extend(_stored_pairs(self._residual_entries()))
+        return evidence
+
+    def with_version(self, version: str, registry: FixRegistry | None = None) -> FixMsg:
+        """Copy this row with one transient registry fragment selected."""
+        copied = dataclasses.replace(self)
+        copied.__version = version
+        return copied.link_registry(registry or self.registry)
+
+    @classmethod
+    def into_versions_arrow(
+        cls,
+        source: pyarrow.RecordBatch | Mapping[str, Any],
+        registry: FixRegistry | None = None,
+    ) -> pyarrow.Array:
+        """Exact registry version per parsed row, without another stored column."""
+        if isinstance(source, pyarrow.RecordBatch):
+            columns = {name: source.column(name) for name in source.schema.names}
+            rows = source.num_rows
+        else:
+            columns = source
+            rows = len(next(iter(columns.values()))) if columns else 0
+        return cls._versions_arrow(columns, cls.into_codec(registry), rows)
 
     @property
     def has_indexed_entries(self) -> bool:
@@ -1297,7 +1359,8 @@ class FixMsg(Message):
             )
 
         entries = parsed.column("entries")
-        versions = pyarrow.compute.fill_null(parsed.column("protocolversion"), "")
+        parsed_columns = {name: parsed.column(name) for name in parsed.schema.names}
+        versions = pyarrow.compute.fill_null(cls._versions_arrow(parsed_columns, codec, rows), "")
         parts: list[pyarrow.Array] = []
         positions: list[pyarrow.Array] = []
         for version, where in groups_of(versions):
@@ -1422,14 +1485,21 @@ class FixMsg(Message):
                 parts.append(codec.into_message_entries(pairs))
             positions.append(where)
         entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
-        protocolversion, protocolversionsource = codec.versions_of_entries(
-            entries, columns.get("beginstring"), columns.get("applverid")
+        begin_strings = cls._begin_strings_arrow(columns, rows)
+        versions, _ = codec.versions_of_entries(entries, begin_strings, columns.get("applverid"))
+        public_versions = pyarrow.compute.coalesce(versions, begin_strings)
+        # The raw classifier owns the grammar. Version evidence decorates a
+        # protocol it claimed; it must not reclaim a row one configured rule
+        # rejected as OTHER.
+        claimed = pyarrow.compute.not_equal(
+            Protocol.into_family_arrow(protocols), int(Protocol.OTHER)
+        )
+        public_versions = pyarrow.compute.if_else(
+            claimed, public_versions, pyarrow.scalar(None, pyarrow.string())
         )
         columns.update(
             {
-                "protocol": protocols,
-                "protocolversion": protocolversion,
-                "protocolversionsource": protocolversionsource,
+                "protocol": Protocol.with_versions_arrow(protocols, public_versions),
                 "entries": entries,
             }
         )
@@ -1466,7 +1536,7 @@ class FixMsg(Message):
     ) -> dict[str, Any]:
         """Resolve each version-homogeneous slice and restore batch order."""
         compute = pyarrow.compute
-        versions = compute.fill_null(columns["protocolversion"], "")
+        versions = compute.fill_null(cls._versions_arrow(columns, codec, rows), "")
         parts, positions = [], []
         for version, where in groups_of(versions):
             taken = {
@@ -1478,6 +1548,71 @@ class FixMsg(Message):
         if not parts:
             return {}
         return {name: scattered([part[name] for part in parts], positions) for name in parts[0]}
+
+    @classmethod
+    def _versions_arrow(cls, columns: Mapping[str, Any], codec: Any, rows: int) -> pyarrow.Array:
+        """Exact versions from persisted application authority, then wire evidence."""
+        entries = columns.get("entries")
+        if entries is None:
+            entries = pyarrow.nulls(rows, ENTRIES)
+        inferred, _ = codec.versions_of_entries(
+            entries, cls._begin_strings_arrow(columns, rows), columns.get("applverid")
+        )
+        protocols = columns.get("protocol")
+        if protocols is None:
+            return inferred
+        embedded = Protocol.into_versions_arrow(protocols)
+        authoritative = pyarrow.compute.and_(
+            pyarrow.compute.is_valid(embedded),
+            pyarrow.compute.invert(
+                pyarrow.compute.fill_null(pyarrow.compute.starts_with(embedded, "FIXT"), False)
+            ),
+        )
+        registered = pyarrow.compute.is_in(
+            embedded,
+            value_set=pyarrow.array(codec.registry.versions, pyarrow.string()),
+        )
+        registered = pyarrow.compute.and_(
+            registered,
+            pyarrow.compute.invert(
+                pyarrow.compute.fill_null(pyarrow.compute.starts_with(embedded, "FIXT"), False)
+            ),
+        )
+        resolved = pyarrow.compute.if_else(
+            authoritative,
+            pyarrow.compute.if_else(registered, embedded, pyarrow.scalar(None, pyarrow.string())),
+            inferred,
+        )
+        return pyarrow.compute.if_else(
+            pyarrow.compute.equal(Protocol.into_family_arrow(protocols), int(Protocol.OTHER)),
+            pyarrow.scalar(None, pyarrow.string()),
+            resolved,
+        )
+
+    @classmethod
+    def _begin_strings_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
+        """BeginString evidence, restored from a persisted FIXT protocol token."""
+        begin = columns.get("beginstring")
+        stated = (
+            pyarrow.nulls(rows, pyarrow.string())
+            if begin is None
+            else begin.cast(pyarrow.string(), safe=False)
+        )
+        stated = pyarrow.compute.if_else(
+            pyarrow.compute.equal(stated, ""),
+            pyarrow.scalar(None, pyarrow.string()),
+            stated,
+        )
+        protocols = columns.get("protocol")
+        if protocols is None:
+            return stated
+        versions = Protocol.into_versions_arrow(protocols)
+        transport = pyarrow.compute.if_else(
+            pyarrow.compute.equal(versions, "FIXT1.1"),
+            "FIXT.1.1",
+            pyarrow.scalar(None, pyarrow.string()),
+        )
+        return pyarrow.compute.coalesce(stated, transport)
 
     @classmethod
     def _resolved_columns(
@@ -1953,7 +2088,7 @@ class FixMsg(Message):
 
     def into_market_events(self, **declared: Any) -> Iterator[Any]:
         """Translate this parsed row into its ordered market events."""
-        if self.error:
+        if self.error or self.protocol.family is Protocol.OTHER:
             return
         for event in self.into_fix_events(**declared):
             if self.reason and not event.reason:

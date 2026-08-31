@@ -2163,7 +2163,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMsg.into_field().names) == 111
+    assert len(FixMsg.into_field().names) == 109
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -2171,7 +2171,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     stored = logs.read_arrow_table(FixMsg.into_field())
     assert stored.num_rows == 1, "the same line upserts onto itself"
     row = stored.to_pylist()[0]
-    assert Protocol.from_int(row["protocol"]) is Protocol.FIX
+    assert Protocol.from_int(row["protocol"]).code == "FIX4.2"
     assert row["entries"] == []
     assert [party["partyid"] for party in row["parties"]] == ["BUYSIDE", "XPAR"]
     assert row["msgseqnum"] == 7 and row["sendercompid"] == "BUYSIDE"

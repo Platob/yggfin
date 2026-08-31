@@ -42,13 +42,13 @@ EXPECTED_CONTINUATIONS = 3
 EXPECTED_PROTOCOLS = [
     "OTHER",
     "OTHER",
+    "FIX4.2",
     "FIX",
-    "FIX",
-    "FIX",
+    "FIX4.4",
     # A bare named document, whatever the plugin renders it for.
     "UL",
     # The same names inside a numbered frame, which makes one mixed message.
-    "FIXML",
+    "FIXML4.2",
     "OTHER",
     "OTHER",
     "OTHER",
@@ -282,6 +282,7 @@ def test_text_file_outputs_only_the_message_contract(raw_table: pyarrow.Table) -
     assert raw_table.schema.names == Message.into_field().names
     assert not {
         "protocolversion",
+        "protocolversionsource",
         "Parties",
     } & set(raw_table.schema.names)
     assert {"protocol", *LIFTED_HEADER.values()} <= set(raw_table.schema.names)
@@ -313,9 +314,10 @@ def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) 
 
 
 def test_the_stored_column_and_a_rebuilt_row_agree(table: pyarrow.Table) -> None:
-    """One classifier, so a row rebuilt from its text answers what the batch did."""
+    """The raw classifier agrees with the stored protocol's grammar family."""
     rebuilt = [Message(message=one) for one in table.column("message").to_pylist()]
-    assert [row.protocol.code for row in rebuilt] == _protocols(table)
+    stored = [Protocol.from_int(code).family.code for code in table.column("protocol").to_pylist()]
+    assert [row.protocol.code for row in rebuilt] == stored
 
 
 # -- what a line carries -----------------------------------------------------
@@ -869,6 +871,35 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
     )
     for row in range(EXPECTED_RECORDS):
         _assert_no_semantic_columns(table, row)
+
+
+def test_version_evidence_does_not_override_a_rule_that_rejects_one_row(
+    codec: FixCodec,
+) -> None:
+    rules = Rules(
+        rules=[
+            Rule(protocol="FIX", plugin_pattern="^ONLY$", codec="fix"),
+            Rules.into_default().rule(Protocol.OTHER),
+        ]
+    )
+    own = FixCodec(registry=codec.registry, rules=rules)
+    parsed = FixMsg.from_message_batch(
+        [
+            Message(
+                message="8=FIX.4.4|35=D|11=C1|10=000",
+                plugincode="NOT-ONLY",
+            )
+        ],
+        own,
+    )
+
+    assert Protocol.from_int(parsed.column("protocol")[0].as_py()) is Protocol.OTHER
+    assert parsed.column("entries")[0].as_py() is None
+    roundtripped = next(FixMsg.from_arrow_reader([parsed]))
+    assert roundtripped.protocol is Protocol.OTHER
+    assert roundtripped.resolved_version(codec.registry) is None
+    assert list(roundtripped.into_fix_events(registry=codec.registry)) == []
+    assert list(roundtripped.into_market_events(registry=codec.registry)) == []
 
 
 def test_a_sparse_codec_gets_typed_nulls_for_optional_declared_columns(
@@ -1464,12 +1495,13 @@ def test_a_misc_row_keeps_its_raw_line_and_a_market_row_gives_it_up() -> None:
     assert field.field("message").nullable, "a market row leaves it null"
 
 
-def test_protocol_version_agrees_with_the_columns_it_derives_from(
+def test_protocol_agrees_with_the_version_evidence_it_derives_from(
     resolved: pyarrow.Table,
 ) -> None:
-    """A row where the stored version and its own evidence disagree is corrupt."""
+    """A row where the protocol token and its own evidence disagree is corrupt."""
+    versions = [Protocol.from_int(code).version for code in resolved.column("protocol").to_pylist()]
     for version, begin, appl in zip(
-        resolved.column("protocolversion").to_pylist(),
+        versions,
         resolved.column("beginstring").to_pylist(),
         resolved.column("applverid").to_pylist(),
         strict=True,
@@ -1483,25 +1515,22 @@ def test_protocol_version_agrees_with_the_columns_it_derives_from(
         assert version.replace(".", "") in str(begin).replace(".", ""), (version, begin)
 
 
-def test_a_version_nothing_infers_stays_null_and_says_why(codec: FixCodec) -> None:
-    """Null because the message carried none, told apart from null because nothing tried."""
+def test_a_version_nothing_infers_keeps_the_unversioned_protocol(codec: FixCodec) -> None:
     messages = pyarrow.array(
         ["8=FIXT.1.1|35=D|11=C1|10=000", "nothing about this line is a message"],
         pyarrow.string(),
     )
     parsed = _parsed_lines(codec, *messages.to_pylist())
-    assert parsed.column("protocolversion").to_pylist() == [None, None]
-    assert parsed.column("protocolversionsource").to_pylist() == ["none", "none"], (
-        "a FIXT header with no ApplVerID resolves nothing, and neither does a non-message"
-    )
+    assert _protocols(parsed) == ["FIXT1.1", "OTHER"]
+    assert not {"protocolversion", "protocolversionsource"} & set(parsed.schema.names)
 
 
 def test_a_fixt_message_resolves_through_its_application_version(codec: FixCodec) -> None:
     """FIXT is the transport; `ApplVerID <1128>` says which application version."""
     messages = pyarrow.array(["8=FIXT.1.1|35=D|1128=9|11=C1|10=000"], pyarrow.string())
     parsed = _parsed_lines(codec, *messages.to_pylist())
-    assert parsed.column("protocolversion").to_pylist() == ["5.0.SP2"]
-    assert parsed.column("protocolversionsource").to_pylist() == ["application_version"]
+    assert _protocols(parsed) == ["FIX5SP2"]
+    assert Protocol.from_int(parsed.column("protocol")[0].as_py()).version == "5.0.SP2"
 
 
 def test_wire_order_survives_dictionary_completion(codec: FixCodec) -> None:

@@ -37,8 +37,8 @@ def test_char_is_a_string_not_one_character() -> None:
         ("ARRAY", pyarrow.string()),
         ("varchar", pyarrow.string()),
         ("Currency", pyarrow.string()),
-        ("UTCTimestamp", pyarrow.timestamp("ns")),
-        ("datetime", pyarrow.timestamp("ns")),
+        ("UTCTimestamp", pyarrow.timestamp("us")),
+        ("datetime", pyarrow.timestamp("us")),
         ("data", pyarrow.binary()),
     ],
 )
@@ -82,7 +82,7 @@ def test_every_point_in_time_is_a_timestamp(datatype: str) -> None:
     The reader normalises all three to the same epoch nanoseconds, and a
     timestamp is the one temporal type a zone can still be applied to.
     """
-    assert arrow_type_of(datatype) == pyarrow.timestamp("ns")
+    assert arrow_type_of(datatype) == pyarrow.timestamp("us")
 
 
 def test_a_period_is_not_an_instant_and_stays_text() -> None:
@@ -252,6 +252,18 @@ def test_a_stamp_a_date_and_a_time_of_day_each_read_as_the_type_declared() -> No
     millis = cast_arrow_fix(pyarrow.array(["10:30:00.5"]), pyarrow.time32("ms"))
     assert seconds.to_pylist() == [datetime.time(10, 30)]
     assert millis.to_pylist() == [datetime.time(10, 30, 0, 500000)]
+
+
+def test_standard_and_iso_dashed_dates_share_the_timestamp_reading() -> None:
+    spelled = ["20260821", "2026-08-21", "2026-08-21T10:30:00.25"]
+    expected = [
+        datetime.datetime(2026, 8, 21),
+        datetime.datetime(2026, 8, 21),
+        datetime.datetime(2026, 8, 21, 10, 30, 0, 250000),
+    ]
+
+    assert cast_arrow_fix(pyarrow.array(spelled), pyarrow.timestamp("us")).to_pylist() == expected
+    assert [scalar_fix_temporal(value, pyarrow.timestamp("us")) for value in spelled] == expected
 
 
 def test_binary_keeps_the_bytes_the_line_carried() -> None:

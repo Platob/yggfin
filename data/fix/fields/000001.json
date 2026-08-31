@@ -55,7 +55,7 @@
  },
  "503": {
   "name": "CardStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The start date of the card as specified on the card being used for payment.",
   "fix": {
@@ -73,7 +73,7 @@
  },
  "504": {
   "name": "PaymentDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The date written on a cheque or date payment should be submitted to the relevant clearing system.",
   "fix": {
@@ -270,7 +270,7 @@
  },
  "515": {
   "name": "ExecValuationPoint",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "For CIV - a date and time stamp to indicate the fund valuation point with respect to which a order was priced by the fund manager.",
   "fix": {
@@ -741,7 +741,7 @@
  },
  "541": {
   "name": "MaturityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date of maturity.",
   "fix": {
@@ -759,7 +759,7 @@
  },
  "542": {
   "name": "UnderlyingMaturityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Underlying security's maturity date. See MaturityDate (541) field for description",
   "fix": {
@@ -1557,7 +1557,7 @@
  },
  "586": {
   "name": "OrigOrdModTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The most recent (or current) modification TransactTime (tag 60) reported on an Execution Report for the order. The OrigOrdModTime is provided as an optional field on Order Cancel Request and Order Cancel Replace Requests to identify that the state of the order has not changed since the request was issued. The use of this approach is not recommended.",
   "fix": {
@@ -1594,7 +1594,7 @@
  },
  "588": {
   "name": "LegSettlDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Refer to description for SettlDate[64]",
   "fix": {
@@ -2012,7 +2012,7 @@
  },
  "611": {
   "name": "LegMaturityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description",
   "fix": {
@@ -2337,7 +2337,7 @@
  },
  "629": {
   "name": "HopSendingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time that HopCompID (628) sent the message. It is recommended that this value be the SendingTime (52) of the message sent by the third party. Applicable when messages are communicated/re-distributed via third parties which function as service bureaus or \"hubs\". Only applicable if OnBehalfOfCompID (115) is being used.",
   "fix": {
@@ -3536,7 +3536,7 @@
  },
  "696": {
   "name": "YieldRedemptionDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date to which the yield has been calculated (i.e. maturity, par call or current call, pre-refunded date).",
   "fix": {
@@ -3625,7 +3625,7 @@
  },
  "701": {
   "name": "YieldCalcDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Include as needed to clarify yield irregularities associated with date, e.g. when it falls on a non-business day.",
   "fix": {
@@ -3877,7 +3877,7 @@
  },
  "715": {
   "name": "ClearingBusinessDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The \"Clearing Business Date\" referred to by this maintenance request.",
   "fix": {
@@ -4301,7 +4301,7 @@
  },
  "739": {
   "name": "LegDatedDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the Issue Date and the Interest Accrual Date",
   "fix": {
@@ -4373,7 +4373,7 @@
  },
  "743": {
   "name": "DeliveryDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date of delivery.",
   "fix": {
@@ -4833,7 +4833,7 @@
  },
  "769": {
   "name": "TrdRegTimestamp",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Traded / Regulatory timestamp value. Use to store time information required by government regulators or self regulatory organizations (such as an exchange or clearing house).",
   "fix": {
@@ -5013,7 +5013,7 @@
  },
  "779": {
   "name": "LastUpdateTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Timestamp of last update to data item (or creation if no updates made since creation).",
   "fix": {
@@ -6575,7 +6575,7 @@
  },
  "866": {
   "name": "EventDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date of event",
   "fix": {
@@ -6702,7 +6702,7 @@
  },
  "873": {
   "name": "DatedDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The effective date of a new securities issue determined by its underwriters. Often but not always the same as the Issue Date and the Interest Accrual Date",
   "fix": {
@@ -6720,7 +6720,7 @@
  },
  "874": {
   "name": "InterestAccrualDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the Issue Date and the Dated Date",
   "fix": {
@@ -7449,7 +7449,7 @@
  },
  "915": {
   "name": "AgreementDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "A reference to the date the underlying agreement specified by AgreementID and AgreementDesc was executed.",
   "fix": {
@@ -7467,7 +7467,7 @@
  },
  "916": {
   "name": "StartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Start date of a financing deal, i.e. the date the buyer pays the seller cash and takes control of the collateral",
   "fix": {
@@ -7485,7 +7485,7 @@
  },
  "917": {
   "name": "EndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "End date of a financing deal, i.e. the date the seller reimburses the buyer and takes back control of the collateral",
   "fix": {
@@ -8184,7 +8184,7 @@
  },
  "956": {
   "name": "LegInterestAccrualDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The start date used for calculating accrued interest on debt instruments which are being sold between interest payment dates. Often but not always the same as the Issue Date and the Dated Date",
   "fix": {
@@ -8292,7 +8292,7 @@
  },
  "962": {
   "name": "SideTimeInForce",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Indicates how long the order as specified in the side stays in effect. SideTimeInForce allows a two-sided cross order to specify order behavior separately for each side. Absence of this field indicates that TimeInForce should be referenced. SideTimeInForce will override TimeInForce if both are provided.",
   "fix": {
@@ -8545,7 +8545,7 @@
  },
  "976": {
   "name": "QuantityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date associated to the quantity that is being reported for the position.",
   "fix": {
@@ -8742,7 +8742,7 @@
  },
  "987": {
   "name": "UnderlyingSettlementDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date the underlying instrument will settle. Used for derivatives that deliver into more than one underlying instrument. Settlement dates can vary across underlying instruments.",
   "fix": {

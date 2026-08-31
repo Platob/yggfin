@@ -6,6 +6,7 @@ import pyarrow
 import pytest
 
 from rekep.market import Book, Event, Execution, FixEvents, Order, Side, State
+from rekep.market.identity import hash_bytes_of
 
 
 def report(
@@ -94,7 +95,7 @@ def test_linked_parentless_pair_does_not_reduce_the_resulting_order_twice() -> N
     partial = report(1, "1", "F", last_qty=30.0, leavesqty=70.0)
     resulting, execution = partial
     execution.parenthash = []
-    execution.linkedhashes = [placed[0].xhash]
+    execution.linkedhashes = [placed[0].hash]
 
     latest = folded(placed, [resulting, execution])[-1]
 
@@ -277,13 +278,16 @@ def test_paired_execution_is_completed_from_the_published_order() -> None:
         leavesqty=70.0,
         side=None,
     )
-    raw_link = raw_order.xhash
+    raw_link = raw_order.hash
 
     latest = folded(accepted(), [raw_order, raw_execution])[-1]
 
+    order = latest.deltas[0]
     execution = latest.executions[0]
     assert execution.side is Side.BID
-    assert execution.primary_linked_hash == latest.deltas[0].xhash
+    assert execution.primary_linked_hash == order.hash
+    assert order.linkedhashes == [execution.hash]
+    assert set(latest.linkedhashes) == {order.hash, execution.hash}
     assert raw_link not in execution.linkedhashes
 
 
@@ -315,13 +319,15 @@ def test_explicit_null_book_collections_and_depths_normalize_once() -> None:
 
 
 def test_linked_hashes_preserve_order_deduplicate_and_round_trip_through_arrow() -> None:
-    first = Event(unix=1, xhash=11)
-    related = Event(unix=2, xhash=22)
-    event = Event(unix=3, xhash=33).link_to(first, related, first)
-    event.link_to(Event(unix=4, xhash=33))
-    assert event.linkedhashes == [11, 22]
+    first = Event(unix=1, code="first").identify()
+    related = Event(unix=2, code="related").identify()
+    event = Event(unix=3, code="event").identify()
+    identity = event.hash, event.vhash
+    event.link_to(first, related, first, event)
+    assert event.linkedhashes == [first.hash, related.hash]
+    assert (event.hash, event.vhash) == identity, "relations do not circularly define either hash"
 
     schema = Event.into_field().into_arrow_schema()
     stored = pyarrow.Table.from_pylist([event.into_row()], schema=schema).to_pylist()[0]
-    assert stored["linkedhashes"] == [11, 22]
-    assert Event.from_dict(stored).linkedhashes == [11, 22]
+    assert stored["linkedhashes"] == [hash_bytes_of(first.hash), hash_bytes_of(related.hash)]
+    assert Event.from_dict(stored).linkedhashes == [first.hash, related.hash]

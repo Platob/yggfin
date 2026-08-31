@@ -129,7 +129,7 @@
  },
  "41008": {
   "name": "ComplexEventPeriodDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41008",
@@ -145,7 +145,7 @@
  },
  "41009": {
   "name": "ComplexEventPeriodTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41009",
@@ -322,7 +322,7 @@
  },
  "41020": {
   "name": "ComplexEventDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41020",
@@ -419,7 +419,7 @@
  },
  "41026": {
   "name": "ComplexEventDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41026",
@@ -435,7 +435,7 @@
  },
  "41027": {
   "name": "ComplexEventFixingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41027",
@@ -515,7 +515,7 @@
  },
  "41032": {
   "name": "ComplexEventScheduleStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41032",
@@ -531,7 +531,7 @@
  },
  "41033": {
   "name": "ComplexEventScheduleEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41033",
@@ -2002,7 +2002,7 @@
  },
  "41124": {
   "name": "OptionExerciseStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41124",
@@ -2082,7 +2082,7 @@
  },
  "41129": {
   "name": "OptionExerciseStartDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41129",
@@ -2114,7 +2114,7 @@
  },
  "41131": {
   "name": "OptionExerciseNominationDeadline",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41131",
@@ -2130,7 +2130,7 @@
  },
  "41132": {
   "name": "OptionExerciseFirstDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41132",
@@ -2146,7 +2146,7 @@
  },
  "41133": {
   "name": "OptionExerciseLastDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41133",
@@ -2162,7 +2162,7 @@
  },
  "41134": {
   "name": "OptionExerciseEarliestTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41134",
@@ -2178,7 +2178,7 @@
  },
  "41135": {
   "name": "OptionExerciseLatestTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41135",
@@ -2226,7 +2226,7 @@
  },
  "41138": {
   "name": "OptionExerciseDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41138",
@@ -2419,7 +2419,7 @@
  },
  "41150": {
   "name": "OptionExerciseExpirationTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41150",
@@ -2467,7 +2467,7 @@
  },
  "41153": {
   "name": "OptionExerciseExpirationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41153",
@@ -3560,7 +3560,7 @@
  },
  "41221": {
   "name": "PaymentStreamPaymentDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41221",
@@ -3624,7 +3624,7 @@
  },
  "41225": {
   "name": "PaymentStreamPricingDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41225",
@@ -3737,7 +3737,7 @@
  },
  "41232": {
   "name": "PricingDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41232",
@@ -3769,7 +3769,7 @@
  },
  "41234": {
   "name": "PricingDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41234",
@@ -3785,7 +3785,7 @@
  },
  "41235": {
   "name": "PricingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41235",
@@ -3897,7 +3897,7 @@
  },
  "41242": {
   "name": "StreamCalculationPeriodDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41242",
@@ -4314,7 +4314,7 @@
  },
  "41268": {
   "name": "StreamCommoditySettlDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41268",
@@ -4346,7 +4346,7 @@
  },
  "41270": {
   "name": "StreamCommoditySettlDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41270",
@@ -5293,7 +5293,7 @@
  },
  "41329": {
   "name": "LegAdditionalTermBondMaturityDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41329",
@@ -5613,7 +5613,7 @@
  },
  "41349": {
   "name": "LegCashSettlValuationTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41349",
@@ -6061,7 +6061,7 @@
  },
  "41377": {
   "name": "LegComplexEventPeriodDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41377",
@@ -6077,7 +6077,7 @@
  },
  "41378": {
   "name": "LegComplexEventPeriodTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41378",
@@ -6253,7 +6253,7 @@
  },
  "41389": {
   "name": "LegComplexEventDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41389",
@@ -6349,7 +6349,7 @@
  },
  "41395": {
   "name": "LegComplexEventDateAdjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41395",
@@ -6365,7 +6365,7 @@
  },
  "41396": {
   "name": "LegComplexEventFixingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41396",
@@ -6445,7 +6445,7 @@
  },
  "41401": {
   "name": "LegComplexEventScheduleStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41401",
@@ -6461,7 +6461,7 @@
  },
  "41402": {
   "name": "LegComplexEventScheduleEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41402",
@@ -8013,7 +8013,7 @@
  },
  "41499": {
   "name": "LegOptionExerciseStartDateUnadjusted",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "41499",

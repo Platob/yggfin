@@ -1,15 +1,10 @@
 # Parse market
 
-`tasks/parse_market/parse_market.ipynb` reads
-`fix.market` in `(unix, msgseqnum, hash)` order. With the default
-`books: true`, it folds that stream through `BookIterator`, writes only
-`market.books`, and leaves the two flatten notebooks to publish orders and
-executions.
+`parse_market` reads `fix.market` in event order and produces market events.
 
 ## Run this step
 
-After `parse_fix` has populated `fix.market`, run the configured book mode from
-the repository root:
+Book mode folds resting state and writes `market.books`:
 
 ```bash
 uv run --project python --group runner rekep task run \
@@ -17,10 +12,7 @@ uv run --project python --group runner rekep task run \
   --output parse_market.executed.ipynb
 ```
 
-The package, a FIX registry and a catalog have to exist first:
-[deploy from scratch](../operations/deploy.md).
-
-Bypass Books and write FIX-carried Orders and Executions directly with:
+Direct mode writes only the Order and Execution events carried by FIX:
 
 ```bash
 uv run --project python --group runner rekep task run \
@@ -29,49 +21,38 @@ uv run --project python --group runner rekep task run \
   --output parse_market.direct.executed.ipynb
 ```
 
-With `books: false`, it does not construct or write Books.
-`FixMsg.into_market_arrow_batches()` adapts the input stream into bounded,
-typed Order and Execution batches for `order_target` and `execution_target`.
-Either direct target may be null, but at least one is required.
+Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 
-Flat messages use the selected FIX dictionary's dispatch, field tags, and
-lifecycle mappings through Arrow kernels. Repeating groups and uncommon or
-custom shapes fall back to the same scalar translator without changing output.
+## Modes
 
-Direct rows are exactly the events carried by FIX: the mode does not create
-book snapshots, book-generated expiry or rejection rows, lifecycle completion
-from resting state, or a carrying `Book.hash` parent.
+| `books` | writes | stateful behavior |
+| --- | --- | --- |
+| `true` | `market.books` | snapshots, lifecycle completion, expiry and rejection |
+| `false` | configured Order/Execution targets | none; captured events only |
 
-Use empty direct targets, or targets dedicated to this mode, when switching an
-existing deployment: merge-by cannot remove older book-normalized rows whose
-hashes differ from their raw FIX versions.
+```yaml
+source: fix.market
+books: true
+target: market.books
+order_target: market.orders
+execution_target: market.executions
+snapshot_every: 3600000000000
+max_lateness_ns: 900000000000
+max_order_age_ns: 86400000000000
+max_side_alive: 10000
+commit_row_size: 250000
+```
 
-For a bounded interval the reader scans a wider source range, then filters
-each emitted Book or event back to `[start, end)`. The scan starts at the hour
-containing `start` minus one hour and stops after the hour containing `end`
-plus 15 minutes. In book mode, prior Book snapshots use that recovery history
-to restore live orders.
+The FIX registry supplies message dispatch and lifecycle mappings. Flat rows
+use Arrow kernels; structured or custom rows fall back to the same scalar
+translator.
 
-`parse_market` never reads `market.instruments`. `BookIterator` translates the
-sorted `fix.market` stream and uses the transient Instrument facts carried by
-each market event.
+A bounded run starts one hour before the hour containing `start` and ends
+`max_lateness_ns` after the hour ceiling of `end`, then emits only
+`[start, end)`. Both modes exclude rows whose `error` is non-null. They read
+the transient `Instrument` facts on each FIX event and never read
+`market.instruments`.
 
-Snapshot generation, terminal-state handling, one-day inactivity expiry, and
-internal rejection reasons belong to the shared event and book models rather
-than the notebook. Direct mode skips captured `InstrumentUpdate` events and
-keeps the `Instrument` facts carried by each translated FIX message.
-
-The adjacent `parse_market.yml` sets the FIX dictionary, mode, all three
-targets, snapshot cadence, lateness, live-order age, side bound, catalog, and
-commit size. The same dictionary controls both direct and book translation.
-Switching only `books` to `false` selects the configured direct targets.
-
-The result's `products` mapping reports every attempted Book, Order and
-Execution; `read` and `written` are what this stage itself produced.
-In book mode the Order and Execution counts come from the selected Books'
-nested deltas; in direct mode they are the translated rows written here.
-
-The separate `flatten` mapping is downstream work: it carries those nested
-counts in book mode and stays zero in direct mode, where no flatten task is
-needed. `commit_row_size` must be positive and bounds direct-event Arrow
-batches and storage commits.
+Airflow schedules flattening only when book mode reports nested Orders or
+Executions. Direct mode writes those targets itself and reports zero flatten
+work.

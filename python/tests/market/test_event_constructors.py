@@ -9,6 +9,7 @@ import pytest
 from rekep.entries import Entry
 from rekep.enums import Currency, EventType, OptionKind, Side, TimeInForce
 from rekep.market import Execution, Instrument, Leg, Order
+from rekep.market.identity import NIL
 from rekep.text import FixMsg
 
 
@@ -81,6 +82,7 @@ def test_subclass_declarations_select_their_abstract_market_slots() -> None:
 def test_promoted_components_convert_by_their_declared_fix_fields() -> None:
     source = FixMsg(
         unix=31,
+        protocol="FIX4.4",
         instrument=Instrument(
             symbol="SPREAD",
             legs=[
@@ -89,7 +91,7 @@ def test_promoted_components_convert_by_their_declared_fix_fields() -> None:
                     side=Side.BUY,
                     ratio=2,
                     currency="USD",
-                    maturitydate=datetime.date(2027, 3, 19),
+                    maturitydate=datetime.datetime(2027, 3, 19),
                     putorcall=OptionKind.CALL,
                 )
             ],
@@ -104,7 +106,7 @@ def test_promoted_components_convert_by_their_declared_fix_fields() -> None:
     assert (leg.symbol, leg.ratio, leg.maturitydate) == (
         "LEG-A",
         2.0,
-        datetime.date(2027, 3, 19),
+        datetime.datetime(2027, 3, 19),
     )
     assert leg.side is Side.BUY and leg.currency is Currency.USD
     assert leg.putorcall is OptionKind.CALL
@@ -138,8 +140,33 @@ def test_registry_scalars_are_projected_to_the_declared_python_types() -> None:
     execution = Execution.from_entries([Entry.of(tag=64, value="20260818")], version="4.4")
 
     assert instrument.putorcall is OptionKind.CALL
-    assert execution.settldate == datetime.date(2026, 8, 18)
-    assert type(execution.settldate) is datetime.date
+    assert execution.settldate == datetime.datetime(2026, 8, 18)
+    assert type(execution.settldate) is datetime.datetime
+
+
+def test_a_local_settlement_rule_can_retain_a_clock() -> None:
+    execution = Execution.from_entries(
+        [Entry.of(tag=64, value="20260818-16:30:00.250")], version="4.4"
+    )
+    assert execution.settldate == datetime.datetime(2026, 8, 18, 16, 30, 0, 250000)
+
+
+def test_aware_local_settlement_matches_scalar_and_arrow_identity() -> None:
+    east = datetime.timezone(datetime.timedelta(hours=2))
+    execution = Execution(
+        unix=1_700_000_000_000_000_000,
+        execid="EXEC-1",
+        settldate=datetime.datetime(2026, 8, 18, 16, 30, 0, 250000, tzinfo=east),
+    ).identify()
+
+    assert execution.settldate == datetime.datetime(2026, 8, 18, 14, 30, 0, 250000)
+    (stored,) = Execution.from_arrow_reader([Execution.into_arrow_batch([execution])])
+    stored.vhash = NIL
+    stored.hash = NIL
+    stored.identify()
+
+    assert stored.settldate == execution.settldate
+    assert stored.vhash == execution.vhash
 
 
 def test_from_fixmsg_refuses_an_unparsed_source() -> None:

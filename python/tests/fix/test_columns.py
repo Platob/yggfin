@@ -100,8 +100,8 @@ def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
     the dictionary and a day to a reader, and it is stored without a zone.
     """
     for tag in STAMPS:
-        assert registry.field(tag).dtype == pyarrow.timestamp("ns"), tag
-    timestamps = {tag for tag, _ in FLAT if registry.field(tag).dtype == pyarrow.timestamp("ns")}
+        assert registry.field(tag).dtype == pyarrow.timestamp("us"), tag
+    timestamps = {tag for tag, _ in FLAT if registry.field(tag).dtype == pyarrow.timestamp("us")}
     assert STAMPS <= timestamps, "and every documented clock is a lifted timestamp"
 
 

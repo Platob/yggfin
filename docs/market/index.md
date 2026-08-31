@@ -2,9 +2,10 @@
 
 Market tables store immutable event versions. `vhash` identifies its value,
 `hash` anchors that value to the event time, `prevhash` names its predecessor,
-`xhash` identifies its lifecycle, and `linkedhashes` holds
-ordered lifecycle hashes relating order, execution and book rows —
-deduplicated, and never pointing at the event's own lifecycle.
+and `xhash` identifies its lifecycle. `linkedhashes` holds ordered, exact
+`hash` values of related event versions. Links are deduplicated and never
+point at the event itself; `parenthash` separately records construction
+provenance.
 
 Each product has its own page: [Instrument update](../products/instrument.md),
 [Order](../products/order.md), [Execution](../products/execution.md),
@@ -14,14 +15,25 @@ Each product has its own page: [Instrument update](../products/instrument.md),
 from rekep import FixMsg
 
 line = "8=FIX.4.4|35=8|11=C1|37=O1|17=E1|55=BTC-USD|54=1|31=100.25|32=10|38=10|39=2|150=F|10=000"
-for event in FixMsg.from_text(line).into_market_events(fix_version="4.4"):
+events = list(FixMsg.from_text(line).into_market_events(fix_version="4.4"))
+for event in events:
     print(type(event).__name__, event.state.name, event.qty)
+
+order, execution = events
+print(order.linkedhashes == [execution.hash])
+print(execution.linkedhashes == [order.hash])
 ```
 
 ```text
 Order FILLED 0.0
 Execution FILLED 10.0
+True
+True
 ```
+
+Relations do not enter `vhash`, so the two final event hashes can point at
+each other without a circular identity. The complete byte contract is in
+[Identity and binary conversions](../contracts/identity.md).
 
 `MarketEvent` adds `instrumentxhash` and its readable `symbolticker`,
 kind, side, price, quantity, notional, currency, and their previous values.

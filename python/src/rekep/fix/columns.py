@@ -15,7 +15,7 @@ from rekep.entries import TAG as TAG
 from rekep.entries import Entry as Entry
 from rekep.enums import SecurityIDSource
 from rekep.fields import Field, column_name
-from rekep.fix.fields import UTC_DATATYPES
+from rekep.fix.fields import UTC_DATATYPES, arrow_type_of
 from rekep.fix.registry import FixRegistry
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
@@ -192,14 +192,21 @@ _STAMP_FIELDS: tuple[str, ...] = (
 )
 
 
-def _physical_type(member: Field) -> pyarrow.DataType:
-    """Registry type at Iceberg width, zoned only when FIX documents UTC."""
+def physical_type(member: Field) -> pyarrow.DataType | None:
+    """FIX-backed column type at Iceberg width and its documented zone.
+
+    Dates are timestamps too: midnight is a usable first value, while a
+    `date32` column cannot retain a later feed rule that supplies a clock.
+    """
     dtype = member.dtype
-    if dtype is None:  # pragma: no cover - generated registry invariant
-        raise ValueError(f"FIX field {member.name!r} has no Arrow type")
-    if not pyarrow.types.is_timestamp(dtype):
-        return dtype
     datatype = member.fix.get("type", "").strip().lower()
+    if dtype is None:
+        inferred = arrow_type_of(datatype)
+        if not pyarrow.types.is_temporal(inferred):
+            return None
+        dtype = inferred
+    if not (pyarrow.types.is_date(dtype) or pyarrow.types.is_timestamp(dtype)):
+        return dtype
     documented = (member.description or "").lower()
     zoned = datatype in UTC_DATATYPES or "expressed in utc" in documented
     return pyarrow.timestamp("us", tz="UTC" if zoned else None)
@@ -242,9 +249,12 @@ def _declaration(member: Field) -> Field:
     metadata = column_metadata(member.metadata)
     metadata["fix:name"] = member.name
     metadata["fix:display"] = member.name
+    dtype = physical_type(member)
+    if dtype is None:  # pragma: no cover - generated registry invariant
+        raise ValueError(f"FIX field {member.name!r} has no Arrow type")
     return Field(
         name=column_name(member.name),
-        dtype=_physical_type(member),
+        dtype=dtype,
         nullable=True,
         metadata=metadata,
     )

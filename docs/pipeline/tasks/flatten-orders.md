@@ -1,14 +1,9 @@
 # Flatten orders
 
-`tasks/flatten_orders/flatten_orders.ipynb`
-streams `Book.deltas` into the existing `Order` contract and writes
-`market.orders`. It retains event identity and appends the carrying `Book.hash`
-to `parenthash`.
+`flatten_orders` streams `Book.deltas` into `market.orders`, preserving event
+identity and appending the carrying `Book.hash` to `parenthash`.
 
 ## Run this step
-
-In book mode, after `parse_market` has populated `market.books`, run from the
-repository root:
 
 ```bash
 uv run --project python --group runner rekep task run \
@@ -16,13 +11,12 @@ uv run --project python --group runner rekep task run \
   --output flatten_orders.executed.ipynb
 ```
 
-The package, a FIX registry and a catalog have to exist first:
-[deploy from scratch](../operations/deploy.md).
+```yaml
+source: market.books
+target: market.orders
+merge_by: true
+commit_row_size: 250000
+```
 
-The adjacent `flatten_orders.yml` sets the `[start, end)` interval, source,
-target, catalog, and commit size. Replay skips existing event keys when
-`merge_by` is enabled.
-
-Airflow runs this task only when `parse_market` reports nested Order rows in
-`flatten.orders`. Direct mode leaves that count zero because it writes its
-configured order target itself.
+Airflow runs this only when book mode reports `flatten.orders`. Direct market
+mode writes Orders itself. Replay skips existing event keys.

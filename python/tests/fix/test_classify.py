@@ -8,7 +8,6 @@ and a real value would be neither needed nor safe here.
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 import pyarrow
@@ -29,13 +28,10 @@ from rekep.fix.classify import (
     count_reader,
 )
 from rekep.fix.entries import ANY_VERSION, Alias, record_kind
-from rekep.fix.fields import namespaced_field
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
 
 FIXTURES = Path(__file__).parent / "fixtures"
-
-#: The published dictionary, which is what a real run classifies against.
-PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 #: Derived from `bridge_keys.txt`, then pinned: eight lines, seven of which
 #: carry a bridge message, spelling twenty-one distinct key names -- distinct
@@ -46,9 +42,34 @@ EXPECTED_MESSAGES = 7
 EXPECTED_NAMES = 21
 
 
+def _registry_at(path: Path) -> FixRegistry:
+    """The exact dictionary facts the synthetic capture exercises."""
+    registry = FixRegistry(cache_dir=path)
+    registry._store_fields(
+        "4.4",
+        [
+            fix_field("BeginString", 8, "String", version="4.4"),
+            fix_field("MsgType", 35, "String", version="4.4"),
+            fix_field("Side", 54, "char", version="4.4"),
+            fix_field("PartyRole", 452, "int", version="4.4"),
+            fix_field("OrderQty", 38, "Qty", version="4.4"),
+            fix_field("ClOrdID", 11, "String", version="4.4"),
+            fix_field("PartyID", 448, "String", version="4.4"),
+            fix_field("ClientID", 109, "String", version="4.4"),
+            fix_field("NoPartyIDs", 453, "NumInGroup", version="4.4"),
+            fix_field("LegAccount", 2680, "String", version="4.4"),
+        ],
+        components=[],
+    )
+    isin = namespaced_field("ISINCODE", "String")
+    isin.fix.named_aliases = (Alias("AMON.ISINCODE", "fixture", 1),)
+    registry.add_field(isin)
+    return registry
+
+
 @pytest.fixture(scope="module")
-def registry() -> FixRegistry:
-    return FixRegistry(cache_dir=PUBLISHED)
+def registry(tmp_path_factory: pytest.TempPathFactory) -> FixRegistry:
+    return _registry_at(tmp_path_factory.mktemp("classified"))
 
 
 @pytest.fixture(scope="module")
@@ -276,20 +297,10 @@ def test_the_report_is_json_and_carries_names_and_counts_only(report: KeyReport)
 # -- and into the registry ---------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def archive(tmp_path_factory: pytest.TempPathFactory, registry: FixRegistry) -> Path:
-    """The published dictionary written out once, for `editable` to copy.
-
-    Writing it is the expensive half and the bytes are the same every time;
-    what a test needs of its own is the store it then edits.
-    """
-    return Path(registry.into_zip(tmp_path_factory.mktemp("published") / "fix.zip"))
-
-
 @pytest.fixture
-def editable(tmp_path: Path, archive: Path) -> FixRegistry:
-    """A writable copy of the published dictionary, for the apply path."""
-    return FixRegistry(cache_dir=shutil.copy(archive, tmp_path / "fix.zip"))
+def editable(tmp_path: Path) -> FixRegistry:
+    """A fresh writable dictionary for the apply path."""
+    return _registry_at(tmp_path / "fix")
 
 
 def test_nothing_is_applied_unless_it_is_asked_for(

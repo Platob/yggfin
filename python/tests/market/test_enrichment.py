@@ -144,23 +144,30 @@ def test_the_security_type_map_only_holds_values_the_dictionary_defines() -> Non
 
 def test_a_maturity_date_is_read_as_given() -> None:
     found = instrument_of(f"{HEAD}|55=ESZ6|541=20261218")
-    assert found.maturitydate == datetime.date(2026, 12, 18)
+    assert found.maturitydate == datetime.datetime(2026, 12, 18)
+
+
+def test_a_maturity_rule_can_retain_a_local_clock() -> None:
+    found = instrument_of(f"{HEAD}|55=ESZ6|541=20261218-13:45:01.123456")
+    assert found.maturitydate == datetime.datetime(2026, 12, 18, 13, 45, 1, 123456)
 
 
 def test_a_month_year_maturity_is_the_month_it_names() -> None:
     """The older of the two ways to say it, and a venue that sends it usually sends
     no `MaturityDate <541>` at all -- so reading it is the difference between a
     dated future and an undated one."""
-    assert instrument_of(f"{HEAD}|55=ESZ6|200=202612").maturitydate == datetime.date(2026, 12, 1)
+    assert instrument_of(f"{HEAD}|55=ESZ6|200=202612").maturitydate == datetime.datetime(
+        2026, 12, 1
+    )
 
 
 def test_a_month_year_with_a_day_in_it_keeps_the_day() -> None:
-    assert _month_year("20261218") == datetime.date(2026, 12, 18)
+    assert _month_year("20261218") == datetime.datetime(2026, 12, 18)
 
 
 def test_the_exact_date_wins_over_the_month() -> None:
     found = instrument_of(f"{HEAD}|55=ESZ6|200=202612|541=20261218")
-    assert found.maturitydate == datetime.date(2026, 12, 18)
+    assert found.maturitydate == datetime.datetime(2026, 12, 18)
 
 
 @pytest.mark.parametrize("text", ["", None, "2026", "abcdef", "202613", "20261232"])
@@ -193,8 +200,8 @@ def test_a_leg_is_read_with_the_same_rules_as_the_instrument_it_is_of() -> None:
     """Every member is the instrument field with a `Leg` in front of it."""
     near, far = instrument_of(SPREAD).legs
     assert near.kind is AssetKind.FUTURE and near.contractmultiplier == 50.0
-    assert near.maturitydate == datetime.date(2026, 12, 1), "its month-year, read the same way"
-    assert far.maturitydate == datetime.date(2027, 3, 20)
+    assert near.maturitydate == datetime.datetime(2026, 12, 1), "its month-year, read the same way"
+    assert far.maturitydate == datetime.datetime(2027, 3, 20)
     assert far.strikeprice == 4500.0 and far.putorcall is OptionKind.CALL
     assert near.currency is Currency.USD and near.securityexchange == "XCME"
 

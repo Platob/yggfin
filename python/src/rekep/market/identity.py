@@ -221,13 +221,13 @@ def stored_member(name: str, value: Any) -> Any:
 
     Named rather than typed because the vectorized builders assemble a batch
     member by member and never hold the whole row: `hash`, `prevhash`, and the
-    `parenthash` list use the same stored width wherever they appear.
+    event-hash lists use the same stored width wherever they appear.
     """
     if value is None:
         return None
     if name in _WIDE_MEMBERS:
         return hash_bytes_of(value)
-    if name == "parenthash":
+    if name in _WIDE_LIST_MEMBERS:
         return [hash_bytes_of(one) for one in value]
     return value
 
@@ -243,7 +243,7 @@ def read_member(name: str, value: Any) -> Any:
         return None
     if name in _WIDE_MEMBERS:
         return hash_int_of(value) or NIL
-    if name == "parenthash":
+    if name in _WIDE_LIST_MEMBERS:
         return [hash_int_of(one) for one in value]
     return value
 
@@ -251,8 +251,11 @@ def read_member(name: str, value: Any) -> Any:
 #: Members whose Arrow representation is a sixteen-byte event hash.
 _WIDE_MEMBERS = frozenset(("hash", "prevhash"))
 
+#: Lists whose items use the same sixteen-byte event-hash representation.
+_WIDE_LIST_MEMBERS = frozenset(("linkedhashes", "parenthash"))
+
 #: Every member a stored row spells differently from a document.
-ROW_SPELLED = frozenset((*_WIDE_MEMBERS, "parenthash"))
+ROW_SPELLED = frozenset((*_WIDE_MEMBERS, *_WIDE_LIST_MEMBERS))
 
 
 # -- helpers ----------------------------------------------------------------

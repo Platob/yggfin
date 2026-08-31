@@ -155,9 +155,9 @@ fields:
     # A vendor tag no dictionary will ever carry, which holds an instant.
     - field: "9999"
       type: timestamp[us, tz=UTC]
-    # A date this feed writes as text where the standard says otherwise.
+    # A local date this feed may later publish with a clock.
     - field: MaturityDate
-      type: date32[day]
+      type: timestamp[us]
     # Spellings only this estate writes.
     - field: Side
       values: {BUYSIDE: "1", SELLSIDE: "2"}
@@ -169,15 +169,15 @@ fields:
 - `type` is an Arrow type as Arrow spells one. A FIX datatype (`UTCDateOnly`,
   `date`) is accepted and normalizes to what the dictionary projects it to, so
   a rule read back always states its unit and its zone -- and every FIX
-  temporal projects to an instant, so both of those come back `timestamp[ns]`.
-  A rule that wants the day says `date32[day]`, which is exactly what the
-  `MaturityDate` rule above is for.
+  temporal projects to an instant, so both of those come back `timestamp[us]`.
+  Persisted FIX-backed fields use `timestamp[us]`, the width Iceberg stores.
+  A date-only value is midnight; a later rule can retain a supplied clock.
 - `values` maps what a feed writes to what it means, and wins the dictionary's
   own translation for that field.
 
 A declared type changes how the text is **read**; the column keeps the type its
-contract declares. Reading `TransactTime` as `date32[day]` stores that day's
-midnight in the `timestamp[us, tz=UTC]` column the contract fixes.
+contract declares. Reading `MaturityDate` as `timestamp[us]` keeps both
+`20260821` at midnight and `20260821-10:30:00` at its stated local clock.
 
 ```python
 from rekep import FieldRules, FixCodec, FixRegistry

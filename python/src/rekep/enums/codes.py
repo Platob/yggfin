@@ -14,6 +14,8 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
+import pyarrow
+
 from rekep.enums.ascii_codes import Ascii32, Ascii64
 
 #: ISO 10962's category letter -- the first character of a `CFICode <461>` --
@@ -269,12 +271,12 @@ class OptionKind(Ascii64):
 
 
 class Protocol(Ascii64):
-    """Which protocol a line carries, as an eight-byte ASCII name.
+    """Protocol grammar and resolved version in one eight-byte ASCII name.
 
     Open, because the vocabulary belongs to the logs and not to this package:
     `rekep.fix.rules` ships the five below, and a desk whose rule names its
-    own bridge stores that name as a code without a release here. Eight
-    upper-case bytes is the shape such a name has to fit.
+    own bridge stores that name as a code without a release here. FIX service
+    packs use the compact `FIX5SP2` spelling so the exact version still fits.
     """
 
     #: The canonical shape, and so also what a stored code may read back as:
@@ -282,6 +284,13 @@ class Protocol(Ascii64):
     #: let one name pack as two codes -- `from_str` folding to `FIX` while
     #: `from_int` registered `fix` beside it.
     _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9._-]{1,8}$"))
+    _VERSIONED = enum.nonmember(
+        re.compile(
+            r"^(?P<family>FIXML|FXML|FIX|UL)[._-]?"
+            r"(?P<major>[0-9]+)(?:\.(?P<minor>[0-9]+))?"
+            r"(?:[._-]?SP(?P<servicepack>[0-9]+))?$"
+        )
+    )
 
     UNKNOWN = 0
     """No name resolved; a rule declaring one is a configuration error."""
@@ -304,6 +313,152 @@ class Protocol(Ascii64):
     @classmethod
     def _valid(cls, text: str) -> bool:
         return bool(cls._PATTERN.fullmatch(text))
+
+    @classmethod
+    def _canonical(cls, raw: str) -> str:
+        """Fold dotted FIX spellings into the one persisted protocol token."""
+        text = cls._normalise(raw)
+        if text in {"FIXT.1.1", "FIXT1.1"}:
+            return "FIXT1.1"
+        matched = cls._VERSIONED.fullmatch(text)
+        if matched is None:
+            return super()._canonical(raw)
+        family = "FIXML" if matched["family"] == "FXML" else matched["family"]
+        minor = matched["minor"]
+        service_pack = matched["servicepack"]
+        if service_pack is not None:
+            if minor not in {None, "0"}:
+                return super()._canonical(raw)
+            # A service pack belongs to FIX 5.0 when its compact persisted
+            # spelling omits the minor number: `FIX5SP2` is `5.0.SP2`.
+            minor = minor or "0"
+            prefix = "FXML" if family == "FIXML" else family
+            return f"{prefix}{matched['major']}SP{service_pack}"
+        if minor is None:
+            return super()._canonical(raw)
+        return f"{family}{matched['major']}.{minor}"
+
+    @property
+    def family(self) -> Protocol:
+        """The grammar rule that reads this versioned protocol."""
+        code = self.code
+        if code == "FIXT1.1":
+            return type(self).FIX
+        matched = type(self)._VERSIONED.fullmatch(code)
+        if matched is None or (matched["minor"] is None and matched["servicepack"] is None):
+            return self
+        name = "FIXML" if matched["family"] == "FXML" else matched["family"]
+        return type(self).__members__.get(name, self)
+
+    @property
+    def version(self) -> str | None:
+        """The exact registry version encoded in this protocol, if any."""
+        code = self.code
+        if code == "FIXT1.1":
+            return "FIXT1.1"
+        matched = type(self)._VERSIONED.fullmatch(code)
+        if matched is None:
+            return None
+        minor = matched["minor"]
+        service_pack = matched["servicepack"]
+        if service_pack is not None:
+            return f"{matched['major']}.{minor or '0'}.SP{service_pack}"
+        return None if minor is None else f"{matched['major']}.{minor}"
+
+    @classmethod
+    def with_version(cls, protocol: Any, version: str | None) -> Protocol:
+        """Combine one grammar and registry version without losing either."""
+        declared = cls.from_str(protocol)
+        family = declared.family
+        if version is None:
+            return declared
+        embedded = declared.version
+        if embedded is not None and not embedded.startswith("FIXT"):
+            return declared
+        if family not in {cls.FIX, cls.FIXML, cls.UL}:
+            return declared
+        normalized = str(version).strip().upper()
+        if normalized in {"FIXT.1.1", "FIXT1.1"}:
+            return cls.from_str("FIXT1.1") if family is cls.FIX else family
+        matched = re.fullmatch(
+            r"(?:FIX[._-]?)?(?P<major>[0-9]+)\.(?P<minor>[0-9]+)"
+            r"(?:[._-]?SP(?P<servicepack>[0-9]+))?",
+            normalized,
+        )
+        if matched is None:
+            return family
+        service_pack = matched["servicepack"]
+        if service_pack is None:
+            spelling = f"{family.code}{matched['major']}.{matched['minor']}"
+        else:
+            prefix = "FXML" if family is cls.FIXML else family.code
+            spelling = (
+                f"{prefix}{matched['major']}SP{service_pack}"
+                if matched["minor"] == "0"
+                else f"{family.code}{matched['major']}.{matched['minor']}SP{service_pack}"
+            )
+        combined = cls.from_str(spelling)
+        return family if combined is cls.UNKNOWN else combined
+
+    @classmethod
+    def into_family_arrow(cls, protocols: Any) -> pyarrow.Array:
+        """Strip persisted FIX versions from a packed protocol column."""
+        compute = pyarrow.compute
+        column = (
+            protocols.combine_chunks() if isinstance(protocols, pyarrow.ChunkedArray) else protocols
+        )
+        stored = column.cast(cls.into_arrow_type().index_type, safe=False)
+        found = stored
+        for code in compute.drop_null(compute.unique(stored)):
+            family = cls.from_int(code.as_py()).family
+            found = compute.if_else(compute.equal(stored, code), int(family), found)
+        return found.cast(cls.into_arrow_type().index_type, safe=False)
+
+    @classmethod
+    def into_versions_arrow(cls, protocols: Any) -> pyarrow.Array:
+        """Decode exact registry versions from packed protocol tokens."""
+        compute = pyarrow.compute
+        column = (
+            protocols.combine_chunks() if isinstance(protocols, pyarrow.ChunkedArray) else protocols
+        )
+        stored = column.cast(cls.into_arrow_type().index_type, safe=False)
+        found = pyarrow.nulls(len(stored), pyarrow.string())
+        for code in compute.drop_null(compute.unique(stored)):
+            version = cls.from_int(code.as_py()).version
+            if version is not None:
+                found = compute.if_else(compute.equal(stored, code), version, found)
+        return found
+
+    @classmethod
+    def with_versions_arrow(cls, protocols: Any, versions: Any) -> pyarrow.Array:
+        """Combine grammar and exact version columns through Arrow kernels."""
+        compute = pyarrow.compute
+        base = cls.into_family_arrow(protocols)
+        values = (
+            versions.combine_chunks() if isinstance(versions, pyarrow.ChunkedArray) else versions
+        )
+        values = values.cast(pyarrow.string(), safe=False)
+        column = (
+            protocols.combine_chunks() if isinstance(protocols, pyarrow.ChunkedArray) else protocols
+        )
+        found = column.cast(cls.into_arrow_type().index_type, safe=False)
+        embedded = cls.into_versions_arrow(found)
+        authoritative = compute.and_(
+            compute.is_valid(embedded),
+            compute.invert(compute.fill_null(compute.starts_with(embedded, "FIXT"), False)),
+        )
+        for code in compute.drop_null(compute.unique(base)):
+            protocol = cls.from_int(code.as_py())
+            selected = compute.equal(base, code)
+            available = compute.filter(values, compute.fill_null(selected, False))
+            for version in compute.drop_null(compute.unique(available)):
+                combined = cls.with_version(protocol, version.as_py())
+                where = compute.fill_null(
+                    compute.and_(selected, compute.equal(values, version)), False
+                )
+                where = compute.and_(where, compute.invert(authoritative))
+                found = compute.if_else(where, int(combined), found)
+        return found.cast(cls.into_arrow_type().index_type, safe=False)
 
     @classmethod
     def _registers_unknown(cls) -> bool:

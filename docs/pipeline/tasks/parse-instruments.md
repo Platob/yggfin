@@ -1,15 +1,9 @@
 # Parse instruments
 
-`tasks/parse_instruments/parse_instruments.ipynb`
-reads the checked FIX market messages `parse_fix` wrote and versions the
-nested `Instrument` components they carry into `market.instruments`. One
-current `InstrumentUpdate` per `xhash` is replaced when an observation adds a
-fact the stored component does not hold. Its readable identity is
-`instrument.symbolticker`.
+`parse_instruments` versions the nested `Instrument` components in
+`fix.market` into `market.instruments`.
 
 ## Run this step
-
-After `parse_fix` has populated `fix.market`, from the repository root:
 
 ```bash
 uv run --project python --group runner rekep task run \
@@ -17,48 +11,32 @@ uv run --project python --group runner rekep task run \
   --output parse_instruments.executed.ipynb
 ```
 
-The package, a FIX registry and a catalog have to exist first:
-[deploy from scratch](../operations/deploy.md).
+Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 
-## What a version is
+## Version contract
 
-The rule is `InstrumentUpdate.versioned`, on the class that owns the stored
-event rather than in this notebook:
+```yaml
+source: fix.market
+target: market.instruments
+batch_row_size: 65536
+commit_row_size: 250000
+```
 
-- an observation whose `vhash` matches the stored record states the same
-  facts and writes nothing;
-- anything else is the **stored record enriched** with what the observation
-  adds — earlier facts kept, a new `hash` under the same `xhash`;
-- an observation that adds nothing to a fuller stored record is dropped
-  rather than written back thinner.
+`InstrumentUpdate.versioned` applies one rule:
 
-`xhash` is the digest of `instrument.symbolticker` alone, so a version never
-moves the lifecycle a join points at. Reference data learnt later — a tick
-size, a maturity — is not part of the key, deliberately.
+```text
+same vhash                   -> no write
+observation adds facts       -> enriched replacement under the same xhash
+observation is less complete -> no write
+```
 
-The write is an overwrite keyed by `xhash`, not an append: a ticker holds one
-current row and a version replaces it. A window that changed nothing commits
-no snapshot at all, which is what makes a replay free.
+`xhash` is derived from the exact `symbolticker`, so later reference facts do
+not move the identity. The writer overwrites by that declared primary key.
+Each batch looks up its bounded set of `xhash` values with one table predicate.
+A replay that changes nothing commits no snapshot.
 
-## Reading the stored table back
-
-Observations arrive in batches of `batch_row_size`. Each batch's `xhash`
-values are looked up in one `IN` predicate against the table, so the lookup is
-bounded by the batch rather than by the table — and the predicate is on the
-primary key.
-
-## Configuration
-
-The adjacent `parse_instruments.yml` selects the source, the target, the
-catalog, branch, `[start, end)` interval, and both batch sizes. Keep its
-`fix_dictionary` aligned with `parse_fix.yml`: the registry is what resolves
-identifiers out of residual entries.
-
-The interval is read off `FixMsg.unix` — the transaction clock `parse_fix`
-resolved and the column `fix.market` is partitioned from. This stage asks the
-FIX stage for nothing but its table, so a rule change here reruns against
-captures already parsed.
-
-Airflow runs this task and `parse_market` side by side, on the same
-`routed.market` count: both read `fix.market` and neither writes what the
-other reads.
+The `[start, end)` interval uses `FixMsg.unix`. Rows with a non-null `error`
+remain in `fix.market` for audit and are excluded here. Keep `fix_dictionary`
+aligned with `parse_fix.yml`; it resolves identifiers still present in
+residual entries. Airflow runs this task beside `parse_market` because both
+only read `fix.market`.

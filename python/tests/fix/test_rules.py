@@ -400,6 +400,28 @@ def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
     assert DEFAULT.rule(Protocol.OTHER).named is None, "and OTHER is not read at all"
 
 
+def test_a_versioned_protocol_uses_its_family_rule() -> None:
+    assert DEFAULT.rule("FIX4.4") is DEFAULT.rule(Protocol.FIX)
+    assert DEFAULT.rule("FIX.5.0.SP2") is DEFAULT.rule(Protocol.FIX)
+    assert DEFAULT.rule("FIXML.5.0.SP2") is DEFAULT.rule(Protocol.FIXML)
+    assert DEFAULT.category_of("UL4.4", EventType.ORDER) == MARKET_CATEGORY
+    assert DEFAULT.into_arrow_category_array(
+        packed("UL4.4"), pyarrow.array([int(EventType.UNKNOWN)], pyarrow.int64())
+    ).to_pylist() == [MISC_CATEGORY]
+
+
+@pytest.mark.parametrize(
+    ("declared", "family"),
+    [("FIX4.4", Protocol.FIX), ("FIX.5.0.SP2", Protocol.FIX), ("FIXML4.4", Protocol.FIXML)],
+)
+def test_a_versioned_rule_declaration_stores_its_family(declared: str, family: Protocol) -> None:
+    rule = Rule(protocol=declared, codec="fix")
+
+    assert rule.protocol is family
+    assert rule.into_dict()["protocol"] == family.code
+    assert Rules(rules=[rule, OTHER]).rule(declared) is rule
+
+
 def test_an_unknown_protocol_reads_back_as_other() -> None:
     """A batch may carry a name this set has lost, and it still has to be read."""
     assert DEFAULT.rule("SBE") is OTHER

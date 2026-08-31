@@ -11,19 +11,27 @@ line = (
     "8=FIX.4.4|35=8|49=VENUE|56=DESK|34=7|52=20260101-10:00:00.000|11=C1|37=O1|17=E1|"
     "55=BTC-USD|54=1|31=100.25|32=10|38=10|151=0|14=10|39=2|150=F|60=20260101-10:00:00.000|10=000"
 )
-for event in FixMsg.from_text(line).into_market_events(fix_version="4.4"):
+events = list(FixMsg.from_text(line).into_market_events(fix_version="4.4"))
+for event in events:
     print(type(event).__name__, event.state.name, event.qty, event.px)
+
+order, execution = events
+print(order.linkedhashes == [execution.hash])
+print(execution.linkedhashes == [order.hash])
 ```
 
 ```text
 Order FILLED 0.0 None
 Execution FILLED 10.0 100.25
+True
+True
 ```
 
 One execution report produces both rows: the `Execution` is the evidence, the
 `Order` is the resulting state. The order is authoritative for the remaining
-quantity, so the execution is never subtracted twice. The two relate through
-`linkedhashes`.
+quantity, so the execution is never subtracted twice. Each row carries the
+other's exact final `hash` in `linkedhashes`; the Execution's `parenthash`
+separately records the Order version it was built from.
 
 ```python
 from rekep.enums import State

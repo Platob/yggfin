@@ -750,7 +750,7 @@
  },
  "42": {
   "name": "OrigTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
   "fix": {
@@ -912,7 +912,7 @@
  },
  "51": {
   "name": "SendingDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Deprecated in FIX 4.3",
   "fix": {
@@ -929,7 +929,7 @@
  },
  "52": {
   "name": "SendingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -1076,7 +1076,7 @@
  },
  "60": {
   "name": "TransactTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Timestamp when the business transaction represented by the message occurred.",
   "fix": {
@@ -1112,7 +1112,7 @@
  },
  "62": {
   "name": "ValidUntilTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Indicates expiration time of indication message (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -1150,7 +1150,7 @@
  },
  "64": {
   "name": "SettlDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Specific date of trade settlement (SettlementDate) in YYYYMMDD format. If present, this field overrides SettlType (63). This field is required if the value of SettlType (63) is 6 (Future) or 8 (Sellers Option). This field must be omitted if the value of SettlType (63) is 7 (When and If Issued) (expressed in local time at place of settlement)",
   "fix": {
@@ -1348,7 +1348,7 @@
  },
  "75": {
   "name": "TradeDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Indicates date of trade referenced in this message in YYYYMMDD format. Absence of this field indicates current day (expressed in local time at place of trade).",
   "fix": {
@@ -2181,7 +2181,7 @@
  },
  "122": {
   "name": "OrigSendingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request.",
   "fix": {
@@ -2254,7 +2254,7 @@
  },
  "126": {
   "name": "ExpireTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") The meaning of expiration is specific to the context where the field is used. For orders, this is the expiration time of a Good Til Date TimeInForce. For Quotes - this is the expiration of the quote. Expiration time is provided across the quote message dialog to control the length of time of the overall quoting process. For collateral requests, this is the time by which collateral must be assigned. For collateral assignments, this is the time by which a response to the assignment is expected.",
   "fix": {
@@ -3014,7 +3014,7 @@
  },
  "168": {
   "name": "EffectiveTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -3467,7 +3467,7 @@
  },
  "193": {
   "name": "SettlDate2",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "SettDate (64) of the future part of a F/X swap order.",
   "fix": {
@@ -4034,7 +4034,7 @@
  },
  "224": {
   "name": "CouponPaymentDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date interest is to be paid. Used in identifying Corporate Bond issues. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4052,7 +4052,7 @@
  },
  "225": {
   "name": "IssueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The date on which a bond or stock offering is issued. It may or may not be the same as the effective date (\"Dated Date\") or the date on which interest begins to accrue (\"Interest Accrual Date\") (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4126,7 +4126,7 @@
  },
  "229": {
   "name": "TradeOriginationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Used with Fixed Income for Muncipal New Issue Market. Agreement in principal between counter-parties prior to actual trade date. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4144,7 +4144,7 @@
  },
  "230": {
   "name": "ExDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The date when a distribution of interest is deducted from a securities assets or set aside for payment to bondholders. On the ex-date, the securities price drops by the amount of the distribution (plus or minus any market activity). (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4327,7 +4327,7 @@
  },
  "240": {
   "name": "RedemptionDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Return of investor's principal in a security. Bond redemption can occur before maturity date.(Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4346,7 +4346,7 @@
  },
  "241": {
   "name": "UnderlyingCouponPaymentDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Underlying security's CouponPaymentDate. See CouponPaymentDate (224) field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4364,7 +4364,7 @@
  },
  "242": {
   "name": "UnderlyingIssueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Underlying security's IssueDate. See IssueDate (225) field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4457,7 +4457,7 @@
  },
  "247": {
   "name": "UnderlyingRedemptionDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Underlying security's RedemptionDate. See RedemptionDate (240) field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4476,7 +4476,7 @@
  },
  "248": {
   "name": "LegCouponPaymentDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Multileg instrument's individual leg security's CouponPaymentDate. See CouponPaymentDate (224) field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4494,7 +4494,7 @@
  },
  "249": {
   "name": "LegIssueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Multileg instrument's individual leg security's IssueDate. See IssueDate (225) field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4587,7 +4587,7 @@
  },
  "254": {
   "name": "LegRedemptionDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Multileg instrument's individual leg security's RedemptionDate. See RedemptionDate (240) field for description (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4678,7 +4678,7 @@
  },
  "259": {
   "name": "BasisFeatureDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "BasisFeatureDate allows requesting firms within fixed income the ability to request an alternative yield-to-worst, -maturity, -extended or other call. This flows through the confirm process. (Note tag # was reserved in FIX 4.1, added in FIX 4.3) (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4892,7 +4892,7 @@
  },
  "272": {
   "name": "MDEntryDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date of Market Data Entry. (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -4910,7 +4910,7 @@
  },
  "273": {
   "name": "MDEntryTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of Market Data Entry.",
   "fix": {
@@ -6149,7 +6149,7 @@
  },
  "341": {
   "name": "TradSesStartTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Starting time of the trading session",
   "fix": {
@@ -6167,7 +6167,7 @@
  },
  "342": {
   "name": "TradSesOpenTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of the opening of the trading session",
   "fix": {
@@ -6185,7 +6185,7 @@
  },
  "343": {
   "name": "TradSesPreCloseTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Time of the pre-closed of the trading session",
   "fix": {
@@ -6203,7 +6203,7 @@
  },
  "344": {
   "name": "TradSesCloseTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Closing time of the trading session",
   "fix": {
@@ -6221,7 +6221,7 @@
  },
  "345": {
   "name": "TradSesEndTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "End time of the trading session",
   "fix": {
@@ -6612,7 +6612,7 @@
  },
  "367": {
   "name": "QuoteSetValidUntilTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -6667,7 +6667,7 @@
  },
  "370": {
   "name": "OnBehalfOfSendingTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a 'hub' or 'service bureau'. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')",
   "fix": {
@@ -7776,7 +7776,7 @@
  },
  "432": {
   "name": "ExpireDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Date of order expiration (last day the order can trade), always expressed in terms of the local market date. The time at which the order expires is determined by the local market's business practices",
   "fix": {
@@ -7884,7 +7884,7 @@
  },
  "438": {
   "name": "ContraTradeTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Identifes the time of the trade with the ContraBroker (375). (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -7974,7 +7974,7 @@
  },
  "443": {
   "name": "StrikeTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The time at which current market prices are used to determine the value of a basket.",
   "fix": {
@@ -8080,7 +8080,7 @@
  },
  "449": {
   "name": "TotalVolumeTradedDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 19.Removed TotalVolumeTradedDate (tag 449) and TotalVolumeTradedTime (tag 450) fields [Replaced in FIX 4.4] Date of TotalVolumeTraded <387> . (prior to FIX 4.4 field was of type UTCDate)",
   "fix": {
@@ -8097,7 +8097,7 @@
  },
  "450": {
   "name": "TotalVolumeTradedTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 19.Removed TotalVolumeTradedDate (tag 449) and TotalVolumeTradedTime (tag 450) fields [Replaced in FIX 4.4] Time of TotalVolumeTraded <387> .",
   "fix": {
@@ -8693,7 +8693,7 @@
  },
  "483": {
   "name": "TransBkdTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "For CIV A date and time stamp to indicate the time a CIV order was booked by the fund manager. For derivatives a date and time stamp to indicate when this order was booked with the agent prior to submission to the VMU. Indicates the time at which the order was finalized between the buyer and seller prior to submission.",
   "fix": {
@@ -8746,7 +8746,7 @@
  },
  "486": {
   "name": "DateOfBirth",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The date of birth applicable to the individual, e.g. required to open some types of tax-exempt account.",
   "fix": {
@@ -8818,7 +8818,7 @@
  },
  "490": {
   "name": "CardExpDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "The expiry date of the payment card as specified on the card being used for payment.",
   "fix": {

@@ -471,15 +471,26 @@ write to a dataset that owns its own files.
 Exhausting the reader closes that owner. A partial consumer closes the
 surrounding `TextFile` context to release the decoder and temporary spill.
 
-S3-compatible stores can be configured once per process. `S3_ENDPOINT_URL`,
-`S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_SESSION_TOKEN`, and
-`S3_REGION` become Iceberg S3 defaults and also configure direct Arrow access.
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_SESSION_TOKEN=...
+export AWS_REGION=eu-west-1
+```
+
+At the first `rekep` import, these standard AWS values are copied into empty
+or absent `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_SESSION_TOKEN`, and
+`S3_REGION` variables. `AWS_DEFAULT_REGION` is the region fallback.
+`AWS_ENDPOINT_URL_S3` and then `AWS_ENDPOINT_URL` similarly fill
+`S3_ENDPOINT_URL`.
+
+The resulting `S3_*` values become Iceberg defaults and configure direct Arrow
+access. An explicit `S3_*` value wins. The AWS-to-S3 copy runs once, so later
+changes to `AWS_*` do not overwrite the process's `S3_*` values.
 
 An explicit catalog property wins over a value in a location URL, which wins
-over the environment. For the endpoint only, `AWS_ENDPOINT_URL_S3` and then
-`AWS_ENDPOINT_URL` are lower-priority fallbacks. When the portable variables
-are absent, Arrow still uses the standard AWS profile, workload-role, and
-credential environment chain.
+over the environment. Arrow still uses the standard AWS profile and
+workload-role credential chain when no environment credentials were captured.
 
 ## Maintenance
 

@@ -17,7 +17,7 @@
  },
  "2501": {
   "name": "LegCreditSupportAgreementDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2501",
@@ -97,7 +97,7 @@
  },
  "2506": {
   "name": "LegEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2506",
@@ -145,7 +145,7 @@
  },
  "2509": {
   "name": "LegMasterConfirmationAnnexDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2509",
@@ -161,7 +161,7 @@
  },
  "2510": {
   "name": "LegMasterConfirmationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2510",
@@ -209,7 +209,7 @@
  },
  "2513": {
   "name": "LegStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2513",
@@ -3811,7 +3811,7 @@
  },
  "2738": {
   "name": "NextIndexRollDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2738",
@@ -3955,7 +3955,7 @@
  },
  "2747": {
   "name": "ReferenceDataDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2747",
@@ -3988,7 +3988,7 @@
  },
  "2749": {
   "name": "ExecutionTimestamp",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2749",
@@ -4225,7 +4225,7 @@
  },
  "2764": {
   "name": "AveragePriceStartTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2764",
@@ -4241,7 +4241,7 @@
  },
  "2765": {
   "name": "AveragePriceEndTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2765",
@@ -5191,7 +5191,7 @@
  },
  "2825": {
   "name": "PostTradePaymentCalculationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2825",
@@ -5207,7 +5207,7 @@
  },
  "2826": {
   "name": "PostTradePaymentValueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2826",
@@ -5223,7 +5223,7 @@
  },
  "2827": {
   "name": "PostTradePaymentFinalValueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2827",
@@ -5369,7 +5369,7 @@
  },
  "2836": {
   "name": "RelatedOrderTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2836",
@@ -5708,7 +5708,7 @@
  },
  "2868": {
   "name": "CollateralizationValueDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2868",
@@ -5723,7 +5723,7 @@
  },
  "2869": {
   "name": "RegulatoryReportTypeBusinessDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2869",
@@ -5850,7 +5850,7 @@
  },
  "2878": {
   "name": "TerminationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2878",

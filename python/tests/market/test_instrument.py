@@ -8,6 +8,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep.enums import Protocol
 from rekep.fix import FixRegistry
 from rekep.market import AssetKind, Currency, Instrument, InstrumentUpdate, Leg, Side
 from rekep.market.identity import NIL, hash_of
@@ -26,7 +27,7 @@ def spread() -> Instrument:
                 symbol="ESH7",
                 side=Side.BUY,
                 ratio=2,
-                maturitydate=datetime.date(2027, 3, 19),
+                maturitydate=datetime.datetime(2027, 3, 19),
             )
         ],
     )
@@ -68,8 +69,17 @@ def test_the_component_contains_reference_facts_and_no_event_envelope() -> None:
     ]
 
 
+def test_other_protocol_cannot_publish_a_carried_instrument() -> None:
+    message = FixMsg(protocol=Protocol.OTHER, instrument=Instrument(symbol="AAPL"))
+
+    assert list(InstrumentUpdate.from_fixmsgs([message])) == []
+
+
 def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None:
-    components = [spread(), Instrument(symbol="AAPL", maturitydate=datetime.date(2027, 1, 15))]
+    components = [
+        spread(),
+        Instrument(symbol="AAPL", maturitydate=datetime.datetime(2027, 1, 15)),
+    ]
     component_batch = Instrument.into_field().into_arrow_batch(components, owner=Instrument)
 
     update_batch = InstrumentUpdate.from_instrument_arrow_batch(
@@ -86,12 +96,36 @@ def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None
         update.into_row()["hash"] for update in scalar
     ]
     nested = update_batch.column("instrument")[0].as_py()
-    assert nested["legs"][0]["maturitydate"] == datetime.date(2027, 3, 19)
+    assert nested["legs"][0]["maturitydate"] == datetime.datetime(2027, 3, 19)
     assert nested["legs"][0]["ratio"] == 2.0
 
     restored = Instrument.from_update_arrow_batch(update_batch)
     assert restored.equals(component_batch, check_metadata=True)
     assert [Instrument.from_dict(row) for row in restored.to_pylist()] == components
+
+
+def test_aware_local_maturities_match_scalar_and_arrow_identity() -> None:
+    east = datetime.timezone(datetime.timedelta(hours=2))
+    component = Instrument(
+        symbol="CAL-SPREAD",
+        maturitydate=datetime.datetime(2027, 3, 19, 12, 30, tzinfo=east),
+        legs=[
+            Leg(
+                symbol="ESH7",
+                maturitydate=datetime.datetime(2027, 3, 19, 9, 15, tzinfo=east),
+            )
+        ],
+    )
+    assert component.maturitydate == datetime.datetime(2027, 3, 19, 10, 30)
+    assert component.legs is not None
+    assert component.legs[0].maturitydate == datetime.datetime(2027, 3, 19, 7, 15)
+
+    component_batch = Instrument.into_field().into_arrow_batch([component], owner=Instrument)
+    update_batch = InstrumentUpdate.from_instrument_arrow_batch(component_batch, unix=31)
+    scalar = InstrumentUpdate.from_instrument(component, unix=31).identify()
+
+    assert update_batch.column("vhash").to_pylist() == [scalar.vhash]
+    assert update_batch.column("instrument")[0].as_py()["maturitydate"] == component.maturitydate
 
 
 def test_fix_identifiers_choose_one_canonical_ticker_and_identity() -> None:
@@ -199,7 +233,7 @@ def test_declared_reference_values_determine_the_value_hash() -> None:
 
 
 def test_promoted_fallback_does_not_fabricate_unstated_clocks() -> None:
-    message = FixMsg(unix=23, instrument=Instrument(symbol="AAPL"))
+    message = FixMsg(unix=23, protocol="FIX4.4", instrument=Instrument(symbol="AAPL"))
     update = InstrumentUpdate.from_(message)
 
     assert update is not None
@@ -243,6 +277,7 @@ def test_explicit_pair_classification_and_currency_are_preserved() -> None:
 def test_log_residual_tags_enrich_instruments_through_the_declared_registry() -> None:
     log = FixMsg(
         unix=1,
+        protocol="FIX4.4",
         beginstring="FIX.4.4",
         msgtype="d",
         instrument=Instrument(symbol="FAKE-SYM"),

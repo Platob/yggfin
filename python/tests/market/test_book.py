@@ -172,7 +172,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=2,
         hash=31,
         xhash=32,
-        linkedhashes=[bid.xhash],
+        linkedhashes=[bid.hash],
         parenthash=[bid.hash],
         state=State.FILLED,
         code="E1",
@@ -186,7 +186,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
     rows = [
         Book(
             unix=2,
-            linkedhashes=[bid.xhash, execution.xhash],
+            linkedhashes=[bid.hash, execution.hash],
             parenthash=[bid.hash, execution.hash],
             altids={"symbol": "BTC-USD"},
             metadata={"kind": "delta"},
@@ -198,7 +198,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         Book(
             unix=3,
             snapunix=3,
-            linkedhashes=[bid.xhash, ask.xhash],
+            linkedhashes=[bid.hash, ask.hash],
             parenthash=[bid.hash, ask.hash],
             altids={"symbol": "BTC-USD"},
             metadata={"kind": "snapshot"},

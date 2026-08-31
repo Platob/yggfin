@@ -7,7 +7,7 @@ import ipaddress
 import os
 import re
 import urllib.parse
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from typing import Any
@@ -80,8 +80,30 @@ S3_ENVIRONMENT = (
     ("S3_REGION", "region"),
 )
 
-#: Endpoint defaults, from the store-specific spelling to AWS's global one.
-S3_ENDPOINT_ENVIRONMENT = ("S3_ENDPOINT_URL", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL")
+#: AWS's process settings copied into the portable S3 layer at import. The
+#: copy is deliberately one-time: a process must not change stores when an AWS
+#: credential provider refreshes its own environment underneath an open
+#: filesystem.
+S3_AWS_ENVIRONMENT = (
+    ("S3_ACCESS_KEY_ID", ("AWS_ACCESS_KEY_ID",)),
+    ("S3_SECRET_ACCESS_KEY", ("AWS_SECRET_ACCESS_KEY",)),
+    ("S3_SESSION_TOKEN", ("AWS_SESSION_TOKEN",)),
+    ("S3_REGION", ("AWS_REGION", "AWS_DEFAULT_REGION")),
+    ("S3_ENDPOINT_URL", ("AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL")),
+)
+
+
+def _capture_s3_environment(environ: MutableMapping[str, str] = os.environ) -> None:
+    """Copy AWS process settings into unconfigured portable S3 names."""
+    for target, sources in S3_AWS_ENVIRONMENT:
+        if environ.get(target):
+            continue
+        value = next((value for source in sources if (value := environ.get(source))), None)
+        if value:
+            environ[target] = value
+
+
+_capture_s3_environment()
 
 #: What a store that does not care about the region is signed for. Arrow's own
 #: default, and every compatible store's. Named where an endpoint is configured
@@ -749,9 +771,7 @@ def s3_environment(environ: Mapping[str, str] = os.environ, prefix: str = "s3") 
         for name, suffix in S3_ENVIRONMENT
         if (value := environ.get(name))
     }
-    endpoint = next(
-        (value for name in S3_ENDPOINT_ENVIRONMENT if (value := environ.get(name))), None
-    )
+    endpoint = environ.get("S3_ENDPOINT_URL")
     if endpoint:
         settings[f"{prefix}.endpoint"] = endpoint
     return settings

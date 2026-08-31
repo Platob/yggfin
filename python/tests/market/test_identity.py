@@ -476,17 +476,18 @@ def test_a_sliced_identity_column_keeps_its_sign_and_nulls() -> None:
     assert [hash_int_of(one) for one in arrow_of(values).to_pylist()] == [-1, None, 2]
 
 
-def test_only_time_anchored_members_change_spelling_in_a_stored_row() -> None:
+def test_exact_event_hash_members_change_spelling_in_a_stored_row() -> None:
     version = (17 << 64) | ((-9) & ((1 << 64) - 1))
     assert stored_member("hash", version) == hash_bytes_of(version)
     assert stored_member("prevhash", version) == hash_bytes_of(version)
     assert stored_member("parenthash", [version]) == [hash_bytes_of(version)]
+    assert stored_member("linkedhashes", [version]) == [hash_bytes_of(version)]
     assert read_member("hash", hash_bytes_of(version)) == version
     assert read_member("parenthash", [hash_bytes_of(version)]) == [version]
-    for name in ("vhash", "xhash", "instrumentxhash", "linkedhashes"):
-        value = [-9] if name == "linkedhashes" else -9
-        assert stored_member(name, value) == value
-        assert read_member(name, value) == value
+    assert read_member("linkedhashes", [hash_bytes_of(version)]) == [version]
+    for name in ("vhash", "xhash", "instrumentxhash"):
+        assert stored_member(name, -9) == -9
+        assert read_member(name, -9) == -9
 
 
 def test_a_supported_unhashable_lifecycle_part_bypasses_the_cache() -> None:

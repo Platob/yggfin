@@ -1,19 +1,9 @@
 # Parse FIX
 
-`tasks/parse_fix/parse_fix.ipynb` transcribes stored `Message` arguments into
-`FixMsg` rows. Its primary Iceberg scan applies the recording-time window and
-`eventtype` in `EventType.ranked_at_least(INTENT)` before any FIX dictionary
-work begins.
-
-The complementary scan -- `Not` of the market code set -- retains everything
-else: terminal operational rows, unrecognized rows, and any stored code no
-compiled member spells. Together the two scans partition the table, so no row
-silently matches neither.
+`parse_fix` transcribes `logs.messages` through the FIX registry and writes
+typed `FixMsg` rows.
 
 ## Run this step
-
-After `parse_messages` has populated `logs.messages`, run from the repository
-root:
 
 ```bash
 uv run --project python --group runner rekep task run \
@@ -21,78 +11,70 @@ uv run --project python --group runner rekep task run \
   --output parse_fix.executed.ipynb
 ```
 
-The package, a FIX registry and a catalog have to exist first:
-[deploy from scratch](../operations/deploy.md).
+Add a half-open replay interval when needed:
 
-To replay only one half-open recording interval, add
-`--parameter start=2026-08-21T10:00:00Z` and
-`--parameter end=2026-08-21T11:00:00Z` before `--output`.
+```bash
+uv run --project python --group runner rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --parameter start=2026-08-21T10:00:00Z \
+  --parameter end=2026-08-21T11:00:00Z \
+  --output parse_fix.executed.ipynb
+```
 
-`parse_messages` has already opened the dictionary for MsgType event metadata.
-This stage opens the same dictionary for full transcription. For each Arrow
-batch it:
+Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 
-1. reads the stored protocol classification and ordered `entries`;
-2. infers the FIX application version;
-3. resolves names, tags, types and configured value spellings;
-4. lifts declared fields and structured components;
-5. derives the transaction time and nests the `Instrument` component.
+## Transcription
 
-`Message.eventtype`, `Message.msgtype`, and `Message.protocol` pass through
-this conversion; the FIX stage does not classify the message a second time.
+```text
+logs.messages
+  -> resolve protocol, tags, values and components
+  -> derive transaction and creation clocks
+  -> nest Instrument and repeating groups
+  -> fix.market | fix.misc | fix.unknown
+```
 
-Repeated tags and wire order remain in `entries`. A resolved entry records the
-canonical FIX key, its numeric tag, its value, and an indexed component path
-where present; a vendor-qualified name remains whole in the key. Fields
-promoted for filtering use folded physical names: `msgtype`, `msgseqnum`,
-`origclordid`, `transacttime`. Their `fix:display` metadata retains the
-dictionary spelling.
+A market row keeps filterable values flat and the reference component nested:
 
-## Routing
+```yaml
+protocol: FIX4.4
+msgtype: D
+unix: 1787306400123000000
+unixsource: TransactTime
+creaunix: 1787306399000000000
+sendingtime: 2026-08-21T09:59:59Z
+instrument:
+  symbol: TTF
+  securityexchange: XPAR
+entries:
+  - {tag: 60, key: TransactTime, value: "20260821-10:00:00.123"}
+unmap: null
+```
 
-The task writes captured orders, quotes, executions, books and security
-definitions to `fix.market`. Recognized operational traffic, rows without
-MsgType, and unknown events on a recognized transport go to `fix.misc`; an
-unknown event on an unrecognized transport goes to `fix.unknown`.
+`protocol` carries the protocol and resolved version. Repeated tags and
+unpromoted fields remain in `entries`; unknown names move to `unmap`. A bad
+field fills the row's `error` and the remaining fields are transcribed on a
+best-effort basis.
 
-Market and terminal predicates are pushed independently, so neither stream
-sees the other's rows. Registry-declared technical MsgTypes are excluded by the
-scan, and plugin filtering already happened in `parse_messages`, so those rows
-never enter this source table. The raw `message` column is projected out for
-both streams: stored `entries` already carry what transcription needs.
+## Rules
 
-The source interval is filtered on `Message.unix`, the recording clock. The
-resulting `FixMsg.unix` may instead come from a regulatory timestamp,
-`TransactTime`, market-data entry time, sending time, or finally the recording
-clock. Output tables record `hash` as their sole Iceberg sort key; downstream
-readers request transaction-time order explicitly.
+The adjacent task document owns estate-specific readings:
 
-## The base the next stages key on
+```yaml
+fix_dictionary: data/fix
+null_values: ["", "null", "<null>", "n/a"]
+fields:
+  rules:
+    - field: "9999"
+      type: timestamp[us]
+    - field: Side
+      values: {BUYSIDE: "1", SELLSIDE: "2"}
+```
 
-This stage owns the transaction clock, resolved to `unix`. The nested
-`Instrument` class owns ticker derivation, and `instrument.symbolticker` is
-the canonical spelling downstream receives. The task reports how well it
-managed both -- `unixsource` counts which rung answered per row, `tickered`
-counts the rows that carry a ticker at all -- so a run that hands on a weak
-base says so here rather than having it discovered two tables later.
+FIX dates, times and timestamps are stored as `timestamp[us]`; date-only
+values land at midnight. Keep `fix_dictionary` and custom protocol rules
+aligned with `parse_messages.yml`.
 
-Reference data is *not* written here. [`parse_instruments`](parse-instruments.md)
-reads the rows this stage wrote and versions `market.instruments` from them, so
-no instrument enrichment or versioning rule lives in the FIX stage.
-
-## Configuration
-
-The adjacent `parse_fix.yml` owns full-transcription settings:
-`fix_dictionary`, `null_values`, protocol rules, and declared `fields`. It
-also selects the catalog, branch, source interval and commit size. A
-dictionary, field, or protocol-rule change reruns this stage against retained
-`Message` rows, resolving the stored arguments without tokenizing the payload.
-
-Keep its `fix_dictionary` aligned with `parse_messages.yml`. MsgType event
-metadata is read by `parse_messages` because `eventtype` is part of `Message`, so
-changing that metadata requires rebuilding `logs.messages`, while other
-dictionary changes can rerun only this stage.
-
-The projected conversion requires the `msgtype`, `entries` and `protocol`
-columns of the [Message contract](../../contracts/index.md), and refuses a
-source without them rather than reporting an empty run.
+Market event codes route to `fix.market`. Known non-market traffic routes to
+`fix.misc`; an unknown event on an unknown protocol routes to `fix.unknown`.
+The source scan uses recording time, while output `unix` uses the best FIX
+clock and each output table sorts by `hash`.

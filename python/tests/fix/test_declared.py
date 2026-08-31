@@ -10,6 +10,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FieldRule, FieldRules, FixCodec, FixRegistry
+from rekep.fix.fields import fix_field
 from rekep.text import FixMsg, TextFile
 
 #: One order, spelled the way a bridge prints one, with a vendor tag on it.
@@ -20,8 +21,26 @@ LINE = (
 
 
 @pytest.fixture(scope="module")
-def registry() -> FixRegistry:
-    return FixRegistry.from_builtin()
+def registry(tmp_path_factory: pytest.TempPathFactory) -> FixRegistry:
+    """Only the fields the declared-reading examples exercise."""
+    registry = FixRegistry(cache_dir=tmp_path_factory.mktemp("declared"))
+    registry._store_fields(
+        "4.4",
+        [
+            fix_field("BeginString", 8, "String", version="4.4"),
+            fix_field("BodyLength", 9, "Length", version="4.4"),
+            fix_field("CheckSum", 10, "String", version="4.4"),
+            fix_field("ClOrdID", 11, "String", version="4.4"),
+            fix_field("MsgType", 35, "String", version="4.4"),
+            fix_field("OrderQty", 38, "Qty", version="4.4"),
+            fix_field("Price", 44, "Price", version="4.4"),
+            fix_field("Side", 54, "char", version="4.4", values={"1": "Buy"}),
+            fix_field("Symbol", 55, "String", version="4.4"),
+            fix_field("TransactTime", 60, "UTCTimestamp", version="4.4"),
+        ],
+        components=[],
+    )
+    return registry
 
 
 def codec_of(registry: FixRegistry, declared: dict | None = None) -> FixCodec:
@@ -48,17 +67,17 @@ def resolved(codec: FixCodec, line: str = LINE) -> list[tuple[int, str]]:
 
 
 def test_a_declared_type_changes_how_the_text_is_read(registry: FixRegistry) -> None:
-    """`TransactTime` read as a day is that day's midnight, not its clock."""
+    """A coarser declared timestamp drops precision before contract casting."""
     plain = lifted(codec_of(registry))["transacttime"].to_pylist()[0]
-    assert plain.hour == 10
-    declared = {"rules": [{"field": "TransactTime", "type": "date32[day]"}]}
-    dated = lifted(codec_of(registry, declared))["transacttime"].to_pylist()[0]
-    assert (dated.hour, dated.minute, dated.day) == (0, 0, 21)
+    assert plain.microsecond == 123_000
+    declared = {"rules": [{"field": "TransactTime", "type": "timestamp[s]"}]}
+    second = lifted(codec_of(registry, declared))["transacttime"].to_pylist()[0]
+    assert second.microsecond == 0
 
 
 def test_a_rule_may_name_its_field_by_tag_or_by_name(registry: FixRegistry) -> None:
-    by_tag = codec_of(registry, {"rules": [{"field": "60", "type": "date32[day]"}]})
-    by_name = codec_of(registry, {"rules": [{"field": "TransactTime", "type": "date32[day]"}]})
+    by_tag = codec_of(registry, {"rules": [{"field": "60", "type": "timestamp[s]"}]})
+    by_name = codec_of(registry, {"rules": [{"field": "TransactTime", "type": "timestamp[s]"}]})
     assert lifted(by_tag)["transacttime"] == lifted(by_name)["transacttime"]
 
 
@@ -81,13 +100,13 @@ def test_a_tag_the_dictionary_does_not_number_reads_as_declared(registry: FixReg
 
 def test_a_declared_type_is_held_as_arrow_spells_it() -> None:
     """A dumped rule states its unit and its zone whichever spelling wrote it."""
-    assert FieldRule(field="X", type="date32[day]").type == "date32[day]"
+    assert FieldRule(field="X", type="timestamp[us]").type == "timestamp[us]"
+    assert FieldRule(field="X", type="date32[day]").type == "timestamp[us]"
     assert FieldRule(field="X", type="int").type == "int32"
     # A FIX datatype normalizes to what the dictionary projects it to, and
-    # every point in time projects to an instant. A rule that wants the day
-    # says so in Arrow's own spelling, which is the line above.
-    assert FieldRule(field="X", type="date").type == "timestamp[ns]"
-    assert FieldRule(field="X", type="UTCDateOnly").type == "timestamp[ns]"
+    # every point in time projects to an instant.
+    assert FieldRule(field="X", type="date").type == "timestamp[us]"
+    assert FieldRule(field="X", type="UTCDateOnly").type == "timestamp[us]"
 
 
 def test_a_type_that_is_neither_arrow_nor_fix_is_refused() -> None:
@@ -133,19 +152,19 @@ def test_a_declared_spelling_wins_the_dictionary_s(registry: FixRegistry) -> Non
 def test_declared_readings_round_trip_through_a_document() -> None:
     rules = FieldRules(
         rules=[
-            FieldRule(field="60", type="date32[day]"),
+            FieldRule(field="60", type="timestamp[s]"),
             FieldRule(field="Side", values={"BUYSIDE": "1"}),
         ]
     )
     back = FieldRules.from_dict(rules.into_dict())
     assert [one.field for one in back] == ["60", "Side"]
-    assert back.rules[0].dtype == pyarrow.date32()
+    assert back.rules[0].dtype == pyarrow.timestamp("s")
     assert back.rules[1].values == {"BUYSIDE": "1"}
 
 
 def test_a_codec_carries_its_declared_readings(registry: FixRegistry) -> None:
-    codec = codec_of(registry, {"rules": [{"field": "60", "type": "date32[day]"}]})
-    assert codec.into_dict()["fields"]["rules"][0]["type"] == "date32[day]"
+    codec = codec_of(registry, {"rules": [{"field": "60", "type": "timestamp[s]"}]})
+    assert codec.into_dict()["fields"]["rules"][0]["type"] == "timestamp[s]"
 
 
 # -- the header a line opens with ----------------------------------------------

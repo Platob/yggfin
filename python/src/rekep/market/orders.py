@@ -13,7 +13,7 @@ import pyarrow
 
 from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import Field, column_name, scalar
-from rekep.market.event import Event, MarketEvent, _declared_value_parts
+from rekep.market.event import Event, MarketEvent, _declared_value_parts, _local_timestamp
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL, hash_bytes_of
 
@@ -306,11 +306,12 @@ class Order(MarketEvent):
         return bool(same_order or same_client_version or amends_client_version)
 
     def _parent_order_life_code(self, previous: Event) -> str:
-        """An order code whose scoped hash matches a parent Execution's order."""
-        linked = previous.primary_linked_hash
-        if linked is None:
+        """The readable Order root carried across a related Execution."""
+        if previous.primary_linked_hash is None:
             return ""
-        target = linked
+        root = previous.altids.get("orderroot")
+        if not root:
+            return ""
         candidates = dict.fromkeys(
             (
                 self.orderid,
@@ -321,19 +322,7 @@ class Order(MarketEvent):
                 getattr(previous, "clordid", None),
             )
         )
-        for candidate in candidates:
-            if (
-                candidate
-                and self.hash_of(
-                    hash_bytes_of(self.instrumentxhash),
-                    self.mic,
-                    candidate,
-                    self.side,
-                )
-                == target
-            ):
-                return candidate
-        return ""
+        return root if root in candidates else ""
 
     def version_parts(self) -> tuple[Any, ...]:
         """An order's version moves with what it asked for, and how far it got."""
@@ -412,7 +401,7 @@ class Execution(MarketEvent):
     # wrong without them: a fill priced in one currency can settle in another,
     # on a date the venue names rather than the trade's own.
 
-    settldate: Annotated[datetime.date | None, fix_tag("SettlDate")] = None
+    settldate: Annotated[datetime.datetime | None, fix_tag("SettlDate")] = None
     """When the trade settles; null when the venue leaves it to convention."""
 
     settltype: Annotated[str | None, fix_tag("SettlType")] = None
@@ -423,6 +412,11 @@ class Execution(MarketEvent):
 
     settlcurrfxratecalc: Annotated[str | None, fix_tag("SettlCurrFxRateCalc")] = None
     """Whether the settlement FX rate multiplies or divides."""
+
+    def __post_init__(self) -> None:
+        """Normalize settlement to the timestamp its FIX-backed column stores."""
+        self.settldate = _local_timestamp(self.settldate)
+        MarketEvent.__post_init__(self)
 
     def complete_from(self, previous: Event) -> None:
         """A report completed from the one before it on the same order."""
@@ -443,6 +437,11 @@ class Execution(MarketEvent):
             and self.execrefid in (previous.execid, previous.execrefid, previous.code)
         )
         if previous.is_order():
+            if previous.code:
+                # An exact event hash cannot be inverted to the Order's
+                # readable lifecycle root. Carry that root beside the link so
+                # a later Order can recover it across this Execution.
+                self.altids["orderroot"] = previous.code
             self.link_to(previous, primary=True)
         if same_report_life and previous.code:
             self.code = previous.code

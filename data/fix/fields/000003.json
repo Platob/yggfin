@@ -73,7 +73,7 @@
  },
  "1504": {
   "name": "RelSymTransactTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "description": "See TransactTime(60)",
   "fix": {
@@ -810,7 +810,7 @@
  },
  "1550": {
   "name": "InstrumentScopeMaturityTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1550",
@@ -4047,7 +4047,7 @@
  },
  "1753": {
   "name": "VersusPurchaseDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1753",
@@ -4111,7 +4111,7 @@
  },
  "1757": {
   "name": "LegVersusPurchaseDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1757",
@@ -4511,7 +4511,7 @@
  },
  "1782": {
   "name": "EntitlementStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1782",
@@ -4527,7 +4527,7 @@
  },
  "1783": {
   "name": "EntitlementEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1783",
@@ -5735,7 +5735,7 @@
  },
  "1858": {
   "name": "RelatedTradeDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1858",
@@ -5832,7 +5832,7 @@
  },
  "1864": {
   "name": "RelatedPositionDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1864",
@@ -6216,7 +6216,7 @@
  },
  "1888": {
   "name": "TradeMatchTimestamp",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1888",
@@ -6634,7 +6634,7 @@
  },
  "1914": {
   "name": "ResponseTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1914",
@@ -6650,7 +6650,7 @@
  },
  "1915": {
   "name": "QuoteDisplayTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1915",
@@ -7129,7 +7129,7 @@
  },
  "1945": {
   "name": "SettledEntityMatrixPublicationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1945",
@@ -7359,7 +7359,7 @@
  },
  "1959": {
   "name": "IndexAnnexDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1959",
@@ -7423,7 +7423,7 @@
  },
  "1963": {
   "name": "MasterConfirmationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1963",
@@ -7455,7 +7455,7 @@
  },
  "1965": {
   "name": "MasterConfirmationAnnexDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1965",
@@ -7503,7 +7503,7 @@
  },
  "1968": {
   "name": "CreditSupportAgreementDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1968",
@@ -7744,7 +7744,7 @@
  },
  "1983": {
   "name": "UnderlyingEventDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1983",
@@ -7760,7 +7760,7 @@
  },
  "1984": {
   "name": "UnderlyingEventTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "1984",

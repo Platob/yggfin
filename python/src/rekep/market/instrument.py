@@ -19,14 +19,23 @@ from rekep.enums import (
     Currency,
     EventType,
     OptionKind,
+    Protocol,
     SecurityIDSource,
     Side,
 )
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import build_list, list_parts, null_mask, sequence, struct_columns
 from rekep.fix.columns import ISIN_SCHEME, isin_identity
+from rekep.fix.fields import cast_arrow_fix, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
-from rekep.market.event import UNIX, Event, _declared_value_parts, unix_partition_arrow
+from rekep.market.event import (
+    UNIX,
+    Event,
+    _declared_temporal_arrow,
+    _declared_value_parts,
+    _local_timestamp,
+    unix_partition_arrow,
+)
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import (
     HASH,
@@ -84,7 +93,7 @@ class Leg(MarketConvertible):
     contractmultiplier: Annotated[float | None, fix_tag("LegContractMultiplier")] = None
     """Units of the underlying one leg contract represents."""
 
-    maturitydate: Annotated[datetime.date | None, fix_tag("LegMaturityDate")] = None
+    maturitydate: Annotated[datetime.datetime | None, fix_tag("LegMaturityDate")] = None
     """When the leg expires; null for anything that does not."""
 
     strikeprice: Annotated[float | None, fix_tag("LegStrikePrice")] = None
@@ -95,6 +104,7 @@ class Leg(MarketConvertible):
 
     def __post_init__(self) -> None:
         """Derive `xhash` the way an instrument does, so a leg joins to one."""
+        self.maturitydate = _local_timestamp(self.maturitydate)
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
@@ -227,7 +237,7 @@ class Instrument(MarketConvertible):
     roundlot: Annotated[float | None, fix_tag("RoundLot")] = None
     """Quantity increment the venue trades in."""
 
-    maturitydate: Annotated[datetime.date | None, fix_tag("MaturityDate")] = None
+    maturitydate: Annotated[datetime.datetime | None, fix_tag("MaturityDate")] = None
     """When the contract expires; null for anything that does not."""
 
     strikeprice: Annotated[float | None, fix_tag("StrikePrice")] = None
@@ -249,6 +259,7 @@ class Instrument(MarketConvertible):
 
     def __post_init__(self) -> None:
         """Normalize facts and settle the canonical ticker once."""
+        self.maturitydate = _local_timestamp(self.maturitydate)
         self.normalize_float_members()
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
@@ -613,7 +624,7 @@ class InstrumentUpdate(Event):
 
         def observed() -> Iterator[InstrumentUpdate]:
             for log in logs:
-                if getattr(log, "error", None):
+                if getattr(log, "error", None) or log.protocol.family is Protocol.OTHER:
                     continue
                 translated = log.into_fix_events(registry=registry)
                 for reader in translated._instrument_readers():
@@ -732,7 +743,7 @@ def _classified(cfi: str | None, securitytype: str | None) -> AssetKind:
     return AssetKind.UNKNOWN
 
 
-def _month_year(text: str | None) -> datetime.date | None:
+def _month_year(text: str | None) -> datetime.datetime | None:
     """`MaturityMonthYear <200>` as the first or explicitly stated day."""
     if not text:
         return None
@@ -741,22 +752,19 @@ def _month_year(text: str | None) -> datetime.date | None:
         return None
     day = trimmed[6:8]
     try:
-        return datetime.date(int(trimmed[:4]), int(trimmed[4:6]), int(day) if day.isdigit() else 1)
+        return datetime.datetime(
+            int(trimmed[:4]), int(trimmed[4:6]), int(day) if day.isdigit() else 1
+        )
     except ValueError:
         return None
 
 
-def _date(text: str | None) -> datetime.date | None:
-    """One FIX local-market date, or no value when malformed."""
-    if not text:
-        return None
-    try:
-        return datetime.date.fromisoformat(text.replace("-", "")[:8])
-    except ValueError:
-        try:
-            return datetime.datetime.strptime(text[:8], "%Y%m%d").date()
-        except ValueError:
-            return None
+def _date(text: Any) -> datetime.datetime | None:
+    """One FIX local-market date or timestamp in its stored naive form."""
+    if isinstance(text, datetime.date):
+        return _local_timestamp(text)
+    parsed = scalar_fix_temporal(text, pyarrow.timestamp("us")) if isinstance(text, str) else None
+    return _local_timestamp(parsed)
 
 
 def _normalized_legs(source: Any, legs: list[Leg] | None) -> list[Leg] | None:
@@ -884,15 +892,17 @@ def _classified_arrow(cfi: Any, securitytype: Any, rows: int) -> pyarrow.Array:
 
 def _maturity_arrow(date: Any, monthyear: Any, rows: int) -> pyarrow.Array:
     """FIX maturity date, with the older month-resolution spelling as fallback."""
-    dtype = pyarrow.date32()
+    dtype = pyarrow.timestamp("us")
 
     def parsed(column: Any, convert: Any) -> pyarrow.Array:
         if column is None:
             return pyarrow.nulls(rows, dtype)
         if isinstance(column, pyarrow.ChunkedArray):
             column = column.combine_chunks()
-        if isinstance(column, pyarrow.Array) and pyarrow.types.is_date(column.type):
+        if isinstance(column, pyarrow.Array) and pyarrow.types.is_temporal(column.type):
             return column.cast(dtype, safe=False)
+        if convert is _date:
+            return cast_arrow_fix(_text(column, rows), dtype)
         return _mapped_arrow(column, rows, convert, dtype, nullable=True)
 
     return compute.coalesce(parsed(date, _date), parsed(monthyear, _month_year))
@@ -1028,6 +1038,8 @@ def _declared_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
         return framed
     if pyarrow.types.is_date(kind):
         values = values.cast(pyarrow.string())
+    elif pyarrow.types.is_timestamp(kind):
+        values = _declared_temporal_arrow(values)
     return framed_arrow(values)
 
 
@@ -1041,7 +1053,6 @@ def _update_vhash_arrow(
         values["eventtype"],
         values["state"],
         values["mic"],
-        0,
         values["code"],
         values["reason"],
         True,

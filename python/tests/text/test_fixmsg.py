@@ -18,8 +18,8 @@ from rekep.fix.columns import (
     FLAT,
     SESSION,
     STAMPS,
-    _physical_type,
     column_metadata,
+    physical_type,
 )
 from rekep.fix.fields import fix_field, unix_of
 from rekep.market import (
@@ -129,8 +129,6 @@ LINE = [
 ]
 MESSAGE = [
     "unixsource",
-    "protocolversion",
-    "protocolversionsource",
     "unmap",
     "parties",
     "trdregtimestamps",
@@ -237,7 +235,7 @@ ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTR
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 35
 EXPECTED_FLAT_COLUMNS = 86
-EXPECTED_LOG_COLUMNS = 111
+EXPECTED_LOG_COLUMNS = 109
 
 
 @pytest.fixture(scope="module")
@@ -417,6 +415,13 @@ def test_market_translation_uses_the_parsed_row_it_was_given() -> None:
     assert row.into_fix_events().message is row
 
 
+def test_named_text_version_evidence_claims_fix_before_protocol_decoration() -> None:
+    row = FixMsg.from_text("BEGINSTRING=FIX.4.4|MSGTYPE=D|CLORDID=C1")
+
+    assert row.protocol.code == "FIX4.4"
+    assert len(list(row.into_market_events())) == 1
+
+
 def test_a_parsed_row_is_the_raw_row_transcribed() -> None:
     """`from_text` is `from_message` over `Message.from_text`: one seam, and
     the raw row's provenance and envelope carry over whole."""
@@ -427,7 +432,8 @@ def test_a_parsed_row_is_the_raw_row_transcribed() -> None:
     assert row == FixMsg.from_text(line, sourceurl="s3://x/y.log", sourcerownum=4, recunix=9)
     assert (row.sourceurl, row.sourcerownum, row.recunix) == ("s3://x/y.log", 4, 9)
     assert row.eventtype == FixRegistry.from_builtin().msg_type_event_types()["D"]
-    assert row.protocolversion == "4.4"
+    assert row.protocol.code == "FIX4.4"
+    assert row.resolved_version() == "4.4"
     assert FixMsg.from_(staged) == row, "the generic builder reaches the same seam"
 
 
@@ -740,7 +746,7 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
         "a registry is all the conversion needs; the codec derives from it"
     )
     assert from_rows.column("clordid").to_pylist() == ["C1", None]
-    assert from_rows.column("protocolversion").to_pylist() == ["4.4", None]
+    assert _protocols(from_rows) == ["FIX4.4", "OTHER"]
 
     empty = FixMsg.from_message_batch([])
     assert empty.num_rows == 0
@@ -1055,9 +1061,68 @@ def test_the_translator_links_its_dictionary_onto_its_message(registry: FixRegis
 def test_scalar_parsing_resolves_the_fix_version_once_on_the_message() -> None:
     row = FixMsg.from_text("8=FIX.4.4|35=D|11=C1|10=000")
 
-    assert row.protocol is Protocol.FIX
-    assert row.protocolversion == "4.4"
-    assert row.protocolversionsource == "begin_string"
+    assert row.protocol.code == "FIX4.4"
+    assert row.resolved_version() == "4.4"
+
+
+def test_fixt_dict_reconstruction_keeps_the_persisted_application_version() -> None:
+    row = FixMsg.from_dict(
+        {
+            "protocol": int(Protocol.from_str("FIX5SP2")),
+            "beginstring": "FIXT.1.1",
+            "entries": [],
+        }
+    )
+
+    assert row.protocol.code == "FIX5SP2"
+    assert row.resolved_version() == "5.0.SP2"
+
+
+def test_persisted_application_protocol_leads_conflicting_wire_evidence() -> None:
+    row = FixMsg(protocol="FIX5.0", beginstring="FIX.4.4", entries=[])
+    batch = FixMsg.from_message_batch(
+        [Message(protocol="FIX5.0", beginstring="FIX.4.4", message="", entries=[])]
+    )
+
+    assert row.protocol.code == "FIX5.0"
+    assert row.resolved_version() == "5.0"
+    assert _protocols(batch) == ["FIX5.0"]
+    assert FixMsg.into_versions_arrow(batch).to_pylist() == ["5.0"]
+
+
+@pytest.mark.parametrize(
+    ("values", "expected", "version"),
+    [
+        ({"protocol": Protocol.FIX, "beginstring": "FIX.4.4"}, "FIX4.4", "4.4"),
+        ({"protocol": "FIXT1.1", "applverid": "9"}, "FIX5SP2", "5.0.SP2"),
+        (
+            {"protocol": "FIXT1.1", "beginstring": "", "applverid": "9"},
+            "FIX5SP2",
+            "5.0.SP2",
+        ),
+    ],
+)
+def test_structured_fix_evidence_has_scalar_arrow_protocol_parity(
+    values: dict[str, object], expected: str, version: str
+) -> None:
+    scalar = FixMsg(entries=[], **values)
+    batch = FixMsg.from_message_batch([Message(message="", entries=[], **values)])
+    stored = Protocol.from_int(batch.column("protocol")[0].as_py())
+
+    assert scalar.protocol.code == stored.code == expected
+    assert scalar.resolved_version() == version
+    assert FixMsg.into_versions_arrow(batch).to_pylist() == [version]
+
+
+def test_other_protocol_is_authoritative_over_structured_version_evidence() -> None:
+    values = {"protocol": Protocol.OTHER, "beginstring": "FIX.4.4", "entries": []}
+    scalar = FixMsg(**values)
+    batch = FixMsg.from_message_batch([Message(message="", **values)])
+
+    assert scalar.protocol is Protocol.OTHER
+    assert Protocol.from_int(batch.column("protocol")[0].as_py()) is Protocol.OTHER
+    assert scalar.resolved_version() is None
+    assert FixMsg.into_versions_arrow(batch).to_pylist() == [None]
 
 
 def test_scalar_hybrid_projection_prefers_named_registry_identity() -> None:
@@ -1153,7 +1218,7 @@ def test_instrument_groups_resolve_into_their_structured_columns(
         ("AAPL", int(Side.BUY), 1.0),
         ("MSFT", int(Side.SELL), 2.0),
     ]
-    assert legs[0]["maturitydate"] == datetime.date(2027, 1, 15)
+    assert legs[0]["maturitydate"] == datetime.datetime(2027, 1, 15)
     assert [(entry["key"], entry["value"]) for entry in batch.column("entries")[0].as_py()] == [
         ("LegQty", "9")
     ], "a member no column projects stays in `entries`, and nothing is stored twice"
@@ -1200,7 +1265,7 @@ def test_nested_instrument_does_not_absorb_lifecycle_altids() -> None:
 def test_instrument_projection_prefers_promoted_values_and_fills_from_entries() -> None:
     message = FixMsg(
         unix=23,
-        protocolversion="4.4",
+        protocol="FIX4.4",
         instrument=Instrument(symbol="PROMOTED"),
         entries=[(55, "RESIDUAL"), (107, "reference facts")],
     )
@@ -1230,7 +1295,7 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
     )
     batch = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
 
-    assert Protocol.from_int(batch.column("protocol")[0].as_py()) is Protocol.UL
+    assert Protocol.from_int(batch.column("protocol")[0].as_py()).code == "UL4.4"
     altids = batch.column("securityaltid")[0].as_py()
     assert [(entry["securityaltid"], entry["securityaltidsource"]) for entry in altids] == [
         ("US0378331005", "4"),
@@ -1559,8 +1624,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         int(EventType.EXECUTION),
         int(EventType.MISC),
     ]
-    assert _protocols(parsed) == ["FIX", "UL", "OTHER"]
-    assert parsed.column("protocolversion").to_pylist() == ["4.4", "4.4", None]
+    assert _protocols(parsed) == ["FIX4.4", "UL4.4", "OTHER"]
     assert parsed.column("msgtype").to_pylist() == ["D", "8", None]
     assert parsed.column("msgseqnum").to_pylist() == [7, None, None]
     assert parsed.column("origclordid").to_pylist() == ["ROOT", "OLD", None]
@@ -1604,7 +1668,7 @@ def test_fixmsg_projection_does_not_need_the_raw_message(
         raw.select([name for name in raw.schema.names if name != "message"]), codec
     )
 
-    assert _protocols(whole) == ["FIXML", "FIXML"]
+    assert _protocols(whole) == ["FIXML4.4", "FIXML4.4"]
     assert projected.column("protocol").equals(whole.column("protocol"))
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
@@ -1631,7 +1695,7 @@ def test_staged_protocol_matching_the_codec_survives_projection(
     whole = FixMsg.from_message_batch(raw, codec)
     projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
 
-    assert _protocols(whole) == ["FIXML"]
+    assert _protocols(whole) == ["FIXML4.4"]
     assert whole.column("clordid").to_pylist() == ["A"]
     assert projected.column("protocol").equals(whole.column("protocol"))
     assert projected.column("clordid").equals(whole.column("clordid"))
@@ -1773,7 +1837,7 @@ def test_unknown_numeric_fields_follow_the_linked_registry(
     ]
 
     relinked = FixMsg(
-        protocolversion="4.4",
+        protocol="FIX4.4",
         entries=[],
         unmap=[{"tag": 0, "key": "VenueAudit", "value": "Audit"}],
     ).link_registry(custom)
@@ -1944,8 +2008,7 @@ def test_the_lifted_header_reaches_this_stage_as_columns_not_as_entries(
     assert parsed.column("sendingtime").to_pylist() == [
         datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
     ]
-    assert parsed.column("protocolversion").to_pylist() == ["4.4"]
-    assert parsed.column("protocolversionsource").to_pylist() == ["begin_string"]
+    assert _protocols(parsed) == ["FIX4.4"]
     assert parsed.column("checksum").to_pylist() == ["000"], "the trailer is read, not lifted"
 
     # One row at a time reaches the same seven, cast the same way: the scalar
@@ -2042,8 +2105,7 @@ def test_a_header_column_that_is_empty_is_read_back_out_of_the_entries(
         assert batch.column("sendingtime").to_pylist() == [
             datetime.datetime(2026, 8, 14, 9, 30, tzinfo=datetime.UTC)
         ]
-        assert batch.column("protocolversion").to_pylist() == ["4.4"]
-        assert batch.column("protocolversionsource").to_pylist() == ["begin_string"]
+        assert _protocols(batch) == ["FIX4.4"]
         assert batch.column("clordid").to_pylist() == ["C1"]
 
 
@@ -2344,7 +2406,7 @@ def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
     for tag in dictated - set(STAMPS):
         column = COLUMNS[tag]
         if column in _INSTRUMENT_COLUMNS:
-            assert Instrument.into_field().field(column).dtype == pyarrow.date32()
+            assert Instrument.into_field().field(column).dtype == pyarrow.timestamp("us")
         else:
             assert FixMsg.into_field().field(column).dtype == pyarrow.timestamp("us"), (
                 f"{tag} is a date the dictionary types as an instant, and carries no zone"
@@ -2352,6 +2414,11 @@ def test_a_lifted_stamp_is_a_microsecond_utc_timestamp(
 
 
 def test_timestamp_projection_is_naive_until_the_fix_documentation_says_utc() -> None:
+    date = Field(
+        name="LocalDate",
+        dtype=pyarrow.date32(),
+        metadata={"fix:type": "LocalMktDate"},
+    )
     local = Field(
         name="LocalStamp",
         dtype=pyarrow.timestamp("ns"),
@@ -2362,8 +2429,9 @@ def test_timestamp_projection_is_naive_until_the_fix_documentation_says_utc() ->
         dtype=pyarrow.timestamp("ns"),
         metadata={"fix:type": "UTCTimestamp"},
     )
-    assert _physical_type(local) == pyarrow.timestamp("us")
-    assert _physical_type(utc) == pyarrow.timestamp("us", tz="UTC")
+    assert physical_type(date) == pyarrow.timestamp("us")
+    assert physical_type(local) == pyarrow.timestamp("us")
+    assert physical_type(utc) == pyarrow.timestamp("us", tz="UTC")
 
 
 def test_every_flat_column_admits_absence() -> None:
@@ -2470,9 +2538,8 @@ def test_fixml_decodes_a_named_value_inside_its_wire_envelope(
 
     parsed = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
 
-    assert _protocols(parsed) == ["FIXML"]
+    assert _protocols(parsed) == ["FIXML4.2"]
     assert parsed.column("msgtype").to_pylist() == ["UL"]
-    assert parsed.column("protocolversion").to_pylist() == ["4.2"]
     assert parsed.column("exectype").to_pylist() == ["2"]
 
 
@@ -2491,8 +2558,7 @@ def test_ul_enum_names_become_their_real_fix_wire_values(codec: FixCodec) -> Non
         _raw_batch(Message(message=line), Message(message=new_order)), codec
     )
 
-    assert _protocols(parsed) == ["UL", "UL"]
-    assert parsed.column("protocolversion").to_pylist() == ["4.4", "4.4"]
+    assert _protocols(parsed) == ["UL4.4", "UL4.4"]
     assert parsed.column("msgtype").to_pylist() == ["8", "D"]
     assert parsed.column("eventtype").to_pylist() == [
         int(EventType.EXECUTION),
@@ -2536,11 +2602,10 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert wrapped.protocol is Protocol.FIXML
 
     batch = FixMsg.from_message_batch(_raw_batch(echo, heartbeat, wrapped), codec)
-    assert _protocols(batch) == ["UL", "MISC", "FIXML"]
+    assert _protocols(batch) == ["UL4.4", "MISC", "FIXML4.2"]
     assert batch.column("clordid").to_pylist()[0] == "PL024819", "promoted, not dropped"
     assert batch.column("account").to_pylist()[0] == "807768.001"
     assert batch.column("msgtype").to_pylist()[0] == "D"
-    assert batch.column("protocolversion").to_pylist()[0] == "4.4"
     assert batch.column("entries").to_pylist()[1] is None, "operational rows stay unread"
 
     # Without a version the body names stay raw. MsgType is already a promoted
@@ -2552,7 +2617,7 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert bare.protocol is Protocol.UL
     lone = FixMsg.from_message_batch(_raw_batch(bare), codec)
     assert _protocols(lone) == ["UL"]
-    assert lone.column("protocolversion").to_pylist() == [None]
+    assert "protocolversion" not in lone.schema.names
     assert lone.column("msgtype").to_pylist() == ["D"]
     assert lone.column("eventtype").to_pylist() == [int(EventType.ORDER)]
     assert lone.column("entries").to_pylist() == [[]]
@@ -2663,7 +2728,7 @@ INSTRUMENT_COLUMNS = {
     "cficode": "OCASPS",
     "securityexchange": "XNAS",
     "currency": int(Currency.USD),
-    "maturitydate": datetime.date(2026, 12, 18),
+    "maturitydate": datetime.datetime(2026, 12, 18),
     "strikeprice": 150.5,
     "putorcall": int(OptionKind.CALL),
     "contractmultiplier": 100.0,
@@ -2890,7 +2955,7 @@ def test_unknown_versions_and_tags_remain_forward_compatible_non_errors(
 
     parsed = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
 
-    assert parsed.column("protocolversion").to_pylist() == [None]
+    assert _protocols(parsed) == ["FIX9.9"]
     assert parsed.column("error").to_pylist() == [None]
     retained = [
         entry["value"]
@@ -2943,7 +3008,13 @@ def test_a_mixed_protocol_batch_keeps_every_row_where_it_stood(codec: FixCodec) 
     ]
     batch = FixMsg.from_message_batch(_raw_batch(*(Message(message=line) for line in lines)), codec)
 
-    assert _protocols(batch) == ["FIX", "UL", "OTHER", "FIXML", "UL"]
+    assert _protocols(batch) == [
+        "FIX4.4",
+        "UL4.4",
+        "OTHER",
+        "FIXML4.4",
+        "UL4.4",
+    ]
     assert _instrument_column(batch, "symbol").to_pylist() == [
         "AAPL",
         "AAPL",

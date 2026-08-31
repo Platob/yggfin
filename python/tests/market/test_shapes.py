@@ -202,9 +202,11 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
     assert MarketEvent.into_field().field("pxunit").dtype == pyarrow.string()
 
 
-def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
+def test_every_event_uses_one_typed_list_for_exact_event_links() -> None:
     link = Execution.into_field().field("linkedhashes")
-    assert link.dtype.equals(pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False)))
+    assert link.dtype.equals(
+        pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
+    )
     assert not link.nullable
     assert "order_xhash" not in Execution.into_field().names
     assert "order_xcode" not in Execution.into_field().names

@@ -597,7 +597,10 @@ class FixEvents(Convertible):
     @classmethod
     def from_text(cls, text: str | bytes, **carried: Any) -> FixEvents:
         """Events out of one log line, however it spells its separator."""
-        return cls(message=FixMsg.from_text(text), **carried)
+        return cls(
+            message=FixMsg.from_text(text, registry=carried.get("registry")),
+            **carried,
+        )
 
     @classmethod
     def from_pairs(
@@ -610,7 +613,10 @@ class FixEvents(Convertible):
         # With no explicit mapping, keep names until the instance can infer the
         # message version and apply its registry. Resolving newest-first here
         # would silently use the wrong tag for an older/custom version.
-        return cls(message=FixMsg.from_pairs(pairs, names), **carried)
+        return cls(
+            message=FixMsg.from_pairs(pairs, names, registry=carried.get("registry")),
+            **carried,
+        )
 
     # -- reading ------------------------------------------------------------
 
@@ -778,14 +784,17 @@ class FixEvents(Convertible):
     def _reported(self) -> Iterator[MarketEvent]:
         """An ExecutionReport <8>: the order's new state, and the fill if there was one."""
         order = self._order(self.state_of("OrdStatus"))
+        if self.execution_state() is State.UNKNOWN:
+            yield order
+            return
+        # Completed *from the order*, not from a previous report: the running
+        # totals a venue leaves out of a fill are statements about that order.
+        # Build both before yielding either so their relational metadata can
+        # name the two final hashes without changing either identity.
+        execution = self._execution(order)
+        order.link_to(execution)
         yield order
-        if self.execution_state() is not State.UNKNOWN:
-            # Completed *from the order*, not from a previous report: the
-            # running totals a venue leaves out of a fill -- how much is done
-            # now, how much is left, what the average is -- are all statements
-            # about the order this report is on, and the order row is the one
-            # thing here that already holds them.
-            yield self._execution(order)
+        yield execution
 
     def _entries(self, kind: str) -> Iterator[MarketEvent]:
         """One market-data refresh, entry by entry."""
@@ -1052,8 +1061,7 @@ class FixEvents(Convertible):
             state=self.execution_state(),
             kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
             tradeid=get("TradeID") or get("TrdMatchID"),
-            linkedhashes=[order.xhash] if order is not None and order.xhash else [],
-            parenthash=[order.hash] if order is not None and order.hash else [],
+            parenthash=[],
         )
 
     def _entry_order(self, side: Side, snapshot: bool = False) -> Order:
@@ -1135,10 +1143,9 @@ class FixEvents(Convertible):
     def _versioned_message(self) -> FixMsg:
         """The source row carrying an explicitly selected fragment version."""
         selected = self.version
-        if selected is None or self.message.protocolversion == selected:
+        if selected is None or self.message.resolved_version(self.registry) == selected:
             return self.message
-        copied = dataclasses.replace(self.message, protocolversion=selected)
-        return copied.link_registry(self.registry)
+        return self.message.with_version(selected, self.registry)
 
     @functools.cached_property
     def _security_altids(self) -> dict[str, str]:

@@ -57,10 +57,10 @@ fields:
   fix: {display: Xhash}
 - name: linkedhashes
   type: list
-  description: Related lifecycle identities, with the primary match first.
+  description: Exact hashes of related event versions, with the primary match first.
   fix: {display: LinkedHashes}
   item:
-    type: int64
+    type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -234,7 +234,7 @@ fields:
   description: Used to identify whether the order initiator is an aggressor or not in the trade.
   fix: {tag: '1057', type: Boolean, name: AggressorIndicator, display: AggressorIndicator}
 - name: settldate
-  type: date32[day]
+  type: timestamp[us]
   nullable: true
   description: Specific date of trade settlement (SettlementDate) in YYYYMMDD format. If present, this field overrides SettlType (63). This field is required if the value of SettlType (63) is 6 (Future) or 8 (Sellers Option). This field must be omitted if the value of SettlType (63) is 7 (When and If Issued) (expressed in local time at place of settlement)
   fix: {tag: '64', type: LocalMktDate, name: SettlDate, display: SettlDate}

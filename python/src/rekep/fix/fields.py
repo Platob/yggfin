@@ -24,7 +24,7 @@ from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 #: spelling to its UTC instant, and a `LocalMktDate` has no zone in the message
 #: at all -- so the column states the instant and leaves naming the zone to
 #: whoever knows it.
-FIX_INSTANT: pyarrow.DataType = TimestampField.of("ns").dtype
+FIX_INSTANT: pyarrow.DataType = TimestampField.of("us").dtype
 
 #: The FIX datatypes whose reading is a UTC instant: the standard fixes them in
 #: UTC, or the value carries the offset that puts them there and the reader
@@ -49,7 +49,7 @@ UTC_DATATYPES: frozenset[str] = frozenset(
 #: **Every point in time is a timestamp**, whatever width the standard writes
 #: it at. A date is midnight, a time-of-day is that clock on the epoch's day,
 #: and a zoned spelling is the instant its offset names -- because the reader
-#: below already normalises all three to the same epoch nanoseconds, and only
+#: below already normalises all three to the same epoch microseconds, and only
 #: the projection was throwing the difference away. A timestamp is also the one
 #: temporal type a zone can still be applied to afterwards; a `date32` is not.
 #:
@@ -152,7 +152,7 @@ def arrow_type_of(datatype: str | None) -> pyarrow.DataType:
 def declared_arrow_type(text: str) -> pyarrow.DataType | None:
     """The type `text` names, in either spelling a document may use; None for neither.
 
-    Arrow's own first -- `date32[day]`, `timestamp[us, tz=UTC]` -- because
+    Arrow's own first -- `timestamp[s]`, `timestamp[us, tz=UTC]` -- because
     that is what a dumped schema writes and so what a reader of one reaches
     for, and it says the unit and the zone where a FIX datatype only implies
     them. A FIX datatype (`UTCDateOnly`) is the alias it is.
@@ -239,7 +239,7 @@ class FieldRule(Convertible):
     """The field: a tag (`60`), a canonical name, or a rendered key."""
 
     type: str = ""
-    """Arrow type its column stores, as Arrow spells one -- `date32[day]`,
+    """Arrow type its column stores, as Arrow spells one -- `timestamp[s]`,
     `timestamp[us, tz=UTC]`. A FIX datatype (`UTCDateOnly`) is accepted and
     normalizes to what it projects to, so a dumped rule always states its unit
     and its zone. Empty leaves the dictionary's type alone."""
@@ -256,8 +256,11 @@ class FieldRule(Convertible):
         found = declared_arrow_type(self.type)
         if found is None:
             raise ValueError(f"{self.type!r} is neither an Arrow type nor a FIX datatype")
+        if pyarrow.types.is_date(found):
+            found = FIX_INSTANT
         # Held as Arrow spells it, so a rule read back says the unit and the
-        # zone whichever spelling wrote it: `date` dumps as `date32[day]`.
+        # zone whichever spelling wrote it. FIX dates remain timestamp-capable
+        # rather than turning one configured reading into a `date32` column.
         self.type = str(found)
 
     @functools.cached_property
@@ -331,9 +334,9 @@ def cast_arrow_bool(array: Any) -> Any:
 
 #: A FIX timestamp, date or time-of-day, in one pattern. The standard fixes
 #: `UTCTimestamp` as `YYYYMMDD-HH:MM:SS[.sss...]`, `UTCDateOnly` as `YYYYMMDD`
-#: and `UTCTimeOnly` as `HH:MM:SS[.sss...]`; `T` and a space are admitted
-#: because logs rewrite the separator, and a trailing `Z` because feeds add
-#: one. Both halves optional, so one pattern reads all three.
+#: and `UTCTimeOnly` as `HH:MM:SS[.sss...]`; ISO date dashes, `T` and a space
+#: are admitted because logs rewrite those separators, and a trailing `Z`
+#: because feeds add one. Both halves optional, so one pattern reads all three.
 #:
 #: Two bridge spellings are admitted beside the standard's. A colon-free
 #: clock (`094510`, `20260814-094510.250`) lands in `compact`, whole -- six
@@ -346,7 +349,7 @@ def cast_arrow_bool(array: Any) -> Any:
 #: One source string for both engines: `re` reads a value, RE2 reads a column,
 #: and the two are contracted to agree like every other pattern in this package.
 STAMP_PATTERN = (
-    r"^[ \t]*(?:(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?"
+    r"^[ \t]*(?:(?P<year>\d{4})-?(?P<month>\d{2})-?(?P<day>\d{2}))?"
     r"(?:[-T ]?(?P<hour>\d{2})(?::(?P<minute>\d{2})(?::(?P<second>\d{2}))?|(?P<compact>\d{4}))"
     r"(?:\.(?P<fraction>\d{1,9}))?)?"
     r"[ \t]*(?:Z|(?P<zsign>[+-])(?P<zhour>\d{2}):?(?P<zminute>\d{2})s?)?[ \t]*$"

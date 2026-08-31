@@ -1325,6 +1325,35 @@ def test_the_cache_answers_a_version_in_any_case(registry: FixtureRegistry) -> N
     assert [f.name for f in offline.fields("fixt1.1")] == [f.name for f in offline.fields("4.4")]
 
 
+def test_versioned_lookups_read_the_index_once_and_keep_shard_only_fallback(
+    registry: FixtureRegistry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry.fields("4.4")
+    assert "4.4" in registry.versions
+    assert registry.field(54, "4.4") is not None
+    read = registry._documents.read
+    opened: list[str] = []
+
+    def counted(name: str) -> dict[str, object] | None:
+        opened.append(name)
+        return read(name)
+
+    monkeypatch.setattr(registry._documents, "read", counted)
+    assert registry.field(54, "4.4") is not None
+    assert registry.field(54, "4.4") is not None
+    assert "versions.json" not in opened
+
+    assert "9.9" not in registry.versions
+    registry._store_fields("9.9", [fix_field("FutureField", 9000, "String", version="9.9")])
+    assert "versions" not in registry.__dict__
+    opened.clear()
+    assert registry.field(9000, "9.9") is not None
+    assert "versions.json" in opened
+    assert "versions" not in registry.__dict__
+    with pytest.raises(KeyError, match="not a FIX version"):
+        registry.field(9000, "8.8")
+
+
 def test_tags_maps_folded_names_to_tag_numbers(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
     tags = registry.tags()

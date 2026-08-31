@@ -97,7 +97,7 @@ def test_hash_widths_match_their_roles() -> None:
                 assert field.field(name).dtype == pyarrow.int64(), f"{shape.__name__}.{name}"
     assert Leg.into_field().field("xhash").dtype == pyarrow.int64()
     parenthash = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
-    linkedhashes = pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
+    linkedhashes = pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
     for shape in (Event, InstrumentUpdate, MarketEvent, Order, Execution, Book):
         field = shape.into_field()
         assert field.field("prevhash").dtype == HASH, shape.__name__

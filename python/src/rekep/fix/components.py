@@ -108,7 +108,7 @@ class Leg:
     securityexchange: Annotated[str | None, DECLARED["LegSecurityExchange"]] = None
     """Where the leg is listed, when it differs from the strategy's venue."""
 
-    maturitydate: Annotated[datetime.date | None, DECLARED["LegMaturityDate"]] = None
+    maturitydate: Annotated[datetime.datetime | None, DECLARED["LegMaturityDate"]] = None
     """When the leg expires; null for anything that does not."""
 
     maturitymonthyear: Annotated[str | None, DECLARED["LegMaturityMonthYear"]] = None

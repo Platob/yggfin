@@ -309,8 +309,16 @@ def test_a_vendor_namespace_does_not_borrow_the_tag_its_tail_names(codec: FixCod
 
 
 def test_a_promoted_tag_is_only_interpreted_in_a_version_that_declares_it(
-    codec: FixCodec,
+    tmp_path: Path,
 ) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_fields("4.2", [], components=[])
+    registry._store_fields(
+        "4.4",
+        [fix_field("CFICode", 461, "String", version="4.4")],
+        components=[],
+    )
+    codec = FixCodec(registry=registry)
     pairs = parse_arrow_array(pyarrow.array(["461=FXXXSX|"]))
     columns, residual = codec.into_lifted_columns(codec.into_entries(pairs, "4.2"), "4.2")
     assert columns[COLUMNS[461]].to_pylist() == [None]

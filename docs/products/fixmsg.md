@@ -5,6 +5,7 @@ typed columns, and `unix` becomes the instant the message says it happened.
 
 ```python
 from rekep import FixMsg, Message
+from rekep.enums import Protocol
 
 line = (
     "8=FIX.4.4|35=8|49=VENUE|56=DESK|34=7|52=20260101-10:00:00.000|11=C1|37=O1|17=E1|"
@@ -13,13 +14,14 @@ line = (
 staged = Message.from_text(line, message=line)
 row = FixMsg.from_message_batch([staged]).to_pylist()[0]
 
-for name in ("protocolversion", "side", "lastpx", "ordstatus", "unix", "unixsource"):
+row["protocol"] = Protocol.from_int(row["protocol"]).code
+for name in ("protocol", "side", "lastpx", "ordstatus", "unix", "unixsource"):
     print(f"{name:17} {row[name]!r}")
 print(f"{'instrument.symbol':17} {row['instrument']['symbol']!r}")
 ```
 
 ```text
-protocolversion   '4.4'
+protocol          'FIX4.4'
 side              '1'
 lastpx            100.25
 ordstatus         '2'

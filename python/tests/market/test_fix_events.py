@@ -360,7 +360,8 @@ def test_the_order_carries_what_remains_and_the_fill_what_moved() -> None:
 
 def test_the_order_comes_first_because_the_fill_points_at_it() -> None:
     order, fill = events(FILLED)
-    assert fill.linkedhashes == [order.xhash]
+    assert fill.linkedhashes == [order.hash]
+    assert order.linkedhashes == [fill.hash]
     assert fill.parenthash == [order.hash]
 
 
@@ -799,13 +800,13 @@ def test_an_instrument_with_no_cfi_is_unknown_rather_than_guessed() -> None:
 
 def test_the_option_fields_are_read_where_a_venue_sends_them() -> None:
     (order,) = events(
-        "35=D|55=AAPL|11=C|461=OCASPS|201=1|202=150.5|541=20261218|60=20260821-10:00:00"
+        "35=D|55=AAPL|11=C|461=OCASPS|201=1|202=150.5|541=2026-12-18|60=20260821-10:00:00"
     )
     instrument = order.into_instrument()
     assert instrument is not None
     assert instrument.putorcall is OptionKind.CALL
     assert instrument.strikeprice == 150.5
-    assert instrument.maturitydate == datetime.date(2026, 12, 18)
+    assert instrument.maturitydate == datetime.datetime(2026, 12, 18)
 
 
 # -- what the shapes do not have a column for --------------------------------
@@ -1062,6 +1063,29 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     assert "9004" not in order.metadata, "the configured Side tag is a claimed column"
     assert order.metadata["9008"] == "ALPHA", "a registry-only field remains auditable"
 
+    pair_reader = FixEvents.from_pairs(
+        [
+            ("BeginString", "FIX.VENUE1"),
+            ("MsgType", "D"),
+            ("Symbol", "AAPL"),
+            ("ClOrdID", "CUSTOM-1"),
+            ("Side", "1"),
+            ("OrderQty", "7"),
+            ("Price", "10.5"),
+            ("TransactTime", "20260821-10:00:00"),
+            ("DeskCode", "ALPHA"),
+        ],
+        registry=registry,
+    )
+    (pair_order,) = list(pair_reader)
+    assert pair_reader.version == "VENUE1"
+    assert (pair_order.symbolticker, pair_order.clordid, pair_order.side) == (
+        "AAPL",
+        "CUSTOM-1",
+        Side.BUY,
+    )
+    assert pair_order.metadata["9008"] == "ALPHA"
+
 
 # -- the dictionary these shapes are their own ------------------------------
 
@@ -1273,7 +1297,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
     stored = FixMsg(
         beginstring="FIX.4.4",
         msgtype="d",
-        protocolversion="4.4",
+        protocol="FIX4.4",
         securityaltid=[
             SecurityAltIDEntry(securityaltid="US0378331005", securityaltidsource="4"),
             SecurityAltIDEntry(securityaltid="037833100", securityaltidsource="1"),
@@ -1286,7 +1310,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
                     symbol="AAPL",
                     side=Side.BUY,
                     ratio=1.0,
-                    maturitydate=datetime.date(2027, 1, 15),
+                    maturitydate=datetime.datetime(2027, 1, 15),
                     strikeprice=150.5,
                 ),
                 Leg(symbol="MSFT", side=Side.SELL, ratio=2.0, currency="USD"),
@@ -1300,7 +1324,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         ("AAPL", Side.BUY, 1.0),
         ("MSFT", Side.SELL, 2.0),
     ]
-    assert instrument.legs[0].maturitydate == datetime.date(2027, 1, 15)
+    assert instrument.legs[0].maturitydate == datetime.datetime(2027, 1, 15)
     assert instrument.legs[0].strikeprice == 150.5
     assert instrument.legs[1].currency == Currency.USD
 
@@ -1448,7 +1472,7 @@ def test_an_execution_carries_how_its_trade_settles() -> None:
         "60=20260814-10:00:00|10=000"
     )
     (execution,) = list(FixEvents.from_text(line))
-    assert execution.settldate == datetime.date(2026, 8, 18)
+    assert execution.settldate == datetime.datetime(2026, 8, 18)
     assert execution.settltype == "W2"
     assert execution.settlcurrency == "USD"
     assert execution.settlcurrfxratecalc == "M"

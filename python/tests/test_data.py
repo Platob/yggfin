@@ -19,6 +19,7 @@ import pyarrow
 import pytest
 
 from rekep.fix import FIX_SCALARS, FixRegistry
+from rekep.fix.classify import NAMESPACE, NEAR, KeyCount, KeyCounts, classify
 from rekep.fix.columns import _ORDER
 from rekep.fix.entries import ANY_VERSION
 from rekep.fix.fields import fix_field
@@ -653,7 +654,24 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     # correct one in each case, and never a string standing in for a number.
     assert registry.field("RatioQty", "4.3").dtype == pyarrow.float64()
     assert registry.field("MaturityDay", "4.1").dtype == pyarrow.int64()
-    assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.timestamp("ns")
+    assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.timestamp("us")
+
+
+def test_published_versions_keep_the_promoted_field_boundary(registry: FixRegistry) -> None:
+    assert registry.field("CFICode", "4.2") is None
+    assert registry.field("CFICode", "4.4").fix.tag == 461
+
+
+def test_published_names_keep_the_classification_examples(registry: FixRegistry) -> None:
+    """The small unit registry stays representative of the published vocabulary."""
+    names = ("PARTYROLLE", "SIDDE", "TECH.CLIENTID", "VENDOR.SOURCE")
+    counts = KeyCounts(counts={name: KeyCount(name, bare=1) for name in names})
+    rows = {row.name: row for row in classify(counts, registry).rows}
+
+    assert (rows["PARTYROLLE"].kind, rows["PARTYROLLE"].resolved) == (NEAR, "PartyRole")
+    assert (rows["SIDDE"].kind, rows["SIDDE"].resolved) == (NEAR, "Side")
+    assert rows["TECH.CLIENTID"].kind == NAMESPACE
+    assert rows["VENDOR.SOURCE"].kind == NAMESPACE
 
 
 # -- source merging -----------------------------------------------------------

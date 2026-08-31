@@ -57,10 +57,10 @@ fields:
   fix: {display: Xhash}
 - name: linkedhashes
   type: list
-  description: Related lifecycle identities, with the primary match first.
+  description: Exact hashes of related event versions, with the primary match first.
   fix: {display: LinkedHashes}
   item:
-    type: int64
+    type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.

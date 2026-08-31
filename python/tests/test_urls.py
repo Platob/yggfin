@@ -7,6 +7,7 @@ failure this file has ever had came from.
 """
 
 import os
+import runpy
 from pathlib import Path
 
 import pyarrow.fs
@@ -685,9 +686,64 @@ def test_s3_environment_translates_portable_defaults_and_endpoint_fallbacks() ->
         "s3.endpoint": "http://portable:9000",
     }
     environment["S3_ENDPOINT_URL"] = ""
+    urls._capture_s3_environment(environment)
     assert s3_environment(environment)["s3.endpoint"] == "http://service:9000"
+    environment["S3_ENDPOINT_URL"] = ""
     environment["AWS_ENDPOINT_URL_S3"] = ""
+    urls._capture_s3_environment(environment)
     assert s3_environment(environment)["s3.endpoint"] == "http://global:9000"
+
+
+def test_module_initialization_captures_standard_aws_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for target, sources in urls.S3_AWS_ENVIRONMENT:
+        monkeypatch.delenv(target, raising=False)
+        for source in sources:
+            monkeypatch.delenv(source, raising=False)
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "aws-key")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "aws-secret")
+    monkeypatch.setenv("AWS_SESSION_TOKEN", "aws-token")
+    monkeypatch.setenv("AWS_REGION", "eu-west-1")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-west-2")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://service:9000")
+    monkeypatch.setenv("AWS_ENDPOINT_URL", "http://global:9000")
+
+    runpy.run_path(urls.__file__)
+
+    assert os.environ["S3_ACCESS_KEY_ID"] == "aws-key"
+    assert os.environ["S3_SECRET_ACCESS_KEY"] == "aws-secret"
+    assert os.environ["S3_SESSION_TOKEN"] == "aws-token"
+    assert os.environ["S3_REGION"] == "eu-west-1"
+    assert os.environ["S3_ENDPOINT_URL"] == "http://service:9000"
+
+
+def test_explicit_portable_s3_settings_win_over_aws_settings() -> None:
+    environment = {
+        "S3_ACCESS_KEY_ID": "s3-key",
+        "S3_REGION": "s3-region",
+        "S3_ENDPOINT_URL": "http://portable:9000",
+        "AWS_ACCESS_KEY_ID": "aws-key",
+        "AWS_SECRET_ACCESS_KEY": "aws-secret",
+        "AWS_DEFAULT_REGION": "aws-region",
+        "AWS_ENDPOINT_URL_S3": "http://service:9000",
+    }
+    urls._capture_s3_environment(environment)
+    assert environment == {
+        "S3_ACCESS_KEY_ID": "s3-key",
+        "S3_REGION": "s3-region",
+        "S3_ENDPOINT_URL": "http://portable:9000",
+        "AWS_ACCESS_KEY_ID": "aws-key",
+        "AWS_SECRET_ACCESS_KEY": "aws-secret",
+        "AWS_DEFAULT_REGION": "aws-region",
+        "AWS_ENDPOINT_URL_S3": "http://service:9000",
+        "S3_SECRET_ACCESS_KEY": "aws-secret",
+    }
+
+    defaults = {"AWS_DEFAULT_REGION": "us-west-2", "AWS_ENDPOINT_URL": "http://global:9000"}
+    urls._capture_s3_environment(defaults)
+    assert defaults["S3_REGION"] == "us-west-2"
+    assert defaults["S3_ENDPOINT_URL"] == "http://global:9000"
 
 
 def test_empty_s3_environment_values_are_not_configuration() -> None:

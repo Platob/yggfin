@@ -81,7 +81,7 @@
  },
  "2005": {
   "name": "UnderlyingIndexAnnexDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2005",
@@ -322,7 +322,7 @@
  },
  "2020": {
   "name": "UnderlyingSettledEntityMatrixPublicationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2020",
@@ -658,7 +658,7 @@
  },
  "2041": {
   "name": "UnderlyingDatedDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2041",
@@ -674,7 +674,7 @@
  },
  "2042": {
   "name": "UnderlyingInterestAccrualDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2042",
@@ -866,7 +866,7 @@
  },
  "2054": {
   "name": "UnderlyingComplexEventStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2054",
@@ -882,7 +882,7 @@
  },
  "2055": {
   "name": "UnderlyingComplexEventEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2055",
@@ -914,7 +914,7 @@
  },
  "2057": {
   "name": "UnderlyingComplexEventStartTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2057",
@@ -930,7 +930,7 @@
  },
  "2058": {
   "name": "UnderlyingComplexEventEndTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2058",
@@ -978,7 +978,7 @@
  },
  "2061": {
   "name": "LegEventDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2061",
@@ -994,7 +994,7 @@
  },
  "2062": {
   "name": "LegEventTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2062",
@@ -1346,7 +1346,7 @@
  },
  "2084": {
   "name": "PreviousClearingBusinessDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2084",
@@ -1361,7 +1361,7 @@
  },
  "2085": {
   "name": "ValuationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2085",
@@ -1376,7 +1376,7 @@
  },
  "2086": {
   "name": "ValuationTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2086",
@@ -1855,7 +1855,7 @@
  },
  "2116": {
   "name": "NextAuctionTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2116",
@@ -2563,7 +2563,7 @@
  },
  "2160": {
   "name": "LegSettledEntityMatrixPublicationDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2160",
@@ -2787,7 +2787,7 @@
  },
  "2174": {
   "name": "LegIndexAnnexDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2174",
@@ -3267,7 +3267,7 @@
  },
  "2204": {
   "name": "LegComplexEventStartTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2204",
@@ -3956,7 +3956,7 @@
  },
  "2247": {
   "name": "LegComplexEventEndTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2247",
@@ -4020,7 +4020,7 @@
  },
  "2251": {
   "name": "LegComplexEventStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2251",
@@ -4036,7 +4036,7 @@
  },
  "2252": {
   "name": "LegComplexEventEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2252",
@@ -6390,7 +6390,7 @@
  },
  "2400": {
   "name": "EffectiveBusinessDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2400",
@@ -7105,7 +7105,7 @@
  },
  "2445": {
   "name": "AggressorTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2445",
@@ -7475,7 +7475,7 @@
  },
  "2468": {
   "name": "MDStatisticStartDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2468",
@@ -7491,7 +7491,7 @@
  },
  "2469": {
   "name": "MDStatisticEndDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2469",
@@ -7507,7 +7507,7 @@
  },
  "2470": {
   "name": "MDStatisticStartTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2470",
@@ -7523,7 +7523,7 @@
  },
  "2471": {
   "name": "MDStatisticEndTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2471",
@@ -7604,7 +7604,7 @@
  },
  "2476": {
   "name": "MDStatisticTime",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2476",
@@ -7921,7 +7921,7 @@
  },
  "2496": {
   "name": "LegAgreementDate",
-  "type": "timestamp[ns]",
+  "type": "timestamp[us]",
   "nullable": true,
   "fix": {
    "tag": "2496",

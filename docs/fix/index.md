@@ -71,9 +71,9 @@ for name in ("TransactTime", "MDEntryDate", "MDEntryTime", "MaturityMonthYear"):
 ```
 
 ```text
-UTCTimestamp   timestamp[ns]
-UTCDateOnly    timestamp[ns]
-UTCTimeOnly    timestamp[ns]
+UTCTimestamp   timestamp[us]
+UTCDateOnly    timestamp[us]
+UTCTimeOnly    timestamp[us]
 MonthYear      string
 ```
 
@@ -88,6 +88,18 @@ fixes in UTC, or one whose value carries the offset that puts it there, lands
 in `timestamp[us, tz=UTC]`; a `LocalMktDate` is a wall clock in a place the
 message never names, so its column stays naive rather than claiming a zone it
 does not have.
+
+```python
+from rekep.market import Execution, Instrument
+
+print(Instrument.into_field().field("maturitydate").dtype)
+print(Execution.into_field().field("settldate").dtype)
+```
+
+```text
+timestamp[us]
+timestamp[us]
+```
 
 `MonthYear` is the deliberate exception and stays text: `202608` is a month
 and `202608w2` a week, and neither is an instant.

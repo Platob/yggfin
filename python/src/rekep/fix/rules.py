@@ -162,7 +162,7 @@ class Rule(Convertible):
             raise ValueError(
                 f"{self.protocol!r} is no protocol name: at most eight bytes of [A-Z0-9._-]"
             )
-        self.protocol = declared
+        self.protocol = declared.family
         if isinstance(self.extra_entry_separators, str):
             self.extra_entry_separators = (self.extra_entry_separators,)
         else:
@@ -253,7 +253,7 @@ class Rules(Convertible):
         batch may carry a code this set no longer declares, and that is a
         line nobody parses rather than a configuration error.
         """
-        wanted = Protocol.from_str(protocol)
+        wanted = Protocol.from_str(protocol).family
         for rule in self.rules:
             # By value, not identity: an open vocabulary evicts a code it
             # learnt at runtime, and the member a rule holds outlives that.
@@ -270,7 +270,7 @@ class Rules(Convertible):
             return MARKET_CATEGORY
         if kind is EventType.MISC:
             return MISC_CATEGORY
-        if Protocol.from_str(protocol) in self.protocols:
+        if Protocol.from_str(protocol).family in self.protocols:
             return MISC_CATEGORY
         return UNKNOWN_CATEGORY
 
@@ -325,7 +325,7 @@ class Rules(Convertible):
         if not rows:
             return found
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
-        codes = protocols.cast(_PROTOCOL_CODE, safe=False)
+        codes = Protocol.into_family_arrow(protocols)
         for protocol, anchor in self._anchors().items():
             selected = compute.fill_null(compute.equal(codes, protocol), False)
             if not compute.any(selected, min_count=0).as_py():
@@ -384,7 +384,7 @@ class Rules(Convertible):
         )
         known = compute.fill_null(
             compute.is_in(
-                protocols.cast(_PROTOCOL_CODE, safe=False),
+                Protocol.into_family_arrow(protocols),
                 value_set=pyarrow.array(sorted(self.protocols), _PROTOCOL_CODE),
             ),
             False,

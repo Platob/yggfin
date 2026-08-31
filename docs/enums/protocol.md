@@ -5,23 +5,24 @@
 ```python
 from rekep.enums import Protocol
 
-carried = Protocol.from_str("FIX")
-assert carried.code == "FIX"
+carried = Protocol.from_str("FIX.5.0.SP2")
+assert carried.code == "FIX5SP2"
+assert carried.family is Protocol.FIX
+assert carried.version == "5.0.SP2"
 assert Protocol.from_int(int(carried)) is carried
 ```
 
-Which grammar a payload is written in, decided by the keys it holds and never
-by their values. The vocabulary belongs to the logs rather than to this
-package: [`rekep.fix.rules`](../fix/configuring.md#which-lines-carry-a-message)
-ships the five below, and a rule naming its own bridge stores that name
-without a release here. Up to eight bytes of `[A-Z0-9._-]` is the shape such a
-name has to fit -- the shape a code reads back as, so one name never packs as
-two -- and a rule declaring anything else is refused rather than stored as
-`UNKNOWN`.
+The grammar comes first and the resolved version follows it. Service packs
+drop punctuation to fit exactly: `FIX5SP2` is FIX 5.0 SP2. `FXML5SP2` keeps
+the FIXML grammar and the same version.
 
-`Message.protocol` and `FixMsg.protocol` are the columns that hold it. A line
-no rule recognised is `OTHER`, which is most of a capture, so the column is
-NOT NULL and `OTHER` is what a row starts as.
+The vocabulary belongs to the logs rather than to this package. A rule naming
+its own bridge stores that name without a release here. Up to eight bytes of
+`[A-Z0-9._-]` is the stored shape.
+
+`Message.protocol` carries the grammar found without a registry. `FixMsg.protocol`
+adds the version resolved from `BeginString` and application-version fields. A
+line no rule recognised is `OTHER`, so the column is NOT NULL.
 
 | Key | Code | Stored value | Meaning |
 | --- | --- | ---: | --- |

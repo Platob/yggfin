@@ -1386,14 +1386,22 @@ class FixRegistry(Convertible):
         if version is None:
             return self.versions
         wanted = str(version).strip().lower()
+        available = self.__dict__.get("versions")
+        if available is not None:
+            for candidate in available:
+                if candidate.lower() == wanted:
+                    return (candidate,)
+        # A store can predate versions.json or receive one version's shards
+        # independently. Only an index miss earns the wider store scan.
         stored = tuple(dict.fromkeys((*self._stored_versions(), *self._known_versions())))
         for candidate in stored:
             if candidate.lower() == wanted:
                 return (candidate,)
-        available = self.versions
-        for candidate in available:
-            if candidate.lower() == wanted:
-                return (candidate,)
+        if available is None:
+            available = self.versions
+            for candidate in available:
+                if candidate.lower() == wanted:
+                    return (candidate,)
         raise KeyError(f"{version!r} is not a FIX version here; one of {available}")
 
     # -- fields --------------------------------------------------------------

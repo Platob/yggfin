@@ -57,10 +57,10 @@ fields:
   fix: {display: Xhash}
 - name: linkedhashes
   type: list
-  description: Related lifecycle identities, with the primary match first.
+  description: Exact hashes of related event versions, with the primary match first.
   fix: {display: LinkedHashes}
   item:
-    type: int64
+    type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -134,7 +134,7 @@ fields:
   fix: {display: Message}
 - name: protocol
   type: int64
-  description: Which protocol the line carries; OTHER is a line that carries none.
+  description: Protocol grammar and resolved version; OTHER carries neither.
   fix: {display: Protocol}
   enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
 - name: beginstring
@@ -322,15 +322,6 @@ fields:
   type: string
   description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock.
   fix: {display: UnixSource}
-- name: protocolversion
-  type: string
-  nullable: true
-  description: Which version of `protocol` the line is read under; null when unresolved.
-  fix: {display: ProtocolVersion}
-- name: protocolversionsource
-  type: string
-  description: 'What resolved `protocolversion`: a BeginString, an application version, or nothing.'
-  fix: {display: ProtocolVersionSource}
 - name: unmap
   type: list
   nullable: true
@@ -736,7 +727,7 @@ fields:
     description: The trading lot size of a security
     fix: {tag: '561', type: Qty, name: RoundLot, display: RoundLot}
   - name: maturitydate
-    type: date32[day]
+    type: timestamp[us]
     nullable: true
     description: Date of maturity.
     fix: {tag: '541', type: LocalMktDate, name: MaturityDate, display: MaturityDate}
@@ -828,7 +819,7 @@ fields:
         description: Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier (23) field for description
         fix: {tag: '614', type: float, name: LegContractMultiplier, display: LegContractMultiplier}
       - name: maturitydate
-        type: date32[day]
+        type: timestamp[us]
         nullable: true
         description: Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description
         fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate, display: LegMaturityDate}

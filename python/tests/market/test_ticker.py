@@ -12,7 +12,7 @@ def test_the_readable_symbol_precedes_the_security_identifier() -> None:
     """First rung of the ladder: what the desk, the venue and a reader all call
     the instrument, under the venue that named it."""
     message = FixMsg(
-        protocolversion="4.2",
+        protocol="FIX4.2",
         instrument=Instrument(
             securityexchange="xnas",
             securityidsource="4",

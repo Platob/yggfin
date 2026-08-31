@@ -86,8 +86,8 @@ ALTIDS_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
 
-#: Related lifecycle identities use their native signed 64-bit width.
-_LINKED_HASHES_TYPE = pyarrow.list_(pyarrow.field("item", pyarrow.int64(), nullable=False))
+#: Relations name immutable event versions, at the same width as `hash`.
+_LINKED_HASHES_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 
 #: The list a `parenthash` is, at the width an identifier is stored in.
 _PARENT_HASH_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
@@ -192,7 +192,7 @@ class Event(MarketConvertible):
         Field(dtype=_LINKED_HASHES_TYPE),
         Field.column("LinkedHashes"),
     ] = dataclasses.field(default_factory=list)
-    """Related lifecycle identities, with the primary match first."""
+    """Exact hashes of related event versions, with the primary match first."""
 
     version: int = 0
     """Which version of `xhash` this is, counting up from the first."""
@@ -214,7 +214,8 @@ class Event(MarketConvertible):
     prevhash: Annotated[int | None, Field(dtype=HASH), Field.column("PrevHash")] = None
     """The previous version's hash; null on the first version."""
 
-    # `parenthash` values are distinct from `linkedhashes` lifecycle relations.
+    # Parent hashes record construction provenance; linked hashes record
+    # business relations. Both name exact immutable event versions.
     parenthash: Annotated[
         list[int] | None, Field(dtype=_PARENT_HASH_TYPE), Field.column("ParentHash")
     ] = None
@@ -254,7 +255,7 @@ class Event(MarketConvertible):
         if not isinstance(source, FixMsg):
             raise TypeError(f"source must be FixMsg, got {type(source).__name__}")
         selected = registry or source.registry
-        access = FieldAccess.of(selected, source.protocolversion)
+        access = FieldAccess.of(selected, source.resolved_version(selected))
         values = _promoted_values(cls, source, access)
         for name, value in _entry_values(cls, source.entries or (), access).items():
             values.setdefault(name, value)
@@ -363,6 +364,7 @@ class Event(MarketConvertible):
             self.vhash = self.hash_of(*self.version_parts())
         if not self.hash:
             self.hash = txhash.couple128(self.unix // MICROSECOND, self.vhash)
+        self._drop_self_link()
         return self
 
     def with_previous(self, previous: Event | None) -> Self | None:
@@ -499,9 +501,9 @@ class Event(MarketConvertible):
             return self
         given: list[int] = []
         for event in events:
-            xhash = event.xhash if isinstance(event, Event) else int(event)
-            if xhash:
-                given.append(int(xhash))
+            event_hash = event.hash if isinstance(event, Event) else int(event)
+            if event_hash:
+                given.append(int(event_hash))
         given = list(dict.fromkeys(given))
         existing = list(self.linkedhashes)
         ordered = given + existing if primary else existing + given
@@ -511,13 +513,13 @@ class Event(MarketConvertible):
 
     @property
     def primary_linked_hash(self) -> int | None:
-        """First related lifecycle, when one is known."""
+        """First related event version, when one is known."""
         return self.linkedhashes[0] if self.linkedhashes else None
 
     def _drop_self_link(self) -> None:
-        """A relation never points back to its own lifecycle."""
-        if self.xhash and self.linkedhashes:
-            self.linkedhashes = [linked for linked in self.linkedhashes if linked != self.xhash]
+        """A relation never points back to its own immutable version."""
+        if self.hash and self.linkedhashes:
+            self.linkedhashes = [linked for linked in self.linkedhashes if linked != self.hash]
 
     def derive(self) -> None:
         """Fill what this row's own fields already determine.
@@ -607,14 +609,14 @@ class Event(MarketConvertible):
 
     def version_parts(self) -> tuple[Any, ...]:
         """Current non-clock values in the lifecycle's framed hash domain."""
-        links = tuple(self.linkedhashes)
+        # Relations are metadata around two already final event hashes. Keeping
+        # them out of `vhash`, as parent provenance already is, lets an Order
+        # and its Execution point at each other without circular identities.
         return (
             hash_bytes_of(self.xhash),
             self.eventtype,
             self.state,
             self.mic,
-            len(links),
-            *links,
             self.code,
             self.reason,
             *_mapping_parts(self.altids),
@@ -1098,7 +1100,39 @@ def _declared_value_parts(value: Any) -> tuple[Any, ...]:
         return tuple(parts)
     if isinstance(value, list | tuple):
         return (True, len(value), *(part for item in value for part in _declared_value_parts(item)))
-    return (value.isoformat() if isinstance(value, datetime.date) else value,)
+    return (_declared_temporal(value) if isinstance(value, datetime.date) else value,)
+
+
+def _declared_temporal(value: datetime.date) -> str:
+    """One market identity timestamp in the spelling Arrow can reproduce."""
+    if not isinstance(value, datetime.datetime):
+        return value.isoformat()
+    if value.tzinfo is not None:
+        value = value.astimezone(datetime.UTC)
+        return value.isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return value.isoformat(timespec="microseconds")
+
+
+def _local_timestamp(value: datetime.date | None) -> datetime.datetime | None:
+    """One local-market value in the naive timestamp form its schema stores.
+
+    Arrow drops the zone after converting an aware value to UTC for a naive
+    timestamp. Normalize before identity is derived so scalar and Arrow paths
+    see the same instant.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, datetime.datetime):
+        return datetime.datetime.combine(value, datetime.time())
+    if value.utcoffset() is not None:
+        return value.astimezone(datetime.UTC).replace(tzinfo=None)
+    return value
+
+
+def _declared_temporal_arrow(values: pyarrow.Array) -> pyarrow.Array:
+    """Vectorized spelling used by `_declared_temporal`."""
+    spelled = values.cast(pyarrow.string())
+    return pyarrow.compute.replace_substring(spelled, " ", "T", max_replacements=1)
 
 
 @functools.lru_cache(maxsize=65_536)

@@ -181,8 +181,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 
 - Events are immutable versions. `vhash` identifies a clock-free value,
   `hash` anchors it to one event time, `xhash` identifies a lifecycle,
-  `prevhash` its previous version, and `linkedhashes` relates lifecycles by
-  `xhash`.
+  `prevhash` its previous version, and `linkedhashes` names exact related
+  event versions by `hash`. `parenthash` records construction provenance.
+- `linkedhashes` is excluded from `vhash`, so two final events such as an
+  Order and its Execution can point at each other without circular identities.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
   `vhash` and lifecycle identities are signed `int64`; `hash` composes epoch

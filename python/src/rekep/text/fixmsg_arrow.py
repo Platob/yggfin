@@ -74,13 +74,13 @@ def into_flat_fixmsg_batch(
     ):
         return None
 
-    protocolversion, protocolversionsource = _versions(
+    versions, _ = _versions(
         codec, entries, tags, values, rows, columns.get("beginstring"), columns.get("applverid")
     )
-    versions = compute.drop_null(compute.unique(protocolversion))
-    if protocolversion.null_count or len(versions) != 1:
+    distinct_versions = compute.drop_null(compute.unique(versions))
+    if versions.null_count or len(distinct_versions) != 1:
         return None
-    version = versions[0].as_py()
+    version = distinct_versions[0].as_py()
     group_tags = codec.registry.group_count_tags(version)
     if (
         group_tags
@@ -102,9 +102,7 @@ def into_flat_fixmsg_batch(
     output = dict(columns)
     output.update(
         {
-            "protocol": protocols,
-            "protocolversion": protocolversion,
-            "protocolversionsource": protocolversionsource,
+            "protocol": Protocol.with_versions_arrow(protocols, versions),
             "entries": residual,
             "unmap": unmap,
             **promoted,

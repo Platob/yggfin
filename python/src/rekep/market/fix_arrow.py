@@ -15,6 +15,7 @@ from rekep.fields.arrays import build_list, build_map, dense_counts, interleave,
 from rekep.fields.names import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_fix
+from rekep.market.event import _declared_temporal_arrow
 from rekep.market.fix import (
     _TRADE_EVIDENCE_FIELDS,
     CANCEL_REJECT_HANDLER,
@@ -145,9 +146,11 @@ def flat_market_parts(
         return None
     columns = _with_instrument_columns({name: batch.column(name) for name in batch.schema.names})
     msg_type = columns.get("msgtype")
-    version = columns.get("protocolversion")
+    from rekep.text.fixmsg import FixMsg
+
+    version = FixMsg.into_versions_arrow(columns, declared.get("registry"))
     entries = columns.get("entries")
-    if msg_type is None or version is None or entries is None:
+    if msg_type is None or entries is None:
         return None
     if version.null_count:
         return None
@@ -248,6 +251,8 @@ def flat_market_parts(
         if len(execution_at)
         else None
     )
+    if orders is not None and executions is not None:
+        orders = _link_report_orders(orders, order_at, executions, execution_at)
     return orders, executions, order_at, execution_at
 
 
@@ -259,9 +264,11 @@ def flat_market_positions(
         return
     columns = {name: batch.column(name) for name in batch.schema.names}
     msg_type = columns.get("msgtype")
-    versions = columns.get("protocolversion")
+    from rekep.text.fixmsg import FixMsg
+
+    versions = FixMsg.into_versions_arrow(columns, declared.get("registry"))
     entries = columns.get("entries")
-    if msg_type is None or versions is None or entries is None:
+    if msg_type is None or entries is None:
         return
     positions = sequence(batch.num_rows)
     configured = declared.get("fix_version")
@@ -623,7 +630,7 @@ def _orders(
     null_text = pyarrow.nulls(len(where), pyarrow.string())
     vhash = _value_hash_arrow(
         Order,
-        (arrow_of(xhash), eventtype, state, mic, 0, code, reason),
+        (arrow_of(xhash), eventtype, state, mic, code, reason),
         altids,
         (
             arrow_of(instrumentxhash),
@@ -772,14 +779,12 @@ def _executions(
         ),
     )
     order_by_source = _order_lookup(orders, order_at, where)
-    order_xhash = order_by_source["xhash"]
     order_hash = order_by_source["hash"]
-    order_lifecycle = order_xhash
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
     linked = build_list(
         Execution.into_field().field("linkedhashes").dtype,
         linked_sizes,
-        compute.filter(order_lifecycle, reported),
+        compute.filter(order_hash, reported),
     )
     parent = build_list(
         Execution.into_field().field("parenthash").dtype,
@@ -791,10 +796,12 @@ def _executions(
     null_float = pyarrow.nulls(rows, pyarrow.float64())
     eventtype = _constant(rows, int(EventType.EXECUTION), pyarrow.int64())
     altids = shared.take(shared.altids, where)
+    altids = _with_order_roots(altids, order_by_source["code"], reported)
     pxunit = shared.take(shared.pxunit, where)
     qtyunit = _constant(rows, "", pyarrow.string())
     metadata = shared.take(shared.metadata, where)
-    settldate = shared.take(values.raw("SettlDate", pyarrow.date32()), where)
+    settldate_type = Execution.into_field().field("settldate").dtype
+    settldate = shared.take(values.raw("SettlDate", settldate_type), where)
     settltype = shared.take(values.text("SettlType"), where)
     settlcurrency = shared.take(values.text("SettlCurrency"), where)
     settlcurrfxratecalc = shared.take(values.text("SettlCurrFxRateCalc"), where)
@@ -821,28 +828,19 @@ def _executions(
         leaves,
         vwap,
         aggressorindicator,
-        settldate.cast(pyarrow.string()),
+        _declared_temporal_arrow(settldate),
         settltype,
         settlcurrency,
         settlcurrfxratecalc,
     )
-    no_link_vhash = _value_hash_arrow(
+    vhash = _value_hash_arrow(
         Execution,
-        (arrow_of(xhash), eventtype, state, mic, 0, code, reason),
+        (arrow_of(xhash), eventtype, state, mic, code, reason),
         altids,
         market_values,
         metadata,
         execution_values,
     )
-    linked_vhash = _value_hash_arrow(
-        Execution,
-        (arrow_of(xhash), eventtype, state, mic, 1, order_lifecycle, code, reason),
-        altids,
-        market_values,
-        metadata,
-        execution_values,
-    )
-    vhash = compute.if_else(reported, linked_vhash, no_link_vhash)
     event_hash = txhash.couple128_arrow(Execution._clock_micros(unix), vhash)
     columns: dict[str, pyarrow.Array] = {
         "unix": unix,
@@ -890,17 +888,78 @@ def _executions(
     return _batch(Execution, columns, rows)
 
 
+def _link_report_orders(
+    orders: pyarrow.RecordBatch,
+    order_at: pyarrow.Array,
+    executions: pyarrow.RecordBatch,
+    execution_at: pyarrow.Array,
+) -> pyarrow.RecordBatch:
+    """Relate each report Order to the Execution from the same source row."""
+    locations = compute.index_in(order_at, value_set=execution_at)
+    matched = compute.is_valid(locations)
+    safe_locations = compute.fill_null(locations, 0)
+    execution_hashes = compute.take(executions.column("hash"), safe_locations)
+    linked = build_list(
+        Order.into_field().field("linkedhashes").dtype,
+        matched.cast(pyarrow.int64()),
+        compute.filter(execution_hashes, matched),
+    )
+    at = orders.schema.get_field_index("linkedhashes")
+    return orders.set_column(at, orders.schema.field(at), linked)
+
+
 def _order_lookup(
     orders: pyarrow.RecordBatch | None, order_at: pyarrow.Array, execution_at: pyarrow.Array
 ) -> dict[str, pyarrow.Array]:
     rows = len(execution_at)
     if orders is None:
         return {
-            "xhash": pyarrow.nulls(rows, pyarrow.int64()),
             "hash": pyarrow.nulls(rows, HASH),
+            "code": pyarrow.nulls(rows, pyarrow.string()),
         }
     locations = compute.index_in(execution_at, value_set=order_at)
-    return {name: compute.take(orders.column(name), locations) for name in ("xhash", "hash")}
+    return {name: compute.take(orders.column(name), locations) for name in ("hash", "code")}
+
+
+def _with_order_roots(
+    altids: pyarrow.Array, roots: pyarrow.Array, reported: pyarrow.Array
+) -> pyarrow.Array:
+    """Carry a report Order's readable lifecycle root on its Execution."""
+    item = pyarrow.struct(
+        [
+            pyarrow.field("key", altids.type.key_type, nullable=False),
+            pyarrow.field("value", altids.type.item_type, nullable=altids.type.item_field.nullable),
+        ]
+    )
+    listed = altids.cast(pyarrow.list_(item), safe=False)
+    entries = compute.list_flatten(listed)
+    parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+    keys = compute.struct_field(entries, "key")
+    items = compute.struct_field(entries, "value")
+    ranks = sequence(len(entries))
+    keep = compute.not_equal(keys, "orderroot")
+    parents = compute.filter(parents, keep)
+    keys = compute.filter(keys, keep)
+    items = compute.filter(items, keep)
+    ranks = compute.filter(ranks, keep)
+
+    add = compute.and_(reported, compute.fill_null(compute.not_equal(roots, ""), False))
+    added_parents = compute.indices_nonzero(add).cast(pyarrow.int64())
+    parents = pyarrow.concat_arrays([parents, added_parents])
+    keys = pyarrow.concat_arrays(
+        [keys, pyarrow.repeat(pyarrow.scalar("orderroot"), len(added_parents))]
+    )
+    items = pyarrow.concat_arrays([items, compute.filter(roots, add)])
+    ranks = pyarrow.concat_arrays([ranks, compute.add(sequence(len(added_parents)), len(entries))])
+    if len(parents):
+        order = compute.sort_indices(
+            pyarrow.record_batch([parents, ranks], names=["parent", "rank"]),
+            sort_keys=[("parent", "ascending"), ("rank", "ascending")],
+        )
+        parents = compute.take(parents, order)
+        keys = compute.take(keys, order)
+        items = compute.take(items, order)
+    return build_map(altids.type, dense_counts(parents, len(altids)), keys, items)
 
 
 def _quantity_transition(

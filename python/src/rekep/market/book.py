@@ -588,6 +588,12 @@ class _Side:
     orders: dict[int, Order] = dataclasses.field(default_factory=dict)
     """Every live order, by lifecycle, in no particular order."""
 
+    hashed: dict[int, int] = dataclasses.field(default_factory=dict)
+    """Lifecycle for every seen immutable Order hash while it remains live."""
+
+    hashes: dict[int, set[int]] = dataclasses.field(default_factory=dict)
+    """Seen immutable Order hashes for each live lifecycle."""
+
     named: dict[tuple[str, str], dict[int | None, int]] = dataclasses.field(default_factory=dict)
     """Lifecycle for each typed identifier and known venue scope."""
 
@@ -1120,13 +1126,14 @@ class _Side:
         return before != after
 
     def standing(self, event: Order | Execution) -> Order | None:
-        """The live order matched by exact lifecycle, links, then identifiers."""
+        """The live order matched by lifecycle, exact event links, then identifiers."""
         if event.is_order() and event.xhash:
             found = self.orders.get(event.xhash)
             if found is not None:
                 return found
-        for identity in event.linkedhashes:
-            found = self.orders.get(identity)
+        for event_hash in event.linkedhashes:
+            lifecycle = self.hashed.get(event_hash)
+            found = self.orders.get(lifecycle) if lifecycle is not None else None
             if found is not None:
                 return found
         aliases = tuple(Order.lookup_altids_of(event))
@@ -1207,6 +1214,9 @@ class _Side:
     def _forget(self, xhash: int) -> None:
         """Drop one order and every cached code that still points at it."""
         self.orders.pop(xhash, None)
+        for event_hash in self.hashes.pop(xhash, ()):
+            if self.hashed.get(event_hash) == xhash:
+                self.hashed.pop(event_hash, None)
         self._deadline_tokens.pop(xhash, None)
         self._deadline_values.pop(xhash, None)
         for scope, namespace, value in self.aliases.pop(xhash, ()):
@@ -1222,6 +1232,11 @@ class _Side:
     def _rekey(self, old: int, new: int) -> None:
         """Move one lifecycle's state and code cache without scanning either index."""
         self.orders.pop(old, None)
+        event_hashes = self.hashes.pop(old, set())
+        if event_hashes:
+            self.hashes.setdefault(new, set()).update(event_hashes)
+            for event_hash in event_hashes:
+                self.hashed[event_hash] = new
         self._deadline_tokens.pop(old, None)
         self._deadline_values.pop(old, None)
         aliases = self.aliases.pop(old, {})
@@ -1242,6 +1257,9 @@ class _Side:
         """
         xhash = order.xhash
         self.orders[xhash] = order
+        if order.hash:
+            self.hashes.setdefault(xhash, set()).add(order.hash)
+            self.hashed[order.hash] = xhash
         scope = int(order.mic) if order.mic else None
         current = dict.fromkeys((scope, *key) for key in Order.lookup_altids_of(order))
         previous = self.aliases.get(xhash, {})
@@ -1380,7 +1398,7 @@ class _Side:
                 revised.vhash = revised.hash = NIL
                 revised.derive()
                 revised.identify()
-                self.orders[order.xhash] = revised
+                self._remember(revised)
                 if level is not None:
                     self._place(level, order.xhash, _resting(revised))
         return traded - taken
@@ -1441,14 +1459,11 @@ class _Folding:
     reported: dict[int, Order] = dataclasses.field(default_factory=dict)
     """Generated Orders by source hash until their report's Execution arrives."""
 
-    reported_lifecycles: dict[int, int] = dataclasses.field(default_factory=dict)
-    """Pending Order lifecycle to its source hash for linked report pairing."""
+    reported_hashes: dict[int, int] = dataclasses.field(default_factory=dict)
+    """Pending final Order hash to its source hash for report pairing."""
 
     reported_names: dict[tuple[str, str], int] = dataclasses.field(default_factory=dict)
     """Pending typed source identifiers to their Order source hash."""
-
-    reported_source_links: dict[int, int] = dataclasses.field(default_factory=dict)
-    """Raw generated Order link replaced by the completed published Order."""
 
     unpublished: set[int] = dataclasses.field(default_factory=set)
     """Report Orders deferred because LastQty is needed to distinguish their change."""
@@ -1617,7 +1632,6 @@ class BookIterator:
         self._sweep(event.unix, state)
         state.moved = self._expire(state, event.unix) or state.moved
         source_hash = event.hash
-        source_link = event.xhash if isinstance(event, Order) and event.xhash else None
         paired = self._paired_execution(state, event) if isinstance(event, Execution) else None
         if paired is not None:
             folded, settled = paired
@@ -1630,7 +1644,6 @@ class BookIterator:
                 self._remember_reported(
                     state,
                     source_hash,
-                    source_link,
                     event,
                     unpublished=True,
                 )
@@ -1639,7 +1652,7 @@ class BookIterator:
         state.unix = settled.unix
         if isinstance(settled, Order):
             state.deltas.append(settled)
-            self._remember_reported(state, source_hash, source_link, settled)
+            self._remember_reported(state, source_hash, settled)
             bounded = self.max_side_alive is not None and self._bound(state, settled.unix)
         elif isinstance(settled, Execution):
             state.executions.append(settled)
@@ -1658,21 +1671,17 @@ class BookIterator:
     def _remember_reported(
         state: _Folding,
         source_hash: int,
-        source_link: int | None,
         order: Order,
         *,
         unpublished: bool = False,
     ) -> None:
-        """Index one pending report Order by its exact and lifecycle identities."""
+        """Index one pending report Order by source, final hash, and names."""
         key = source_hash or order.hash
         if not key:
             return
         state.reported[key] = order
-        if source_link is not None:
-            state.reported_source_links[key] = source_link
-            state.reported_lifecycles[source_link] = key
-        if order.xhash:
-            state.reported_lifecycles[order.xhash] = key
+        if order.hash:
+            state.reported_hashes[order.hash] = key
         for code in Order.lookup_altids_of(order):
             state.reported_names[code] = key
         if unpublished:
@@ -1685,7 +1694,9 @@ class BookIterator:
             if parent in state.reported:
                 return parent, state.reported[parent]
 
-        candidates = [state.reported_lifecycles.get(xhash) for xhash in execution.linkedhashes]
+        candidates = [
+            state.reported_hashes.get(event_hash) for event_hash in execution.linkedhashes
+        ]
         candidates.extend(
             state.reported_names.get(code) for code in Order.lookup_altids_of(execution)
         )
@@ -1702,6 +1713,7 @@ class BookIterator:
         self, state: _Folding, execution: Execution
     ) -> tuple[bool, Execution] | None:
         """Apply a report's generated Order once and retain its Execution as evidence."""
+        source_execution_hash = execution.hash
         matched = self._reported_for_execution(state, execution)
         if matched is None:
             return None
@@ -1739,7 +1751,6 @@ class BookIterator:
                 self._remember_reported(
                     state,
                     source_parent,
-                    state.reported_source_links.get(source_parent),
                     paired,
                 )
                 state.unpublished.discard(source_parent)
@@ -1781,12 +1792,15 @@ class BookIterator:
         if paired.vhash != old_vhash:
             state.parent_hashes.pop(old_hash, None)
             state.parent_hashes[paired.hash] = None
+            if old_hash in state.linkedhashes:
+                state.linkedhashes = {
+                    paired.hash if event_hash == old_hash else event_hash: None
+                    for event_hash in state.linkedhashes
+                }
 
-        source_link = state.reported_source_links.get(source_parent)
-        if source_link is not None:
-            execution.linkedhashes = [
-                linked for linked in execution.linkedhashes if linked != source_link
-            ]
+        execution.linkedhashes = [
+            linked for linked in execution.linkedhashes if linked != source_parent
+        ]
         execution.parenthash = list(
             dict.fromkeys(
                 paired.hash if state.reported.get(parent) is paired else parent
@@ -1796,13 +1810,18 @@ class BookIterator:
         execution.completed_from(paired)
         execution.identify()
         settled = self.validate(execution)
+        paired.linkedhashes = [
+            linked for linked in paired.linkedhashes if linked != source_execution_hash
+        ]
+        paired.link_to(settled)
+        settled.link_to(paired, primary=True)
         return moved or paired_moved, settled
 
     @staticmethod
     def _remember_pending(state: _Folding, event: Order | Execution) -> None:
         """Accumulate one delta's event and parent relations without rescanning it."""
-        if event.xhash:
-            state.linkedhashes[event.xhash] = None
+        if event.hash:
+            state.linkedhashes[event.hash] = None
         if event.hash:
             state.parent_hashes[event.hash] = None
 
@@ -2022,9 +2041,8 @@ class BookIterator:
             state.moved = False
         elif state.unix is not None and unix != state.unix and state.unpublished:
             state.reported.clear()
-            state.reported_lifecycles.clear()
+            state.reported_hashes.clear()
             state.reported_names.clear()
-            state.reported_source_links.clear()
             state.unpublished.clear()
         self._snapshots(state, unix, inclusive=inclusive)
 
@@ -2082,7 +2100,7 @@ class BookIterator:
             ask_frame=ask_frame,
         )
         alive = [*taken.bidalive, *taken.askalive]
-        taken.linkedhashes = list(dict.fromkeys(order.xhash for order in alive if order.xhash))
+        taken.linkedhashes = list(dict.fromkeys(order.hash for order in alive if order.hash))
         taken.parenthash = [order.hash for order in alive if order.hash] or None
         linked = taken.with_previous(previous)
         if linked is None:
@@ -2214,9 +2232,8 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     state.deltas.clear()
     state.executions.clear()
     state.reported.clear()
-    state.reported_lifecycles.clear()
+    state.reported_hashes.clear()
     state.reported_names.clear()
-    state.reported_source_links.clear()
     state.unpublished.clear()
     state.linkedhashes.clear()
     state.parent_hashes.clear()

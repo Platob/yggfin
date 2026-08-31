@@ -84,6 +84,7 @@ def test_orders_expire_after_one_unchanged_day_by_default() -> None:
 def test_sorted_logs_feed_books_without_a_task_adapter() -> None:
     log = FixMsg(
         unix=BASE,
+        protocol="FIX4.4",
         msgtype="D",
         instrument=Instrument(symbol="BTC-USD"),
         clordid="B1",
@@ -219,6 +220,7 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         return FixMsg(
             unix=BASE + offset,
             unixsource="TransactTime",
+            protocol="FIX4.4",
             beginstring="FIX.4.4",
             msgtype=message_type,
             instrument=Instrument(symbol="BTC-USD"),
@@ -356,7 +358,9 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
     report_order = expected[Order][1]
     report_execution = expected[Execution][0]
     assert report_execution.parenthash == [report_order.hash]
-    assert report_execution.linkedhashes == [report_order.xhash]
+    assert report_execution.linkedhashes == [report_order.hash]
+    assert report_order.linkedhashes == [report_execution.hash]
+    assert report_execution.altids["orderroot"] == report_order.code
     assert report_execution.altids["tradeid"] == "TRADE-1"
     assert report_execution.metadata["9998"] == "report-meta"
 
@@ -375,6 +379,7 @@ def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
         return FixMsg(
             unix=BASE + offset,
             unixsource="TransactTime",
+            protocol="FIX4.4",
             beginstring="FIX.4.4",
             msgtype=message_type,
             instrument=Instrument(symbol="ETH-USD"),
@@ -502,6 +507,7 @@ def test_mixed_market_batch_keeps_supported_rows_fast_and_ordered(
     def message(offset: int, message_type: str, **given) -> FixMsg:
         return FixMsg(
             unix=BASE + offset,
+            protocol="FIX4.4",
             beginstring="FIX.4.4",
             msgtype=message_type,
             instrument=Instrument(symbol="ETH-USD"),
@@ -617,7 +623,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
     logs = [
         FixMsg(
             unix=BASE + 1,
-            protocolversion="4.4",
+            protocol="FIX4.4",
             msgtype="Q",
             entries=[
                 (wire_tags["Symbol"], "AAPL"),
@@ -630,7 +636,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         ),
         FixMsg(
             unix=BASE + 2,
-            protocolversion="4.4",
+            protocol="FIX4.4",
             msgtype="R",
             entries=[
                 (wire_tags["Symbol"], "AAPL"),
@@ -694,7 +700,7 @@ def test_flat_fix_arrow_keeps_trade_revision_order_state_unknown(
 ) -> None:
     message = FixMsg(
         unix=BASE,
-        protocolversion="4.4",
+        protocol="FIX4.4",
         msgtype="8",
         instrument=Instrument(symbol="AAPL"),
         orderid="ORDER-1",
@@ -1292,7 +1298,7 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
             one.prevexecpx,
         ) == (None, None, None, None, None)
         assert [order.orderid for order in one.bidalive] == ["B1"]
-        assert one.linkedhashes == [order.xhash for order in one.bidalive]
+        assert one.linkedhashes == [order.hash for order in one.bidalive]
 
 
 def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
@@ -1696,7 +1702,7 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
             px=100.0,
             qty=1.0,
             execid="X1",
-            linkedhashes=[placed.xhash],
+            linkedhashes=[placed.hash],
             parenthash=[placed.hash],
         )
         .attach_instrument(richer)
@@ -1707,7 +1713,7 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
 
     nested_order = books[0].deltas[0]
     nested_fill = books[-1].executions[0]
-    assert nested_fill.primary_linked_hash == nested_order.xhash
+    assert nested_fill.primary_linked_hash == nested_order.hash
     assert nested_order.hash in nested_fill.parenthash
 
 
@@ -1976,7 +1982,7 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
             cumqty=400.0,
             state=State.FILLED,
             execid="E1",
-            linkedhashes=[placed.xhash],
+            linkedhashes=[placed.hash],
         )
     )
 
@@ -2034,7 +2040,7 @@ def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
     last = books[-1]
     purged = [one for one in last.deltas if one.state is State.INTERNAL_EXPIRED]
     linked = set(last.linkedhashes)
-    assert {one.xhash for one in purged} <= linked
+    assert {one.hash for one in purged} <= linked
 
 
 def test_purge_alive_on_an_empty_stream_emits_nothing() -> None:
@@ -2059,6 +2065,7 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
     plain = FixMsg(
         unix=BASE + 1,
         unixsource="TransactTime",
+        protocol="FIX4.4",
         beginstring="FIX.4.4",
         msgtype="D",
         instrument=Instrument(symbol="ETH-USD"),
@@ -2116,6 +2123,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     linked = FixMsg(
         unix=BASE + 1,
         unixsource="TransactTime",
+        protocol="FIX4.4",
         beginstring="FIX.4.4",
         msgtype="D",
         instrument=Instrument(symbol="ETH-USD"),
@@ -2142,6 +2150,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     settled = FixMsg(
         unix=BASE + 3,
         unixsource="TransactTime",
+        protocol="FIX4.4",
         beginstring="FIX.4.4",
         msgtype="AE",
         instrument=Instrument(symbol="ETH-USD"),
@@ -2167,7 +2176,7 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
         "the reject reads where the order stands from OrdStatus"
     )
-    assert executions.column("settldate").to_pylist() == [datetime.date(2026, 8, 18)]
+    assert executions.column("settldate").to_pylist() == [datetime.datetime(2026, 8, 18)]
     assert executions.column("settltype").to_pylist() == ["W2"]
     assert executions.column("settlcurrency").to_pylist() == ["USD"]
     assert executions.column("settlcurrfxratecalc").to_pylist() == ["M"]

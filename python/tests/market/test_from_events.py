@@ -231,7 +231,7 @@ def test_the_units_come_from_the_events_folded_and_not_the_one_after_them() -> N
 def test_a_book_links_to_the_events_that_built_its_delta() -> None:
     (only,) = books(TWO_SIDED)
     assert only.parenthash == [event.hash for event in only.deltas]
-    assert only.linkedhashes == [event.xhash for event in only.deltas]
+    assert only.linkedhashes == [event.hash for event in only.deltas]
 
 
 # -- the levels, and the orders under them -----------------------------------
@@ -506,18 +506,18 @@ def test_a_fill_that_names_an_order_takes_it_out_of_that_order_s_side() -> None:
     _, second = books(
         [
             *TWO_SIDED,
-            trade(20, 100.0, 2.0, linkedhashes=[resting_order.xhash]),
+            trade(20, 100.0, 2.0, linkedhashes=[resting_order.hash]),
         ]
     )
     assert second.bidqty == 3.0
 
 
-def test_a_fill_tries_linked_lifecycles_in_order() -> None:
+def test_a_fill_tries_linked_event_hashes_in_order() -> None:
     placed = TWO_SIDED[0]
     _, second = books(
         [
             *TWO_SIDED,
-            trade(20, 100.5, 2.0, linkedhashes=[-1, placed.xhash]),
+            trade(20, 100.5, 2.0, linkedhashes=[-1, placed.hash]),
         ]
     )
     assert second.bidqty == 3.0 and second.askqty == 7.0
@@ -568,7 +568,7 @@ def test_a_trade_is_recorded_on_the_side_it_hit() -> None:
 
 def test_a_later_fill_does_not_mutate_the_prior_flattened_order() -> None:
     placed = order(10, Side.BID, 100.0, 5.0, "B1")
-    fill = trade(20, 100.0, 2.0, linkedhashes=[placed.xhash])
+    fill = trade(20, 100.0, 2.0, linkedhashes=[placed.hash])
 
     first, second = books([placed, fill])
 
@@ -823,7 +823,7 @@ def test_an_execution_xhash_is_not_mistaken_for_its_order_lifecycle() -> None:
     assert side.standing(probe) is side.orders[second.xhash]
 
 
-def test_a_linked_order_lifecycle_precedes_conflicting_identifier_altids() -> None:
+def test_a_linked_order_event_precedes_conflicting_identifier_altids() -> None:
     side = _Side(side=Side.BID)
     first = order(10, Side.BID, 100.0, 5.0, "A")
     second = order(11, Side.BID, 99.0, 4.0, "B")
@@ -831,12 +831,24 @@ def test_a_linked_order_lifecycle_precedes_conflicting_identifier_altids() -> No
     side.apply(second)
 
     probe = Execution(
-        linkedhashes=[first.xhash],
+        linkedhashes=[first.hash],
         orderid="B",
         altids={"orderid": "B"},
     )
 
     assert side.standing(probe) is side.orders[first.xhash]
+
+
+def test_a_link_to_an_earlier_order_version_finds_its_live_amendment() -> None:
+    side = _Side(side=Side.BID)
+    first = order(10, Side.BID, 100.0, 5.0, "A")
+    revised = order(11, Side.BID, 100.0, 4.0, "A", state=State.OPEN)
+    side.apply(first)
+    side.apply(revised)
+
+    standing = side.orders[first.xhash]
+    assert standing.hash != first.hash
+    assert side.standing(Execution(linkedhashes=[first.hash])) is standing
 
 
 def test_a_missing_order_xhash_falls_back_to_typed_altids_without_a_scan() -> None:

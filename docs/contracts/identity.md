@@ -34,21 +34,31 @@ deliberately distinct and have pinned tests; an empty composite is refused.
 
 ## Stored columns
 
+```text
+hash:         fixed_size_binary[16]
+prevhash:     fixed_size_binary[16]
+linkedhashes: list<item: fixed_size_binary[16]>
+parenthash:   list<item: fixed_size_binary[16]>
+```
+
 XXH3-64 digests are signed `int64` columns. `vhash` identifies an event's
-clock-free value, `xhash` identifies its lifecycle, `instrumentxhash` joins a
-market row to its instrument, and `linkedhashes` lists related lifecycle
-identities. A related event time is recovered by joining on `xhash`.
+clock-free value, `xhash` identifies its lifecycle, and `instrumentxhash`
+joins a market row to its instrument.
 
 An event `hash` composes its epoch microseconds with its `vhash` without
 hashing the payload again. It is stored as sixteen big-endian two's-complement
 bytes -- `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
-`prevhash` has the same width and `parenthash` is a list of those values. The
+`prevhash` has the same width. `linkedhashes` lists exact hashes of related
+event versions; an Order and its Execution hold each other's final `hash`.
+`parenthash` instead lists the events used to construct this one. The
 [time-anchored hash contract](txhash.md) defines the reversible composition.
 
-A lifecycle identity used to construct another lifecycle enters the frame as
-its sign-extended sixteen-byte representation. Related identities in
-`linkedhashes` and value hashes nested in a Book frame use their native signed
-`int64` payloads.
+`linkedhashes` is excluded from `vhash`. Both event hashes can therefore be
+final before the mutual relation is attached, with no circular identity.
+Construction provenance in `parenthash` is excluded for the same reason.
+An `int64` identity nested in another identity frame enters as its
+sign-extended sixteen-byte representation; Book value hashes keep their native
+signed `int64` payloads.
 
 ## Scalar payloads
 
