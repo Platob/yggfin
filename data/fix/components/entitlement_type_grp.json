@@ -10,8 +10,12 @@
   "fix": {
    "component": "EntitlementTypeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyEntitlementsRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyEntitlementsRequest"
+   ]
   },
   "fields": [
    {

@@ -108,7 +108,7 @@
     }
    },
    {
-    "name": "LinkXHashes",
+    "name": "LinkHashes",
     "type": "string",
     "fix": {
      "tag": "30013"
@@ -143,11 +143,11 @@
     }
    },
    {
-    "name": "MIC",
+    "name": "LastMkt",
     "type": "string",
     "nullable": true,
     "fix": {
-     "tag": "30018"
+     "tag": "30"
     }
    },
    {

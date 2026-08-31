@@ -13,8 +13,12 @@
   "fix": {
    "component": "CompIDReqGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"NetworkCounterpartySystemStatusRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "NetworkCounterpartySystemStatusRequest"
+   ]
   },
   "fields": [
    {

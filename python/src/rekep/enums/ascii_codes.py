@@ -13,12 +13,14 @@ import enum
 import functools
 import json
 import re
+import warnings
 from collections import OrderedDict
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
 import pyarrow
+import pyarrow.compute
 
 #: A code an ASCII enum learnt at runtime is remembered so the next read of the
 #: same value is the same member, bounded so a stream of junk cannot grow it
@@ -34,6 +36,7 @@ PRIVATE_RANK = 9_000
 _BRACKETED = re.compile(r"\(([A-Za-z0-9 ]+)\)")
 
 _ASCII_REGISTERED: dict[type[enum.IntEnum], OrderedDict[int, enum.IntEnum]] = {}
+_ASCII_CANONICAL: dict[type[enum.IntEnum], dict[str, enum.IntEnum]] = {}
 _ASCII_ALIASES: dict[type[enum.IntEnum], dict[str, str]] = {}
 
 
@@ -42,12 +45,9 @@ class Ascii32(enum.IntEnum):
 
     The code sits left-justified, padded with trailing NULs to exactly four
     bytes, so the stored integer orders exactly as the text does and a raw
-    column dump reads back as its spelling. The set is closed by default: a
-    stored integer is a compiled code or it is `UNKNOWN`, which keeps a
-    Python answer and a pushed code-set filter on the same rows. A
-    vocabulary that learns codes at runtime (`Protocol`, `MIC`, `Currency`)
-    opts in through `_registers_unknown`, and even there only an exact round
-    trip of the stored bytes registers.
+    column dump reads back as its spelling. Vocabularies are open: a valid
+    code that was not compiled registers once, while malformed bytes remain
+    `UNKNOWN`.
     """
 
     BYTE_WIDTH = enum.nonmember(4)
@@ -60,12 +60,12 @@ class Ascii32(enum.IntEnum):
     #: codes one. The wire codes themselves are **not** declared here: they
     #: belong to that field, the dictionary states them, and a second copy on
     #: each member is a second thing to keep in step with a rescrape. A
-    #: vocabulary that codes no single field -- an open one, or one whose
-    #: meaning is spread across several tags -- names nothing.
+    #: vocabulary that codes no single field, or one whose meaning is spread
+    #: across several tags, names nothing.
     FIX_FIELD = enum.nonmember("")
 
     def __new__(cls, value: int | str, rank: int | None = None) -> Self:
-        text = str(value).strip().upper() if isinstance(value, str) else ""
+        text = str(value).strip().rstrip("\0").upper() if isinstance(value, str) else ""
         packed = cls._pack(text) if text else int(value)
         member = int.__new__(cls, packed)
         member._value_ = packed
@@ -90,16 +90,16 @@ class Ascii32(enum.IntEnum):
         return self.code
 
     def into_fix(self) -> str:
-        """The wire spelling: the dictionary's code for this member, or none.
+        """The wire spelling: the dictionary's code or a runtime member's code.
 
-        An open vocabulary's members *are* wire values -- `USD`, `XPAR` --
-        while a closed mnemonic set writes whatever code the field it codes
-        gives it; a grouping marker no wire value means renders as nothing.
+        A vocabulary's members *are* wire values -- `USD`, `XPAR` -- unless
+        the FIX dictionary gives a compiled mnemonic its own wire code.
         """
         wired = type(self)._wire_codes().get(self, "")
         if wired:
             return wired
-        return self.code if type(self)._registers_unknown() else ""
+        registered = _ASCII_REGISTERED.get(type(self), {})
+        return self.code if not type(self).FIX_FIELD or int(self) in registered else ""
 
     def __str__(self) -> str:
         return self.code
@@ -110,8 +110,7 @@ class Ascii32(enum.IntEnum):
     def from_str(cls, value: Any) -> Self:
         """Parse a spelling: a member name, an alias, or a code.
 
-        An open vocabulary registers a valid code it had not seen; a closed
-        one answers `UNKNOWN`. An integer is a stored code.
+        A valid code not yet seen registers once. An integer is a stored code.
         """
         if isinstance(value, cls):
             return value
@@ -121,12 +120,10 @@ class Ascii32(enum.IntEnum):
 
     @classmethod
     def from_int(cls, value: Any, default: Self | None = None) -> Self:
-        """Decode a stored integer: a known code, or `UNKNOWN`.
+        """Decode a stored integer, registering a valid unknown code.
 
-        An open vocabulary reads a well-formed unknown code back as a newly
-        registered member -- exactly the bytes stored, never a respelling.
-        A closed one answers only on its compiled codes, so the scalar
-        reader and a pushed code-set filter keep the same rows.
+        A well-formed unknown code reads back as a newly registered member --
+        exactly the bytes stored, never a respelling.
         """
         try:
             packed = int(value)
@@ -137,8 +134,6 @@ class Ascii32(enum.IntEnum):
             known = _ASCII_REGISTERED.setdefault(cls, OrderedDict()).get(packed)
         if isinstance(known, cls):
             return known
-        if not cls._registers_unknown():
-            return default if default is not None else cls.UNKNOWN
         half = 1 << (8 * cls.BYTE_WIDTH - 1)
         if packed < -half or packed >= half:
             return default if default is not None else cls.UNKNOWN
@@ -158,8 +153,13 @@ class Ascii32(enum.IntEnum):
         word spelling of a *compiled* member answers, because bridges render
         `SIDE=buy` where the wire says `1`. A vocabulary with no declared
         wire codes speaks its own codes there, so its values parse as
-        spellings.
+        spellings. Without an explicit default, a valid future wire code
+        registers too.
         """
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, int):
+            return cls.from_int(value, default)
         raw = str(value).strip() if value is not None else ""
         known = cls._fix_codes().get(raw)
         if known is not None:
@@ -170,7 +170,7 @@ class Ascii32(enum.IntEnum):
             worded = cls.worded_codes().get(encoded_key(raw))
             if worded is not None:
                 return worded
-            return default if default is not None else cls.UNKNOWN
+            return default if default is not None else cls.from_str(raw)
         parsed = cls.from_str(value)
         return default if parsed is cls.UNKNOWN and default is not None else parsed
 
@@ -178,11 +178,9 @@ class Ascii32(enum.IntEnum):
     def register(cls, value: str, *, aliases: Any = ()) -> Self:
         """Register one code and optional source aliases.
 
-        Open vocabularies only. A value that does not spell a valid code is
-        `UNKNOWN`, not an exception: the callers sit on data paths.
+        A value that does not spell a valid code is `UNKNOWN`, not an
+        exception: the callers sit on data paths.
         """
-        if not cls._registers_unknown():
-            raise TypeError(f"{cls.__name__} is a closed set; its codes are compiled")
         text = cls._canonical(str(value) if value is not None else "")
         if not cls._valid(text):
             return cls.UNKNOWN
@@ -193,7 +191,33 @@ class Ascii32(enum.IntEnum):
         member = known if isinstance(known, cls) else cls._register(packed, text)
         if aliases:
             configured = _ASCII_ALIASES.setdefault(cls, {})
-            configured.update({cls._normalise(alias): member.code for alias in aliases})
+            for alias in aliases:
+                key = cls._normalise(alias)
+                if not key:
+                    continue
+                owner = cls.__members__.get(key)
+                if owner is None:
+                    owner = _ASCII_CANONICAL.setdefault(cls, {}).get(key)
+                target = configured.get(key)
+                if target is None:
+                    target = next(
+                        (
+                            value
+                            for spelling, value in cls._built_in_aliases().items()
+                            if cls._normalise(spelling) == key
+                        ),
+                        None,
+                    )
+                existing = owner.code if owner is not None else target
+                if existing and existing != member.code:
+                    warnings.warn(
+                        f"{cls.__name__} alias {alias!r} already names {existing!r}; "
+                        f"keeping that canonical value",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                    continue
+                configured.setdefault(key, member.code)
             cls._from_text.cache_clear()
         return member
 
@@ -265,19 +289,47 @@ class Ascii32(enum.IntEnum):
         """A stored code column rendered as this enum spelled out.
 
         Arrow indexes a dictionary by position, not by the stored value, so
-        the codes resolve to members and the members to their spellings; an
-        unknown code renders as null.
+        distinct stored codes resolve once and become the dictionary's
+        spellings; malformed codes render as null.
         """
         compute = pyarrow.compute
         column = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
         index = cls.into_arrow_type().index_type
         stored = column.cast(index, safe=False)
-        spellings = [member.code for member in cls]
-        codes = pyarrow.array([int(member) for member in cls], index)
+        distinct = compute.drop_null(compute.unique(stored))
+        resolved = [cls.from_int(value.as_py()) for value in distinct]
+        pairs = [
+            (value.as_py(), member.code)
+            for value, member in zip(distinct, resolved, strict=True)
+            if member is not cls.UNKNOWN or value.as_py() == int(cls.UNKNOWN)
+        ]
+        codes = pyarrow.array([value for value, _code in pairs], index)
+        spellings = [code for _value, code in pairs]
         positions = compute.index_in(stored, value_set=codes).cast(index, safe=False)
         return pyarrow.DictionaryArray.from_arrays(
             positions, pyarrow.array(spellings, pyarrow.utf8())
         )
+
+    @classmethod
+    def arrow_from_strings(cls, *values: Any) -> Any:
+        """Pack the first valid protocol spelling across string columns."""
+        if not values:
+            raise ValueError("at least one source column is required")
+        compute = pyarrow.compute
+        sources = [
+            compute.utf8_trim_whitespace(value.cast(pyarrow.string(), safe=False))
+            for value in values
+        ]
+        source = compute.coalesce(*sources)
+        unique = compute.drop_null(compute.unique(source))
+        dtype = cls.into_arrow_type().index_type
+        if not len(unique):
+            return pyarrow.nulls(len(source), dtype)
+        members = [cls.from_fix(value.as_py()) for value in unique]
+        packed = pyarrow.array(
+            [None if member is cls.UNKNOWN else int(member) for member in members], dtype
+        )
+        return compute.take(packed, compute.index_in(source, value_set=unique))
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
@@ -316,23 +368,67 @@ class Ascii32(enum.IntEnum):
             known = _ASCII_REGISTERED.setdefault(cls, OrderedDict()).get(packed)
         if isinstance(known, cls):
             return known
-        if not cls._registers_unknown():
-            return cls.UNKNOWN
         return cls._register(packed, text)
 
     @classmethod
     def _register(cls, packed: int, text: str) -> Self:
+        known = cls._value2member_map_.get(packed)
+        if known is None:
+            known = _ASCII_REGISTERED.setdefault(cls, OrderedDict()).get(packed)
+        if isinstance(known, cls):
+            if known.code != text:
+                warnings.warn(
+                    f"{cls.__name__} code {text!r} collides with {known.code!r}; "
+                    "keeping the canonical value",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+            return known
+        canonical = cls._normalise(text)
+        named = cls.__members__.get(canonical)
+        if named is None and cls._valid(canonical):
+            named = cls._value2member_map_.get(cls._pack(canonical))
+        if named is None:
+            named = _ASCII_CANONICAL.setdefault(cls, {}).get(canonical)
+        if isinstance(named, cls):
+            warnings.warn(
+                f"{cls.__name__} code {text!r} collides with {named.code!r}; "
+                "keeping the canonical value",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            cls._remember(packed, named)
+            return named
         member = int.__new__(cls, packed)
         member._name_ = text
         member._value_ = packed
         member._code = text
-        member._rank = packed
+        member._rank = 0 if cls._has_declared_ranks() else packed
+        canonical_codes = _ASCII_CANONICAL.setdefault(cls, {})
+        canonical_codes.setdefault(canonical, member)
+        cls._remember(packed, member)
+        return member
+
+    @classmethod
+    def _remember(cls, packed: int, member: Self) -> None:
+        """Keep one runtime reading, bounded across codes and collisions."""
         registered = _ASCII_REGISTERED.setdefault(cls, OrderedDict())
         registered[packed] = member
         registered.move_to_end(packed)
         if len(registered) > _ASCII_REGISTERED_LIMIT:
-            registered.popitem(last=False)
-        return member
+            _packed, dropped = registered.popitem(last=False)
+            canonical_codes = _ASCII_CANONICAL.setdefault(cls, {})
+            canonical = cls._normalise(dropped.code)
+            if canonical_codes.get(canonical) is dropped and not any(
+                current is dropped for current in registered.values()
+            ):
+                canonical_codes.pop(canonical, None)
+
+    @classmethod
+    @functools.cache
+    def _has_declared_ranks(cls) -> bool:
+        """Whether compiled members order by semantic ranks rather than codes."""
+        return any(member.rank != int(member) for member in cls)
 
     @classmethod
     def _missing_(cls, value: Any) -> Self:
@@ -340,7 +436,7 @@ class Ascii32(enum.IntEnum):
 
     @classmethod
     def _normalise(cls, raw: str) -> str:
-        return raw.strip().upper()
+        return str(raw).strip().rstrip("\0").upper()
 
     @classmethod
     def aliased_codes(cls) -> dict[str, str]:
@@ -397,10 +493,6 @@ class Ascii32(enum.IntEnum):
         if b"\0" in text:
             raise UnicodeDecodeError("ascii", raw, 0, width, "embedded NUL")
         return text.decode("ascii")
-
-    @classmethod
-    def _registers_unknown(cls) -> bool:
-        return False
 
     @classmethod
     def _built_in_aliases(cls) -> dict[str, str]:

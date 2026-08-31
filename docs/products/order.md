@@ -1,6 +1,6 @@
 # Order
 
-One version of one order. `price` is its `Price <44>` limit. `lastqty` is the
+One version of one order. `lastpx` is its `Price <44>` limit. `lastqty` is the
 **remaining live quantity after that event**: new orders carry their initial
 quantity, partial fills reduce it, and terminal orders carry zero.
 
@@ -13,12 +13,12 @@ line = (
 )
 events = list(FixMsg.from_text(line).into_market_events(fix_version="4.4"))
 for event in events:
-    print(type(event).__name__, event.state.name, event.lastqty, event.price)
+    print(type(event).__name__, event.state.name, event.lastqty, event.lastpx)
 
 order, execution = events
 print(order.codesource, execution.codesource)
-print(order.linkxhashes == [execution.xhash])
-print(execution.linkxhashes == [order.xhash])
+print(order.linkhashes == [execution.hash])
+print(execution.linkhashes == [order.hash])
 ```
 
 ```text
@@ -32,8 +32,8 @@ True
 One execution report produces both rows: the `Execution` is the evidence, the
 `Order` is the resulting state. The order is authoritative for the remaining
 quantity, so the execution is never subtracted twice. Each row carries the
-other's lifecycle `xhash` in `linkxhashes`; the Execution's `parenthash`
-separately records the exact Order event `hash` it was built from.
+other's exact event `hash` in `linkhashes`; the Execution's `parenthash` also
+records the Order event it was built from.
 
 ```python
 from rekep.enums import State

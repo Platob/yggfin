@@ -14,7 +14,9 @@
    "component": "AssignmentReport",
    "msgtype": "AW",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -10,8 +10,13 @@
   "fix": {
    "component": "MarginReqmtInqQualGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarginRequirementInquiry\",\"MarginRequirementInquiryAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarginRequirementInquiry",
+    "MarginRequirementInquiryAck"
+   ]
   },
   "fields": [
    {

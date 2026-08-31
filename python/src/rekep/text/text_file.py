@@ -17,6 +17,7 @@ import pyarrow
 import pyarrow.compute
 import pyarrow.fs
 
+from rekep.arrow_path import ArrowPath
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField, TimestampField
@@ -36,10 +37,10 @@ _TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
 
 
 #: Matches the fixed header every log row opens with, leaving the free-form
-#: payload to `message`::
+#: payload to `body`::
 #:
 #:     2026-08-14 00:05:01.167_520 [77-e72:9ef:72503] [ModuleFoo] (DEBUG) Found code
-#:     ^timestamp                  ^threadname       ^plugincode ^level ^message
+#:     ^timestamp                  ^threadname       ^plugin     ^level ^body
 #:
 #: `level` is optional -- some plugins print none -- and the fraction is one
 #: to nine digits or absent: the same capture writes `01.147`, `01,147`,
@@ -60,9 +61,9 @@ HEADER_PATTERN = re.compile(
     rb"^(?:\xef\xbb\xbf)?[ \t]*"
     rb"(?P<timestamp>" + _TIMESTAMP.encode() + rb")[ \t]+"
     rb"\[(?P<threadname>[^\]]*)\][ \t]+"
-    rb"\[(?P<plugincode>[^\]]*)\][ \t]*"
+    rb"\[(?P<plugin>[^\]]*)\][ \t]*"
     rb"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
-    rb"(?P<message>.*)$",
+    rb"(?P<body>.*)$",
     re.DOTALL,
 )
 
@@ -126,7 +127,7 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 DEFAULT_MAX_ROW_BYTE_SIZE = 1 << 26
 
 # Columns a line physically carries; the rest of the parsed row is derived.
-_RENDERED = ("unix", "threadname", "plugincode", "message")
+_RENDERED = ("unix", "threadname", "plugin", "body")
 
 
 def compiled_header(source: re.Pattern[bytes] | str | bytes) -> re.Pattern[bytes]:
@@ -177,7 +178,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: configures its own by handing over the pattern source: a `str` or
     #: `bytes` is compiled here, so a log whose header this package has never
     #: seen is a document change and not a code change. It must name the same
-    #: groups -- `timestamp`, `threadname`, `plugincode`, `message`.
+    #: groups -- `timestamp`, `threadname`, `plugin`, `body`.
     header_pattern: re.Pattern[bytes] | str | bytes = HEADER_PATTERN
 
     #: Shape reads and writes land on. None is `into_row()`'s own -- what the parser
@@ -300,7 +301,7 @@ class TextFile(Dataset, io.BufferedIOBase):
 
     @cached_property
     def rendered_field(self) -> StructField:
-        """What a write has to carry: the header's own columns and the message."""
+        """What a write has to carry: the header columns and exact body."""
         parsed = self.parsed_field
         return Field.from_arrow_schema(
             pyarrow.schema([parsed.field(name).into_arrow_field() for name in _RENDERED]),
@@ -320,7 +321,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     def exists(self) -> bool:
         """Whether the file is there yet."""
         if self.filesystem is not None:
-            return self.filesystem.get_file_info(self.url).type != pyarrow.fs.FileType.NotFound
+            return ArrowPath(self.url, self.filesystem).exists()
         opened = self.fileio.opened
         return bool(opened is not None and getattr(opened, "exists", lambda: True)())
 
@@ -335,9 +336,10 @@ class TextFile(Dataset, io.BufferedIOBase):
         filesystem = self.filesystem
         if filesystem is None:
             raise NotImplementedError("an injected input stream cannot create a text file")
-        if not self.exists:
-            with filesystem.open_output_stream(self.url) as stream:
-                stream.write(b"")
+        try:
+            ArrowPath(self.url, filesystem).write_bytes(b"", overwrite=False)
+        except FileExistsError:
+            pass
         return self
 
     def read_arrow_reader(
@@ -433,7 +435,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             filesystem = self.filesystem
             if filesystem is None:
                 raise pyarrow.ArrowNotImplementedError("an injected input stream cannot append")
-            stream = filesystem.open_append_stream(self.url)
+            stream = ArrowPath(self.url, filesystem).open_append()
         except pyarrow.ArrowNotImplementedError as error:
             raise NotImplementedError(
                 f"{getattr(self.filesystem, 'type_name', 'input stream')} cannot append, and a "
@@ -558,9 +560,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     ) -> Iterator[pyarrow.RecordBatch]:
         """Parse bounded raw rows only after their payload and time survive."""
         groups = self.header_pattern.groupindex
-        indices = tuple(
-            groups[name] for name in ("timestamp", "threadname", "plugincode", "message")
-        )
+        indices = tuple(groups[name] for name in ("timestamp", "threadname", "plugin", "body"))
         rows: list[tuple[bytes, bytes | None, bytes | None, bytes | bytearray | None]] = []
         row_byte_sizes: list[int] = []
         # Bytes of each row the reader saw and did not keep, so a truncated row
@@ -594,12 +594,12 @@ class TextFile(Dataset, io.BufferedIOBase):
                     added = len(line) + 1
                     kept = added if added <= room else max(room, 0)
                     if kept:
-                        timestamp, thread, plugin, message = rows[-1]
-                        if not isinstance(message, bytearray):
-                            message = bytearray(message or b"")
-                        message.extend(b"\n")
-                        message.extend(line if kept == added else line[: kept - 1])
-                        rows[-1] = (timestamp, thread, plugin, message)
+                        timestamp, thread, plugin, body = rows[-1]
+                        if not isinstance(body, bytearray):
+                            body = bytearray(body or b"")
+                        body.extend(b"\n")
+                        body.extend(line if kept == added else line[: kept - 1])
+                        rows[-1] = (timestamp, thread, plugin, body)
                         row_byte_sizes[-1] += kept
                         held_bytes += kept
                     dropped_byte_sizes[-1] += added - kept + dropped
@@ -671,7 +671,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         one.
         """
         schema = self.schema
-        timestamps, threads, plugins, messages = (
+        timestamps, threads, plugins, bodies = (
             pyarrow.array(values, type=pyarrow.binary()) for values in zip(*rows, strict=True)
         )
         rownums_array = pyarrow.array(rownums, type=pyarrow.int64())
@@ -681,31 +681,31 @@ class TextFile(Dataset, io.BufferedIOBase):
         unix = _unix_nanos(local, self.timezone)
         selected = _unix_mask(unix, start_unix, end_unix)
         if selected is not None:
-            unix, threads, plugins, messages, rownums_array, reasons = (
+            unix, threads, plugins, bodies, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, messages, rownums_array, reasons)
+                for values in (unix, threads, plugins, bodies, rownums_array, reasons)
             )
         if not len(unix):
             return _empty_batch(schema)
 
-        messages = pyarrow.compute.fill_null(_utf8(messages), "")
-        selected = _message_mask(messages, include_regexes, exclude_regexes)
+        text = pyarrow.compute.fill_null(_utf8(bodies), "")
+        selected = _message_mask(text, include_regexes, exclude_regexes)
         if selected is not None:
-            unix, threads, plugins, messages, rownums_array, reasons = (
+            unix, threads, plugins, bodies, text, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, messages, rownums_array, reasons)
+                for values in (unix, threads, plugins, bodies, text, rownums_array, reasons)
             )
         count = len(unix)
         if not count:
             return _empty_batch(schema)
 
         selected = _msgtype_mask(
-            Message.msg_types_arrow(messages), include_msgtypes, exclude_msgtypes
+            Message.msg_types_arrow(bodies), include_msgtypes, exclude_msgtypes
         )
         if selected is not None:
-            unix, threads, plugins, messages, rownums_array, reasons = (
+            unix, threads, plugins, bodies, text, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, messages, rownums_array, reasons)
+                for values in (unix, threads, plugins, bodies, text, rownums_array, reasons)
             )
         count = len(unix)
         if not count:
@@ -725,31 +725,32 @@ class TextFile(Dataset, io.BufferedIOBase):
             "altids": pyarrow.repeat(pyarrow.scalar({}, ALTIDS_TYPE), count),
             "prevunix": pyarrow.nulls(count, pyarrow.int64()),
             "parenthash": pyarrow.nulls(count, PARENTS),
-            "mic": pyarrow.nulls(count, pyarrow.int32()),
+            "lastmkt": pyarrow.nulls(count, pyarrow.int32()),
             "reason": reasons,
             "sourceurl": pyarrow.repeat(self.url, count),
             "sourcerownum": rownums_array,
             "threadname": pyarrow.compute.fill_null(_utf8(threads), ""),
-            "plugincode": pyarrow.compute.fill_null(_utf8(plugins), ""),
-            "message": messages,
+            "plugin": pyarrow.compute.fill_null(_utf8(plugins), ""),
+            "body": pyarrow.compute.fill_null(bodies, b""),
         }
-        columns.update(
-            self.into_row().parse_arrow(
-                messages,
-                self.msg_type_event_types,
-                columns["plugincode"],
-                self.protocol_rules,
-            )
+        parsed = self.into_row().parse_arrow(
+            bodies,
+            self.msg_type_event_types,
+            columns["plugin"],
+            self.protocol_rules,
         )
+        parse_errors = parsed.pop("parseerror")
+        columns["reason"] = _merge_reasons(columns["reason"], parse_errors)
+        columns.update(parsed)
         columns.update(
             (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
         )
         # `Message.identified` fills these once every raw column is here.
         for name in ("hash", "vhash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
-        linkxhashes = schema.field("linkxhashes")
+        linkhashes = schema.field("linkhashes")
         columns.setdefault(
-            "linkxhashes", pyarrow.repeat(pyarrow.scalar([], type=linkxhashes.type), count)
+            "linkhashes", pyarrow.repeat(pyarrow.scalar([], type=linkhashes.type), count)
         )
         missing_required = [
             field.name for field in schema if field.name not in columns and not field.nullable
@@ -912,7 +913,7 @@ class TextFile(Dataset, io.BufferedIOBase):
 
 
 def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
-    """One chunk of parsed rows back as log lines, in string kernels only."""
+    """One chunk of parsed rows back as log lines, in Arrow kernels only."""
     if rows.num_rows == 0:
         return b""
     compute = pyarrow.compute
@@ -928,21 +929,21 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
     stamps = compute.strftime(stamps, format="%Y-%m-%d %H:%M:%S")
     stamps = compute.utf8_replace_slice(stamps, start=23, stop=23, replacement="_")
     lines = compute.binary_join_element_wise(
-        stamps.cast(pyarrow.string()),
-        " [",
-        rows.column("threadname").cast(pyarrow.string()),
-        "] [",
-        rows.column("plugincode").cast(pyarrow.string()),
-        "] ",
-        rows.column("message").cast(pyarrow.string()),
-        "",
+        stamps.cast(pyarrow.binary()),
+        b" [",
+        rows.column("threadname").cast(pyarrow.binary()),
+        b"] [",
+        rows.column("plugin").cast(pyarrow.binary()),
+        b"] ",
+        rows.column("body").cast(pyarrow.binary()),
+        b"",
     )
     flat = lines.combine_chunks() if isinstance(lines, pyarrow.ChunkedArray) else lines
     whole = pyarrow.ListArray.from_arrays(
         pyarrow.array([0, len(flat)], pyarrow.int32()),
         flat.combine_chunks() if isinstance(flat, pyarrow.ChunkedArray) else flat,
     )
-    return compute.binary_join(whole, "\n")[0].as_py().encode() + b"\n"
+    return compute.binary_join(whole, b"\n")[0].as_py() + b"\n"
 
 
 def parsed_field_of(
@@ -1155,6 +1156,23 @@ def _truncated_reasons(dropped_byte_sizes: Sequence[int], rows: int) -> pyarrow.
             "",
         ),
         pyarrow.scalar(None, pyarrow.string()),
+    )
+
+
+def _merge_reasons(current: Any, added: Any) -> pyarrow.Array:
+    """Append nullable parser diagnostics without replacing truncation facts."""
+    compute = pyarrow.compute
+    left = compute.fill_null(current.cast(pyarrow.string(), safe=False), "")
+    right = compute.fill_null(added.cast(pyarrow.string(), safe=False), "")
+    both = compute.and_(compute.not_equal(left, ""), compute.not_equal(right, ""))
+    joined = compute.binary_join_element_wise(
+        left,
+        compute.if_else(both, "; ", ""),
+        right,
+        "",
+    )
+    return compute.if_else(
+        compute.equal(joined, ""), pyarrow.nulls(len(joined), pyarrow.string()), joined
     )
 
 

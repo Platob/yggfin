@@ -12,6 +12,17 @@ uv run --project python --group runner rekep task run \
   --output parse_messages.executed.ipynb
 ```
 
+Calendar-partitioned paths expand before the files are opened:
+
+```yaml
+source: s3://example-bucket/capture/{year}/{month}/{day}
+start: 2026-08-30
+end: 2026-08-31
+```
+
+`year`, `month`, and `day` are zero-padded. A templated source requires both
+bounds; a date-only `end` includes that whole day.
+
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 
 ## Output
@@ -22,7 +33,8 @@ One retained payload becomes one [`Message`](../../products/message.md):
 protocol: FIX
 msgtype: D
 eventtype: ORDER
-message: "8=FIX.4.4|35=D|11=ORD-1|10=001|"
+plugin: ""
+body: !!binary OD1GSVguNC40fDM1PUR8MTE9T1JELTF8MTA9MDAxfA==
 entries:
   - {tag: 11, key: "11", value: ORD-1}
   - {tag: 10, key: "10", value: "001"}
@@ -35,8 +47,8 @@ sourcerownum: 1
 
 Repeated tags remain repeated list items in wire order. `vhash` identifies the
 payload bytes and `hash` adds `unix`. The raw stage has no lifecycle code, so
-its fixed-width `xhash` is zero; `parse_fix` fills `code`, `codesource`, and
-`xhash = txhash(creaunix // 1_000, hash_of(code))`.
+its `xhash` is zero; `parse_fix` fills `code`, `codesource`, and
+`xhash = XXH3-128(UTF-8(code))`.
 
 ## Filters and bounds
 

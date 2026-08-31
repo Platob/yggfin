@@ -13,8 +13,17 @@
   "fix": {
    "component": "PreAllocGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelReplaceRequest",
+    "ExecutionReport",
+    "NewOrderCross",
+    "NewOrderList",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
   },
   "fields": [
    {

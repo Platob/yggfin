@@ -17,6 +17,7 @@ import uuid
 
 import pyarrow
 import pytest
+import xxhash
 
 import rekep.market.identity as identity
 from rekep.market.identity import (
@@ -27,6 +28,8 @@ from rekep.market.identity import (
     NIL,
     arrow_of,
     frame,
+    hash128_bytes,
+    hash128_bytes_arrow,
     hash_arrow,
     hash_bytes,
     hash_bytes_arrow,
@@ -109,6 +112,13 @@ def test_the_published_cross_language_vectors_pin_frame_and_digest() -> None:
         "XXH3-64",
         0,
     )
+    assert (corpus["xhash"]["algorithm"], corpus["xhash"]["seed"]) == ("XXH3-128", 0)
+    for vector in corpus["xhash"]["vectors"]:
+        raw = vector["code"].encode("utf-8")
+        assert raw.hex() == vector["utf8_hex"], vector["name"]
+        digest = hash128_bytes(raw)
+        assert hash_bytes_of(digest).hex() == vector["digest_hex"], vector["name"]
+        assert digest == vector["signed_i128"], vector["name"]
     assert len(corpus["raw_vectors"]) == 3
     for vector in corpus["raw_vectors"]:
         raw = bytes.fromhex(vector["raw_hex"])
@@ -206,6 +216,31 @@ def test_unframed_arrow_hashes_match_scalar_bytes() -> None:
     found = hash_bytes_arrow(values)
     assert found.type == pyarrow.int64()
     assert found.to_pylist() == [hash_bytes(value.encode("utf-8")) for value in values.to_pylist()]
+
+
+def test_direct_128_hashes_match_the_canonical_xxhash_digest_bytes() -> None:
+    values = pyarrow.array(["ORD-1", "", None, "café"])
+    found = hash128_bytes_arrow(values)
+    expected = [
+        None if value is None else xxhash.xxh3_128_digest(value.encode("utf-8"))
+        for value in values.to_pylist()
+    ]
+
+    assert found.type == HASH
+    assert found.to_pylist() == expected
+    assert expected[0].hex() == "99ea32063587bcca554a6378a39091a5"
+    assert hash128_bytes(b"ORD-1") == 204587895432405237931932019262678405541 - (1 << 128)
+    assert hash_bytes_of(hash128_bytes(b"ORD-1")) == expected[0]
+    assert expected[0] != xxhash.xxh3_128_digest(frame(("ORD-1",)))
+
+
+def test_direct_128_hashing_reads_a_sliced_columns_actual_rows() -> None:
+    values = pyarrow.array(["skip", "ORD-1", None, ""]).slice(1)
+    assert hash128_bytes_arrow(values).to_pylist() == [
+        xxhash.xxh3_128_digest(b"ORD-1"),
+        None,
+        xxhash.xxh3_128_digest(b""),
+    ]
 
 
 def test_an_empty_composite_is_refused_in_both_builders() -> None:
@@ -478,13 +513,13 @@ def test_a_sliced_identity_column_keeps_its_sign_and_nulls() -> None:
 
 def test_wide_hash_members_change_spelling_in_a_stored_row() -> None:
     version = (17 << 64) | ((-9) & ((1 << 64) - 1))
-    for name in ("hash", "xhash", "prevhash"):
+    for name in ("hash", "xhash", "prevhash", "instrumentxhash"):
         assert stored_member(name, version) == hash_bytes_of(version)
         assert read_member(name, hash_bytes_of(version)) == version
     assert stored_member("parenthash", [version]) == [hash_bytes_of(version)]
-    assert stored_member("linkxhashes", [version]) == [hash_bytes_of(version)]
+    assert stored_member("linkhashes", [version]) == [hash_bytes_of(version)]
     assert read_member("parenthash", [hash_bytes_of(version)]) == [version]
-    assert read_member("linkxhashes", [hash_bytes_of(version)]) == [version]
-    for name in ("vhash", "instrumentxhash"):
+    assert read_member("linkhashes", [hash_bytes_of(version)]) == [version]
+    for name in ("vhash",):
         assert stored_member(name, -9) == -9
         assert read_member(name, -9) == -9

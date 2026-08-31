@@ -110,18 +110,16 @@ stored document, and there is no snake-case alias beside it.
 The fold is also the match: a spelling resolves against the FIX registry by
 what it folds to, so `MsgType`, `msgtype` and `MSGTYPE` are one field.
 
-Every column carries `fix:display`, the name a reader is shown -- the
-dictionary's spelling for a FIX column, `display_name`'s capitalised run-on
-spelling for everything else. No display carries a space, because no FIX field
-name does: `SourceURL`, not `Source URL`. `tests/test_schemas.py` holds both
-halves for every published contract.
+`fix:name` is the reader-facing spelling the folded Arrow name cannot retain;
+for a FIX-backed column it is the dictionary's canonical name. There is no
+parallel `fix:display` metadata.
 
 A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
 `clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is
 `minpriceincrement`. Three exceptions, all deliberate:
 
-- `price` and `lastqty` are the flat summary slots every `MarketEvent` shares.
-  An Order holds its limit and remaining live quantity, an Execution holds
+- `lastpx` and `lastqty` are the flat summary slots every `MarketEvent` shares.
+  An Order maps `lastpx` from its `Price <44>` limit, an Execution holds
   `LastPx <31>` and `LastQty <32>`, and a Book holds its midpoint and touch
   size. Their unit columns remain `pxunit` and `qtyunit`.
 - A nested book `Level` keeps the compact `px` and `qty`; the nesting already
@@ -186,14 +184,13 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Events are immutable versions. `vhash` identifies a clock-free value and
   `hash` anchors it to `unix`; `prevhash` names the preceding exact version
   and `parenthash` records exact construction provenance.
-- `xhash` identifies a lifecycle as `txhash(creaunix // 1_000,
-  hash_of(code))`, stored as sixteen bytes. `codesource` names the field that
-  supplied `code`; `linkxhashes` names related lifecycles by their `xhash`.
+- `xhash` identifies a lifecycle as the direct XXH3-128 digest of UTF-8 `code`.
+  `codesource` names the field that supplied `code`; `linkhashes` names exact
+  related event versions by their sixteen-byte `hash`.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
-  `vhash` and reference identities are signed `int64`; event `hash` and
-  lifecycle `xhash` are sixteen big-endian bytes. Numbers are never formatted
-  as text.
+  `vhash` is signed `int64`; `hash`, `xhash`, and reference identities are
+  sixteen big-endian bytes. Numbers are never formatted as text.
 - Store market notions as ASCII codes packed into one integer, left-justified
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage
@@ -202,10 +199,12 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   lifecycle flat; book summary values stay flat too.
 - `Instrument` is the event-free FIX component of reference facts, nested in
   `FixMsg` and `InstrumentUpdate`. `InstrumentUpdate` is the latest persisted
-  reference event, keyed by its event `xhash`. `Instrument.xhash`, leg
-  identities and `instrumentxhash` remain clock-free `hash_of(symbolticker)`
-  reference identities.
+  reference event, keyed by the direct XXH3-128 digest of `code`, where `code`
+  is its `symbolticker`. Instrument, leg, and flat instrument identities are
+  the same clock-free operation over their canonical ticker.
 - FIX transcription preserves repeated tags and wire order in lists, not maps.
+- `lastmkt` is standard `LastMkt <30>` with the packed `MIC` enum as its
+  column type.
 - Package fields use bare FIX names. `MarketEventType <30002>` avoids the
   standard `EventType <865>`; the six package message declarations retain the
   `REKEP.` namespace.
@@ -284,6 +283,7 @@ python/src/rekep/
   iceberg/      catalog, dataset, and the schema bridge
   text/         FixMsg plus streamed text files
   tasks/        notebook configuration only
+  arrow_path.py     one URL and the Arrow filesystem serving its path
   arrow_file_io.py  the Iceberg FileIO: locations, spills, content cache
   console.py    terminal styling: colour, boxes, tables, spinners
   logs.py       the level policy, and where a run's records go

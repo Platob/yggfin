@@ -12,8 +12,13 @@
   "fix": {
    "component": "TrdSessLstGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradingSessionList\",\"TradingSessionListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradingSessionList",
+    "TradingSessionListUpdateReport"
+   ]
   },
   "fields": [
    {

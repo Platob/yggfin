@@ -27,7 +27,14 @@ from rekep.fix.entries import (
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import DEFAULT_SOURCES, FixRegistry
 from rekep.fix.shell import shell
-from rekep.fix.store import document_of, field_document
+from rekep.fix.store import (
+    component_from_document,
+    component_record_document,
+    document_of,
+    field_document,
+    field_from_document,
+    field_record_document,
+)
 from rekep.logs import COMMAND_LEVEL, configure
 from rekep.tasks import Task
 
@@ -223,7 +230,7 @@ def find_fields(arguments: argparse.Namespace) -> int:
         entry = registry.field(member.fix.get("tag") or member.name)
         if entry is not None:
             entries.append(entry)
-    _write_json([entry.into_dict() for entry in entries])
+    _write_json([field_record_document(entry) for entry in entries])
     return 0
 
 
@@ -233,17 +240,21 @@ def show_field(arguments: argparse.Namespace) -> int:
     if entry is None:
         CONSOLE.fail(f"no FIX field {arguments.field!r} in this registry")
         return 1
-    _write_json(entry.into_dict())
+    _write_json(field_record_document(entry))
     return 0
 
 
 def list_components(arguments: argparse.Namespace) -> int:
-    """Write component identities, optionally filtered by name."""
+    """Write component and message identities, optionally filtered by name."""
     wanted = arguments.query.casefold()
     entries = sorted(_registry(arguments).component_records().values(), key=lambda item: item.name)
     _write_json(
         [
-            {"name": entry.name, "versions": list(entry.versions)}
+            {
+                "name": entry.name,
+                "msgtype": entry.msg_type or "",
+                "versions": list(entry.versions),
+            }
             for entry in entries
             if not wanted or wanted in entry.name.casefold()
         ]
@@ -252,13 +263,13 @@ def list_components(arguments: argparse.Namespace) -> int:
 
 
 def show_component(arguments: argparse.Namespace) -> int:
-    """Write one complete component record."""
+    """Write one complete component or message record."""
     try:
         entry = _registry(arguments).merged_component(arguments.component)
     except KeyError:
-        CONSOLE.fail(f"no FIX component {arguments.component!r} in this registry")
+        CONSOLE.fail(f"no FIX component or message {arguments.component!r} in this registry")
         return 1
-    _write_json(entry.into_dict())
+    _write_json(component_record_document(entry))
     return 0
 
 
@@ -333,16 +344,16 @@ def alias_field(arguments: argparse.Namespace) -> int:
 
 
 def remove_component(arguments: argparse.Namespace) -> int:
-    """Delete one component identity, saying so when the store did not have it."""
+    """Delete one component or message, saying so when the store did not have it."""
     if not _registry(arguments).remove_component(arguments.name):
-        CONSOLE.fail(f"no FIX component {arguments.name!r} in this registry")
+        CONSOLE.fail(f"no FIX component or message {arguments.name!r} in this registry")
         return 1
     CONSOLE.ok(f"removed {arguments.name}")
     return 0
 
 
 def add_component(arguments: argparse.Namespace) -> int:
-    """Register one component identity from a document holding its member trees."""
+    """Register one component or message from a document holding its member trees."""
     registry = _registry(arguments)
     entry = registry.add_component(_component_entry(arguments))
     CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} components/{entry.slug}")
@@ -350,7 +361,7 @@ def add_component(arguments: argparse.Namespace) -> int:
 
 
 def update_component(arguments: argparse.Namespace) -> int:
-    """Replace one stored component identity from such a document."""
+    """Replace one stored component or message from such a document."""
     registry = _registry(arguments)
     entry = registry.update_component(_component_entry(arguments))
     CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} components/{entry.slug}")
@@ -358,12 +369,13 @@ def update_component(arguments: argparse.Namespace) -> int:
 
 
 def _component_entry(arguments: argparse.Namespace) -> ComponentRecord:
-    """One component identity out of the document `--declaration` names.
+    """One component or message out of the document `--declaration` names.
 
-    Whichever format it is written in: `Convertible` reads the extension, so a
-    declaration travels as JSON, YAML or TOML without a flag saying which.
+    JSON and YAML both carry the readable nested metadata emitted by `show`.
     """
-    return ComponentRecord.from_file(arguments.declaration)
+    payload = read_bytes(arguments.declaration)
+    document = document_of(payload, f".{_format_of(arguments.declaration)}")
+    return component_from_document(document)
 
 
 def check_registry(arguments: argparse.Namespace) -> int:
@@ -424,7 +436,7 @@ def _field_entry(arguments: argparse.Namespace) -> Field:
     if arguments.declaration:
         payload = read_bytes(arguments.declaration)
         document = document_of(payload, f".{_format_of(arguments.declaration)}")
-        return refuse_record(Field.from_dict(document))
+        return refuse_record(field_from_document(document))
     record = (
         fix_field(arguments.name, int(arguments.tag), arguments.type or None)
         if arguments.tag
@@ -787,10 +799,14 @@ def _parser() -> argparse.ArgumentParser:
     finding.add_argument("--limit", type=int, default=20, help="maximum matches to write")
     showing = verb("show", "write one complete field record as JSON", show_field)
     showing.add_argument("field", help="field name, alias, or tag")
-    components = verb("components", "write component identities as JSON", list_components)
+    components = verb(
+        "components", "write component and message identities as JSON", list_components
+    )
     components.add_argument("query", nargs="?", default="", help="optional name filter")
-    component = verb("component", "write one complete component record as JSON", show_component)
-    component.add_argument("component", help="component name or alias")
+    component = verb(
+        "component", "write one complete component or message record as JSON", show_component
+    )
+    component.add_argument("component", help="component or message name or alias")
     verb("check", "report everything inconsistent about a store", check_registry)
 
     described(verb("add-field", "register a field identity the store does not have", add_field))
@@ -828,15 +844,15 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     for name, run in (("add-component", add_component), ("update-component", update_component)):
-        action = verb(name, f"{name.split('-')[0]} a component identity", run)
+        action = verb(name, f"{name.split('-')[0]} a component or message identity", run)
         action.add_argument(
             "--declaration",
             required=True,
             help="path of a document holding the entry's name and per-version members",
         )
-    verb("remove-component", "delete a component identity", remove_component).add_argument(
-        "--name", required=True, help="the component to remove"
-    )
+    verb(
+        "remove-component", "delete a component or message identity", remove_component
+    ).add_argument("--name", required=True, help="the component or message to remove")
 
     dumping = verb("dump", "write a deterministic registry archive", dump_registry)
     dumping.add_argument("--output", required=True, help="target .zip path or URI")
@@ -869,7 +885,7 @@ def _parser() -> argparse.ArgumentParser:
     counting.add_argument(
         "--plugins",
         default=None,
-        help="a regular expression a line's plugincode must match, for instance ^UL",
+        help="a regular expression a line's plugin must match, for instance ^UL",
     )
     counting.add_argument(
         "--limit", type=int, default=None, help="stop after this many lines, for a sample"

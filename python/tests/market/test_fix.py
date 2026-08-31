@@ -43,12 +43,14 @@ NARROWED = {
     "localmktdate": (pyarrow.timestamp("us"),),
 }
 
-#: One field narrowed by name rather than by datatype. `SecurityIDSource <22>`
-#: is enumerated exactly like the `char` fields above -- thirty-three codes,
-#: every one a single character -- but the standard types it `String`, and
-#: admitting `String` to the table would let any text column narrow silently.
-#: Named here so the exception is the field's and not the datatype's.
-NARROWED_FIELDS = {"SecurityIDSource": (pyarrow.int32(),)}
+#: Fields narrowed by name rather than by datatype. `SecurityIDSource <22>` is
+#: enumerated exactly like the `char` fields above, while `LastMkt <30>` carries
+#: an ISO 10383 MIC. FIX types both as general text, so admitting their broad
+#: datatypes here would let unrelated strings narrow silently.
+NARROWED_FIELDS = {
+    "SecurityIDSource": (pyarrow.int32(),),
+    "LastMkt": (pyarrow.int32(),),
+}
 
 
 def dictionary() -> dict[str, dict[str, Any]]:
@@ -74,8 +76,8 @@ def dictionary() -> dict[str, dict[str, Any]]:
     for aliased in (False, True):
         for record in records:
             # A stored record is a field document: the Arrow reading at the
-            # top, the protocol's own under `fix`, the ones that are lists
-            # packed into one JSON string apiece.
+            # top and the protocol's own, including nested metadata, under
+            # `fix`.
             fix = record["fix"]
             if "tag" not in fix:
                 continue  # A field FIX never numbered; nothing here declares one.
@@ -83,9 +85,7 @@ def dictionary() -> dict[str, dict[str, Any]]:
             if fix.get("type"):
                 metadata["fix:type"] = fix["type"]
             spellings = (
-                [alias["name"] for alias in json.loads(fix.get("aliases") or "[]")]
-                if aliased
-                else [record["name"]]
+                [alias["name"] for alias in fix.get("aliases", [])] if aliased else [record["name"]]
             )
             for spelled in spellings:
                 by_name.setdefault(spelled, {"name": spelled, "metadata": metadata})
@@ -99,7 +99,7 @@ def tagged(shape: type) -> list[tuple[str, Field]]:
     def walk(prefix: str, members: tuple[Field, ...]) -> None:
         for member in members:
             path = f"{prefix}{member.name}"
-            if "name" in member.fix:
+            if member.fix.type:
                 found.append((path, member))
             walk(f"{path}.", member.fields)
 

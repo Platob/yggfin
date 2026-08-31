@@ -18,10 +18,14 @@ from rekep import txhash
 from rekep.annotations import SEQUENCE_ORIGINS, item_annotation, unwrap_annotated, unwrap_optional
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
 from rekep.fields import Field, scalar
+from rekep.fields.arrays import build_list, dense_counts, null_mask
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import (
     HASH,
     NIL,
+    NIL_BYTES,
+    hash128_bytes,
+    hash128_bytes_arrow,
     hash_arrow,
     hash_bytes_of,
     hash_of,
@@ -67,7 +71,7 @@ _SOURCE_IDENTITY_MEMBERS = frozenset(
         "hash",
         "vhash",
         "xhash",
-        "linkxhashes",
+        "linkhashes",
         "version",
         "state",
         "code",
@@ -87,8 +91,8 @@ ALTIDS_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
 
-#: Relations name event lifecycles, at the same width as `xhash`.
-_LINK_XHASHES_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
+#: Relations name exact event versions, at the same width as `hash`.
+_LINK_HASHES_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
 
 #: The list a `parenthash` is, at the width an identifier is stored in.
 _PARENT_HASH_TYPE = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
@@ -160,6 +164,9 @@ class Event(MarketConvertible):
     eventtype: Annotated[EventType, Field.column("EventType")] = EventType.UNKNOWN
     """Which kind of event this is -- the one column a union of the tables needs."""
 
+    plugin: Annotated[str, Field.column("Plugin")] = ""
+    """Source plugin that recorded the row; empty when the envelope did not name one."""
+
     creaunix: Annotated[int, Field(metadata=UNIX), Field.column("CreaUnix")] = 0
     """When the event was created, upstream of anything that carried it."""
 
@@ -185,15 +192,15 @@ class Event(MarketConvertible):
     vhash: Annotated[int, Field(dtype=pyarrow.int64()), Field.column("ValueHash")] = NIL
     """XXH3-64 of the framed value parts, with every clock excluded."""
 
-    xhash: Annotated[int, Field(dtype=HASH)] = NIL
-    """Creation-anchored composition of `creaunix` and the XXH3-64 of `code`."""
+    xhash: Annotated[int, Field(dtype=HASH), Field.column("XHash")] = NIL
+    """Direct XXH3-128 digest of `code`; all-zero when no readable code exists."""
 
-    linkxhashes: Annotated[
+    linkhashes: Annotated[
         list[int],
-        Field(dtype=_LINK_XHASHES_TYPE),
-        Field.column("LinkXHashes"),
+        Field(dtype=_LINK_HASHES_TYPE),
+        Field.column("LinkHashes"),
     ] = dataclasses.field(default_factory=list)
-    """Related lifecycle `xhash` values, with the primary match first."""
+    """Related exact event `hash` values, with the primary match first."""
 
     version: int = 0
     """Which version of `xhash` this is, counting up from the first."""
@@ -218,15 +225,15 @@ class Event(MarketConvertible):
     prevhash: Annotated[int | None, Field(dtype=HASH), Field.column("PrevHash")] = None
     """The previous version's hash; null on the first version."""
 
-    # Parent hashes record exact construction provenance. Lifecycle links are
-    # separate because a relation normally survives revisions at either end.
+    # Parent hashes record directed construction provenance. Peer relations
+    # stay separate because they carry no parent/child direction.
     parenthash: Annotated[
         list[int] | None, Field(dtype=_PARENT_HASH_TYPE), Field.column("ParentHash")
     ] = None
     """Every event this one was built from, in the order they were combined."""
 
-    mic: MIC | None = None
-    """ISO 10383 venue code, packed losslessly into `int32`; null when absent."""
+    lastmkt: Annotated[MIC | None, fix_tag("LastMkt")] = None
+    """Last execution venue as an ISO 10383 code; null when absent."""
 
     reason: str | None = None
     """Why this event was rejected or could not be interpreted, when known."""
@@ -238,6 +245,9 @@ class Event(MarketConvertible):
         # reader of `altids`.
         if not isinstance(self.altids, dict):
             self.altids = dict(self.altids or ())
+        if self.lastmkt is not None:
+            venue = MIC.from_str(self.lastmkt)
+            self.lastmkt = None if venue is MIC.UNKNOWN else venue
         self.normalize_float_members()
         if self.eventtype is EventType.UNKNOWN:
             self.eventtype = type(self).into_event_type()
@@ -360,20 +370,17 @@ class Event(MarketConvertible):
         return compute.divide(compute.subtract(nanos, carry), MICROSECOND).cast(pyarrow.int64())
 
     @staticmethod
-    def xhash_of(creaunix: int, code: str) -> int:
-        """Creation-anchored lifecycle identity, or zero when no code names one."""
-        if not code:
-            return NIL
-        return txhash.couple128(creaunix // MICROSECOND, hash_of(code))
+    def xhash_of(code: str) -> int:
+        """Lifecycle identity, or zero when no readable code names one."""
+        return hash128_bytes(code.encode("utf-8")) if code else NIL
 
     @classmethod
-    def xhash_arrow(cls, creaunix: Any, code: Any) -> pyarrow.Array:
-        """`xhash_of` over whole columns, using the same microsecond floor."""
+    def xhash_arrow(cls, code: Any) -> pyarrow.Array:
+        """`xhash_of` over a whole code column."""
         compute = pyarrow.compute
         text = code.cast(pyarrow.string(), safe=False)
         named = compute.fill_null(compute.not_equal(text, ""), False)
-        anchored = txhash.couple128_arrow(cls._clock_micros(creaunix), hash_arrow(text))
-        return compute.if_else(named, anchored, pyarrow.scalar(txhash.wide_bytes(NIL), HASH))
+        return compute.if_else(named, hash128_bytes_arrow(text), pyarrow.scalar(NIL_BYTES, HASH))
 
     def identify(self) -> Self:
         """Give the event the identity its own content earns, where it has none."""
@@ -390,6 +397,9 @@ class Event(MarketConvertible):
     def with_previous(self, previous: Event | None) -> Self | None:
         """Complete this version, returning None when it changes no stored fact."""
         self.completed_from(previous)
+        related = previous is not None and (
+            type(self) is not type(previous) or self.xhash != previous.xhash
+        )
         self.vhash = self.hash_of(*self.version_parts())
         self.hash = NIL
         if (
@@ -401,7 +411,12 @@ class Event(MarketConvertible):
             and previous.snapunix is None
         ):
             return None
-        return self.identify()
+        identified = self.identify()
+        if related:
+            # A relation names exact versions, so neither side may still be
+            # waiting for the content hash that identifies it.
+            identified.link_to(previous, primary=True)
+        return identified
 
     def completed_from(self, previous: Event | None) -> Self:
         """Complete inherited and derived values without assigning identities."""
@@ -422,18 +437,13 @@ class Event(MarketConvertible):
             or not self.code
         )
         if same_lifecycle:
-            # Creation is part of `xhash`, so continuity must be established
-            # from the readable identifier before a later transmission clock
-            # can accidentally split one lifecycle.
+            # The readable code is the lifecycle identity. Keep its original
+            # spelling when a later version names the same digest indirectly.
             self.code = previous.code or self.code
             if previous.code:
                 self.codesource = previous.codesource or self.codesource
             self._keep_creation(previous)
-            self.xhash = (
-                previous.xhash
-                if previous.xhash and (previous.creaunix or not self.creaunix)
-                else self.life_hash()
-            )
+            self.xhash = previous.xhash or self.life_hash()
         else:
             self.xhash = self.life_hash()
         self._drop_self_link()
@@ -449,14 +459,15 @@ class Event(MarketConvertible):
             self.version = previous.version + 1
             self.prevunix = previous.unix
             self._remember_previous(previous)
-        elif self.xhash != previous.xhash:
+        else:
             # Not a version of it: a different thing, built from it. A fill
             # completed from the order it happened to is the case that matters
             # -- it takes the order's running totals and stays version zero of
             # its own life, because a version counter counts one lifecycle.
+            # Relations are added by the producer only after both exact event
+            # hashes are final; construction provenance is already final here.
             if previous.hash and previous.hash not in (self.parenthash or ()):
                 self.parenthash = [*(self.parenthash or ()), previous.hash]
-            self.link_to(previous)
         # Cleared, not kept: every layer has just filled fields the hash is
         # made of, so the identity this row arrived with was of a different
         # row. `identify` refuses to overwrite a hash that is set, which is
@@ -497,8 +508,8 @@ class Event(MarketConvertible):
 
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it."""
-        if previous.linkxhashes:
-            self.link_to(*previous.linkxhashes)
+        if previous.linkhashes:
+            self.link_to(*previous.linkhashes)
         if not self.unix:
             # A message with no clock at all still belongs somewhere in time,
             # and the only honest answer is where the version before it was.
@@ -513,8 +524,8 @@ class Event(MarketConvertible):
         # The identifiers *beside* it are facts about the same thing under any
         # reading, so a version silent about one keeps what the last one said.
         self.name_altids(previous.altids)
-        if self.mic is None:
-            self.mic = previous.mic
+        if self.lastmkt is None:
+            self.lastmkt = previous.lastmkt
         if self.state is State.UNKNOWN:
             # A report that says nothing about the state is not saying the
             # state is unknown; it is not mentioning it.
@@ -525,30 +536,54 @@ class Event(MarketConvertible):
         self.prevhash = previous.hash or None
 
     def link_to(self, *events: Event | int, primary: bool = False) -> Self:
-        """Relate lifecycles once, optionally ahead of existing links."""
+        """Relate exact event versions once, optionally ahead of existing links."""
         if not events:
             return self
         given: list[int] = []
         for event in events:
-            xhash = event.xhash if isinstance(event, Event) else int(event)
-            if xhash:
-                given.append(int(xhash))
+            event_hash = event.hash if isinstance(event, Event) else int(event)
+            if event_hash:
+                given.append(int(event_hash))
         given = list(dict.fromkeys(given))
-        existing = list(self.linkxhashes)
+        existing = list(self.linkhashes)
         ordered = given + existing if primary else existing + given
-        self.linkxhashes = list(dict.fromkeys(ordered))
+        self.linkhashes = list(dict.fromkeys(ordered))
         self._drop_self_link()
         return self
 
     @property
-    def primary_linked_xhash(self) -> int | None:
-        """First related lifecycle, when one is known."""
-        return self.linkxhashes[0] if self.linkxhashes else None
+    def primary_link(self) -> int | None:
+        """First related exact event version, when one is known."""
+        return self.linkhashes[0] if self.linkhashes else None
 
     def _drop_self_link(self) -> None:
-        """A relation never points back to its own lifecycle."""
-        if self.xhash and self.linkxhashes:
-            self.linkxhashes = [linked for linked in self.linkxhashes if linked != self.xhash]
+        """A relation never points back to its own exact event version."""
+        if self.hash and self.linkhashes:
+            self.linkhashes = [linked for linked in self.linkhashes if linked != self.hash]
+
+    @staticmethod
+    def _without_self_links_arrow(linkhashes: Any, hashes: Any) -> pyarrow.Array:
+        """Remove each row's own exact hash from its Arrow relation list."""
+        compute = pyarrow.compute
+        if isinstance(linkhashes, pyarrow.ChunkedArray):
+            linkhashes = linkhashes.combine_chunks()
+        if isinstance(hashes, pyarrow.ChunkedArray):
+            hashes = hashes.combine_chunks()
+        values = compute.list_flatten(linkhashes)
+        if not len(values):
+            return linkhashes
+        parents = compute.list_parent_indices(linkhashes).cast(pyarrow.int64())
+        self_links = compute.fill_null(compute.equal(values, compute.take(hashes, parents)), False)
+        if not compute.any(self_links, min_count=0).as_py():
+            return linkhashes
+        keep = compute.invert(self_links)
+        kept_parents = compute.filter(parents, keep)
+        return build_list(
+            linkhashes.type,
+            dense_counts(kept_parents, len(linkhashes)),
+            compute.filter(values, keep),
+            null_mask(linkhashes),
+        )
 
     def derive(self) -> None:
         """Fill what this row's own fields already determine.
@@ -589,8 +624,8 @@ class Event(MarketConvertible):
         """Drop what *changed*, keeping what *is*. A snapshot has no delta."""
 
     def life_hash(self) -> int:
-        """The lifecycle identity its creation time and readable code name."""
-        return self.xhash_of(self.creaunix, self.life_code())
+        """The lifecycle identity its readable code names."""
+        return self.xhash_of(self.life_code())
 
     def life_code(self) -> str:
         """The readable part that names this lifecycle, without changing it."""
@@ -624,7 +659,7 @@ class Event(MarketConvertible):
         return (
             self.eventtype,
             self.state,
-            self.mic,
+            self.lastmkt,
             self.code,
             self.codesource,
             self.reason,
@@ -647,9 +682,7 @@ class MarketEvent(Event):
     # Not a partition, deliberately. The value is a hash, so bucketing it split
     # every hour into as many files as buckets while the hour itself already
     # prunes the read -- more small files for a filter that was already exact.
-    instrumentxhash: Annotated[
-        int, Field(dtype=pyarrow.int64()), Field.column("InstrumentXhash")
-    ] = NIL
+    instrumentxhash: Annotated[int, Field(dtype=HASH), Field.column("InstrumentXhash")] = NIL
     """Canonical Instrument identity used to join market rows."""
 
     # Beside the hash rather than only inside `altids`: a hash joins, and a
@@ -676,8 +709,8 @@ class MarketEvent(Event):
     side: Annotated[Side, fix_tag("Side")] = Side.UNKNOWN
     """Which way the interest points; `side.sign` turns it into `+1` or `-1`."""
 
-    price: Annotated[float | None, fix_tag("Price")] = None
-    """The price on this row, in `pxunit`; what it means is the subclass's to say."""
+    lastpx: Annotated[float | None, fix_tag("LastPx")] = None
+    """The current event price in `pxunit`; each subclass declares its exact source."""
 
     prevpx: Annotated[float | None, Field.column("PrevPx")] = None
     """Price on the immediately preceding lifecycle version; null on the first."""
@@ -689,7 +722,7 @@ class MarketEvent(Event):
     # producer always knows how it quotes, and a column widened later is a
     # column every reader written before the widening has to re-handle.
     pxunit: Annotated[str, Field.column("PxUnit")] = ""
-    """How to read `price`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated."""
+    """How to read `lastpx`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated."""
 
     currency: Annotated[Currency | None, fix_tag("Currency")] = None
     """Currency of the monetary values; null when the source does not state one."""
@@ -706,7 +739,7 @@ class MarketEvent(Event):
     # Carried rather than derived after persistence because the multiplier is
     # normalized in the separate reference stream.
     notional: float | None = None
-    """`price * lastqty * multiplier` in the instrument's currency, as computed."""
+    """`lastpx * lastqty * multiplier` in the instrument's currency, as computed."""
 
     prevnotional: Annotated[float | None, Field.column("PrevNotional")] = None
     """Notional on the immediately preceding lifecycle version; null on the first."""
@@ -738,7 +771,7 @@ class MarketEvent(Event):
     def complete_from(self, previous: Event) -> None:
         """The four market slots, carried forward where this version was silent.
 
-        `price` and `lastqty` are filled because a venue restating an order's status
+        `lastpx` and `lastqty` are filled because a venue restating an order's status
         rarely repeats its limit, and a row with a null price drops out of
         every filter on price.
         """
@@ -755,7 +788,7 @@ class MarketEvent(Event):
             self.symbolticker = previous.symbolticker
         if self.side is Side.UNKNOWN:
             self.side = previous.side
-        # `price` and `lastqty` are the abstract slots, and what they hold is the
+        # `lastpx` and `lastqty` are the abstract slots, and what they hold is the
         # subclass's to say: an order's are what it asked for, an execution's
         # are what traded, a book's are the mid and the touch. So they carry
         # only from a version of the *same shape*. Carrying an execution's
@@ -764,8 +797,8 @@ class MarketEvent(Event):
         if previous.eventtype == self.eventtype:
             if self.kind is MarketKind.UNKNOWN:
                 self.kind = previous.kind
-            if self.price is None:
-                self.price = previous.price
+            if self.lastpx is None:
+                self.lastpx = previous.lastpx
             if self.lastqty is None:
                 self.lastqty = previous.lastqty
         if not self.pxunit:
@@ -781,7 +814,7 @@ class MarketEvent(Event):
         if not isinstance(previous, MarketEvent):
             return
         if self.prevpx is None:
-            self.prevpx = previous.price
+            self.prevpx = previous.lastpx
         if self.prevqty is None:
             self.prevqty = previous.lastqty
         if self.prevnotional is None:
@@ -794,7 +827,7 @@ class MarketEvent(Event):
             self.notional = self.into_notional()
 
     def into_notional(self) -> float | None:
-        """`price * lastqty * multiplier` in the instrument's currency, or None.
+        """`lastpx * lastqty * multiplier` in the instrument's currency, or None.
 
         None when any of the three is missing, and that is the point of it
         being a method rather than an expression at the call site: a notional
@@ -802,7 +835,7 @@ class MarketEvent(Event):
         nobody notices until settlement, so a contract whose multiplier is
         unknown has no notional rather than a plausible one.
         """
-        if self.price is None or self.lastqty is None:
+        if self.lastpx is None or self.lastqty is None:
             return None
         instrument = self.into_instrument()
         if instrument is None:
@@ -816,7 +849,7 @@ class MarketEvent(Event):
             if instrument.kind.band is not AssetKind.CASH:
                 return None
             multiplier = 1.0
-        return self.price * self.lastqty * multiplier
+        return self.lastpx * self.lastqty * multiplier
 
     def forget_delta(self) -> None:
         """A snapshot keeps current values, never the transition into them."""
@@ -849,7 +882,7 @@ class MarketEvent(Event):
             self.symbolticker,
             self.kind,
             self.side,
-            self.price,
+            self.lastpx,
             self.pxunit,
             self.currency,
             self.lastqty,
@@ -998,7 +1031,10 @@ def _same_field(target: Field, source: Field, access: Any) -> bool:
 
 def _fix_backed(member: Field) -> bool:
     """Whether a declaration names a registry-owned field."""
-    return member.fix.tag is not None or "fix:name" in member.metadata
+    # `fix:name` is also the reader-facing spelling of a generic column. The
+    # registry adds the datatype, including for named fields with no tag, so
+    # it is the discriminator that cannot turn an envelope column into FIX.
+    return bool(member.fix.type)
 
 
 def _has_value(value: Any) -> bool:
@@ -1037,7 +1073,16 @@ def _entry_values(
             continue
         reading = _reading(member, materialized, access)
         if reading:
-            values[member.name] = _projected_value(member, annotation, reading.value, access)
+            _, declared = unwrap_annotated(annotation)
+            _, declared = unwrap_optional(declared)
+            value = (
+                reading.raw
+                if _fix_backed(member)
+                and isinstance(declared, type)
+                and issubclass(declared, enum.Enum)
+                else reading.value
+            )
+            values[member.name] = _projected_value(member, annotation, value, access)
     return values
 
 

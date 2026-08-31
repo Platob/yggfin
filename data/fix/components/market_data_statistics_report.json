@@ -11,7 +11,9 @@
    "component": "MarketDataStatisticsReport",
    "msgtype": "DP",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

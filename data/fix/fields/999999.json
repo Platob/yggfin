@@ -6,9 +6,15 @@
   "description": "ISIN carried by the rendered ISINCODE field.",
   "fix": {
    "type": "String",
-   "versions": "[\"*\"]",
+   "versions": [
+    "*"
+   ],
    "column": "isincode",
-   "aliases": "[{\"name\":\"AMON.ISINCODE\"}]"
+   "aliases": [
+    {
+     "name": "AMON.ISINCODE"
+    }
+   ]
   }
  },
  "ParentClOrdID": {
@@ -18,7 +24,9 @@
   "description": "Client order identity of the parent in a replace chain, as the bridge renders it.",
   "fix": {
    "type": "String",
-   "versions": "[\"*\"]",
+   "versions": [
+    "*"
+   ],
    "column": "parentclordid"
   }
  },
@@ -29,7 +37,9 @@
   "description": "Venue order identity of the parent in a replace chain, as the bridge renders it.",
   "fix": {
    "type": "String",
-   "versions": "[\"*\"]",
+   "versions": [
+    "*"
+   ],
    "column": "parentorderid"
   }
  }

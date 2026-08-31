@@ -11,7 +11,9 @@
    "component": "QuoteAcknowledgement",
    "msgtype": "b",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

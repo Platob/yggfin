@@ -10,8 +10,13 @@
   "fix": {
    "component": "PartyDetailsUpdateGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyDetailsDefinitionRequest\",\"PartyDetailsListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyDetailsDefinitionRequest",
+    "PartyDetailsListUpdateReport"
+   ]
   },
   "fields": [
    {

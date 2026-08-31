@@ -11,10 +11,11 @@ from typing import Annotated, Any
 import pyarrow
 import pyarrow.compute
 
+from rekep.enums import Currency
 from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import DECLARED, ENTRIES
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import cast_arrow_field
 from rekep.fix.quickfix import entry_of, is_group, is_reference, members_of
 
 
@@ -123,7 +124,7 @@ class Leg:
     contractmultiplier: Annotated[float | None, DECLARED["LegContractMultiplier"]] = None
     """Units of the underlying one leg contract represents."""
 
-    currency: Annotated[str | None, DECLARED["LegCurrency"]] = None
+    currency: Annotated[Currency | None, DECLARED["LegCurrency"]] = None
     """ISO 4217 currency the leg is priced in."""
 
     side: Annotated[str | None, DECLARED["LegSide"]] = None
@@ -131,6 +132,12 @@ class Leg:
 
     ratioqty: Annotated[float | None, DECLARED["LegRatioQty"]] = None
     """How many of this leg one unit of the strategy is; the leg's weight."""
+
+    def __post_init__(self) -> None:
+        """Normalize the packed currency once."""
+        if self.currency is not None:
+            currency = Currency.from_str(self.currency)
+            self.currency = None if currency is Currency.UNKNOWN else currency
 
 
 def _entries_type(row: type) -> pyarrow.DataType:
@@ -150,8 +157,6 @@ _NO_SIDE_TRD_REG_TS = "NoSideTrdRegTS"
 _NO_SECURITY_ALT_ID = "NoSecurityAltID"
 _NO_LEGS = "NoLegs"
 _UNSIGNED = r"^[0-9]{1,18}$"
-_SIGNED = r"^[+-]?[0-9]{1,18}$"
-_DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]{1,3})?$"
 _GROUP_STRIDE = 2**32
 
 
@@ -353,14 +358,11 @@ class ComponentGroup:
                 else compute.and_(members, compute.is_in(keys, value_set=self._tags_named(member)))
             )
             text, at = _first_for_party(values, positions, party_group, matched, party_groups)
-            target = row_field.field(column).dtype
-            readable = _readable(text, target)
-            lifted.append(
-                cast_arrow_fix(
-                    compute.if_else(readable, text, pyarrow.scalar(None, pyarrow.string())),
-                    target,
-                )
-            )
+            declared = row_field.field(column)
+            target = declared.dtype
+            converted = cast_arrow_field(text, declared, target)
+            readable = compute.is_valid(converted)
+            lifted.append(compute.if_else(readable, converted, pyarrow.scalar(None, target)))
             # A value the column cannot hold is not projected, so it stays
             # in the residual `entries` as the text that arrived rather than
             # becoming a null nobody can explain. The delimiter still opens
@@ -600,31 +602,6 @@ def _without(declared: Field, drop: Any) -> Field:
     """One block with the members `drop` names taken out of it."""
     kept = [member.into_arrow_field() for member in members_of(declared) if not drop(member)]
     return Field(name=declared.name, dtype=pyarrow.struct(kept), nullable=declared.nullable)
-
-
-def _readable(text: Any, dtype: pyarrow.DataType) -> Any:
-    """Which values a column of this type can hold, as a mask over `text`.
-
-    The mask and not the cast: `cast_arrow_fix` already nulls what it cannot
-    read, and what a caller here needs is the *other* half of that answer --
-    which values were not read, so they can be kept as the text that arrived.
-    """
-    compute = pyarrow.compute
-    kinds = pyarrow.types
-    if kinds.is_integer(dtype):
-        pattern = _SIGNED
-    elif kinds.is_floating(dtype) or kinds.is_decimal(dtype):
-        pattern = _DECIMAL
-    elif kinds.is_temporal(dtype):
-        # The cast itself, not its pattern: the reader range-checks what the
-        # shape alone admits -- an absurd clock, an impossible zone -- and a
-        # gate that answered from the shape would mark such text readable,
-        # project the null the cast makes of it, and drop the text nobody
-        # can then explain.
-        return compute.is_valid(cast_arrow_fix(text, dtype))
-    else:
-        return compute.is_valid(text)
-    return compute.fill_null(compute.match_substring_regex(text, pattern), False)
 
 
 @dataclasses.dataclass(eq=False)

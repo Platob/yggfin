@@ -10,8 +10,28 @@
   "fix": {
    "component": "TargetParties",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\",\"MassQuoteAck\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"OrderMassActionReport\",\"OrderMassActionRequest\",\"OrderMassCancelReport\",\"OrderMassCancelRequest\",\"OrderMassStatusRequest\",\"PositionTransferInstruction\",\"PositionTransferInstructionAck\",\"PositionTransferReport\",\"QuoteCancel\",\"QuoteStatusReport\",\"QuoteStatusRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport",
+    "MassQuoteAck",
+    "MultilegOrderCancelReplace",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "OrderMassActionReport",
+    "OrderMassActionRequest",
+    "OrderMassCancelReport",
+    "OrderMassCancelRequest",
+    "OrderMassStatusRequest",
+    "PositionTransferInstruction",
+    "PositionTransferInstructionAck",
+    "PositionTransferReport",
+    "QuoteCancel",
+    "QuoteStatusReport",
+    "QuoteStatusRequest"
+   ]
   },
   "fields": [
    {

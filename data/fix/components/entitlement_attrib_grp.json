@@ -10,8 +10,15 @@
   "fix": {
    "component": "EntitlementAttribGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyEntitlementsDefinitionRequest",
+    "PartyEntitlementsDefinitionRequestAck",
+    "PartyEntitlementsReport",
+    "PartyEntitlementsUpdateReport"
+   ]
   },
   "fields": [
    {

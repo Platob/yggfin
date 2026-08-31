@@ -8,80 +8,79 @@ fields:
   description: When the event happened, in whole nanoseconds since the epoch.
   metadata: {unit: ns, epoch: '1970-01-01'}
   iceberg: {primary_key: 'true'}
-  fix: {display: Unix}
 - name: unixpartition
   type: int32
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: UnixPartition}
+  fix: {name: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: EventType}
+  fix: {name: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
+- name: plugin
+  type: string
+  description: Source plugin that recorded the row; empty when the envelope did not name one.
+  fix: {name: Plugin}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: CreaUnix}
+  fix: {name: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: RecUnix}
+  fix: {name: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: ExpUnix}
+  fix: {name: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: SnapUnix}
+  fix: {name: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
   iceberg: {primary_key: 'true', sort_key: asc}
-  fix: {display: Hash}
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: ValueHash}
+  fix: {name: ValueHash}
 - name: xhash
   type: fixed_size_binary[16]
-  description: Creation-anchored composition of `creaunix` and the XXH3-64 of `code`.
-  fix: {display: Xhash}
-- name: linkxhashes
+  description: Direct XXH3-128 digest of `code`; all-zero when no readable code exists.
+  fix: {name: XHash}
+- name: linkhashes
   type: list
-  description: Related lifecycle `xhash` values, with the primary match first.
-  fix: {display: LinkXHashes}
+  description: Related exact event `hash` values, with the primary match first.
+  fix: {name: LinkHashes}
   item:
     type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
-  fix: {display: Version}
 - name: state
   type: int64
   description: 'Where the lifecycle stands, as a ranked code: `is_terminal` is over.'
-  fix: {display: State}
-  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","REJECTED":"61REJCTD","REPLACED":"52REPLCD","STOPPED":"26STOPPD","SUSPENDED":"25SUSPND"}'}
+  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3544985283371287876":"QUEUED","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3618451351954607687":"RUNNING","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3761723214427014468":"SUCCEEDED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","QUEUED":"12QUEUED","REJECTED":"61REJCTD","REPLACED":"52REPLCD","RUNNING":"27RUNING","STOPPED":"26STOPPD","SUCCEEDED":"44SUCCED","SUSPENDED":"25SUSPND"}'}
 - name: code
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
-  fix: {display: Code}
 - name: codesource
   type: string
   description: Column whose value supplied `code`; empty when the lifecycle is unnamed.
-  fix: {display: CodeSource}
+  fix: {name: CodeSource}
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: AltIDs}
+  fix: {name: AltIDs}
   key:
     type: string
   value:
@@ -91,169 +90,164 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: PrevUnix}
+  fix: {name: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: PrevHash}
+  fix: {name: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: ParentHash}
+  fix: {name: ParentHash}
   item:
     type: fixed_size_binary[16]
-- name: mic
+- name: lastmkt
   type: int32
   nullable: true
-  description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
-  fix: {display: MIC}
+  description: 'Market of execution for last fill, or an indication of the market where an order was routed Valid values: See "Appendix 6-C"'
+  fix: {tag: '30', type: Exchange, name: LastMkt}
   enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
-  fix: {display: Reason}
 - name: instrumentxhash
-  type: int64
+  type: fixed_size_binary[16]
   description: Canonical Instrument identity used to join market rows.
-  fix: {display: InstrumentXhash}
+  fix: {name: InstrumentXhash}
 - name: symbolticker
   type: string
   description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
-  fix: {display: SymbolTicker}
+  fix: {name: SymbolTicker}
 - name: kind
   type: int64
   description: Standard market semantic, independent of its protocol spelling.
-  fix: {display: Kind}
   enum: {name: MarketKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5566821097645801472":"MARKET","5569638063833105746":"MARKET_ORDER","5569638037863023432":"MARKET_IF_TOUCHED","5569638085258136916":"MARKET_TO_LIMIT","5497009797519638528":"LIMIT","5498143419748599122":"LIMIT_ORDER","5498143368109052741":"LIMIT_ON_CLOSE","5498143363696972882":"LIMIT_OR_BETTER","6004511408207691776":"STOP","6004512504804558162":"STOP_ORDER","6004511409487827968":"STOP_LIMIT","5784107667857604608":"PEGGED","5784107702435464530":"PEGGED_ORDER","5787764708158558036":"PREVIOUSLY_QUOTED","5787764708023878723":"PREVIOUSLY_INDICATED","4996819940632690688":"EXECUTION","5715706001773122560":"ORDER_STATUS","6075990608747429888":"TRADE","6075993903160513091":"TRADE_CORRECT","6075993902925366092":"TRADE_CANCEL","5498687660606357504":"LOCKED","5928228344835556676":"RELEASED","4849327045626908231":"CLEARING","4849341369292702720":"CLEARING_HOLD","5928228409493900370":"RELEASED_TO_CLEARING","4702695109861397582":"ACTIVATION","6075999417763451460":"TRIGGERED"}', fix_values: '{"40":{"1":5569638063833105746,"5":5569638063833105746,"6":5569638063833105746,"A":5569638063833105746,"C":5569638063833105746,"G":5569638063833105746,"J":5569638037863023432,"K":5569638085258136916,"T":5569638085258136916,"2":5498143419748599122,"8":5498143419748599122,"F":5498143419748599122,"I":5498143419748599122,"B":5498143368109052741,"7":5498143363696972882,"3":6004512504804558162,"R":6004512504804558162,"4":6004511409487827968,"S":6004511409487827968,"9":5784107702435464530,"L":5784107702435464530,"M":5784107702435464530,"P":5784107702435464530,"D":5787764708158558036,"H":5787764708158558036,"Q":5787764708158558036,"E":5787764708023878723},"150":{"0":5715706001773122560,"3":5715706001773122560,"4":5715706001773122560,"5":5715706001773122560,"6":5715706001773122560,"7":5715706001773122560,"8":5715706001773122560,"9":5715706001773122560,"A":5715706001773122560,"B":5715706001773122560,"C":5715706001773122560,"D":5715706001773122560,"E":5715706001773122560,"F":6075990608747429888,"G":6075993903160513091,"H":6075993902925366092,"I":5715706001773122560,"J":4849341369292702720,"K":5928228409493900370,"L":6075999417763451460,"M":5498687660606357504,"N":5928228344835556676}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACTIVATION":"ACTIVATN","CLEARING_HOLD":"CLRHOLD","EXECUTION":"EXEC","LIMIT_ON_CLOSE":"LMTCLOSE","LIMIT_ORDER":"LMTORDER","LIMIT_OR_BETTER":"LMTBETTR","MARKET_IF_TOUCHED":"MKTIFTCH","MARKET_ORDER":"MKTORDER","MARKET_TO_LIMIT":"MKTTOLMT","ORDER_STATUS":"ORDSTAT","PEGGED_ORDER":"PEGORDER","PREVIOUSLY_INDICATED":"PREVINDC","PREVIOUSLY_QUOTED":"PREVQUOT","RELEASED_TO_CLEARING":"RELTOCLR","STOP_LIMIT":"STOPLMT","STOP_ORDER":"STPORDER","TRADE_CANCEL":"TRDCANCL","TRADE_CORRECT":"TRDCORRC","TRIGGERED":"TRIGGERD"}'}
 - name: side
   type: int32
   description: 'Side of order (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '54', type: char, name: Side, display: Side}
+  fix: {tag: '54', type: char, name: Side}
   enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
-- name: price
+- name: lastpx
   type: double
   nullable: true
   description: Price of this (last) fill.
-  fix: {tag: '31', type: Price, name: LastPx, display: LastPx}
+  fix: {tag: '31', type: Price, name: LastPx}
 - name: prevpx
   type: double
   nullable: true
   description: Price on the immediately preceding lifecycle version; null on the first.
-  fix: {display: PrevPx}
+  fix: {name: PrevPx}
 - name: pxunit
   type: string
-  description: 'How to read `price`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
-  fix: {display: PxUnit}
+  description: 'How to read `lastpx`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
+  fix: {name: PxUnit}
 - name: currency
   type: int32
   nullable: true
   description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
-  fix: {tag: '15', type: Currency, name: Currency, display: Currency}
+  fix: {tag: '15', type: Currency, name: Currency}
   enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
 - name: lastqty
   type: double
   nullable: true
   description: Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '32', type: Qty, name: LastQty, display: LastQty}
+  fix: {tag: '32', type: Qty, name: LastQty}
 - name: prevqty
   type: double
   nullable: true
   description: Quantity on the immediately preceding lifecycle version; null on the first.
-  fix: {display: PrevQty}
+  fix: {name: PrevQty}
 - name: qtyunit
   type: string
   description: 'How to read `lastqty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
-  fix: {display: QtyUnit}
+  fix: {name: QtyUnit}
 - name: notional
   type: double
   nullable: true
-  description: '`price * lastqty * multiplier` in the instrument''s currency, as computed.'
-  fix: {display: Notional}
+  description: '`lastpx * lastqty * multiplier` in the instrument''s currency, as computed.'
 - name: prevnotional
   type: double
   nullable: true
   description: Notional on the immediately preceding lifecycle version; null on the first.
-  fix: {display: PrevNotional}
+  fix: {name: PrevNotional}
 - name: metadata
   type: map
   nullable: true
   description: Protocol fields carried verbatim, exactly as the venue sent them.
-  fix: {display: Metadata}
   key:
     type: string
   value:
     type: string
-    fix: {display: Value}
 - name: execid
   type: string
   nullable: true
   description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int).
-  fix: {tag: '17', type: String, name: ExecID, display: ExecID}
+  fix: {tag: '17', type: String, name: ExecID}
 - name: execrefid
   type: string
   nullable: true
   description: Reference identifier used with Trade, Trade Cancel and Trade Correct execution types. (Prior to FIX 4.1 this field was of type int)
-  fix: {tag: '19', type: String, name: ExecRefID, display: ExecRefID}
+  fix: {tag: '19', type: String, name: ExecRefID}
 - name: tradeid
   type: string
   nullable: true
   description: The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty.
-  fix: {tag: '1003', type: String, name: TradeID, display: TradeID}
+  fix: {tag: '1003', type: String, name: TradeID}
 - name: orderid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-  fix: {tag: '37', type: String, name: OrderID, display: OrderID}
+  fix: {tag: '37', type: String, name: OrderID}
 - name: clordid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID (49) or OnBehalfOfCompID (5) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID field.
-  fix: {tag: '11', type: String, name: ClOrdID, display: ClOrdID}
+  fix: {tag: '11', type: String, name: ClOrdID}
 - name: origclordid
   type: string
   nullable: true
   description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-  fix: {tag: '41', type: String, name: OrigClOrdID, display: OrigClOrdID}
+  fix: {tag: '41', type: String, name: OrigClOrdID}
 - name: cumqty
   type: double
   nullable: true
   description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '14', type: Qty, name: CumQty, display: CumQty}
+  fix: {tag: '14', type: Qty, name: CumQty}
 - name: leavesqty
   type: double
   nullable: true
   description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14). (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '151', type: Qty, name: LeavesQty, display: LeavesQty}
+  fix: {tag: '151', type: Qty, name: LeavesQty}
 - name: vwap
   type: double
   nullable: true
   description: Average price of everything done on the order, as of this report.
-  fix: {display: VWAP}
 - name: aggressorindicator
   type: bool
   nullable: true
   description: Used to identify whether the order initiator is an aggressor or not in the trade.
-  fix: {tag: '1057', type: Boolean, name: AggressorIndicator, display: AggressorIndicator}
+  fix: {tag: '1057', type: Boolean, name: AggressorIndicator}
 - name: settldate
   type: timestamp[us]
   nullable: true
   description: Specific date of trade settlement (SettlementDate) in YYYYMMDD format. If present, this field overrides SettlType (63). This field is required if the value of SettlType (63) is 6 (Future) or 8 (Sellers Option). This field must be omitted if the value of SettlType (63) is 7 (When and If Issued) (expressed in local time at place of settlement)
-  fix: {tag: '64', type: LocalMktDate, name: SettlDate, display: SettlDate}
+  fix: {tag: '64', type: LocalMktDate, name: SettlDate}
 - name: settltype
   type: string
   nullable: true
   description: Indicates order settlement period. If present, SettlDate (64) overrides this field. If both SettlType (63) and SettDate (64) are omitted, the default for SettlType (63) is 0 (Regular) Regular is defined as the default settlement period for the particular security on the exchange of execution. In Fixed Income the contents of this field may influence the instrument definition if the SecurityID (48) is ambiguous. In the US an active Treasury offering may be re-opened, and for a time one CUSIP will apply to both the current and "when-issued" securities. Supplying a value of "7" clarifies the instrument description; any other value or the absence of this field should cause the respondent to default to the active issue. Additionally the following patterns may be uses as well as enum values Dx = FX tenor expression for "days", e.g. "D5", where "x" is any integer > 0 Mx = FX tenor expression for "months", e.g. "M3", where "x" is any integer > 0 Wx = FX tenor expression for "weeks", e.g. "W13", where "x" is any integer > 0 Yx = FX tenor expression for "years", e.g. "Y1", where "x" is any integer > 0 Noted that for FX the tenors expressed using Dx, Mx, Wx, and Yx values do not denote business days, but calendar days.
-  fix: {tag: '63', type: String, name: SettlType, display: SettlType}
+  fix: {tag: '63', type: String, name: SettlType}
 - name: settlcurrency
-  type: string
+  type: int32
   nullable: true
   description: Currency code of settlement denomination.
-  fix: {tag: '120', type: Currency, name: SettlCurrency, display: SettlCurrency}
+  fix: {tag: '120', type: Currency, name: SettlCurrency}
+  enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
 - name: settlcurrfxratecalc
   type: string
   nullable: true
   description: Specifies whether or not SettlCurrFxRate (55) should be multiplied or divided.
-  fix: {tag: '156', type: char, name: SettlCurrFxRateCalc, display: SettlCurrFxRateCalc}
+  fix: {tag: '156', type: char, name: SettlCurrFxRateCalc}

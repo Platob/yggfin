@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import fnmatch
 import io
 import logging
@@ -17,6 +18,7 @@ from typing import Any
 import pyarrow
 import pyarrow.fs
 
+from rekep.arrow_path import ArrowPath
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset
 from rekep.fields import StructField
@@ -37,6 +39,7 @@ from rekep.text.text_file import (
     parsed_field_of,
     static_columns_of,
 )
+from rekep.times import datetime_of
 from rekep.urls import Url
 
 LOGGER = logging.getLogger(__name__)
@@ -151,19 +154,37 @@ class TextFiles(Dataset, io.BufferedIOBase):
     @classmethod
     def from_folder(
         cls,
-        source: str | os.PathLike[str],
+        source: str | os.PathLike[str] | ArrowPath,
         filesystem: pyarrow.fs.FileSystem | None = None,
+        *,
+        start: Any | None = None,
+        end: Any | None = None,
         **declared: Any,
     ) -> TextFiles:
-        """Build from one folder, named by URI or by local path.
+        """Build from one path, expanding its calendar tokens over a window.
 
         The whole of the common case: `TextFiles.from_folder("/var/log/app")`,
-        `TextFiles.from_folder("s3://bucket/logs/2026-08-14")`. Anything else
-        the set declares -- `pattern`, `recursive`, `reverse`, `timezone`,
-        `msg_type_event_types`, `static_values` -- is a keyword here, so a call reads
-        as one shape.
+        `TextFiles.from_folder("s3://bucket/logs/{year}/{month}/{day}",
+        start="2026-08-14", end="2026-08-16")`. A calendar pattern requires
+        both bounds because an object-store prefix cannot enumerate an open
+        interval safely.
         """
-        return cls.from_folders([source], filesystem, **declared)
+        path = source if isinstance(source, ArrowPath) else ArrowPath(source, filesystem)
+        if not path.has_time_pattern:
+            return cls.from_folders([path], path.filesystem, **declared)
+        if start is None or end is None:
+            raise ValueError("a {year}, {month}, or {day} source requires start and end")
+        lower = datetime_of(start)
+        upper = datetime_of(end, upper=True)
+        if lower is None or upper is None:
+            raise ValueError("a time-pattern source requires valid start and end instants")
+        if upper < lower:
+            raise ValueError("end must not precede start")
+        if upper == lower:
+            roots: tuple[ArrowPath, ...] = ()
+        else:
+            roots = tuple(path.iter_times(lower, upper - datetime.timedelta(microseconds=1)))
+        return cls.from_folders(roots, path.filesystem, **declared)
 
     @classmethod
     def from_folders(
@@ -321,7 +342,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         if filesystem is None:
             return
         for root in self.roots:
-            info = filesystem.get_file_info(root)
+            info = ArrowPath(root, filesystem).info()
             if info.type == pyarrow.fs.FileType.Directory:
                 yield from self._walk(root)
             elif info.type == pyarrow.fs.FileType.File:
@@ -363,9 +384,9 @@ class TextFiles(Dataset, io.BufferedIOBase):
         if identity in seen:
             return
         seen.add(identity)
-        selector = pyarrow.fs.FileSelector(directory, recursive=False, allow_not_found=True)
-        listing = self.filesystem.get_file_info(selector)
-        for info in sorted(listing, key=_natural, reverse=self.reverse):
+        root = ArrowPath(directory, self.filesystem)
+        listing = root.ls_with_info()
+        for _, info in sorted(listing, key=lambda entry: _natural(entry[1]), reverse=self.reverse):
             if info.type == pyarrow.fs.FileType.Directory:
                 if self.recursive:
                     yield from self._walk(info.path, seen)

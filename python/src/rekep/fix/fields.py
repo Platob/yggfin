@@ -155,6 +155,12 @@ def arrow_type_of(datatype: str | None) -> pyarrow.DataType:
     return FIX_SCALARS.get(datatype.strip().lower(), pyarrow.string())
 
 
+def datatype_identity(datatype: str | None) -> str:
+    """The contract identity used to compare FIX datatype readings."""
+    folded = (datatype or "").strip().casefold()
+    return "string" if folded == "char" else folded
+
+
 def field_type_of(datatype: str | None, description: str | None = None) -> pyarrow.DataType:
     """The stored type one FIX field's datatype and description establish."""
     dtype = arrow_type_of(datatype)
@@ -560,6 +566,30 @@ def cast_arrow_fix(values: Any, dtype: pyarrow.DataType) -> Any:
     if kinds.is_floating(dtype) or kinds.is_decimal(dtype):
         return _only(text, _DECIMAL).cast(dtype, safe=False)
     return text.cast(dtype, safe=False)
+
+
+def cast_arrow_field(
+    values: Any,
+    field: Field,
+    dtype: pyarrow.DataType | None = None,
+) -> Any:
+    """FIX text read through its field identity at the requested storage width."""
+    target = dtype or field.dtype
+    if target is None or values.type.equals(target):
+        return values
+    datatype = field.fix.get("type", "").strip().casefold()
+    if pyarrow.types.is_integer(target) and datatype in {"currency", "exchange"}:
+        from rekep.enums import MIC, Currency
+
+        enum_type = Currency if datatype == "currency" else MIC
+        return enum_type.arrow_from_strings(values).cast(target, safe=False)
+    source = field.dtype or target
+    read = cast_arrow_fix(values, source)
+    if read.type.equals(target):
+        return read
+    if pyarrow.types.is_string(read.type) or pyarrow.types.is_large_string(read.type):
+        return cast_arrow_fix(read, target)
+    return read.cast(target, safe=False)
 
 
 #: The five value shapes an unregistered key still spells unambiguously.

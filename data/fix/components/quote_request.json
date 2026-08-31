@@ -18,7 +18,9 @@
    "component": "QuoteRequest",
    "msgtype": "R",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

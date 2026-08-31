@@ -117,8 +117,7 @@ FIX_LINE = FixMsg(
     code="ORD-1",
     eventtype=EventType.ORDER,
     threadname="t",
-    plugincode="d",
-    message="sending 8=FIX.4.2|9=176|35=D|34=7|49=BUYSIDE|56=XPAR|11=ORD-1|55=TTF|10=203|",
+    plugin="d",
     protocol=Protocol.FIX,
     entries=[],
     parties=[
@@ -454,8 +453,7 @@ def test_closing_a_partial_ordered_limit_releases_the_scan(
 def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from pyiceberg.io.pyarrow import PyArrowFile
-
+    from rekep import ArrowPath
     from rekep.iceberg import dataset as module
 
     catalog = IcebergCatalog(name="partition-order", properties=catalog_properties(tmp_path))
@@ -476,14 +474,14 @@ def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     assert paths == ["day=2026-08-14", "day=2026-08-15"]
 
     opened: list[str] = []
-    original = PyArrowFile.open
+    original = ArrowPath.open_input
 
-    def recorded(self: PyArrowFile, *args: object, **kwargs: object) -> object:
+    def recorded(self: ArrowPath, *args: object, **kwargs: object) -> object:
         if self.location.endswith(".parquet"):
             opened.append(self.location)
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(PyArrowFile, "open", recorded)
+    monkeypatch.setattr(ArrowPath, "open_input", recorded)
     reader = ordered.read_arrow_reader(order_by="unix")
     head = reader.read_next_batch()
     assert opened and all("day=2026-08-14" in path for path in opened)
@@ -2163,7 +2161,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMsg.into_field().names) == 109
+    assert len(FixMsg.into_field().names) == 123
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -2194,7 +2192,7 @@ def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path)
         unix=1,
         sourceurl="capture.log",
         sourcerownum=7,
-        message="opaque",
+        body=b"opaque",
         entries=[
             Entry(key="Empty", value=""),
             Entry(key="55", value="TTF"),
@@ -2217,17 +2215,15 @@ def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
     logs: IcebergDataset,
 ) -> None:
     """Pin PyIceberg's loss of the outer `list<struct>` validity bitmap."""
-    quiet = FixMsg(unix=1, hash=1, xhash=1, message="heartbeat emitted")
-    bridged = FixMsg(
-        unix=2, hash=2, xhash=2, message="toBridge #", protocol=Protocol.FIXML, entries=[]
-    )
+    quiet = FixMsg(unix=1, hash=1, xhash=1)
+    bridged = FixMsg(unix=2, hash=2, xhash=2, protocol=Protocol.FIXML, entries=[])
     logs.append_arrow_table(log_table(quiet, bridged, FIX_LINE))
 
     stored = logs.read_arrow_table(FixMsg.into_field()).sort_by("unix")
     assert [Protocol.from_int(code).code for code in stored.column("protocol").to_pylist()] == [
         "OTHER",
         "FIXML",
-        "FIX",
+        "FIX4.2",
     ]
     # PyIceberg's projection currently rebuilds list<struct> without its outer
     # validity bitmap, so an absent pair/component list reads as empty. The
@@ -2264,7 +2260,7 @@ def test_the_leaf_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> 
     """
     logs.append_arrow_table(log_table(FIX_LINE))
     leaves = FixMsg.into_field().leaf_names()
-    assert len(leaves) == 157
+    assert len(leaves) == 168
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]
@@ -3312,18 +3308,18 @@ def keyed(prefix: str, count: int) -> pyarrow.Table:
 
 @pytest.fixture
 def opened(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
-    """Store opens by file kind, counted on `PyArrowFile` -- below any cache."""
-    from pyiceberg.io.pyarrow import PyArrowFile
+    """Store opens by file kind, counted on `ArrowPath` -- below any cache."""
+    from rekep import ArrowPath
 
     counts: dict[str, int] = {}
-    original = PyArrowFile.open
+    original = ArrowPath.open_input
 
-    def counted(self: PyArrowFile, *args: object, **kwargs: object) -> object:
+    def counted(self: ArrowPath, *args: object, **kwargs: object) -> object:
         kind = "data" if self.location.endswith(".parquet") else "metadata"
         counts[kind] = counts.get(kind, 0) + 1
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(PyArrowFile, "open", counted)
+    monkeypatch.setattr(ArrowPath, "open_input", counted)
     return counts
 
 
@@ -5059,7 +5055,7 @@ def test_a_wide_batch_transcribes_the_same_as_a_narrow_one(logs: IcebergDataset)
     wide = pyarrow.RecordBatch.from_struct_array(
         narrow.to_struct_array().cast(pyarrow.struct(wide_schema))
     )
-    assert str(wide.schema.field("message").type) == "large_string", "the fixture is wide"
+    assert str(wide.schema.field("body").type) == "large_binary", "the fixture is wide"
 
     from_narrow = FixMsg.from_message_batch(narrow)
     from_wide = FixMsg.from_message_batch(wide)

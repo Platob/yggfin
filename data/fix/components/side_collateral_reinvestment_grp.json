@@ -10,8 +10,12 @@
   "fix": {
    "component": "SideCollateralReinvestmentGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

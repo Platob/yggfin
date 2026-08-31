@@ -10,8 +10,17 @@
   "fix": {
    "component": "ValueChecksGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport",
+    "MultilegOrderCancelReplace",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote"
+   ]
   },
   "fields": [
    {

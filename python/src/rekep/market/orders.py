@@ -11,16 +11,9 @@ from typing import Annotated, Any
 
 import pyarrow
 
-from rekep import txhash
-from rekep.enums import EventType, State, TimeInForce
+from rekep.enums import Currency, EventType, State, TimeInForce
 from rekep.fields import Field, column_name, scalar
-from rekep.market.event import (
-    MICROSECOND,
-    Event,
-    MarketEvent,
-    _declared_value_parts,
-    _local_timestamp,
-)
+from rekep.market.event import Event, MarketEvent, _declared_value_parts, _local_timestamp
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL
 
@@ -148,6 +141,11 @@ class Order(MarketEvent):
         """Event kind fixed by this shape."""
         return EventType.ORDER
 
+    # The uniform event slot is `LastPx`, but for an order it carries the
+    # limit from `Price <44>`. The subclass metadata records that provenance.
+    lastpx: Annotated[float | None, fix_tag("Price")] = None
+    """Current order limit, or null for a market order."""
+
     lastqty: Annotated[float | None, Field.column("LastQty")] = None
     """Current remaining quantity after this transition; null when indeterminable."""
 
@@ -158,7 +156,7 @@ class Order(MarketEvent):
     """How long it lives. `GTD` expires at `expunix`, where every expiry here lives."""
 
     stoppx: Annotated[float | None, fix_tag("StopPx")] = None
-    """Trigger price of a stop order; `price` is the limit that applies once triggered."""
+    """Trigger price of a stop order; `lastpx` is the limit once triggered."""
 
     hiddenqty: Annotated[float | None, Field.column("HiddenQty")] = None
     """Current quantity hidden from the displayed book; null when unstated."""
@@ -198,7 +196,9 @@ class Order(MarketEvent):
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means."""
         same_named_life = self._continues_named_life(previous)
-        linked_life = self._linked_order_life(previous)
+        linked_life = (
+            previous._linked_order_life(self) if isinstance(previous, Execution) else ("", "")
+        )
         MarketEvent.complete_from(self, previous)
         # By name, for the reason `_carry` gives. `vwap` means the same thing
         # wherever it appears, unlike the abstract price and quantity slots.
@@ -225,8 +225,8 @@ class Order(MarketEvent):
             self.clordid = named
         elif self.origclordid is None and named not in (None, self.clordid):
             self.origclordid = named
-        anchor, source, creation = (
-            (previous.code or previous.life_code(), previous.life_code_source(), None)
+        anchor, source = (
+            (previous.code or previous.life_code(), previous.life_code_source())
             if same_named_life
             else linked_life
         )
@@ -234,16 +234,14 @@ class Order(MarketEvent):
             # A later acknowledgement may introduce the venue's OrderID. The
             # exact field keeps it, while the lifecycle stays on its first
             # readable anchor. Clear the incoming identity so the envelope
-            # composes that anchor with the recovered lifecycle creation.
+            # hashes that anchor again.
             self.code = anchor
             self.codesource = source
-            if creation is not None:
-                self.creaunix = creation
             self.xhash = NIL
 
     def derive(self) -> None:
         """What an order's own numbers say about each other."""
-        if self.expires_on_arrival:
+        if self.expires_on_arrival and self.expunix is None:
             self.expunix = self.unix
         if self.state.is_terminal:
             if self.prevqty is None and self.lastqty is not None:
@@ -328,24 +326,6 @@ class Order(MarketEvent):
         )
         return bool(same_order or same_client_version or amends_client_version)
 
-    def _linked_order_life(self, previous: Event) -> tuple[str, str, int | None]:
-        """Order code, source, and creation recovered through an Execution link."""
-        if not isinstance(previous, Execution):
-            return "", "", None
-        linked = previous.primary_linked_xhash
-        if not linked:
-            return "", "", None
-        current = set(self.lookup_altids_of(self))
-        prior = set(self.lookup_altids_of(previous))
-        if not current or current.isdisjoint(prior):
-            return "", "", None
-        creation = txhash.micros_of(linked) * MICROSECOND
-        candidates = (*self._code_fields_of(previous), *self._code_fields_of(self))
-        for _namespace, source, code in candidates:
-            if Event.xhash_of(creation, code) == linked:
-                return code, source, creation
-        return "", "", None
-
     def version_parts(self) -> tuple[Any, ...]:
         """An order's version moves with what it asked for, and how far it got."""
         return (
@@ -370,6 +350,12 @@ class Order(MarketEvent):
 class Execution(MarketEvent):
     """One fill, correction or cancellation reported against an order."""
 
+    # An exact event hash is intentionally not reversible to its lifecycle
+    # code. Keep the order anchor only while an in-memory event chain crosses
+    # this report; persisted folding resolves the exact hash through its index.
+    __order_code: str = ""
+    __order_codesource: str = ""
+
     @classmethod
     @functools.cache
     def into_event_type(cls) -> EventType:
@@ -379,7 +365,7 @@ class Execution(MarketEvent):
     # The shared names remain stable while this declaration states the exact
     # report fields. An execution carries the last fill, not the order limit
     # or its remaining quantity.
-    price: Annotated[float | None, fix_tag("LastPx")] = None
+    lastpx: Annotated[float | None, fix_tag("LastPx")] = None
     """What traded on this report -- the fill's price, not the order's limit."""
 
     lastqty: Annotated[float | None, fix_tag("LastQty")] = None
@@ -425,7 +411,7 @@ class Execution(MarketEvent):
     settltype: Annotated[str | None, fix_tag("SettlType")] = None
     """How the settlement date was chosen, in FIX's own codes."""
 
-    settlcurrency: Annotated[str | None, fix_tag("SettlCurrency")] = None
+    settlcurrency: Annotated[Currency | None, fix_tag("SettlCurrency")] = None
     """ISO 4217 currency the trade settles in, when it differs from `currency`."""
 
     settlcurrfxratecalc: Annotated[str | None, fix_tag("SettlCurrFxRateCalc")] = None
@@ -434,10 +420,21 @@ class Execution(MarketEvent):
     def __post_init__(self) -> None:
         """Normalize settlement to the timestamp its FIX-backed column stores."""
         self.settldate = _local_timestamp(self.settldate)
+        if self.settlcurrency is not None:
+            currency = Currency.from_str(self.settlcurrency)
+            self.settlcurrency = None if currency is Currency.UNKNOWN else currency
         MarketEvent.__post_init__(self)
 
     def complete_from(self, previous: Event) -> None:
         """A report completed from the one before it on the same order."""
+        if isinstance(previous, Order):
+            self.__order_code = previous.code or previous.life_code()
+            self.__order_codesource = previous.life_code_source()
+        elif isinstance(previous, Execution):
+            self.__order_code, self.__order_codesource = (
+                previous.__order_code,
+                previous.__order_codesource,
+            )
         MarketEvent.complete_from(self, previous)
         # By name, for the reason `_carry` gives.
         _carry(
@@ -454,8 +451,6 @@ class Execution(MarketEvent):
             and self.execrefid is not None
             and self.execrefid in (previous.execid, previous.execrefid, previous.code)
         )
-        if previous.is_order():
-            self.link_to(previous, primary=True)
         if same_report_life and previous.code:
             self.code = previous.code
             self.codesource = previous.codesource
@@ -473,15 +468,15 @@ class Execution(MarketEvent):
                     _replaced_average(
                         average,
                         known_done,
-                        previous.price,
+                        previous.lastpx,
                         prior_qty,
-                        self.price,
+                        self.lastpx,
                         replacement_qty,
                     )
                     if known_done is not None
                     else (
                         average
-                        if replacement_qty == prior_qty and self.price == previous.price
+                        if replacement_qty == prior_qty and self.lastpx == previous.lastpx
                         else None
                     )
                 )
@@ -489,7 +484,7 @@ class Execution(MarketEvent):
             if known_done is None and self.cumqty is not None and self.cumqty >= self.lastqty:
                 known_done = self.cumqty - self.lastqty
             delta = self.lastqty
-            revised_average = _weighted(average, known_done, self.price, self.lastqty)
+            revised_average = _weighted(average, known_done, self.lastpx, self.lastqty)
         if self.cumqty is None:
             self.cumqty = (
                 max(known_done + delta, 0.0)
@@ -500,6 +495,14 @@ class Execution(MarketEvent):
             self.leavesqty = max(left - delta, 0.0) if delta is not None else left
         if self.vwap is None:
             self.vwap = revised_average
+
+    def _linked_order_life(self, current: Order) -> tuple[str, str]:
+        """Transient order anchor retained while folding an in-memory report chain."""
+        current_keys = set(Order.lookup_altids_of(current))
+        report_keys = set(Order.lookup_altids_of(self))
+        if not current_keys or current_keys.isdisjoint(report_keys):
+            return "", ""
+        return self.__order_code, self.__order_codesource
 
     def life_code(self) -> str:
         """The report identifier that survives corrections, or nothing."""

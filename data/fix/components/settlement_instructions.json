@@ -17,7 +17,9 @@
    "component": "SettlementInstructions",
    "msgtype": "T",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

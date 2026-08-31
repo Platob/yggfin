@@ -13,8 +13,12 @@
   "fix": {
    "component": "QuotEntryGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MassQuote\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MassQuote"
+   ]
   },
   "fields": [
    {

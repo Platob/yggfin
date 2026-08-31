@@ -13,7 +13,7 @@ from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 import rekep.text.entries as entries
 import rekep.text.text_file as text_file_module
 from rekep import Dataset, Field, FixCodec, FixMsg, FixRegistry, Message, txhash
-from rekep.enums import EventType
+from rekep.enums import Direction, EventType, Protocol
 from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
 from rekep.market.identity import HASH
@@ -109,14 +109,43 @@ def test_header_pattern_splits_a_row() -> None:
     assert match is not None
     assert match["timestamp"] == b"2026-08-14 00:05:01.147_250"
     assert match["threadname"] == b"250-e7256476:9effef3e6a:72505"
-    assert match["plugincode"] == b"OMSSales_Enrichment"
+    assert match["plugin"] == b"OMSSales_Enrichment"
     assert match["level"] == b"DEBUG"
-    assert match["message"].startswith(b"-> [5] {trade")
+    assert match["body"].startswith(b"-> [5] {trade")
 
 
 def test_header_pattern_tolerates_a_missing_level() -> None:
     (row,) = [r for r in RECORDS if HEADER_PATTERN.match(r)["level"] is None]
-    assert HEADER_PATTERN.match(row)["message"] == b"no level printed by this driver"
+    assert HEADER_PATTERN.match(row)["body"] == b"no level printed by this driver"
+
+
+def test_xmlapi_header_classifies_receiving_xml_and_keeps_nested_entries(tmp_path: Path) -> None:
+    path = tmp_path / "xmlapi.txt"
+    body = (
+        'Receiving: <event id="20260828-220500-041-00" type="orderdelta" '
+        'timestamp="20260828-22:05:00.041190"><action '
+        'id="IRI20260828-220500-041-000" userid="uliris_pco" '
+        'type="orderdelta.update"><orderdelta '
+        'id="BCGF42#####dbi;GB00BN7SWP63_XLON_GBX#sell#open#GBP###uliris_pco#false#false#false" '
+        'clientid="BCGF42" instrumentid="dbi;GB00BN7SWP63_XLON_GBX" '
+        'exchangeid="XLON" side="sell" quantity="-400"/>'
+        "</action></event>"
+    )
+    path.write_text(f"2026-08-29 00:05:00.042_525 [135] [XmlApi] (INFO) {body}\n")
+
+    with TextFile.from_path(path) as log:
+        table = log.read_arrow_table()
+
+    assert table.column("plugin").to_pylist() == ["XmlApi"]
+    assert table.column("body").to_pylist() == [body.encode()]
+    assert Protocol.from_int(table.column("protocol")[0].as_py()) is Protocol.XML
+    assert Direction.from_int(table.column("direction")[0].as_py()) is Direction.RECV
+    entries = table.column("entries")[0].as_py()
+    assert (entries[-1]["comp"], entries[-1]["key"], entries[-1]["value"]) == (
+        "event[0].action[0].orderdelta[0]",
+        "quantity",
+        "-400",
+    )
 
 
 @pytest.mark.parametrize(
@@ -222,7 +251,7 @@ def test_the_other_two_shapes_open_a_header_too() -> None:
         found = HEADER_PATTERN.match(stamp + b" [t] [d] (INFO) x")
         assert found is not None, stamp
         assert found.group("timestamp") == stamp
-        assert found.group("message") == b"x"
+        assert found.group("body") == b"x"
 
 
 def test_two_shapes_of_one_width_in_one_batch_read_as_themselves() -> None:
@@ -486,7 +515,7 @@ def test_a_remote_compressed_log_spills_raw_bytes_and_refreshes_when_it_grows(
     second = log.read_arrow_table()
 
     assert second.num_rows == EXPECTED_RECORDS + 1
-    assert second.column("message")[-1].as_py() == "added"
+    assert second.column("body").cast(pyarrow.string())[-1].as_py() == "added"
     assert spilled[1] != spilled[0], "temporary readers never share deletion ownership"
     assert not Path(spilled[1]).exists()
 
@@ -558,8 +587,7 @@ MESSAGE_COLUMNS = [
     "sourceurl",
     "sourcerownum",
     "threadname",
-    "plugincode",
-    "message",
+    "body",
     "protocol",
     *SESSION_COLUMNS,
     "entries",
@@ -591,7 +619,7 @@ def test_schema(plain: Path) -> None:
         field = schema.field(name)
         assert field.type == pyarrow.string(), f"{name} is the text the payload spelled"
         protocol = {key for key in field.metadata or {} if key.startswith(b"fix:")}
-        assert protocol == {b"fix:display"}, (
+        assert protocol == {b"fix:name"}, (
             f"{name} is lifted by syntax, so it says what it is called and nothing more"
         )
     assert schema.field("unix").type == pyarrow.int64()
@@ -601,7 +629,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("xhash").type == HASH
     assert schema.field("eventtype").type == pyarrow.int64()
     assert schema.field("protocol").type == pyarrow.int64()
-    assert schema.field("message").type == pyarrow.string()
+    assert schema.field("body").type == pyarrow.binary()
 
 
 def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> None:
@@ -612,14 +640,14 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     payloads = [line.split(" (INFO) ", 1)[1] for line in WIRE.splitlines()]
 
     assert table.schema.names == Message.into_field().names
-    assert table.column("message").to_pylist() == payloads
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == payloads
     assert table.column("msgtype").to_pylist() == ["D", "AB", None]
     assert table.column("eventtype").to_pylist() == [
         int(EventType.ORDER),
         int(EventType.MISC),
         int(EventType.MISC),
     ]
-    assert table.column("mic").to_pylist() == [None] * 3
+    assert table.column("lastmkt").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
     assert table.column("codesource").to_pylist() == [""] * 3
     assert table.column("xhash").to_pylist() == [txhash.wide_bytes(0)] * 3
@@ -808,15 +836,15 @@ def test_reader_includes_any_regex_and_excludes_any_match_before_projection(
     table = log.read_arrow_table(
         include_regexes=(r"^lower", r"^UPPER$"), exclude_regexes=(r"secret", r"UPPER")
     )
-    assert table.column("message").to_pylist() == ["lower"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["lower"]
     assert table.column("sourcerownum").to_pylist() == [1]
 
     projected = log.read_arrow_table(
-        pyarrow.schema([("message", pyarrow.string())]),
+        pyarrow.schema([("body", pyarrow.binary())]),
         include_regexes=(r"lower", r"UPPER"),
         exclude_regexes=(r"secret",),
     )
-    assert projected.to_pydict() == {"message": ["lower", "UPPER"]}
+    assert projected.to_pydict() == {"body": [b"lower", b"UPPER"]}
 
 
 def test_regexes_match_the_complete_folded_message(tmp_path: Path) -> None:
@@ -832,7 +860,9 @@ def test_regexes_match_the_complete_folded_message(tmp_path: Path) -> None:
     table = TextFile.from_path(path).read_arrow_table(
         include_regexes=(r"Trace\.java",), exclude_regexes=(r"hidden\.Trace",)
     )
-    assert table.column("message").to_pylist() == ["first\n\tat visible.Trace.call(Trace.java:1)"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == [
+        "first\n\tat visible.Trace.call(Trace.java:1)"
+    ]
     assert table.column("sourcerownum").to_pylist() == [1]
 
 
@@ -845,7 +875,7 @@ def test_message_regexes_count_unicode_characters_not_utf8_bytes(tmp_path: Path)
     )
 
     table = log.read_arrow_table(include_regexes=(r"^.$",))
-    assert table.column("message").to_pylist() == ["é", "😀"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["é", "😀"]
 
 
 def _counting_splitter(monkeypatch: pytest.MonkeyPatch) -> list[int]:
@@ -878,7 +908,7 @@ def test_message_and_time_filters_run_before_entry_parsing(
         end_unix=unix_of("2026-08-14 00:05:04.000"),
     )
 
-    assert table.column("message").to_pylist() == ["kept C=3"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["kept C=3"]
     assert parsed == [], "a single incidental assignment is not a structured message"
 
 
@@ -930,7 +960,7 @@ def test_time_filter_runs_before_payload_utf8_decoding(
     monkeypatch.setattr(text_file_module, "_utf8", reject_dirty)
     table = TextFile.from_path(path).read_arrow_table(start_unix=unix_of("2026-08-14 00:05:02.000"))
 
-    assert table.column("message").to_pylist() == ["kept"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["kept"]
 
 
 def test_regex_arguments_are_lists_and_can_filter_every_message(tmp_path: Path) -> None:
@@ -962,7 +992,7 @@ def test_start_is_inclusive_and_end_is_exclusive(tmp_path: Path) -> None:
         start_unix=unix_of("2026-08-14 00:05:02.000"),
         end_unix=unix_of("2026-08-14 00:05:04.000"),
     )
-    assert table.column("message").to_pylist() == ["start", "inside"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["start", "inside"]
     assert (
         list(
             log.into_arrow_batches(
@@ -987,7 +1017,7 @@ def test_duration_batches_use_an_exact_explicit_start_and_skip_empty_windows(
     start = unix_of("2026-08-14 00:05:01.250")
 
     batches = list(log.into_arrow_batches(start_unix=start, duration_ns=SECOND))
-    assert [batch.column("message").to_pylist() for batch in batches] == [
+    assert [batch.column("body").cast(pyarrow.string()).to_pylist() for batch in batches] == [
         ["first", "same-window"],
         ["boundary"],
         ["after-gap"],
@@ -1006,7 +1036,7 @@ def test_duration_without_a_start_uses_the_first_unix_truncated_to_duration(
     )
 
     batches = list(log.into_arrow_batches(duration_ns=SECOND))
-    assert [batch.column("message").to_pylist() for batch in batches] == [
+    assert [batch.column("body").cast(pyarrow.string()).to_pylist() for batch in batches] == [
         ["first"],
         ["boundary", "same-window"],
         ["next"],
@@ -1069,7 +1099,7 @@ def test_duration_handles_an_int64_wide_distance_from_the_start(tmp_path: Path) 
     )
 
     batches = list(log.into_arrow_batches(start_unix=-(1 << 63), duration_ns=SECOND))
-    assert [batch.column("message").to_pylist() for batch in batches] == [
+    assert [batch.column("body").cast(pyarrow.string()).to_pylist() for batch in batches] == [
         ["first"],
         ["second"],
     ]
@@ -1084,7 +1114,7 @@ def test_duration_rejects_a_window_that_recurs_after_a_later_one(tmp_path: Path)
     )
     batches = iter(log.into_arrow_batches(duration_ns=SECOND))
 
-    assert next(batches).column("message").to_pylist() == ["first"]
+    assert next(batches).column("body").cast(pyarrow.string()).to_pylist() == ["first"]
     with pytest.raises(ValueError, match="duration window recurs"):
         next(batches)
 
@@ -1098,8 +1128,8 @@ def test_first_row(plain: Path) -> None:
     assert first["sourceurl"] == url
     assert first["unix"] == FIRST_UNIX
     assert first["threadname"] == "250-e7256476:9effef3e6a:72505"
-    assert first["plugincode"] == "OMSSales_Enrichment"
-    assert first["message"].startswith("-> [5] {trade")
+    assert first["plugin"] == "OMSSales_Enrichment"
+    assert first["body"].startswith(b"-> [5] {trade")
 
 
 def test_the_hour_column_is_the_instant_truncated(plain: Path) -> None:
@@ -1184,13 +1214,13 @@ def test_event_hash_is_stable_across_reads(plain: Path) -> None:
 def test_level_is_stripped_from_the_message(plain: Path) -> None:
     """`level` is parsed by the regex but not a column: it must not leak."""
     with TextFile(url=plain.as_uri()) as log:
-        messages = log.into_arrow_table().column("message").to_pylist()
+        messages = log.into_arrow_table().column("body").cast(pyarrow.string()).to_pylist()
     assert not any(message.startswith(("(DEBUG)", "(INFO)", "(WARNING)")) for message in messages)
 
 
 def test_continuations_fold_into_the_previous_message(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
-        messages = log.into_arrow_table().column("message").to_pylist()
+        messages = log.into_arrow_table().column("body").cast(pyarrow.string()).to_pylist()
 
     (folded,) = [m for m in messages if "java.lang.IllegalStateException" in m]
     assert folded.startswith("Expression from CODE-0000058 raised while evaluating")
@@ -1201,7 +1231,9 @@ def test_continuations_are_dropped_when_folding_is_off(plain: Path) -> None:
     with TextFile(url=plain.as_uri()) as log:
         table = log.into_arrow_reader(fold_continuations=False).read_all()
     assert table.num_rows == EXPECTED_RECORDS
-    assert all("\n" not in message for message in table.column("message").to_pylist())
+    assert all(
+        "\n" not in message for message in table.column("body").cast(pyarrow.string()).to_pylist()
+    )
 
 
 @pytest.mark.parametrize("batch_row_size", [1, 5, 23, EXPECTED_RECORDS, 10_000])
@@ -1217,8 +1249,12 @@ def test_batching_does_not_change_the_result(plain: Path, batch_row_size: int) -
         whole = log.into_arrow_table(batch_row_size=EXPECTED_RECORDS * 2)
     assert sum(batch.num_rows for batch in batches) == EXPECTED_RECORDS
     assert max(batch.num_rows for batch in batches) <= batch_row_size
-    messages = [message for batch in batches for message in batch.column("message").to_pylist()]
-    assert messages == whole.column("message").to_pylist()
+    messages = [
+        message
+        for batch in batches
+        for message in batch.column("body").cast(pyarrow.string()).to_pylist()
+    ]
+    assert messages == whole.column("body").cast(pyarrow.string()).to_pylist()
 
 
 def test_large_payloads_stop_a_batch_before_the_row_limit(tmp_path: Path) -> None:
@@ -1230,7 +1266,9 @@ def test_large_payloads_stop_a_batch_before_the_row_limit(tmp_path: Path) -> Non
     batches = list(log.into_arrow_batches(batch_row_size=100, batch_byte_size=1))
 
     assert [batch.num_rows for batch in batches] == [1, 1, 1, 1]
-    assert [batch.column("message")[0].as_py() for batch in batches] == ["x" * 100] * 4
+    assert [batch.column("body").cast(pyarrow.string())[0].as_py() for batch in batches] == [
+        "x" * 100
+    ] * 4
 
 
 def test_one_file_is_read_once_at_a_time(tmp_path: Path) -> None:
@@ -1247,16 +1285,28 @@ def test_one_file_is_read_once_at_a_time(tmp_path: Path) -> None:
 
     with TextFile.from_path(path) as log:
         first = log.into_arrow_reader(batch_row_size=3, read_byte_size=64)
-        assert first.read_next_batch().column("message").to_pylist() == ["m0", "m1", "m2"]
+        assert first.read_next_batch().column("body").cast(pyarrow.string()).to_pylist() == [
+            "m0",
+            "m1",
+            "m2",
+        ]
         with pytest.raises(ValueError, match="is already being read"):
             log.into_arrow_reader(batch_row_size=3)
         with pytest.raises(ValueError, match="is already being read"):
             log.into_arrow_batches()
         # Rows the second reader would have rewound past are still there.
-        assert first.read_next_batch().column("message").to_pylist() == ["m3", "m4", "m5"]
+        assert first.read_next_batch().column("body").cast(pyarrow.string()).to_pylist() == [
+            "m3",
+            "m4",
+            "m5",
+        ]
         first.close()
         again = log.into_arrow_reader(batch_row_size=3)
-        assert again.read_next_batch().column("message").to_pylist() == ["m0", "m1", "m2"]
+        assert again.read_next_batch().column("body").cast(pyarrow.string()).to_pylist() == [
+            "m0",
+            "m1",
+            "m2",
+        ]
         again.close()
 
 
@@ -1269,7 +1319,7 @@ def test_a_carriage_return_inside_a_truncated_row_is_payload(tmp_path: Path) -> 
     with TextFile.from_path(path) as log:
         table = log.into_arrow_table(max_row_byte_size=len(header) + 4)
 
-    assert table.column("message").to_pylist() == ["AAA\r"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["AAA\r"]
     assert table.column("reason").to_pylist() == [
         "row truncated at max_row_byte_size; dropped bytes: 10"
     ]
@@ -1290,7 +1340,7 @@ def test_a_row_is_bounded_by_max_row_byte_size_and_says_what_it_dropped(
     with TextFile.from_path(path) as log:
         table = log.into_arrow_table(max_row_byte_size=bound, read_byte_size=64)
 
-    messages = table.column("message").to_pylist()
+    messages = table.column("body").cast(pyarrow.string()).to_pylist()
     assert messages == ["x" * 100, "short"]
     assert table.column("reason").to_pylist() == [
         "row truncated at max_row_byte_size; dropped bytes: 9900",
@@ -1310,7 +1360,7 @@ def test_folded_continuations_stop_at_the_same_bound(tmp_path: Path) -> None:
 
     # "head", the newline the fold puts back, and the five bytes left of the
     # first continuation; the second one has no room at all.
-    assert table.column("message").to_pylist() == ["head\nyyyyy"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["head\nyyyyy"]
     assert table.column("reason").to_pylist() == [
         "row truncated at max_row_byte_size; dropped bytes: 76"
     ]
@@ -1327,7 +1377,7 @@ def test_a_row_that_exactly_fills_the_bound_is_not_reported_as_truncated(
         path.write_bytes(f"{header}{'x' * 10}{ending}".encode())
         with TextFile.from_path(path) as log:
             table = log.into_arrow_table(max_row_byte_size=bound)
-        assert table.column("message").to_pylist() == ["x" * 10], name
+        assert table.column("body").cast(pyarrow.string()).to_pylist() == ["x" * 10], name
         assert table.column("reason").to_pylist() == [None], name
 
 
@@ -1369,7 +1419,7 @@ def test_a_leading_fragment_that_fits_is_still_only_a_continuation(tmp_path: Pat
     with TextFile.from_path(path) as log:
         table = log.into_arrow_table()
 
-    assert table.column("message").to_pylist() == ["second"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["second"]
 
 
 def test_a_byte_order_mark_is_not_part_of_the_first_record(tmp_path: Path) -> None:
@@ -1384,7 +1434,7 @@ def test_a_byte_order_mark_is_not_part_of_the_first_record(tmp_path: Path) -> No
     with TextFile.from_path(path) as log:
         table = log.into_arrow_table()
 
-    assert table.column("message").to_pylist() == ["first", "second"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["first", "second"]
     assert table.column("sourcerownum").to_pylist() == [1, 2]
 
 
@@ -1399,7 +1449,7 @@ def test_a_drained_chunk_ending_on_a_payload_return_is_counted_whole(
     with TextFile.from_path(path) as log:
         table = log.into_arrow_table(max_row_byte_size=len(header) + 4, read_byte_size=4)
 
-    assert table.column("message").to_pylist() == ["KEEP"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["KEEP"]
     assert table.column("reason").to_pylist() == [
         "row truncated at max_row_byte_size; dropped bytes: 8"
     ]
@@ -1416,7 +1466,7 @@ def test_one_long_compressed_line_streams_across_tiny_reads(tmp_path: Path) -> N
         table = log.into_arrow_table(read_byte_size=31, batch_byte_size=4_096)
 
     assert table.num_rows == 1
-    assert table.column("message")[0].as_py() == payload
+    assert table.column("body").cast(pyarrow.string())[0].as_py() == payload
 
 
 def test_a_continuation_on_the_batch_boundary_is_still_folded(tmp_path: Path) -> None:
@@ -1430,7 +1480,10 @@ def test_a_continuation_on_the_batch_boundary_is_still_folded(tmp_path: Path) ->
     with TextFile(url=path.as_uri()) as log:
         table = log.into_arrow_table(batch_row_size=4)
     assert table.num_rows == 6
-    assert table.column("message")[3].as_py() == "r3\n\tat com.example.A.b(A.java:1)"
+    assert (
+        table.column("body").cast(pyarrow.string())[3].as_py()
+        == "r3\n\tat com.example.A.b(A.java:1)"
+    )
 
 
 @pytest.mark.parametrize("read_byte_size", [1, 7, 64, 1 << 20])
@@ -1469,7 +1522,7 @@ def test_custom_header_pattern(tmp_path: Path) -> None:
     bundled offsets.
     """
     pattern = re.compile(
-        rb"^(?P<timestamp>\S+)\|(?P<threadname>[^|]*)\|(?P<plugincode>[^|]*)\|(?P<message>.*)$",
+        rb"^(?P<timestamp>\S+)\|(?P<threadname>[^|]*)\|(?P<plugin>[^|]*)\|(?P<body>.*)$",
         re.DOTALL,
     )
     path = tmp_path / "custom.txt"
@@ -1478,7 +1531,7 @@ def test_custom_header_pattern(tmp_path: Path) -> None:
     )
     with TextFile(url=path.as_uri(), header_pattern=pattern) as log:
         table = log.into_arrow_table()
-    assert table.column("message").to_pylist() == ["first", "second"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["first", "second"]
     assert [(unix // 1000) % 1_000_000 for unix in table.column("unix").to_pylist()] == [
         167520,
         1,
@@ -1524,7 +1577,10 @@ def test_from_path_takes_the_zone_too(plain: Path) -> None:
     naive = TextFile.from_path(plain).read_arrow_table()
     zoned = TextFile.from_path(plain, timezone="Europe/Paris").read_arrow_table()
     assert zoned.column("unix").to_pylist() != naive.column("unix").to_pylist()
-    assert zoned.column("message").to_pylist() == naive.column("message").to_pylist()
+    assert (
+        zoned.column("body").cast(pyarrow.string()).to_pylist()
+        == naive.column("body").cast(pyarrow.string()).to_pylist()
+    )
     assert zoned.column("vhash").to_pylist() == naive.column("vhash").to_pylist()
     assert zoned.column("xhash").to_pylist() == naive.column("xhash").to_pylist()
     assert zoned.column("hash").to_pylist() != naive.column("hash").to_pylist()
@@ -1562,7 +1618,7 @@ def test_a_write_renders_the_zone_it_read(tmp_path: Path, plain: Path, zone: str
     back = TextFile.from_url(written.as_uri(), timezone=zone).read_arrow_table()
     # The rendered line is the header regex read backwards rather than the
     # bytes that were parsed. What has to survive is what the columns say.
-    for column in ("unix", "unixpartition", "message"):
+    for column in ("unix", "unixpartition", "body"):
         assert back.column(column).to_pylist() == rows.column(column).to_pylist(), column
 
 
@@ -1842,7 +1898,7 @@ def test_nothing_names_the_source_but_the_caller(plain: Path) -> None:
 
 
 def test_a_static_value_infers_its_arrow_type(plain: Path) -> None:
-    # Not `message`, which the raw contract already declares: a static column of that
+    # Not `body`, which the raw contract already declares: a static column of that
     # name would be a second column of that name, and the schema could answer neither.
     log = TextFile.from_path(
         plain, static_values={"label": "a", "count": 2, "ratio": 0.5, "flag": True}
@@ -1880,7 +1936,7 @@ def test_a_static_value_of_none_is_refused(plain: Path) -> None:
 
 def test_a_static_value_that_is_already_a_column_is_refused_by_name(plain: Path) -> None:
     """A duplicate raw-message column is refused before Arrow sees it."""
-    for taken in ("unix", "hash", "code", "sourceurl", "message", "msgtype", "sendingtime"):
+    for taken in ("unix", "hash", "code", "sourceurl", "body", "msgtype", "sendingtime"):
         log = TextFile.from_path(plain, static_values={taken: "x"})
         with pytest.raises(ValueError, match=f"static value '{taken}' is already a column"):
             log.into_struct_field()
@@ -1912,8 +1968,8 @@ def test_a_missing_file_does_not_exist_yet(tmp_path: Path) -> None:
 def test_reading_casts_only_when_asked(plain: Path) -> None:
     log = TextFile.from_path(plain)
     assert log.read_arrow_reader().schema.equals(Message.into_field().into_arrow_schema())
-    narrow = pyarrow.schema([("message", pyarrow.large_string())])
-    assert log.read_arrow_reader(narrow).schema.field("message").type == pyarrow.large_string()
+    narrow = pyarrow.schema([("body", pyarrow.large_binary())])
+    assert log.read_arrow_reader(narrow).schema.field("body").type == pyarrow.large_binary()
 
 
 def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> None:
@@ -1924,7 +1980,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in ("unix", "unixpartition", "threadname", "plugincode", "message"):
+    for column in ("unix", "unixpartition", "threadname", "plugin", "body"):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 
@@ -1955,17 +2011,17 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
     batch = pyarrow.RecordBatch.from_pydict(
         {
             "unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
-            "message": ["hello"],
+            "body": ["hello"],
             "threadname": ["t"],
-            "plugincode": ["d"],
+            "plugin": ["d"],
             "noise": ["dropped"],
         }
     )
     target = TextFile.from_path(tmp_path / "cast.txt")
     target.append_arrow(batch)
     parsed = target.read_arrow_table()
-    assert parsed.column("message").to_pylist() == ["hello"]
-    assert parsed.column("plugincode").to_pylist() == ["d"]
+    assert parsed.column("body").cast(pyarrow.string()).to_pylist() == ["hello"]
+    assert parsed.column("plugin").to_pylist() == ["d"]
 
 
 def test_a_text_file_cannot_merge(tmp_path: Path) -> None:
@@ -1983,8 +2039,8 @@ def test_an_empty_write_leaves_an_empty_file(tmp_path: Path) -> None:
 
 def test_create_with_adopts_a_shape(tmp_path: Path) -> None:
     log = TextFile.from_path(tmp_path / "shaped.txt")
-    narrow = Field.from_arrow_schema(pyarrow.schema([("message", pyarrow.string())]))
+    narrow = Field.from_arrow_schema(pyarrow.schema([("body", pyarrow.binary())]))
     log.create_with(narrow)
     assert log.exists
     assert log.into_struct_field() is narrow
-    assert log.read_arrow_table().column_names == ["message"]
+    assert log.read_arrow_table().column_names == ["body"]

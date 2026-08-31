@@ -11,7 +11,9 @@
    "component": "StreamAssignmentRequest",
    "msgtype": "CC",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

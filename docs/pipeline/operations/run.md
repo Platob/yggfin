@@ -106,10 +106,9 @@ FixMsg rows skipped, and the one canonical `InstrumentUpdate` unchanged.
 ## Sampled output
 
 The InstrumentUpdate table holds one `TTF` component keyed by its top-level
-Event `xhash`, versioned out of `fix.market` by `parse_instruments`. Its
-readable identity is nested at `instrument.symbolticker`; the component's
-clock-free reference hash remains distinct, and `fix.market` itself contains
-only captured rows.
+sixteen-byte `xhash`, versioned out of `fix.market` by `parse_instruments`.
+Its readable identity is nested at `instrument.symbolticker`; `fix.market`
+itself contains only captured rows.
 
 | Product | Selected rows |
 | --- | --- |
@@ -126,7 +125,7 @@ the fill and remaining quantity without inventing a missing order price.
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage-light.svg#only-light)
 
 Event products are keyed `(unix, hash)` except `InstrumentUpdate`, whose
-current row is keyed by its fixed-width Event `xhash`. All six contracts are
+current row is keyed by its sixteen-byte `xhash`. All six contracts are
 sorted by `hash` and partitioned on `unixpartition` alone.
 
 `schemas/rekep/` is the portable source. Arrow owns types and metadata between

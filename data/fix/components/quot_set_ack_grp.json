@@ -13,8 +13,13 @@
   "fix": {
    "component": "QuotSetAckGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MassQuoteAck\",\"MassQuoteAcknowledgement\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MassQuoteAck",
+    "MassQuoteAcknowledgement"
+   ]
   },
   "fields": [
    {

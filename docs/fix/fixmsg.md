@@ -31,9 +31,9 @@ declarations differ.
 from rekep import FixMsg, Message
 
 line = "8=FIX.4.4|9=12x|35=D|11=C1|55=AAPL|44=abc|54=1|10=000|"
-row = FixMsg.from_message_batch([Message(message=line)]).to_pylist()[0]
+row = FixMsg.from_message_batch([Message(body=line)]).to_pylist()[0]
 
-print(row["clordid"], row["instrument"]["symbol"], row["price"])
+print(row["clordid"], row["instrument"]["symbol"], row["lastpx"])
 print(row["error"])
 ```
 
@@ -57,12 +57,11 @@ diagnostics.
 `parse_instruments` and `parse_market` push down `error IS NULL`, and the class
 conversion APIs enforce the same quarantine for callers outside the notebooks.
 
-The stage consumes the arguments `TextFile`/`TextFiles` already stored rather
-than tokenizing the payload again. A batch arriving from Iceberg carries
-`large_string` where the contract says `string`, so it is brought onto the
-`Message` declaration first — narrowed to the columns the batch has, because
-`parse_fix` projects `message` away and filling it back in would invent text
-the reader deliberately left behind.
+The stage consumes the arguments `TextFile`/`TextFiles` already stored and may
+reclassify their binary `body` under feed-specific rules. A batch arriving
+from Iceberg carries `large_binary` where the contract says `binary`, so it is
+brought onto the `Message` declaration first. `FixMsg` consumes `body`; its
+stored schema contains only typed columns and ordered residual entries.
 
 Classification uses the codec's rules; the stored
 [`protocol`](../enums/protocol.md) fills only the rows those rules call
@@ -82,23 +81,24 @@ dropped. `MsgSeqNum` is `msgseqnum`, `OrigClOrdID` is `origclordid`,
 attribute and the stored document all spell it the same way — and no
 snake-case alias beside it.
 
-The dictionary's own spelling is not lost: every column carries it as
-`fix:display`, which is what a reader is shown.
+The dictionary's own spelling is not lost: a lifted column carries it as
+`fix:name`.
 
 ```python
 from rekep import FixMsg
 
 column = FixMsg.into_field().field("origclordid")
-print(column.name, column.fix.display, column.fix.tag)
+print(column.name, column.fix.canonical, column.fix.tag)
 ```
 
 ```text
 origclordid OrigClOrdID 41
 ```
 
-Field metadata retains the tag, datatype, description, versions and
-enumerated values. FIX UTC timestamps become Arrow timestamps at microsecond
-precision; one whose timezone is undocumented stays naive.
+Field metadata retains the tag, canonical name and datatype. Versions,
+message usage, sources and enumerated values remain in the registry. FIX UTC
+timestamps become Arrow timestamps at microsecond precision; one whose
+timezone is undocumented stays naive.
 
 Structured components fold their members the same way:
 
@@ -106,7 +106,7 @@ Structured components fold their members the same way:
 from rekep import FixMsg, Message
 
 line = "8=FIX.4.4|35=D|11=C1|453=1|448=BUY-A|447=D|452=3|10=000"
-staged = Message.from_text(line, message=line)
+staged = Message.from_text(line)
 print(FixMsg.from_message_batch([staged]).to_pylist()[0]["parties"])
 ```
 
@@ -191,7 +191,7 @@ payload's first token, so the same words inside a payload never answer:
 from rekep import Message
 
 for text in ("Receiving : 8=FIX.4.4|35=D|10=0", "Sending : 8=FIX.4.4|35=D|10=0"):
-    print(Message.from_text(text, message=text).direction)
+    print(Message.from_text(text).direction)
 ```
 
 ```text
@@ -203,9 +203,9 @@ SENT
 the verb, and no answer beats a guessed one. The verb has to open before the
 first token the row's protocol could start with, which
 `rekep.fix.rules.CODEC_ANCHORS` spells per codec. It resolves at the message
-stage, where the raw line and its protocol reading last coexist; the FIX stage
-re-resolves any row still carrying its text and keeps the stored answer where
-`parse_fix` projected the text away.
+stage, where the raw body and its protocol reading coexist; the FIX stage
+re-resolves a retained body and keeps the stored answer where a projection
+omitted it.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. The wrapper names the envelope and the payload names the message,
@@ -224,8 +224,8 @@ indexed group members are never treated as duplicates.
 | `fix.misc` | non-technical `MISC`, and an unknown discriminator on a recognized transport |
 | `fix.unknown` | an unknown event on an unrecognized transport |
 
-Registry-declared technical MsgTypes and plugins enter no FIX table. Both
-scans project `message` out, so every resulting `FixMsg.message` is null.
+Registry-declared technical MsgTypes and plugins enter no FIX table. Every
+resulting `FixMsg` schema excludes `body`.
 
 Market readers consume only `fix.market`, ordered by
 `(unix, msgseqnum, hash)`. Each row carries its reference facts in the final

@@ -11,7 +11,9 @@
    "component": "PayManagementReportAck",
    "msgtype": "EB",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -29,6 +29,7 @@ from rekep.annotations import (
     item_annotation,
     unwrap_annotated,
 )
+from rekep.arrow_path import ArrowPath
 from rekep.filesystems import resolve
 from rekep.require import require
 
@@ -406,7 +407,8 @@ def _write(
         target.write(payload.decode() if _is_text(target) else payload)
         return None
     fs, path = _resolve(target, filesystem)
-    with fs.open_output_stream(path) as stream:
+    output = ArrowPath(os.fspath(target), fs, filesystem_path=path)
+    with output.open_output(overwrite=True) as stream:
         stream.write(payload)
     return None
 
@@ -418,8 +420,11 @@ def _read(source: Target, filesystem: pyarrow.fs.FileSystem | None) -> bytes:
         data = source.read()
         return data.encode() if isinstance(data, str) else data
     fs, path = _resolve(source, filesystem)
-    with fs.open_input_stream(path) as stream:
-        return stream.read()
+    required = ArrowPath(os.fspath(source), fs, filesystem_path=path)
+    payload = required.read_bytes(strict=True, compression="detect")
+    if payload is None:  # pragma: no cover - `strict=True` raises instead
+        raise FileNotFoundError(os.fspath(source))
+    return payload
 
 
 def _is_text(target: Any) -> bool:

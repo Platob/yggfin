@@ -18,7 +18,6 @@ from rekep.convert import Convertible
 from rekep.fields.builder import FieldBuilder
 from rekep.fields.field import (
     DESCRIPTION,
-    DISPLAY,
     ITEM,
     NAMESPACE,
     Field,
@@ -81,7 +80,8 @@ class ClassBuilder:
 
     def annotation(self, member: Field) -> Any:
         """The Python annotation that projects back to exactly `member`."""
-        inner = self.python_type(member.dtype, member.name, member.fix.display)
+        declared_name = member.fix.name or member.fix.component
+        inner = self.python_type(member.dtype, member.name, declared_name)
         declared = self.declaration(member, inner)
         if member.nullable:
             inner = inner | None
@@ -99,19 +99,20 @@ class ClassBuilder:
             metadata=member.metadata,
         )
 
-    def python_type(self, dtype: pyarrow.DataType, name: str, display: str = "") -> Any:
+    def python_type(self, dtype: pyarrow.DataType, name: str, declared_name: str = "") -> Any:
         """Plainest Python annotation for one Arrow type; exactness is the
         declaration's job.
 
-        `display` is what the field says it is called -- `PartyID` for a column
-        stored as `partyid` -- and it is what a generated class is named after,
-        so a folded column still builds a class a reader recognises.
+        `declared_name` is the FIX name -- `PartyID` for a column stored as
+        `partyid` -- and names a generated nested class when present.
         """
         kinds = pyarrow.types
         if kinds.is_struct(dtype):
-            return self.dataclass(Field.from_arrow_type(dtype, name), _class_name(display or name))
+            return self.dataclass(
+                Field.from_arrow_type(dtype, name), _class_name(declared_name or name)
+            )
         if kinds.is_list(dtype) or kinds.is_large_list(dtype):
-            return list[self.annotation(self._entry(dtype.field(0), name, display))]
+            return list[self.annotation(self._entry(dtype.field(0), name, declared_name))]
         if kinds.is_map(dtype):
             key = self.python_type(dtype.key_type, f"{name}_key")
             return dict[key, self.annotation(Field.from_arrow_field(dtype.item_field))]
@@ -135,21 +136,21 @@ class ClassBuilder:
             return bytes
         return str
 
-    def _entry(self, entry: Any, name: str, display: str = "") -> Field:
+    def _entry(self, entry: Any, name: str, declared_name: str = "") -> Field:
         """One list's entry, under a name that says which entry it is.
 
         Arrow calls every list value `item`, so a struct entry would build a
         class called `Item` -- one per list, all of them, and two groups in
         one FIX component would be two different classes wearing the same
         name. An entry that was named on purpose keeps its name; one still
-        wearing Arrow's takes the list's, and its display with it.
+        wearing Arrow's takes the list's protocol name with it.
         """
         built = Field.from_arrow_field(entry)
         if built.name != ITEM:
             return built
         metadata = dict(built.metadata or {})
-        if display and not built.fix.display:
-            metadata[DISPLAY] = display
+        if declared_name and not built.fix.name:
+            metadata["fix:name"] = declared_name
         return dataclasses.replace(built, name=name or ITEM, metadata=metadata)
 
 

@@ -32,6 +32,7 @@ from rekep.market.transacted import (
     Transacted,
     resolve,
     resolve_created,
+    resolve_expiry,
     resolve_recorded,
 )
 from rekep.text.fixmsg import FixMsg
@@ -568,14 +569,17 @@ class FixEvents(Convertible):
     venue: str | None = None
     """Which feed this came off, when the reader knows and the message does not."""
 
-    mic: MIC | None = None
-    """ISO venue supplied by the parsed log, when it already resolved one."""
+    lastmkt: MIC | None = None
+    """Last execution venue already resolved by the parsed log."""
 
     recunix: int = 0
     """When the line was recorded, which is the reader's clock and not the venue's."""
 
     creaunix: int | None = None
     """Creation time already resolved by a parsed row; otherwise read from FIX."""
+
+    expunix: int | None = None
+    """Expiry already resolved by a parsed row; otherwise read from FIX."""
 
     registry: FixRegistry | None = None
     """Optional dictionary overriding standard tags for this feed."""
@@ -793,6 +797,7 @@ class FixEvents(Convertible):
         # Build both before yielding either so their relational metadata can
         # name the two final hashes without changing either identity.
         execution = self._execution(order)
+        execution.link_to(order, primary=True)
         order.link_to(execution)
         yield order
         yield execution
@@ -895,9 +900,10 @@ class FixEvents(Convertible):
         inside = FixEvents(
             message=type(self.message).from_pairs(entry),
             venue=self.venue,
-            mic=self.mic,
+            lastmkt=self.lastmkt,
             recunix=self.recunix,
             creaunix=self.creaunix,
+            expunix=self.expunix,
             registry=self.registry,
             fix_version=self.version,
         )
@@ -975,7 +981,7 @@ class FixEvents(Convertible):
             yield self._quote_order(
                 side,
                 state,
-                price=_number(get(price_field)),
+                lastpx=_number(get(price_field)),
                 lastqty=_number(get(quantity_field) or get(default_quantity_field)),
             )
 
@@ -1035,7 +1041,7 @@ class FixEvents(Convertible):
         side: Side,
         state: State,
         *,
-        price: float | None,
+        lastpx: float | None,
         lastqty: float | None,
     ) -> Order:
         """Map one quote side onto the generic Order declaration."""
@@ -1048,7 +1054,7 @@ class FixEvents(Convertible):
             expunix=unix_value(get("ValidUntilTime")),
             state=state,
             side=side,
-            price=price,
+            lastpx=lastpx,
             lastqty=lastqty,
             kind=MarketKind.LIMIT_ORDER,
             indicative=True,
@@ -1106,7 +1112,7 @@ class FixEvents(Convertible):
             Order,
             state=self.state_of("MDUpdateAction", State.NEW if snapshot else State.OPEN),
             side=side,
-            price=_number(get("MDEntryPx")),
+            lastpx=_number(get("MDEntryPx")),
             lastqty=_number(get("MDEntrySize")),
             kind=MarketKind.LIMIT_ORDER,
             indicative=True,
@@ -1128,7 +1134,7 @@ class FixEvents(Convertible):
             Execution,
             state=State.FILLED,
             kind=MarketKind.TRADE,
-            price=_number(get("MDEntryPx")),
+            lastpx=_number(get("MDEntryPx")),
             lastqty=_number(get("MDEntrySize")),
             execid=entry_id,
             tradeid=trade_id or match_id,
@@ -1155,6 +1161,9 @@ class FixEvents(Convertible):
         **overrides: Any,
     ) -> TMarketEvent:
         """Build one declared market shape, then apply its lifecycle context."""
+        if "lastpx" not in overrides:
+            overrides["lastpx"] = self._lastpx(event_type)
+        carried = {"expunix": self.expiry_unix, **self._shared(), **overrides}
         event = event_type.from_entries(
             self._event_entries,
             registry=self.registry,
@@ -1162,10 +1171,28 @@ class FixEvents(Convertible):
             unix=self.unix,
             creaunix=self.creation_unix,
             recunix=self.recorded_unix,
-            **self._shared(),
-            **overrides,
+            **carried,
         )
         return self._finish(event, previous)
+
+    def _lastpx(self, event_type: type[MarketEvent]) -> float | None:
+        """Choose the first price whose meaning matches the target event."""
+        side = Side.from_fix(self.get("Side"), Side.UNKNOWN)
+        if issubclass(event_type, Execution):
+            fields = ["LastPx", "MDEntryPx", "Price"]
+        else:
+            # A fill's LastPx is not an order limit. Quote and market-data
+            # prices are safe because their side declares the same interest.
+            fields = ["Price", "MDEntryPx"]
+        if side.sign > 0:
+            fields.append("BidPx")
+        elif side.sign < 0:
+            fields.append("OfferPx")
+        for name in fields:
+            value = _number(self.get(name))
+            if value is not None:
+                return value
+        return None
 
     def _finish(self, event: TMarketEvent, previous: MarketEvent | None = None) -> TMarketEvent:
         """Attach transient reference data before deriving and identifying."""
@@ -1303,6 +1330,12 @@ class FixEvents(Convertible):
         """Capture time, with a carried recording clock only where it is absent."""
         return resolve_recorded(self.recunix, self._rekep_clock("RecUnix"))
 
+    @functools.cached_property
+    def expiry_unix(self) -> int | None:
+        """Event expiry from the resolved envelope, then package and standard FIX fields."""
+        stated = self.expunix if self.expunix is not None else self._rekep_clock("ExpUnix")
+        return resolve_expiry(self._clock, stated=stated)
+
     def _rekep_clock(self, name: str) -> int | None:
         """One package-owned epoch-nanosecond field, or None when malformed."""
         found = self.get(name)
@@ -1353,7 +1386,7 @@ class FixEvents(Convertible):
 
     def _expires(self, timeinforce: TimeInForce, unix: int, duration: int | None) -> int | None:
         """Exact expiry, from UTC time first and a fixed GFT duration second."""
-        explicit = unix_of(self.get("ExpireTime"))
+        explicit = self.expiry_unix
         if explicit is not None:
             return explicit
         if timeinforce is not TimeInForce.GFT or duration is None or duration <= 0:
@@ -1370,10 +1403,11 @@ class FixEvents(Convertible):
     def _shared_values(self) -> dict[str, Any]:
         """Shared envelope values that are immutable during translation."""
         instrument = self._reference
-        mic = self._mic()
+        lastmkt = self._lastmkt()
         return {
             "altids": self._identifier_altids,
-            "mic": mic,
+            "plugin": self.message.plugin,
+            "lastmkt": lastmkt,
             "reason": self._reason(),
             "instrumentxhash": instrument.xhash,
             "symbolticker": instrument.symbolticker,
@@ -1434,14 +1468,14 @@ class FixEvents(Convertible):
             "metadata": dict(self.extras),
         }
 
-    def _mic(self) -> MIC | None:
-        """First valid ISO code: exchange fields, configured feed, then session peers."""
+    def _lastmkt(self) -> MIC | None:
+        """First valid venue from LastMkt, instrument, feed, then session peers."""
         for value in (
             self.get("LastMkt"),
             self.get("SecurityExchange"),
             self.get("ExDestination"),
             self.venue,
-            self.mic,
+            self.lastmkt,
             self.get("SenderCompID"),
             self.get("TargetCompID"),
         ):

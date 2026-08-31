@@ -10,8 +10,21 @@
   "fix": {
    "component": "RateSource",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationReport\",\"ExecutionReport\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteRequest\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationReport",
+    "ExecutionReport",
+    "MarketDataIncrementalRefresh",
+    "MarketDataSnapshotFullRefresh",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote",
+    "QuoteRequest",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

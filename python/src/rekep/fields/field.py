@@ -63,11 +63,6 @@ ENUM = "enum"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
 
-#: Metadata key carrying what a column is *called* -- `SecurityID` for one
-#: stored as `securityid`, `SourceURL` for one stored as `sourceurl`. Every
-#: column carries it, because a folded name is a key and not a label.
-DISPLAY = "fix:display"
-
 #: Iceberg identifies a column by id and never by name, so an id is part of
 #: what a schema *is* once a table exists. It rides under the protocol's own
 #: prefix like every other Iceberg key -- the ecosystem's `PARQUET:field_id`
@@ -380,17 +375,16 @@ class Field(Convertible):
         return Field()
 
     @classmethod
-    def column(cls, display: str = "", **declared: Any) -> Field:
+    def column(cls, name: str = "", **declared: Any) -> Field:
         """A declaration for a column the FIX dictionary does not name.
 
         A column's name is folded -- lowercase letters and digits, nothing
         else -- so `sourceurl` cannot spell the words it is made of. This is
-        where it spells them. A field the dictionary *does* name takes its
-        display from the dictionary instead, and says nothing here.
+        where it states the readable protocol name.
         """
         built = cls(**declared)
-        if display:
-            built.fix.display = display
+        if name:
+            built.fix.name = name
         return built
 
     @classmethod

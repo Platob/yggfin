@@ -13,7 +13,9 @@
    "component": "SecurityDefinitionUpdateReport",
    "msgtype": "BP",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

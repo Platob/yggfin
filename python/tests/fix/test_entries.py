@@ -270,7 +270,8 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
     assert entry.fix.encode("nothing here") == "nothing here", "or falls through untouched"
     assert entry.fix.meaning("1") == "Buy", "and the value itself carries what it means"
     assert entry.fix.meaning("3") is None, "an unknown wire value means nothing here"
-    assert not hasattr(entry.fix, "decode"), "there is no reverse: the wire value is the fact"
+    assert entry.fix.decode("1") == "BUY", "decode returns the declared symbolic spelling"
+    assert entry.fix.decode("3") == "3", "an unknown wire value stays itself"
 
 
 def test_a_value_resolves_the_standard_s_parenthesized_abbreviation() -> None:

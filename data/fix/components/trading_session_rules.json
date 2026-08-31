@@ -11,8 +11,19 @@
   "fix": {
    "component": "TradingSessionRules",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradingSessionList\",\"TradingSessionListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList",
+    "DerivativeSecurityListUpdateReport",
+    "SecurityDefinition",
+    "SecurityDefinitionUpdateReport",
+    "SecurityList",
+    "SecurityListUpdateReport",
+    "TradingSessionList",
+    "TradingSessionListUpdateReport"
+   ]
   },
   "fields": [
    {

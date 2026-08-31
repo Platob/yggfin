@@ -11,7 +11,9 @@
    "component": "TradeAggregationRequest",
    "msgtype": "DW",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

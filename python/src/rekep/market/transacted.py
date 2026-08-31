@@ -348,11 +348,17 @@ TRANSACTED: tuple[Stamped, ...] = (
 #: FIX fields that say when a lifecycle was made upstream, best first. These
 #: are deliberately separate from `TRANSACTED`: transmission is useful
 #: creation evidence but it does not replace a business transaction's time.
-CREATED: tuple[Stamped, ...] = tuple(
-    rung
-    for rung in TRANSACTED
-    if rung.name in {"OrigTime", "OrigSendingTime", "OnBehalfOfSendingTime", "SendingTime"}
+CREATED: tuple[Stamped, ...] = (
+    Stamped(name="CreationTime", fields=("creationtime",)),
+    *(
+        rung
+        for rung in TRANSACTED
+        if rung.name in {"OrigTime", "OrigSendingTime", "OnBehalfOfSendingTime", "SendingTime"}
+    ),
 )
+
+#: The standard FIX expiry clock that fills the generic event deadline.
+EXPIRY = Stamped(name="ExpireTime", fields=("expiretime",))
 
 #: Source recorded when the package-owned event-time field states `unix`
 #: directly rather than leaving it to the standard FIX clock chain.
@@ -482,6 +488,11 @@ def resolve_recorded(local: int | None, stated: int | None = None) -> int:
     return local or stated or 0
 
 
+def resolve_expiry(read: Callable[[str], Any], *, stated: int | None = None) -> int | None:
+    """Event expiry from an explicit value or standard `ExpireTime <126>`."""
+    return stated if stated is not None else read(EXPIRY.fields[0])
+
+
 # -- whole columns ------------------------------------------------------------
 
 
@@ -602,6 +613,19 @@ def resolve_created_arrow(
         if reading is not None:
             found = compute.coalesce(found, reading)
     return compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64()))
+
+
+def resolve_expiry_arrow(
+    columns: Mapping[str, Any], rows: int, *, stated: Any | None = None
+) -> Any:
+    """`resolve_expiry` over typed columns, preserving an explicit epoch zero."""
+    found = (
+        pyarrow.nulls(rows, pyarrow.int64())
+        if stated is None
+        else stated.cast(pyarrow.int64(), safe=False)
+    )
+    reading, _ = EXPIRY.arrow(columns, None, rows)
+    return found if reading is None else pyarrow.compute.coalesce(found, reading)
 
 
 def resolve_recorded_arrow(local: Any, stated: Any | None, rows: int) -> Any:

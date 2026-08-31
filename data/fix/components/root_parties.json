@@ -12,8 +12,19 @@
   "fix": {
    "component": "RootParties",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"CrossOrderCancelRequest\",\"NewOrderCross\",\"NewOrderList\",\"QuoteRequest\",\"QuoteRequestReject\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelReplaceRequest",
+    "CrossOrderCancelRequest",
+    "NewOrderCross",
+    "NewOrderList",
+    "QuoteRequest",
+    "QuoteRequestReject",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

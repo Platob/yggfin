@@ -6,7 +6,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixMsg, FixRegistry, Message
-from rekep.fields import column_name, display_name
+from rekep.fields import column_name
 from rekep.market import Book, Execution, InstrumentUpdate, Order
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
@@ -67,7 +67,7 @@ def test_message_contracts_keep_time_keys(name: str) -> None:
 def test_market_contract_keeps_protocol_metadata() -> None:
     order = Field.from_yaml(str(SCHEMAS / "rekep" / "order.yaml"))
     assert order.field("timeinforce").fix["tag"] == "59"
-    assert order.field("price").fix["name"] == "Price"
+    assert order.field("lastpx").fix["name"] == "Price"
     assert order.field("side").fix["tag"] == "54"
     assert "fix:tag" not in order.field("code").metadata, "a lifecycle is not a FIX field"
     assert "instrument" not in order.names
@@ -90,9 +90,6 @@ def test_published_contracts_have_no_nested_table_keys() -> None:
 #: What Arrow calls the parts of a container when nobody named them. They are
 #: not columns and nothing looks them up, so they are exempt from the rule.
 _CONTAINER_PARTS = frozenset({"item", "key", "value"})
-
-#: Reader-facing names whose words are intentionally fuller than the folded column.
-_COLUMN_DISPLAYS = {"unmap": "Unmapped", "vhash": "ValueHash"}
 
 
 def _columns(field: Field) -> list[Field]:
@@ -130,23 +127,9 @@ def test_every_column_is_folded(path: Path) -> None:
 
 
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
-def test_every_column_says_what_it_is_called(path: Path) -> None:
-    """The fold drops information, so every column carries the spelling back.
-
-    A FIX column displays the dictionary's own name and an analytical one
-    displays what `display_name` writes -- and either folds back onto
-    something the column already is: its own name, or the FIX field it says it
-    reads. `price` displays `Price` because that is what tag 44 is called; it is
-    a spelling of the column's source, not a second name for the column.
-    """
+def test_no_column_repeats_its_fix_name_as_display(path: Path) -> None:
     for member in _columns(Field.from_(str(path))):
-        display = member.fix.display
-        assert display, f"{path.name}: {member.name} says nothing about its name"
-        spellings = {member.name, column_name(member.fix.name or member.name)}
-        if member.name in _COLUMN_DISPLAYS:
-            assert display == _COLUMN_DISPLAYS[member.name]
-            spellings.add(column_name(display))
-        assert column_name(display) in spellings, f"{path.name}: {member.name} -> {display}"
+        assert "fix:display" not in member.metadata, f"{path.name}: {member.name}"
 
 
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
@@ -171,28 +154,3 @@ def test_a_registry_lookup_ignores_case_and_not_the_letters() -> None:
         found = registry.field(spelling)
         assert found is not None and found.fix.tag == 35, spelling
     assert FixMsg.into_field().field("MsgType") is FixMsg.into_field().field("msgtype")
-
-
-def test_a_display_capitalises_the_words_a_fold_removed_without_spacing_them() -> None:
-    """`display_name` restores the word boundaries the fold dropped as capitals,
-    and keeps an acronym an acronym rather than capitalising it into a word.
-
-    Capitals and not spaces, because a display is the spelling of a FIX field
-    and no FIX field carries a space: `SourceURL` reads as one name the way
-    `SecurityID` does, and `Source URL` reads as two.
-    """
-    assert display_name("source_url") == "SourceURL"
-    assert display_name("prevbidpx") == "Prevbidpx", "nothing said where the words were"
-    assert display_name("prev_bid_px") == "PrevBidPx"
-    assert display_name("alt_ids") == "AltIDs"
-    assert display_name("mic") == "MIC"
-    assert display_name("SecurityID") == "SecurityID", "a name that spells itself is kept"
-    for name in ("source_url", "alt_ids", "mic", "SecurityID"):
-        assert column_name(display_name(name)) == column_name(name)
-
-
-@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
-def test_no_published_display_carries_a_space(path: Path) -> None:
-    """A column says what it is called the way a FIX field does: one word."""
-    for member in _columns(Field.from_(str(path))):
-        assert " " not in member.fix.display, f"{path.name}: {member.name}"

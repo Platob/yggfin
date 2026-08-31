@@ -13,8 +13,12 @@
   "fix": {
    "component": "InstrmtStrkPxGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ListStrikePrice\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ListStrikePrice"
+   ]
   },
   "fields": [
    {

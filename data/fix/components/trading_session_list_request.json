@@ -13,7 +13,9 @@
    "component": "TradingSessionListRequest",
    "msgtype": "BI",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

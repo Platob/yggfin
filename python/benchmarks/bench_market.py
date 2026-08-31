@@ -65,7 +65,7 @@ from rekep.market import (  # noqa: E402
     identity,  # noqa: E402
 )
 from rekep.market.book import _Side  # noqa: E402
-from rekep.market.event import SECOND  # noqa: E402
+from rekep.market.event import SECOND, Event  # noqa: E402
 from rekep.market.fields import dictionary_arrow  # noqa: E402
 from rekep.market.identity import (  # noqa: E402
     _binary,
@@ -260,10 +260,27 @@ def bench_identifiers(rows: int, repeat: int) -> None:
     joined, _ = timed(lambda: plain_join(*columns), repeat)
     framed, _ = timed(lambda: framed_join(*columns), repeat)
 
+    codes = columns[1]
+    lifecycle_vector, lifecycle = timed(lambda: Event.xhash_arrow(codes), repeat)
+    lifecycle_scalar, lifecycles = timed(
+        lambda: [
+            txhash.wide_bytes(Event.xhash_of(code)) for code in codes.to_pylist()[:scalar_rows]
+        ],
+        repeat,
+    )
+    assert lifecycle.to_pylist()[:scalar_rows] == lifecycles
+
     report("hash_of, one row at a time", scalar, scalar_rows)
     report("hash_arrow, whole column", vector, rows, against=scalar / scalar_rows * rows)
     report("  of which: the join, unframed", joined, rows)
     report("  of which: the join, length framed", framed, rows)
+    report("XXH3-128 code, one row at a time", lifecycle_scalar, scalar_rows)
+    report(
+        "XXH3-128 code, whole column",
+        lifecycle_vector,
+        rows,
+        against=lifecycle_scalar / scalar_rows * rows,
+    )
 
 
 def bench_instruments(rows: int, repeat: int) -> None:
@@ -319,20 +336,21 @@ def envelope(rows: int) -> dict[str, object]:
         "unix": [UNIX] * rows,
         "unixpartition": [UNIX_PARTITION] * rows,
         "eventtype": [0] * rows,
+        "plugin": [""] * rows,
         "creaunix": [UNIX] * rows,
         "recunix": [UNIX] * rows,
         "hash": [txhash.wide_bytes(txhash.couple128(UNIX // 1_000, vhash)) for vhash in vhashes],
         "vhash": vhashes,
-        "xhash": [
-            txhash.wide_bytes(txhash.couple128(UNIX // 1_000, hash_of(code))) for code in codes
-        ],
-        "linkxhashes": [[] for _ in range(rows)],
+        "xhash": [txhash.wide_bytes(Event.xhash_of(code)) for code in codes],
+        "linkhashes": [[] for _ in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
         "code": codes,
         "codesource": ["Code"] * rows,
         "altids": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
-        "instrumentxhash": [index % 5000 + 1 for index in range(rows)],
+        "instrumentxhash": [
+            txhash.wide_bytes(Event.xhash_of(f"S{index % 5000}")) for index in range(rows)
+        ],
         "symbolticker": [f"S{index % 5000}" for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
@@ -500,7 +518,7 @@ def stream(events: int) -> list[object]:
                 ready(
                     Execution(
                         unix=unix,
-                        price=100.0 + generate.randrange(-20, 20) * 0.01,
+                        lastpx=100.0 + generate.randrange(-20, 20) * 0.01,
                         lastqty=1.0,
                         state=State.FILLED,
                         execid=f"E{index}",
@@ -514,7 +532,7 @@ def stream(events: int) -> list[object]:
                 Order(
                     unix=unix,
                     side=side,
-                    price=float("nan") if index % 20 == 0 else quoted,
+                    lastpx=float("nan") if index % 20 == 0 else quoted,
                     lastqty=float(generate.randrange(1, 50)),
                     orderid=named,
                     state=State.CANCELLED if shape == 2 else State.NEW,
@@ -542,7 +560,7 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
             unix=unix,
             creaunix=unix,
             side=Side.BID,
-            price=100.0 - level * 0.01,
+            lastpx=100.0 - level * 0.01,
             lastqty=1.0 + cycle % 2,
             orderid=f"M{slot}",
             state=State.NEW,
@@ -598,7 +616,7 @@ def bench_standing(rows: int, repeat: int) -> None:
                     orderid=f"O{index}",
                     clordid=f"CL{index}",
                     side=Side.BID,
-                    price=100.0,
+                    lastpx=100.0,
                     lastqty=1.0,
                     state=State.NEW,
                 )
@@ -606,19 +624,21 @@ def bench_standing(rows: int, repeat: int) -> None:
         target = side.orders[live // 2 + 1]
         cases = (
             ("exact xhash", Order(xhash=target.xhash)),
-            ("linked xhash", Execution(linkxhashes=[target.xhash])),
+            ("linked hash", Execution(linkhashes=[target.hash])),
             ("venue code", Order(altids={"secondary_order_id": f"V{live // 2}"})),
             ("client code", Order(altids={"secondary_cl_ord_id": f"C{live // 2}"})),
             ("code miss", Order(altids={"secondary_order_id": "missing"})),
         )
 
         def linear(event: Order | Execution, side: _Side = side) -> Order | None:
-            identities = ([event.xhash] if event.is_order() and event.xhash else []) + [
-                identity for identity in event.linkxhashes
-            ]
-            if identities:
+            if event.is_order() and event.xhash:
                 return next(
-                    (order for order in side.orders.values() if order.xhash in identities), None
+                    (order for order in side.orders.values() if order.xhash == event.xhash), None
+                )
+            if event.linkhashes:
+                return next(
+                    (order for order in side.orders.values() if order.hash in event.linkhashes),
+                    None,
                 )
             aliases = set(Order.lookup_altids_of(event))
             return next(
@@ -645,10 +665,7 @@ def bench_standing(rows: int, repeat: int) -> None:
 
 def bench_operation_counts(rows: int) -> None:
     """One representative replay with allocations and hot operations counted."""
-    import rekep.market.event as event_module
-
     events = min(max(rows, 2_000), 10_000)
-    event_module._life_hash.cache_clear()
     tracemalloc.start()
     try:
         with counted_operations() as operations:
@@ -770,7 +787,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
     """Value-hash comparison and indexed explicit-expiry lookup."""
     from rekep.market import Order, Side, State
 
-    previous = next(one for one in stream(4) if isinstance(one, Order) and one.price == one.price)
+    previous = next(one for one in stream(4) if isinstance(one, Order) and one.lastpx == one.lastpx)
     current = copy.copy(previous)
     pictured = copy.copy(previous)
     pictured.snapunix = previous.unix
@@ -806,7 +823,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 altids={"symbol": "BTC-USD"},
                 orderid=f"O{index}",
                 side=Side.BID,
-                price=100.0,
+                lastpx=100.0,
                 lastqty=1.0,
                 state=State.NEW,
                 expunix=expiry if index % 100 == 0 else None,
@@ -857,7 +874,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 altids={"symbol": "BTC-USD"},
                 orderid=f"O{index}",
                 side=Side.BID,
-                price=float(live - index),
+                lastpx=float(live - index),
                 lastqty=1.0,
                 state=State.NEW,
             )
@@ -868,7 +885,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
             1,
             capped.orders.values(),
             key=lambda order: (
-                -(order.price or 0.0),
+                -(order.lastpx or 0.0),
                 order.creaunix or order.unix,
                 order.xhash,
             ),

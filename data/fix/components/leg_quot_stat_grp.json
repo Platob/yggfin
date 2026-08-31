@@ -13,8 +13,12 @@
   "fix": {
    "component": "LegQuotStatGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"QuoteStatusReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "QuoteStatusReport"
+   ]
   },
   "fields": [
    {

@@ -11,7 +11,9 @@
    "component": "PartyDetailsDefinitionRequest",
    "msgtype": "CX",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -7,9 +7,10 @@
   "fix": {
    "tag": "30000",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "unix",
-   "display": "Unix"
+   "versions": [
+    "*"
+   ],
+   "column": "unix"
   }
  },
  "30001": {
@@ -20,9 +21,10 @@
   "fix": {
    "tag": "30001",
    "type": "int32",
-   "versions": "[\"*\"]",
-   "column": "unixpartition",
-   "display": "UnixPartition"
+   "versions": [
+    "*"
+   ],
+   "column": "unixpartition"
   }
  },
  "30002": {
@@ -33,9 +35,10 @@
   "fix": {
    "tag": "30002",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "eventtype",
-   "display": "MarketEventType"
+   "versions": [
+    "*"
+   ],
+   "column": "eventtype"
   }
  },
  "30003": {
@@ -46,9 +49,10 @@
   "fix": {
    "tag": "30003",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "creaunix",
-   "display": "CreaUnix"
+   "versions": [
+    "*"
+   ],
+   "column": "creaunix"
   }
  },
  "30004": {
@@ -59,9 +63,10 @@
   "fix": {
    "tag": "30004",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "recunix",
-   "display": "RecUnix"
+   "versions": [
+    "*"
+   ],
+   "column": "recunix"
   }
  },
  "30005": {
@@ -72,9 +77,10 @@
   "fix": {
    "tag": "30005",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "expunix",
-   "display": "ExpUnix"
+   "versions": [
+    "*"
+   ],
+   "column": "expunix"
   }
  },
  "30006": {
@@ -85,9 +91,10 @@
   "fix": {
    "tag": "30006",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "snapunix",
-   "display": "SnapUnix"
+   "versions": [
+    "*"
+   ],
+   "column": "snapunix"
   }
  },
  "30007": {
@@ -98,9 +105,10 @@
   "fix": {
    "tag": "30007",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "hash",
-   "display": "Hash"
+   "versions": [
+    "*"
+   ],
+   "column": "hash"
   }
  },
  "30008": {
@@ -111,22 +119,24 @@
   "fix": {
    "tag": "30008",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "vhash",
-   "display": "ValueHash"
+   "versions": [
+    "*"
+   ],
+   "column": "vhash"
   }
  },
  "30009": {
   "name": "XHash",
   "type": "fixed_size_binary[16]",
   "nullable": true,
-  "description": "Creation-time composition of `creaunix` and the XXH3-64 `code` digest.",
+  "description": "Direct XXH3-128 digest of the UTF-8 `code`.",
   "fix": {
    "tag": "30009",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "xhash",
-   "display": "XHash"
+   "versions": [
+    "*"
+   ],
+   "column": "xhash"
   }
  },
  "30010": {
@@ -137,9 +147,10 @@
   "fix": {
    "tag": "30010",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "prevhash",
-   "display": "PrevHash"
+   "versions": [
+    "*"
+   ],
+   "column": "prevhash"
   }
  },
  "30011": {
@@ -150,9 +161,10 @@
   "fix": {
    "tag": "30011",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "prevunix",
-   "display": "PrevUnix"
+   "versions": [
+    "*"
+   ],
+   "column": "prevunix"
   }
  },
  "30012": {
@@ -163,25 +175,27 @@
   "fix": {
    "tag": "30012",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "parenthash",
-   "display": "ParentHash"
+   "versions": [
+    "*"
+   ],
+   "column": "parenthash"
   },
   "item": {
    "type": "fixed_size_binary[16]"
   }
  },
  "30013": {
-  "name": "LinkXHashes",
+  "name": "LinkHashes",
   "type": "list",
   "nullable": true,
-  "description": "Ordered lifecycle hashes of related events.",
+  "description": "Ordered exact hashes of related events.",
   "fix": {
    "tag": "30013",
    "type": "MultipleValueString",
-   "versions": "[\"*\"]",
-   "column": "linkxhashes",
-   "display": "LinkXHashes"
+   "versions": [
+    "*"
+   ],
+   "column": "linkhashes"
   },
   "item": {
    "type": "fixed_size_binary[16]"
@@ -195,9 +209,10 @@
   "fix": {
    "tag": "30014",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "version",
-   "display": "Version"
+   "versions": [
+    "*"
+   ],
+   "column": "version"
   }
  },
  "30015": {
@@ -208,9 +223,10 @@
   "fix": {
    "tag": "30015",
    "type": "int64",
-   "versions": "[\"*\"]",
-   "column": "state",
-   "display": "State"
+   "versions": [
+    "*"
+   ],
+   "column": "state"
   }
  },
  "30016": {
@@ -221,9 +237,10 @@
   "fix": {
    "tag": "30016",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "code",
-   "display": "Code"
+   "versions": [
+    "*"
+   ],
+   "column": "code"
   }
  },
  "30017": {
@@ -234,28 +251,16 @@
   "fix": {
    "tag": "30017",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "altids",
-   "display": "AltIDs"
+   "versions": [
+    "*"
+   ],
+   "column": "altids"
   },
   "key": {
    "type": "string"
   },
   "value": {
    "type": "string"
-  }
- },
- "30018": {
-  "name": "MIC",
-  "type": "int32",
-  "nullable": true,
-  "description": "ISO 10383 market identifier code.",
-  "fix": {
-   "tag": "30018",
-   "type": "int32",
-   "versions": "[\"*\"]",
-   "column": "mic",
-   "display": "MIC"
   }
  },
  "30019": {
@@ -266,9 +271,10 @@
   "fix": {
    "tag": "30019",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "reason",
-   "display": "Reason"
+   "versions": [
+    "*"
+   ],
+   "column": "reason"
   }
  },
  "30020": {
@@ -279,9 +285,10 @@
   "fix": {
    "tag": "30020",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "symbolticker",
-   "display": "SymbolTicker"
+   "versions": [
+    "*"
+   ],
+   "column": "symbolticker"
   }
  },
  "30021": {
@@ -292,9 +299,10 @@
   "fix": {
    "tag": "30021",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "unmap",
-   "display": "Unmapped"
+   "versions": [
+    "*"
+   ],
+   "column": "unmap"
   },
   "item": {
    "type": "struct",
@@ -302,35 +310,23 @@
     {
      "name": "tag",
      "type": "int32",
-     "description": "Numeric identity written or resolved; zero while unresolved.",
-     "fix": {
-      "display": "Tag"
-     }
+     "description": "Numeric identity written or resolved; zero while unresolved."
     },
     {
      "name": "key",
      "type": "string",
-     "description": "Whole field spelling outside an indexed container.",
-     "fix": {
-      "display": "Key"
-     }
+     "description": "Whole field spelling outside an indexed container."
     },
     {
      "name": "value",
      "type": "string",
-     "description": "Text after the first equals sign; an empty value is empty text.",
-     "fix": {
-      "display": "Value"
-     }
+     "description": "Text after the first equals sign; an empty value is empty text."
     },
     {
      "name": "comp",
      "type": "string",
      "nullable": true,
-     "description": "Indexed container prefix.",
-     "fix": {
-      "display": "Comp"
-     }
+     "description": "Indexed container prefix."
     }
    ]
   }
@@ -339,13 +335,14 @@
   "name": "PxUnit",
   "type": "string",
   "nullable": true,
-  "description": "Unit in which `price` is expressed.",
+  "description": "Unit in which `lastpx` is expressed.",
   "fix": {
    "tag": "30024",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "pxunit",
-   "display": "PxUnit"
+   "versions": [
+    "*"
+   ],
+   "column": "pxunit"
   }
  },
  "30025": {
@@ -356,22 +353,24 @@
   "fix": {
    "tag": "30025",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "qtyunit",
-   "display": "QtyUnit"
+   "versions": [
+    "*"
+   ],
+   "column": "qtyunit"
   }
  },
  "30026": {
   "name": "Notional",
   "type": "double",
   "nullable": true,
-  "description": "Producer-computed `price * lastqty * multiplier`.",
+  "description": "Producer-computed `lastpx * lastqty * multiplier`.",
   "fix": {
    "tag": "30026",
    "type": "double",
-   "versions": "[\"*\"]",
-   "column": "notional",
-   "display": "Notional"
+   "versions": [
+    "*"
+   ],
+   "column": "notional"
   }
  },
  "30027": {
@@ -382,9 +381,164 @@
   "fix": {
    "tag": "30027",
    "type": "String",
-   "versions": "[\"*\"]",
-   "column": "codesource",
-   "display": "CodeSource"
+   "versions": [
+    "*"
+   ],
+   "column": "codesource"
+  }
+ },
+ "30028": {
+  "name": "LastShares",
+  "type": "double",
+  "nullable": true,
+  "description": "Vendor-reported share quantity, distinct from `LastQty <32>`.",
+  "fix": {
+   "tag": "30028",
+   "type": "double",
+   "versions": [
+    "*"
+   ],
+   "column": "lastshares"
+  }
+ },
+ "30029": {
+  "name": "MarketMarker",
+  "type": "bool",
+  "nullable": true,
+  "description": "Whether the source marks the row as market activity.",
+  "fix": {
+   "tag": "30029",
+   "type": "Boolean",
+   "versions": [
+    "*"
+   ],
+   "column": "marketmarker"
+  }
+ },
+ "30030": {
+  "name": "GlobalOrderId",
+  "type": "string",
+  "nullable": true,
+  "description": "Order identifier shared across source systems.",
+  "fix": {
+   "tag": "30030",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "globalorderid"
+  }
+ },
+ "30031": {
+  "name": "CreationTime",
+  "type": "timestamp[us, tz=UTC]",
+  "nullable": true,
+  "description": "Lifecycle creation timestamp expressed in UTC.",
+  "fix": {
+   "tag": "30031",
+   "type": "UTCTimestamp",
+   "versions": [
+    "*"
+   ],
+   "column": "creationtime"
+  }
+ },
+ "30032": {
+  "name": "Env",
+  "type": "string",
+  "nullable": true,
+  "description": "Source environment name.",
+  "fix": {
+   "tag": "30032",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "env"
+  }
+ },
+ "30033": {
+  "name": "RootOrderId",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifier of the root order in the lifecycle.",
+  "fix": {
+   "tag": "30033",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "rootorderid"
+  }
+ },
+ "30034": {
+  "name": "RootOriginatorOrderId",
+  "type": "string",
+  "nullable": true,
+  "description": "Originator identifier of the root order.",
+  "fix": {
+   "tag": "30034",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "rootoriginatororderid"
+  }
+ },
+ "30035": {
+  "name": "OrderFlags",
+  "type": "string",
+  "nullable": true,
+  "description": "Source flags attached to the order.",
+  "fix": {
+   "tag": "30035",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "orderflags"
+  }
+ },
+ "30036": {
+  "name": "OrderOriginatorId",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifier of the order's originating participant.",
+  "fix": {
+   "tag": "30036",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "orderoriginatorid"
+  }
+ },
+ "30037": {
+  "name": "ConversationId",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifier shared by messages in one conversation.",
+  "fix": {
+   "tag": "30037",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "conversationid"
+  }
+ },
+ "30038": {
+  "name": "BloombergCode",
+  "type": "string",
+  "nullable": true,
+  "description": "Bloomberg identifier supplied by the source bridge.",
+  "fix": {
+   "tag": "30038",
+   "type": "String",
+   "versions": [
+    "*"
+   ],
+   "column": "bloombergcode"
   }
  }
 }

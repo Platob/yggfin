@@ -2,6 +2,26 @@
   "protocol": "rekep-identity-v1",
   "algorithm": "XXH3-64",
   "seed": 0,
+  "xhash": {
+    "algorithm": "XXH3-128",
+    "seed": 0,
+    "vectors": [
+      {
+        "name": "ascii_code",
+        "code": "ORD-1",
+        "utf8_hex": "4f52442d31",
+        "digest_hex": "99ea32063587bcca554a6378a39091a5",
+        "signed_i128": -135694471488533225531442588169089805915
+      },
+      {
+        "name": "unicode_code",
+        "code": "café",
+        "utf8_hex": "636166c3a9",
+        "digest_hex": "fc88ba8ad8a06b6234b319bdcedd52af",
+        "signed_i128": -4606976081663523397616769640649895249
+      }
+    ]
+  },
   "raw_vectors": [
     {
       "name": "empty_blob",

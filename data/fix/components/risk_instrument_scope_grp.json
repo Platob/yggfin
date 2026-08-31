@@ -10,8 +10,17 @@
   "fix": {
    "component": "RiskInstrumentScopeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsRequest\",\"PartyRiskLimitsUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyRiskLimitsDefinitionRequest",
+    "PartyRiskLimitsDefinitionRequestAck",
+    "PartyRiskLimitsReport",
+    "PartyRiskLimitsReportAck",
+    "PartyRiskLimitsRequest",
+    "PartyRiskLimitsUpdateReport"
+   ]
   },
   "fields": [
    {

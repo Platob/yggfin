@@ -13,8 +13,12 @@
   "fix": {
    "component": "SecTypesGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"SecurityTypes\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "SecurityTypes"
+   ]
   },
   "fields": [
    {

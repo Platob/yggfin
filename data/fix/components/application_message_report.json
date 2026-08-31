@@ -12,7 +12,9 @@
    "component": "ApplicationMessageReport",
    "msgtype": "BY",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

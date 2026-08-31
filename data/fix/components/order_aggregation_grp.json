@@ -10,8 +10,12 @@
   "fix": {
    "component": "OrderAggregationGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeAggregationRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeAggregationRequest"
+   ]
   },
   "fields": [
    {

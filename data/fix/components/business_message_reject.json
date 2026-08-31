@@ -16,7 +16,9 @@
    "component": "BusinessMessageReject",
    "msgtype": "j",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

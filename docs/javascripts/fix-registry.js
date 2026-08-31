@@ -507,9 +507,9 @@
       }
       const valueCodes = [...declared.values()];
       const encoded = encodings(field);
-      // `tag // 500`, and the shard no tag reaches for a field FIX never
+      // `tag // 1000`, and the shard no tag reaches for a field FIX never
       // numbered -- the same arithmetic the store writes by.
-      const shard = field.tag === undefined ? 999999 : Math.floor(Number(field.tag) / 500);
+      const shard = field.tag === undefined ? 999999 : Math.floor(Number(field.tag) / 1000);
       const source = `fields/${String(shard).padStart(6, "0")}.json`;
       const componentReferences = list(field.components);
       const messageReferences = list(field.used_in);

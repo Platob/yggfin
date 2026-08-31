@@ -30,7 +30,7 @@ CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
         "values": 522,
         "aliases": 223,
         "added": 16,
-        "type": 274,
+        "type": 197,
         "name": 59,
         "note": 18,
         "members": 65,
@@ -95,6 +95,13 @@ FIXMSG_FIELDS: tuple[str, ...] = (
     "OrigClOrdID",
     "OrderID",
     "ExecID",
+    "GlobalOrderId",
+    "RootOrderId",
+    "RootOriginatorOrderId",
+    "OrderFlags",
+    "OrderOriginatorId",
+    "ConversationId",
+    "BloombergCode",
     "Side",
     "OrdType",
     "TimeInForce",
@@ -107,7 +114,14 @@ FIXMSG_FIELDS: tuple[str, ...] = (
     "LeavesQty",
     "LastPx",
     "LastQty",
+    "LastShares",
+    "LastMkt",
+    "MarketMarker",
+    "Env",
+    "SettlCurrency",
     "TransactTime",
+    "CreationTime",
+    "ExpireTime",
     "Text",
     "QuoteID",
     "QuoteReqID",
@@ -168,7 +182,6 @@ FIXMSG_FIELDS: tuple[str, ...] = (
 #: underneath `market` and must not depend on it.
 MARKET_FIELDS: tuple[str, ...] = (
     "TradeDate",
-    "ExpireTime",
     "ExpireDate",
     "ExposureDuration",
     "ExposureDurationUnit",
@@ -218,7 +231,6 @@ BRIDGE_FIELDS: tuple[str, ...] = (
     "HandlInst",
     "IOIID",
     "LastCapacity",
-    "LastMkt",
     "MaxFloor",
     "MultiLegReportingType",
     "NoTradingSessions",
@@ -240,7 +252,7 @@ BRIDGE_FIELDS: tuple[str, ...] = (
 NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID")
 
 #: Every standard key the packaged projection selects, in declaration order.
-#: `register_rekep` adds the 26 package-owned identities after this selection.
+#: `register_rekep` adds the 36 package-owned identities after this selection.
 PROJECTED: tuple[str, ...] = tuple(
     dict.fromkeys((*FIXMSG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
 )

@@ -173,7 +173,7 @@ def test_a_codec_carries_its_declared_readings(registry: FixRegistry) -> None:
 #: preamble, which no shipped pattern reads.
 VENDOR_HEADER = (
     r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
-    r"(?P<plugincode>[^|]*)\|(?P<message>.*)$"
+    r"(?P<plugin>[^|]*)\|(?P<body>.*)$"
 )
 
 
@@ -190,7 +190,7 @@ def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: Fix
         [FixMsg.from_message_batch(batch, codec_of(registry)) for batch in messages.to_batches()]
     )
     assert messages.num_rows == 1
-    assert messages.column("plugincode").to_pylist() == ["VendorBridge"]
+    assert messages.column("plugin").to_pylist() == ["VendorBridge"]
     assert messages.column("msgtype").to_pylist() == ["D"]
     assert rows.column("msgtype").to_pylist() == ["D"]
 

@@ -12,7 +12,9 @@
    "component": "OrderMassActionRequest",
    "msgtype": "CA",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

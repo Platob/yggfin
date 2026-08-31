@@ -14,8 +14,8 @@ from rekep.fields import column_names, encoded_key
 from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
 from rekep.fields.names import column_name
 from rekep.fix.access import FieldAccess
-from rekep.fix.fields import cast_arrow_fix
-from rekep.market.event import _declared_temporal_arrow
+from rekep.fix.fields import cast_arrow_field, cast_arrow_fix
+from rekep.market.event import Event, _declared_temporal_arrow
 from rekep.market.fix import (
     _TRADE_EVIDENCE_FIELDS,
     CANCEL_REJECT_HANDLER,
@@ -27,10 +27,8 @@ from rekep.market.fix import (
 )
 from rekep.market.identity import (
     HASH,
-    NIL,
     arrow_of,
     framed_arrow,
-    hash_arrow,
     hash_bytes_arrow,
 )
 from rekep.market.instrument import Instrument
@@ -79,6 +77,7 @@ _READ_FIELDS = (
     "OrdType",
     "OrigClOrdID",
     "Price",
+    "MDEntryPx",
     "SecurityExchange",
     "SecurityID",
     "SecurityIDSource",
@@ -103,6 +102,7 @@ _FLOAT_FIELDS = (
     "MaxFloor",
     "OrderQty",
     "Price",
+    "MDEntryPx",
     "StopPx",
 )
 #: Wire codes with the word spellings a bridge renders beside them, exact
@@ -446,23 +446,27 @@ class _Values:
         self.rows = rows
         requested = tuple((tags.tags[name], name) for name in _READ_FIELDS if name in tags.tags)
         self.residual = FieldAccess.first_arrow_fields(entries, requested, rows)
-        self._cache: dict[tuple[str, str], pyarrow.Array] = {}
+        self._cache: dict[tuple[str, str, str], pyarrow.Array] = {}
 
-    def raw(self, name: str, dtype: pyarrow.DataType) -> pyarrow.Array:
+    def raw(self, name: str, dtype: pyarrow.DataType, field: Any = None) -> pyarrow.Array:
         """One FIX field, from its own column or from what `entries` still holds.
 
         Asked for by the dictionary's spelling and found under the folded one:
         a column is `parentclordid` and the field is `ParentClOrdID`, and the
         residual read is keyed by the name the caller asked with.
         """
-        key = (name, str(dtype))
+        key = (name, str(dtype), "" if field is None else field.fix.canonical)
         found = self._cache.get(key)
         if found is not None:
             return found
         available = []
         for column in (self.columns.get(column_name(name)), self.residual.get(name)):
             if column is not None:
-                available.append(cast_arrow_fix(column, dtype))
+                available.append(
+                    cast_arrow_fix(column, dtype)
+                    if field is None
+                    else cast_arrow_field(column, field, dtype)
+                )
         found = compute.coalesce(*available) if available else pyarrow.nulls(self.rows, dtype)
         self._cache[key] = found
         return found
@@ -492,16 +496,14 @@ class _Shared:
         self.rows = rows
         self.unix = columns["unix"].cast(pyarrow.int64(), safe=False)
         self.unixpartition = columns["unixpartition"].cast(pyarrow.int32(), safe=False)
+        self.plugin = columns["plugin"].cast(pyarrow.string(), safe=False)
         self.creaunix = columns["creaunix"].cast(pyarrow.int64(), safe=False)
         self.recunix = columns["recunix"].cast(pyarrow.int64(), safe=False)
+        self.expunix = columns["expunix"].cast(pyarrow.int64(), safe=False)
         self.reason = columns["reason"].cast(pyarrow.string(), safe=False)
-        self.mic = columns["mic"].cast(pyarrow.int32(), safe=False)
+        self.lastmkt = columns["lastmkt"].cast(pyarrow.int32(), safe=False)
         self.symbolticker = _ticker_array(values, tags)
-        self.instrumentxhash = compute.if_else(
-            compute.equal(self.symbolticker, ""),
-            pyarrow.scalar(NIL, pyarrow.int64()),
-            hash_arrow(self.symbolticker),
-        )
+        self.instrumentxhash = Event.xhash_arrow(self.symbolticker)
         self.altids = FixMsg.altids_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
         stated_currency, stated_unit = _currencies(values.text("Currency"))
@@ -592,7 +594,8 @@ def _orders(
         timeinforce,
         value_set=pyarrow.array([int(TimeInForce.IOC), int(TimeInForce.FOK)], pyarrow.int32()),
     )
-    expunix = compute.if_else(immediate, unix, pyarrow.nulls(len(where), pyarrow.int64()))
+    tif_expiry = compute.if_else(immediate, unix, pyarrow.nulls(len(where), pyarrow.int64()))
+    expunix = compute.coalesce(shared.take(shared.expunix, where), tif_expiry)
     displayed = shared.take(values.number("MaxFloor"), where)
     hidden = compute.if_else(
         compute.and_(compute.is_valid(current), compute.is_valid(displayed)),
@@ -612,9 +615,9 @@ def _orders(
     symbolticker = shared.take(shared.symbolticker, where)
     code = named
     instrumentxhash = shared.take(shared.instrumentxhash, where)
-    mic = shared.take(shared.mic, where)
+    lastmkt = shared.take(shared.lastmkt, where)
     creaunix = shared.take(shared.creaunix, where)
-    xhash = Order.xhash_arrow(creaunix, code)
+    xhash = Order.xhash_arrow(code)
     price = shared.take(values.number("Price"), where)
     currency = shared.take(shared.currency, where)
     reason = shared.take(shared.reason, where)
@@ -631,7 +634,7 @@ def _orders(
     null_text = pyarrow.nulls(len(where), pyarrow.string())
     vhash = _value_hash_arrow(
         Order,
-        (eventtype, state, mic, code, codesource, reason),
+        (eventtype, state, lastmkt, code, codesource, reason),
         altids,
         (
             arrow_of(instrumentxhash),
@@ -667,26 +670,27 @@ def _orders(
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
         "eventtype": eventtype,
+        "plugin": shared.take(shared.plugin, where),
         "creaunix": creaunix,
         "recunix": shared.take(shared.recunix, where),
         "expunix": expunix,
         "hash": event_hash,
         "vhash": vhash,
         "xhash": xhash,
-        "linkxhashes": _empty_lists(len(where), Order.into_field().field("linkxhashes").dtype),
+        "linkhashes": _empty_lists(len(where), Order.into_field().field("linkhashes").dtype),
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
         "codesource": codesource,
         "altids": altids,
         "prevhash": pyarrow.nulls(len(where), HASH),
-        "mic": mic,
+        "lastmkt": lastmkt,
         "reason": reason,
         "instrumentxhash": instrumentxhash,
         "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
-        "price": price,
+        "lastpx": price,
         "pxunit": pxunit,
         "currency": currency,
         "lastqty": current,
@@ -759,13 +763,18 @@ def _executions(
     symbolticker = shared.take(shared.symbolticker, where)
     code = named
     instrumentxhash = shared.take(shared.instrumentxhash, where)
-    mic = shared.take(shared.mic, where)
+    lastmkt = shared.take(shared.lastmkt, where)
     creaunix = shared.take(shared.creaunix, where)
-    xhash = Execution.xhash_arrow(creaunix, code)
+    xhash = Execution.xhash_arrow(code)
     orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
-    price = shared.take(values.number("LastPx"), where)
+    price = shared.take(
+        compute.coalesce(
+            values.number("LastPx"), values.number("MDEntryPx"), values.number("Price")
+        ),
+        where,
+    )
     lastqty = shared.take(values.number("LastQty"), where)
     filled = shared.take(values.number("CumQty"), where)
     leaves = shared.take(values.number("LeavesQty"), where)
@@ -792,12 +801,12 @@ def _executions(
     )
     order_by_source = _order_lookup(orders, order_at, where)
     order_hash = order_by_source["hash"]
-    order_xhash = order_by_source["xhash"]
+    expunix = compute.coalesce(shared.take(shared.expunix, where), order_by_source["expunix"])
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
     linked = build_list(
-        Execution.into_field().field("linkxhashes").dtype,
+        Execution.into_field().field("linkhashes").dtype,
         linked_sizes,
-        compute.filter(order_xhash, reported),
+        compute.filter(order_hash, reported),
     )
     parent = build_list(
         Execution.into_field().field("parenthash").dtype,
@@ -815,7 +824,10 @@ def _executions(
     settldate_type = Execution.into_field().field("settldate").dtype
     settldate = shared.take(values.raw("SettlDate", settldate_type), where)
     settltype = shared.take(values.text("SettlType"), where)
-    settlcurrency = shared.take(values.text("SettlCurrency"), where)
+    settlcurrency_field = Execution.into_field().field("settlcurrency")
+    settlcurrency = shared.take(
+        values.raw("SettlCurrency", settlcurrency_field.dtype, settlcurrency_field), where
+    )
     settlcurrfxratecalc = shared.take(values.text("SettlCurrFxRateCalc"), where)
     market_values = (
         arrow_of(instrumentxhash),
@@ -847,7 +859,7 @@ def _executions(
     )
     vhash = _value_hash_arrow(
         Execution,
-        (eventtype, state, mic, code, codesource, reason),
+        (eventtype, state, lastmkt, code, codesource, reason),
         altids,
         market_values,
         metadata,
@@ -858,12 +870,14 @@ def _executions(
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
         "eventtype": eventtype,
+        "plugin": shared.take(shared.plugin, where),
         "creaunix": creaunix,
         "recunix": shared.take(shared.recunix, where),
+        "expunix": expunix,
         "hash": event_hash,
         "vhash": vhash,
         "xhash": xhash,
-        "linkxhashes": linked,
+        "linkhashes": linked,
         "version": _constant(rows, 0, pyarrow.int64()),
         "state": state,
         "code": code,
@@ -871,13 +885,13 @@ def _executions(
         "altids": altids,
         "prevhash": pyarrow.nulls(rows, HASH),
         "parenthash": parent,
-        "mic": mic,
+        "lastmkt": lastmkt,
         "reason": reason,
         "instrumentxhash": instrumentxhash,
         "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
-        "price": price,
+        "lastpx": price,
         "pxunit": pxunit,
         "currency": currency,
         "lastqty": lastqty,
@@ -911,13 +925,13 @@ def _link_report_orders(
     locations = compute.index_in(order_at, value_set=execution_at)
     matched = compute.is_valid(locations)
     safe_locations = compute.fill_null(locations, 0)
-    execution_xhashes = compute.take(executions.column("xhash"), safe_locations)
+    execution_hashes = compute.take(executions.column("hash"), safe_locations)
     linked = build_list(
-        Order.into_field().field("linkxhashes").dtype,
+        Order.into_field().field("linkhashes").dtype,
         matched.cast(pyarrow.int64()),
-        compute.filter(execution_xhashes, matched),
+        compute.filter(execution_hashes, matched),
     )
-    at = orders.schema.get_field_index("linkxhashes")
+    at = orders.schema.get_field_index("linkhashes")
     return orders.set_column(at, orders.schema.field(at), linked)
 
 
@@ -928,14 +942,14 @@ def _order_lookup(
     if orders is None:
         return {
             "hash": pyarrow.nulls(rows, HASH),
-            "xhash": pyarrow.nulls(rows, HASH),
             "code": pyarrow.nulls(rows, pyarrow.string()),
             "codesource": pyarrow.nulls(rows, pyarrow.string()),
+            "expunix": pyarrow.nulls(rows, pyarrow.int64()),
         }
     locations = compute.index_in(execution_at, value_set=order_at)
     return {
         name: compute.take(orders.column(name), locations)
-        for name in ("hash", "xhash", "code", "codesource")
+        for name in ("hash", "code", "codesource", "expunix")
     }
 
 

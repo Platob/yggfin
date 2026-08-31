@@ -5,7 +5,6 @@ from rekep.fields.builder import FieldBuilder
 from rekep.fields.classes import ClassBuilder
 from rekep.fields.field import (
     DESCRIPTION,
-    DISPLAY,
     ENUM,
     FIELD_ID,
     FIX,
@@ -48,10 +47,9 @@ from rekep.fields.metadata import (
     newest_rank,
     version_rank,
 )
-from rekep.fields.names import column_name, column_names, display_name
+from rekep.fields.names import column_name, column_names
 
 __all__ = [
-    "display_name",
     "column_name",
     "column_names",
     "ANY_VERSION",
@@ -59,7 +57,6 @@ __all__ = [
     "BinaryField",
     "ClassBuilder",
     "DESCRIPTION",
-    "DISPLAY",
     "DictionaryField",
     "ENUM",
     "EnumMetadata",

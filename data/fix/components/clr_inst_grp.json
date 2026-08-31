@@ -13,8 +13,16 @@
   "fix": {
    "component": "ClrInstGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

@@ -13,7 +13,9 @@
    "component": "ContraryIntentionReport",
    "msgtype": "BO",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

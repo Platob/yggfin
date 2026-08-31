@@ -18,7 +18,9 @@
    "component": "ListStatusRequest",
    "msgtype": "M",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

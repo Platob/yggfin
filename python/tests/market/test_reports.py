@@ -95,7 +95,7 @@ def test_linked_parentless_pair_does_not_reduce_the_resulting_order_twice() -> N
     partial = report(1, "1", "F", last_qty=30.0, leavesqty=70.0)
     resulting, execution = partial
     execution.parenthash = []
-    execution.linkxhashes = [placed[0].xhash]
+    execution.linkhashes = [placed[0].hash]
 
     latest = folded(placed, [resulting, execution])[-1]
 
@@ -251,7 +251,7 @@ def test_pending_replacement_does_not_move_acknowledged_interest() -> None:
 
     assert (
         latest.deltas[0].state,
-        latest.deltas[0].price,
+        latest.deltas[0].lastpx,
         latest.deltas[0].lastqty,
     ) == (
         State.PENDING_REPLACE,
@@ -293,9 +293,9 @@ def test_paired_execution_is_completed_from_the_published_order() -> None:
     order = latest.deltas[0]
     execution = latest.executions[0]
     assert execution.side is Side.BID
-    assert execution.primary_linked_xhash == order.xhash
-    assert order.linkxhashes == [execution.xhash]
-    assert set(latest.linkxhashes) == {order.xhash, execution.xhash}
+    assert execution.primary_link == order.hash
+    assert order.linkhashes == [execution.hash]
+    assert set(latest.linkhashes) == {order.hash, execution.hash}
     assert raw_xhash == order.xhash
 
 
@@ -326,16 +326,16 @@ def test_explicit_null_book_collections_and_depths_normalize_once() -> None:
     assert book.biddepth == book.askdepth == 0
 
 
-def test_lifecycle_links_preserve_order_deduplicate_and_round_trip_through_arrow() -> None:
+def test_exact_event_links_preserve_order_deduplicate_and_round_trip_through_arrow() -> None:
     first = Event(unix=1, code="first").identify()
     related = Event(unix=2, code="related").identify()
     event = Event(unix=3, code="event").identify()
     identity = event.hash, event.vhash
     event.link_to(first, related, first, event)
-    assert event.linkxhashes == [first.xhash, related.xhash]
+    assert event.linkhashes == [first.hash, related.hash]
     assert (event.hash, event.vhash) == identity, "relations do not circularly define either hash"
 
     schema = Event.into_field().into_arrow_schema()
     stored = pyarrow.Table.from_pylist([event.into_row()], schema=schema).to_pylist()[0]
-    assert stored["linkxhashes"] == [hash_bytes_of(first.xhash), hash_bytes_of(related.xhash)]
-    assert Event.from_dict(stored).linkxhashes == [first.xhash, related.xhash]
+    assert stored["linkhashes"] == [hash_bytes_of(first.hash), hash_bytes_of(related.hash)]
+    assert Event.from_dict(stored).linkhashes == [first.hash, related.hash]

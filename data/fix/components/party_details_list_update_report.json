@@ -11,7 +11,9 @@
    "component": "PartyDetailsListUpdateReport",
    "msgtype": "CK",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

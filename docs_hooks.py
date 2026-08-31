@@ -93,7 +93,7 @@ def _enum_catalog() -> dict[str, Any]:
                 "base": "Ascii32" if enum.BYTE_WIDTH <= 4 else "Ascii64",
                 "byte_width": enum.BYTE_WIDTH,
                 "stored": "int32" if enum.BYTE_WIDTH <= 4 else "int64",
-                "open": enum._registers_unknown(),
+                "open": True,
                 "members": [
                     {
                         "key": key,

@@ -11,7 +11,9 @@
    "component": "TradeMatchReportAck",
    "msgtype": "DD",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

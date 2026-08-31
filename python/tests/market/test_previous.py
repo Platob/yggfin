@@ -53,14 +53,14 @@ def resting(**given: object) -> Order:
     declared = {
         "unix": 10,
         "side": Side.BUY,
-        "price": 100.0,
+        "lastpx": 100.0,
         "lastqty": 10.0,
         "kind": MarketKind.LIMIT_ORDER,
         "timeinforce": TimeInForce.DAY,
         "state": State.NEW,
         "orderid": "ORD-1",
         "clordid": "CL-1",
-        "mic": XNAS,
+        "lastmkt": XNAS,
     }
     completed = changed(_order(instrument, **{**declared, **given}))
     assert isinstance(completed, Order)
@@ -75,7 +75,7 @@ def test_a_first_version_still_gets_its_identity() -> None:
     first = resting()
     assert first.xhash != NIL and first.hash != NIL
     assert first.code == "ORD-1"
-    assert first.xhash == Event.xhash_of(first.creaunix, first.code)
+    assert first.xhash == Event.xhash_of(first.code)
     assert first.version == 0 and first.prevunix is None and first.prevhash is None
 
 
@@ -129,7 +129,7 @@ def test_vhash_drives_change_detection_while_snapshots_remain_explicit() -> None
     assert later_snapshot is not None and later_snapshot.vhash == current.vhash
     assert later_snapshot.hash != current.hash, "a snapshot remains an explicit timed row"
 
-    nonfinite = resting(price=float("nan"))
+    nonfinite = resting(lastpx=float("nan"))
     assert _order(unix=20, orderid="ORD-1").with_previous(nonfinite) is None
 
 
@@ -143,19 +143,19 @@ def test_a_message_with_no_clock_lands_where_the_version_before_it_was() -> None
 def test_what_the_message_did_send_always_wins() -> None:
     """This completes a row; it does not correct one."""
     first = resting()
-    restated = _order(unix=20, orderid="ORD-1", price=101.0, lastqty=3.0, state=State.OPEN)
+    restated = _order(unix=20, orderid="ORD-1", lastpx=101.0, lastqty=3.0, state=State.OPEN)
     later = changed(restated, first)
-    assert later.price == 101.0 and later.lastqty == 3.0
+    assert later.lastpx == 101.0 and later.lastqty == 3.0
 
 
 def test_priced_transition_values_are_kept_without_a_self_join() -> None:
     first = resting()
     later = changed(
-        _order(unix=20, orderid="ORD-1", price=101.0, lastqty=8.0, state=State.OPEN),
+        _order(unix=20, orderid="ORD-1", lastpx=101.0, lastqty=8.0, state=State.OPEN),
         first,
     )
     assert (later.prevpx, later.prevqty, later.prevnotional) == (
-        first.price,
+        first.lastpx,
         first.lastqty,
         first.notional,
     )
@@ -166,7 +166,7 @@ def test_transition_values_do_not_turn_a_duplicate_observation_into_a_version() 
     assert _order(unix=20, orderid="ORD-1").with_previous(first) is None
 
 
-def test_quote_sides_with_one_code_and_creation_share_a_lifecycle_identity() -> None:
+def test_quote_sides_with_one_code_share_a_lifecycle_identity() -> None:
     bid = resting(orderid="QUOTE-1", indicative=True, side=Side.BUY)
     ask = resting(orderid="QUOTE-1", indicative=True, side=Side.SELL)
     assert bid.xhash == ask.xhash
@@ -179,7 +179,7 @@ def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeatin
     """A row with a null price drops out of every filter on price."""
     first = resting()
     later = changed(_order(unix=20, orderid="ORD-1", state=State.OPEN), first)
-    assert later.price == 100.0 and later.lastqty == 10.0
+    assert later.lastpx == 100.0 and later.lastqty == 10.0
     assert later.side is Side.BUY and later.symbolticker == "XNAS:AAPL"
     assert later.into_instrument() is EQUITY
     assert later.instrumentxhash == first.instrumentxhash, "and it stays in its partition"
@@ -193,7 +193,7 @@ def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
     fill = changed(_execution(unix=30, execid="EX-1", state=State.FILLED, lastqty=4.0), first)
     assert fill.code == "EX-1", "and never `ORD-1`: an execution is not a version of its order"
     assert fill.altids == {}
-    assert fill.linkxhashes == [first.xhash]
+    assert fill.linkhashes == [first.hash]
     assert fill.parenthash == [first.hash]
 
 
@@ -295,21 +295,21 @@ def test_the_order_kind_and_time_in_force_are_carried() -> None:
 def fill(px: float, qty: float, unix: int, **given: object) -> Execution:
     instrument = given.pop("instrument", EQUITY)
     assert isinstance(instrument, Instrument)
-    declared = {"unix": unix, "state": State.FILLED, "price": px, "lastqty": qty}
+    declared = {"unix": unix, "state": State.FILLED, "lastpx": px, "lastqty": qty}
     return _execution(instrument, **{**declared, **given})
 
 
 def test_a_fill_links_itself_to_the_order_it_followed() -> None:
     first = resting()
     done = fill(100.0, 4.0, 20, execid="EX-1").with_previous(first)
-    assert done.linkxhashes == [first.xhash]
+    assert done.linkhashes == [first.hash]
 
 
 def test_the_matched_order_precedes_other_event_links() -> None:
     first = resting()
-    done = fill(100.0, 4.0, 20, execid="EX-1", linkxhashes=[-1]).with_previous(first)
+    done = fill(100.0, 4.0, 20, execid="EX-1", linkhashes=[-1]).with_previous(first)
     assert done is not None
-    assert done.linkxhashes == [first.xhash, -1]
+    assert done.linkhashes == [first.hash, -1]
 
 
 def test_what_is_done_accumulates_across_fills() -> None:
@@ -338,7 +338,7 @@ def test_zero_is_a_price_when_reweighting_the_average() -> None:
 def test_an_unknown_prior_total_stays_unknown_when_another_fill_arrives() -> None:
     previous = _execution(
         unix=20,
-        price=100.0,
+        lastpx=100.0,
         lastqty=1.0,
         state=State.FILLED,
         execid="EX-1",
@@ -431,7 +431,7 @@ def test_an_unknown_referenced_price_makes_an_amended_average_unknown(
 ) -> None:
     previous = _execution(
         unix=20,
-        price=None,
+        lastpx=None,
         lastqty=2.0,
         state=State.FILLED,
         execid="EX-1",
@@ -441,7 +441,7 @@ def test_an_unknown_referenced_price_makes_an_amended_average_unknown(
     ).with_previous(None)
     amended = _execution(
         unix=30,
-        price=px,
+        lastpx=px,
         lastqty=qty,
         state=state,
         execid="EX-2",
@@ -458,8 +458,8 @@ def test_a_preidentified_execution_keeps_its_lifecycle_and_records_its_order() -
 
     done.with_previous(order)
 
-    assert done.xhash == before == Event.xhash_of(done.creaunix, "EX-1")
-    assert done.linkxhashes == [order.xhash]
+    assert done.xhash == before == Event.xhash_of("EX-1")
+    assert done.linkhashes == [order.hash]
     assert done.version == 0 and done.parenthash == [order.hash]
 
 
@@ -554,12 +554,12 @@ def test_a_chain_crossing_classes_still_carries_forward() -> None:
 
 
 def test_the_abstract_slots_do_not_cross_between_shapes() -> None:
-    """`price` and `lastqty` mean what the subclass says: an order's are what it
+    """`lastpx` and `lastqty` mean what the subclass says: an order's are what it
     asked for, a fill's are what traded. Carrying one into the other made a partly
     filled order claim it had asked for exactly what had just traded."""
     done = fill(100.0, 4.0, 20, execid="EX-1").with_previous(resting())
     after = _order(unix=25, orderid="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
-    assert after.lastqty == 6.0 and after.price is None
+    assert after.lastqty == 6.0 and after.lastpx is None
 
 
 # -- a version of it, or a different thing built from it ---------------------
@@ -582,7 +582,7 @@ def test_specialized_order_codes_do_not_cross_shapes_but_generic_state_does() ->
     done = fill(100.0, 4.0, 20, execid="EX-1").with_previous(order)
     after = _order(unix=25, orderid="ORD-1", state=State.PARTIALLY_FILLED).with_previous(done)
     assert after.kind is MarketKind.UNKNOWN
-    crossed = _execution(unix=30, execid="EX-2", price=1.0, lastqty=1.0).with_previous(order)
+    crossed = _execution(unix=30, execid="EX-2", lastpx=1.0, lastqty=1.0).with_previous(order)
     assert crossed.state is State.NEW
 
 
@@ -625,14 +625,14 @@ def test_a_later_order_id_does_not_split_a_client_identified_lifecycle() -> None
 
 
 def test_a_preidentified_order_keeps_its_code_identity_across_completion() -> None:
-    first = resting(orderid="ORD-1", mic=XNAS)
+    first = resting(orderid="ORD-1", lastmkt=XNAS)
     later = changed(
         _order(
             unix=20,
             orderid="ORD-1",
             state=State.OPEN,
             instrumentxhash=first.instrumentxhash,
-            mic=XNAS,
+            lastmkt=XNAS,
         )
     )
     before = later.xhash
@@ -660,7 +660,7 @@ def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
 
     after.with_previous(done)
 
-    assert done.linkxhashes == [first.xhash]
+    assert done.linkhashes == [first.hash]
     assert after.code == first.code == "CL-1"
     assert after.codesource == "ClOrdID"
     assert after.xhash == first.xhash
@@ -708,9 +708,9 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
 
     assert amended.code == first.code == "CL-1"
     assert done.origclordid == "CL-1"
-    assert done.linkxhashes == [amended.xhash]
+    assert done.linkhashes == [amended.hash]
     assert after.code == "CL-1" and after.xhash == first.xhash
-    assert after.codesource == "OrigClOrdID"
+    assert after.codesource == "ClOrdID"
 
 
 def test_order_and_client_identifier_namespaces_never_cross_match() -> None:
@@ -750,10 +750,10 @@ def test_equal_lifecycle_hashes_reconcile_to_the_existing_code() -> None:
     )
 
 
-def test_the_same_code_and_creation_ignore_shape_instrument_and_venue() -> None:
-    here = _order(instrumentxhash=1, mic=XNAS, code="ORD-1").with_previous(None)
-    there = _order(instrumentxhash=2, mic=XNAS, code="ORD-1").with_previous(None)
-    elsewhere = _execution(instrumentxhash=1, mic=XNAS, code="ORD-1").with_previous(None)
+def test_the_same_code_ignores_shape_instrument_and_venue() -> None:
+    here = _order(instrumentxhash=1, lastmkt=XNAS, code="ORD-1").with_previous(None)
+    there = _order(instrumentxhash=2, lastmkt=XNAS, code="ORD-1").with_previous(None)
+    elsewhere = _execution(instrumentxhash=1, lastmkt=XNAS, code="ORD-1").with_previous(None)
     assert here.xhash == there.xhash == elsewhere.xhash
 
 

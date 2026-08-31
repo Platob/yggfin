@@ -486,8 +486,7 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
     print(f"\n  lines -> header columns, {len(lines):,} lines")
     print(f"    {'implementation':>34} {'lines/s':>12}")
     indices = tuple(
-        HEADER_PATTERN.groupindex[name]
-        for name in ("timestamp", "threadname", "plugincode", "message")
+        HEADER_PATTERN.groupindex[name] for name in ("timestamp", "threadname", "plugin", "body")
     )
 
     def by_loop() -> list[tuple[bytes, ...]]:
@@ -497,8 +496,8 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
             found = match(line)
             if found is None:
                 if rows:
-                    stamp, thread, plugin, message = rows[-1]
-                    rows[-1] = (stamp, thread, plugin, (message or b"") + b"\n" + line)
+                    stamp, thread, plugin, body = rows[-1]
+                    rows[-1] = (stamp, thread, plugin, (body or b"") + b"\n" + line)
                 continue
             rows.append(found.group(*indices))
         return rows
@@ -514,18 +513,18 @@ def _header_stage(path: pathlib.Path, repeat: int) -> None:
         # A continuation belongs to the row above it: number the rows by how
         # many headers have been seen, then join each row's messages back.
         row = compute.subtract(compute.cumulative_sum(header.cast(pyarrow.int32())), 1)
-        message = compute.if_else(header, compute.struct_field(found, "message"), column)
+        body = compute.if_else(header, compute.struct_field(found, "body"), column)
         grouped = (
-            pyarrow.table({"row": row, "message": message})
+            pyarrow.table({"row": row, "body": body})
             .group_by("row", use_threads=False)
-            .aggregate([("message", "list")])
+            .aggregate([("body", "list")])
         )
         keep = compute.greater_equal(grouped.column("row"), 0)
         return (
             compute.filter(stamps, header),
             compute.filter(compute.struct_field(found, "threadname"), header),
-            compute.filter(compute.struct_field(found, "plugincode"), header),
-            compute.filter(compute.binary_join(grouped.column("message_list"), "\n"), keep),
+            compute.filter(compute.struct_field(found, "plugin"), header),
+            compute.filter(compute.binary_join(grouped.column("body_list"), "\n"), keep),
         )
 
     looped, kerneled = by_loop(), by_kernel()
@@ -553,7 +552,7 @@ def _protocol_columns(
     row = 0
     with TextFile.from_path(path) as log:
         for batch in log.into_arrow_batches(batch_row_size=DEFAULT_BATCH_ROW_SIZE):
-            for message in batch.column("message").to_pylist():
+            for message in batch.column("body").cast(pyarrow.string()).to_pylist():
                 bucket = collected[protocols[row]]
                 if len(bucket) < batch_row_size:
                     bucket.append(message)

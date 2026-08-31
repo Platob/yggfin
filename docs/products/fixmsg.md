@@ -11,12 +11,13 @@ line = (
     "8=FIX.4.4|35=8|49=VENUE|56=DESK|34=7|52=20260101-10:00:00.000|11=C1|37=O1|17=E1|"
     "55=BTC-USD|54=1|31=100.25|32=10|38=10|151=0|14=10|39=2|150=F|60=20260101-10:00:00.000|10=000"
 )
-staged = Message.from_text(line, message=line)
+staged = Message.from_text(line)
 row = FixMsg.from_message_batch([staged]).to_pylist()[0]
 
 row["protocol"] = Protocol.from_int(row["protocol"]).code
 for name in (
-    "protocol", "side", "lastpx", "ordstatus", "unix", "unixsource", "code", "codesource"
+    "protocol", "side", "lastpx", "priceinferred", "ordstatus", "unix",
+    "unixsource", "code", "codesource"
 ):
     print(f"{name:17} {row[name]!r}")
 print(f"{'instrument.symbol':17} {row['instrument']['symbol']!r}")
@@ -26,6 +27,7 @@ print(f"{'instrument.symbol':17} {row['instrument']['symbol']!r}")
 protocol          'FIX4.4'
 side              '1'
 lastpx            100.25
+priceinferred     ''
 ordstatus         '2'
 unix              1767261600000000000
 unixsource        'TransactTime'
@@ -50,8 +52,11 @@ instrument.symbol 'BTC-USD'
 time are never confused. The chain is in
 [market lifecycle](../market/index.md#when-it-happened).
 
-`codesource` names the promoted field that supplied `code`. Together with
-`creaunix`, that code produces the fixed-width lifecycle `xhash`.
+`codesource` names the promoted field that supplied `code`. The direct
+XXH3-128 digest of that UTF-8 code is the sixteen-byte lifecycle `xhash`.
+
+`priceinferred` names price slots derived from another FIX price field. An
+empty value means every stored price slot was explicit on the source message.
 
 Malformed typed values and isolated transcription failures remain as rows with
 a nullable `error`; see [best-effort rows](../fix/fixmsg.md#best-effort-rows).

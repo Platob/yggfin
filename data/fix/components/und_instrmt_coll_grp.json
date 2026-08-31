@@ -13,8 +13,14 @@
   "fix": {
    "component": "UndInstrmtCollGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CollateralAssignment\",\"CollateralRequest\",\"CollateralResponse\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CollateralAssignment",
+    "CollateralRequest",
+    "CollateralResponse"
+   ]
   },
   "fields": [
    {

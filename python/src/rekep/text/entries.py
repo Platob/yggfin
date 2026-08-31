@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from xml.etree import ElementTree
 
 import pyarrow
 import pyarrow.compute
@@ -56,6 +57,8 @@ _MARKED_BODY = rf"(?s)(?P<body>#{_BARE_KEY}{_WS}*=.*)$"
 _UNMARKED_BODY = rf"(?s)(?:^|[^A-Za-z0-9_.\-\]#])(?P<body>{_BARE_KEY}{_WS}*=.*)$"
 _TOKEN = rf"(?s)^{_WS}*(?P<key>{_KEY}){_WS}*=(?P<value>.*?){_WS}*$"
 _DEFAULT_SEPARATOR = "\x01"
+_XML_START = re.compile(rb"<(?:\?xml\b|[A-Za-z_:])", re.IGNORECASE)
+_XML_ERROR_LENGTH = 2_048
 
 
 #: What makes a row worth tokenising: two delimiter-separated assignments, or
@@ -112,6 +115,86 @@ def payload_arrow(messages):
         ],
         [carried_at, compute.filter(positions, compute.invert(carried))],
     )
+
+
+def xml_payload_arrow(bodies: Any, selected: Any = None) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """Parse selected XML bodies into ordered entries and row-local errors.
+
+    XML has no Arrow kernel. The selected row slice is therefore the bounded
+    unit: every document is released after its entries are built, and one bad
+    document returns a diagnostic without changing its neighbours.
+    """
+    if isinstance(bodies, pyarrow.ChunkedArray):
+        bodies = bodies.combine_chunks()
+    if isinstance(selected, pyarrow.ChunkedArray):
+        selected = selected.combine_chunks()
+    rows = len(bodies)
+    if not rows:
+        return pyarrow.array([], type=ENTRIES), pyarrow.array([], pyarrow.string())
+    wanted = [True] * rows if selected is None else selected.to_pylist()
+    parsed: list[list[dict[str, Any]]] = []
+    errors: list[str | None] = []
+    for body, keep in zip(bodies.to_pylist(), wanted, strict=True):
+        if not keep:
+            parsed.append([])
+            errors.append(None)
+            continue
+        try:
+            raw = body.encode("utf-8") if isinstance(body, str) else bytes(body or b"")
+            found = _XML_START.search(raw)
+            if found is None:
+                raise ValueError("no XML document start")
+            root = ElementTree.fromstring(raw[found.start() :].strip())
+            parsed.append([entry.into_dict() for entry in _xml_entries(root)])
+            errors.append(None)
+        except (ElementTree.ParseError, UnicodeError, TypeError, ValueError) as error:
+            parsed.append([])
+            detail = " ".join(str(error).split()) or "no detail"
+            errors.append(f"XML parse failed: {type(error).__name__}: {detail}"[:_XML_ERROR_LENGTH])
+    return pyarrow.array(parsed, type=ENTRIES), pyarrow.array(errors, pyarrow.string())
+
+
+def _xml_entries(root: ElementTree.Element) -> list[Entry]:
+    """One XML tree in source order, with indexed element paths as components."""
+    entries: list[Entry] = []
+
+    def visit(element: ElementTree.Element, parent: str | None, index: int) -> None:
+        name = _xml_name(element.tag)
+        component = f"{name}[{index}]" if parent is None else f"{parent}.{name}[{index}]"
+        for key, value in element.attrib.items():
+            entries.append(Entry(key=_xml_name(key), value=value, comp=component))
+
+        children = list(element)
+        text = (element.text or "").strip()
+        if text:
+            # A leaf element is the field its parent contains. Mixed content
+            # belongs to the element itself under a neutral terminal.
+            entries.append(
+                Entry(
+                    key=name if not children else "value",
+                    value=text,
+                    comp=parent if not children else component,
+                )
+            )
+
+        counts: dict[str, int] = {}
+        for child in children:
+            child_name = _xml_name(child.tag)
+            child_index = counts.get(child_name, 0)
+            counts[child_name] = child_index + 1
+            visit(child, component, child_index)
+            tail = (child.tail or "").strip()
+            if tail:
+                entries.append(Entry(key="value", value=tail, comp=component))
+
+    visit(root, None, 0)
+    return entries
+
+
+def _xml_name(name: Any) -> str:
+    """An ElementTree QName as the local spelling a FIX registry can resolve."""
+    text = str(name)
+    return text.rsplit("}", 1)[-1] if "}" in text else text
 
 
 def parse_arrow(messages):

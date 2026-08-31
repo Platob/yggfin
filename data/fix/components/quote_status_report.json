@@ -15,7 +15,9 @@
    "component": "QuoteStatusReport",
    "msgtype": "AI",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

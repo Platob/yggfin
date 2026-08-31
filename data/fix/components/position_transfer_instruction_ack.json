@@ -11,7 +11,9 @@
    "component": "PositionTransferInstructionAck",
    "msgtype": "DM",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

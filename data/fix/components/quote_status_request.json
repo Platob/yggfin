@@ -16,7 +16,9 @@
    "component": "QuoteStatusRequest",
    "msgtype": "a",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -10,8 +10,12 @@
   "fix": {
    "component": "NewsRefGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"News\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "News"
+   ]
   },
   "fields": [
    {

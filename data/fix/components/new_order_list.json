@@ -18,7 +18,9 @@
    "component": "NewOrderList",
    "msgtype": "E",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

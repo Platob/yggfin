@@ -214,6 +214,34 @@ endpoint, bucket, and path are parsed once by `Url`; explicit catalog
 properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
 same Arrow S3 filesystem as `s3://`.
 
+`ArrowPath` keeps that parsed URL and filesystem together:
+
+```python
+from rekep import ArrowPath
+
+capture = ArrowPath("data/capture/app.log").resolve(".")
+print(capture.name, capture.parent, capture.exists())
+with capture.open("rb") as source:
+    head = source.read(64)
+
+for entry in capture.parent.ls():
+    print(entry)
+
+optional = capture.parent / "optional.log"
+assert optional.read_bytes() is None
+assert not optional.delete()
+
+# Required inputs keep a missing-path error explicit.
+required = optional.read_bytes(strict=True)
+```
+
+Joining with `/`, globbing, byte reads and writes, and input/output streams all
+reuse the same filesystem. Listings and default byte reads/deletes treat a
+missing path as empty; `strict=True` is for required data. A write tries the
+target first and creates its parent only when that backend requires one. A
+bound `ArrowFileIO` holds this one path instead of parallel URL, filesystem,
+and opened-file state.
+
 Maintenance lists through the table's own FileIO rather than resolving the
 location again, because a location this package canonicalized has had its
 endpoint and credentials taken out of it -- resolved afresh, a sweep of a MinIO

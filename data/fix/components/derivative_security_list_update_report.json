@@ -12,7 +12,9 @@
    "component": "DerivativeSecurityListUpdateReport",
    "msgtype": "BR",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

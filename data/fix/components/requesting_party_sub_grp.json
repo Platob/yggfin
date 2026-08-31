@@ -10,8 +10,27 @@
   "fix": {
    "component": "RequestingPartySubGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyActionReport\",\"PartyActionRequest\",\"PartyDetailsDefinitionRequest\",\"PartyDetailsDefinitionRequestAck\",\"PartyDetailsListRequest\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsRequest\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsRequest\",\"PartyRiskLimitsUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyActionReport",
+    "PartyActionRequest",
+    "PartyDetailsDefinitionRequest",
+    "PartyDetailsDefinitionRequestAck",
+    "PartyDetailsListRequest",
+    "PartyDetailsListUpdateReport",
+    "PartyEntitlementsDefinitionRequest",
+    "PartyEntitlementsDefinitionRequestAck",
+    "PartyEntitlementsRequest",
+    "PartyEntitlementsUpdateReport",
+    "PartyRiskLimitCheckRequest",
+    "PartyRiskLimitCheckRequestAck",
+    "PartyRiskLimitsDefinitionRequest",
+    "PartyRiskLimitsDefinitionRequestAck",
+    "PartyRiskLimitsRequest",
+    "PartyRiskLimitsUpdateReport"
+   ]
   },
   "fields": [
    {

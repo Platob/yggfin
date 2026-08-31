@@ -13,8 +13,12 @@
   "fix": {
    "component": "OrdListStatGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ListStatus\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ListStatus"
+   ]
   },
   "fields": [
    {

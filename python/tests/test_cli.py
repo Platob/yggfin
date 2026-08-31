@@ -175,7 +175,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
     field = FixMsg.into_field()
-    assert len(field.names) == 110
+    assert len(field.names) == 123
     assert field.names[-1] == "instrument"
     assert field.field("instrument").names == [
         "symbolticker",
@@ -197,7 +197,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
         "securitydesc",
         "legs",
     ]
-    assert "FixMsg: 110 columns, builds" in printed
+    assert "FixMsg: 123 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unixpartition: int32  [partition identity]" in printed
     assert (
@@ -708,7 +708,9 @@ def test_registry_components_and_dump_are_scriptable(
     capsys.readouterr()
 
     assert run("fix", "registry", "components", "--store", str(store), "part") == 0
-    assert json.loads(capsys.readouterr().out) == [{"name": "FakeParties", "versions": ["9.1"]}]
+    assert json.loads(capsys.readouterr().out) == [
+        {"name": "FakeParties", "msgtype": "", "versions": ["9.1"]}
+    ]
     assert run("fix", "registry", "component", "--store", str(store), "FakeParties") == 0
     assert json.loads(capsys.readouterr().out)["declaration"]["fields"][0]["name"] == "FakeRole"
 
@@ -716,6 +718,71 @@ def test_registry_components_and_dump_are_scriptable(
     assert run("fix", "registry", "dump", "--store", str(store), "--output", str(archive)) == 0
     assert archive.exists()
     assert FixRegistry(cache_dir=archive).resolve("FakeRole") is not None
+
+
+def test_a_message_uses_component_crud(
+    store: Path, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    declaration = tmp_path / "fake_message.json"
+    document = {
+        "name": "FakeMessage",
+        "versions": ["9.1"],
+        "declaration": {
+            "name": "FakeMessage",
+            "type": "struct",
+            "fix": {"component": "FakeMessage", "msgtype": "Z"},
+            "fields": [
+                {
+                    "name": "FakeRole",
+                    "type": "string",
+                    "nullable": True,
+                    "fix": {"tag": "90001"},
+                }
+            ],
+        },
+    }
+    declaration.write_text(json.dumps(document))
+
+    assert (
+        run(
+            "fix",
+            "registry",
+            "add-component",
+            "--store",
+            str(store),
+            "--declaration",
+            str(declaration),
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert run("fix", "registry", "components", "--store", str(store), "message") == 0
+    assert json.loads(capsys.readouterr().out) == [
+        {"name": "FakeMessage", "msgtype": "Z", "versions": ["9.1"]}
+    ]
+
+    document["declaration"]["fix"]["msgtype"] = "Y"
+    declaration.write_text(json.dumps(document))
+    assert (
+        run(
+            "fix",
+            "registry",
+            "update-component",
+            "--store",
+            str(store),
+            "--declaration",
+            str(declaration),
+        )
+        == 0
+    )
+    assert reopened(store).merged_component("FakeMessage").msg_type == "Y"
+
+    assert (
+        run("fix", "registry", "remove-component", "--store", str(store), "--name", "FakeMessage")
+        == 0
+    )
+    with pytest.raises(KeyError, match="FakeMessage"):
+        reopened(store).merged_component("FakeMessage")
 
 
 def test_scrape_forwards_source_configuration(

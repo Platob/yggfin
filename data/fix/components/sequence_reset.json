@@ -16,7 +16,9 @@
    "component": "SequenceReset",
    "msgtype": "4",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

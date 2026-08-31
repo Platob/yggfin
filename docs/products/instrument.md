@@ -2,12 +2,11 @@
 
 One current reference-data event for a tradable instrument. `Instrument` is
 the nested FIX component of reference facts; `InstrumentUpdate` adds the event
-envelope that `market.instruments` stores. Its fixed-width `xhash` is the table
-key: creation microseconds over the framed XXH3-64 digest of `code`.
+envelope that `market.instruments` stores. Its `fixed_size_binary[16]` `xhash`
+is the table key: the direct XXH3-128 digest of UTF-8 `code`.
 
 ```python
 from rekep import FixMsg, Instrument, InstrumentUpdate
-from rekep.txhash import micros_of
 
 line = (
     "8=FIX.4.4|35=d|49=VENUE|56=DESK|34=2|52=20260101-09:00:00.000|"
@@ -15,7 +14,7 @@ line = (
 )
 update = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)]))
 instrument = Instrument.from_update(update)
-print(update.codesource, micros_of(update.xhash) == update.creaunix // 1_000)
+print(update.codesource, update.xhash == instrument.xhash)
 print(
     instrument.symbolticker,
     instrument.symbol,
@@ -43,9 +42,9 @@ identifier without its source is no key at all.
 classifies the instrument as currency and supplies `NOK` as its quote currency
 when those facts are otherwise absent.
 
-`Instrument.xhash`, each `Leg.xhash`, and flat `instrumentxhash` joins remain
-signed `int64` reference identities derived from `symbolticker`. They carry no
-event clock and are distinct from the sixteen-byte `InstrumentUpdate.xhash`.
+`InstrumentUpdate.xhash`, `Instrument.xhash`, each `Leg.xhash`, and flat
+`instrumentxhash` joins are the same sixteen-byte XXH3-128 identity derived
+directly from UTF-8 `symbolticker`. They carry no event clock.
 
 ## Lineage
 

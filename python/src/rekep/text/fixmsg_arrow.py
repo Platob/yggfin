@@ -12,7 +12,7 @@ from rekep.entries import ENTRIES
 from rekep.enums import Protocol
 from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import COLUMNS, TYPES
-from rekep.fix.fields import cast_arrow_fix
+from rekep.fix.fields import cast_arrow_field
 from rekep.fix.transcribe import BEGIN_STRING_SOURCE, _raw_spelling_changed, _version_key
 
 
@@ -112,9 +112,9 @@ def into_flat_fixmsg_batch(
     for field in schema:
         output.setdefault(field.name, pyarrow.nulls(rows, field.type))
 
-    from rekep.text.fixmsg import _mic_arrow
+    from rekep.text.fixmsg import _lastmkt_arrow
 
-    output["mic"] = _mic_arrow(output, rows)
+    output["lastmkt"] = _lastmkt_arrow(output, rows)
     return shape.identified(output, schema, rows, codec.registry)
 
 
@@ -347,7 +347,7 @@ def _lifted_columns(
         column_rows = sorted_parents.slice(at, run)
         identities = sorted_identities.slice(at, run)
         at += run
-        column = _cast(raw, fields[tag].dtype, TYPES[tag])
+        column = cast_arrow_field(raw, fields[tag], TYPES[tag])
         changed = _raw_spelling_changed(raw, column)
         if compute.any(changed, min_count=0).as_py():
             retained_identities.append(compute.filter(identities, changed))
@@ -375,20 +375,6 @@ def _lifted_columns(
     )
     residual = build_list(ENTRIES, dense_counts(kept_parents, rows), kept)
     return columns, residual
-
-
-def _cast(
-    column: pyarrow.Array,
-    source_type: pyarrow.DataType,
-    target_type: pyarrow.DataType,
-) -> pyarrow.Array:
-    """Read one lifted column at the physical contract width."""
-    read = cast_arrow_fix(column, source_type)
-    if read.type.equals(target_type):
-        return read
-    if pyarrow.types.is_string(read.type) or pyarrow.types.is_large_string(read.type):
-        return cast_arrow_fix(read, target_type)
-    return read.cast(target_type, safe=False)
 
 
 def _checksum_is_last(entries: pyarrow.Array, parents: pyarrow.Array, tags: pyarrow.Array) -> bool:

@@ -13,8 +13,12 @@
   "fix": {
    "component": "BidCompRspGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"BidResponse\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "BidResponse"
+   ]
   },
   "fields": [
    {

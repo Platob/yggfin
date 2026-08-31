@@ -16,7 +16,9 @@
    "component": "MarketDataRequestReject",
    "msgtype": "Y",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

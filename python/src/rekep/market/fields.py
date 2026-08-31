@@ -152,18 +152,13 @@ def _row_value(name: str, value: Any) -> Any:
 
 
 def fix_tag(name: str, **declared: Any) -> Field:
-    """A model annotation backed by the packaged FIX registry.
-
-    The member it annotates carries the folded name; the dictionary's spelling
-    of it is kept as the display.
-    """
+    """A model annotation backed by the packaged FIX registry."""
     from rekep.fix.columns import column_metadata, physical_type
 
     registry = FixRegistry.from_builtin().scalar(name, dtype=None)
     registry.metadata = column_metadata(registry.metadata)
     built = registry.merge(Field(**declared))
     built.dtype = physical_type(built)
-    built.fix.display = registry.fix.canonical
     return built
 
 

@@ -13,8 +13,13 @@
   "fix": {
    "component": "LinesOfTextGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"Email\",\"News\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "Email",
+    "News"
+   ]
   },
   "fields": [
    {

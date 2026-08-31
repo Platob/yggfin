@@ -10,8 +10,13 @@
   "fix": {
    "component": "PostTradePayment",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PayManagementReport\",\"PayManagementRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PayManagementReport",
+    "PayManagementRequest"
+   ]
   },
   "fields": [
    {

@@ -7,13 +7,13 @@ import datetime
 import functools
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
-from typing import Annotated, Any
+from typing import Annotated, Any, ClassVar
 
 import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, Direction, EventType, Protocol
+from rekep.enums import MIC, Currency, Direction, EventType, Protocol, Side
 from rekep.fields import Field, column_name, column_names, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -47,7 +47,7 @@ from rekep.fix.components import (
     # that column's own default under `get_type_hints`.
     SecurityAltID as SecurityAltIDEntry,
 )
-from rekep.fix.fields import cast_arrow_fix, scalar_fix_value
+from rekep.fix.fields import cast_arrow_field, cast_arrow_fix, scalar_fix_value
 from rekep.fix.message import (
     group_pairs,
     indexed_group_pairs,
@@ -60,16 +60,17 @@ from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import HASH, NIL, hash_bytes_arrow, hash_int_of
 from rekep.market.instrument import Instrument
-from rekep.text.message import SESSION_FIELDS, Message, _event_types
+from rekep.text.entries import xml_payload_arrow
+from rekep.text.message import SESSION_FIELDS, Message, _body_text_arrow, _event_types
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _PROTOCOL_CODE = Protocol.into_arrow_type().index_type
 
-#: What `vhash` cannot be taken over. The clocks, because a version is what a
-#: row says and not when it was said. The identities, because they are what the
-#: digest and the folding produce from it. And `message`, because the parsed
-#: columns beside it hold the same content in a spelling a reformat cannot move
-#: -- which is the whole reason a digest exists rather than a hash of the line.
+#: What `vhash` cannot be taken over. The clocks and recorder provenance,
+#: because a version is what a row says and not when or through which plugin it
+#: was said. The identities are what the digest and the folding produce from
+#: that value. The raw `body` is consumed before this shape, so the parsed
+#: columns are the only persisted payload reading.
 _UNDIGESTED: frozenset[str] = frozenset(
     {
         "unix",
@@ -84,12 +85,18 @@ _UNDIGESTED: frozenset[str] = frozenset(
         "xhash",
         "prevhash",
         "parenthash",
-        "linkxhashes",
+        "linkhashes",
         "version",
-        "message",
         "error",
+        "plugin",
+        "priceinferred",
     }
 )
+
+#: Normalized price slots whose source may be another FIX field. Persisting
+#: which ones were derived is what lets a stored row render back without
+#: inventing a `LastPx`, `BidPx`, or `OfferPx` the source never sent.
+_INFERRED_PRICE_COLUMNS = frozenset(("bidpx", "lastpx", "offerpx"))
 
 # Ordinary data failures are isolated to one row. Resource exhaustion and I/O
 # failures still stop the caller: retrying those against smaller slices would
@@ -292,8 +299,8 @@ class FixMsg(Message):
         """Contract metadata published with parsed log schemas."""
         return _CONTRACT_METADATA
 
-    xhash: Annotated[int, Field(dtype=HASH)] = NIL
-    """Creation-anchored lifecycle identity; zero when no code names one."""
+    xhash: Annotated[int, Field(dtype=HASH), Field.column("XHash")] = NIL
+    """Direct XXH3-128 lifecycle identity; all-zero when no code names one."""
 
     code: str = ""
     """Best lifecycle identifier present on this line."""
@@ -325,6 +332,9 @@ class FixMsg(Message):
         # `Event.__post_init__` and not Message's, so nothing else reads them
         # off a spelling. A column takes the code, never the word.
         self.direction = Direction.from_str(self.direction)
+        if self.settlcurrency is not None:
+            currency = Currency.from_str(self.settlcurrency)
+            self.settlcurrency = None if currency is Currency.UNKNOWN else currency
         unclassified = self.protocol is Protocol.UNKNOWN
         self.protocol = Protocol.from_str(self.protocol)
         if self.entries is not None:
@@ -350,12 +360,16 @@ class FixMsg(Message):
                     self.protocol = Protocol.with_version(protocol, stated)
         if unclassified and self.protocol is Protocol.UNKNOWN:
             self.protocol = Protocol.OTHER
+        self.priceinferred = ",".join(
+            sorted(_INFERRED_PRICE_COLUMNS.intersection(self.priceinferred.split(",")))
+        )
 
     def identify(self) -> FixMsg:
         """Give the parsed event the identities its registry projection earns."""
         self._materialize_life_code()
         if self.hash and self.vhash:
             self.xhash = self.xhash or self.life_hash()
+            self._drop_self_link()
             return self
         codec = type(self).into_codec(self.registry)
         staged_values = {
@@ -367,7 +381,7 @@ class FixMsg(Message):
         for name, _ in SESSION_FIELDS:
             if (value := staged_values.get(name)) is not None:
                 staged_values[name] = _fix_text(value)
-        staged_values["message"] = self.message or ""
+        staged_values["body"] = b""
         if self.entries is not None or self.unmap is not None:
             retained_entries: Sequence[Any] = self._residual_entries()
             version = self.resolved_version(codec.registry)
@@ -384,9 +398,7 @@ class FixMsg(Message):
             # A scalar rendered message has no raw payload left to classify.
             # Its unresolved names still need the rendered-field rule; the
             # final row keeps the protocol already established on `self`.
-            if not self.message and any(
-                not Entry.from_stored(entry).tag for entry in retained_entries
-            ):
+            if any(not Entry.from_stored(entry).tag for entry in retained_entries):
                 staged_values["protocol"] = Protocol.UL
         else:
             staged_values["entries"] = None
@@ -426,6 +438,7 @@ class FixMsg(Message):
         self.unixpartition = value("unixpartition")
         self.creaunix = value("creaunix")
         self.recunix = value("recunix")
+        self.expunix = value("expunix")
         self.unixsource = value("unixsource")
         self.code = value("code")
         self.codesource = value("codesource")
@@ -436,17 +449,14 @@ class FixMsg(Message):
         self.vhash = value("vhash")
         self.hash = hash_int_of(value("hash")) or NIL
         self.xhash = hash_int_of(value("xhash")) or NIL
+        self._drop_self_link()
         self.__raw_clocks = False
         return self
 
-    # Nullable, and null on `fix.market`: typed columns plus the two residual
-    # lists carry every field the line held, so keeping the raw string beside them would
-    # store the same content twice. An all-null column run-length and dictionary encodes
-    # to nothing on disk, which is what makes one stored shape across the
-    # three tables affordable -- the same reasoning `_zeros` applies to the
-    # envelope members a parsed line leaves unset.
-    message: str | None = None
-    """Payload text; null where parsed columns retain every field."""
+    # Consumed from Message at the conversion boundary. ClassVar overrides the
+    # inherited dataclass field, so no persisted FixMsg schema can retain a raw
+    # payload beside its parsed columns.
+    body: ClassVar[bytes] = b""
 
     protocol: Protocol = Protocol.UNKNOWN
     """Protocol grammar and resolved version; OTHER carries neither."""
@@ -637,6 +647,27 @@ class FixMsg(Message):
     execid: Annotated[str | None, DECLARED["ExecID"]] = None
     """`ExecID <17>`: the venue's identifier for this execution report."""
 
+    globalorderid: Annotated[str | None, DECLARED["GlobalOrderId"]] = None
+    """Order identifier shared across source systems."""
+
+    rootorderid: Annotated[str | None, DECLARED["RootOrderId"]] = None
+    """Identifier of the root order in the lifecycle."""
+
+    rootoriginatororderid: Annotated[str | None, DECLARED["RootOriginatorOrderId"]] = None
+    """Originator identifier of the root order."""
+
+    orderflags: Annotated[str | None, DECLARED["OrderFlags"]] = None
+    """Source flags attached to the order."""
+
+    orderoriginatorid: Annotated[str | None, DECLARED["OrderOriginatorId"]] = None
+    """Identifier of the order's originating participant."""
+
+    conversationid: Annotated[str | None, DECLARED["ConversationId"]] = None
+    """Identifier shared by messages in one conversation."""
+
+    bloombergcode: Annotated[str | None, DECLARED["BloombergCode"]] = None
+    """Bloomberg identifier supplied by the source bridge."""
+
     # On what terms.
 
     side: Annotated[str | None, DECLARED["Side"]] = None
@@ -679,6 +710,18 @@ class FixMsg(Message):
     lastqty: Annotated[float | None, DECLARED["LastQty"]] = None
     """`LastQty <32>`: the size of this fill."""
 
+    lastshares: Annotated[float | None, DECLARED["LastShares"]] = None
+    """Vendor share quantity, distinct from `LastQty <32>`."""
+
+    marketmarker: Annotated[bool | None, DECLARED["MarketMarker"]] = None
+    """Whether the source marks the row as market activity."""
+
+    env: Annotated[str | None, DECLARED["Env"]] = None
+    """Source environment name."""
+
+    settlcurrency: Annotated[Currency | None, DECLARED["SettlCurrency"]] = None
+    """Settlement denomination as a packed ISO 4217 code."""
+
     # When it happened, and whatever was said about it.
 
     transacttime: Annotated[datetime.datetime | None, DECLARED["TransactTime"]] = None
@@ -686,6 +729,12 @@ class FixMsg(Message):
 
     origtime: Annotated[datetime.datetime | None, DECLARED["OrigTime"]] = None
     """`OrigTime <42>`: when the upstream message originated, in UTC."""
+
+    creationtime: Annotated[datetime.datetime | None, DECLARED["CreationTime"]] = None
+    """Upstream lifecycle creation time in UTC."""
+
+    expiretime: Annotated[datetime.datetime | None, DECLARED["ExpireTime"]] = None
+    """`ExpireTime <126>`: the order deadline in UTC."""
 
     text: Annotated[str | None, DECLARED["Text"]] = None
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
@@ -719,6 +768,9 @@ class FixMsg(Message):
 
     offerpx: Annotated[float | None, DECLARED["OfferPx"]] = None
     """`OfferPx <133>`: quoted offer price."""
+
+    priceinferred: Annotated[str, Field.column("PriceInferred")] = ""
+    """Normalized price columns derived from another FIX price field."""
 
     bidsize: Annotated[float | None, DECLARED["BidSize"]] = None
     """`BidSize <134>`: quoted bid quantity."""
@@ -822,6 +874,7 @@ class FixMsg(Message):
         values = {
             member.name: getattr(source, member.name) for member in dataclasses.fields(Message)
         }
+        body = values.pop("body")
         if not isinstance(source, cls):
             # Raw structured rows have no stored classifier result. Their own
             # version statement is the explicit FIX claim; a reconstructed
@@ -829,9 +882,8 @@ class FixMsg(Message):
             values["protocol"] = _structured_protocol(source, registry)
         values.update(
             {
-                "message": source.message or None,
                 "entries": list(source.entries or ()),
-                "linkxhashes": list(source.linkxhashes),
+                "linkhashes": list(source.linkhashes),
                 "altids": dict(source.altids),
                 "parenthash": None if source.parenthash is None else list(source.parenthash),
                 "hash": NIL,
@@ -839,6 +891,11 @@ class FixMsg(Message):
                 "xhash": NIL,
             }
         )
+        if Protocol.from_str(source.protocol).family is Protocol.XML and body:
+            _, errors = xml_payload_arrow(
+                pyarrow.array([body], pyarrow.binary()), pyarrow.array([True])
+            )
+            values["error"] = errors[0].as_py()
         values.update(_session_values(source))
         values.update(declared)
         msg_type = values.get("msgtype")
@@ -853,9 +910,70 @@ class FixMsg(Message):
                 .get(msg_type, EventType.UNKNOWN)
             )
         built = cls(**values).link_registry(registry)
+        built._enrich_prices()
         built.__raw_clocks = not isinstance(source, cls)
         built.__creaunix_declared = "creaunix" in declared
         return built
+
+    def _enrich_prices(self) -> None:
+        """Fill the uniform and side price slots from compatible FIX facts."""
+
+        def price(name: str, promoted: Any = None) -> float | None:
+            value = promoted
+            if value is None:
+                reading = self.get(name)
+                value = reading.value if reading else None
+            if value is None or value == "":
+                return None
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+
+        side_reading = self.get("Side")
+        side = Side.from_fix(
+            self.side if self.side is not None else side_reading.raw if side_reading else None,
+            Side.UNKNOWN,
+        )
+        if side is Side.UNKNOWN:
+            reading = self.get("MDEntryType")
+            side = {"0": Side.BID, "1": Side.ASK}.get(str(reading.raw), side) if reading else side
+        inferred = set(filter(None, self.priceinferred.split(",")))
+        stated = price("Price", self.price)
+        entry = price("MDEntryPx")
+        self.bidpx = price("BidPx", self.bidpx)
+        self.offerpx = price("OfferPx", self.offerpx)
+        if self.bidpx is None and side.sign > 0:
+            self.bidpx = stated if stated is not None else entry
+            if self.bidpx is not None:
+                inferred.add("bidpx")
+        if self.offerpx is None and side.sign < 0:
+            self.offerpx = stated if stated is not None else entry
+            if self.offerpx is not None:
+                inferred.add("offerpx")
+        if self.lastpx is None:
+            stated_last = price("LastPx")
+            self.lastpx = next(
+                (
+                    value
+                    for value in (
+                        stated_last,
+                        stated,
+                        entry,
+                        self.bidpx if side.sign > 0 else None,
+                        self.offerpx if side.sign < 0 else None,
+                    )
+                    if value is not None
+                ),
+                None,
+            )
+            if self.lastpx is not None and stated_last is None:
+                inferred.add("lastpx")
+        self.priceinferred = ",".join(sorted(inferred))
+
+    def _writes_price_column(self, name: str) -> bool:
+        """Whether a normalized price was stated rather than inferred."""
+        return name not in self.priceinferred.split(",")
 
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
@@ -924,12 +1042,14 @@ class FixMsg(Message):
         promoted_entries = [
             Entry.of(tag=int(tag), key=str(tag), value=value)
             for name, tag in type(self).into_tagged_columns()
-            if (value := _promoted_value(self, name)) is not None
+            if self._writes_price_column(name)
+            and (value := _promoted_value(self, name)) is not None
         ]
         promoted_entries.extend(
             Entry.of(key=spelled, value=value)
             for name, spelled in type(self).into_named_columns()
-            if (value := _promoted_value(self, name)) is not None
+            if self._writes_price_column(name)
+            and (value := _promoted_value(self, name)) is not None
         )
         promoted = [(entry.spelling, entry.value) for entry in promoted_entries]
         promoted_resolved = access.tagged_pairs(promoted)
@@ -1124,11 +1244,15 @@ class FixMsg(Message):
         stored_tags = {tag for tag, _ in stored}
         found: dict[str, Any] = {}
         for name, tag in type(self).into_tagged_columns():
+            if not self._writes_price_column(name):
+                continue
             value = _promoted_value(self, name)
             if value is None or tag in stored_tags:
                 continue
             found[tag] = render_fix_value(resolver.canonical_value(tag, value))
         for name, spelling in type(self).into_named_columns():
+            if not self._writes_price_column(name):
+                continue
             value = _promoted_value(self, name)
             if value is not None:
                 found[spelling] = render_fix_value(resolver.canonical_value(spelling, value))
@@ -1163,7 +1287,9 @@ class FixMsg(Message):
         return tuple(
             (member.name, spelled)
             for member in (*cls.into_field().fields, *Instrument.into_field().fields)
-            if not member.fix.get("tag") and (spelled := member.fix.get("name"))
+            if not member.fix.get("tag")
+            and member.fix.get("type")
+            and (spelled := member.fix.get("name"))
         )
 
     # -- the FIX stage --------------------------------------------------------
@@ -1215,14 +1341,14 @@ class FixMsg(Message):
         # columns against constants it builds itself -- which Arrow refuses
         # across the two widths. The declaration is the one reading, so the
         # batch is brought onto it here rather than at each kernel. Narrowed
-        # and not merged: this stage is read with `message` projected away, and
+        # and not merged: this stage may be read with `body` projected away, and
         # filling a column the reader did not select would invent the text it
         # deliberately left behind.
         batch = Message.into_field().narrowed(batch.schema).cast_arrow_batch(batch)
-        if "message" not in batch.schema.names and "protocol" not in batch.schema.names:
+        if "body" not in batch.schema.names and "protocol" not in batch.schema.names:
             raise ValueError(
                 "a projected Message batch needs protocol; reparse the "
-                "messages before dropping message"
+                "messages before dropping body"
             )
         return cls._best_effort_message_batch(batch, codec)
 
@@ -1260,8 +1386,9 @@ class FixMsg(Message):
         rows = batch.num_rows
         columns = {name: batch.column(name) for name in batch.schema.names}
         columns.update(_session_batch_columns(columns, codec.null_values))
-        messages = columns.get("message")
-        if messages is not None:
+        bodies = columns.get("body")
+        if bodies is not None:
+            messages = _body_text_arrow(bodies)
             # Protocol and direction are both read off the raw line, so both are
             # answered here and by the same rule: a row that still carries its
             # text is classified again under *this* codec's rules -- the ones it
@@ -1272,7 +1399,7 @@ class FixMsg(Message):
             carries_text = pyarrow.compute.fill_null(
                 pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
             )
-            protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugincode"))
+            protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugin"))
             direction = codec.rules.into_arrow_direction_array(messages, protocols)
             stored_protocols = columns.get("protocol")
             if stored_protocols is not None:
@@ -1350,6 +1477,12 @@ class FixMsg(Message):
         """Attach deterministic diagnostics for typed values that read as null."""
         rows = parsed.num_rows
         errors = parsed.column("error")
+        body_at = source.schema.get_field_index("body")
+        if body_at >= 0:
+            protocols = Protocol.into_family_arrow(parsed.column("protocol"))
+            selected = pyarrow.compute.equal(protocols, int(Protocol.XML))
+            _, xml_errors = xml_payload_arrow(source.column(body_at), selected)
+            errors = _merge_error_columns(errors, xml_errors)
         declared = cls.into_field()
         for name, dtype in _session_types().items():
             if name not in source.schema.names:
@@ -1384,17 +1517,24 @@ class FixMsg(Message):
                     for field in row.into_field().fields
                     if field.fix.tag
                 }
+                tagged_fields = {**fields, **group_fields, **component_fields}
                 part = _invalid_entry_errors(
                     taken,
-                    {**fields, **group_fields, **component_fields},
+                    tagged_fields,
                     len(where),
                     codec.null_values,
                 )
+                # Named package fields are resolved to their numeric tag before
+                # this boundary. The tag pass therefore owns both spellings
+                # whenever the current version declares that tag.
+                named_fields = {
+                    name: field
+                    for name, field in codec.named_fields().items()
+                    if not field.fix.tag or int(field.fix.tag) not in tagged_fields
+                }
                 part = _merge_error_columns(
                     part,
-                    _invalid_named_entry_errors(
-                        taken, codec.named_fields(), len(where), codec.null_values
-                    ),
+                    _invalid_named_entry_errors(taken, named_fields, len(where), codec.null_values),
                 )
             parts.append(part)
             positions.append(where)
@@ -1418,11 +1558,17 @@ class FixMsg(Message):
         )
         anchored = txhash.couple128_arrow(cls._clock_micros(parsed.column("unix")), vhash)
         hashes = pyarrow.compute.if_else(degraded, anchored, parsed.column("hash"))
-        raw_xhash = cls.xhash_arrow(parsed.column("creaunix"), parsed.column("code"))
+        raw_xhash = cls.xhash_arrow(parsed.column("code"))
         xhash = pyarrow.compute.if_else(degraded, raw_xhash, parsed.column("xhash"))
         for name, column in (("vhash", vhash), ("hash", hashes), ("xhash", xhash)):
             at = parsed.schema.get_field_index(name)
             parsed = parsed.set_column(at, parsed.schema.field(at), column)
+        at = parsed.schema.get_field_index("linkhashes")
+        parsed = parsed.set_column(
+            at,
+            parsed.schema.field(at),
+            cls._without_self_links_arrow(parsed.column(at), parsed.column("hash")),
+        )
         return parsed
 
     @classmethod
@@ -1434,6 +1580,8 @@ class FixMsg(Message):
         defaults = cls.into_arrow_batch((cls(),))
         columns = {name: defaults.column(name) for name in defaults.schema.names}
         for field in source.schema:
+            if field.name not in schema.names:
+                continue
             target = schema.field(field.name)
             column = source.column(field.name)
             columns[field.name] = (
@@ -1448,10 +1596,16 @@ class FixMsg(Message):
         # raw columns that remain rather than to an incomplete parsed shape.
         vhash = _raw_message_vhash(source, 1)
         anchored = txhash.couple128_arrow(cls._clock_micros(built.column("unix")), vhash)
-        xhash = cls.xhash_arrow(built.column("creaunix"), built.column("code"))
+        xhash = cls.xhash_arrow(built.column("code"))
         for name, column in (("vhash", vhash), ("hash", anchored), ("xhash", xhash)):
             at = built.schema.get_field_index(name)
             built = built.set_column(at, built.schema.field(at), column)
+        at = built.schema.get_field_index("linkhashes")
+        built = built.set_column(
+            at,
+            built.schema.field(at),
+            cls._without_self_links_arrow(built.column(at), built.column("hash")),
+        )
         return built
 
     @classmethod
@@ -1480,10 +1634,9 @@ class FixMsg(Message):
                     if len(where) == rows
                     else pyarrow.compute.take(columns["entries"], where)
                 )
-                pairs = codec.drop_null_values(
-                    codec.into_payload_pairs(
-                        codec.into_pairs_from_entries(entries, protocol.as_py())
-                    )
+                pairs = codec.complete_pairs(
+                    codec.into_pairs_from_entries(entries, protocol.as_py()),
+                    protocol.as_py(),
                 )
                 parts.append(codec.into_message_entries(pairs))
             positions.append(where)
@@ -1510,7 +1663,7 @@ class FixMsg(Message):
         for field in schema:
             columns.setdefault(field.name, pyarrow.nulls(rows, field.type))
         columns.update(cls._resolved_batch_columns(columns, codec, rows))
-        columns["mic"] = _mic_arrow(columns, rows)
+        columns["lastmkt"] = _lastmkt_arrow(columns, rows)
         return cls.identified(columns, schema, rows, codec.registry)
 
     @classmethod
@@ -1530,7 +1683,13 @@ class FixMsg(Message):
                 f"raw message columns collide with FixMsg fields {collisions}; "
                 "rename the caller-declared columns"
             )
-        extra = [field for field in source if column_name(field.name) not in own]
+        # `body` is a Message input, not a caller extension. Every other
+        # source-only field remains an explicit passthrough column.
+        extra = [
+            field
+            for field in source
+            if column_name(field.name) not in own and column_name(field.name) not in raw
+        ]
         return pyarrow.schema([*schema, *extra], metadata=schema.metadata)
 
     @classmethod
@@ -1834,10 +1993,12 @@ class FixMsg(Message):
         from rekep.market.transacted import (
             resolve_arrow,
             resolve_created_arrow,
+            resolve_expiry_arrow,
             resolve_recorded_arrow,
         )
 
         compute = pyarrow.compute
+        columns = cls.enriched_price_columns(columns, rows, registry)
         msgtypes = columns.get("msgtype")
         eventtypes = columns.get("eventtype")
         if msgtypes is not None and eventtypes is not None:
@@ -1868,11 +2029,19 @@ class FixMsg(Message):
             rows,
             stated=columns.get(_STATED_CLOCKS["creaunix"]),
         )
+        columns["expunix"] = resolve_expiry_arrow(
+            columns,
+            rows,
+            stated=columns.get("expunix"),
+        )
         columns["vhash"] = cls.version_vhash_arrow(columns, rows)
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
-        columns["xhash"] = cls.xhash_arrow(columns["creaunix"], columns["code"])
+        columns["xhash"] = cls.xhash_arrow(columns["code"])
+        columns["linkhashes"] = cls._without_self_links_arrow(
+            columns["linkhashes"], columns["hash"]
+        )
         # `cast_arrow_fix` and not a plain cast, because the session columns
         # arrive as the text the wire carried: `20260814-09:30:00.123` is an
         # instant and `Y` is a boolean, and Arrow's own cast raises on both.
@@ -1882,14 +2051,112 @@ class FixMsg(Message):
         )
 
     @classmethod
+    def enriched_price_columns(
+        cls,
+        columns: Mapping[str, Any],
+        rows: int,
+        registry: FixRegistry | None = None,
+    ) -> dict[str, Any]:
+        """Fill uniform and side-specific prices without replacing source facts."""
+        compute = pyarrow.compute
+        found = dict(columns)
+        floats = pyarrow.float64()
+
+        def price(name: str) -> pyarrow.Array:
+            value = found.get(name)
+            return pyarrow.nulls(rows, floats) if value is None else cast_arrow_fix(value, floats)
+
+        mdentrypx = pyarrow.nulls(rows, floats)
+        mdentrytype = pyarrow.nulls(rows, pyarrow.string())
+        entries = found.get("entries")
+        selected = registry or cls.into_registry()
+        declared = tuple(
+            field
+            for name in ("MDEntryPx", "MDEntryType")
+            if (field := selected.field(name)) is not None and field.fix.tag is not None
+        )
+        if entries is not None and declared:
+            residual = FieldAccess.first_arrow_fields(
+                entries,
+                tuple((int(field.fix.tag), field.fix.canonical) for field in declared),
+                rows,
+            )
+            if (value := residual.get("MDEntryPx")) is not None:
+                mdentrypx = cast_arrow_fix(value, floats)
+            if (value := residual.get("MDEntryType")) is not None:
+                mdentrytype = cast_arrow_fix(value, pyarrow.string())
+
+        side = found.get("side")
+        packed_side = (
+            pyarrow.nulls(rows, Side.into_arrow_type().index_type)
+            if side is None
+            else Side.arrow_from_strings(side)
+        )
+        buying = compute.or_(
+            compute.fill_null(compute.equal(packed_side, int(Side.BUY)), False),
+            compute.fill_null(compute.equal(mdentrytype, "0"), False),
+        )
+        selling = compute.or_(
+            compute.fill_null(compute.equal(packed_side, int(Side.SELL)), False),
+            compute.fill_null(compute.equal(mdentrytype, "1"), False),
+        )
+        exact_price = price("price")
+        quote_source = compute.coalesce(exact_price, mdentrypx)
+        null_price = pyarrow.nulls(rows, floats)
+        explicit_bidpx = price("bidpx")
+        explicit_offerpx = price("offerpx")
+        explicit_lastpx = price("lastpx")
+        bidpx = compute.coalesce(explicit_bidpx, compute.if_else(buying, quote_source, null_price))
+        offerpx = compute.coalesce(
+            explicit_offerpx, compute.if_else(selling, quote_source, null_price)
+        )
+        # Bid and offer are only interchangeable with the event price when the
+        # side states which one the row represents. An explicit source value
+        # always leads every inferred value.
+        found["bidpx"] = bidpx
+        found["offerpx"] = offerpx
+        lastpx = compute.coalesce(
+            explicit_lastpx,
+            exact_price,
+            mdentrypx,
+            compute.if_else(buying, bidpx, null_price),
+            compute.if_else(selling, offerpx, null_price),
+        )
+        found["lastpx"] = lastpx
+
+        # Equal explicit values cannot be distinguished from derived ones after
+        # the raw entries have been lifted. Persist that distinction beside the
+        # normalized columns so a stored row never invents wire fields later.
+        inferred = pyarrow.repeat(pyarrow.scalar("", pyarrow.string()), rows)
+        for name, stated, enriched in (
+            ("bidpx", explicit_bidpx, bidpx),
+            ("lastpx", explicit_lastpx, lastpx),
+            ("offerpx", explicit_offerpx, offerpx),
+        ):
+            selected_rows = compute.and_(compute.is_null(stated), compute.is_valid(enriched))
+            appended = compute.if_else(
+                compute.equal(inferred, ""),
+                pyarrow.scalar(name, pyarrow.string()),
+                compute.binary_join_element_wise(inferred, name, ","),
+            )
+            inferred = compute.if_else(selected_rows, appended, inferred)
+        stored_inference = found.get("priceinferred")
+        found["priceinferred"] = (
+            inferred
+            if stored_inference is None
+            else compute.coalesce(cast_arrow_fix(stored_inference, pyarrow.string()), inferred)
+        )
+        return found
+
+    @classmethod
     @functools.cache
     def into_digest_columns(cls) -> tuple[str, ...]:
         """What a stored row's `vhash` is taken over: everything the row says.
 
         The **parsed** values and never the raw line, so a message reformatted
-        but not changed hashes alike. Every clock is excluded; `unixsource`
-        remains because it states which field supplied the event time, which is
-        a reading and not a clock.
+        but not changed hashes alike. Every clock and the recorder `plugin` are
+        excluded; `unixsource` remains because it states which field supplied
+        the event time, which is a reading and not a clock.
 
         Stated by exclusion rather than listed. A named list hashed the eight
         columns it happened to name while the registry projection promoted a
@@ -1920,7 +2187,7 @@ class FixMsg(Message):
             compute.is_null(unmapped) if unmapped is not None else pyarrow.repeat(True, rows),
         )
         incoming = columns.get("vhash")
-        raw_message = columns.get("message")
+        raw_message = columns.get("body")
         carries_raw = (
             pyarrow.repeat(False, rows)
             if raw_message is None
@@ -1937,7 +2204,11 @@ class FixMsg(Message):
         unread = compute.and_(unread, compute.or_(carries_raw, carries_identity))
         if not compute.any(unread, min_count=0).as_py():
             return digests
-        recomputed = hash_bytes_arrow(_digest_text(raw_message, rows))
+        recomputed = (
+            hash_bytes_arrow(raw_message)
+            if raw_message is not None
+            else hash_bytes_arrow(_digest_text(None, rows))
+        )
         raw = (
             recomputed
             if incoming is None
@@ -1965,7 +2236,8 @@ class FixMsg(Message):
         found, source = _first_text_and_source(
             columns,
             tuple(
-                (name, cls.into_field().field(name).fix.display) for name in cls.into_code_columns()
+                (name, cls.into_field().field(name).fix.canonical)
+                for name in cls.into_code_columns()
             ),
             rows,
         )
@@ -2078,6 +2350,7 @@ class FixMsg(Message):
 
         carried = {
             "recunix": self.recunix,
+            "expunix": self.expunix,
             # A raw Message carries generic envelope columns between stages;
             # only a parsed row or a caller override owns creation time.
             "creaunix": (
@@ -2085,7 +2358,7 @@ class FixMsg(Message):
                 if self.__creaunix_declared or self.hash or not self.__raw_clocks
                 else None
             ),
-            "mic": self.mic,
+            "lastmkt": self.lastmkt,
             "registry": getattr(self, "_FixMsg__registry", None),
             **declared,
         }
@@ -2395,7 +2668,7 @@ def _invalid_value_error(
         # well as before diagnostics so a stricter custom type cannot turn an
         # intentionally absent field into a row-level transcription failure.
         reading = compute.if_else(absent, pyarrow.scalar(None, pyarrow.string()), text)
-    converted = cast_arrow_fix(reading, dtype)
+    converted = cast_arrow_field(reading, field, dtype)
     invalid = compute.and_(compute.fill_null(present, False), compute.is_null(converted))
     if not compute.any(invalid, min_count=0).as_py():
         return pyarrow.nulls(rows, pyarrow.string())
@@ -2467,13 +2740,12 @@ def _raw_message_vhash(source: pyarrow.RecordBatch, rows: int) -> pyarrow.Array:
     projected = Message.hash_arrow(
         *(_digest_text(column(name), rows) for name in _PROJECTED_RAW_IDENTITY)
     )
-    messages = column("message")
+    messages = column("body")
     if messages is None:
         raw = projected
     else:
-        text = _digest_text(messages, rows)
-        carries_text = compute.greater(compute.binary_length(text), 0)
-        raw = compute.if_else(carries_text, hash_bytes_arrow(text), projected)
+        carries_text = compute.greater(compute.binary_length(messages), 0)
+        raw = compute.if_else(carries_text, hash_bytes_arrow(messages), projected)
 
     if incoming is None:
         return raw
@@ -2546,8 +2818,8 @@ def _first_text_and_source(
     return compute.fill_null(found, ""), source
 
 
-def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
-    """ISO exchange fields, the stored venue, then FIX session endpoints."""
+def _lastmkt_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
+    """LastMkt, instrument venues, a stored value, then session endpoints."""
     compute = pyarrow.compute
     missing = pyarrow.nulls(rows, pyarrow.string())
     stored = columns.get("entries")
@@ -2556,7 +2828,18 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         if stored is not None
         else {}
     )
+    stated = columns.get("lastmkt")
+    stored_lastmkt = pyarrow.nulls(rows, pyarrow.int32())
+    if stated is not None and pyarrow.types.is_integer(stated.type):
+        stored_lastmkt = stated.cast(pyarrow.int32(), safe=False)
+        stored_lastmkt = compute.if_else(
+            compute.equal(stored_lastmkt, 0),
+            pyarrow.scalar(None, pyarrow.int32()),
+            stored_lastmkt,
+        )
+        stated = None
     explicit = [
+        stated if stated is not None else missing,
         tags.get(30, missing),
         columns.get("securityexchange", missing),
         tags.get(100, missing),
@@ -2565,11 +2848,6 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     ]
     explicit = [value for value in explicit if value.null_count < rows]
     venue = MIC.arrow_from_strings(*explicit) if explicit else pyarrow.nulls(rows, pyarrow.int32())
-    stored_mic = columns.get("mic")
-    if stored_mic is None:
-        stored_mic = pyarrow.nulls(rows, pyarrow.int32())
-    elif stored_mic.type != pyarrow.int32():
-        stored_mic = stored_mic.cast(pyarrow.int32(), safe=False)
     sender_source = columns.get("sendercompid", missing)
     target_source = columns.get("targetcompid", missing)
     sender = (
@@ -2582,7 +2860,7 @@ def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         if target_source.null_count < rows
         else pyarrow.nulls(rows, pyarrow.int32())
     )
-    return compute.coalesce(venue, stored_mic, target, sender)
+    return compute.coalesce(venue, stored_lastmkt, target, sender)
 
 
 def _stored_entries(entries: Sequence[Any] | None) -> list[dict[str, Any]] | None:

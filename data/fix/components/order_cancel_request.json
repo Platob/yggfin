@@ -18,7 +18,9 @@
    "component": "OrderCancelRequest",
    "msgtype": "F",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

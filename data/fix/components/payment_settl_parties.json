@@ -10,8 +10,15 @@
   "fix": {
    "component": "PaymentSettlParties",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport",
+    "PositionMaintenanceReport",
+    "PositionReport",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

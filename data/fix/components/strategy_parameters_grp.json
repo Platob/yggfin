@@ -12,8 +12,19 @@
   "fix": {
    "component": "StrategyParametersGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelReplaceRequest",
+    "ExecutionReport",
+    "MultilegOrderCancelReplace",
+    "NewOrderCross",
+    "NewOrderList",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest"
+   ]
   },
   "fields": [
    {

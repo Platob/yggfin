@@ -13,8 +13,12 @@
   "fix": {
    "component": "InstrmtLegIOIGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"IOI\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "IOI"
+   ]
   },
   "fields": [
    {

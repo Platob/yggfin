@@ -10,8 +10,16 @@
   "fix": {
    "component": "CollateralAmountGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AccountSummaryReport\",\"CollateralReport\",\"CollateralResponse\",\"PositionReport\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AccountSummaryReport",
+    "CollateralReport",
+    "CollateralResponse",
+    "PositionReport",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

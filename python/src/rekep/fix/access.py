@@ -23,7 +23,7 @@ import pyarrow.compute
 from rekep.entries import KEY_VIEW, Entry, fold
 from rekep.fields import Field, column_name, column_names, encoded_key
 from rekep.fields.arrays import sequence
-from rekep.fix.fields import cast_arrow_fix, coherent_fix_value, scalar_fix_temporal
+from rekep.fix.fields import cast_arrow_field, coherent_fix_value, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import TagIndex
 
@@ -342,7 +342,9 @@ class FieldAccess:
         if dtype is None or pyarrow.types.is_string(dtype):
             return text
         try:
-            return cast_arrow_fix(pyarrow.array([text], pyarrow.string()), dtype)[0].as_py()
+            return cast_arrow_field(pyarrow.array([text], pyarrow.string()), record, dtype)[
+                0
+            ].as_py()
         except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, ValueError):
             return text
 

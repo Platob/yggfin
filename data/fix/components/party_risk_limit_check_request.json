@@ -11,7 +11,9 @@
    "component": "PartyRiskLimitCheckRequest",
    "msgtype": "DF",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

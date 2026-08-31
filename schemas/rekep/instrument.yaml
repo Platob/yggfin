@@ -7,81 +7,80 @@ fields:
   type: int64
   description: When the reference facts were observed, in nanoseconds since the epoch.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: Unix}
 - name: unixpartition
   type: int32
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: UnixPartition}
+  fix: {name: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: EventType}
+  fix: {name: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
+- name: plugin
+  type: string
+  description: Source plugin that recorded the row; empty when the envelope did not name one.
+  fix: {name: Plugin}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: CreaUnix}
+  fix: {name: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: RecUnix}
+  fix: {name: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: ExpUnix}
+  fix: {name: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: SnapUnix}
+  fix: {name: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
   iceberg: {sort_key: asc}
-  fix: {display: Hash}
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: ValueHash}
+  fix: {name: ValueHash}
 - name: xhash
   type: fixed_size_binary[16]
-  description: Creation-anchored lifecycle identity of the instrument update.
+  description: Direct XXH3-128 digest of the component's canonical ticker.
   iceberg: {primary_key: 'true'}
-  fix: {display: Xhash}
-- name: linkxhashes
+  fix: {name: XHash}
+- name: linkhashes
   type: list
-  description: Related lifecycle `xhash` values, with the primary match first.
-  fix: {display: LinkXHashes}
+  description: Related exact event `hash` values, with the primary match first.
+  fix: {name: LinkHashes}
   item:
     type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
-  fix: {display: Version}
 - name: state
   type: int64
   description: 'Where the lifecycle stands, as a ranked code: `is_terminal` is over.'
-  fix: {display: State}
-  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","REJECTED":"61REJCTD","REPLACED":"52REPLCD","STOPPED":"26STOPPD","SUSPENDED":"25SUSPND"}'}
+  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3544985283371287876":"QUEUED","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3618451351954607687":"RUNNING","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3761723214427014468":"SUCCEEDED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","QUEUED":"12QUEUED","REJECTED":"61REJCTD","REPLACED":"52REPLCD","RUNNING":"27RUNING","STOPPED":"26STOPPD","SUCCEEDED":"44SUCCED","SUSPENDED":"25SUSPND"}'}
 - name: code
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
-  fix: {display: Code}
 - name: codesource
   type: string
   description: Column whose value supplied `code`; empty when the lifecycle is unnamed.
-  fix: {display: CodeSource}
+  fix: {name: CodeSource}
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: AltIDs}
+  fix: {name: AltIDs}
   key:
     type: string
   value:
@@ -91,201 +90,195 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: PrevUnix}
+  fix: {name: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: PrevHash}
+  fix: {name: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: ParentHash}
+  fix: {name: ParentHash}
   item:
     type: fixed_size_binary[16]
-- name: mic
+- name: lastmkt
   type: int32
   nullable: true
-  description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
-  fix: {display: MIC}
+  description: 'Market of execution for last fill, or an indication of the market where an order was routed Valid values: See "Appendix 6-C"'
+  fix: {tag: '30', type: Exchange, name: LastMkt}
   enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
-  fix: {display: Reason}
 - name: instrument
   type: struct
   description: Reference facts observed by this update.
-  fix: {display: Instrument}
   fields:
   - name: symbolticker
     type: string
-    description: Canonical spelling selected from the FIX instrument identifiers.
-    fix: {display: SymbolTicker}
+    description: Canonical instrument spelling.
+    fix: {tag: '30020', type: String, name: SymbolTicker}
   - name: symbol
     type: string
     description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
-    fix: {tag: '55', type: String, name: Symbol, display: Symbol}
+    fix: {tag: '55', type: String, name: Symbol}
   - name: kind
     type: int64
     description: What it settles as, read from the first character of the CFI code.
-    fix: {display: Kind}
     enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","4846246242730115072":"CASH","4994867235166683136":"EQUITY","4919411096516820992":"DEBT","5068043009640103936":"FUND","4851874686865130329":"CURRENCY","4850180317955512576":"COMMODITY","5282234477571997696":"INDEX","4919428642901065728":"DERIVATIVE","5068049681104568320":"FUTURE","5715160600973017088":"OPTION","6005340439975034880":"SWAP","6287397068022371328":"WARRANT","5066358640526640128":"FORWARD","6004514729347007488":"STRUCTURED","6003388760686067712":"SPREAD","5572444038831555911":"MULTILEG","4774188662740221952":"BASKET","5064665298347705600":"FINANCING","5928232784735764480":"REPO","5498685473305919488":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}'}
   - name: securityid
     type: string
     nullable: true
     description: Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.
-    fix: {tag: '48', type: String, name: SecurityID, display: SecurityID}
+    fix: {tag: '48', type: String, name: SecurityID}
   - name: securityidsource
     type: int32
     nullable: true
     description: Identifies class or source of the SecurityID (48) value. Required if SecurityID is specified. 100+ are reserved for private security identifications
-    fix: {tag: '22', type: String, name: SecurityIDSource, display: SecurityIDSource}
+    fix: {tag: '22', type: String, name: SecurityIDSource}
     enum: {name: SecurityIDSource, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1129665360":"CUSIP","1397048396":"SEDOL","1364543819":"QUIK","1230195022":"ISIN","1380532992":"RIC","1128487168":"ISO_CURRENCY","1129599577":"ISO_COUNTRY","1163412296":"EXCHANGE_SYMBOL","1129595136":"CTA","1111639808":"BLOOMBERG","1464552960":"WERTPAPIER","1146442819":"DUTCH","1447119951":"VALOREN","1397310287":"SICOVAM","1111837767":"BELGIAN","1129270606":"COMMON","1129075272":"CLEARING_HOUSE","1230193729":"ISDA_FPML_SPEC","1330664001":"OPRA","1179667788":"ISDA_FPML_URL","1280262912":"LETTER_OF_CREDIT","1296782416":"MARKETPLACE","1380205891":"MARKIT_RED_ENTITY","1380208707":"MARKIT_RED_PAIR","1128682563":"CFTC_COMMODITY","1229148752":"ISDA_COMMODITY","1179207497":"FIGI","1279609088":"LEI","1398361684":"SYNTHETIC","1179206733":"FIDESSA","1229866072":"INDEX_NAME","1431193926":"UNIFORM_SYMBOL","1146374400":"DIGITAL_TOKEN"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"BELGIAN":"BELG","BLOOMBERG":"BBG","Belgian":"BELGIAN","BloombergSymbol":"BLOOMBERG","CFTC_COMMODITY":"CFTC","CFTC_COMMODITY_CODE":"CFTC_COMMODITY","CLEARING_HOUSE":"CLRH","COMMON":"COMN","CUSIP":"CUSP","ClearingHouse":"CLEARING_HOUSE","Common":"COMMON","ConsolidatedTapeAssociation":"CTA","DIGITAL_TOKEN":"DTI","DIGITAL_TOKEN_IDENTIFIER":"DIGITAL_TOKEN","DUTCH":"DUTC","Dutch":"DUTCH","EXCHANGE_SYMBOL":"EXCH","ExchangeSymbol":"EXCHANGE_SYMBOL","FIDESSA":"FIDM","FIDESSA_INSTRUMENT_MNEMONIC":"FIDESSA","FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER":"FIGI","INDEX_NAME":"INDX","ISDAFpMLSpecification":"ISDA_FPML_SPEC","ISDAFpMLURL":"ISDA_FPML_URL","ISDA_COMMODITY":"ICRP","ISDA_COMMODITY_REFERENCE_PRICE":"ISDA_COMMODITY","ISDA_FPML_SPEC":"ISDA","ISDA_FPML_URL":"FPML","ISINNumber":"ISIN","ISOCountryCode":"ISO_COUNTRY","ISOCurrencyCode":"ISO_CURRENCY","ISO_COUNTRY":"CTRY","ISO_CURRENCY":"CCY","LEGAL_ENTITY_IDENTIFIER":"LEI","LETTER_OF_CREDIT":"LOC","LetterOfCredit":"LETTER_OF_CREDIT","MARKETPLACE":"MKTP","MARKIT_RED_ENTITY":"RDEC","MARKIT_RED_ENTITY_CLIP":"MARKIT_RED_ENTITY","MARKIT_RED_PAIR":"RDPC","MARKIT_RED_PAIR_CLIP":"MARKIT_RED_PAIR","MarketplaceAssignedIdentifier":"MARKETPLACE","OptionPriceReportingAuthority":"OPRA","RICCode":"RIC","SEDOL":"SEDL","SICOVAM":"SICO","SYNTHETIC":"SYNT","Sicovam":"SICOVAM","UNIFORM_SYMBOL":"UNIF","VALOREN":"VALO","Valoren":"VALOREN","WERTPAPIER":"WKN","Wertpapier":"WERTPAPIER"}', fix_aliases: '{"1":"CUSP","2":"SEDL","3":"QUIK","4":"ISIN","5":"RIC","6":"CCY","7":"CTRY","8":"EXCH","9":"CTA","A":"BBG","B":"WKN","C":"DUTC","D":"VALO","E":"SICO","F":"BELG","G":"COMN","H":"CLRH","I":"ISDA","J":"OPRA","K":"FPML","L":"LOC","M":"MKTP","N":"RDEC","P":"RDPC","Q":"CFTC","R":"ICRP","S":"FIGI","T":"LEI","U":"SYNT","V":"FIDM","W":"INDX","X":"UNIF","Y":"DTI"}'}
   - name: isincode
     type: string
     nullable: true
-    description: ISO 6166 identifier, wherever the message carried it; null when it did not.
+    description: ISIN carried by the rendered ISINCODE field.
     metadata: {iso: '6166'}
-    fix: {display: ISINCode}
+    fix: {type: String, name: ISINCODE}
   - name: securitytype
     type: string
     nullable: true
     description: 'Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties.'
-    fix: {tag: '167', type: String, name: SecurityType, display: SecurityType}
+    fix: {tag: '167', type: String, name: SecurityType}
   - name: cficode
     type: string
     nullable: true
     description: Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments. A subset of possible values applicable to FIX usage are identified in "Appendix 6-D CFICode Usage - ISO 10962 Classification of Financial Instruments (CFI code)"
-    fix: {tag: '461', type: String, name: CFICode, display: CFICode}
+    fix: {tag: '461', type: String, name: CFICode}
   - name: securityexchange
     type: string
     nullable: true
     description: 'Market used to help identify a security. Valid values: See "Appendix 6-C"'
-    fix: {tag: '207', type: Exchange, name: SecurityExchange, display: SecurityExchange}
+    fix: {tag: '207', type: Exchange, name: SecurityExchange}
   - name: currency
     type: int32
     nullable: true
     description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
-    fix: {tag: '15', type: Currency, name: Currency, display: Currency}
+    fix: {tag: '15', type: Currency, name: Currency}
     enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
   - name: contractmultiplier
     type: double
     nullable: true
     description: Specifies the ratio or multiply factor to convert from "nominal" units (e.g. contracts) to total units (e.g. shares) (e.g. 1.0, 100, 1000, etc). Applicable For Fixed Income, Convertible Bonds, Derivatives, etc. In general quantities for all calsses should be expressed in the basic unit of the instrument, e.g. shares for equities, norminal or par amount for bonds, currency for foreign exchange. When quantity is expressed in contracts, e.g. financing transactions and bond trade reporting, ContractMutliplier should contain the number of units in one contract and can be omitted if the multiplier is the default amount for the instrument, i.e. 1,000 par of bonds, 1,000,000 par for financing transactions.
-    fix: {tag: '231', type: float, name: ContractMultiplier, display: ContractMultiplier}
+    fix: {tag: '231', type: float, name: ContractMultiplier}
   - name: minpriceincrement
     type: double
     nullable: true
     description: Minimum price increase for a given exchange-traded Instrument
-    fix: {tag: '969', type: float, name: MinPriceIncrement, display: MinPriceIncrement}
+    fix: {tag: '969', type: float, name: MinPriceIncrement}
   - name: roundlot
     type: double
     nullable: true
     description: The trading lot size of a security
-    fix: {tag: '561', type: Qty, name: RoundLot, display: RoundLot}
+    fix: {tag: '561', type: Qty, name: RoundLot}
   - name: maturitydate
     type: timestamp[us]
     nullable: true
     description: Date of maturity.
-    fix: {tag: '541', type: LocalMktDate, name: MaturityDate, display: MaturityDate}
+    fix: {tag: '541', type: LocalMktDate, name: MaturityDate}
   - name: strikeprice
     type: double
     nullable: true
     description: Strike Price for an Option.
-    fix: {tag: '202', type: Price, name: StrikePrice, display: StrikePrice}
+    fix: {tag: '202', type: Price, name: StrikePrice}
   - name: putorcall
     type: int64
     description: Indicates whether an option contract is a put or call
-    fix: {tag: '201', type: int, name: PutOrCall, display: PutOrCall}
+    fix: {tag: '201', type: int, name: PutOrCall}
     enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}
   - name: securitydesc
     type: string
     nullable: true
     description: Can be used to provide an optional textual description for a financial instrument.
-    fix: {tag: '107', type: String, name: SecurityDesc, display: SecurityDesc}
+    fix: {tag: '107', type: String, name: SecurityDesc}
   - name: legs
     type: list
     nullable: true
     description: The legs of a multileg instrument, in the order the venue sent them.
-    fix: {display: Legs}
     item:
       type: struct
-      fix: {display: Item}
       fields:
       - name: symbolticker
         type: string
         description: Canonical instrument spelling derived from the leg's FIX identifiers.
-        fix: {display: SymbolTicker}
+        fix: {name: SymbolTicker}
       - name: symbol
         type: string
         description: Multileg instrument's individual security's Symbol. See Symbol (55) field for description
-        fix: {tag: '600', type: String, name: LegSymbol, display: LegSymbol}
+        fix: {tag: '600', type: String, name: LegSymbol}
       - name: side
         type: int32
         description: The side of this individual leg (multileg security). See Side (54) field for description and values
-        fix: {tag: '624', type: char, name: LegSide, display: LegSide}
+        fix: {tag: '624', type: char, name: LegSide}
         enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
       - name: ratio
         type: double
         nullable: true
         description: The ratio of quantity for this individual leg relative to the entire multileg security.
-        fix: {tag: '623', type: float, name: LegRatioQty, display: LegRatioQty}
+        fix: {tag: '623', type: float, name: LegRatioQty}
       - name: kind
         type: int64
         description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType <609>`.
-        fix: {display: Kind}
         enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","4846246242730115072":"CASH","4994867235166683136":"EQUITY","4919411096516820992":"DEBT","5068043009640103936":"FUND","4851874686865130329":"CURRENCY","4850180317955512576":"COMMODITY","5282234477571997696":"INDEX","4919428642901065728":"DERIVATIVE","5068049681104568320":"FUTURE","5715160600973017088":"OPTION","6005340439975034880":"SWAP","6287397068022371328":"WARRANT","5066358640526640128":"FORWARD","6004514729347007488":"STRUCTURED","6003388760686067712":"SPREAD","5572444038831555911":"MULTILEG","4774188662740221952":"BASKET","5064665298347705600":"FINANCING","5928232784735764480":"REPO","5498685473305919488":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}'}
       - name: securityid
         type: string
         nullable: true
         description: Multileg instrument's individual security's SecurityID. See SecurityID (48) field for description
-        fix: {tag: '602', type: String, name: LegSecurityID, display: LegSecurityID}
+        fix: {tag: '602', type: String, name: LegSecurityID}
       - name: securityidsource
         type: string
         nullable: true
         description: Multileg instrument's individual security's SecurityIDSource. See SecurityIDSource (22) field for description
-        fix: {tag: '603', type: String, name: LegSecurityIDSource, display: LegSecurityIDSource}
+        fix: {tag: '603', type: String, name: LegSecurityIDSource}
       - name: cficode
         type: string
         nullable: true
         description: Multileg instrument's individual security's CFICode. See CFICode (461) field for description
-        fix: {tag: '608', type: String, name: LegCFICode, display: LegCFICode}
+        fix: {tag: '608', type: String, name: LegCFICode}
       - name: securitytype
         type: string
         nullable: true
         description: Refer to definition of SecurityType(167)
-        fix: {tag: '609', type: String, name: LegSecurityType, display: LegSecurityType}
+        fix: {tag: '609', type: String, name: LegSecurityType}
       - name: securityexchange
         type: string
         nullable: true
         description: Multileg instrument's individual security's SecurityExchange. See SecurityExchange (207) field for description
-        fix: {tag: '616', type: Exchange, name: LegSecurityExchange, display: LegSecurityExchange}
+        fix: {tag: '616', type: Exchange, name: LegSecurityExchange}
       - name: currency
         type: int32
         nullable: true
         description: Currency associated with a particular Leg's quantity
-        fix: {tag: '556', type: Currency, name: LegCurrency, display: LegCurrency}
+        fix: {tag: '556', type: Currency, name: LegCurrency}
         enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
       - name: contractmultiplier
         type: double
         nullable: true
         description: Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier (23) field for description
-        fix: {tag: '614', type: float, name: LegContractMultiplier, display: LegContractMultiplier}
+        fix: {tag: '614', type: float, name: LegContractMultiplier}
       - name: maturitydate
         type: timestamp[us]
         nullable: true
         description: Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description
-        fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate, display: LegMaturityDate}
+        fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate}
       - name: strikeprice
         type: double
         nullable: true
         description: Multileg instrument's individual security's StrikePrice. See StrikePrice (202) field for description
-        fix: {tag: '612', type: Price, name: LegStrikePrice, display: LegStrikePrice}
+        fix: {tag: '612', type: Price, name: LegStrikePrice}
       - name: putorcall
         type: int64
         description: Refer to definition of PutOrCall(201)
-        fix: {tag: '1358', type: int, name: LegPutOrCall, display: LegPutOrCall}
+        fix: {tag: '1358', type: int, name: LegPutOrCall}
         enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}

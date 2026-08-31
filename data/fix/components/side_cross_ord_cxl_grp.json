@@ -13,8 +13,12 @@
   "fix": {
    "component": "SideCrossOrdCxlGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelRequest"
+   ]
   },
   "fields": [
    {

@@ -13,8 +13,12 @@
   "fix": {
    "component": "ListOrdGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"NewOrderList\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "NewOrderList"
+   ]
   },
   "fields": [
    {

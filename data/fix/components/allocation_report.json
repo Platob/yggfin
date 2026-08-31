@@ -14,7 +14,9 @@
    "component": "AllocationReport",
    "msgtype": "AS",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

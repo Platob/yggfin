@@ -11,8 +11,12 @@
   "fix": {
    "component": "StatsIndGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataIncrementalRefresh\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataIncrementalRefresh"
+   ]
   },
   "fields": [
    {

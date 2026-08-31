@@ -13,8 +13,14 @@
   "fix": {
    "component": "TrdAllocGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

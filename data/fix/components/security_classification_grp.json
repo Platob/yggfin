@@ -10,8 +10,15 @@
   "fix": {
    "component": "SecurityClassificationGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityList\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList",
+    "DerivativeSecurityListUpdateReport",
+    "SecurityDefinition",
+    "SecurityList"
+   ]
   },
   "fields": [
    {

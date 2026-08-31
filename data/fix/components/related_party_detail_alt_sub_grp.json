@@ -10,8 +10,29 @@
   "fix": {
    "component": "RelatedPartyDetailAltSubGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyActionReport\",\"PartyActionRequest\",\"PartyDetailsDefinitionRequest\",\"PartyDetailsDefinitionRequestAck\",\"PartyDetailsListReport\",\"PartyDetailsListUpdateReport\",\"PartyEntitlementsDefinitionRequest\",\"PartyEntitlementsDefinitionRequestAck\",\"PartyEntitlementsReport\",\"PartyEntitlementsUpdateReport\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\",\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsDefinitionRequestAck\",\"PartyRiskLimitsReport\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyActionReport",
+    "PartyActionRequest",
+    "PartyDetailsDefinitionRequest",
+    "PartyDetailsDefinitionRequestAck",
+    "PartyDetailsListReport",
+    "PartyDetailsListUpdateReport",
+    "PartyEntitlementsDefinitionRequest",
+    "PartyEntitlementsDefinitionRequestAck",
+    "PartyEntitlementsReport",
+    "PartyEntitlementsUpdateReport",
+    "PartyRiskLimitCheckRequest",
+    "PartyRiskLimitCheckRequestAck",
+    "PartyRiskLimitsDefinitionRequest",
+    "PartyRiskLimitsDefinitionRequestAck",
+    "PartyRiskLimitsReport",
+    "PartyRiskLimitsReportAck",
+    "PartyRiskLimitsUpdateReport",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

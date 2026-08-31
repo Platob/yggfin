@@ -10,8 +10,19 @@
   "fix": {
    "component": "RelatedTradeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"PayManagementReport\",\"PayManagementRequest\",\"PositionMaintenanceReport\",\"PositionReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataIncrementalRefresh",
+    "MarketDataSnapshotFullRefresh",
+    "PayManagementReport",
+    "PayManagementRequest",
+    "PositionMaintenanceReport",
+    "PositionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

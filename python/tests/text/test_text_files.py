@@ -5,7 +5,7 @@ import pyarrow
 import pyarrow.fs
 import pytest
 
-from rekep import Dataset, Field, FixRegistry, Message, TextFile, TextFiles
+from rekep import ArrowPath, Dataset, Field, FixRegistry, Message, TextFile, TextFiles, Url
 from rekep.filesystems import ArrowFile
 from rekep.text import HEADER_PATTERN
 from rekep.text.text_files import _natural
@@ -77,6 +77,61 @@ def relative(files: TextFiles, root: Path) -> list[str]:
 def test_paths_come_out_in_natural_path_order(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt*")
     assert tuple(relative(files, capture)) == CAPTURE_ORDER
+
+
+def test_calendar_tokens_expand_source_roots_over_the_inclusive_days(tmp_path: Path) -> None:
+    for year, day in (("2026", "31"), ("2027", "01")):
+        folder = tmp_path / "capture" / year / ("12" if year == "2026" else "01") / day
+        folder.mkdir(parents=True)
+        (folder / "ticks.txt").write_bytes(SAMPLE_BYTES)
+
+    template = tmp_path / "capture" / "{year}" / "{month}" / "{day}"
+    files = TextFiles.from_folder(
+        template,
+        start="2026-12-31",
+        end="2027-01-01",
+        pattern="*.txt",
+    )
+
+    assert files.roots == (
+        (tmp_path / "capture/2026/12/31").as_posix(),
+        (tmp_path / "capture/2027/01/01").as_posix(),
+    )
+    assert [Path(url).name for url in files.into_urls()] == ["ticks.txt", "ticks.txt"]
+
+
+def test_calendar_tokens_require_a_closed_window(tmp_path: Path) -> None:
+    template = tmp_path / "capture" / "{year}" / "{month}" / "{day}"
+
+    with pytest.raises(ValueError, match="requires start and end"):
+        TextFiles.from_folder(template, start="2026-08-31")
+
+
+def test_remote_calendar_tokens_keep_one_resolved_store_and_ignore_query_tokens() -> None:
+    store = pyarrow.fs._MockFileSystem()
+    store.create_dir("bucket/capture/2026/08/31", recursive=True)
+    with store.open_output_stream("bucket/capture/2026/08/31/ticks.txt") as output:
+        output.write(SAMPLE_BYTES)
+    uri = "s3://bucket/capture/{year}/{month}/{day}?marker={day}"
+    template = ArrowPath.from_parts(
+        Url.from_string(uri),
+        store,
+        "bucket/capture/{year}/{month}/{day}",
+        uri=uri,
+    )
+
+    files = TextFiles.from_folder(
+        template,
+        start="2026-08-31",
+        end="2026-08-31",
+        pattern="*.txt",
+    )
+
+    assert files.filesystem is store
+    assert files.roots == ("bucket/capture/2026/08/31",)
+    assert [info.path for info in files.into_file_infos()] == [
+        "bucket/capture/2026/08/31/ticks.txt"
+    ]
 
 
 def test_spill_policy_is_passed_to_each_file(capture: Path) -> None:
@@ -340,7 +395,7 @@ def test_message_regexes_are_forwarded_to_every_file(tmp_path: Path) -> None:
         )
     )
     assert [batch.num_rows for batch in batches] == [2]
-    assert batches[0].column("message").to_pylist() == ["kept-a", "kept-b"]
+    assert batches[0].column("body").cast(pyarrow.string()).to_pylist() == ["kept-a", "kept-b"]
     assert (
         list(
             TextFiles.from_folder(tmp_path).into_arrow_batches(
@@ -387,7 +442,7 @@ def test_duration_windows_are_shared_across_file_boundaries(tmp_path: Path) -> N
             batch_row_size=2, duration_ns=1_000_000_000
         )
     )
-    assert [batch.column("message").to_pylist() for batch in batches] == [
+    assert [batch.column("body").cast(pyarrow.string()).to_pylist() for batch in batches] == [
         ["first-file", "second-file"],
         ["same-window"],
         ["boundary"],
@@ -408,7 +463,7 @@ def test_time_bounds_are_forwarded_to_every_file(tmp_path: Path) -> None:
         start_unix=1_786_665_902_000_000_000,
         end_unix=1_786_665_904_000_000_000,
     )
-    assert table.column("message").to_pylist() == ["start", "inside"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["start", "inside"]
 
 
 def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
@@ -429,7 +484,10 @@ def test_rows_stay_in_the_order_the_files_are_read(capture: Path) -> None:
 def test_a_compressed_file_and_a_plain_one_read_the_same(capture: Path) -> None:
     plain = TextFiles.from_folders([capture / "app.txt"]).into_arrow_table()
     zipped = TextFiles.from_folders([capture / "app.1.txt.gz"]).into_arrow_table()
-    assert plain.column("message").to_pylist() == zipped.column("message").to_pylist()
+    assert (
+        plain.column("body").cast(pyarrow.string()).to_pylist()
+        == zipped.column("body").cast(pyarrow.string()).to_pylist()
+    )
 
 
 @pytest.mark.parametrize("batch_row_size", [1, 7, EXPECTED_RECORDS, 10_000])
@@ -492,7 +550,7 @@ def test_continuations_do_not_fold_across_two_files(tmp_path: Path) -> None:
         b"\tat com.example.C.d(C.java:2)\n2026-08-14 00:05:02.000_000 [t] [M] (INFO) second\n"
     )
     table = TextFiles.from_folder(tmp_path, pattern="*.txt").into_arrow_table()
-    assert table.column("message").to_pylist() == [
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == [
         "first\n\tat com.example.A.b(A.java:1)",
         "second",
     ]
@@ -501,12 +559,10 @@ def test_continuations_do_not_fold_across_two_files(tmp_path: Path) -> None:
 def test_reading_casts_only_when_asked(capture: Path) -> None:
     files = TextFiles.from_folder(capture, pattern="*.txt")
     assert files.read_arrow_reader().schema.equals(Message.into_field().into_arrow_schema())
-    narrow = Field.from_arrow_schema(
-        pyarrow.schema([("message", pyarrow.large_string())]), "Narrow"
-    )
+    narrow = Field.from_arrow_schema(pyarrow.schema([("body", pyarrow.large_binary())]), "Narrow")
     table = files.read_arrow_table(narrow)
-    assert table.schema.names == ["message"]
-    assert table.schema.field("message").type == pyarrow.large_string()
+    assert table.schema.names == ["body"]
+    assert table.schema.field("body").type == pyarrow.large_binary()
 
 
 def test_one_file_is_open_at_a_time(capture: Path) -> None:
@@ -777,7 +833,7 @@ def test_writing_a_set_is_refused(capture: Path) -> None:
 
 def test_creating_a_set_adopts_the_shape_and_touches_nothing(tmp_path: Path) -> None:
     files = TextFiles.from_folder(tmp_path / "nothing-here")
-    narrow = Field.from_arrow_schema(pyarrow.schema([("message", pyarrow.string())]), "Narrow")
+    narrow = Field.from_arrow_schema(pyarrow.schema([("body", pyarrow.binary())]), "Narrow")
     assert files.create_with(narrow) is files
     assert files.into_struct_field() == narrow
     assert not (tmp_path / "nothing-here").exists()
@@ -792,7 +848,7 @@ def test_the_row_bound_reaches_every_file_in_the_set(tmp_path: Path) -> None:
     files = TextFiles.from_folder(tmp_path, pattern="*.txt")
     table = files.into_arrow_table(max_row_byte_size=len(header % 1) + 20)
 
-    assert table.column("message").to_pylist() == ["x" * 20, "short"]
+    assert table.column("body").cast(pyarrow.string()).to_pylist() == ["x" * 20, "short"]
     assert table.column("reason").to_pylist() == [
         "row truncated at max_row_byte_size; dropped bytes: 480",
         None,

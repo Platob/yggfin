@@ -10,8 +10,12 @@
   "fix": {
    "component": "OrderEntryGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MassOrder\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MassOrder"
+   ]
   },
   "fields": [
    {

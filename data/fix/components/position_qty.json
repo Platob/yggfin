@@ -13,8 +13,18 @@
   "fix": {
    "component": "PositionQty",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AdjustedPositionReport\",\"AssignmentReport\",\"PositionMaintenanceReport\",\"PositionMaintenanceRequest\",\"PositionReport\",\"PositionTransferInstruction\",\"PositionTransferReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AdjustedPositionReport",
+    "AssignmentReport",
+    "PositionMaintenanceReport",
+    "PositionMaintenanceRequest",
+    "PositionReport",
+    "PositionTransferInstruction",
+    "PositionTransferReport"
+   ]
   },
   "fields": [
    {

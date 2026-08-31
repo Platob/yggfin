@@ -17,7 +17,9 @@
    "component": "AllocationInstructionAck",
    "msgtype": "P",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

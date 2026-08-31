@@ -10,7 +10,6 @@ import datetime
 
 import pytest
 
-from rekep import txhash
 from rekep.fix import FixFieldValue, FixRegistry, fix_field, record_copy
 from rekep.market import (
     MIC,
@@ -36,7 +35,6 @@ from rekep.market.fix import (
     market_tags,
     unix_of,
 )
-from rekep.market.identity import hash_of
 from rekep.market.transacted import CREATED
 from rekep.text import FixMsg, Message
 
@@ -177,7 +175,7 @@ def test_scalar_and_arrow_market_events_keep_the_three_generic_clocks(
     recorded = unix_of("20260821-10:00:02")
     assert recorded is not None and all(value is not None for value in expected)
     scalar = next(iter(reader(line, recunix=recorded)))
-    parsed = FixMsg.from_message_batch([Message(message=line, recunix=recorded)])
+    parsed = FixMsg.from_message_batch([Message(body=line, recunix=recorded)])
     [(shape, batch)] = list(FixMsg.into_market_arrow_batches(parsed))
     row = batch.to_pylist()[0]
 
@@ -299,11 +297,12 @@ def test_the_declared_order_is_the_one_the_reader_uses() -> None:
         ("sendingtime",),
     ]
     assert tuple(rung.name for rung in CREATED) == (
+        "CreationTime",
         "OrigTime",
         "OrigSendingTime",
         "OnBehalfOfSendingTime",
         "SendingTime",
-    ), "OrigTime is both default event-time and lifecycle-creation evidence"
+    ), "CreationTime leads the fallback lifecycle-creation evidence"
 
 
 def test_a_regulatory_stamp_outranks_the_messages_own_claim() -> None:
@@ -361,14 +360,34 @@ def test_a_filled_report_is_both_the_order_and_the_fill() -> None:
 def test_the_order_carries_what_remains_and_the_fill_what_moved() -> None:
     """`LeavesQty <151>` is live interest; `LastQty <32>` is what just traded."""
     order, fill = events(FILLED)
-    assert (order.price, order.lastqty) == (100.5, 6.0)
-    assert (fill.price, fill.lastqty) == (100.25, 4.0)
+    assert (order.lastpx, order.lastqty) == (100.5, 6.0)
+    assert (fill.lastpx, fill.lastqty) == (100.25, 4.0)
+
+
+def test_an_execution_uses_price_when_the_feed_omits_lastpx() -> None:
+    """A trade-only bridge may put its event price in `Price <44>`."""
+    order, fill = events(
+        "35=8|37=O-1|11=C-1|17=E-1|150=F|39=2|54=1|44=101.25|32=2|14=2|151=0|55=AAPL|207=XNAS"
+    )
+
+    assert order.lastpx == 101.25
+    assert fill.lastpx == 101.25
+
+
+def test_a_fill_price_does_not_become_a_missing_order_limit() -> None:
+    """LastPx is coherent for the Execution, not for its parallel Order row."""
+    order, fill = events(
+        "35=8|37=O-1|11=C-1|17=E-1|150=F|39=1|54=1|31=101.25|32=2|14=2|151=3|55=AAPL|207=XNAS"
+    )
+
+    assert order.lastpx is None
+    assert fill.lastpx == 101.25
 
 
 def test_the_order_comes_first_because_the_fill_points_at_it() -> None:
     order, fill = events(FILLED)
-    assert fill.linkxhashes == [order.xhash]
-    assert order.linkxhashes == [fill.xhash]
+    assert fill.linkhashes == [order.hash]
+    assert order.linkhashes == [fill.hash]
     assert fill.parenthash == [order.hash]
 
 
@@ -556,7 +575,7 @@ def test_an_omitted_time_in_force_is_day_as_fix_specifies() -> None:
 def test_a_price_the_venue_did_not_send_is_absent_and_not_zero() -> None:
     """A market order has no limit at all, and zero is a price."""
     (order,) = events("35=D|55=AAPL|11=CL-1|40=1|54=1|38=100|60=20260821-10:00:00")
-    assert order.price is None and order.kind is MarketKind.MARKET_ORDER
+    assert order.lastpx is None and order.kind is MarketKind.MARKET_ORDER
 
 
 def test_a_local_market_expiry_date_is_preserved_but_not_guessed_as_utc() -> None:
@@ -622,6 +641,43 @@ def test_expire_time_wins_over_good_for_time() -> None:
     assert order.expunix == unix_of("20260821-10:00:01")
 
 
+@pytest.mark.parametrize(
+    ("fields", "parsed_expiry", "market_expiry"),
+    (
+        (
+            f"126=20260821-11:00:00|30005={unix_of('20260821-12:00:00')}|",
+            unix_of("20260821-12:00:00"),
+            unix_of("20260821-12:00:00"),
+        ),
+        (
+            "126=20260821-11:00:00|",
+            unix_of("20260821-11:00:00"),
+            unix_of("20260821-11:00:00"),
+        ),
+        ("", None, unix_of("20260821-10:29:59.998")),
+    ),
+    ids=("package", "standard", "time-in-force"),
+)
+def test_parsed_expiry_precedence_survives_scalar_and_arrow_market_conversion(
+    fields: str, parsed_expiry: int | None, market_expiry: int
+) -> None:
+    """Package ExpUnix leads standard ExpireTime, which leads TIF derivation."""
+    line = FILLED.replace("|59=1|", f"|59=3|{fields}")
+    batch = FixMsg.from_message_batch([Message(body=line)])
+    parsed = next(FixMsg.from_arrow_reader([batch]))
+
+    scalar = list(parsed.into_market_events())
+    arrow = list(FixMsg.into_market_arrow_batches(batch))
+
+    assert parsed.expunix == parsed_expiry
+    assert [type(event) for event in scalar] == [Order, Execution]
+    assert [event.expunix for event in scalar] == [market_expiry, market_expiry]
+    assert [(shape, part.column("expunix").to_pylist()) for shape, part in arrow] == [
+        (Order, [market_expiry]),
+        (Execution, [market_expiry]),
+    ]
+
+
 @pytest.mark.parametrize("fix", ["3", "4"], ids=["ioc", "fok"])
 def test_immediate_time_in_force_expires_on_arrival(fix: str) -> None:
     (order,) = events(f"35=D|55=AAPL|11=CL-1|54=1|38=100|44=10|59={fix}|60=20260821-10:00:00")
@@ -671,7 +727,7 @@ def test_an_entry_after_the_first_inherits_the_date_it_was_not_resent() -> None:
 
 
 def test_parsed_refresh_keeps_clocks_on_their_own_entries() -> None:
-    parsed = FixMsg.from_message_batch([Message(message=REFRESH)])
+    parsed = FixMsg.from_message_batch([Message(body=REFRESH)])
     translated = {shape: batch for shape, batch in FixMsg.into_market_arrow_batches(parsed)}
 
     assert parsed.column("unixsource").to_pylist() == ["SendingTime"]
@@ -700,7 +756,7 @@ def test_a_trade_entry_is_an_execution_and_not_a_resting_order() -> None:
     *_, printed = events(REFRESH)
     assert isinstance(printed, Execution)
     assert printed.state is State.FILLED
-    assert (printed.price, printed.lastqty) == (100.2, 1.0)
+    assert (printed.lastpx, printed.lastqty) == (100.2, 1.0)
 
 
 def test_an_entry_type_that_is_a_statistic_is_not_a_market_event() -> None:
@@ -710,14 +766,11 @@ def test_an_entry_type_that_is_a_statistic_is_not_a_market_event() -> None:
 
 
 def test_independently_parsed_level_updates_share_their_code_digest() -> None:
-    """Creation anchors differ while the synthetic price code remains the same."""
+    """The synthetic price code is the lifecycle identity across update clocks."""
     first = "35=X|55=AAPL|268=1|279=0|269=0|270=10.0|271=5|52=20260821-10:00:00"
     later = "35=X|55=AAPL|268=1|279=1|269=0|270=10.0|271=9|52=20260821-10:00:01"
     first_event, later_event = events(first)[0], events(later)[0]
-    assert first_event.xhash != later_event.xhash
-    assert txhash.micros_of(first_event.xhash) == first_event.creaunix // 1_000
-    assert txhash.micros_of(later_event.xhash) == later_event.creaunix // 1_000
-    assert txhash.vhash_of(first_event.xhash) == txhash.vhash_of(later_event.xhash)
+    assert first_event.xhash == later_event.xhash == first_event.xhash_of(first_event.code)
     assert first_event.codesource == later_event.codesource == "MDEntryPx"
 
 
@@ -725,10 +778,7 @@ def test_independently_parsed_entry_ids_share_their_code_digest() -> None:
     with_id = "35=X|55=AAPL|268=1|279=0|269=0|270=10.0|271=5|278=E-1|52=20260821-10:00:00"
     moved = "35=X|55=AAPL|268=1|279=1|269=0|270=11.0|271=5|278=E-1|52=20260821-10:00:01"
     first_event, moved_event = events(with_id)[0], events(moved)[0]
-    assert first_event.xhash != moved_event.xhash
-    assert txhash.micros_of(first_event.xhash) == first_event.creaunix // 1_000
-    assert txhash.micros_of(moved_event.xhash) == moved_event.creaunix // 1_000
-    assert txhash.vhash_of(first_event.xhash) == txhash.vhash_of(moved_event.xhash)
+    assert first_event.xhash == moved_event.xhash == first_event.xhash_of("E-1")
     assert first_event.codesource == moved_event.codesource == "MDEntryID"
 
 
@@ -766,14 +816,14 @@ def test_the_price_unit_is_the_instruments_currency() -> None:
 
 def test_fix_exchange_values_become_the_lossless_mic_code() -> None:
     order, fill = events(FILLED)
-    assert order.mic is fill.mic is MIC.from_str("XCME")
-    assert int(order.mic) == int.from_bytes(b"XCME", "big")
+    assert order.lastmkt is fill.lastmkt is MIC.from_str("XCME")
+    assert int(order.lastmkt) == int.from_bytes(b"XCME", "big")
 
 
 def test_fix_text_becomes_the_event_reason_and_session_ids_are_a_mic_fallback() -> None:
     (order,) = events("35=D|49=BUYSIDE|56=XPAR|11=CL-1|58=invalid price")
     assert order.reason == "invalid price"
-    assert order.mic is MIC.from_str("XPAR")
+    assert order.lastmkt is MIC.from_str("XPAR")
 
 
 def test_a_structured_reject_reason_fills_reason_when_text_is_absent() -> None:
@@ -787,18 +837,18 @@ def test_session_direction_does_not_split_one_order_lifecycle() -> None:
     received = "35=8|49=XPAR|56=BUYSIDE|55=AAPL|11=CL-1|39=0|150=0|60=20260821-10:00:01"
     (requested,) = events(sent)
     (reported,) = events(received)
-    assert requested.mic == reported.mic == MIC.from_str("XPAR")
-    assert requested.mic is reported.mic is MIC.from_str("XPAR")
+    assert requested.lastmkt == reported.lastmkt == MIC.from_str("XPAR")
+    assert requested.lastmkt is reported.lastmkt is MIC.from_str("XPAR")
     assert requested.xhash == reported.xhash
 
 
-def test_configured_mic_precedes_session_peer_fallbacks() -> None:
+def test_configured_feed_venue_precedes_stored_lastmkt_and_session_fallbacks() -> None:
     (order,) = events(
         "35=D|49=BUY1|56=XPAR|55=AAPL|11=CL-1",
         venue="XCME",
-        mic=MIC.from_str("XPAR"),
+        lastmkt=MIC.from_str("XPAR"),
     )
-    assert order.mic is MIC.from_str("XCME")
+    assert order.lastmkt is MIC.from_str("XCME")
 
 
 def test_the_asset_class_is_the_first_character_of_the_cfi_code() -> None:
@@ -1017,7 +1067,7 @@ def test_events_build_from_named_pairs_with_nothing_loaded() -> None:
         ],
         fix_version="4.4",
     )
-    assert order.side is Side.BUY and order.price == 10.5 and order.lastqty == 100.0
+    assert order.side is Side.BUY and order.lastpx == 10.5 and order.lastqty == 100.0
     assert order.unix == unix_of("20260821-10:00:00")
     assert order.metadata["MyOwnField"] == "kept"
 
@@ -1077,7 +1127,7 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     (order,) = list(reader)
     assert reader.version == "VENUE1"
     assert (order.symbolticker, order.clordid, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
-    assert (order.lastqty, order.price, order.unix) == (
+    assert (order.lastqty, order.lastpx, order.unix) == (
         7.0,
         10.5,
         unix_of("20260821-10:00:00"),
@@ -1378,10 +1428,8 @@ def test_a_two_sided_trade_capture_report_is_one_row_per_side_of_one_trade_lifec
         (Side.SELL, "O-SELL", "C-SELL"),
     ]
     assert {one.tradeid for one in events} == {"M-1"}
-    assert {(one.price, one.lastqty, one.unix) for one in events} == {(99.5, 7.0, events[0].unix)}
-    assert events[0].xhash == events[1].xhash
-    assert txhash.micros_of(events[0].xhash) == events[0].creaunix // 1_000
-    assert txhash.vhash_of(events[0].xhash) == hash_of("M-1")
+    assert {(one.lastpx, one.lastqty, one.unix) for one in events} == {(99.5, 7.0, events[0].unix)}
+    assert events[0].xhash == events[1].xhash == events[0].xhash_of("M-1")
 
 
 def test_a_single_sided_or_flat_trade_capture_report_stays_one_execution() -> None:
@@ -1390,7 +1438,7 @@ def test_a_single_sided_or_flat_trade_capture_report_stays_one_execution() -> No
         "552=1|54=1|37=O-9|11=C-9|10=000"
     )
     (execution,) = list(FixEvents.from_text(single))
-    assert (execution.side, execution.orderid, execution.price) == (Side.BUY, "O-9", 101.0)
+    assert (execution.side, execution.orderid, execution.lastpx) == (Side.BUY, "O-9", 101.0)
 
     flat = (
         "8=FIX.4.4|35=AE|571=R3|880=M-3|31=50|32=1|55=MSFT|54=2|37=O-3|60=20260814-11:00:00|10=000"
@@ -1456,8 +1504,8 @@ def test_a_quote_request_with_prices_is_read_like_any_other_quote() -> None:
         "133=1.081|135=2000000|60=20260814-10:00:00|10=000"
     )
     bid, ask = list(FixEvents.from_text(line))
-    assert (bid.side, bid.price, bid.lastqty) == (Side.BID, 1.08, 1000000.0)
-    assert (ask.side, ask.price, ask.lastqty) == (Side.ASK, 1.081, 2000000.0)
+    assert (bid.side, bid.lastpx, bid.lastqty) == (Side.BID, 1.08, 1000000.0)
+    assert (ask.side, ask.lastpx, ask.lastqty) == (Side.ASK, 1.081, 2000000.0)
 
 
 def test_a_mass_quote_acknowledgement_reads_its_entries() -> None:
@@ -1471,7 +1519,7 @@ def test_a_mass_quote_acknowledgement_reads_its_entries() -> None:
     assert entry.state is State.REJECTED
     # Rejected is terminal, so the working quantity is zeroed and the asked
     # size survives as the previous one.
-    assert (entry.side, entry.price, entry.lastqty, entry.prevqty) == (
+    assert (entry.side, entry.lastpx, entry.lastqty, entry.prevqty) == (
         Side.BID,
         9.0,
         0.0,
@@ -1486,7 +1534,7 @@ def test_a_trade_capture_report_request_carrying_a_trade_is_an_execution() -> No
     )
     (execution,) = list(FixEvents.from_text(line))
     assert isinstance(execution, Execution)
-    assert (execution.side, execution.price, execution.lastqty, execution.tradeid) == (
+    assert (execution.side, execution.lastpx, execution.lastqty, execution.tradeid) == (
         Side.BUY,
         100.0,
         5.0,
@@ -1503,7 +1551,7 @@ def test_an_execution_carries_how_its_trade_settles() -> None:
     (execution,) = list(FixEvents.from_text(line))
     assert execution.settldate == datetime.datetime(2026, 8, 18)
     assert execution.settltype == "W2"
-    assert execution.settlcurrency == "USD"
+    assert execution.settlcurrency is Currency.from_str("USD")
     assert execution.settlcurrfxratecalc == "M"
 
 
@@ -1564,7 +1612,7 @@ def test_a_side_never_answers_with_its_siblings_fields() -> None:
     assert {one.tradeid for one in (first, second)} == {"M-1"}, (
         "the report level still falls through"
     )
-    assert {one.price for one in (first, second)} == {99.5}
+    assert {one.lastpx for one in (first, second)} == {99.5}
 
 
 def test_a_side_with_nested_parties_does_not_truncate_the_sides_after_it() -> None:
@@ -1610,7 +1658,7 @@ def test_a_pure_trade_report_query_fabricates_no_execution() -> None:
         "60=20260814-10:00:00|10=000"
     )
     (execution,) = list(FixEvents.from_text(echoed))
-    assert (execution.tradeid, execution.price) == ("M-1", 100.0)
+    assert (execution.tradeid, execution.lastpx) == ("M-1", 100.0)
 
 
 def test_a_side_with_its_own_regulatory_stamp_keeps_it() -> None:

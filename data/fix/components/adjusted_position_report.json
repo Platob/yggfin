@@ -13,7 +13,9 @@
    "component": "AdjustedPositionReport",
    "msgtype": "BL",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

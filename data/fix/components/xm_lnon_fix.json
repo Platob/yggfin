@@ -13,7 +13,9 @@
    "component": "XMLnonFIX",
    "msgtype": "n",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": []
  }

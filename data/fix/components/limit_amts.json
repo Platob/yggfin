@@ -10,8 +10,14 @@
   "fix": {
    "component": "LimitAmts",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

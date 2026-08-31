@@ -10,8 +10,14 @@
   "fix": {
    "component": "TradeReportOrderDetail",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

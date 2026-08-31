@@ -12,7 +12,9 @@
    "component": "OrderMassActionReport",
    "msgtype": "BZ",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

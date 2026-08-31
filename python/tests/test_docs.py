@@ -243,7 +243,12 @@ def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) 
         for shared in ("schemas", "data", "python"):
             source_path = DOCS.parent / shared
             if source_path.exists():
-                (root / shared).symlink_to(source_path, target_is_directory=True)
+                try:
+                    (root / shared).symlink_to(source_path, target_is_directory=True)
+                except OSError as error:
+                    if getattr(error, "winerror", None) == 1314:
+                        pytest.skip("Windows symlink privilege is unavailable")
+                    raise
         carried: list[str] = []
         for index, source in enumerate(fences):
             outside = any(mark in source for mark in _OUTSIDE)

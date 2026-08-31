@@ -11,7 +11,9 @@
    "component": "TradeAggregationReport",
    "msgtype": "DX",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

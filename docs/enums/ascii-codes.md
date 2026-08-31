@@ -49,7 +49,8 @@ spelling this package has never compiled still answers.
 ## What a code may be
 
 A code is at most `BYTE_WIDTH` characters of printable ASCII — bytes 32 to
-126. A spelling too long, holding a NUL, or outside ASCII is not a code, and
+126. Trailing NUL storage padding is stripped from string input. A spelling
+too long, holding an embedded NUL, or outside ASCII is not a code, and
 `from_int` answers `UNKNOWN` for a stored value that decodes to one:
 
 ```python
@@ -91,20 +92,29 @@ so every code is its own band.
 
 | Enum | Base | Stored | Set |
 | --- | --- | --- | --- |
-| [EventType](event-type.md) | `Ascii64` | `int64` | closed |
-| [State](state.md) | `Ascii64` | `int64` | closed |
-| [AssetKind](asset-kind.md) | `Ascii64` | `int64` | closed |
-| [MarketKind](market-kind.md) | `Ascii64` | `int64` | closed |
-| [OptionKind](option-kind.md) | `Ascii64` | `int64` | closed |
+| [EventType](event-type.md) | `Ascii64` | `int64` | open |
+| [State](state.md) | `Ascii64` | `int64` | open |
+| [AssetKind](asset-kind.md) | `Ascii64` | `int64` | open |
+| [MarketKind](market-kind.md) | `Ascii64` | `int64` | open |
+| [OptionKind](option-kind.md) | `Ascii64` | `int64` | open |
 | [Protocol](protocol.md) | `Ascii64` | `int64` | open |
-| [Direction](direction.md) | `Ascii32` | `int32` | closed |
+| [Direction](direction.md) | `Ascii32` | `int32` | open |
 | [MIC](mic.md) | `Ascii32` | `int32` | open |
 | [Currency](currency.md) | `Ascii32` | `int32` | open |
 | [SecurityIDSource](security-id-source.md) | `Ascii32` | `int32` | open |
-| [Side](side.md) | `Ascii32` | `int32` | closed |
-| [TimeInForce](time-in-force.md) | `Ascii32` | `int32` | closed |
+| [Side](side.md) | `Ascii32` | `int32` | open |
+| [TimeInForce](time-in-force.md) | `Ascii32` | `int32` | open |
 
-A **closed** set answers only on the codes it compiles, which keeps a Python
-answer and a pushed code-set filter on the same rows. An **open** one —
-`Protocol`, `MIC`, `Currency`, `SecurityIDSource` — registers a code it meets,
-and even there only an exact round trip of the stored bytes registers.
+```python
+future = State.from_str("90VENUE")
+print(future.code, future.rank, State.from_int(int(future)) is future)
+```
+
+```text
+90VENUE 0 True
+```
+
+Every set registers a valid code it meets. Compiled members remain the finite
+set used by rank filters and published member tables. A runtime code in a
+ranked enum has rank zero until its meaning is compiled, so it cannot enter a
+semantic band by accident.

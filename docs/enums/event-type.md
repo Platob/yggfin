@@ -1,6 +1,6 @@
 # EventType
 
-[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, an open vocabulary, so a valid code registers when first read.
 
 ```python
 from rekep.enums import EventType

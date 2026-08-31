@@ -16,7 +16,9 @@
    "component": "MarketDataRequest",
    "msgtype": "V",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

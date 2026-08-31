@@ -12,11 +12,11 @@
   },
   "fields": [
    {
-    "name": "Price",
+    "name": "LastPx",
     "type": "string",
     "nullable": true,
     "fix": {
-     "tag": "44"
+     "tag": "31"
     }
    },
    {

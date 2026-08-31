@@ -42,7 +42,6 @@ from rekep.market.identity import (
     NIL,
     framed_arrow,
     hash_bytes_arrow,
-    hash_of,
 )
 from rekep.market.ticker import SymbolTicker
 
@@ -119,7 +118,7 @@ class Leg(MarketConvertible):
     @property
     def xhash(self) -> int:
         """Stable reference digest of `symbolticker`; zero when it is empty."""
-        return hash_of(self.symbolticker) if self.symbolticker else NIL
+        return Event.xhash_of(self.symbolticker)
 
     @classmethod
     def from_fix_arrow(
@@ -184,7 +183,7 @@ class Instrument(MarketConvertible):
             }
         )
 
-    symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
+    symbolticker: Annotated[str, fix_tag("SymbolTicker")] = ""
     """Canonical spelling selected from the FIX instrument identifiers."""
 
     symbol: Annotated[str, fix_tag("Symbol")] = ""
@@ -204,9 +203,7 @@ class Instrument(MarketConvertible):
     # <454>` group. Flat because it is what a human looks an instrument up by
     # and what a reference-data join keys on, and neither can reach into a map
     # on any engine below Arrow.
-    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), Field.column("ISINCode")] = (
-        None
-    )
+    isincode: Annotated[str | None, Field(metadata={"iso": "6166"}), fix_tag("ISINCode")] = None
     """ISO 6166 identifier, wherever the message carried it; null when it did not."""
 
     securitytype: Annotated[str | None, fix_tag("SecurityType")] = None
@@ -282,7 +279,7 @@ class Instrument(MarketConvertible):
     @property
     def xhash(self) -> int:
         """Digest of `symbolticker`; zero when the ticker is empty."""
-        return hash_of(self.symbolticker) if self.symbolticker else NIL
+        return Event.xhash_of(self.symbolticker)
 
     def enriched_with(self, other: Instrument) -> Instrument | None:
         """These facts plus values only the other observation knows."""
@@ -448,8 +445,8 @@ class InstrumentUpdate(Event):
     # A current-reference table replaces one lifecycle at a time. The nested
     # ticker cannot be an Iceberg identifier field, so the event's top-level
     # lifecycle key is the merge key every engine can use.
-    xhash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
-    """Creation-anchored lifecycle identity of the instrument update."""
+    xhash: Annotated[int, Field.primary_key(dtype=HASH), Field.column("XHash")] = NIL
+    """Direct XXH3-128 digest of the component's canonical ticker."""
 
     # Last because Iceberg counts nested leaves in declaration order for the
     # bounds it collects; see docs/market/index.md.
@@ -524,6 +521,7 @@ class InstrumentUpdate(Event):
         unix: Any = 0,
         creaunix: Any | None = None,
         recunix: Any | None = None,
+        plugin: Any = "",
     ) -> pyarrow.RecordBatch:
         """Wrap component columns in identified update envelopes with Arrow kernels."""
         if isinstance(source, pyarrow.RecordBatch):
@@ -550,7 +548,7 @@ class InstrumentUpdate(Event):
         clock = _broadcast(unix, rows, pyarrow.int64())
         ticker = compute.struct_field(component, "symbolticker")
         creation = clock if creaunix is None else _broadcast(creaunix, rows, pyarrow.int64())
-        xhash = cls.xhash_arrow(creation, ticker)
+        xhash = cls.xhash_arrow(ticker)
         field = cls.into_field()
         values = _default_columns(field, rows)
         values.update(
@@ -560,6 +558,7 @@ class InstrumentUpdate(Event):
                 "eventtype": _broadcast(int(EventType.INSTRUMENT), rows, pyarrow.int64()),
                 "creaunix": creation,
                 "recunix": clock if recunix is None else _broadcast(recunix, rows, pyarrow.int64()),
+                "plugin": _broadcast(plugin, rows, pyarrow.string()),
                 "xhash": xhash,
                 "code": ticker,
                 "codesource": compute.if_else(compute.equal(ticker, ""), "", "SymbolTicker"),
@@ -603,6 +602,7 @@ class InstrumentUpdate(Event):
                         unix=event.unix,
                         creaunix=event.creaunix,
                         recunix=event.recunix,
+                        plugin=event.plugin,
                     )
                 )
 
@@ -630,6 +630,7 @@ class InstrumentUpdate(Event):
                             unix=reader.unix,
                             creaunix=reader.creation_unix,
                             recunix=reader.recorded_unix,
+                            plugin=reader.message.plugin,
                         )
 
         return cls.enriched(observed())
@@ -1046,7 +1047,7 @@ def _update_vhash_arrow(
         cls.__name__,
         values["eventtype"],
         values["state"],
-        values["mic"],
+        values["lastmkt"],
         values["code"],
         values["codesource"],
         values["reason"],

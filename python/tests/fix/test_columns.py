@@ -27,7 +27,7 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 #: Derived from the module, then pinned, so a tag added or dropped fails here
 #: rather than quietly changing the shape of every stored log.
 EXPECTED_SESSION = 33
-EXPECTED_COMMON = 35
+EXPECTED_COMMON = 49
 EXPECTED_QUOTE = 18
 
 

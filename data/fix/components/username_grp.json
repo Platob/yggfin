@@ -11,8 +11,12 @@
   "fix": {
    "component": "UsernameGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"UserNotification\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "UserNotification"
+   ]
   },
   "fields": [
    {

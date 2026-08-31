@@ -12,7 +12,9 @@
    "component": "MarketDefinitionUpdateReport",
    "msgtype": "BV",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

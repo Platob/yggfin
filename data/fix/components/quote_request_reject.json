@@ -15,7 +15,9 @@
    "component": "QuoteRequestReject",
    "msgtype": "AG",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

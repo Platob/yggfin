@@ -369,7 +369,6 @@ class ComponentRecord(Convertible):
             metadata={
                 "fix:component": self.name,
                 "fix:version": version,
-                "fix:display": self.name,
             },
         )
 
@@ -466,7 +465,6 @@ def _component_fields(
         name = column_name(member.name)
         if field is not None and field.fix.column:
             name = field.fix.column
-        display = field.fix.display if field is not None and field.fix.display else member.name
         if quickfix.is_group(member):
             entry = quickfix.entry_of(member)
             item = _component_fields(entry, fields, components, seen)
@@ -478,11 +476,11 @@ def _component_fields(
                             name=column_name(entry.name),
                             dtype=pyarrow.struct([one.into_arrow_field() for one in item]),
                             nullable=False,
-                            metadata={"fix:name": entry.name, "fix:display": entry.name},
+                            metadata={"fix:name": entry.name},
                         ).into_arrow_field()
                     ),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name, "fix:display": display},
+                    metadata={"fix:name": member.name},
                 )
             )
         elif quickfix.is_reference(member):
@@ -497,7 +495,7 @@ def _component_fields(
                     name=name,
                     dtype=field.dtype if field is not None else pyarrow.string(),
                     nullable=member.nullable is not False,
-                    metadata={"fix:name": member.name, "fix:display": display},
+                    metadata={"fix:name": member.name},
                 )
             )
     return built

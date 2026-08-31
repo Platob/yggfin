@@ -6,9 +6,9 @@ compressed copy. Runtime jobs can therefore stay offline.
 ```text
 data/fix/versions.json          the version list, session layers, and which
                                 versions have had their spec read
-data/fix/fields/000000.json     tags 0-499, one cross-version record each
-data/fix/fields/000060.json     tags 30000-30499, rekep package vocabulary
-data/fix/fields/000080.json     tags 40000-40499, the 5.0.SP2 extension pack
+data/fix/fields/000000.json     tags 0-999, one cross-version record each
+data/fix/fields/000030.json     tags 30000-30999, rekep package vocabulary
+data/fix/fields/000040.json     tags 40000-40999, the 5.0.SP2 extension pack
 data/fix/fields/999999.json     the fields FIX never numbered
 data/fix/components/parties.json  one component, declared as a Field
 data/fix/components/new_order_single.json  a message, declared the same way
@@ -16,19 +16,20 @@ data/fix-conflicts.json         every reading the collapse dropped
 ```
 
 A field's record is cross-version by nature: one tag, one reading, and
-`versions` -- the list of versions that declare it. Shards hold five hundred
+`versions` -- the list of versions that declare it. Shards hold one thousand
 tags each and are named by the shard index, so the document holding a tag is
-`tag // 500` and nothing has to be looked up; a field FIX never numbered keys
+`tag // 1000` and nothing has to be looked up; a field FIX never numbered keys
 by its name and lands in `999999`, the one index no tag reaches. The tag space
-is sparse, so fifteen shards hold 6,097 tagged fields and `999999.json` holds
-three rendered ones. Empty ranges are absent, and a lookup reads one shard.
+is sparse, so ten files hold the populated ranges and named fields. Empty
+ranges are absent, and a lookup reads one shard.
 
 Three ordered sources fill it. Nanoconda supplies the first reading and the
 symbolic name of every enumerated value. OnixS fills missing prose, values and
 usage. The QuickFIX spec fills machine-readable types, extension-pack fields,
 session layers and the component and message trees. Each field stores its
 primary source, every source that answered, and the source of each scalar and
-value part.
+value part. JSON-valued metadata stays as nested arrays and objects in the
+shards; the reader restores its compact Arrow metadata string on load.
 Prose-only valid-value lists are not enumerations: every published enumeration
 has a source-supplied symbolic name for each wire value.
 
@@ -44,7 +45,7 @@ The registry is also the source of the package fields and per-field timezone
 refinements:
 
 ```python
-for name in ("OrigTime", "MarketEventType", "XHash", "LinkXHashes", "CodeSource"):
+for name in ("OrigTime", "MarketEventType", "XHash", "LinkHashes", "CodeSource"):
     field = registry.field(name, "5.0.SP2")
     print(f"{name:18} {field.dtype}")
 ```
@@ -53,14 +54,16 @@ for name in ("OrigTime", "MarketEventType", "XHash", "LinkXHashes", "CodeSource"
 OrigTime           timestamp[us, tz=UTC]
 MarketEventType    int64
 XHash              fixed_size_binary[16]
-LinkXHashes        list<item: fixed_size_binary[16] not null>
+LinkHashes         list<item: fixed_size_binary[16] not null>
 CodeSource         string
 ```
 
 Package fields use bare names. `MarketEventType <30002>` distinguishes the
 package event kind from standard `EventType <865>`; the six package message
-declarations retain `REKEP.`. Tags 30022 and 30023 stay empty:
-`RekepMarket` references standard `Price <44>` and `LastQty <32>`.
+declarations retain `REKEP.`. The event venue uses standard `LastMkt <30>`
+with the packed `MIC` enum. Tags 30018, 30022, and 30023 stay empty:
+`RekepHeader` references `LastMkt`; `RekepMarket` references standard
+`Price <44>` and `LastQty <32>`.
 
 ```bash
 cd python
@@ -105,7 +108,7 @@ publish_full('../data/fix', '../data/fix.zip')"
 ```
 
 Then rebuild the projection the wheel ships. It selects the standard keys
-`rekep.fix.publish.PROJECTED` names, adds rekep's 26 frozen fields, and carries
+`rekep.fix.publish.PROJECTED` names, adds rekep's 35 frozen fields, and carries
 every declaration, messages included:
 
 ```bash

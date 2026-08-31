@@ -116,39 +116,39 @@ not one per version:
 {"54": {"name": "Side", "type": "string", "nullable": true,
         "description": "Side of order.",
         "fix": {"tag": "54", "type": "char",
-                "versions": "[\"4.4\",\"4.3\",\"4.2\"]",
-                "values": "[{\"value\":\"1\",\"meaning\":\"Buy\",\"aliases\":[\"Buy\"]}]"}}}
+                "versions": ["4.4", "4.3", "4.2"],
+                "values": [{"value": "1", "meaning": "Buy",
+                            "aliases": ["Buy"]}]}}}
 ```
 
 A record is a `Field` document -- the Arrow reading at the top, the protocol's
-own keys under `fix`, and each key holding a list packed into one JSON string
-because Arrow field metadata is bytes to bytes. So is a component, a message
-and every file in `schemas/rekep/`: one shape to read and one to write, and no
-codec of its own to keep in step with the others.
+own keys under `fix`, with JSON objects and arrays left nested for review.
+Loading the record encodes those values back into Arrow's bytes-to-bytes
+metadata. A component, a message and every file in `schemas/rekep/` use the
+same `Field` document shape.
 
 Having a tag is the whole of being a standard field, so nothing states the
 kind beside it. One enumerated value is one record -- what the wire carries,
 what it means, and every other spelling naming it -- and the lookups a parse
 needs are derived from it, never stored beside it.
 
-Records live in tag-range shards of five hundred, named by the shard index:
+Records live in tag-range shards of one thousand, named by the shard index:
 
 ```text
 versions.json         the version list, each version's session layer,
                       and which versions have had their spec read
-fields/000000.json    tags 0-499
-fields/000060.json    tags 30000-30499, rekep package vocabulary
-fields/000080.json    tags 40000-40499, the 5.0.SP2 extension pack
+fields/000000.json    tags 0-999
+fields/000030.json    tags 30000-30999, rekep package vocabulary
+fields/000040.json    tags 40000-40999, the 5.0.SP2 extension pack
 fields/999999.json    the fields FIX never numbered
 components/parties.json          one component
 components/new_order_single.json a message
 ```
 
-The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
+The document holding a tag is `tag // 1000` -- arithmetic, so there is no index,
 no lookup table and no scan, and `registry.lookup(54)` deserializes one shard
 rather than the dictionary. The tag space is sparse, and an empty shard is
-simply absent: fifteen shards hold 6,097 tagged fields and `fields/999999.json`
-holds three rendered ones.
+simply absent: ten files hold the populated ranges and named fields.
 
 JSON, and measured: every process importing this package parses a projection of
 the dictionary, where pure-Python YAML costs 25 seconds to read against a tenth
@@ -187,7 +187,7 @@ it kept. The report is a list somebody can read; a silent drop is not.
 The counts are pinned in `rekep.fix.publish.CONFLICT_BASELINE` and a rebuild
 that grows past them fails.
 
-### The one conversion
+### Value codecs
 
 `encode` maps a value spelled as text to the wire value it names, so
 `TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. Each raw value
@@ -201,25 +201,27 @@ never stored: it was three hundred kilobytes of the published dictionary
 saying nothing the values did not already say. Recording an estate's own
 spelling is one more alias on the value it names.
 
-There is **no conversion the other way**. A wire value is the fact, and
-`meaning` says what it officially means; a name derived back out of the value
-was a second vocabulary nobody declared, and two readers of it came to
-disagree. Market dispatch asks the dictionary to spell the sixteen message
-shapes this package implements and matches the answers, which is the same
-question a venue's own MsgTypes answer too.
+`decode` maps a wire value to the leading symbolic spelling the registry
+decided, while `meaning` returns its prose. Both fall through safely when a
+field declares no transformation. `arrow_encode` and `arrow_decode` apply the
+same maps to columns and return an identity column untouched.
 
 Two values that normalize alike emit neither key: an ambiguous encoding that
 silently picks one is worse than none, and the lookup falls through to the raw
 value. The dropped keys are counted with the conflict report.
 
 ```python
-field = registry.resolve("TrdRegTimestampType")
+import pyarrow
 
-print(field.fix.encode("ORDER_SUBMISSION_TIME"), field.fix.meaning("10"))
+field = registry.resolve("Side")
+assert field.fix.encode("Buy") == "1"
+assert field.fix.decode("1") == "Buy"
+assert field.fix.meaning("1") == "Buy"
+print(field.fix.arrow_encode(pyarrow.array(["Buy", "2"])).to_pylist())
 ```
 
 ```text
-10 ORDER_SUBMISSION_TIME
+['1', '2']
 ```
 
 ### Resolving a name
@@ -407,15 +409,17 @@ Protocol-specific code should normalize values, not duplicate registry tables.
 
 ### What the wheel carries
 
-`data/fix.zip` is the whole dictionary plus rekep's 26 frozen fields and stays
+`data/fix.zip` is the whole dictionary plus rekep's 35 frozen fields and stays
 beside the repository. The wheel ships `rekep/fix/registry.zip`: the standard
 keys `rekep.fix.publish.PROJECTED` names, those same package fields, and every
 version's declarations, messages included, whole.
 
 Package fields have bare canonical names. `MarketEventType <30002>` avoids the
 standard `EventType <865>`; the six package message declarations keep their
-`REKEP.` namespace. Tags 30022 and 30023 are unassigned because
-`RekepMarket` references standard `Price <44>` and `LastQty <32>` directly.
+`REKEP.` namespace. `LastMkt <30>` and `SettlCurrency <120>` keep their standard
+FIX identities while storing packed `MIC` and `Currency` codes. Tags 30018,
+30022, and 30023 are unassigned because the components reference `LastMkt`,
+`Price <44>`, and `LastQty <32>` directly.
 
 A component says where a repeating group starts and ends, so a projection that
 selected its members alongside the fields would end the group somewhere else,
@@ -479,7 +483,7 @@ So a component file reads like a contract file, because it is one -- the same
 document `Field.into_dict()` writes for `schemas/rekep/*.yaml` -- and there is
 no second tree to keep in step with the first. FIX's own names are what the
 declaration says; the Arrow projection folds them when it builds columns, and
-records each one under `fix:display` so the spelling survives the fold.
+records each one under `fix:name` so the spelling survives the fold.
 Whether a member is required is its nullability, which is the same fact under
 the name the rest of the package already uses for it.
 

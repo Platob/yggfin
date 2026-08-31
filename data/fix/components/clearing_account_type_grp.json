@@ -10,8 +10,12 @@
   "fix": {
    "component": "ClearingAccountTypeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"SecurityList\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "SecurityList"
+   ]
   },
   "fields": [
    {

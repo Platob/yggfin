@@ -14,8 +14,11 @@ import xxhash
 
 from rekep import txhash
 
-#: The Arrow type of a time-anchored event hash.
+#: The Arrow type shared by event, lifecycle, and reference identities.
 HASH = pyarrow.binary(txhash.WIDE_WIDTH)
+
+#: The zero digest written for a required wide identity nobody could name.
+NIL_BYTES = b"\x00" * txhash.WIDE_WIDTH
 
 #: The immutable wire protocol implemented here and in `docs/contracts/identity.md`.
 IDENTITY_PROTOCOL = "rekep-identity-v1"
@@ -63,6 +66,19 @@ def hash_bytes_arrow(raw: Any) -> pyarrow.Array:
     if isinstance(binary, pyarrow.Scalar):
         binary = pyarrow.array([binary.as_py()], type=pyarrow.binary())
     return _digested(binary)
+
+
+def hash128_bytes(raw: bytes) -> int:
+    """Hash one unframed blob with XXH3-128 seed 0 and return signed bits."""
+    return txhash.wide_of(xxhash.xxh3_128_digest(raw))
+
+
+def hash128_bytes_arrow(raw: Any) -> pyarrow.Array:
+    """Hash each unframed UTF-8 or binary value to its sixteen-byte digest."""
+    binary = _binary(raw)
+    if isinstance(binary, pyarrow.Scalar):
+        binary = pyarrow.array([binary.as_py()], type=pyarrow.binary())
+    return _digested128(binary)
 
 
 #: Cached prefixes cover nearly every market identity part.
@@ -192,7 +208,7 @@ def hash_arrow(*columns: Any) -> pyarrow.Array:
 
 
 def arrow_of(values: Any) -> pyarrow.Array:
-    """Signed identities padded to the event-hash width for nested framing."""
+    """Identities at their sixteen-byte stored width for nested framing."""
     if isinstance(values, pyarrow.ChunkedArray):
         return pyarrow.chunked_array([arrow_of(chunk) for chunk in values.chunks], type=HASH)
     if isinstance(values, pyarrow.Array):
@@ -205,12 +221,12 @@ def arrow_of(values: Any) -> pyarrow.Array:
 
 
 def hash_bytes_of(value: Any) -> bytes | None:
-    """One signed identity padded to sixteen bytes for a nested frame."""
+    """One in-memory identity as its sixteen stored bytes."""
     return txhash.wide_bytes(value)
 
 
 def hash_int_of(value: Any) -> int | None:
-    """One padded or integer identity as the signed value a reader uses."""
+    """One stored or integer identity as the signed value a reader uses."""
     return None if value is None else txhash.wide_of(value)
 
 
@@ -221,8 +237,8 @@ def stored_member(name: str, value: Any) -> Any:
     """One member as a column stores it, by the name that says what it is.
 
     Named rather than typed because the vectorized builders assemble a batch
-    member by member and never hold the whole row: event and lifecycle hashes
-    use the same stored width wherever they appear.
+    member by member and never hold the whole row. Exact event hashes and
+    lifecycle identities share a stored width, though only `hash` has a clock.
     """
     if value is None:
         return None
@@ -249,11 +265,11 @@ def read_member(name: str, value: Any) -> Any:
     return value
 
 
-#: Members whose Arrow representation is a sixteen-byte anchored hash.
-_WIDE_MEMBERS = frozenset(("hash", "xhash", "prevhash"))
+#: Members whose Arrow representation is a sixteen-byte identity.
+_WIDE_MEMBERS = frozenset(("hash", "xhash", "prevhash", "instrumentxhash"))
 
 #: Lists whose items use the same sixteen-byte anchored-hash representation.
-_WIDE_LIST_MEMBERS = frozenset(("linkxhashes", "parenthash"))
+_WIDE_LIST_MEMBERS = frozenset(("linkhashes", "parenthash"))
 
 #: Every member a stored row spells differently from a document.
 ROW_SPELLED = frozenset((*_WIDE_MEMBERS, *_WIDE_LIST_MEMBERS))
@@ -265,8 +281,8 @@ ROW_SPELLED = frozenset((*_WIDE_MEMBERS, *_WIDE_LIST_MEMBERS))
 def _int64_bytes(value: int) -> bytes:
     """One integer part, eight bytes, refusing what Rust cannot hold as an `i64`.
 
-    A time-anchored event or lifecycle hash is wider and enters a frame through
-    `hash_bytes_of`; value and reference hashes already fit this width.
+    A stored event or lifecycle identity is wider and enters a frame through
+    `hash_bytes_of`; value hashes fit this width directly.
     """
     try:
         return LENGTH.pack(value)
@@ -403,4 +419,31 @@ def _digested(joined: pyarrow.Array) -> pyarrow.Array:
         return hashed
     return pyarrow.compute.if_else(
         pyarrow.compute.is_valid(joined), hashed, pyarrow.scalar(None, pyarrow.int64())
+    )
+
+
+def _digested128(joined: pyarrow.Array) -> pyarrow.Array:
+    """One XXH3-128 digest per row in its canonical big-endian byte spelling."""
+    digest = xxhash.xxh3_128_digest
+    rows = len(joined)
+    out = bytearray(txhash.WIDE_WIDTH * rows)
+    if rows:
+        _, offset_buffer, data_buffer = joined.buffers()[:3]
+        wide = pyarrow.types.is_large_binary(joined.type)
+        start = joined.offset
+        offsets = (
+            memoryview(offset_buffer).cast("q" if wide else "i")[start : start + rows + 1].tolist()
+        )
+        data = memoryview(data_buffer)
+        begin = offsets[0]
+        for row in range(rows):
+            end = offsets[row + 1]
+            cell = row * txhash.WIDE_WIDTH
+            out[cell : cell + txhash.WIDE_WIDTH] = digest(data[begin:end])
+            begin = end
+    hashed = pyarrow.FixedSizeBinaryArray.from_buffers(HASH, rows, [None, pyarrow.py_buffer(out)])
+    if not joined.null_count:
+        return hashed
+    return pyarrow.compute.if_else(
+        pyarrow.compute.is_valid(joined), hashed, pyarrow.scalar(None, HASH)
     )

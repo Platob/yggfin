@@ -13,8 +13,13 @@
   "fix": {
    "component": "LegQuotGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"Quote\",\"QuoteResponse\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "Quote",
+    "QuoteResponse"
+   ]
   },
   "fields": [
    {

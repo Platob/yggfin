@@ -13,8 +13,12 @@
   "fix": {
    "component": "InstrmtMDReqGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataRequest"
+   ]
   },
   "fields": [
    {

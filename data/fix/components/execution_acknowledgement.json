@@ -12,7 +12,9 @@
    "component": "ExecutionAcknowledgement",
    "msgtype": "BN",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

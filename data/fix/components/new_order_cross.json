@@ -15,7 +15,9 @@
    "component": "NewOrderCross",
    "msgtype": "s",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

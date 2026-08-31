@@ -11,8 +11,12 @@
   "fix": {
    "component": "ApplIDReportGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ApplicationMessageReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ApplicationMessageReport"
+   ]
   },
   "fields": [
    {

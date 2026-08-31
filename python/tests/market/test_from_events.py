@@ -35,7 +35,7 @@ def order(unix: int, side: Side, px: float, qty: float, named: str, **given: obj
     declared = {
         "unix": unix,
         "side": side,
-        "price": px,
+        "lastpx": px,
         "lastqty": qty,
         "orderid": named,
         "state": State.NEW,
@@ -47,7 +47,7 @@ def order(unix: int, side: Side, px: float, qty: float, named: str, **given: obj
 def trade(unix: int, px: float, qty: float, **given: object) -> Execution:
     declared = {
         "unix": unix,
-        "price": px,
+        "lastpx": px,
         "lastqty": qty,
         "state": State.FILLED,
         "execid": f"EX-{unix}",
@@ -86,7 +86,7 @@ def test_an_instant_that_moved_nothing_still_keeps_its_audit_delta() -> None:
         Execution(
             unix=20,
             code="BTC-USD",
-            price=100.0,
+            lastpx=100.0,
             lastqty=1.0,
             state=State.ACCEPTED,
         )
@@ -172,7 +172,7 @@ def test_a_stream_carrying_two_instruments_folds_each_on_its_own() -> None:
             unix=20,
             code="ETH-USD",
             side=Side.BID,
-            price=1.0,
+            lastpx=1.0,
             lastqty=1.0,
             state=State.NEW,
         ),
@@ -191,7 +191,7 @@ def test_one_instrument_s_book_never_sees_another_s_orders() -> None:
             unix=20,
             code="ETH-USD",
             side=Side.ASK,
-            price=1.0,
+            lastpx=1.0,
             lastqty=99.0,
             state=State.NEW,
         ),
@@ -216,7 +216,7 @@ def test_a_market_order_rests_nowhere_and_moves_no_book() -> None:
     first, audited = books([*TWO_SIDED, unpriced])
     assert audited.bidqty == first.bidqty and audited.askqty == first.askqty
     assert len(audited.deltas) == 1
-    assert audited.deltas[0].lastqty == 5.0 and audited.deltas[0].price is None
+    assert audited.deltas[0].lastqty == 5.0 and audited.deltas[0].lastpx is None
 
 
 # -- what it carries ---------------------------------------------------------
@@ -235,7 +235,7 @@ def test_the_units_come_from_the_events_folded_and_not_the_one_after_them() -> N
         Execution(
             unix=20,
             code="BTC-USD",
-            price=100.0,
+            lastpx=100.0,
             lastqty=1.0,
             state=State.FILLED,
         )
@@ -244,10 +244,10 @@ def test_the_units_come_from_the_events_folded_and_not_the_one_after_them() -> N
     assert first.pxunit == "USD"
 
 
-def test_a_book_links_to_the_lifecycles_that_changed_its_delta() -> None:
+def test_a_book_links_to_the_exact_events_that_changed_its_delta() -> None:
     (only,) = books(TWO_SIDED)
     assert only.parenthash == [event.hash for event in only.deltas]
-    assert only.linkxhashes == [event.xhash for event in only.deltas]
+    assert only.linkhashes == [event.hash for event in only.deltas]
 
 
 # -- the levels, and the orders under them -----------------------------------
@@ -345,7 +345,7 @@ def test_a_partial_restatement_still_copies_and_completes(
     moved, settled = side._applied(partial)
 
     assert moved and settled is not None
-    assert (settled.price, settled.lastqty) == (100.0, 4.0)
+    assert (settled.lastpx, settled.lastqty) == (100.0, 4.0)
     assert calls == ["copy", "complete"]
 
 
@@ -454,21 +454,21 @@ def test_a_level_of_zero_is_not_a_level() -> None:
 def test_the_touch_and_the_spread_are_computed_across_both_sides() -> None:
     (only,) = books(TWO_SIDED)
     assert (only.bidpx, only.askpx) == (100.0, 100.5)
-    assert only.price == 100.25 and only.spread == pytest.approx(0.5)
+    assert only.lastpx == 100.25 and only.spread == pytest.approx(0.5)
     assert only.lastqty == 12.0, "the size at the touch, both sides"
 
 
 def test_the_flat_pair_of_mid_and_spread_is_the_best_bid_and_offer_exactly() -> None:
     """Which is why neither is stored twice, and why there is no `crossed` flag."""
     (only,) = books(TWO_SIDED)
-    assert only.price - only.spread / 2 == only.bidpx
-    assert only.price + only.spread / 2 == only.askpx
+    assert only.lastpx - only.spread / 2 == only.bidpx
+    assert only.lastpx + only.spread / 2 == only.askpx
 
 
 def test_the_vwap_leans_towards_the_side_with_less_size() -> None:
     (only,) = books(TWO_SIDED)
     assert only.vwap == pytest.approx((100.0 * 7.0 + 100.5 * 5.0) / 12.0)
-    assert only.vwap < only.price, "more offered than bid, so the fair price is lower"
+    assert only.vwap < only.lastpx, "more offered than bid, so the fair price is lower"
 
 
 def test_the_imbalance_is_signed_towards_the_heavier_side() -> None:
@@ -479,7 +479,7 @@ def test_the_imbalance_is_signed_towards_the_heavier_side() -> None:
 def test_a_one_sided_book_has_no_prices_across_it() -> None:
     (only,) = books([order(10, Side.BID, 100.0, 5.0, "B1")])
     assert only.bidpx == 100.0
-    assert only.price is None and only.spread is None and only.vwap is None
+    assert only.lastpx is None and only.spread is None and only.vwap is None
 
 
 def test_an_empty_book_says_so_in_its_state() -> None:
@@ -522,7 +522,7 @@ def test_a_fill_that_names_an_order_takes_it_out_of_that_order_s_side() -> None:
     _, second = books(
         [
             *TWO_SIDED,
-            trade(20, 100.0, 2.0, linkxhashes=[resting_order.xhash]),
+            trade(20, 100.0, 2.0, linkhashes=[resting_order.hash]),
         ]
     )
     assert second.bidqty == 3.0
@@ -533,7 +533,7 @@ def test_a_fill_tries_linked_event_hashes_in_order() -> None:
     _, second = books(
         [
             *TWO_SIDED,
-            trade(20, 100.5, 2.0, linkxhashes=[-1, placed.xhash]),
+            trade(20, 100.5, 2.0, linkhashes=[-1, placed.hash]),
         ]
     )
     assert second.bidqty == 3.0 and second.askqty == 7.0
@@ -572,7 +572,7 @@ def test_an_acknowledgement_takes_nothing_out() -> None:
         Execution(
             unix=20,
             code="BTC-USD",
-            price=100.0,
+            lastpx=100.0,
             lastqty=99.0,
             state=State.ACCEPTED,
         )
@@ -586,13 +586,13 @@ def test_a_trade_is_recorded_on_the_side_it_hit() -> None:
     _, second = books([*TWO_SIDED, trade(20, 100.0, 2.0)])
     (changed,) = second.bidlevels
     assert (changed.px, changed.qty) == (100.0, 3.0)
-    assert [(one.price, one.lastqty) for one in second.executions] == [(100.0, 2.0)]
+    assert [(one.lastpx, one.lastqty) for one in second.executions] == [(100.0, 2.0)]
     assert second.asklevels == []
 
 
 def test_a_later_fill_does_not_mutate_the_prior_flattened_order() -> None:
     placed = order(10, Side.BID, 100.0, 5.0, "B1")
-    fill = trade(20, 100.0, 2.0, linkxhashes=[placed.xhash])
+    fill = trade(20, 100.0, 2.0, linkhashes=[placed.hash])
 
     first, second = books([placed, fill])
 
@@ -609,7 +609,7 @@ def test_a_trade_bigger_than_the_level_walks_the_orders_in_the_order_they_sit() 
         (100.0, 0.0),
         (99.5, 2.0),
     ]
-    assert [(one.price, one.lastqty) for one in second.executions] == [(100.0, 6.0)]
+    assert [(one.lastpx, one.lastqty) for one in second.executions] == [(100.0, 6.0)]
 
 
 def test_a_print_against_a_book_this_fold_never_saw_takes_nothing() -> None:
@@ -633,7 +633,7 @@ def test_a_side_that_did_not_move_carries_no_delta_on_the_next_row() -> None:
 
 
 def test_a_book_whose_side_emptied_has_no_mid_rather_than_the_last_one() -> None:
-    """`price` and `lastqty` are shared values that a version carries forward, which is
+    """`lastpx` and `lastqty` are shared values that a version carries forward, which is
     right for an order's limit and wrong for a mid: inheriting it makes a one-sided
     market look two-sided for as long as it lasts."""
     gone = Order(
@@ -644,9 +644,9 @@ def test_a_book_whose_side_emptied_has_no_mid_rather_than_the_last_one() -> None
         state=State.CANCELLED,
     ).attach_instrument(BTC)
     first, second = books([*TWO_SIDED, gone])
-    assert first.price == 100.25
+    assert first.lastpx == 100.25
     assert second.bidpx == 100.0 and second.askpx is None
-    assert second.price is None and second.lastqty is None
+    assert second.lastpx is None and second.lastqty is None
     assert second.spread is None and second.vwap is None and second.imbalance is None
 
 
@@ -682,7 +682,7 @@ def test_a_venue_s_own_lines_fold_into_the_book_they_describe() -> None:
     ]
     assert [one.askqty for one in found] == [7.0, 7.0, 4.0], "the trade took three off the ask"
     assert [(level.px, level.qty) for level in found[-1].asklevels] == [(100.5, 4.0)]
-    assert [(one.price, one.lastqty) for one in found[-1].executions] == [(100.5, 3.0)]
+    assert [(one.lastpx, one.lastqty) for one in found[-1].executions] == [(100.5, 3.0)]
 
 
 def test_the_folded_books_are_a_table() -> None:
@@ -721,7 +721,7 @@ def walked(side: _Side) -> list[tuple[float, float, int]]:
     """The levels, aggregated the slow way: over every live order, every time."""
     found: dict[float, list[float]] = {}
     for one in side.sorted_orders:
-        px = one.price or 0.0
+        px = one.lastpx or 0.0
         totals = found.setdefault(px, [0.0, 0.0])
         totals[0] += max((one.lastqty or 0.0) - (one.hiddenqty or 0.0), 0.0)
         totals[1] += 1
@@ -855,7 +855,7 @@ def test_a_linked_order_event_precedes_conflicting_identifier_altids() -> None:
     side.apply(second)
 
     probe = Execution(
-        linkxhashes=[first.xhash],
+        linkhashes=[first.hash],
         orderid="B",
         altids={"orderid": "B"},
     )
@@ -872,7 +872,20 @@ def test_a_link_to_an_earlier_order_version_finds_its_live_amendment() -> None:
 
     standing = side.orders[first.xhash]
     assert standing.hash != first.hash
-    assert side.standing(Execution(linkxhashes=[first.xhash])) is standing
+    assert side.standing(Execution(linkhashes=[first.hash])) is standing
+
+
+def test_exact_order_hash_lookup_stays_bounded_per_live_lifecycle() -> None:
+    side = _Side(side=Side.BID)
+    versions = []
+    for unix in range(10, 90):
+        revised = order(unix, Side.BID, 100.0, float(unix), "A", state=State.OPEN)
+        side.apply(revised)
+        versions.append(side.orders[revised.xhash].hash)
+
+    assert len(side.hashes) == len(side.version_hashes[revised.xhash]) == 64
+    assert versions[0] not in side.hashes
+    assert side.standing(Execution(linkhashes=[versions[-1]])) is side.orders[revised.xhash]
 
 
 def test_a_missing_order_xhash_falls_back_to_typed_altids_without_a_scan() -> None:
@@ -914,7 +927,7 @@ def test_each_typed_order_code_can_anchor_a_lifecycle(name: str) -> None:
         Order(
             unix=10,
             side=Side.BID,
-            price=100.0,
+            lastpx=100.0,
             lastqty=5.0,
             altids={name: "ONLY-ID"},
             state=State.NEW,
@@ -924,7 +937,7 @@ def test_each_typed_order_code_can_anchor_a_lifecycle(name: str) -> None:
         Order(
             unix=20,
             side=Side.BID,
-            price=100.0,
+            lastpx=100.0,
             lastqty=4.0,
             altids={name: "ONLY-ID"},
             state=State.OPEN,
@@ -934,7 +947,7 @@ def test_each_typed_order_code_can_anchor_a_lifecycle(name: str) -> None:
         Order(
             unix=20,
             side=Side.BID,
-            price=99.0,
+            lastpx=99.0,
             lastqty=1.0,
             altids={name: "OTHER-ID"},
             state=State.NEW,
@@ -959,7 +972,7 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             unix=10,
             code="client-root",
             side=Side.BID,
-            price=100.0,
+            lastpx=100.0,
             lastqty=5.0,
             clordid="42",
             altids={"clordid": "42"},
@@ -971,7 +984,7 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             unix=11,
             code="venue-root",
             side=Side.BID,
-            price=99.0,
+            lastpx=99.0,
             lastqty=4.0,
             orderid="42",
             altids={"orderid": "42"},
@@ -999,7 +1012,7 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
         Order(
             unix=11,
             side=Side.BID,
-            price=99.0,
+            lastpx=99.0,
             lastqty=4.0,
             clordid="CLIENT",
             altids={"clordid": "CLIENT"},
@@ -1027,7 +1040,7 @@ def test_identifier_fallback_respects_known_mic_scope() -> None:
         100.0,
         1.0,
         "SAME",
-        mic=MIC.from_str("XNAS"),
+        lastmkt=MIC.from_str("XNAS"),
     )
     bats = order(
         11,
@@ -1035,7 +1048,7 @@ def test_identifier_fallback_respects_known_mic_scope() -> None:
         99.0,
         2.0,
         "SAME",
-        mic=MIC.from_str("BATS"),
+        lastmkt=MIC.from_str("BATS"),
     )
     side.apply(xnas)
     assert side.standing(Order(altids={"orderid": "SAME"})).xhash == xnas.xhash
@@ -1044,11 +1057,11 @@ def test_identifier_fallback_respects_known_mic_scope() -> None:
 
     assert set(side.orders) == {xnas.xhash, bats.xhash}
     assert (
-        side.standing(Order(mic=MIC.from_str("XNAS"), altids={"orderid": "SAME"})).xhash
+        side.standing(Order(lastmkt=MIC.from_str("XNAS"), altids={"orderid": "SAME"})).xhash
         == xnas.xhash
     )
     assert (
-        side.standing(Order(mic=MIC.from_str("BATS"), altids={"orderid": "SAME"})).xhash
+        side.standing(Order(lastmkt=MIC.from_str("BATS"), altids={"orderid": "SAME"})).xhash
         == bats.xhash
     )
     assert side.standing(Order(altids={"orderid": "SAME"})) is None
@@ -1061,7 +1074,7 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
             Order(
                 unix=10,
                 side=Side.BID,
-                price=100.0,
+                lastpx=100.0,
                 lastqty=5.0,
                 clordid="CL-1",
                 altids={"clordid": "CL-1"},
@@ -1072,7 +1085,7 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
             Order(
                 unix=20,
                 side=Side.BID,
-                price=100.0,
+                lastpx=100.0,
                 lastqty=4.0,
                 clordid="CL-2",
                 origclordid="CL-1",
@@ -1084,7 +1097,7 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
             Order(
                 unix=30,
                 side=Side.BID,
-                price=100.0,
+                lastpx=100.0,
                 lastqty=3.0,
                 clordid="CL-3",
                 origclordid="CL-2",
@@ -1096,7 +1109,7 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
             Order(
                 unix=40,
                 side=Side.BID,
-                price=100.0,
+                lastpx=100.0,
                 lastqty=2.0,
                 orderid="ORD-1",
                 clordid="CL-3",
@@ -1150,7 +1163,7 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
             Order(
                 unix=10 + version,
                 side=Side.BID,
-                price=100.0,
+                lastpx=100.0,
                 lastqty=5.0,
                 clordid=root,
                 altids={"secondaryclordid": f"S{version}"},
@@ -1353,7 +1366,7 @@ def test_negative_side_bound_is_refused() -> None:
 def test_a_report_that_omits_the_mic_still_finds_the_order_it_continues() -> None:
     """Source identifiers still match when a later report omits the market code."""
     side = _Side(side=Side.BID)
-    side.apply(order(10, Side.BID, 100.0, 5.0, "B1", mic=MIC.from_str("XCME")))
+    side.apply(order(10, Side.BID, 100.0, 5.0, "B1", lastmkt=MIC.from_str("XCME")))
     bare = Order(
         unix=20,
         code="BTC-USD",

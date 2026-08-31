@@ -66,7 +66,7 @@ Eleven rows through `parse_messages`, at `INFO`:
 
 ```text
 INFO rekep.logs parse_messages reading capture=python/tests/data/app_messages_sample.txt
-INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 58 columns, partitioned by {'unixpartition': 'identity'}
+INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 59 columns, partitioned by {'unixpartition': 'identity'}
 INFO rekep.iceberg.dataset logs.messages wrote branch=main snapshot=2257423558696136046 in 97ms
 INFO rekep.logs parse_messages finished: 11 read, 11 written, 0 skipped → messages=logs.messages in 0.9s
 ```

@@ -11,8 +11,12 @@
   "fix": {
    "component": "ApplIDRequestAckGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ApplicationMessageRequestAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ApplicationMessageRequestAck"
+   ]
   },
   "fields": [
    {

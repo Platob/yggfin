@@ -14,7 +14,9 @@
    "component": "NetworkCounterpartySystemStatusResponse",
    "msgtype": "BD",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

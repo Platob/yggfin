@@ -13,8 +13,13 @@
   "fix": {
    "component": "QuotReqLegsGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"QuoteRequest\",\"QuoteRequestReject\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "QuoteRequest",
+    "QuoteRequestReject"
+   ]
   },
   "fields": [
    {

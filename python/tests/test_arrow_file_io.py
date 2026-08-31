@@ -8,6 +8,7 @@ below it, because "served from memory" is the whole claim.
 
 import gzip
 import threading
+from datetime import date, datetime
 from pathlib import Path
 
 import pyarrow.fs
@@ -15,6 +16,7 @@ import pytest
 from pyiceberg.io.pyarrow import PyArrowFile
 
 import rekep.arrow_file_io as arrow_file_io
+from rekep import ArrowPath, Url
 from rekep.arrow_file_io import (
     CONTENT_CACHE,
     DEFAULT_CACHE_BYTES,
@@ -36,6 +38,311 @@ def windows(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def posix(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(arrow_file_io, "_WINDOWS", False)
+
+
+def test_arrow_path_owns_one_injected_filesystem_and_python_path_operations() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    root = ArrowPath("bucket/root", filesystem)
+    child = root / "day=1" / "ticks.parquet"
+
+    child.parent.mkdir()
+    child.write_bytes(b"rows")
+
+    assert child.filesystem is filesystem
+    assert child.path == "bucket/root/day=1/ticks.parquet"
+    assert (child.name, child.stem, child.suffix) == ("ticks.parquet", "ticks", ".parquet")
+    assert child.parent.same_path(root.joinpath("day=1"))
+    assert child.exists() and child.is_file() and child.info().size == 4
+    assert child.read_bytes() == b"rows"
+    assert [found.path for found in root.glob("**/*.parquet")] == [child.path]
+    assert ArrowPath(child).same_path(child)
+    detached = child.url
+    detached.path = "somewhere-else"
+    assert child.url.path == "bucket/root/day=1/ticks.parquet"
+
+
+def test_arrow_path_glob_reserves_recursive_descent_for_globstar() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    root = ArrowPath("bucket/root", filesystem)
+    direct = root / "a" / "one.txt"
+    nested = root / "a" / "deeper" / "two.txt"
+    top = root / "top.txt"
+    for path in (direct, nested, top):
+        path.parent.mkdir()
+        path.write_bytes(b"row")
+
+    assert [found.path for found in root.glob("a/*.txt")] == [direct.path]
+    recursive = [nested.path, direct.path, top.path]
+    assert [found.path for found in root.glob("**/*.txt")] == recursive
+    assert [found.path for found in root.rglob("*.txt")] == recursive
+    assert [found.path for found in root.glob("a/**/two.txt")] == [nested.path]
+
+
+def test_arrow_path_local_bytes_and_delete_are_missing_safe(tmp_path: Path) -> None:
+    target = ArrowPath(tmp_path / "new" / "deep" / "rows.bin")
+    missing = ArrowPath(tmp_path / "absent.bin")
+
+    assert missing.read_bytes() is None
+    with pytest.raises(FileNotFoundError):
+        missing.read_bytes(strict=True)
+    assert not missing.delete()
+    with pytest.raises(FileNotFoundError):
+        missing.delete(strict=True)
+
+    target.write_bytes(b"rows")
+
+    assert target.read_bytes(strict=True) == b"rows"
+    assert target.delete()
+    assert target.read_bytes() is None
+
+
+def test_arrow_path_mock_store_lists_lazily_and_glob_uses_ls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    root = ArrowPath("bucket/root", filesystem)
+    direct = root / "one.txt"
+    nested = root / "deeper" / "two.txt"
+
+    assert list(root.ls()) == []
+    direct.write_bytes(b"one")
+    nested.write_bytes(b"two")
+    assert [path.path for path in root.ls()] == [nested.parent.path, direct.path]
+    assert [path.path for path in root.ls(recursive=True)] == [
+        nested.parent.path,
+        nested.path,
+        direct.path,
+    ]
+    with_info = {path.path: info for path, info in root.ls_with_info(recursive=True)}
+    assert with_info[direct.path].type == pyarrow.fs.FileType.File
+    assert with_info[direct.path].size == 3
+    assert with_info[nested.parent.path].type == pyarrow.fs.FileType.Directory
+
+    calls: list[bool] = []
+    listed = ArrowPath.ls
+
+    def watched(self: ArrowPath, recursive: bool = False):  # noqa: ANN202
+        calls.append(recursive)
+        yield from listed(self, recursive)
+
+    monkeypatch.setattr(ArrowPath, "ls", watched)
+
+    assert [path.path for path in root.glob("*.txt")] == [direct.path]
+    assert calls == [False]
+
+
+def test_arrow_path_missing_listing_tolerates_an_adapter_that_ignores_the_flag() -> None:
+    class ObjectStore(pyarrow.fs._MockFileSystem):
+        def get_file_info(self, source):  # noqa: ANN001, ANN202 - Arrow's signature
+            if isinstance(source, pyarrow.fs.FileSelector):
+                raise FileNotFoundError(source.base_dir)
+            return super().get_file_info(source)
+
+    missing = ArrowPath("bucket/missing", ObjectStore())
+
+    assert list(missing.ls(recursive=True)) == []
+    with pytest.raises(FileNotFoundError):
+        list(missing.ls_with_info(strict=True))
+
+
+def test_arrow_path_recognizes_a_backend_missing_message_without_hiding_other_errors() -> None:
+    class ObjectStore(pyarrow.fs._MockFileSystem):
+        refused = False
+
+        def get_file_info(self, source):  # noqa: ANN001, ANN202 - Arrow's signature
+            message = "Access denied" if self.refused else "Path does not exist 'bucket/missing'"
+            raise OSError(message)
+
+    filesystem = ObjectStore()
+    missing = ArrowPath("bucket/missing", filesystem)
+
+    assert list(missing.ls_with_info()) == []
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        list(missing.ls_with_info(strict=True))
+    filesystem.refused = True
+    with pytest.raises(OSError, match="Access denied"):
+        list(missing.ls())
+
+
+def test_arrow_path_normalizes_backend_open_create_info_and_delete_errors() -> None:
+    class RefusingStore(pyarrow.fs._MockFileSystem):
+        message = "Path does not exist 'bucket/item'"
+
+        @classmethod
+        def refuse(cls) -> None:
+            raise OSError(cls.message)
+
+        def get_file_info(self, source):  # noqa: ANN001, ANN202 - Arrow's signature
+            self.refuse()
+
+        def open_input_file(self, path):  # noqa: ANN001, ANN202 - Arrow's signature
+            self.refuse()
+
+        def open_output_stream(self, path, *args, **kwargs):  # noqa: ANN001, ANN202
+            self.refuse()
+
+        def delete_file(self, path):  # noqa: ANN001, ANN202 - Arrow's signature
+            self.refuse()
+
+    filesystem = RefusingStore()
+    path = ArrowPath("bucket/item", filesystem)
+
+    assert not path.exists()
+    with pytest.raises(FileNotFoundError):
+        path.read_bytes(strict=True)
+    with pytest.raises(FileNotFoundError):
+        path.delete(strict=True)
+
+    RefusingStore.message = "AWS Error [code 15]: access denied"
+    for operation in (path.info, path.open_input_file, path.open_output_stream, path.delete):
+        with pytest.raises(PermissionError, match="access denied"):
+            operation()
+
+
+def test_arrow_path_replaces_and_appends_on_its_owned_filesystem() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    source = ArrowPath("bucket/new/source.txt", filesystem)
+    target = source.with_name("target.txt")
+    source.write_bytes(b"one")
+
+    assert source.replace(target) is target
+    with target.open_append(compression=None) as stream:
+        stream.write(b" two")
+
+    assert source.read_bytes() is None
+    assert target.read_bytes(strict=True) == b"one two"
+    with pytest.raises(ValueError, match="same filesystem"):
+        target.replace(ArrowPath("other.txt", pyarrow.fs.LocalFileSystem()))
+
+
+def test_arrow_path_default_io_uses_no_metadata_precheck() -> None:
+    class CountingStore(pyarrow.fs._MockFileSystem):
+        infos = 0
+        output_attempts = 0
+        directories = 0
+
+        def get_file_info(self, source):  # noqa: ANN001, ANN202 - Arrow's signature
+            CountingStore.infos += 1
+            return super().get_file_info(source)
+
+        def open_output_stream(self, path, *args, **kwargs):  # noqa: ANN001, ANN202
+            CountingStore.output_attempts += 1
+            return super().open_output_stream(path, *args, **kwargs)
+
+        def create_dir(self, path, recursive=True):  # noqa: ANN001, ANN202
+            CountingStore.directories += 1
+            return super().create_dir(path, recursive=recursive)
+
+    target = ArrowPath("bucket/new/deep/rows.bin", CountingStore())
+
+    target.write_bytes(b"rows")
+    assert target.read_bytes(strict=True) == b"rows"
+    assert target.delete(strict=True)
+
+    assert CountingStore.infos == 0
+    assert CountingStore.output_attempts == 2
+    assert CountingStore.directories == 1
+
+
+def test_arrow_path_binary_open_keeps_compressed_bytes_raw_until_asked() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    path = ArrowPath("bucket/data.gz", filesystem)
+    path.parent.mkdir()
+    encoded = gzip.compress(b"rows")
+
+    with path.open("wb") as stream:
+        stream.write(encoded)
+
+    with path.open("rb", seekable=False) as stream:
+        assert stream.read() == encoded
+    with path.open_input(seekable=False, compression="detect") as stream:
+        assert stream.read() == b"rows"
+    with pytest.raises(FileExistsError):
+        path.open("xb")
+    with pytest.raises(ValueError, match="supports only"):
+        path.open("r")
+
+
+def test_arrow_path_time_templates_touch_the_url_path_only() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    template = ArrowPath(
+        (
+            "s3://key:secret@minio:9000/bucket/{year}/{month}/{day}/ticks.parquet"
+            "?region=eu-west-1&marker={day}"
+        ),
+        filesystem,
+        filesystem_path="bucket/{year}/{month}/{day}/ticks.parquet",
+    )
+
+    rendered = template.at_time(datetime(2026, 8, 9, 23, 59))
+
+    assert template.has_time_pattern
+    assert rendered.path == "bucket/2026/08/09/ticks.parquet"
+    assert rendered.uri == (
+        "s3://key:secret@minio:9000/bucket/2026/08/09/ticks.parquet?region=eu-west-1&marker={day}"
+    )
+    assert [path.uri for path in template.iter_times(date(2026, 8, 8), date(2026, 8, 10))] == [
+        (
+            f"s3://key:secret@minio:9000/bucket/2026/08/{day}/ticks.parquet"
+            "?region=eu-west-1&marker={day}"
+        )
+        for day in ("08", "09", "10")
+    ]
+    query_only = ArrowPath(
+        "s3://bucket/ticks.parquet?prefix={year}",
+        filesystem,
+        filesystem_path="bucket/ticks.parquet",
+    )
+    assert not query_only.has_time_pattern
+    assert query_only.at_time(date(2026, 1, 1)) is query_only
+
+    root = ArrowPath("s3://bucket", filesystem, filesystem_path="bucket")
+    assert root.parent is root
+    assert (root / "year={year}").uri == "s3://bucket/year={year}"
+
+
+def test_arrow_path_recognizes_a_remote_template_after_url_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    encoded = Url.from_string("s3://bucket/{year}/{month}/{day}/ticks.parquet").resolve()
+    assert "%7Byear%7D" in encoded
+
+    def resolved(url: Url) -> tuple[pyarrow.fs.FileSystem, str]:
+        return filesystem, url.store_path
+
+    monkeypatch.setattr(Url, "into_filesystem", resolved)
+    template = ArrowPath(encoded)
+
+    assert template.resolve("ignored") is template
+    assert template.has_time_pattern
+    assert template.at_time(date(2026, 8, 9)).uri == ("s3://bucket/2026/08/09/ticks.parquet")
+
+
+def test_arrow_path_resolves_only_a_local_relative_path(tmp_path: Path) -> None:
+    relative = ArrowPath("nested/ticks.parquet")
+    resolved = relative.resolve(tmp_path)
+
+    assert resolved.filesystem is relative.filesystem
+    assert resolved.path == (tmp_path / "nested" / "ticks.parquet").as_posix()
+    assert resolved.resolve(tmp_path) is resolved
+
+
+def test_bound_arrow_file_io_keeps_only_an_arrow_path_and_opens_through_it() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    filesystem.create_dir("bucket")
+    with filesystem.open_output_stream("bucket/ticks.txt", compression=None) as stream:
+        stream.write(b"ticks")
+    io = ArrowFileIO()
+    io.fs_by_scheme = lambda *_: filesystem
+
+    bound = io.at("s3://bucket/ticks.txt")
+
+    assert isinstance(bound.arrow_path, ArrowPath)
+    assert bound.opened is bound.arrow_path
+    assert bound.filesystem is filesystem and bound.path == "bucket/ticks.txt"
+    with bound.open() as stream:
+        assert stream.read() == b"ticks"
 
 
 def test_a_file_uri_with_a_drive_sheds_the_leading_slash(windows: None) -> None:
@@ -470,7 +777,7 @@ def test_a_remote_spill_is_deterministic_reused_and_refreshed_by_size(tmp_path: 
     first = source.spill(tmp_path)
     assert first is not None
     assert isinstance(first, ArrowFileIO)
-    assert isinstance(first.opened, PyArrowFile)
+    assert isinstance(first.opened, ArrowPath)
     assert isinstance(first.filesystem, pyarrow.fs.LocalFileSystem)
     target = Path(first.location)
     assert target.parent == tmp_path
@@ -579,13 +886,13 @@ def pristine_cache() -> None:
 def opens(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
     """Opens the store actually serves, counted below the cache."""
     counted = {"opens": 0}
-    original = PyArrowFile.open
+    original = ArrowPath.open_input
 
-    def watched(self: PyArrowFile, *args: object, **kwargs: object) -> object:
+    def watched(self: ArrowPath, *args: object, **kwargs: object) -> object:
         counted["opens"] += 1
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(PyArrowFile, "open", watched)
+    monkeypatch.setattr(ArrowPath, "open_input", watched)
     return counted
 
 
@@ -729,11 +1036,21 @@ def test_a_deleted_file_is_forgotten_with_the_store(tmp_path: Path) -> None:
         io.new_input(location).open()
 
 
+def test_deleting_an_absent_iceberg_file_is_already_complete(tmp_path: Path) -> None:
+    io = ArrowFileIO()
+    location = (tmp_path / "absent.avro").as_posix()
+
+    io.delete(location)
+
+    assert not (tmp_path / "absent.avro").exists()
+
+
 def test_a_catalog_can_opt_out(tmp_path: Path, opens: dict[str, int]) -> None:
     location = (tmp_path / "m.avro").as_posix()
     (tmp_path / "m.avro").write_bytes(b"cold")
     plain = ArrowFileIO({"rekep.io.cache-bytes": "0"})
-    assert isinstance(plain.new_input(location), PyArrowFile), "no wrapper at all"
+    direct = plain.new_input(location)
+    assert isinstance(direct.arrow_path, ArrowPath), "no cache wrapper at all"
     for _ in range(2):
         with plain.new_input(location).open() as stream:
             stream.read()

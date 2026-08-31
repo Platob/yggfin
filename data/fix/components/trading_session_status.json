@@ -16,7 +16,9 @@
    "component": "TradingSessionStatus",
    "msgtype": "h",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

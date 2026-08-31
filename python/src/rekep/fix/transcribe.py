@@ -36,7 +36,7 @@ from rekep.fix.components import (
     SideTrdRegTimestamps,
     TrdRegTimestamps,
 )
-from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_fix
+from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_field, cast_arrow_fix
 from rekep.fix.message import (
     _MEMBER_NAME_VECTOR,
     MARKED_SEPARATOR_VECTOR,
@@ -101,7 +101,7 @@ _MEMBER_NAME_SCALAR = re.compile(_MEMBER_NAME_VECTOR, re.ASCII)
 #: renderer and the padding with the log format. Configuration, not a rule: a
 #: feed whose `n/a` really is a value passes its own set, and an empty set
 #: keeps every pair.
-NULL_VALUES: frozenset[str] = frozenset({"", "null", "<null>", "n/a"})
+NULL_VALUES: frozenset[str] = frozenset({"", "null", "<null>", "n/a", "none"})
 
 #: Where an inferred version came from. Unknown evidence stays distinct from
 #: either transport or application evidence.
@@ -338,9 +338,7 @@ class FixCodec(Convertible):
 
     def into_pairs(self, messages: Any, protocol: Protocol | str | int = Protocol.OTHER) -> Any:
         """One `map<string, string>` per row: the message as the line spells it."""
-        return self.drop_null_values(
-            self.into_payload_pairs(self.into_raw_pairs(messages, protocol))
-        )
+        return self.complete_pairs(self.into_raw_pairs(messages, protocol), protocol)
 
     def into_pairs_from_entries(
         self, entries: Any, protocol: Protocol | str | int = Protocol.OTHER
@@ -380,6 +378,15 @@ class FixCodec(Convertible):
             )
             positions.append(where)
         return scattered(parts, positions)
+
+    def complete_pairs(
+        self,
+        pairs: Any,
+        protocol: Protocol | str | int = Protocol.OTHER,
+    ) -> Any:
+        """Apply the shared payload, null and protocol-replacement boundary."""
+        completed = self.drop_null_values(self.into_payload_pairs(pairs))
+        return _popped_pairs(completed, self.rules.rule(protocol).pop)
 
     def into_payload_pairs(self, pairs: Any) -> Any:
         """`XmlData <213>` read as the message it carries, where it carries one.
@@ -911,7 +918,7 @@ class FixCodec(Convertible):
             at += run
             if one >= 0:
                 field = fields[one]
-                column = _cast(raw, field, FLAT_TYPES.get(one, field.dtype))
+                column = cast_arrow_field(raw, field, FLAT_TYPES.get(one, field.dtype))
             else:
                 field = liftable[named[-1 - one].as_py()]
                 column = cast_arrow_fix(raw, field.dtype)
@@ -1629,23 +1636,6 @@ def _columns_of(entries: Any, keep: Any) -> tuple[Any, ...]:
     return tuple(compute.filter(compute.struct_field(entries, name), keep) for name in ENTRY_PARTS)
 
 
-def _cast(column: Any, field: Field, dtype: pyarrow.DataType) -> Any:
-    """One lifted column at the width its log column stores.
-
-    Both steps go through `cast_arrow_fix` where the first left text, because
-    that is the one reading of FIX text that answers null instead of raising:
-    a declared reading of `20260821-10:00:00` as a string still has to land in
-    a timestamp column, and a raw cast of it would take the batch with it.
-    """
-    read = cast_arrow_fix(column, field.dtype)
-    if read.type.equals(dtype):
-        return read
-    kinds = pyarrow.types
-    if kinds.is_string(read.type) or kinds.is_large_string(read.type):
-        return cast_arrow_fix(read, dtype)
-    return read.cast(dtype, safe=False)
-
-
 def _raw_spelling_changed(raw: Any, typed: Any) -> Any:
     """Whether a typed Arrow value cannot reproduce its source FIX text."""
     compute = pyarrow.compute
@@ -1721,6 +1711,70 @@ def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
             spelled.append(f"{tag}\x00{spelling}")
             resolved.append(value)
     return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())
+
+
+def _popped_pairs(pairs: Any, pop: Mapping[str, str]) -> Any:
+    """Apply ordered source-to-target replacements without changing other pair order."""
+    if not pop:
+        return pairs
+    if isinstance(pairs, pyarrow.ChunkedArray):
+        return pyarrow.chunked_array(
+            [_popped_pairs(chunk, pop) for chunk in pairs.chunks],
+            type=_RAW_PAIRS,
+        )
+    replaced = pairs
+    compute = pyarrow.compute
+    for source, target in pop.items():
+        lengths, keys, values = _entries_of(replaced)
+        if not len(keys):
+            continue
+        listed = _listed(replaced)
+        parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+        folded = column_names(keys)
+        source_mask = compute.fill_null(
+            compute.equal(folded, column_name(source)),
+            False,
+        )
+        if not compute.any(source_mask, min_count=0).as_py():
+            continue
+
+        positions = sequence(len(keys))
+        source_parents = compute.filter(parents, source_mask)
+        source_positions = compute.filter(positions, source_mask)
+        previous = pyarrow.concat_arrays(
+            [
+                pyarrow.array([-1], pyarrow.int64()),
+                source_parents.slice(0, len(source_parents) - 1),
+            ]
+        )
+        first_positions = compute.filter(
+            source_positions,
+            compute.not_equal(source_parents, previous),
+        )
+        first_source = compute.is_in(positions, value_set=first_positions)
+        rows_with_source = compute.unique(source_parents)
+        target_mask = compute.fill_null(
+            compute.equal(folded, column_name(target)),
+            False,
+        )
+        superseded = compute.and_(
+            target_mask,
+            compute.is_in(parents, value_set=rows_with_source),
+        )
+        keep = compute.or_(
+            first_source,
+            compute.invert(compute.or_(source_mask, superseded)),
+        )
+        renamed = compute.if_else(first_source, pyarrow.scalar(target), keys)
+        replaced = _mapped(
+            replaced,
+            lengths,
+            keep,
+            compute.filter(renamed, keep),
+            compute.filter(values, keep),
+            _RAW_PAIRS,
+        )
+    return replaced
 
 
 def _entries_of(pairs: Any) -> tuple[Any, Any, Any]:

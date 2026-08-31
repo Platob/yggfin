@@ -13,8 +13,12 @@
   "fix": {
    "component": "TrdCapDtGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeCaptureReportRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeCaptureReportRequest"
+   ]
   },
   "fields": [
    {

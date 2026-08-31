@@ -91,7 +91,7 @@
 
   <rect class="task" x="1130" y="190" width="205" height="88" rx="14"/>
   <text class="label" x="1233" y="222">parse_instruments</text>
-  <text class="small" x="1233" y="247">version by Event xhash</text>
+  <text class="small" x="1233" y="247">version by 128-bit xhash</text>
 
   <rect class="table" x="1380" y="190" width="190" height="88" rx="14"/>
   <image href="logos/apache-iceberg.svg" x="1398" y="204" width="94" height="26"/>

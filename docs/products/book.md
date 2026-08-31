@@ -1,8 +1,8 @@
 # Book
 
 Both sides of one book, flat, plus values that only exist across them:
-`spread`, `price` (the midpoint), `lastqty` (bid plus ask touch size), `vwap`
-and `imbalance`. `price` and `lastqty` stay null until both touches exist.
+`spread`, `lastpx` (the midpoint), `lastqty` (bid plus ask touch size), `vwap`
+and `imbalance`. `lastpx` and `lastqty` stay null until both touches exist.
 
 ```python
 from rekep import FixMsg
@@ -26,7 +26,7 @@ for book in BookIterator.from_events(events):
         book.askpx,
         book.askqty,
         book.spread,
-        book.price,
+        book.lastpx,
         book.lastqty,
     )
 ```

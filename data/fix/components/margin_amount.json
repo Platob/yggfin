@@ -10,8 +10,13 @@
   "fix": {
    "component": "MarginAmount",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AccountSummaryReport\",\"MarginRequirementReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AccountSummaryReport",
+    "MarginRequirementReport"
+   ]
   },
   "fields": [
    {

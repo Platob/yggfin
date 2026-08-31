@@ -13,8 +13,17 @@
   "fix": {
    "component": "LegBenchmarkCurveData",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"SecurityList\",\"SecurityListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "Quote",
+    "QuoteRequest",
+    "QuoteRequestReject",
+    "QuoteResponse",
+    "SecurityList",
+    "SecurityListUpdateReport"
+   ]
   },
   "fields": [
    {

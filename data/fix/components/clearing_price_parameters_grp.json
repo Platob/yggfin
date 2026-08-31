@@ -10,8 +10,12 @@
   "fix": {
    "component": "ClearingPriceParametersGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"SecurityStatus\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "SecurityStatus"
+   ]
   },
   "fields": [
    {

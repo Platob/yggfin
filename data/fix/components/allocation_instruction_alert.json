@@ -13,7 +13,9 @@
    "component": "AllocationInstructionAlert",
    "msgtype": "BM",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

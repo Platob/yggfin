@@ -177,8 +177,8 @@ def test_a_reader_of_batches_is_counted_one_batch_at_a_time() -> None:
     """The streaming contract: batches in, counts out, nothing held between."""
     batch = pyarrow.record_batch(
         {
-            "message": pyarrow.array(["toBridge #CLORDID=ORD-TEST-01|#SIDE=1"] * 3),
-            "plugincode": pyarrow.array(["ULBridge", "ULFilter", "OMSSales"]),
+            "body": pyarrow.array([b"toBridge #CLORDID=ORD-TEST-01|#SIDE=1"] * 3, pyarrow.binary()),
+            "plugin": pyarrow.array(["ULBridge", "ULFilter", "OMSSales"]),
         }
     )
     assert count_reader(batch).lines == 3
@@ -186,9 +186,9 @@ def test_a_reader_of_batches_is_counted_one_batch_at_a_time() -> None:
     assert filtered.lines == 2, "the plugin filter is applied before anything is parsed"
 
 
-def test_a_batch_with_no_message_column_is_refused() -> None:
-    batch = pyarrow.record_batch({"plugincode": pyarrow.array(["ULBridge"])})
-    with pytest.raises(ValueError, match="needs a 'message' column"):
+def test_a_batch_with_no_body_column_is_refused() -> None:
+    batch = pyarrow.record_batch({"plugin": pyarrow.array(["ULBridge"])})
+    with pytest.raises(ValueError, match="needs a 'body' column"):
         count_reader(batch)
 
 

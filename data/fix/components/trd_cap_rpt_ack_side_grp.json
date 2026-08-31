@@ -12,8 +12,12 @@
   "fix": {
    "component": "TrdCapRptAckSideGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

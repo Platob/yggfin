@@ -9,7 +9,7 @@ table](../assets/compatibility-tree-light.svg#only-light)
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 1 | Source records with the standard header in columns of its own, a promoted message discriminator and residual arguments. |
+| `message.yaml` | 1 | Source records with an exact binary `body`, standard header columns, a promoted discriminator and ordered residual entries. |
 | `fixmsg.yaml` | 1 | Parsed FIX records, with reference facts in a nested `Instrument` component. |
 | `instrument.yaml` | 1 | Immutable `InstrumentUpdate` events carrying that component. |
 | `book.yaml` | 1 | Book deltas, executions, and recovery state. |
@@ -25,7 +25,7 @@ print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
 ```
 
 ```text
-58 58
+59 59
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
@@ -39,7 +39,7 @@ bounds cover the flat leaves.
 
 - `iceberg: { ... }` stores keys, partitions, sort order, and assigned field ids.
 - `fix: { ... }` says which FIX field a column reads: its tag, its canonical
-  name, its display and its FIX datatype. Not the rest of the record — the
+  name and its FIX datatype. Not the rest of the record — the
   versions that declare it, the messages that carry it, the sources that
   answered and the values it enumerates stay in the registry, which is what
   keeps a contract a contract rather than a second copy of the dictionary.
@@ -61,31 +61,30 @@ The fold is also how a name is *matched*: a spelling is looked up by what it
 folds to, which is what makes `MsgType`, `msgtype` and `MSGTYPE` one field
 against the FIX registry rather than three.
 
-What the fold throws away is kept, not lost. Every column carries
-`fix: { display: ... }` — the name a reader is shown. A FIX column displays
-the dictionary's own spelling (`OrigClOrdID`); every other column displays the
-same shape, capitalised word by word and run together with acronyms preserved
-(`sourceurl` → `SourceURL`, `altids` → `AltIDs`, `mic` → `MIC`). No display
-carries a space, because no FIX field name does.
+When a folded column reads a FIX field, `fix: { name: ... }` keeps the
+dictionary's spelling (`OrigClOrdID`). A package column whose readable name
+differs from its folded key uses the same metadata (`SourceURL`, `AltIDs`).
+The venue column uses `LastMkt` and the packed `MIC` enum.
 
 ```python
 from rekep import Field
 
 order = Field.from_yaml("schemas/rekep/order.yaml")
-for name in ("clordid", "price", "unixpartition"):
-    print(f"{name:16} {order.field(name).fix.display}")
+for name in ("clordid", "lastmkt", "lastpx", "unixpartition"):
+    print(f"{name:16} {order.field(name).fix.canonical}")
 ```
 
 ```text
 clordid          ClOrdID
-price            Price
+lastmkt          LastMkt
+lastpx           Price
 unixpartition    UnixPartition
 ```
 
 A column that reads a FIX field is named after that field, so a reader who
 knows the dictionary knows the column: `ClOrdID <11>` is `clordid`,
 `MinPriceIncrement <969>` is `minpriceincrement`. A `MarketEvent` uses the
-flat summary slots `price` and `lastqty`: an Order holds limit price and
+flat summary slots `lastpx` and `lastqty`: an Order holds limit price and
 remaining live quantity, an Execution holds `LastPx <31>` and `LastQty <32>`,
 and a Book holds midpoint and touch-size sum. A nested book `Level` keeps
 compact `px` and `qty`; its nesting supplies the `MDEntryPx <270>` and

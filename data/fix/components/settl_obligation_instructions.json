@@ -11,8 +11,12 @@
   "fix": {
    "component": "SettlObligationInstructions",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"SettlementObligationReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "SettlementObligationReport"
+   ]
   },
   "fields": [
    {

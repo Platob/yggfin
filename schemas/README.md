@@ -27,8 +27,8 @@ shape = Field.from_yaml("schemas/rekep/message.yaml")
 reader = shape.cast_arrow(reader)
 ```
 
-The committed contracts make lifecycle links wide and preserve explicitly UTC
-FIX fields:
+The committed contracts keep exact event links wide and preserve explicitly
+UTC FIX fields:
 
 ```python
 from rekep import Field
@@ -37,18 +37,31 @@ order = Field.from_yaml("schemas/rekep/order.yaml")
 fixmsg = Field.from_yaml("schemas/rekep/fixmsg.yaml")
 for shape, name in (
     (order, "codesource"),
+    (order, "lastmkt"),
     (order, "xhash"),
-    (order, "linkxhashes"),
-    (fixmsg, "origtime"),
+    (order, "linkhashes"),
+    (fixmsg, "creationtime"),
+    (fixmsg, "expiretime"),
 ):
     print(f"{name:12} {shape.field(name).dtype}")
 ```
 
 ```text
 codesource   string
+lastmkt      int32
 xhash        fixed_size_binary[16]
-linkxhashes  list<item: fixed_size_binary[16] not null>
-origtime     timestamp[us, tz=UTC]
+linkhashes   list<item: fixed_size_binary[16] not null>
+creationtime timestamp[us, tz=UTC]
+expiretime   timestamp[us, tz=UTC]
+```
+
+```python
+venue = order.field("lastmkt")
+print(venue.fix.canonical, venue.enum.name)
+```
+
+```text
+LastMkt MIC
 ```
 
 Descriptions are short contract facts. Protocol identity uses top-level

@@ -15,7 +15,9 @@
    "component": "SecurityList",
    "msgtype": "y",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

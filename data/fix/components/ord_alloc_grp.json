@@ -13,8 +13,16 @@
   "fix": {
    "component": "OrdAllocGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ConfirmationRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "Confirmation",
+    "ConfirmationRequest"
+   ]
   },
   "fields": [
    {

@@ -42,7 +42,13 @@ from rekep.fix import (
 from rekep.fix import registry as registry_source
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, is_group, members_of
-from rekep.fix.registry import _is_missing, _is_transient, _levenshtein, _wait_for
+from rekep.fix.registry import (
+    _is_missing,
+    _is_transient,
+    _levenshtein,
+    _source_conflicts,
+    _wait_for,
+)
 from rekep.fix.store import Collision
 
 from .conftest import FIXTURES, fixture_page
@@ -62,13 +68,13 @@ EXPECTED_LISTED = 3
 EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
-#: What a store of those eleven fields holds: two tag shards (the fixture's
-#: tags straddle 500), two components, one message and the version index.
+#: What a store of those eleven fields holds: one tag shard, two components,
+#: one message and the version index.
 #: Derived from the fixture, then pinned, so a layout that stopped sharding
 #: fails here.
-EXPECTED_DOCUMENTS = 6
+EXPECTED_DOCUMENTS = 5
 
-#: Where the fixture's `Side <54>` lands: tags 0 to 499.
+#: Where the fixture's `Side <54>` lands: tags 0 to 999.
 SIDE_SHARD = "fields/000000.json"
 
 
@@ -131,6 +137,7 @@ class RefusingRegistry(FixRegistry):
     #: How many answers are a refusal, and what every attempt was asked for.
     refusals: int = 2
     asked: list[str]
+    useragents: list[str | None]
 
     @property
     def offline(self) -> bool:
@@ -139,6 +146,7 @@ class RefusingRegistry(FixRegistry):
 
     def _read(self, request: urllib.request.Request) -> str:
         asked = self.__dict__.setdefault("asked", [])
+        self.__dict__.setdefault("useragents", []).append(request.get_header("User-agent"))
         asked.append(request.full_url)
         if len(asked) <= self.refusals:
             raise _refused(request.full_url)
@@ -462,13 +470,25 @@ def test_sources_merge_in_priority_order_and_attribute_conflicts(tmp_path: Path)
     assert exec_type.fix.value_of("2").meaning == "Fill"
     assert exec_type.fix.value_of("2").aliases == ("Fill", "EXECUTION_FILL")
     by_part = {conflict.part: conflict for conflict in report.collapses}
-    assert {"name", "type", "values", "aliases"} <= by_part.keys()
-    assert by_part["type"].keptsource == "onixs"
-    assert {dropped.source for dropped in by_part["type"].dropped} == {"quickfix"}
+    assert {"name", "values", "aliases"} <= by_part.keys()
+    assert "type" not in by_part, "char and String are the same wire and Arrow type"
     for part in ("name", "values", "aliases"):
         assert by_part[part].keptsource == "nanoconda"
         assert {dropped.source for dropped in by_part[part].dropped} == {"onixs"}
     assert "_source_conflicts" not in registry.__dict__
+
+
+def test_source_char_and_string_readings_do_not_conflict() -> None:
+    readings = (
+        {"name": "ExecType", "type": "char", "source": "onixs"},
+        {"name": "ExecType", "type": "String", "source": "quickfix"},
+    )
+    merged = {"name": "ExecType", "type": "char"}
+    assert _source_conflicts(readings, merged, "4.4", 150) == ()
+
+    conflicted = (*readings, {"name": "ExecType", "type": "int", "source": "other"})
+    report = _source_conflicts(conflicted, merged, "4.4", 150)
+    assert [(one.part, one.dropped[0].reading) for one in report] == [("type", "int")]
 
 
 def test_every_source_contributes_parts_the_others_do_not_carry(tmp_path: Path) -> None:
@@ -958,6 +978,7 @@ def test_a_refused_page_is_asked_for_again(tmp_path: Path) -> None:
     registry = RefusingRegistry(cache_dir=tmp_path / "fix", backoff=0.0)
     assert "Side of order." in registry._fetch("https://example.test/tagNum_54.html")
     assert len(registry.asked) == 3
+    assert set(registry.useragents) == {"rekep-fix-registry"}
 
 
 def test_a_page_refused_past_the_retries_raises(tmp_path: Path) -> None:
@@ -1154,8 +1175,8 @@ def test_the_archive_holds_one_member_per_file(dumped: Path, tmp_path: Path) -> 
         names = opened.namelist()
     written = [path.relative_to(dumped).as_posix() for path in dumped.rglob("*.json")]
     assert sorted(names) == sorted(written)
-    # Twelve fields in two tag shards, three blocks and the version index.
-    # Not a size claim -- six documents of a few hundred bytes each cost more
+    # Eleven fields in one tag shard, three blocks and the version index.
+    # Not a size claim -- five documents of a few hundred bytes each cost more
     # in zip headers than deflating them saves, and what compresses is the
     # whole dictionary (`tests/test_data.py`), not a fixture.
     assert len(names) == EXPECTED_DOCUMENTS
@@ -1206,7 +1227,7 @@ def test_a_member_written_into_a_prefixed_zip_joins_its_neighbours(
     registry._store_fields("9.9", [fix_field("Marvellous", 9999, "char", version="9.9")])
     with zipfile.ZipFile(rooted) as opened:
         names = opened.namelist()
-    assert "fix/fields/000019.json" in names, "tag 9999 shards into 9999 // 500"
+    assert "fix/fields/000009.json" in names, "tag 9999 shards into 9999 // 1000"
     assert not [name for name in names if name.startswith("fields/")], "never at the root"
     reopened = OfflineRegistry(cache_dir=rooted)
     assert [member.name for member in reopened.fields("9.9")] == ["Marvellous"]
@@ -1284,9 +1305,8 @@ def test_a_torn_cache_file_offline_is_reported_and_not_hidden(
     registry.fields("4.4")
     (Path(registry.cache_dir) / SIDE_SHARD).write_text("{ torn")
     offline = OfflineRegistry(cache_dir=registry.cache_dir)
-    torn = len(json.loads((Path(registry.cache_dir) / "fields" / "000001.json").read_text()))
-    with pytest.warns(RuntimeWarning, match="cannot read"):
-        assert len(offline.fields("4.4")) == torn, "the shard that still reads"
+    with pytest.warns(RuntimeWarning, match="cannot read"), pytest.raises(OSError, match="offline"):
+        offline.fields("4.4")
 
 
 def test_refresh_scrapes_again(registry: FixtureRegistry) -> None:
@@ -1500,9 +1520,8 @@ def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> 
     assert json.loads(begin.fix["versions"]) == [
         member.fix["version"] for member in registry.lookup(8)
     ]
-    # One reading, from the newest application version: 4.0 called tag 8 a
-    # `char`, and the collapse says so in `data/fix-conflicts.json` rather
-    # than in a per-version map here.
+    # One reading, from the newest application version. Older versions called
+    # tag 8 `char`; that is the same stored string contract, not a conflict.
     assert begin.fix["type"] == "String"
     assert begin.fix["version"] == "5.0.SP2"
 

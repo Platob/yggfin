@@ -16,7 +16,9 @@
    "component": "BidRequest",
    "msgtype": "k",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

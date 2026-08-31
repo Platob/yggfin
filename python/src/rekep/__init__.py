@@ -1,5 +1,6 @@
 """rekep: trading log parser."""
 
+from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
 from rekep.enums import Ascii32, Ascii64, Currency, MarketKind
@@ -36,6 +37,7 @@ from rekep.urls import Url
 __version__ = "0.1.0"
 
 __all__ = [
+    "ArrowPath",
     "Book",
     "Convertible",
     "Ascii32",

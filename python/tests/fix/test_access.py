@@ -91,8 +91,8 @@ def test_an_unregistered_value_reads_back_coherently_typed(access: FieldAccess) 
     import datetime
 
     def read(value: str) -> object:
-        stored = [{"tag": 0, "key": "CONVERSATIONID", "value": value, "comp": None}]
-        return access.reading(stored, "CONVERSATIONID")
+        stored = [{"tag": 0, "key": "UNREGISTEREDFIELD", "value": value, "comp": None}]
+        return access.reading(stored, "UNREGISTEREDFIELD")
 
     assert read("12345").value == 12345
     assert read("007").value == 7 and read("007").raw == "007", "raw keeps the spelling"

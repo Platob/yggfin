@@ -103,11 +103,14 @@ INSTRUMENT_PROMOTED_NAMES = (
     "securitydesc",
 )
 
-#: Where each promoted scalar lands, derived from the module that declares
-#: the flat FIX layer. Nested members remain in this accounting so moving the
-#: instrument under one struct cannot make a source field disappear quietly.
+#: Where each source scalar lands, derived from the module that declares the
+#: flat FIX layer. `lastmkt` is omitted because the same column may be inferred
+#: from session peers without consuming a LastMkt field. Nested members remain
+#: so moving the instrument under one struct cannot hide a source field.
 TOP_LEVEL_PROMOTED_NAMES = tuple(
-    name for name in COLUMNS.values() if name not in INSTRUMENT_SOURCE_NAMES
+    name
+    for name in COLUMNS.values()
+    if name not in INSTRUMENT_SOURCE_NAMES and name not in {"lastmkt", "lastpx", "bidpx", "offerpx"}
 )
 PROMOTED_NAMES = (*TOP_LEVEL_PROMOTED_NAMES, *INSTRUMENT_PROMOTED_NAMES)
 
@@ -313,10 +316,14 @@ def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) 
     assert _protocols(table) == EXPECTED_PROTOCOLS
 
 
-def test_the_stored_column_and_a_rebuilt_row_agree(table: pyarrow.Table) -> None:
+def test_the_stored_column_and_a_rebuilt_row_agree(raw_table: pyarrow.Table) -> None:
     """The raw classifier agrees with the stored protocol's grammar family."""
-    rebuilt = [Message(message=one) for one in table.column("message").to_pylist()]
-    stored = [Protocol.from_int(code).family.code for code in table.column("protocol").to_pylist()]
+    rebuilt = [
+        Message(body=one) for one in raw_table.column("body").cast(pyarrow.string()).to_pylist()
+    ]
+    stored = [
+        Protocol.from_int(code).family.code for code in raw_table.column("protocol").to_pylist()
+    ]
     assert [row.protocol.code for row in rebuilt] == stored
 
 
@@ -515,8 +522,8 @@ def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -
 def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:
     """A marker inside a `Text <58>` value is prose, so the frame stays numbered."""
     quoted = "8=FIX.4.4|35=8|58=see #A=1 and #B=2|10=1|"
-    assert Message(message=quoted).protocol is Protocol.FIX
-    assert Message(message="8=FIX.4.2|35=ULX|#A=1|#B=2").protocol is Protocol.FIXML, (
+    assert Message(body=quoted).protocol is Protocol.FIX
+    assert Message(body="8=FIX.4.2|35=ULX|#A=1|#B=2").protocol is Protocol.FIXML, (
         "and marked keys of its own make the same frame mixed"
     )
 
@@ -539,10 +546,12 @@ def test_a_line_carrying_no_message_has_no_pairs_at_all(table: pyarrow.Table) ->
         assert _lifted(table, row) == 0
 
 
-def test_a_stack_trace_still_folds_into_the_row_above_it(table: pyarrow.Table) -> None:
+def test_a_stack_trace_still_folds_into_the_row_above_it(raw_table: pyarrow.Table) -> None:
     """The message layer must not have cost the parser its continuations."""
     (folded,) = [
-        one for one in table.column("message").to_pylist() if "IllegalStateException" in one
+        one
+        for one in raw_table.column("body").cast(pyarrow.string()).to_pylist()
+        if "IllegalStateException" in one
     ]
     assert folded.count("\n") == EXPECTED_CONTINUATIONS
 
@@ -782,11 +791,14 @@ def test_both_stamp_widths_read_as_the_instants_they_spell(table: pyarrow.Table)
 
 
 def test_the_capture_reparses_to_the_same_instants(
-    tmp_path: Path, codec: FixCodec, table: pyarrow.Table
+    tmp_path: Path,
+    codec: FixCodec,
+    raw_table: pyarrow.Table,
+    table: pyarrow.Table,
 ) -> None:
     """Written back out and read again under the same codec, column for column."""
     copy = tmp_path / "copy.txt"
-    TextFile.from_path(copy).append_arrow(table)
+    TextFile.from_path(copy).append_arrow(raw_table)
     with TextFile.from_path(
         copy,
         msg_type_event_types=event_types(codec.registry),
@@ -886,8 +898,8 @@ def test_version_evidence_does_not_override_a_rule_that_rejects_one_row(
     parsed = FixMsg.from_message_batch(
         [
             Message(
-                message="8=FIX.4.4|35=D|11=C1|10=000",
-                plugincode="NOT-ONLY",
+                body="8=FIX.4.4|35=D|11=C1|10=000",
+                plugin="NOT-ONLY",
             )
         ],
         own,
@@ -1240,11 +1252,11 @@ def _parsed(messages: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
 
 def _parsed_lines(codec: FixCodec, *lines: str) -> pyarrow.Table:
     """Build raw rows in memory and parse them only at the FixMsg boundary."""
-    messages = Message.into_arrow_reader(Message(message=line) for line in lines).read_all()
+    messages = Message.into_arrow_reader(Message(body=line) for line in lines).read_all()
     parsed = Message.parse_arrow(
-        messages.column("message"),
+        messages.column("body"),
         event_types(codec.registry),
-        messages.column("plugincode"),
+        messages.column("plugin"),
         protocol_rules=codec.rules,
     )
     messages = messages.set_column(
@@ -1352,9 +1364,9 @@ def test_the_parse_and_the_translation_resolve_one_row_alike(
     rows = [FixMsg.from_dict(row) for row in transacted.to_pylist()]
     for row in rows:
         found = row.into_fix_events().transacted
-        if not row.message or "8=FIX" not in row.message:
+        if row.msgtype is None:
             continue
-        assert (found.unix, found.source) == (row.unix, row.unixsource), row.message
+        assert (found.unix, found.source) == (row.unix, row.unixsource), row.msgtype
 
 
 # -- the raw/parsed boundary -------------------------------------------------
@@ -1413,7 +1425,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
 ) -> None:
     assert staged.schema.names == Message.into_field().names
     expected = [line.split("(INFO) ", 1)[1] for line in STAGED_LINES.splitlines()]
-    assert staged.column("message").to_pylist() == expected
+    assert staged.column("body").cast(pyarrow.string()).to_pylist() == expected
     assert "entries" in staged.schema.names
     assert staged.column("msgtype").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
@@ -1485,14 +1497,9 @@ def test_the_redirection_sends_one_input_to_all_three_tables(
     assert categories.to_pylist() == ["market", "market", "misc", "misc"]
 
 
-def test_a_misc_row_keeps_its_raw_line_and_a_market_row_gives_it_up() -> None:
-    """The one stored shape: two content columns, and which is filled where."""
-    market = FixMsg(unix=1, hash=1, message=None, entries=[])
-    misc = FixMsg(unix=2, hash=2, message="heartbeat", entries=None)
-    assert market.message is None and market.entries == []
-    assert misc.message == "heartbeat"
-    field = FixMsg.into_field()
-    assert field.field("message").nullable, "a market row leaves it null"
+def test_fixmsg_never_persists_the_raw_body() -> None:
+    """Parsed fields and residual entries are the persisted payload reading."""
+    assert "body" not in FixMsg.into_field().names
 
 
 def test_protocol_agrees_with_the_version_evidence_it_derives_from(

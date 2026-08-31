@@ -301,6 +301,9 @@ class Protocol(Ascii64):
     FIXML = "FIXML"
     """Numbered tags and named keys together."""
 
+    XML = "XML"
+    """Structured XML events without a FIX application version."""
+
     UL = "UL"
     """Named keys alone."""
 
@@ -461,10 +464,6 @@ class Protocol(Ascii64):
         return found.cast(cls.into_arrow_type().index_type, safe=False)
 
     @classmethod
-    def _registers_unknown(cls) -> bool:
-        return True
-
-    @classmethod
     def schema_metadata(cls) -> dict[str, str]:
         return {**super().schema_metadata(), "pattern": "[A-Z0-9._-]{1,8}"}
 
@@ -489,6 +488,8 @@ class State(Ascii64):
     """Band floor: requested but not acknowledged."""
     PENDING_NEW = "11PNDNEW", 110
     """Awaiting first venue acknowledgement."""
+    QUEUED = "12QUEUED", 120
+    """Task accepted and waiting for execution."""
     OPEN = "20OPEN", 200
     """Band floor: live at the venue."""
     NEW = "21NEW", 210
@@ -503,6 +504,8 @@ class State(Ascii64):
     """Held by the venue and resumable."""
     STOPPED = "26STOPPD", 260
     """Stopped at a price awaiting a trade."""
+    RUNNING = "27RUNING", 270
+    """Task execution is in progress."""
     PARTIAL = "30PARTL", 300
     """Band floor: live and partly complete."""
     PARTIALLY_FILLED = "31PRTFIL", 310
@@ -515,6 +518,8 @@ class State(Ascii64):
     """Over for the session."""
     CALCULATED = "43CALCD", 430
     """Priced and closed by the venue."""
+    SUCCEEDED = "44SUCCED", 440
+    """Task completed successfully."""
     CLOSED = "50CLOSED", 500
     """Band floor: over without completion."""
     CANCELLED = "51CANCLD", 510
@@ -680,7 +685,7 @@ class MIC(Ascii32):
     #
     # Compiling is not decoration. `into_arrow_array` renders the compiled
     # members and nulls everything else, so before this every real venue in a
-    # `mic` column read back as null while `from_int` named it -- the scalar
+    # `lastmkt` column read back as null while `from_int` named it -- the scalar
     # reader and the column renderer disagreeing on the same bytes. Only
     # compiled codes reach the `enum:values` a contract publishes, and only
     # they are safe from the eviction the learnt-code registry does.
@@ -783,10 +788,6 @@ class MIC(Ascii32):
         return bool(cls._PATTERN.fullmatch(text))
 
     @classmethod
-    def _registers_unknown(cls) -> bool:
-        return True
-
-    @classmethod
     def schema_metadata(cls) -> dict[str, str]:
         return {**super().schema_metadata(), "pattern": "[A-Z0-9]{4}"}
 
@@ -834,10 +835,6 @@ class Currency(Ascii32):
     @classmethod
     def _valid(cls, text: str) -> bool:
         return bool(cls._PATTERN.fullmatch(text))
-
-    @classmethod
-    def _registers_unknown(cls) -> bool:
-        return True
 
     @classmethod
     def _built_in_aliases(cls) -> dict[str, str]:
@@ -938,10 +935,6 @@ class SecurityIDSource(Ascii32):
     INDEX_NAME = "INDX"
     UNIFORM_SYMBOL = "UNIF"
     DIGITAL_TOKEN = "DTI"
-
-    @classmethod
-    def _registers_unknown(cls) -> bool:
-        return True
 
     @classmethod
     def _built_in_aliases(cls) -> dict[str, str]:

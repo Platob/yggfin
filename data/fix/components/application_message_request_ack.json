@@ -12,7 +12,9 @@
    "component": "ApplicationMessageRequestAck",
    "msgtype": "BX",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

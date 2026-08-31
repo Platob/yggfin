@@ -13,8 +13,13 @@
   "fix": {
    "component": "CollInqQualGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CollateralInquiry\",\"CollateralInquiryAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CollateralInquiry",
+    "CollateralInquiryAck"
+   ]
   },
   "fields": [
    {

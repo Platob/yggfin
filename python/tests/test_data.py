@@ -83,9 +83,8 @@ FIELD_KEYS = frozenset(
     {"name", "type", "nullable", "description", "fix", "fields", "item", "key", "value"}
 )
 
-#: The `fix:` keys whose value is itself a document, packed into one string
-#: because Arrow field metadata is bytes to bytes.
-PACKED = (
+#: The `fix:` keys whose value is itself a document in a readable field shard.
+NESTED = (
     "versions",
     "values",
     "aliases",
@@ -99,9 +98,10 @@ PACKED = (
 
 
 def stored_fix(record: dict[str, object]) -> dict[str, object]:
-    """One record's FIX metadata, with the documents it packs into strings read."""
+    """One record's readable FIX metadata."""
     fix = dict(record.get("fix") or {})
-    return {key: json.loads(value) if key in PACKED else value for key, value in fix.items()}
+    assert all(not isinstance(fix[key], str) for key in NESTED if key in fix)
+    return fix
 
 
 def stored_value(record: dict[str, object], value: str) -> dict[str, object]:
@@ -119,20 +119,19 @@ VERSIONS: list[str] = INDEX["versions"]
 #: zero", so a rebuild that lost half the dictionary and still produced a
 #: readable store fails here.
 #:
-#: Sixteen shards under one naming rule: the standard occupies fourteen
+#: Ten shards under one naming rule: the standard occupies eight
 #: sparse ranges, rekep's frozen 30000 range occupies one more, and the fields
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
-EXPECTED_FIELD_DOCUMENTS = 16
-EXPECTED_FIELD_RECORDS = 6100
+EXPECTED_FIELD_DOCUMENTS = 10
+EXPECTED_FIELD_RECORDS = 6110
 EXPECTED_COMPONENT_FILES = 907
 #: Of which these are messages: a message is a component that arrives under a MsgType.
 EXPECTED_MESSAGE_FILES = 176
 
 REKEP_TAG_VALUES = frozenset(REKEP_TAGS.values())
 REKEP_FIELD_NAMES = {
-    REKEP_TAGS[column]: name
-    for column, name, _datatype, _display, _description in REKEP_FIELD_DECLARATIONS
+    REKEP_TAGS[column]: name for column, name, _datatype, _description in REKEP_FIELD_DECLARATIONS
 }
 REKEP_COMPONENTS = frozenset(REKEP_COMPONENT_NAMES)
 
@@ -178,7 +177,7 @@ def test_the_archive_holds_tag_shards_and_one_file_per_component() -> None:
 
 
 def test_every_field_is_in_the_document_the_arithmetic_names() -> None:
-    """`tag // 500`: no index in `versions.json`, no lookup table, no scan.
+    """`tag // 1000`: no index in `versions.json`, no lookup table, no scan.
 
     And one rule for every document, including the one the fields FIX never
     numbered share: they key by name, so they land in `NAMED_SHARD` rather
@@ -263,7 +262,7 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     assert "encoded" not in stored_fix(msg_type) and "decoded" not in stored_fix(msg_type), (
         "a lookup derived from the values is not stored beside them"
     )
-    assert [alias["name"] for alias in stored_fix(held["32"])["aliases"]] == ["LastShares"]
+    assert stored_fix(held["32"]).get("aliases", []) == []
 
 
 def test_a_component_record_is_one_declaration_and_its_versions() -> None:
@@ -276,7 +275,7 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     declared = parties["declaration"]
     assert declared["type"] == "struct" and declared["fix"]["component"] == "Parties"
     assert "msgtype" not in declared["fix"], "a reusable block is not a message definition"
-    carried = json.loads(declared["fix"]["msgtypes"])
+    carried = declared["fix"]["msgtypes"]
     assert {"NewOrderSingle", "ExecutionReport"} <= set(carried), "which messages carry it"
     assert carried == sorted(carried)
     group = declared["fields"][0]
@@ -468,10 +467,10 @@ def test_the_builtin_projection_matches_the_published_versions(
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
-    # Derived from `publish.PROJECTED`, then pinned: 181 standard keys resolve
-    # to 180 records, and the package adds its 26 frozen field identities.
-    assert len(builtin.tags()) == 207
-    assert len(builtin.field_records()) == 206
+    # Derived from `publish.PROJECTED`, then pinned: the standard projection
+    # plus the package's 36 frozen field identities.
+    assert len(builtin.tags()) == 216
+    assert len(builtin.field_records()) == 216
     assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
     package_tags = set(REKEP_TAGS.values())
     selected = {
@@ -498,7 +497,7 @@ def test_the_builtin_projection_matches_the_published_versions(
             version
         )
         assert [member.name for member in packaged if member.fix.tag in package_tags] == [
-            name for _column, name, _datatype, _display, _description in REKEP_FIELD_DECLARATIONS
+            name for _column, name, _datatype, _description in REKEP_FIELD_DECLARATIONS
         ]
     # A field FIX never numbered holds for every version and sorts after the
     # numbered ones, so the named identities are the tail of the newest
@@ -665,6 +664,7 @@ def test_fields_whose_descriptions_fix_utc_store_a_zoned_timestamp() -> None:
 
     assert documented == {
         "ContraTradeTime": "timestamp[us, tz=UTC]",
+        "CreationTime": "timestamp[us, tz=UTC]",
         "EffectiveTime": "timestamp[us, tz=UTC]",
         "ExpireTime": "timestamp[us, tz=UTC]",
         "OnBehalfOfSendingTime": "timestamp[us, tz=UTC]",

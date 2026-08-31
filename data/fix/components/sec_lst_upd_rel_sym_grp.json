@@ -12,8 +12,12 @@
   "fix": {
    "component": "SecLstUpdRelSymGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"SecurityListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "SecurityListUpdateReport"
+   ]
   },
   "fields": [
    {

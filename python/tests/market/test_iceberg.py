@@ -46,16 +46,18 @@ def test_every_column_comment_travels(shape: type) -> None:
         assert schema.find_field(member.name).doc == member.description, member.name
 
 
-def test_hash_widths_are_preserved_in_every_engine() -> None:
+def test_identity_widths_are_preserved_in_every_engine() -> None:
     schema = MarketEvent.into_field().into_iceberg_schema()
     assert str(schema.find_field("hash").field_type) == "fixed[16]"
     assert str(schema.find_field("vhash").field_type) == "long"
     assert str(schema.find_field("xhash").field_type) == "fixed[16]"
-    assert str(schema.find_field("instrumentxhash").field_type) == "long"
+    assert str(schema.find_field("instrumentxhash").field_type) == "fixed[16]"
     back = StructField.from_iceberg_schema(schema)
     assert back.field("hash").dtype == HASH
     assert back.field("xhash").dtype == HASH
+    assert back.field("instrumentxhash").dtype == HASH
     assert back.field("vhash").dtype == pyarrow.int64()
+    assert back.field("linkhashes").dtype.value_type == HASH
 
 
 def test_a_stable_code_is_a_plain_iceberg_integer() -> None:

@@ -9,9 +9,11 @@ parameters:
   # The FIX dictionary. A directory, a zip, or either on a bucket:
   # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
   fix_dictionary: data/fix
-  null_values: ["", "null", "<null>", "n/a"]
+  null_values: ["", "null", "<null>", "n/a", "none"]
   # Each rule may extend indexed-group delimiter detection with
   # `extra_entry_separators`; keep this document aligned with parse_messages.
+  # The shipped UL rule pops `DetailedCFICode` into `CFICode`, so the detailed
+  # enrichment replaces a generic CFI value before the field is lifted.
   protocols: null
   # How named fields read, where a job says what the dictionary cannot: a
   # vendor tag that carries an instant, a value spelling only this estate

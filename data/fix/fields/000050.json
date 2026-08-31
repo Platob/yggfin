@@ -1,0 +1,85 @@
+{
+ "50000": {
+  "name": "BatchID",
+  "type": "string",
+  "nullable": true,
+  "fix": {
+   "tag": "50000",
+   "type": "STRING",
+   "source": "quickfix",
+   "sources": [
+    "quickfix"
+   ],
+   "origins": {
+    "name": "quickfix",
+    "type": "quickfix"
+   },
+   "name": "BatchID",
+   "versions": [
+    "5.0.SP2"
+   ]
+  }
+ },
+ "50001": {
+  "name": "BatchTotalMessages",
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "50001",
+   "type": "INT",
+   "source": "quickfix",
+   "sources": [
+    "quickfix"
+   ],
+   "origins": {
+    "name": "quickfix",
+    "type": "quickfix"
+   },
+   "name": "BatchTotalMessages",
+   "versions": [
+    "5.0.SP2"
+   ]
+  }
+ },
+ "50002": {
+  "name": "BatchProcessMode",
+  "type": "int32",
+  "nullable": true,
+  "fix": {
+   "tag": "50002",
+   "type": "INT",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "",
+     "aliases": [
+      "UPDATE"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "",
+     "aliases": [
+      "SNAPSHOT"
+     ]
+    }
+   ],
+   "source": "quickfix",
+   "sources": [
+    "quickfix"
+   ],
+   "origins": {
+    "name": "quickfix",
+    "type": "quickfix",
+    "aliases": {
+     "0": "quickfix",
+     "1": "quickfix"
+    }
+   },
+   "name": "BatchProcessMode",
+   "versions": [
+    "5.0.SP2"
+   ]
+  }
+ }
+}

@@ -10,8 +10,19 @@
   "fix": {
    "component": "AllocRegulatoryTradeIDGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationInstructionAlert\",\"AllocationReport\",\"AllocationReportAck\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAck",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "AllocationReportAck",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

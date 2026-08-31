@@ -1,6 +1,6 @@
 # State
 
-[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, a closed set, so a stored value is a compiled code or it is `UNKNOWN`.
+[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, an open vocabulary, so a valid code registers when first read.
 
 ```python
 from rekep.enums import State
@@ -9,6 +9,9 @@ state = State.from_str("PARTIALLY_FILLED")
 assert state.band is State.PARTIAL
 assert state.is_live
 assert not state.is_terminal
+
+assert State.QUEUED < State.RUNNING < State.SUCCEEDED
+assert State.RUNNING.is_live and State.SUCCEEDED.is_terminal
 ```
 
 Lifecycle states are ordered by completion, and each mnemonic carries its
@@ -19,14 +22,15 @@ down.
 
 Because the prefix leads the packed bytes, the stored `int64` sorts by
 lifecycle as well. A range predicate over the column is therefore as honest
-as the code sets: `state >= int(State.FILLED)` selects exactly the states at
-or past that point.
+as the code sets for compiled states: `state >= int(State.FILLED)` selects
+their states at or past that point.
 
 | Key | Mnemonic | Stored value | Rank | Meaning |
 | --- | --- | ---: | ---: | --- |
 | `UNKNOWN` |  | 0 | 0 | Nothing has been stated. |
 | `PENDING` | `10PENDNG` | 3544421165336645191 | 100 | Band floor: requested but not acknowledged. |
 | `PENDING_NEW` | `11PNDNEW` | 3544702678800942423 | 110 | Awaiting first venue acknowledgement. |
+| `QUEUED` | `12QUEUED` | 3544985283371287876 | 120 | Task accepted and waiting for execution. |
 | `OPEN` | `20OPEN` | 3616477706957225984 | 200 | Band floor: live at the venue. |
 | `NEW` | `21NEW` | 3616758035474546688 | 210 | Acknowledged and working. |
 | `ACCEPTED` | `22ACCEPT` | 3617025207879159892 | 220 | Accepted but not yet working. |
@@ -34,12 +38,14 @@ or past that point.
 | `PENDING_CANCEL` | `24PNDCNL` | 3617604697768283724 | 240 | Cancellation pending while the order remains live. |
 | `SUSPENDED` | `25SUSPND` | 3617889501597158980 | 250 | Held by the venue and resumable. |
 | `STOPPED` | `26STOPPD` | 3618170972211793988 | 260 | Stopped at a price awaiting a trade. |
+| `RUNNING` | `27RUNING` | 3618451351954607687 | 270 | Task execution is in progress. |
 | `PARTIAL` | `30PARTL` | 3688536336300788736 | 300 | Band floor: live and partly complete. |
 | `PARTIALLY_FILLED` | `31PRTFIL` | 3688817884324579660 | 310 | Some quantity traded; the rest remains live. |
 | `DONE` | `40DONE` | 3760580796260614144 | 400 | Band floor and first terminal state. |
 | `FILLED` | `41FILLED` | 3760864444457698628 | 410 | Every share traded. |
 | `DONE_FOR_DAY` | `42DONEDY` | 3761143746214052953 | 420 | Over for the session. |
 | `CALCULATED` | `43CALCD` | 3761424061515908096 | 430 | Priced and closed by the venue. |
+| `SUCCEEDED` | `44SUCCED` | 3761723214427014468 | 440 | Task completed successfully. |
 | `CLOSED` | `50CLOSED` | 3832637277919724868 | 500 | Band floor: over without completion. |
 | `CANCELLED` | `51CANCLD` | 3832918705633971268 | 510 | Withdrawn before completion. |
 | `REPLACED` | `52REPLCD` | 3833216690499109700 | 520 | Superseded by an amendment. |

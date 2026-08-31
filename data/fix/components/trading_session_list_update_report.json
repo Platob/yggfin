@@ -12,7 +12,9 @@
    "component": "TradingSessionListUpdateReport",
    "msgtype": "BS",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

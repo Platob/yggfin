@@ -11,7 +11,9 @@
    "component": "StreamAssignmentReport",
    "msgtype": "CD",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

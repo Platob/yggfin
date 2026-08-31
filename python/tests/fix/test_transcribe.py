@@ -776,6 +776,8 @@ ABSENT = "|".join(
         "#CLIENTID=N/A",
         "#SECURITYEXCHANGE=null",
         "#TEXT= NULL ",
+        "#ENV=none",
+        "#GLOBALORDERID=NONE",
         "#ORDERQTY=1200",
     ]
 )
@@ -821,6 +823,20 @@ def test_an_empty_set_keeps_every_pair(codec: FixCodec) -> None:
     keeping = FixCodec(registry=codec.registry, null_values=frozenset())
     parsed = keeping.into_pairs(pyarrow.array([ABSENT]), "FIXML")
     assert len(parsed.to_pylist()[0]) == ABSENT.count("|") + 1
+
+
+def test_ul_pop_replaces_the_generic_cfi_at_the_detailed_reading(codec: FixCodec) -> None:
+    line = "#SYMBOL=TTF|#CFICODE=FXXXXX|#DETAILEDCFICODE=OCASPS|#SIDE=1"
+    raw = codec.into_raw_pairs(pyarrow.array([line]), "UL")
+
+    completed = codec.complete_pairs(raw, "UL")
+
+    assert completed.to_pylist() == codec.into_pairs(pyarrow.array([line]), "UL").to_pylist()
+    assert _pairs(completed) == [
+        ("SYMBOL", "TTF"),
+        ("CFICode", "OCASPS"),
+        ("SIDE", "1"),
+    ]
 
 
 def test_a_pair_with_no_value_goes_even_when_no_spelling_means_absent(codec: FixCodec) -> None:
@@ -1050,17 +1066,16 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
 ) -> None:
     """One column per declared tag, typed from the registry declaration."""
     columns, _ = codec.into_lifted_columns(wire_tags, "4.2")
-    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 35, 18), (
+    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 49, 18), (
         "the session layer, shared components, then quote fields"
     )
-    assert len(FLAT) == 86
+    assert len(FLAT) == 100
     namespaced = {field.name for field in NAMESPACE_COLUMNS.values()}
     assert set(columns) == set(COLUMNS.values()) | namespaced, (
         "one pass lifts both kinds, so it answers with both"
     )
-    assert sorted(STAMPS) == [42, 52, 60, 62, 122, 370], (
-        "OrigTime, SendingTime, TransactTime, ValidUntilTime, "
-        "OrigSendingTime, OnBehalfOfSendingTime"
+    assert sorted(STAMPS) == [42, 52, 60, 62, 122, 126, 370, 30031], (
+        "the UTC timestamp fields lifted as typed columns"
     )
     assert {name: column.type for name, column in columns.items()} == {
         name: TYPES[tag] for tag, name in COLUMNS.items()

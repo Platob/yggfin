@@ -10,8 +10,12 @@
   "fix": {
    "component": "PartyDetailAckGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyDetailsDefinitionRequestAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyDetailsDefinitionRequestAck"
+   ]
   },
   "fields": [
    {

@@ -61,12 +61,12 @@ def test_a_two_sided_quote_becomes_two_indicative_rows_for_one_quote_lifecycle()
     )
 
     assert all(isinstance(row, Order) and row.indicative for row in (bid, ask))
-    assert (bid.side, bid.price, bid.lastqty) == (Side.BID, 100.0, 10.0)
-    assert (ask.side, ask.price, ask.lastqty) == (Side.ASK, 101.0, 12.0)
+    assert (bid.side, bid.lastpx, bid.lastqty) == (Side.BID, 100.0, 10.0)
+    assert (ask.side, ask.lastpx, ask.lastqty) == (Side.ASK, 101.0, 12.0)
     assert bid.kind is ask.kind is MarketKind.LIMIT_ORDER
     assert bid.orderid == ask.orderid == "Q-1"
     assert bid.clordid == ask.clordid == "REQ-1"
-    assert bid.xhash == ask.xhash, "one creation time and QuoteID name one lifecycle"
+    assert bid.xhash == ask.xhash, "one QuoteID names one lifecycle"
     assert bid.codesource == ask.codesource == "QuoteID"
     assert bid.expunix == ask.expunix == unix_of("20260821-10:05:00")
     assert bid.metadata["537"] == ask.metadata["537"] == "1"
@@ -87,7 +87,7 @@ def test_named_quote_fields_resolve_through_the_builtin_registry() -> None:
             fix_version="4.4",
         )
     )
-    assert (bid.price, bid.lastqty, ask.price, ask.lastqty) == (100.0, 10.0, 101.0, 12.0)
+    assert (bid.lastpx, bid.lastqty, ask.lastpx, ask.lastqty) == (100.0, 10.0, 101.0, 12.0)
 
 
 def test_a_quote_status_without_prices_updates_both_quote_sides() -> None:
@@ -147,7 +147,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     raw = next(
         iter(
             Message.into_arrow_reader(
-                [Message(message=line, msgtype="i", eventtype=EventType.QUOTE)],
+                [Message(body=line, msgtype="i", eventtype=EventType.QUOTE)],
                 batch_row_size=1,
             )
         )
@@ -160,7 +160,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     stored_events = list(stored.into_market_events(fix_version="4.4"))
 
     def project(event):
-        return event.symbolticker, event.side, event.price, event.lastqty, event.orderid
+        return event.symbolticker, event.side, event.lastpx, event.lastqty, event.orderid
 
     assert [project(event) for event in stored_events] == [
         project(event) for event in direct_events
@@ -186,7 +186,7 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
     registry = FixRegistry(cache_dir=FIX_DATA)
     rows = list(FixEvents.from_text(mass_quote(registry), registry=registry, fix_version="4.4"))
 
-    assert [(row.symbolticker, row.side, row.orderid, row.price, row.lastqty) for row in rows] == [
+    assert [(row.symbolticker, row.side, row.orderid, row.lastpx, row.lastqty) for row in rows] == [
         ("AAPL", Side.BID, "ENTRY-1", 100.0, 10.0),
         ("AAPL", Side.ASK, "ENTRY-1", 101.0, 11.0),
         ("MSFT", Side.BID, "ENTRY-2", 200.0, 20.0),

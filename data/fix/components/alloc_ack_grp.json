@@ -13,8 +13,13 @@
   "fix": {
    "component": "AllocAckGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstructionAck\",\"AllocationReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstructionAck",
+    "AllocationReportAck"
+   ]
   },
   "fields": [
    {

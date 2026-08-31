@@ -15,7 +15,9 @@
    "component": "NewOrderMultileg",
    "msgtype": "AB",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

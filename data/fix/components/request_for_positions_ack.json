@@ -14,7 +14,9 @@
    "component": "RequestForPositionsAck",
    "msgtype": "AO",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -16,7 +16,9 @@
    "component": "MarketDataIncrementalRefresh",
    "msgtype": "X",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -1,10 +1,10 @@
 """Where a FIX dictionary is kept: tag-range shards of fields, and components.
 
-One layout. Fields live in shards of five hundred tags under `fields/`, named
+One layout. Fields live in shards of one thousand tags under `fields/`, named
 by the shard index, so the file holding a tag is arithmetic -- no index, no
 lookup table, no scan -- and a single-tag lookup reads one document rather than
 the dictionary. The tag space is sparse, and an empty shard is simply absent:
-fifteen files hold 6,098 tagged fields. Fields FIX never numbered have no tag
+ten files hold the tagged and named fields. Fields FIX never numbered have no tag
 to shard on: they key by their name and share `999999`, the one shard index the
 arithmetic never reaches, so every field document is named the same way and
 nothing has to ask what kind of record it is about to read.
@@ -30,6 +30,7 @@ from typing import Any, Protocol
 
 import pyarrow.fs
 
+from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import State
 from rekep.fields import Field, encodings_of, newest_rank
@@ -49,6 +50,7 @@ from rekep.fix.entries import (
     refuse_record,
     slug_of,
 )
+from rekep.fix.fields import datatype_identity
 from rekep.fix.quickfix import is_reference, walk
 from rekep.require import require
 from rekep.urls import LOCAL, Url
@@ -80,10 +82,9 @@ SESSIONS = "sessions"
 STORED = "stored"
 DECLARED = "declared"
 
-#: How many tags one shard holds. Five hundred: wide enough that the populated
-#: ranges are fifteen files rather than a hundred, narrow enough that a
-#: single-tag lookup parses a few hundred records instead of all 6,101.
-SHARD_SPAN = 500
+#: How many tags one shard holds. One thousand keeps one lookup bounded while
+#: halving object-store listings and archive members for the sparse registry.
+SHARD_SPAN = 1_000
 
 #: The shard the fields FIX never numbered share. An index, not a name, so
 #: every field document is `fields/NNNNNN.json` under one rule and there is no
@@ -192,10 +193,8 @@ class DirectoryDocuments:
     def read(self, name: str) -> dict[str, Any] | None:
         """One document, or None for anything that cannot be read as one."""
         try:
-            with self.filesystem.open_input_stream(self._path(name)) as stream:
-                return document_of(stream.read(), name)
-        except FileNotFoundError:
-            return None
+            payload = self._path(name).read_bytes()
+            return None if payload is None else document_of(payload, name)
         except (OSError, ValueError, pyarrow.ArrowException):
             # A torn write or someone else's file: write over it rather than
             # refuse to run offline forever.
@@ -204,30 +203,24 @@ class DirectoryDocuments:
     def write(self, name: str, payload: Mapping[str, Any]) -> None:
         """Written beside, then renamed, so a reader never sees half a file."""
         path = self._path(name)
-        self.filesystem.create_dir(posixpath.dirname(path), recursive=True)
-        scratch = f"{path}.tmp"
-        with self.filesystem.open_output_stream(scratch) as stream:
-            stream.write(document_text(payload).encode())
-        self.filesystem.move(scratch, path)
+        scratch = path.with_name(f"{path.name}.tmp")
+        scratch.write_bytes(document_text(payload).encode())
+        scratch.replace(path)
 
     def remove(self, name: str) -> bool:
         """Delete one document; False when it is not there."""
-        try:
-            self.filesystem.delete_file(self._path(name))
-        except (FileNotFoundError, OSError):
-            return False
-        return True
+        return self._path(name).delete()
 
     def names(self) -> tuple[str, ...]:
         """Every document under the directory, folders included."""
-        selector = pyarrow.fs.FileSelector(self.directory, recursive=True, allow_not_found=True)
         prefix = self.directory.rstrip("/") + "/"
         found = []
-        for info in self.filesystem.get_file_info(selector):
+        root = ArrowPath(self.directory, self.filesystem)
+        for path, info in root.ls_with_info(recursive=True):
             if info.type != pyarrow.fs.FileType.File or not is_document(info.path):
                 continue
-            path = info.path
-            found.append(path[len(prefix) :] if path.startswith(prefix) else path)
+            spelled = path.path
+            found.append(spelled[len(prefix) :] if spelled.startswith(prefix) else spelled)
         return tuple(sorted(found))
 
     def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
@@ -250,15 +243,15 @@ class DirectoryDocuments:
     def stamp(self, name: str) -> float:
         """When one document was last written, off the filesystem itself."""
         try:
-            (info,) = self.filesystem.get_file_info([self._path(name)])
+            info = self._path(name).info()
         except (OSError, pyarrow.ArrowException):
             return 0.0
         if info.type != pyarrow.fs.FileType.File or info.mtime is None:
             return 0.0
         return info.mtime.timestamp()
 
-    def _path(self, name: str) -> str:
-        return posixpath.join(self.directory, name)
+    def _path(self, name: str) -> ArrowPath:
+        return ArrowPath(posixpath.join(self.directory, name), self.filesystem)
 
 
 @dataclasses.dataclass(eq=False)
@@ -440,7 +433,7 @@ def _archive_prefix(members: Sequence[str]) -> str:
 
 
 def field_document(key: int | str) -> str:
-    """The document holding one field key: `fields/000000.json` for tags 0-499.
+    """The document holding one field key: `fields/000000.json` for tags 0-999.
 
     `tag // SHARD_SPAN` zero-padded, and `NAMED_SHARD` for a field FIX never
     numbered, which keys by its name instead. That is the whole mapping: no
@@ -462,8 +455,8 @@ class ShardedLayout:
     """A FIX dictionary as tag-range shards, cross-version records inside them.
 
     Each shard is `{"<tag>": {record}}` in numeric tag order, and is read and
-    held whole -- a tag lookup parses the few hundred records that share its
-    range, never the dictionary. Questions about a whole version read every
+    held whole -- a tag lookup parses at most one thousand records that share
+    its range, never the dictionary. Questions about a whole version read every
     shard, once, and hold those too.
     """
 
@@ -567,7 +560,7 @@ class ShardedLayout:
                 self.__dict__.setdefault("_torn", set()).add(name)
             return {}
         return {
-            _record_key(key): refuse_record(Field.from_dict(record))
+            _record_key(key): refuse_record(field_from_document(record))
             for key, record in document.items()
         }
 
@@ -599,7 +592,7 @@ class ShardedLayout:
             torn.update(name for name in self.documents.names() if name.startswith(prefix))
             torn.difference_update(readable)
             held = self.__dict__["_components"] = {
-                document_stem(name[len(prefix) :]): ComponentRecord.from_dict(document)
+                document_stem(name[len(prefix) :]): component_from_document(document)
                 for name, document in sorted(readable.items())
             }
         return held
@@ -704,7 +697,9 @@ class ShardedLayout:
 
     def store_component(self, entry: ComponentRecord) -> None:
         """Write one component record, replacing what was under its slug."""
-        self.documents.write(f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", entry.into_dict())
+        self.documents.write(
+            f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", component_record_document(entry)
+        )
         self.component_records[entry.slug] = entry
 
     def remove_component(self, slug: str) -> bool:
@@ -803,9 +798,78 @@ def _shard_document(shard: Mapping[int | str, Field]) -> dict[str, Any]:
     tags = sorted(key for key in shard if isinstance(key, int))
     names = sorted(key for key in shard if not isinstance(key, int))
     return {
-        (str(key) if isinstance(key, int) else shard[key].fix.canonical): shard[key].into_dict()
+        (str(key) if isinstance(key, int) else shard[key].fix.canonical): _field_document(
+            shard[key]
+        )
         for key in (*tags, *names)
     }
+
+
+def _field_document(record: Field) -> dict[str, Any]:
+    """One registry field with JSON metadata shown as the value it contains."""
+    return _readable_declaration(record.into_dict())
+
+
+def field_record_document(record: Field) -> dict[str, Any]:
+    """One field record in the readable JSON shape used by registry stores."""
+    return _field_document(record)
+
+
+def field_from_document(document: Mapping[str, Any]) -> Field:
+    """Restore readable registry metadata to Arrow's string metadata."""
+    return Field.from_dict(_stored_declaration(document))
+
+
+def component_record_document(record: ComponentRecord) -> dict[str, Any]:
+    """One component with readable metadata throughout its declaration tree."""
+    return _readable_declaration(record.into_dict())
+
+
+def component_from_document(document: Mapping[str, Any]) -> ComponentRecord:
+    """Restore one readable component declaration to its stored metadata types."""
+    return ComponentRecord.from_dict(_stored_declaration(document))
+
+
+def _readable_declaration(value: Any) -> Any:
+    """Render every FIX metadata object in a declaration tree as nested JSON."""
+    if isinstance(value, Mapping):
+        found = {key: _readable_declaration(member) for key, member in value.items()}
+        fixed = found.get("fix")
+        if isinstance(fixed, Mapping):
+            found["fix"] = {key: _nested_metadata(member) for key, member in fixed.items()}
+        return found
+    if isinstance(value, list | tuple):
+        return [_readable_declaration(member) for member in value]
+    return value
+
+
+def _stored_declaration(value: Any) -> Any:
+    """Encode nested FIX metadata back to Arrow's string metadata contract."""
+    if isinstance(value, Mapping):
+        found = {key: _stored_declaration(member) for key, member in value.items()}
+        fixed = value.get("fix")
+        if isinstance(fixed, Mapping):
+            found["fix"] = {
+                key: member
+                if isinstance(member, str)
+                else json.dumps(member, separators=(",", ":"))
+                for key, member in fixed.items()
+            }
+        return found
+    if isinstance(value, list | tuple):
+        return [_stored_declaration(member) for member in value]
+    return value
+
+
+def _nested_metadata(value: Any) -> Any:
+    """Decode a JSON object or array while leaving scalar metadata as text."""
+    if not isinstance(value, str) or not value.startswith(("[", "{")):
+        return value
+    try:
+        decoded = json.loads(value)
+    except (TypeError, ValueError):
+        return value
+    return decoded if isinstance(decoded, (list, dict)) else value
 
 
 def _field_order(member: Field) -> tuple[int, int, str]:
@@ -1256,13 +1320,22 @@ def _collapsed(
     dropped = tuple(
         Dropped(version, reading, source=source)
         for version, source, reading in readings
-        if reading and reading != kept
+        if reading and not _same_reading(part, reading, kept)
     )
     return (
         Collapse(record.fix.canonical, part, kept_version, dropped, record.fix.tag, kept_source)
         if dropped
         else None
     )
+
+
+def _same_reading(part: str, left: str, right: str) -> bool:
+    """Whether two readings state the same contract fact."""
+    if part != TYPE:
+        return left == right
+    # FIX `char` constrains one string character; it does not change the wire
+    # or Arrow type, so sources may use either spelling without a conflict.
+    return datatype_identity(left) == datatype_identity(right)
 
 
 def component_closure(wanted: Iterable[str], by_name: Mapping[str, ComponentRecord]) -> set[str]:
@@ -1408,7 +1481,7 @@ def documents_of(
     for name, shard in shards.items():
         documents[name] = _shard_document(shard)
     for slug, entry in component_records.items():
-        documents[f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}"] = entry.into_dict()
+        documents[f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}"] = component_record_document(entry)
     return documents
 
 

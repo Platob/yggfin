@@ -10,8 +10,14 @@
   "fix": {
    "component": "TransactionAttributeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CollateralReport\",\"PositionReport\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CollateralReport",
+    "PositionReport",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

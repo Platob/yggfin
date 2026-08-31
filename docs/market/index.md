@@ -2,9 +2,9 @@
 
 Market tables store immutable event versions. `vhash` identifies its value,
 `hash` anchors that value to the event time, `prevhash` names its predecessor,
-and `xhash` anchors its lifecycle code to its creation time. `codesource`
-names the field that supplied the code. `linkxhashes` holds ordered lifecycle
-`xhash` values; `parenthash` separately records exact construction provenance.
+and `xhash` identifies its lifecycle from `code`. `codesource` names the field
+that supplied the code. `linkhashes` holds ordered exact event `hash` values;
+`parenthash` separately records exact construction provenance.
 
 Each product has its own page: [Instrument update](../products/instrument.md),
 [Order](../products/order.md), [Execution](../products/execution.md),
@@ -16,12 +16,12 @@ from rekep import FixMsg
 line = "8=FIX.4.4|35=8|11=C1|37=O1|17=E1|55=BTC-USD|54=1|31=100.25|32=10|38=10|39=2|150=F|10=000"
 events = list(FixMsg.from_text(line).into_market_events(fix_version="4.4"))
 for event in events:
-    print(type(event).__name__, event.state.name, event.price, event.lastqty)
+    print(type(event).__name__, event.state.name, event.lastpx, event.lastqty)
 
 order, execution = events
 print(order.codesource, execution.codesource)
-print(order.linkxhashes == [execution.xhash])
-print(execution.linkxhashes == [order.xhash])
+print(order.linkhashes == [execution.hash])
+print(execution.linkhashes == [order.hash])
 ```
 
 ```text
@@ -32,16 +32,18 @@ True
 True
 ```
 
-The related rows point at lifecycles, not individual versions. `prevhash` and
-`parenthash` continue to point at exact event `hash` values. The complete byte
+The related rows point at exact versions. `prevhash` names the preceding
+version and `parenthash` records construction provenance. The complete byte
 contract is in [Identity and binary conversions](../contracts/identity.md).
 
 `MarketEvent` adds `instrumentxhash` and its readable `symbolticker`, kind,
-side, `price`, `lastqty`, notional, currency, and their previous values. An
+side, `lastpx`, `lastqty`, notional, currency, and their previous values. An
 Order uses limit price and remaining live quantity; an Execution uses
 `LastPx <31>` and `LastQty <32>`; a Book uses midpoint and touch-size sum.
 `pxunit` and `qtyunit` keep their names and qualify those two summaries.
-Protocol spelling stays in metadata; stored fields use common semantics.
+`lastmkt` carries standard `LastMkt <30>` metadata while retaining the packed
+`MIC` enum. Protocol spelling stays in metadata; stored fields use common
+semantics.
 Parsed logs retain FIX wire order as `MsgSeqNum`; normalized market events do
 not repeat it.
 
@@ -75,14 +77,16 @@ from rekep.fix import unix_of
 
 row = FixMsg.from_text(
     "8=FIX.4.4|35=D|11=C1|60=20260821-10:00:00|"
-    "42=20260821-09:59:57|52=20260821-09:59:59|10=000|",
+    "42=20260821-09:59:57|30031=20260821-09:59:56|"
+    "126=20260821-10:30:00|52=20260821-09:59:59|10=000|",
     recunix=unix_of("20260821-10:00:02"),
 ).identify()
 
 print(row.unixsource)
 print(row.unix == unix_of("20260821-10:00:00"))
-print(row.creaunix == unix_of("20260821-09:59:57"))
+print(row.creaunix == unix_of("20260821-09:59:56"))
 print(row.recunix == unix_of("20260821-10:00:02"))
+print(row.expunix == unix_of("20260821-10:30:00"))
 ```
 
 ```text
@@ -90,21 +94,22 @@ TransactTime
 True
 True
 True
+True
 ```
 
-The three clocks answer different questions:
+The four clocks answer different questions:
 
 | column | meaning | precedence |
 | --- | --- | --- |
 | `unix` | when this transaction happened | `Unix <30000>`, then the FIX transaction chain below, then `recunix` |
-| `creaunix` | when this lifecycle was created upstream | `CreaUnix <30003>`, `OrigTime`, `OrigSendingTime`, `OnBehalfOfSendingTime`, `SendingTime` |
+| `creaunix` | when this lifecycle was created upstream | `CreaUnix <30003>`, `CreationTime <30031>`, `OrigTime`, `OrigSendingTime`, `OnBehalfOfSendingTime`, `SendingTime` |
 | `recunix` | when this capture recorded the row | local log header, then `RecUnix <30004>` |
+| `expunix` | when this event expires | `ExpUnix <30005>`, then `ExpireTime <126>`; an order may derive it from time-in-force only when neither is present |
 
 `TransactTime` never fabricates `creaunix`. A later version of the same
 lifecycle keeps its first known nonzero creation time; it may fill an unknown
-one, but completion from another `xhash` does not copy it. Event `xhash` stores
-`creaunix // 1_000` over the framed XXH3-64 digest of `code`. Zero means the
-clock is unknown.
+one, but completion from another `xhash` does not copy it. Event `xhash` is the
+direct XXH3-128 digest of UTF-8 `code`; all-zero means the code is unknown.
 
 `rekep.market.transacted` owns these rules. The parse stage applies them to
 whole Arrow batches and the translation layer applies them to one message,

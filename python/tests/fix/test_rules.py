@@ -29,8 +29,8 @@ from rekep.text import Message
 SOH = "\x01"
 
 #: One message of each protocol, in the spellings the sample capture uses. The
-#: three structured protocols are told apart by the keys their payload holds:
-#: numbered tags alone, named keys alone, or both together.
+#: Three key-shaped protocols are told apart by the keys their payload holds;
+#: XML is told by its document envelope.
 LINES = {
     "sending >> 8=FIX.4.2|9=176|35=D|10=203| << queued seq=1092": "FIX",
     "recv 8=FIX4^A9=61^A35=0^A10=017^A on session 3": "FIX",
@@ -40,6 +40,8 @@ LINES = {
     "8=FIX.4.4|35=D|11=ORDER-1|SYMBOL=AAPL|SIDE=1|10=000": "FIXML",
     "toBridge #ISINCODE=XX|#SYMBOL=TTF|#SIDE=1": "UL",
     "ACCOUNT=A1|MSGTYPE=D|CLORDID=ORDER-1|SYMBOL=AAPL|SIDE=1": "UL",
+    "<Order ClOrdID='XML-1'><Instrument><Symbol>IBM</Symbol></Instrument></Order>": "XML",
+    "Receiving XmlApi: <Execution ExecID='E1'><LastQty>2</LastQty></Execution>": "XML",
     "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR": "OTHER",
     "Message rejected because : ignoring OMSSales expiry message": "OTHER",
     "no level printed by this plugin": "OTHER",
@@ -48,8 +50,8 @@ LINES = {
 
 #: Derived from the rule set, then pinned, so a renamed built-in cannot move
 #: both sides of the assertions below together.
-EXPECTED_RULES = 5
-EXPECTED_PROTOCOLS = 5
+EXPECTED_RULES = 6
+EXPECTED_PROTOCOLS = 6
 DEFAULT = Rules.into_default()
 
 
@@ -76,13 +78,20 @@ def packed(*protocols: str | None) -> pyarrow.Array:
 
 
 def test_the_default_set_is_the_built_ins_in_order() -> None:
-    """The three shapes lead, so a FIX frame saying "heartbeat" stays a frame."""
+    """Structured rules lead, so payload prose cannot replace its envelope."""
     assert len(DEFAULT_RULES) == EXPECTED_RULES
-    assert [rule.protocol.code for rule in DEFAULT.rules] == ["FIX", "FIXML", "UL", "MISC", "OTHER"]
+    assert [rule.protocol.code for rule in DEFAULT.rules] == [
+        "XML",
+        "FIX",
+        "FIXML",
+        "UL",
+        "MISC",
+        "OTHER",
+    ]
     assert len({rule.protocol for rule in DEFAULT_RULES}) == EXPECTED_PROTOCOLS
     assert {rule.protocol for rule in DEFAULT_RULES} == set(Protocol) - {Protocol.UNKNOWN}
     assert OTHER.protocol is Protocol.OTHER
-    assert [rule.codec for rule in DEFAULT.rules] == [*SHAPES, "none", "none"]
+    assert [rule.codec for rule in DEFAULT.rules] == ["xml", *SHAPES, "none", "none"]
 
 
 @pytest.mark.parametrize(("message", "expected"), LINES.items(), ids=lambda v: str(v)[:28])
@@ -146,7 +155,12 @@ def test_a_value_full_of_digits_is_still_a_value() -> None:
 def test_the_scalar_row_and_the_column_agree() -> None:
     """One classifier: a row built from text answers what its batch answers."""
     for line, expected in LINES.items():
-        assert Message(message=line).protocol.code == expected
+        assert Message(body=line).protocol.code == expected
+
+
+def test_xml_inside_a_fix_value_does_not_replace_the_fix_envelope() -> None:
+    line = "8=FIX.4.4|35=D|58=<Order ClOrdID='not-an-envelope'/>|10=000|"
+    assert protocols_of(line) == ["FIX"]
 
 
 def test_a_declared_pattern_decides_instead_of_the_shape() -> None:
@@ -223,11 +237,11 @@ def test_a_lone_marked_key_in_prose_is_not_a_document() -> None:
 def test_default_rule_instances_are_isolated() -> None:
     assert Rules.into_default() is DEFAULT
     first, second = Rules(), Rules()
-    first.rules[3].pattern = "first only"
-    assert second.rules[3].pattern != "first only"
-    assert DEFAULT.rules[3].pattern != "first only"
+    first.rules[4].pattern = "first only"
+    assert second.rules[4].pattern != "first only"
+    assert DEFAULT.rules[4].pattern != "first only"
     assert MISC.pattern != "first only"
-    assert first.rules[3] is not second.rules[3]
+    assert first.rules[4] is not second.rules[4]
 
 
 def test_a_null_message_is_other_rather_than_null() -> None:
@@ -257,19 +271,23 @@ def test_no_rows_is_no_rows() -> None:
     assert len(payload_shapes(pyarrow.array([], Message.into_field().field("entries").dtype))) == 0
 
 
-def test_direction_is_a_closed_packed_vocabulary() -> None:
+def test_direction_is_an_open_packed_vocabulary() -> None:
     assert int(Direction.SENT) == int.from_bytes(b"SENT", "big", signed=True)
     assert int(Direction.RECV) == int.from_bytes(b"RECV", "big", signed=True)
     assert Direction.from_str("sent") is Direction.SENT
-    assert Direction.from_int(int.from_bytes(b"NOPE", "big", signed=True)) is Direction.UNKNOWN
-    with pytest.raises(TypeError, match="closed set"):
-        Direction.register("BOTH")
+    assert Direction.from_int(int.from_bytes(b"NOPE", "big", signed=True)).code == "NOPE"
+    assert Direction.register("BOTH") is Direction.from_str("BOTH")
 
 
 def test_every_structured_protocol_reads_direction_the_same_way() -> None:
-    """One anchor per codec, so a verb answers in front of any of the three."""
-    assert set(CODEC_ANCHORS) == set(SHAPES)
-    assert set(DEFAULT._anchors()) == {Protocol.FIX, Protocol.FIXML, Protocol.UL}
+    """One anchor per codec, so a verb answers in front of every payload shape."""
+    assert set(CODEC_ANCHORS) == {*SHAPES, "xml"}
+    assert set(DEFAULT._anchors()) == {
+        Protocol.XML,
+        Protocol.FIX,
+        Protocol.FIXML,
+        Protocol.UL,
+    }
 
 
 def test_an_in_or_out_marker_is_a_direction_and_the_same_letters_in_prose_are_not() -> None:
@@ -393,11 +411,23 @@ def test_a_rule_naming_a_plugin_with_no_plugin_column_does_not_match() -> None:
 
 
 def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
-    assert CODECS == ("fix", "fixml", "ul", "none")
+    assert CODECS == ("fix", "fixml", "ul", "xml", "none")
     assert CODEC_KEYS[DEFAULT.rule("FIX").codec] is False
     assert CODEC_KEYS[DEFAULT.rule("FIXML").codec] is True
     assert CODEC_KEYS[DEFAULT.rule("UL").codec] is True
+    assert CODEC_KEYS[DEFAULT.rule("XML").codec] is True
     assert DEFAULT.rule(Protocol.OTHER).named is None, "and OTHER is not read at all"
+
+
+def test_the_ul_rule_promotes_its_detailed_cfi_reading() -> None:
+    assert DEFAULT.rule("UL").pop == {"DetailedCFICode": "CFICode"}
+
+
+def test_a_pop_rule_requires_two_distinct_field_names() -> None:
+    with pytest.raises(ValueError, match="non-empty source and target"):
+        Rule(protocol="UL", codec="ul", pop={"": "CFICode"})
+    with pytest.raises(ValueError, match="cannot replace itself"):
+        Rule(protocol="UL", codec="ul", pop={"CFI_Code": "cficode"})
 
 
 def test_a_versioned_protocol_uses_its_family_rule() -> None:
@@ -459,7 +489,8 @@ def test_a_rule_set_round_trips_as_a_document(tmp_path: Path) -> None:
 def test_a_written_rule_spells_its_protocol_rather_than_packing_it() -> None:
     """The document is hand-edited, and a packed code is nineteen digits of
     nothing to whoever opens the file."""
-    assert DEFAULT.rules[0].into_dict()["protocol"] == "FIX"
+    assert DEFAULT.rules[0].into_dict()["protocol"] == "XML"
+    assert b"protocol: XML\n" in DEFAULT.into_yaml()
     assert b"protocol: FIX\n" in DEFAULT.into_yaml()
     assert Rules.from_dict({"rules": [{"protocol": "VENUE"}]}).rules[0].protocol.code == "VENUE"
 

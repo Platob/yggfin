@@ -15,7 +15,9 @@
    "component": "RFQRequest",
    "msgtype": "AH",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

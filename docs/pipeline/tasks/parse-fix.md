@@ -41,6 +41,9 @@ msgtype: D
 unix: 1787306400123000000
 unixsource: TransactTime
 creaunix: 1787306399000000000
+expunix: 1787308200000000000
+creationtime: 2026-08-21T09:59:59Z
+expiretime: 2026-08-21T10:30:00Z
 sendingtime: 2026-08-21T09:59:59Z
 instrument:
   symbol: TTF
@@ -61,7 +64,7 @@ The adjacent task document owns estate-specific readings:
 
 ```yaml
 fix_dictionary: data/fix
-null_values: ["", "null", "<null>", "n/a"]
+null_values: ["", "null", "<null>", "n/a", "none"]
 fields:
   rules:
     - field: "9999"

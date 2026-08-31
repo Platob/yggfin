@@ -439,12 +439,12 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             (
                 "partition, 3 columns",
                 f"unixpartition = {hour}",
-                ["unix", "plugincode", "message"],
+                ["unix", "plugin", "body"],
                 None,
             ),
-            ("3 columns, no filter", None, ["unix", "plugincode", "message"], None),
+            ("3 columns, no filter", None, ["unix", "plugin", "body"], None),
             ("correlated column", f"unix < {third_day}", None, None),
-            ("no stats to prune on", "plugincode = 'ULBridge'", None, None),
+            ("no stats to prune on", "plugin = 'ULBridge'", None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
@@ -893,7 +893,7 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "plugincode", "message")]),
+        pyarrow.schema([schema.field(name) for name in ("unix", "plugin", "body")]),
         "Narrow",
     )
 
@@ -904,7 +904,7 @@ def narrow_field() -> Any:
 
     schema = Message.into_field().into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "plugincode", "message")]),
+        pyarrow.schema([schema.field(name) for name in ("unix", "plugin", "body")]),
         "Narrow",
     )
 

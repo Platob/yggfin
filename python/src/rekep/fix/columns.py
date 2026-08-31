@@ -82,6 +82,13 @@ _COMMON_FIELDS: tuple[str, ...] = (
     "OrigClOrdID",
     "OrderID",
     "ExecID",
+    "GlobalOrderId",
+    "RootOrderId",
+    "RootOriginatorOrderId",
+    "OrderFlags",
+    "OrderOriginatorId",
+    "ConversationId",
+    "BloombergCode",
     "Side",
     "OrdType",
     "TimeInForce",
@@ -94,8 +101,15 @@ _COMMON_FIELDS: tuple[str, ...] = (
     "LeavesQty",
     "LastPx",
     "LastQty",
+    "LastShares",
+    "LastMkt",
+    "MarketMarker",
+    "Env",
+    "SettlCurrency",
     "TransactTime",
     "OrigTime",
+    "CreationTime",
+    "ExpireTime",
     "Text",
 )
 
@@ -188,6 +202,8 @@ _STAMP_FIELDS: tuple[str, ...] = (
     "OnBehalfOfSendingTime",
     "TransactTime",
     "OrigTime",
+    "CreationTime",
+    "ExpireTime",
     "ValidUntilTime",
 )
 
@@ -229,7 +245,6 @@ _COLUMN_METADATA: tuple[str, ...] = (
     "fix:tag",
     "fix:name",
     "fix:type",
-    "fix:display",
 )
 
 
@@ -241,13 +256,11 @@ def column_metadata(source: Mapping[str, str]) -> dict[str, str]:
 def _declaration(member: Field) -> Field:
     """A registry field in the physical shape used by parsed logs.
 
-    Named as a column is named -- folded -- with the dictionary's own spelling
-    kept as the display, because that is what a reader wants to see and what
-    the fold throws away.
+    Named as a column is named -- folded -- with the dictionary's spelling in
+    `fix:name`, which is the readable half the fold throws away.
     """
     metadata = column_metadata(member.metadata)
     metadata["fix:name"] = member.name
-    metadata["fix:display"] = member.name
     dtype = physical_type(member)
     if dtype is None:  # pragma: no cover - generated registry invariant
         raise ValueError(f"FIX field {member.name!r} has no Arrow type")
@@ -387,7 +400,7 @@ def _namespace_column(entry: Field) -> Field:
         nullable=True,
         metadata=column_metadata(entry.metadata),
     )
-    built.fix.display = entry.fix.name
+    built.fix.name = entry.fix.name
     return built
 
 
@@ -501,7 +514,7 @@ NAMESPACE_COLUMNS: Mapping[str, Field] = named_columns(_REGISTRY)
 #: codes as one code, and `DECLARED` would hand back the standard's width.
 SECURITY_ID_SOURCE: Field = _REGISTRY.scalar("SecurityIDSource", dtype=None)
 SECURITY_ID_SOURCE.metadata = column_metadata(SECURITY_ID_SOURCE.metadata)
-SECURITY_ID_SOURCE.fix.display = SECURITY_ID_SOURCE.fix.canonical
+SECURITY_ID_SOURCE.fix.name = SECURITY_ID_SOURCE.fix.canonical
 
 ISIN_CODE: Field = NAMESPACE_FIELDS["ISINCODE"]
 PARENT_CL_ORD_ID: Field = NAMESPACE_FIELDS["ParentClOrdID"]

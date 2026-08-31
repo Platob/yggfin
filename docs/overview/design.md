@@ -39,10 +39,11 @@ guessing would make bad data look valid.
 
 ## Keep identities portable
 
-Value and reference identities are signed `int64`. Event `hash` and lifecycle
-`xhash` compose epoch microseconds over a value digest and store the result as
-sixteen big-endian bytes: `fixed_size_binary(16)` in Arrow and `fixed[16]` in
-Iceberg. Composite keys use the exact
+Value identities are signed `int64`. Lifecycle and reference identities are
+direct XXH3-128 digests, while event `hash` composes epoch microseconds over a
+value digest. All three wide identities use big-endian
+`fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
+Composite keys use the exact
 [binary frame](../contracts/identity.md), not Python formatting or
 process-local hashes.
 Enums persist integer codes with their member table in field metadata, so an

@@ -16,7 +16,9 @@
    "component": "QuoteCancel",
    "msgtype": "Z",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

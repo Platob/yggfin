@@ -93,7 +93,7 @@ def test_a_thousand_levels_still_derive_the_touch_and_depth() -> None:
 def test_prices_match_the_book_formulas() -> None:
     given = book(1, **prices("bid", [(10.0, 100.0)]), **prices("ask", [(10.2, 300.0)]))
     out = Book.summarise_arrow_batch(given)
-    assert out.column("price")[0].as_py() == pytest.approx(10.1)
+    assert out.column("lastpx")[0].as_py() == pytest.approx(10.1)
     assert out.column("lastqty")[0].as_py() == 400.0
     assert out.column("spread")[0].as_py() == pytest.approx(0.2)
     assert out.column("vwap")[0].as_py() == pytest.approx((10.0 * 300.0 + 10.2 * 100.0) / 400.0)
@@ -106,7 +106,7 @@ def test_one_sided_and_zero_sized_books_have_no_synthetic_price() -> None:
     )
     assert all(
         one_sided.column(name)[0].as_py() is None
-        for name in ("price", "spread", "vwap", "imbalance")
+        for name in ("lastpx", "spread", "vwap", "imbalance")
     )
     empty = Book.summarise_arrow_batch(
         book(1, **prices("bid", [(5.0, 0.0)]), **prices("ask", [(5.5, 0.0)]))
@@ -143,14 +143,14 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=1,
         hash=11,
         xhash=12,
-        linkxhashes=[10],
+        linkhashes=[10],
         parenthash=[9],
         state=State.NEW,
         code="B1",
         altids={"order": "B1"},
         metadata={"source": "bid"},
         side=Side.BID,
-        price=100.0,
+        lastpx=100.0,
         lastqty=3.0,
         orderid="B1",
     )
@@ -158,14 +158,14 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=1,
         hash=21,
         xhash=22,
-        linkxhashes=[20],
+        linkhashes=[20],
         parenthash=[19],
         state=State.NEW,
         code="A1",
         altids={"order": "A1"},
         metadata={"source": "ask"},
         side=Side.ASK,
-        price=101.0,
+        lastpx=101.0,
         lastqty=4.0,
         orderid="A1",
     )
@@ -173,21 +173,21 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         unix=2,
         hash=31,
         xhash=32,
-        linkxhashes=[bid.xhash],
+        linkhashes=[bid.hash],
         parenthash=[bid.hash],
         state=State.FILLED,
         code="E1",
         altids={"execution": "E1"},
         metadata={"source": "trade"},
         side=Side.BID,
-        price=100.0,
+        lastpx=100.0,
         lastqty=1.0,
         execid="E1",
     )
     rows = [
         Book(
             unix=2,
-            linkxhashes=[bid.xhash, execution.xhash],
+            linkhashes=[bid.hash, execution.hash],
             parenthash=[bid.hash, execution.hash],
             altids={"symbol": "BTC-USD"},
             metadata={"kind": "delta"},
@@ -199,7 +199,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         Book(
             unix=3,
             snapunix=3,
-            linkxhashes=[bid.xhash, ask.xhash],
+            linkhashes=[bid.hash, ask.hash],
             parenthash=[bid.hash, ask.hash],
             altids={"symbol": "BTC-USD"},
             metadata={"kind": "snapshot"},

@@ -16,7 +16,9 @@
    "component": "Logon",
    "msgtype": "A",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

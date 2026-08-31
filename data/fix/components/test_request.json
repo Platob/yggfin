@@ -16,7 +16,9 @@
    "component": "TestRequest",
    "msgtype": "1",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

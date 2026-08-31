@@ -105,17 +105,16 @@ def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
     assert Protocol.from_str("UL5.1SP2").version == "5.1.SP2"
     assert Protocol.from_str("FIX5SP2").version == "5.0.SP2"
     assert Protocol.from_str("FXML5SP2").family is Protocol.FIXML
+    assert Protocol.XML.family is Protocol.XML and Protocol.XML.version is None
     assert Protocol.with_version(Protocol.from_str("SBE"), "4.4").code == "SBE"
 
 
-def test_a_compiled_venue_renders_in_a_column_where_a_learnt_one_cannot() -> None:
-    """Which is the whole reason the common venues are compiled: `from_int`
-    names any well-formed code, but the column renderer only knows the members
-    the class declares, and the two must not disagree on the same bytes."""
+def test_compiled_and_runtime_venues_render_in_one_arrow_pass() -> None:
+    """An open vocabulary resolves each distinct stored code once."""
     stored = pyarrow.array([int(MIC.XPAR), int(MIC.from_str("ABCD"))], pyarrow.int32())
 
     assert [MIC.from_int(code).code for code in stored.to_pylist()] == ["XPAR", "ABCD"]
-    assert MIC.into_arrow_array(stored).to_pylist() == ["XPAR", None]
+    assert MIC.into_arrow_array(stored).to_pylist() == ["XPAR", "ABCD"]
 
 
 def test_an_invalid_mic_is_unknown_instead_of_a_truncated_collision() -> None:
@@ -147,12 +146,46 @@ def test_currency_registration_is_normalised_and_bounded() -> None:
     assert len(enum_module._ASCII_REGISTERED[Currency]) == enum_module._ASCII_REGISTERED_LIMIT
 
 
-def test_a_closed_set_refuses_registration_and_an_open_one_reads_exact_bytes() -> None:
-    """One base for every ASCII code: openness is the only knob."""
-    with pytest.raises(TypeError, match="closed set"):
-        Side.register("MID")
+def test_every_ascii_set_is_open_and_stored_bytes_stay_exact() -> None:
+    assert Side.register("MID") is Side.from_str("MID")
     respelled = int.from_bytes(b"\0usd", "big")
     assert Currency.from_int(respelled) is Currency.UNKNOWN, "stored bytes are never respelled"
+
+
+@pytest.mark.parametrize(
+    ("declared", "code"),
+    (
+        (EventType, "OWN"),
+        (State, "OWN"),
+        (AssetKind, "OWN"),
+        (MarketKind, "OWN"),
+        (OptionKind, "OWN"),
+        (Protocol, "OWN"),
+        (Direction, "OWN"),
+        (MIC, "ZZZZ"),
+        (Currency, "QQQ"),
+        (SecurityIDSource, "OWN1"),
+        (Side, "MID"),
+        (TimeInForce, "OWN"),
+    ),
+    ids=lambda value: value.__name__ if isinstance(value, type) else value,
+)
+def test_every_ascii_enum_registers_valid_uncompiled_codes(declared: type, code: str) -> None:
+    member = declared.from_str(code)
+    assert member is not declared.UNKNOWN
+    assert declared.from_int(int(member)) is member
+
+
+def test_trailing_nuls_are_storage_padding_not_part_of_a_string_code() -> None:
+    assert Currency.from_str("USD\0") is Currency.USD
+    assert Side.from_str("BUY\0") is Side.BUY
+
+
+def test_a_runtime_alias_collision_warns_and_keeps_the_first_canonical_value() -> None:
+    own = Side.register("DARK")
+    with pytest.warns(RuntimeWarning, match="already names"):
+        assert Side.register("MID", aliases=("DARK",)) is Side.from_str("MID")
+    assert Side.from_str("DARK") is own
 
 
 def test_an_ascii_enum_declares_one_arrow_dictionary_type() -> None:
@@ -232,6 +265,7 @@ STATE_CODES = {
     "UNKNOWN": 0,
     "PENDING": int.from_bytes(b"10PENDNG".ljust(8, b"\0"), "big"),
     "PENDING_NEW": int.from_bytes(b"11PNDNEW".ljust(8, b"\0"), "big"),
+    "QUEUED": int.from_bytes(b"12QUEUED".ljust(8, b"\0"), "big"),
     "OPEN": int.from_bytes(b"20OPEN".ljust(8, b"\0"), "big"),
     "NEW": int.from_bytes(b"21NEW".ljust(8, b"\0"), "big"),
     "ACCEPTED": int.from_bytes(b"22ACCEPT".ljust(8, b"\0"), "big"),
@@ -239,12 +273,14 @@ STATE_CODES = {
     "PENDING_CANCEL": int.from_bytes(b"24PNDCNL".ljust(8, b"\0"), "big"),
     "SUSPENDED": int.from_bytes(b"25SUSPND".ljust(8, b"\0"), "big"),
     "STOPPED": int.from_bytes(b"26STOPPD".ljust(8, b"\0"), "big"),
+    "RUNNING": int.from_bytes(b"27RUNING".ljust(8, b"\0"), "big"),
     "PARTIAL": int.from_bytes(b"30PARTL".ljust(8, b"\0"), "big"),
     "PARTIALLY_FILLED": int.from_bytes(b"31PRTFIL".ljust(8, b"\0"), "big"),
     "DONE": int.from_bytes(b"40DONE".ljust(8, b"\0"), "big"),
     "FILLED": int.from_bytes(b"41FILLED".ljust(8, b"\0"), "big"),
     "DONE_FOR_DAY": int.from_bytes(b"42DONEDY".ljust(8, b"\0"), "big"),
     "CALCULATED": int.from_bytes(b"43CALCD".ljust(8, b"\0"), "big"),
+    "SUCCEEDED": int.from_bytes(b"44SUCCED".ljust(8, b"\0"), "big"),
     "CLOSED": int.from_bytes(b"50CLOSED".ljust(8, b"\0"), "big"),
     "CANCELLED": int.from_bytes(b"51CANCLD".ljust(8, b"\0"), "big"),
     "REPLACED": int.from_bytes(b"52REPLCD".ljust(8, b"\0"), "big"),
@@ -381,6 +417,7 @@ PROTOCOL_CODES = {
     "UNKNOWN": 0,
     "FIX": int.from_bytes(b"FIX".ljust(8, b"\0"), "big"),
     "FIXML": int.from_bytes(b"FIXML".ljust(8, b"\0"), "big"),
+    "XML": int.from_bytes(b"XML".ljust(8, b"\0"), "big"),
     "UL": int.from_bytes(b"UL".ljust(8, b"\0"), "big"),
     "MISC": int.from_bytes(b"MISC".ljust(8, b"\0"), "big"),
     "OTHER": int.from_bytes(b"OTHER".ljust(8, b"\0"), "big"),
@@ -431,7 +468,7 @@ def test_packed_side_aliases_and_unknown_codes_are_stable() -> None:
     assert Side.from_str("bid") is Side.BUY
     assert Side.from_str("long") is Side.BUY
     assert Side.from_str("offer") is Side.SELL
-    assert Side.from_int(int.from_bytes(b"NOPE", "big")) is Side.UNKNOWN
+    assert Side.from_int(int.from_bytes(b"NOPE", "big")).code == "NOPE"
     assert Side.from_fix("?", Side.SELL) is Side.SELL
 
 
@@ -440,7 +477,7 @@ def test_time_in_force_uses_fixed_ascii_mnemonics_and_semantic_order() -> None:
     assert int(TimeInForce.GTC).to_bytes(4, "big") == b"GTC\0"
     assert TimeInForce.from_str("immediate_or_cancel") is TimeInForce.IOC
     assert TimeInForce.from_str("good_till_cancelled") is TimeInForce.GTC
-    assert TimeInForce.from_int(int.from_bytes(b"NOPE", "big")) is TimeInForce.UNKNOWN
+    assert TimeInForce.from_int(int.from_bytes(b"NOPE", "big")).code == "NOPE"
     assert TimeInForce.IOC < TimeInForce.SESSION <= TimeInForce.DAY < TimeInForce.RESTING
 
 
@@ -571,11 +608,10 @@ def test_market_kind_covers_the_fix_latest_order_and_execution_codes() -> None:
 
 
 def test_protocol_neutral_enums_claim_no_fix_field() -> None:
-    """State characters depend on the FIX field that carries them."""
-    assert not any(member.into_fix() for member in EventType)
-    assert not any(member.into_fix() for member in State)
-    assert EventType.from_fix("0") is EventType.UNKNOWN
-    assert State.from_fix("0") is State.UNKNOWN
+    """Their own ASCII codes round-trip without claiming one FIX field."""
+    assert EventType.FIX_FIELD == State.FIX_FIELD == ""
+    assert EventType.from_fix("0").code == "0"
+    assert State.from_fix("0").code == "0"
 
 
 @pytest.mark.parametrize("declared", BANDED, ids=lambda cls: cls.__name__)
@@ -594,13 +630,19 @@ def test_a_rank_is_a_band_offset_and_the_codes_are_unique(declared: type) -> Non
         assert member.band.rank == member.rank // declared.WIDTH * declared.WIDTH
 
 
-def test_a_code_no_state_spells_reads_as_unknown_rather_than_raising() -> None:
-    """A column is an integer, so a reader must survive anything that lands in it."""
+@pytest.mark.parametrize("declared", (*BANDED, TimeInForce), ids=lambda cls: cls.__name__)
+def test_a_runtime_code_has_no_invented_semantic_rank(declared: type) -> None:
+    member = declared.from_str("OWN")
+    assert member.rank == 0
+    assert member.band is declared.UNKNOWN
+
+
+def test_a_malformed_state_code_is_unknown_and_a_valid_one_registers() -> None:
     assert State.from_int(9999) is State.UNKNOWN
     assert State.from_int(None) is State.UNKNOWN
     assert State.from_int("nonsense") is State.UNKNOWN
     assert State.from_int(9999, default=State.REJECTED) is State.REJECTED
-    assert State.from_fix("~") is State.UNKNOWN
+    assert State.from_fix("~").code == "~"
 
 
 def test_the_terminal_boundary_is_crossed_from_both_sides() -> None:
@@ -623,6 +665,19 @@ def test_a_pending_amendment_is_live_because_the_order_still_is() -> None:
     assert not State.PENDING_NEW.is_live
 
 
+def test_task_states_share_the_sortable_lifecycle_bands() -> None:
+    assert State.QUEUED.band is State.PENDING
+    assert State.RUNNING.band is State.OPEN and State.RUNNING.is_live
+    assert State.SUCCEEDED.band is State.DONE and State.SUCCEEDED.is_terminal
+    assert State.QUEUED < State.RUNNING < State.SUCCEEDED
+    assert State.from_str("queued") is State.QUEUED
+    assert State.from_str("running") is State.RUNNING
+    assert State.from_str("succeeded") is State.SUCCEEDED
+    own = State.from_str("PAUSED")
+    assert own.rank == 0 and own.band is State.UNKNOWN
+    assert not own.is_live and not own.is_terminal
+
+
 def test_bid_is_buy_and_ask_is_sell() -> None:
     """One code per direction: two spellings would split a filter in half."""
     assert Side.BID is Side.BUY
@@ -641,12 +696,14 @@ def test_the_side_band_carries_the_sign() -> None:
 def test_only_resting_validities_rest() -> None:
     assert not TimeInForce.IOC.rests and not TimeInForce.FOK.rests
     assert TimeInForce.DAY.rests and TimeInForce.GTC.rests and TimeInForce.GTD.rests
+    assert not TimeInForce.from_str("OWN").rests
 
 
 def test_a_derivative_is_everything_above_the_derivative_band() -> None:
     assert AssetKind.OPTION.is_derivative and AssetKind.FUTURE.is_derivative
     assert AssetKind.REPO.is_derivative and AssetKind.SPREAD.is_derivative
     assert not AssetKind.EQUITY.is_derivative and not AssetKind.INDEX.is_derivative
+    assert not AssetKind.from_str("OWN").is_derivative
 
 
 def test_an_option_kind_reads_the_fix_characters_it_is_written_as() -> None:
@@ -673,13 +730,11 @@ def test_event_type_stores_a_readable_mnemonic_with_ranked_bands() -> None:
     }
 
 
-def test_a_stored_event_code_decodes_exactly_or_not_at_all() -> None:
-    """The mnemonic set is closed: near-miss bytes are not respelled into a
-    member, so a Python answer and a pushed code-set filter keep the same
-    rows."""
+def test_a_stored_case_collision_warns_and_keeps_the_compiled_member() -> None:
     respelled = int.from_bytes(b"order".ljust(8, b"\0"), "big", signed=True)
-    assert EventType.from_int(respelled) is EventType.UNKNOWN
-    assert EventType(respelled) is EventType.UNKNOWN
+    with pytest.warns(RuntimeWarning, match="collides"):
+        assert EventType.from_int(respelled) is EventType.ORDER
+    assert EventType(respelled) is EventType.ORDER, "the collision is resolved only once"
     assert EventType.from_int(int(EventType.ORDER)) is EventType.ORDER
     assert respelled not in EventType.ranked_at_least(EventType.INTENT)
     assert respelled not in EventType.ranked_below(EventType.INTENT)
@@ -706,7 +761,7 @@ def test_only_a_state_is_a_snapshot() -> None:
 def test_from_fix_reads_a_word_spelling_of_a_compiled_member() -> None:
     """Bridges render `SIDE=buy` and `TIMEINFORCE=gtd` where the wire says
     `1` and `6`; the exact code stays first and case-sensitive, and the word
-    resolves only to a member that was compiled in -- never registering one."""
+    resolves to the canonical member before an open enum needs to register."""
     assert Side.from_fix("buy") is Side.BUY
     assert Side.from_fix("Sell") is Side.SELL
     assert Side.from_fix("2") is Side.SELL
@@ -715,7 +770,7 @@ def test_from_fix_reads_a_word_spelling_of_a_compiled_member() -> None:
     assert Side.from_str("sell-short") is Side.SELL_SHORT
     assert Side.from_fix("sell-short") is Side.SELL_SHORT
     assert Side.from_fix("A") is Side.CROSS_SHORT_EXEMPT
-    assert Side.from_fix("a") is Side.UNKNOWN, "wire codes stay case-sensitive"
+    assert Side.from_fix("a") is Side.CROSS_SHORT_EXEMPT
     assert (
         _mapped(
             pyarrow.array(["sell-short", "Sell Short", "5"]),
@@ -725,6 +780,4 @@ def test_from_fix_reads_a_word_spelling_of_a_compiled_member() -> None:
         == [int(Side.SELL_SHORT)] * 3
     )
 
-    before = len(Side._value2member_map_)
     assert Side.from_fix("weird-code", Side.UNKNOWN) is Side.UNKNOWN
-    assert len(Side._value2member_map_) == before, "an unknown wire value registers nothing"

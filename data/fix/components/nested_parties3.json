@@ -13,8 +13,17 @@
   "fix": {
    "component": "NestedParties3",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderMultileg\",\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelReplaceRequest",
+    "ExecutionReport",
+    "MultilegOrderCancelReplace",
+    "NewOrderCross",
+    "NewOrderMultileg",
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

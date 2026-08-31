@@ -11,8 +11,13 @@
   "fix": {
    "component": "SecSizesGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataIncrementalRefresh",
+    "MarketDataSnapshotFullRefresh"
+   ]
   },
   "fields": [
    {

@@ -13,8 +13,12 @@
   "fix": {
    "component": "QuotCxlEntriesGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"QuoteCancel\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "QuoteCancel"
+   ]
   },
   "fields": [
    {

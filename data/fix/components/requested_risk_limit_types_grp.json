@@ -10,8 +10,12 @@
   "fix": {
    "component": "RequestedRiskLimitTypesGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyRiskLimitsRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyRiskLimitsRequest"
+   ]
   },
   "fields": [
    {

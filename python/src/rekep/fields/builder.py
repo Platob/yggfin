@@ -25,7 +25,6 @@ from rekep.annotations import (
     unwrap_optional,
 )
 from rekep.fields.field import DESCRIPTION, NAMESPACE, Field, StructField
-from rekep.fields.names import display_name
 
 _SCALARS = MappingProxyType(
     {
@@ -135,15 +134,6 @@ class FieldBuilder:
                 f"field {name!r} is a primary key and cannot be nullable; "
                 "drop the `| None` or the key"
             )
-        # A column's name is folded, so it cannot spell the words it is made
-        # of. One that is a single word can: `mic` is `MIC` and `unix` is
-        # `Unix`, and writing that out at every declaration would be a hundred
-        # lines saying what the name already says. A name the fold cost a word
-        # boundary declares its own display, and that wins here. A column
-        # holding a whole FIX component is called what the component is
-        # called, which it already says.
-        if not built.fix.display:
-            built.fix.display = built.fix.component or display_name(name)
         return built
 
     def arrow_type(self, annotation: Any) -> pyarrow.DataType:

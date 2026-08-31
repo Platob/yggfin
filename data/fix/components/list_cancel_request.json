@@ -18,7 +18,9 @@
    "component": "ListCancelRequest",
    "msgtype": "K",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

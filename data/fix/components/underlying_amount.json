@@ -12,8 +12,12 @@
   "fix": {
    "component": "UnderlyingAmount",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PositionReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PositionReport"
+   ]
   },
   "fields": [
    {

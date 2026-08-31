@@ -10,8 +10,13 @@
   "fix": {
    "component": "FlexProductEligibilityGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport"
+   ]
   },
   "fields": [
    {

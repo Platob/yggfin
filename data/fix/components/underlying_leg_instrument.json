@@ -11,8 +11,13 @@
   "fix": {
    "component": "UnderlyingLegInstrument",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

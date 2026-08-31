@@ -45,6 +45,8 @@ _ARROW_DISPATCH = MappingProxyType(
 _DEADLINE_STALE_BUFFER = 64
 # Keep the stable root and current identifiers; bound only historical lookup aliases.
 _ORDER_ALIAS_LIMIT = 64
+# Exact event links can target an earlier version while its order still rests.
+_ORDER_HASH_LIMIT = 64
 
 
 @scalar(slots=True, weakref_slot=True)
@@ -73,9 +75,8 @@ class Book(MarketEvent):
 
     # Re-declared to carry **no** FIX tag, which is the honest thing to say:
     # a mid and a touch size are computed from two sides, and FIX has no field
-    # for either. The inherited `Price <44>` would label them as an order's
-    # limit, which is a schema claiming a provenance it does not have.
-    price: float | None = None
+    # for either. The inherited `LastPx <31>` would claim the mid was a trade.
+    lastpx: float | None = None
     """The mid, `(bidpx + askpx) / 2`; null until both sides have a price."""
 
     lastqty: Annotated[float | None, Field.column("LastQty")] = None
@@ -251,9 +252,9 @@ class Book(MarketEvent):
 
     def complete_from(self, previous: MarketEvent) -> None:
         """Complete the book without carrying an earlier delta's relations."""
-        links = list(self.linkxhashes)
+        links = list(self.linkhashes)
         MarketEvent.complete_from(self, previous)
-        self.linkxhashes = links
+        self.linkhashes = links
         if isinstance(previous, Book) and self.execpx is None:
             self.execpx = previous.execpx
 
@@ -277,8 +278,8 @@ class Book(MarketEvent):
                 self.recunix = previous.recunix
             if self.expunix is None:
                 self.expunix = previous.expunix
-            if self.mic is None:
-                self.mic = previous.mic
+            if self.lastmkt is None:
+                self.lastmkt = previous.lastmkt
             if self.into_instrument() is None:
                 instrument = previous.into_instrument()
                 if instrument is not None:
@@ -299,7 +300,7 @@ class Book(MarketEvent):
             self._remember_previous(previous)
         self.derive()
         self._materialize_life_code()
-        if self.linkxhashes:
+        if self.linkhashes:
             self._drop_self_link()
         self.vhash = self._version_vhash()
         self.hash = NIL
@@ -370,8 +371,8 @@ class Book(MarketEvent):
     def _summarise(self) -> None:
         """Fill flat side summaries from present level lists, then price the book."""
         for execution in reversed(self.executions):
-            if execution.state is State.FILLED and execution.price is not None:
-                self.execpx = execution.price
+            if execution.state is State.FILLED and execution.lastpx is not None:
+                self.execpx = execution.lastpx
                 break
         if self.snapunix is not None:
             for name in ("bid", "ask"):
@@ -386,7 +387,7 @@ class Book(MarketEvent):
         """The five prices across the sides, for one book rather than a column of them."""
         bidpx, bidqty = self.bidpx, self.bidqty
         askpx, askqty = self.askpx, self.askqty
-        self.price = None if bidpx is None or askpx is None else (bidpx + askpx) / 2
+        self.lastpx = None if bidpx is None or askpx is None else (bidpx + askpx) / 2
         self.spread = None if bidpx is None or askpx is None else askpx - bidpx
         size = None if bidqty is None or askqty is None else bidqty + askqty
         self.lastqty = size
@@ -424,7 +425,7 @@ class Book(MarketEvent):
         weighted = compute.greater(size, 0)
         return _with(
             batch,
-            price=compute.divide(compute.add(bidpx, askpx), pyarrow.scalar(2.0)),
+            lastpx=compute.divide(compute.add(bidpx, askpx), pyarrow.scalar(2.0)),
             lastqty=size,
             spread=compute.subtract(askpx, bidpx),
             vwap=compute.if_else(
@@ -598,6 +599,12 @@ class _Side:
     )
     """Current lookup keys per lifecycle, cached for bounded replacement and removal."""
 
+    hashes: dict[int, int] = dataclasses.field(default_factory=dict)
+    """Live lifecycle for each retained exact event hash."""
+
+    version_hashes: dict[int, dict[int, None]] = dataclasses.field(default_factory=dict)
+    """Bounded exact event hashes retained for each live lifecycle."""
+
     levels: dict[float, _LevelState] = dataclasses.field(default_factory=dict)
     """Live levels by price, updated incrementally as orders move."""
 
@@ -676,13 +683,13 @@ class _Side:
                     f"{order.xhash} more than once"
                 )
             quantity = _resting(order)
-            if order.price is None or quantity <= 0:
+            if order.lastpx is None or quantity <= 0:
                 raise ValueError(
                     f"recovery Order {order.xhash} has no positive resting price and quantity"
                 )
-            if order.price not in captured_levels:
+            if order.lastpx not in captured_levels:
                 raise ValueError(
-                    f"live recovery Order {order.xhash} at {order.price} is absent from the levels"
+                    f"live recovery Order {order.xhash} at {order.lastpx} is absent from the levels"
                 )
             recovered_xhash.add(order.xhash)
             restored._remember(order)
@@ -993,7 +1000,7 @@ class _Side:
             return False, None
         if settled.state is State.INTERNAL_REJECTED:
             return False, settled
-        if settled.price is None:
+        if settled.lastpx is None:
             # No price even after completing: a market order, which rests
             # nowhere -- it is an execution against a side, not a level on
             # it. Skipped rather than refused, because an order stream really
@@ -1012,14 +1019,14 @@ class _Side:
         if (
             standing is not None
             and settled.xhash == standing.xhash
-            and settled.price == standing.price
+            and settled.lastpx == standing.lastpx
             and after > 0
-            and (level := self.levels.get(standing.price)) is not None
+            and (level := self.levels.get(standing.lastpx)) is not None
         ):
             moved = after - before
             if moved:
                 level.qty += moved
-                self.changed[standing.price] = None
+                self.changed[standing.lastpx] = None
             # Match the former leave/join path's equal-price priority without
             # deleting and bisecting the level itself.
             level.members.pop(settled.xhash, None)
@@ -1042,7 +1049,7 @@ class _Side:
             self._remember(settled)
             self._join(settled, after)
         moved = after - before
-        if not moved and (standing is None or standing.price == settled.price):
+        if not moved and (standing is None or standing.lastpx == settled.lastpx):
             return False, settled
         return True, settled
 
@@ -1050,7 +1057,7 @@ class _Side:
         """Publish a pending request while the acknowledged economics keep resting."""
         working = copy.copy(requested)
         for name in (
-            "price",
+            "lastpx",
             "lastqty",
             "hiddenqty",
             "notional",
@@ -1065,7 +1072,7 @@ class _Side:
 
         old_xhash = standing.xhash
         if working.xhash != old_xhash:
-            level = self.levels.get(standing.price)
+            level = self.levels.get(standing.lastpx)
             if level is not None and old_xhash in level.members:
                 level.members = {
                     working.xhash if xhash == old_xhash else xhash: None for xhash in level.members
@@ -1122,17 +1129,18 @@ class _Side:
         return before != after
 
     def standing(self, event: Order | Execution) -> Order | None:
-        """The live order matched by lifecycle links, then typed identifiers."""
+        """The live order matched by exact event links, then typed identifiers."""
         if event.is_order() and event.xhash:
             found = self.orders.get(event.xhash)
             if found is not None:
                 return found
-        for xhash in event.linkxhashes:
-            found = self.orders.get(xhash)
+        for event_hash in event.linkhashes:
+            xhash = self.hashes.get(event_hash)
+            found = self.orders.get(xhash) if xhash is not None else None
             if found is not None:
                 return found
         aliases = tuple(Order.lookup_altids_of(event))
-        scope = int(event.mic) if event.mic else None
+        scope = int(event.lastmkt) if event.lastmkt else None
         venue = {value for namespace, value in aliases if namespace != CLIENT_ORDER_CODE}
         for key in aliases:
             scoped = self.named.get(key)
@@ -1172,7 +1180,7 @@ class _Side:
         A new level is one `bisect.insort` into `keys` -- a binary search and
         a `memmove`, which at any depth a book reaches beats re-sorting.
         """
-        px = order.price
+        px = order.lastpx
         level = self.levels.get(px)
         if level is None:
             key = px * self.facing
@@ -1192,17 +1200,17 @@ class _Side:
         of nothing is not a level, and leaving it would put an empty price in
         every `alive` list from then on.
         """
-        level = self.levels.get(order.price)
+        level = self.levels.get(order.lastpx)
         if level is None:
             return
         quantity = _resting(order)
         level.qty -= quantity
         level.members.pop(order.xhash, None)
         self._unplace(level, order.xhash)
-        self._touch(order.price, level)
+        self._touch(order.lastpx, level)
         if not level.members or level.qty <= 0:
-            del self.levels[order.price]
-            at = bisect.bisect_left(self.keys, order.price * self.facing)
+            del self.levels[order.lastpx]
+            at = bisect.bisect_left(self.keys, order.lastpx * self.facing)
             self.keys.pop(at)
             self.alive.pop(at)
 
@@ -1211,6 +1219,9 @@ class _Side:
         self.orders.pop(xhash, None)
         self._deadline_tokens.pop(xhash, None)
         self._deadline_values.pop(xhash, None)
+        for event_hash in self.version_hashes.pop(xhash, ()):
+            if self.hashes.get(event_hash) == xhash:
+                del self.hashes[event_hash]
         for scope, namespace, value in self.aliases.pop(xhash, ()):
             key = (namespace, value)
             scoped = self.named.get(key)
@@ -1233,6 +1244,12 @@ class _Side:
                 scoped = self.named.get((namespace, value))
                 if scoped is not None and scoped.get(scope) == old:
                     scoped[scope] = new
+        versions = self.version_hashes.pop(old, {})
+        if versions:
+            self.version_hashes[new] = versions
+            for event_hash in versions:
+                if self.hashes.get(event_hash) == old:
+                    self.hashes[event_hash] = new
         self._compact_deadlines()
 
     def _remember(self, order: Order) -> None:
@@ -1244,7 +1261,16 @@ class _Side:
         """
         xhash = order.xhash
         self.orders[xhash] = order
-        scope = int(order.mic) if order.mic else None
+        if order.hash:
+            versions = self.version_hashes.setdefault(xhash, {})
+            versions[order.hash] = None
+            self.hashes[order.hash] = xhash
+            while len(versions) > _ORDER_HASH_LIMIT:
+                expired = next(iter(versions))
+                del versions[expired]
+                if self.hashes.get(expired) == xhash:
+                    del self.hashes[expired]
+        scope = int(order.lastmkt) if order.lastmkt else None
         current = dict.fromkeys((scope, *key) for key in Order.lookup_altids_of(order))
         previous = self.aliases.get(xhash, {})
         remembered = {
@@ -1276,7 +1302,7 @@ class _Side:
                 if scoped.get(current_scope) not in (None, xhash):
                     continue
             self.named.setdefault((namespace, value), {})[current_scope] = xhash
-        self._moved(order.price)
+        self._moved(order.lastpx)
         self._index_deadline(order)
 
     def _index_deadline(self, order: Order) -> None:
@@ -1369,11 +1395,11 @@ class _Side:
         standing = _resting(order)
         taken = min(standing, traded)
         left = standing - taken
-        self._touch(order.price)
+        self._touch(order.lastpx)
         if left <= 0:
             self.remove(order.xhash)
         else:
-            level = self.levels.get(order.price)
+            level = self.levels.get(order.lastpx)
             if level is not None:
                 level.qty -= taken
             if order.lastqty is not None:
@@ -1414,7 +1440,7 @@ class _Folding:
     """The book's lifecycle. One instrument is one book, so this never moves."""
 
     creaunix: int = 0
-    """Creation clock encoded in the book lifecycle identity."""
+    """The first upstream creation clock retained across book versions."""
 
     code: str = ""
     """Readable code the book lifecycle was first identified by."""
@@ -1449,16 +1475,13 @@ class _Folding:
     reported: dict[int, Order] = dataclasses.field(default_factory=dict)
     """Generated Orders by source hash until their report's Execution arrives."""
 
-    reported_xhashes: dict[int, int] = dataclasses.field(default_factory=dict)
-    """Pending Order lifecycle to its source hash for report pairing."""
-
     reported_names: dict[tuple[str, str], int] = dataclasses.field(default_factory=dict)
     """Pending typed source identifiers to their Order source hash."""
 
     unpublished: set[int] = dataclasses.field(default_factory=set)
     """Report Orders deferred because LastQty is needed to distinguish their change."""
 
-    linkxhashes: dict[int, None] = dataclasses.field(default_factory=dict)
+    linkhashes: dict[int, None] = dataclasses.field(default_factory=dict)
     """Delta relations accumulated once in insertion order."""
 
     parent_hashes: dict[int, None] = dataclasses.field(default_factory=dict)
@@ -1670,8 +1693,6 @@ class BookIterator:
         if not key:
             return
         state.reported[key] = order
-        if order.xhash:
-            state.reported_xhashes[order.xhash] = key
         for code in Order.lookup_altids_of(order):
             state.reported_names[code] = key
         if unpublished:
@@ -1684,7 +1705,9 @@ class BookIterator:
             if parent in state.reported:
                 return parent, state.reported[parent]
 
-        candidates = [state.reported_xhashes.get(xhash) for xhash in execution.linkxhashes]
+        candidates = [
+            linked if linked in state.reported else None for linked in execution.linkhashes
+        ]
         candidates.extend(
             state.reported_names.get(code) for code in Order.lookup_altids_of(execution)
         )
@@ -1701,7 +1724,7 @@ class BookIterator:
         self, state: _Folding, execution: Execution
     ) -> tuple[bool, Execution] | None:
         """Apply a report's generated Order once and retain its Execution as evidence."""
-        source_execution_xhash = execution.xhash
+        source_execution_hash = execution.hash
         matched = self._reported_for_execution(state, execution)
         if matched is None:
             return None
@@ -1780,9 +1803,12 @@ class BookIterator:
         if paired.vhash != old_vhash:
             state.parent_hashes.pop(old_hash, None)
             state.parent_hashes[paired.hash] = None
+            state.linkhashes.pop(old_hash, None)
+            state.linkhashes[paired.hash] = None
 
-        execution.linkxhashes = [
-            linked for linked in execution.linkxhashes if linked != paired.xhash
+        stale_order_hashes = {source_parent, old_hash, paired.hash}
+        execution.linkhashes = [
+            linked for linked in execution.linkhashes if linked not in stale_order_hashes
         ]
         execution.parenthash = list(
             dict.fromkeys(
@@ -1793,8 +1819,8 @@ class BookIterator:
         execution.completed_from(paired)
         execution.identify()
         settled = self.validate(execution)
-        paired.linkxhashes = [
-            linked for linked in paired.linkxhashes if linked != source_execution_xhash
+        paired.linkhashes = [
+            linked for linked in paired.linkhashes if linked != source_execution_hash
         ]
         paired.link_to(settled)
         settled.link_to(paired, primary=True)
@@ -1803,8 +1829,8 @@ class BookIterator:
     @staticmethod
     def _remember_pending(state: _Folding, event: Order | Execution) -> None:
         """Accumulate one delta's event and parent relations without rescanning it."""
-        if event.xhash:
-            state.linkxhashes[event.xhash] = None
+        if event.hash:
+            state.linkhashes[event.hash] = None
         if event.hash:
             state.parent_hashes[event.hash] = None
 
@@ -1874,6 +1900,7 @@ class BookIterator:
         lifecycle = Book(
             unix=event.unix,
             creaunix=creation,
+            plugin=event.plugin,
             instrumentxhash=instrument.xhash,
             symbolticker=ticker,
             altids=dict(event.altids),
@@ -1991,13 +2018,13 @@ class BookIterator:
             if not event.side.sign:
                 reasons.append("side is missing")
             price_required = kind.band is MarketKind.LIMIT or kind is MarketKind.STOP_LIMIT
-            invalid_price = event.price is not None and not math.isfinite(event.price)
-            if price_required and event.price is None or invalid_price:
+            invalid_price = event.lastpx is not None and not math.isfinite(event.lastpx)
+            if price_required and event.lastpx is None or invalid_price:
                 reasons.append("required price is missing or non-finite")
             if quantity is None or not math.isfinite(quantity) or quantity <= 0:
                 reasons.append("quantity is missing or non-positive")
         elif event.is_execution() and event.state is State.FILLED:
-            if event.price is None or not math.isfinite(event.price):
+            if event.lastpx is None or not math.isfinite(event.lastpx):
                 reasons.append("price is missing or non-finite")
             if event.lastqty is None or not math.isfinite(event.lastqty) or event.lastqty <= 0:
                 reasons.append("quantity is missing or non-positive")
@@ -2030,7 +2057,6 @@ class BookIterator:
             state.moved = False
         elif state.unix is not None and unix != state.unix and state.unpublished:
             state.reported.clear()
-            state.reported_xhashes.clear()
             state.reported_names.clear()
             state.unpublished.clear()
         self._snapshots(state, unix, inclusive=inclusive)
@@ -2089,7 +2115,7 @@ class BookIterator:
             ask_frame=ask_frame,
         )
         alive = [*taken.bidalive, *taken.askalive]
-        taken.linkxhashes = list(dict.fromkeys(order.xhash for order in alive if order.xhash))
+        taken.linkhashes = list(dict.fromkeys(order.hash for order in alive if order.hash))
         taken.parenthash = [order.hash for order in alive if order.hash] or None
         linked = taken.with_previous(previous)
         if linked is None:
@@ -2140,7 +2166,7 @@ def _traded(bid: _Side, ask: _Side, execution: Execution) -> bool:
     if (
         execution.state is State.INTERNAL_REJECTED
         or execution.state is not State.FILLED
-        or execution.price is None
+        or execution.lastpx is None
         or execution.lastqty is None
     ):
         return False
@@ -2169,7 +2195,7 @@ def _hit(bid: _Side, ask: _Side, execution: Execution) -> _Side | None:
     if best_ask is None:
         return bid
     mid = ((best_bid.px or 0.0) + (best_ask.px or 0.0)) / 2
-    return bid if (execution.price or 0.0) <= mid else ask
+    return bid if (execution.lastpx or 0.0) <= mid else ask
 
 
 def _settled(state: _Folding, unix: int) -> Book | None:
@@ -2185,6 +2211,7 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     book = Book(
         unix=unix,
         creaunix=state.creaunix,
+        plugin=about.plugin,
         instrumentxhash=state.instrument.xhash,
         symbolticker=state.symbolticker,
         code=state.code,
@@ -2193,10 +2220,10 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         pxunit=about.pxunit,
         currency=about.currency,
         qtyunit=about.qtyunit,
-        mic=about.mic,
+        lastmkt=about.lastmkt,
         state=State.OPEN if (state.bid.keys or state.ask.keys) else State.CLOSED,
         xhash=state.xhash,
-        linkxhashes=list(state.linkxhashes),
+        linkhashes=list(state.linkhashes),
         parenthash=list(state.parent_hashes) or None,
         bidpx=None if bid_best is None else bid_best.px,
         bidqty=None if bid_best is None else bid_best.qty,
@@ -2223,10 +2250,9 @@ def _settled(state: _Folding, unix: int) -> Book | None:
     state.deltas.clear()
     state.executions.clear()
     state.reported.clear()
-    state.reported_xhashes.clear()
     state.reported_names.clear()
     state.unpublished.clear()
-    state.linkxhashes.clear()
+    state.linkhashes.clear()
     state.parent_hashes.clear()
     # The prices across the sides are `Book.derive`'s, which `with_previous`
     # runs once every layer has filled -- so they are not computed here as

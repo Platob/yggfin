@@ -14,7 +14,9 @@
    "component": "UserResponse",
    "msgtype": "BF",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

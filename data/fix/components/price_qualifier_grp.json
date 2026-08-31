@@ -10,8 +10,27 @@
   "fix": {
    "component": "PriceQualifierGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ExecutionAck\",\"ExecutionReport\",\"IOI\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "Confirmation",
+    "ExecutionAck",
+    "ExecutionReport",
+    "IOI",
+    "MarketDataIncrementalRefresh",
+    "MarketDataSnapshotFullRefresh",
+    "Quote",
+    "QuoteRequest",
+    "QuoteRequestReject",
+    "QuoteResponse",
+    "QuoteStatusReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

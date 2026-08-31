@@ -218,8 +218,27 @@ def test_the_fix_view_answers_what_a_registry_record_does() -> None:
 
     assert side.fix.spellings()[0] == "Side"
     assert side.fix.meaning("1") == record.fix.meaning("1")
+    assert side.fix.meaning("Buy") == "Buy"
     assert side.fix.encode("Buy") == record.fix.encode("Buy") == "1"
-    assert not hasattr(side.fix, "decode"), "one direction: the wire value is the fact"
+    assert side.fix.decode("1") == record.fix.decode("1") == "Buy"
     assert side.fix.declares("4.4") and not side.fix.declares("9.9")
     assert msg_type.fix.event_type("D") is registry.field("MsgType").fix.event_type("D")
     assert msg_type.fix.event_type("nothing-declares-this").name == "UNKNOWN"
+
+
+def test_fix_value_codecs_apply_the_same_mapping_to_arrow_columns() -> None:
+    from rekep.fix import FixRegistry
+
+    side = FixRegistry.from_builtin().field("Side").fix
+    source = pyarrow.chunked_array([["Buy", "2"], [None, "future"]])
+    encoded = side.arrow_encode(source)
+    assert encoded.to_pylist() == ["1", "2", None, "future"]
+    assert side.arrow_decode(encoded).to_pylist() == ["Buy", "Sell", None, "future"]
+
+
+def test_an_identity_fix_value_mapping_skips_arrow_work() -> None:
+    built = make_field()
+    built.fix.enumerated = {"A": "A"}
+    source = pyarrow.array(["A", None])
+    assert built.fix.arrow_encode(source) is source
+    assert built.fix.arrow_decode(source) is source

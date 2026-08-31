@@ -15,7 +15,9 @@
    "component": "CrossOrderCancelReplaceRequest",
    "msgtype": "t",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

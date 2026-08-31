@@ -10,8 +10,14 @@
   "fix": {
    "component": "PartyRiskLimitsUpdateGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyRiskLimitsDefinitionRequest\",\"PartyRiskLimitsReportAck\",\"PartyRiskLimitsUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyRiskLimitsDefinitionRequest",
+    "PartyRiskLimitsReportAck",
+    "PartyRiskLimitsUpdateReport"
+   ]
   },
   "fields": [
    {

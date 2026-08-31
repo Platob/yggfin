@@ -21,6 +21,7 @@ from typing import Any
 import pyarrow
 import pyarrow.fs
 
+from rekep.arrow_path import ArrowPath
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import (
     SOURCE_INDEX,
@@ -1840,8 +1841,8 @@ class IcebergDataset(Dataset):
                 (relative if reduced is not None else by_name).add(
                     reduced if reduced is not None else path.rsplit("/", 1)[-1]
                 )
-            selector = pyarrow.fs.FileSelector(base, recursive=True, allow_not_found=True)
-            for info in filesystem.get_file_info(selector):
+            root = ArrowPath(directory, filesystem, filesystem_path=base)
+            for _, info in root.ls_with_info(recursive=True):
                 if info.type != pyarrow.fs.FileType.File:
                     continue
                 name = _relative(info.path, bases)
@@ -1884,14 +1885,9 @@ class IcebergDataset(Dataset):
         identity = getattr(self.iceberg_table.io, "content_identity", None)
         for filesystem, path, location, _ in orphans:
             CONTENT_CACHE.evict(identity(location) if identity else location)
-            try:
-                filesystem.delete_file(path)
-            except FileNotFoundError:
-                # Already gone -- another sweeper reached it between the
-                # listing and here. That is the outcome this wanted, and
-                # raising would abandon every orphan after it and throw away
-                # the report of the ones before.
-                continue
+            # Already gone means another sweeper reached it first. Missing-safe
+            # deletion keeps processing and preserves the full sweep report.
+            ArrowPath(path, filesystem).delete()
 
     def _data_path(self, table: Any) -> str:
         """Where this table's data files live, as Iceberg decides it."""

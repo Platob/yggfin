@@ -11,8 +11,13 @@
   "fix": {
    "component": "DerivativeInstrumentAttribute",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList",
+    "DerivativeSecurityListUpdateReport"
+   ]
   },
   "fields": [
    {

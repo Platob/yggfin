@@ -179,9 +179,9 @@ def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
         "fields",
         "versions.json",
     ]
-    # Tags 90001 and 90002 both sit in 90000 // 500, which is shard 180.
-    assert [path.name for path in (folder / "fields").iterdir()] == ["000180.json"]
-    assert sorted(json.loads((folder / "fields" / "000180.json").read_text())) == [
+    # Tags 90001 and 90002 share the 90000--90999 shard.
+    assert [path.name for path in (folder / "fields").iterdir()] == ["000090.json"]
+    assert sorted(json.loads((folder / "fields" / "000090.json").read_text())) == [
         "90001",
         "90002",
     ]
@@ -231,6 +231,18 @@ def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> 
         "aliases": {"1": "onixs", "2": "nanoconda"},
     }
 
+    document = json.loads((tmp_path / "fix" / field_document(54)).read_text())["54"]
+    assert document["fix"]["sources"] == ["nanoconda", "onixs"]
+    assert document["fix"]["origins"]["values"] == {
+        "1": "onixs",
+        "2": "nanoconda",
+    }
+    assert [value["value"] for value in document["fix"]["values"]] == ["1", "2"]
+    assert document["fix"]["type"] == "char", "plain metadata remains plain text"
+
+    reopened = Offline(cache_dir=tmp_path / "fix").field(54)
+    assert reopened is not None and reopened.metadata == stored.metadata
+
 
 @pytest.mark.parametrize(
     ("tag", "document"),
@@ -238,22 +250,24 @@ def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> 
         (0, "fields/000000.json"),
         (54, "fields/000000.json"),
         (499, "fields/000000.json"),
-        (500, "fields/000001.json"),
-        (40000, "fields/000080.json"),
-        (50002, "fields/000100.json"),
+        (500, "fields/000000.json"),
+        (999, "fields/000000.json"),
+        (1000, "fields/000001.json"),
+        (40000, "fields/000040.json"),
+        (50002, "fields/000050.json"),
         ("isincode", "fields/999999.json"),
         ("FAKE.VENDOR.CODE", "fields/999999.json"),
     ],
 )
 def test_which_document_holds_a_field_is_arithmetic(tag: int | str, document: str) -> None:
-    """No index, no lookup table, no scan: `tag // 500`, zero-padded.
+    """No index, no lookup table, no scan: `tag // 1000`, zero-padded.
 
     A field FIX never numbered keys by its name instead, and lands in the one
     shard index no tag can reach -- so every field document is named the same
     way and nothing asks whether a record has a tag to find it.
     """
     assert field_document(tag) == document
-    assert SHARD_SPAN == 500
+    assert SHARD_SPAN == 1_000
 
 
 class Counting:
@@ -272,7 +286,7 @@ class Counting:
 
 
 def test_a_single_tag_lookup_deserializes_one_shard() -> None:
-    """Over the published dictionary: fifteen shards, and a tag reads one."""
+    """Over the published dictionary: ten shards, and a tag reads one."""
     registry = FixRegistry(cache_dir=PUBLISHED)
     counted = Counting(registry._documents)
     registry.__dict__["_documents"] = counted
@@ -324,7 +338,7 @@ def test_a_renamed_tag_is_one_identity_and_the_older_spelling_an_alias(store: Of
     assert [alias.name for alias in entry.fix.named_aliases] == ["FakeRoleCode"]
     assert store.resolve("FakeRoleCode") is entry
     stored = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
-    assert json.loads(stored["90001"]["fix"]["aliases"]) == [
+    assert stored["90001"]["fix"]["aliases"] == [
         {"name": "FakeRoleCode", "source": "9.0", "occurrences": 0}
     ]
 
@@ -390,9 +404,9 @@ def test_an_alias_is_data_and_carries_where_it_came_from(store: Offline) -> None
     entry = store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=41))
     assert store.resolve("FakeRolle").fix.tag == 90001
     stored = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
-    assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in json.loads(
-        stored["90001"]["fix"]["aliases"]
-    )
+    assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in stored["90001"]["fix"][
+        "aliases"
+    ]
     assert entry.fix.named_aliases[-1].occurrences == 41
 
     again = store.alias_field("FakeRole", "FakeRolle")
@@ -546,7 +560,7 @@ def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> Non
         "D": EventType.ORDER,
     }
     document = json.loads((Path(store.cache_dir) / field_document(35)).read_text())
-    assert json.loads(document["35"]["fix"]["event_types"]) == {"D": "ORDER"}, (
+    assert document["35"]["fix"]["event_types"] == {"D": "ORDER"}, (
         "by name, because this file is read and edited by hand and the packed "
         "code is a nineteen-digit integer"
     )
@@ -667,6 +681,29 @@ def test_a_component_is_one_queryable_object_across_every_version(store: Offline
         store.merged_component("FakeAbsent")
 
 
+def test_component_member_metadata_is_readable_json_and_round_trips(store: Offline) -> None:
+    """Group entries use the same readable metadata shape as field shards."""
+    member = field_member("FakeRole", 90001)
+    member.fix["values"] = json.dumps(
+        [{"value": "1", "meaning": "one", "aliases": ["ONE"]}], separators=(",", ":")
+    )
+    entry = ComponentRecord(
+        name="ReadableComponent",
+        versions=("9.1",),
+        declaration=block("ReadableComponent", [group_member("NoFakeRoles", 90003, [member])]),
+    )
+    store.add_component(entry)
+
+    document = json.loads(
+        (Path(store.cache_dir) / "components" / "readable_component.json").read_text()
+    )
+    values = document["declaration"]["fields"][0]["item"]["fields"][0]["fix"]["values"]
+    assert values == [{"value": "1", "meaning": "one", "aliases": ["ONE"]}]
+
+    reopened = Offline(cache_dir=store.cache_dir).merged_component("ReadableComponent")
+    assert reopened.declaration.into_dict() == entry.declaration.into_dict()
+
+
 # -- collapsing, and what it costs -------------------------------------------
 
 
@@ -774,7 +811,7 @@ def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) 
         "H": State.CANCELLED,
     }
     stored = json.loads((tmp_path / "fix" / field_document(150)).read_text())
-    assert json.loads(stored["150"]["fix"]["states"])["G"] == "REPLACED"
+    assert stored["150"]["fix"]["states"]["G"] == "REPLACED"
     assert Offline(cache_dir=registry.cache_dir).state_values("ExecType") == (
         registry.state_values("ExecType")
     )
@@ -808,6 +845,17 @@ def test_a_report_round_trips_and_says_which_counts_grew() -> None:
     assert ConflictReport.from_dict(report.into_dict()) == report
     assert report.exceeds({"type": 1}) == []
     assert report.exceeds({"type": 0}) == ["type: 1 conflicts against a baseline of 0"]
+
+
+def test_char_and_string_are_one_fix_datatype_but_integer_is_not() -> None:
+    char = fix_field("FakeRole", 90001, "char", version="9.0")
+    string = fix_field("FakeRole", 90001, "String", version="9.1")
+    _, _, report = collapse(("9.1", "9.0"), {"9.1": [string], "9.0": [char]}, {})
+    assert not [one for one in report.collapses if one.part == "type"]
+
+    integer = fix_field("FakeRole", 90001, "int", version="9.2")
+    _, _, report = collapse(("9.2", "9.1"), {"9.2": [integer], "9.1": [string]}, {})
+    assert [one.part for one in report.collapses] == ["type"]
 
 
 def test_two_identities_claiming_one_name_are_refused_when_a_store_is_built() -> None:
@@ -909,7 +957,7 @@ def test_a_cold_default_store_is_fetched_once_and_says_so_both_times(
         "and how to avoid paying for it"
     )
     assert "is installed at" in said[1]
-    assert (default_store / "fields" / "000180.json").exists(), "the sharded layout, cold"
+    assert (default_store / "fields" / "000090.json").exists(), "the sharded layout, cold"
 
     second = Scraping(announce=said.append)
     assert "fetched" not in second.__dict__ and not second.installed, "one scrape, ever"
@@ -957,6 +1005,7 @@ def test_an_https_registry_receives_the_private_bearer_token(
     request = seen["request"]
     assert isinstance(request, urllib.request.Request)
     assert request.get_header("Authorization") == "Bearer secret"
+    assert request.get_header("User-agent") == "rekep-fix-registry"
     assert registry.installed and registry.field(90001, "9.1").name == "FakeRole"
 
 
@@ -1404,9 +1453,9 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
             "description": "A vendor's own code.",
             "fix": {
                 "type": "String",
-                "versions": '["*"]',
+                "versions": ["*"],
                 "column": "fakevendorcode",
-                "aliases": '[{"name":"FAKEVENDORCODE","source":"brk","occurrences":5}]',
+                "aliases": [{"name": "FAKEVENDORCODE", "source": "brk", "occurrences": 5}],
             },
         }
     }

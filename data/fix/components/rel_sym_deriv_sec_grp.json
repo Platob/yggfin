@@ -13,8 +13,12 @@
   "fix": {
    "component": "RelSymDerivSecGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList"
+   ]
   },
   "fields": [
    {

@@ -2,7 +2,8 @@ name: parse_messages
 notebook: parse_messages.ipynb
 parameters:
   project_root: .
-  # Raw input may be an S3 prefix, for example: s3://example-bucket/capture
+  # Raw input may be an S3 prefix. Calendar tokens select only the closed
+  # start/end window: s3://example-bucket/capture/{year}/{month}/{day}
   # `s3a://` and `s3n://` name the same object with the same settings. This
   # location is resolved on its own, not through `catalog_properties`, so an
   # endpoint or region for it comes from the URL or from `S3_*` in the
@@ -18,7 +19,7 @@ parameters:
   protocols: null
   pattern: "*.log*"
   # The fixed header every line opens with, as a regex naming `timestamp`,
-  # `threadname`, `plugincode` and `message`. Null reads the shipped one.
+  # `threadname`, `plugin` and `body`. Null reads the shipped one.
   header: null
   recursive: true
   # False streams compressed objects directly. True stages their raw compressed

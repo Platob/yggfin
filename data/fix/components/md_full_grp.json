@@ -13,8 +13,12 @@
   "fix": {
    "component": "MDFullGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataSnapshotFullRefresh\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataSnapshotFullRefresh"
+   ]
   },
   "fields": [
    {

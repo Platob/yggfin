@@ -10,8 +10,13 @@
   "fix": {
    "component": "SideCrossLegGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"NewOrderCross\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelReplaceRequest",
+    "NewOrderCross"
+   ]
   },
   "fields": [
    {

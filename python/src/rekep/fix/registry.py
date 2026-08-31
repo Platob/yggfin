@@ -27,11 +27,12 @@ from typing import Any, Self
 
 import pyarrow.fs
 
+from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
 from rekep.fields import Field, column_name, newest_rank
 from rekep.fields.metadata import encoded_key, values_of
-from rekep.filesystems import local_path, read_bytes, resolve, spill_path, write_bytes
+from rekep.filesystems import local_path, read_bytes, resolve, spill_path
 from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
@@ -46,7 +47,7 @@ from rekep.fix.entries import (
     records_for,
     refuse_record,
 )
-from rekep.fix.fields import fix_field, namespaced_field
+from rekep.fix.fields import datatype_identity, fix_field, namespaced_field
 from rekep.fix.quickfix import (
     QUICKFIX_URL,
     SPEC_VERSIONS,
@@ -86,9 +87,11 @@ from rekep.fix.store import (
     Dropped,
     ShardedLayout,
     collapse,
+    component_from_document,
     document_of,
     documents_of,
     field_document,
+    field_from_document,
     slug_collisions,
     write_archive,
 )
@@ -100,7 +103,7 @@ NANOCONDA_URL = "https://nanoconda.com/fix-reference"
 ONIXS_URL = "https://www.onixs.biz/fix-dictionary"
 
 # Sent with every request so scrape traffic identifies its client.
-_USER_AGENT = "rekep-fix-registry (+https://github.com/Platob/yggfin)"
+_USER_AGENT = "rekep-fix-registry"
 
 #: Where the scrape persists: the tag shards, the components and the version
 #: list, so everything after the first scrape works offline -- including on a
@@ -726,7 +729,7 @@ class FixRegistry(Convertible):
         """Install the default `from_builtin` hands back, and return it.
 
         None restores the packaged projection. The registry has to carry
-        rekep's own vocabulary -- the 26 identities every product
+        rekep's own vocabulary -- the 36 identities every product
         contract is declared against -- so an installed one that does not is
         refused here rather than reported as a missing field halfway through a
         parse.
@@ -969,15 +972,14 @@ class FixRegistry(Convertible):
             with response:
                 return self._bounded_registry_archive(response)
         filesystem, path = resolve(self.registry_url)
-        info = filesystem.get_file_info(path)
-        if info.type == pyarrow.fs.FileType.NotFound:
-            raise FileNotFoundError(self.registry_url)
-        if info.size > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES:
-            raise ValueError(
-                "the FIX registry archive exceeds "
-                f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
-            )
-        with filesystem.open_input_stream(path) as stream:
+        archive = ArrowPath(
+            self.registry_url,
+            filesystem,
+            filesystem_path=path,
+        )
+        # The configured archive is a required input. Opening it stays strict,
+        # while the bounded reader below remains the one size authority.
+        with archive.open_input_stream() as stream:
             return self._bounded_registry_archive(stream)
 
     @staticmethod
@@ -1112,7 +1114,7 @@ class FixRegistry(Convertible):
                     # declaration does: a document `Field` cannot parse is not
                     # one, and `refuse_record` says the rest.
                     try:
-                        entry = refuse_record(Field.from_dict(record))
+                        entry = refuse_record(field_from_document(record))
                     except (AttributeError, KeyError, TypeError, ValueError) as error:
                         raise ValueError(
                             f"FIX field {stored!r} in {name!r} is invalid: {error}"
@@ -1147,7 +1149,7 @@ class FixRegistry(Convertible):
             ):
                 raise ValueError(f"FIX component in {name!r} has invalid metadata")
             try:
-                entry = ComponentRecord.from_dict(document)
+                entry = component_from_document(document)
             except (AttributeError, KeyError, TypeError, ValueError) as error:
                 raise ValueError(f"FIX component in {name!r} is invalid: {error}") from error
             # The declaration validates by being read: a document Field cannot
@@ -2551,7 +2553,7 @@ class FixRegistry(Convertible):
         filesystem, path = source
         if isinstance(filesystem, pyarrow.fs.LocalFileSystem):
             return
-        write_bytes(pathlib.Path(self._cache_path).read_bytes(), path, filesystem)
+        ArrowPath(path, filesystem).write_bytes(pathlib.Path(self._cache_path).read_bytes())
 
     @cached_property
     def _documents(self) -> Documents:
@@ -2970,7 +2972,7 @@ def _source_conflicts(
     for key, part, compared in (
         ("name", NAME, fold),
         ("added", ADDED, str),
-        ("type", TYPE, str.casefold),
+        ("type", TYPE, datatype_identity),
         ("note", NOTE, str),
     ):
         kept = str(merged.get(key) or "")

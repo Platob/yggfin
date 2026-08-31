@@ -16,7 +16,9 @@
    "component": "MassQuote",
    "msgtype": "i",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

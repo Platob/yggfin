@@ -11,8 +11,17 @@
   "fix": {
    "component": "MaturityRules",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList",
+    "DerivativeSecurityListUpdateReport",
+    "SecurityDefinition",
+    "SecurityDefinitionUpdateReport",
+    "SecurityList",
+    "SecurityListUpdateReport"
+   ]
   },
   "fields": [
    {

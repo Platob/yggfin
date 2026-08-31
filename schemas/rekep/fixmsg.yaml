@@ -8,80 +8,79 @@ fields:
   description: When the event happened, in whole nanoseconds since the epoch.
   metadata: {unit: ns, epoch: '1970-01-01'}
   iceberg: {primary_key: 'true'}
-  fix: {display: Unix}
 - name: unixpartition
   type: int32
   description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
   metadata: {unit: second, epoch: '1970-01-01'}
   iceberg: {partition_key: identity, derived_from: unix}
-  fix: {display: UnixPartition}
+  fix: {name: UnixPartition}
 - name: eventtype
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {display: EventType}
+  fix: {name: EventType}
   enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
+- name: plugin
+  type: string
+  description: Source plugin that recorded the row; empty when the envelope did not name one.
+  fix: {name: Plugin}
 - name: creaunix
   type: int64
   description: When the event was created, upstream of anything that carried it.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: CreaUnix}
+  fix: {name: CreaUnix}
 - name: recunix
   type: int64
   description: When the event was written down here; deliberately not part of `hash`.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: RecUnix}
+  fix: {name: RecUnix}
 - name: expunix
   type: int64
   nullable: true
   description: When the event stops being true -- an order's expiry, a quote's staleness.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: ExpUnix}
+  fix: {name: ExpUnix}
 - name: snapunix
   type: int64
   nullable: true
   description: '`unix` of the event this is a snapshot of; null when it is not one.'
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: SnapUnix}
+  fix: {name: SnapUnix}
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
   iceberg: {primary_key: 'true', sort_key: asc}
-  fix: {display: Hash}
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {display: ValueHash}
+  fix: {name: ValueHash}
 - name: xhash
   type: fixed_size_binary[16]
-  description: Creation-anchored lifecycle identity; zero when no code names one.
-  fix: {display: Xhash}
-- name: linkxhashes
+  description: Direct XXH3-128 lifecycle identity; all-zero when no code names one.
+  fix: {name: XHash}
+- name: linkhashes
   type: list
-  description: Related lifecycle `xhash` values, with the primary match first.
-  fix: {display: LinkXHashes}
+  description: Related exact event `hash` values, with the primary match first.
+  fix: {name: LinkHashes}
   item:
     type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
-  fix: {display: Version}
 - name: state
   type: int64
   description: 'Where the lifecycle stands, as a ranked code: `is_terminal` is over.'
-  fix: {display: State}
-  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","REJECTED":"61REJCTD","REPLACED":"52REPLCD","STOPPED":"26STOPPD","SUSPENDED":"25SUSPND"}'}
+  enum: {name: State, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3544985283371287876":"QUEUED","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3618451351954607687":"RUNNING","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3761723214427014468":"SUCCEEDED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","QUEUED":"12QUEUED","REJECTED":"61REJCTD","REPLACED":"52REPLCD","RUNNING":"27RUNING","STOPPED":"26STOPPD","SUCCEEDED":"44SUCCED","SUSPENDED":"25SUSPND"}'}
 - name: code
   type: string
   description: Best lifecycle identifier present on this line.
-  fix: {display: Code}
 - name: codesource
   type: string
   description: Column whose value supplied `code`; empty when the lifecycle is unnamed.
-  fix: {display: CodeSource}
+  fix: {name: CodeSource}
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {display: AltIDs}
+  fix: {name: AltIDs}
   key:
     type: string
   value:
@@ -91,272 +90,249 @@ fields:
   nullable: true
   description: When the previous version happened, so dwell time is a subtraction.
   metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {display: PrevUnix}
+  fix: {name: PrevUnix}
 - name: prevhash
   type: fixed_size_binary[16]
   nullable: true
   description: The previous version's hash; null on the first version.
-  fix: {display: PrevHash}
+  fix: {name: PrevHash}
 - name: parenthash
   type: list
   nullable: true
   description: Every event this one was built from, in the order they were combined.
-  fix: {display: ParentHash}
+  fix: {name: ParentHash}
   item:
     type: fixed_size_binary[16]
-- name: mic
+- name: lastmkt
   type: int32
   nullable: true
-  description: ISO 10383 venue code, packed losslessly into `int32`; null when absent.
-  fix: {display: MIC}
+  description: 'Market of execution for last fill, or an indication of the market where an order was routed Valid values: See "Appendix 6-C"'
+  fix: {tag: '30', type: Exchange, name: LastMkt}
   enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
-  fix: {display: Reason}
 - name: sourceurl
   type: string
   description: Path of the log the row came from, as its filesystem addresses it.
-  fix: {display: SourceURL}
+  fix: {name: SourceURL}
 - name: sourcerownum
   type: int64
   description: 1-based physical line number of the header; 0 when not read from a file.
-  fix: {display: SourceRownum}
+  fix: {name: SourceRownum}
 - name: threadname
   type: string
   description: Contents of the first bracketed header field.
-  fix: {display: ThreadName}
-- name: plugincode
-  type: string
-  description: Contents of the second bracketed header field.
-  fix: {display: PluginCode}
-- name: message
-  type: string
-  nullable: true
-  description: Payload text; null where parsed columns retain every field.
-  fix: {display: Message}
+  fix: {name: ThreadName}
 - name: protocol
   type: int64
   description: Protocol grammar and resolved version; OTHER carries neither.
-  fix: {display: Protocol}
-  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
+  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6362825411428089856":"XML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
 - name: beginstring
   type: string
   nullable: true
   description: 'Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted) Valid values: FIXT.1.1'
-  fix: {tag: '8', type: String, name: BeginString, display: BeginString}
+  fix: {tag: '8', type: String, name: BeginString}
 - name: bodylength
   type: int64
   nullable: true
   description: Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)
-  fix: {tag: '9', type: Length, name: BodyLength, display: BodyLength}
+  fix: {tag: '9', type: Length, name: BodyLength}
 - name: msgtype
   type: string
   nullable: true
   description: 'Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted) Note: A "U" as the first character in the MsgType field (i.e. U, U2, etc) indicates that the message format is privately defined between the sender and receiver. *** Note the use of lower case letters ***'
-  fix: {tag: '35', type: String, name: MsgType, display: MsgType}
+  fix: {tag: '35', type: String, name: MsgType}
 - name: sendercompid
   type: string
   nullable: true
   description: Assigned value used to identify firm sending message.
-  fix: {tag: '49', type: String, name: SenderCompID, display: SenderCompID}
+  fix: {tag: '49', type: String, name: SenderCompID}
 - name: sendersubid
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator (desk, trader, etc.)
-  fix: {tag: '50', type: String, name: SenderSubID, display: SenderSubID}
+  fix: {tag: '50', type: String, name: SenderSubID}
 - name: senderlocationid
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader)
-  fix: {tag: '142', type: String, name: SenderLocationID, display: SenderLocationID}
+  fix: {tag: '142', type: String, name: SenderLocationID}
 - name: targetcompid
   type: string
   nullable: true
   description: Assigned value used to identify receiving firm.
-  fix: {tag: '56', type: String, name: TargetCompID, display: TargetCompID}
+  fix: {tag: '56', type: String, name: TargetCompID}
 - name: targetsubid
   type: string
   nullable: true
   description: Assigned value used to identify specific individual or unit intended to receive message. "ADMIN" reserved for administrative messages not intended for a specific user.
-  fix: {tag: '57', type: String, name: TargetSubID, display: TargetSubID}
+  fix: {tag: '57', type: String, name: TargetSubID}
 - name: targetlocationid
   type: string
   nullable: true
   description: Assigned value used to identify specific message destination's location (i.e. geographic location and/or desk, trader)
-  fix: {tag: '143', type: String, name: TargetLocationID, display: TargetLocationID}
+  fix: {tag: '143', type: String, name: TargetLocationID}
 - name: onbehalfofcompid
   type: string
   nullable: true
   description: Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID field and the firm originating the message in this field.
-  fix: {tag: '115', type: String, name: OnBehalfOfCompID, display: OnBehalfOfCompID}
+  fix: {tag: '115', type: String, name: OnBehalfOfCompID}
 - name: onbehalfofsubid
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party
-  fix: {tag: '116', type: String, name: OnBehalfOfSubID, display: OnBehalfOfSubID}
+  fix: {tag: '116', type: String, name: OnBehalfOfSubID}
 - name: onbehalfoflocationid
   type: string
   nullable: true
   description: Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party
-  fix: {tag: '144', type: String, name: OnBehalfOfLocationID, display: OnBehalfOfLocationID}
+  fix: {tag: '144', type: String, name: OnBehalfOfLocationID}
 - name: delivertocompid
   type: string
   nullable: true
   description: Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID (56) field and the ultimate receiver firm ID in this field.
-  fix: {tag: '128', type: String, name: DeliverToCompID, display: DeliverToCompID}
+  fix: {tag: '128', type: String, name: DeliverToCompID}
 - name: delivertosubid
   type: string
   nullable: true
   description: Assigned value used to identify specific message recipient (i.e. trader) if the message is delivered by a third party
-  fix: {tag: '129', type: String, name: DeliverToSubID, display: DeliverToSubID}
+  fix: {tag: '129', type: String, name: DeliverToSubID}
 - name: delivertolocationid
   type: string
   nullable: true
   description: Assigned value used to identify specific message recipient's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party
-  fix: {tag: '145', type: String, name: DeliverToLocationID, display: DeliverToLocationID}
+  fix: {tag: '145', type: String, name: DeliverToLocationID}
 - name: msgseqnum
   type: int64
   nullable: true
   description: Integer message sequence number.
-  fix: {tag: '34', type: SeqNum, name: MsgSeqNum, display: MsgSeqNum}
+  fix: {tag: '34', type: SeqNum, name: MsgSeqNum}
 - name: lastmsgseqnumprocessed
   type: int64
   nullable: true
   description: The last MsgSeqNum (34) value received by the FIX engine and processed by downstream application, such as trading engine or order routing system. Can be specified on every message sent. Useful for detecting a backlog with a counterparty.
-  fix: {tag: '369', type: SeqNum, name: LastMsgSeqNumProcessed, display: LastMsgSeqNumProcessed}
+  fix: {tag: '369', type: SeqNum, name: LastMsgSeqNumProcessed}
 - name: possdupflag
   type: bool
   nullable: true
   description: Indicates possible retransmission of message with this sequence number
-  fix: {tag: '43', type: Boolean, name: PossDupFlag, display: PossDupFlag}
+  fix: {tag: '43', type: Boolean, name: PossDupFlag}
 - name: possresend
   type: bool
   nullable: true
   description: Indicates that message may contain information that has been sent under another sequence number.
-  fix: {tag: '97', type: Boolean, name: PossResend, display: PossResend}
+  fix: {tag: '97', type: Boolean, name: PossResend}
 - name: sendingtime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as "GMT")
-  fix: {tag: '52', type: UTCTimestamp, name: SendingTime, display: SendingTime}
+  fix: {tag: '52', type: UTCTimestamp, name: SendingTime}
 - name: origsendingtime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as "GMT") when transmitting orders as the result of a resend request.
-  fix: {tag: '122', type: UTCTimestamp, name: OrigSendingTime, display: OrigSendingTime}
+  fix: {tag: '122', type: UTCTimestamp, name: OrigSendingTime}
 - name: onbehalfofsendingtime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: 'Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a ''hub'' or ''service bureau''. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as ''GMT'')'
-  fix: {tag: '370', type: UTCTimestamp, name: OnBehalfOfSendingTime, display: OnBehalfOfSendingTime}
+  fix: {tag: '370', type: UTCTimestamp, name: OnBehalfOfSendingTime}
 - name: applverid
   type: string
   nullable: true
   description: Specifies the service pack release being applied at message level. Enumerated field with values assigned at time of service pack release
-  fix: {tag: '1128', type: String, name: ApplVerID, display: ApplVerID}
+  fix: {tag: '1128', type: String, name: ApplVerID}
 - name: cstmapplverid
   type: string
   nullable: true
   description: Specifies a custom extension to a message being applied at the message level. Enumerated field
-  fix: {tag: '1129', type: String, name: CstmApplVerID, display: CstmApplVerID}
+  fix: {tag: '1129', type: String, name: CstmApplVerID}
 - name: applextid
   type: int32
   nullable: true
   description: The extension pack number associated with an application message.
-  fix: {tag: '1156', type: int, name: ApplExtID, display: ApplExtID}
+  fix: {tag: '1156', type: int, name: ApplExtID}
 - name: messageencoding
   type: string
   nullable: true
   description: Type of message encoding (non-ASCII (non-English) characters) used in a message's "Encoded" fields.
-  fix: {tag: '347', type: String, name: MessageEncoding, display: MessageEncoding}
+  fix: {tag: '347', type: String, name: MessageEncoding}
 - name: securedatalen
   type: int64
   nullable: true
   description: Length of encrypted message
-  fix: {tag: '90', type: Length, name: SecureDataLen, display: SecureDataLen}
+  fix: {tag: '90', type: Length, name: SecureDataLen}
 - name: securedata
   type: binary
   nullable: true
   description: Actual encrypted data stream
-  fix: {tag: '91', type: data, name: SecureData, display: SecureData}
+  fix: {tag: '91', type: data, name: SecureData}
 - name: signaturelength
   type: int64
   nullable: true
   description: Number of bytes in signature field
-  fix: {tag: '93', type: Length, name: SignatureLength, display: SignatureLength}
+  fix: {tag: '93', type: Length, name: SignatureLength}
 - name: signature
   type: binary
   nullable: true
   description: Electronic signature
-  fix: {tag: '89', type: data, name: Signature, display: Signature}
+  fix: {tag: '89', type: data, name: Signature}
 - name: entries
   type: list
   nullable: true
   description: Unlifted fields and lossless raw audit sidecars for typed columns.
-  fix: {display: Entries}
   item:
     type: struct
-    fix: {display: Item}
     fields:
     - name: tag
       type: int32
       description: Numeric identity written or resolved; zero while unresolved.
-      fix: {display: Tag}
     - name: key
       type: string
       description: Whole field spelling outside an indexed container.
-      fix: {display: Key}
     - name: value
       type: string
       description: Text after the first equals sign; an empty value is empty text.
-      fix: {display: Value}
     - name: comp
       type: string
       nullable: true
       description: Indexed container prefix.
-      fix: {display: Comp}
 - name: direction
   type: int32
   description: SENT or RECV when stated by the transport prefix; UNKNOWN otherwise.
-  fix: {display: Direction}
   enum: {name: Direction, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1397050964":"SENT","1380270934":"RECV"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right}
 - name: unixsource
   type: string
   description: Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock.
-  fix: {display: UnixSource}
+  fix: {name: UnixSource}
 - name: unmap
   type: list
   nullable: true
   description: Registry-unresolved entries partition payload with `entries`; null means all resolved.
-  fix: {display: Unmapped}
+  fix: {name: Unmapped}
   item:
     type: struct
-    fix: {display: Item}
     fields:
     - name: tag
       type: int32
       description: Numeric identity written or resolved; zero while unresolved.
-      fix: {display: Tag}
     - name: key
       type: string
       description: Whole field spelling outside an indexed container.
-      fix: {display: Key}
     - name: value
       type: string
       description: Text after the first equals sign; an empty value is empty text.
-      fix: {display: Value}
     - name: comp
       type: string
       nullable: true
       description: Indexed container prefix.
-      fix: {display: Comp}
 - name: parties
   type: list
   nullable: true
   description: FIX Parties entries; null when the component is absent.
-  fix: {component: Parties, display: Parties}
+  fix: {component: Parties}
   item:
     type: struct
     fields:
@@ -364,22 +340,22 @@ fields:
       type: string
       nullable: true
       description: Party identifier/code. See PartyIDSource (447) and PartyRole (452). See "Appendix 6-G - Use of <Parties> Component Block"
-      fix: {tag: '448', type: String, name: PartyID, display: PartyID}
+      fix: {tag: '448', type: String, name: PartyID}
     - name: partyidsource
       type: string
       nullable: true
       description: 'Identifies class or source of the PartyID (448) value. Required if PartyID is specified. Note: applicable values depend upon PartyRole (452) specified. See "Appendix 6-G - Use of <Parties> Component Block"'
-      fix: {tag: '447', type: char, name: PartyIDSource, display: PartyIDSource}
+      fix: {tag: '447', type: char, name: PartyIDSource}
     - name: partyrole
       type: int32
       nullable: true
       description: 'Identifies the type or role of the PartyID (448) specified. See "Appendix 6-G - Use of <Parties> Component Block" (see Volume : "Glossary" for value definitions)'
-      fix: {tag: '452', type: int, name: PartyRole, display: PartyRole}
+      fix: {tag: '452', type: int, name: PartyRole}
 - name: trdregtimestamps
   type: list
   nullable: true
   description: FIX TrdRegTimestamps entries; null when the component is absent.
-  fix: {component: TrdRegTimestamps, display: TrdRegTimestamps}
+  fix: {component: TrdRegTimestamps}
   item:
     type: struct
     fields:
@@ -387,22 +363,22 @@ fields:
       type: timestamp[us, tz=UTC]
       nullable: true
       description: Traded / Regulatory timestamp value. Use to store time information required by government regulators or self regulatory organizations (such as an exchange or clearing house).
-      fix: {tag: '769', type: UTCTimestamp, name: TrdRegTimestamp, display: TrdRegTimestamp}
+      fix: {tag: '769', type: UTCTimestamp, name: TrdRegTimestamp}
     - name: trdregtimestamptype
       type: int32
       nullable: true
       description: 'Traded / Regulatory timestamp type. Note of Applicability: values are required in US futures markets by the CFTC to support computerized trade reconstruction. (see Volume : "Glossary" for value definitions)'
-      fix: {tag: '770', type: int, name: TrdRegTimestampType, display: TrdRegTimestampType}
+      fix: {tag: '770', type: int, name: TrdRegTimestampType}
     - name: trdregtimestamporigin
       type: string
       nullable: true
       description: Text which identifies the "origin" (i.e. system which was used to generate the time stamp) for the Traded / Regulatory timestamp value.
-      fix: {tag: '771', type: String, name: TrdRegTimestampOrigin, display: TrdRegTimestampOrigin}
+      fix: {tag: '771', type: String, name: TrdRegTimestampOrigin}
 - name: sidetrdregts
   type: list
   nullable: true
   description: FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent.
-  fix: {component: SideTrdRegTS, display: SideTrdRegTS}
+  fix: {component: SideTrdRegTS}
   item:
     type: struct
     fields:
@@ -410,242 +386,311 @@ fields:
       type: timestamp[us, tz=UTC]
       nullable: true
       description: Will be used in a multi-sided message. Traded Regulatory timestamp value Use to store time information required by government regulators or self regulatory organizations such as an exchange or clearing house
-      fix: {tag: '1012', type: UTCTimestamp, name: SideTrdRegTimestamp, display: SideTrdRegTimestamp}
+      fix: {tag: '1012', type: UTCTimestamp, name: SideTrdRegTimestamp}
     - name: sidetrdregtimestamptype
       type: int32
       nullable: true
       description: Same as TrdRegTimeStampType
-      fix: {tag: '1013', type: int, name: SideTrdRegTimestampType, display: SideTrdRegTimestampType}
+      fix: {tag: '1013', type: int, name: SideTrdRegTimestampType}
     - name: sidetrdregtimestampsrc
       type: string
       nullable: true
       description: Same as TrdRegTimestampOrigin Text which identifies the origin i.e. system which was used to generate the time stamp for the Traded Regulatory timestamp value
-      fix: {tag: '1014', type: String, name: SideTrdRegTimestampSrc, display: SideTrdRegTimestampSrc}
+      fix: {tag: '1014', type: String, name: SideTrdRegTimestampSrc}
 - name: parentclordid
   type: string
   nullable: true
   description: Client order identity of the parent in a replace chain, as the bridge renders it.
-  fix: {type: String, name: ParentClOrdID, display: ParentClOrdID}
+  fix: {type: String, name: ParentClOrdID}
 - name: parentorderid
   type: string
   nullable: true
   description: Venue order identity of the parent in a replace chain, as the bridge renders it.
-  fix: {type: String, name: ParentOrderID, display: ParentOrderID}
+  fix: {type: String, name: ParentOrderID}
 - name: checksum
   type: string
   nullable: true
   description: 'Three byte, simple checksum (see Volume 2: "Checksum Calculation" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)'
-  fix: {tag: '10', type: String, name: CheckSum, display: CheckSum}
+  fix: {tag: '10', type: String, name: CheckSum}
 - name: xmldatalen
   type: int64
   nullable: true
   description: Length of the XmlData data block.
-  fix: {tag: '212', type: Length, name: XmlDataLen, display: XmlDataLen}
+  fix: {tag: '212', type: Length, name: XmlDataLen}
 - name: xmldata
   type: binary
   nullable: true
   description: 'Actual XML data stream (e.g. FIXML). See approriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters.'
-  fix: {tag: '213', type: data, name: XmlData, display: XmlData}
+  fix: {tag: '213', type: data, name: XmlData}
 - name: account
   type: string
   nullable: true
   description: Account mnemonic as agreed between buy and sell sides, e.g. broker and institution or investor/intermediary and fund manager.
-  fix: {tag: '1', type: String, name: Account, display: Account}
+  fix: {tag: '1', type: String, name: Account}
 - name: clordid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID (49) or OnBehalfOfCompID (5) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID field.
-  fix: {tag: '11', type: String, name: ClOrdID, display: ClOrdID}
+  fix: {tag: '11', type: String, name: ClOrdID}
 - name: origclordid
   type: string
   nullable: true
   description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-  fix: {tag: '41', type: String, name: OrigClOrdID, display: OrigClOrdID}
+  fix: {tag: '41', type: String, name: OrigClOrdID}
 - name: orderid
   type: string
   nullable: true
   description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-  fix: {tag: '37', type: String, name: OrderID, display: OrderID}
+  fix: {tag: '37', type: String, name: OrderID}
 - name: execid
   type: string
   nullable: true
   description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int).
-  fix: {tag: '17', type: String, name: ExecID, display: ExecID}
+  fix: {tag: '17', type: String, name: ExecID}
+- name: globalorderid
+  type: string
+  nullable: true
+  description: Order identifier shared across source systems.
+  fix: {tag: '30030', type: String, name: GlobalOrderId}
+- name: rootorderid
+  type: string
+  nullable: true
+  description: Identifier of the root order in the lifecycle.
+  fix: {tag: '30033', type: String, name: RootOrderId}
+- name: rootoriginatororderid
+  type: string
+  nullable: true
+  description: Originator identifier of the root order.
+  fix: {tag: '30034', type: String, name: RootOriginatorOrderId}
+- name: orderflags
+  type: string
+  nullable: true
+  description: Source flags attached to the order.
+  fix: {tag: '30035', type: String, name: OrderFlags}
+- name: orderoriginatorid
+  type: string
+  nullable: true
+  description: Identifier of the order's originating participant.
+  fix: {tag: '30036', type: String, name: OrderOriginatorId}
+- name: conversationid
+  type: string
+  nullable: true
+  description: Identifier shared by messages in one conversation.
+  fix: {tag: '30037', type: String, name: ConversationId}
+- name: bloombergcode
+  type: string
+  nullable: true
+  description: Bloomberg identifier supplied by the source bridge.
+  fix: {tag: '30038', type: String, name: BloombergCode}
 - name: side
   type: string
   nullable: true
   description: 'Side of order (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '54', type: char, name: Side, display: Side}
+  fix: {tag: '54', type: char, name: Side}
 - name: ordtype
   type: string
   nullable: true
   description: 'Order type. *** SOME VALUES ARE NO LONGER USED - See "Deprecated (Phased-out) Features and Supported Approach" *** (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '40', type: char, name: OrdType, display: OrdType}
+  fix: {tag: '40', type: char, name: OrdType}
 - name: timeinforce
   type: string
   nullable: true
   description: 'Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders. (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '59', type: char, name: TimeInForce, display: TimeInForce}
+  fix: {tag: '59', type: char, name: TimeInForce}
 - name: ordstatus
   type: string
   nullable: true
   description: 'Identifies current status of order. *** SOME VALUES HAVE BEEN REPLACED - See "Replaced Features and Supported Approach" *** (see Volume : "Glossary" for value definitions)'
-  fix: {tag: '39', type: char, name: OrdStatus, display: OrdStatus}
+  fix: {tag: '39', type: char, name: OrdStatus}
 - name: exectype
   type: string
   nullable: true
   description: Describes the specific ExecutionRpt (i.e. Pending Cancel) while OrdStatus (39) will always identify the current order status (i.e. Partially Filled) *** SOME VALUES HAVE BEEN REPLACED - See "Replaced Features and Supported Approach" ***
-  fix: {tag: '150', type: char, name: ExecType, display: ExecType}
+  fix: {tag: '150', type: char, name: ExecType}
 - name: orderqty
   type: double
   nullable: true
   description: Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments. (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '38', type: Qty, name: OrderQty, display: OrderQty}
+  fix: {tag: '38', type: Qty, name: OrderQty}
 - name: price
   type: double
   nullable: true
   description: Price per unit of quantity (e.g. per share)
-  fix: {tag: '44', type: Price, name: Price, display: Price}
+  fix: {tag: '44', type: Price, name: Price}
 - name: avgpx
   type: double
   nullable: true
   description: Calculated average price of all fills on this order. For Fixed Income trades AvgPx is always expressed as percent-of-par, regardless of the PriceType (423) of LastPx (31). I.e., AvgPx will contain an average of percent-of-par values (see LastParPx (669)) for issues traded in Yield, Spread or Discount.
-  fix: {tag: '6', type: Price, name: AvgPx, display: AvgPx}
+  fix: {tag: '6', type: Price, name: AvgPx}
 - name: cumqty
   type: double
   nullable: true
   description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '14', type: Qty, name: CumQty, display: CumQty}
+  fix: {tag: '14', type: Qty, name: CumQty}
 - name: leavesqty
   type: double
   nullable: true
   description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14). (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '151', type: Qty, name: LeavesQty, display: LeavesQty}
+  fix: {tag: '151', type: Qty, name: LeavesQty}
 - name: lastpx
   type: double
   nullable: true
   description: Price of this (last) fill.
-  fix: {tag: '31', type: Price, name: LastPx, display: LastPx}
+  fix: {tag: '31', type: Price, name: LastPx}
 - name: lastqty
   type: double
   nullable: true
   description: Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '32', type: Qty, name: LastQty, display: LastQty}
+  fix: {tag: '32', type: Qty, name: LastQty}
+- name: lastshares
+  type: double
+  nullable: true
+  description: Vendor-reported share quantity, distinct from `LastQty <32>`.
+  fix: {tag: '30028', type: double, name: LastShares}
+- name: marketmarker
+  type: bool
+  nullable: true
+  description: Whether the source marks the row as market activity.
+  fix: {tag: '30029', type: Boolean, name: MarketMarker}
+- name: env
+  type: string
+  nullable: true
+  description: Source environment name.
+  fix: {tag: '30032', type: String, name: Env}
+- name: settlcurrency
+  type: int32
+  nullable: true
+  description: Currency code of settlement denomination.
+  fix: {tag: '120', type: Currency, name: SettlCurrency}
+  enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
 - name: transacttime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Timestamp when the business transaction represented by the message occurred.
-  fix: {tag: '60', type: UTCTimestamp, name: TransactTime, display: TransactTime}
+  fix: {tag: '60', type: UTCTimestamp, name: TransactTime}
 - name: origtime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as "GMT"))
-  fix: {tag: '42', type: UTCTimestamp, name: OrigTime, display: OrigTime}
+  fix: {tag: '42', type: UTCTimestamp, name: OrigTime}
+- name: creationtime
+  type: timestamp[us, tz=UTC]
+  nullable: true
+  description: Lifecycle creation timestamp expressed in UTC.
+  fix: {tag: '30031', type: UTCTimestamp, name: CreationTime}
+- name: expiretime
+  type: timestamp[us, tz=UTC]
+  nullable: true
+  description: Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as "GMT") The meaning of expiration is specific to the context where the field is used. For orders, this is the expiration time of a Good Til Date TimeInForce. For Quotes - this is the expiration of the quote. Expiration time is provided across the quote message dialog to control the length of time of the overall quoting process. For collateral requests, this is the time by which collateral must be assigned. For collateral assignments, this is the time by which a response to the assignment is expected.
+  fix: {tag: '126', type: UTCTimestamp, name: ExpireTime}
 - name: text
   type: string
   nullable: true
   description: 'Free format text string (Note: this field does not have a specified maximum length)'
-  fix: {tag: '58', type: String, name: Text, display: Text}
+  fix: {tag: '58', type: String, name: Text}
 - name: quoteid
   type: string
   nullable: true
   description: Unique identifier for quote
-  fix: {tag: '117', type: String, name: QuoteID, display: QuoteID}
+  fix: {tag: '117', type: String, name: QuoteID}
 - name: quotereqid
   type: string
   nullable: true
   description: Unique identifier for quote request
-  fix: {tag: '131', type: String, name: QuoteReqID, display: QuoteReqID}
+  fix: {tag: '131', type: String, name: QuoteReqID}
 - name: quotetype
   type: int32
   nullable: true
   description: 'Identifies the type of quote. An indicative quote is used to inform a counterparty of a market. An indicative quote does not result directly in a trade. A tradeable quote is submitted to a market and will result directly in a trade against other orders and quotes in a market. A restricted tradeable quote is submitted to a market and within a certain restriction (possibly based upon price or quantity) will automatically trade against orders. Order that do not comply with restrictions are sent to the quote issuer who can choose to accept or decline the order. A counter quote is used in the negotiation model. See Volume 7 - Product: Fixed Income for example usage.'
-  fix: {tag: '537', type: int, name: QuoteType, display: QuoteType}
+  fix: {tag: '537', type: int, name: QuoteType}
 - name: quotestatus
   type: int32
   nullable: true
   description: Identifies the status of the quote acknowledgement.
-  fix: {tag: '297', type: int, name: QuoteStatus, display: QuoteStatus}
+  fix: {tag: '297', type: int, name: QuoteStatus}
 - name: quoterejectreason
   type: int32
   nullable: true
   description: 'Reason Quote was rejected:'
-  fix: {tag: '300', type: int, name: QuoteRejectReason, display: QuoteRejectReason}
+  fix: {tag: '300', type: int, name: QuoteRejectReason}
 - name: quoteresptype
   type: int32
   nullable: true
   description: Identifies the type of Quote Response.
-  fix: {tag: '694', type: int, name: QuoteRespType, display: QuoteRespType}
+  fix: {tag: '694', type: int, name: QuoteRespType}
 - name: quotecanceltype
   type: int32
   nullable: true
   description: Identifies the type of quote cancel.
-  fix: {tag: '298', type: int, name: QuoteCancelType, display: QuoteCancelType}
+  fix: {tag: '298', type: int, name: QuoteCancelType}
 - name: bidpx
   type: double
   nullable: true
   description: Bid price/rate
-  fix: {tag: '132', type: Price, name: BidPx, display: BidPx}
+  fix: {tag: '132', type: Price, name: BidPx}
 - name: offerpx
   type: double
   nullable: true
   description: Offer price/rate
-  fix: {tag: '133', type: Price, name: OfferPx, display: OfferPx}
+  fix: {tag: '133', type: Price, name: OfferPx}
+- name: priceinferred
+  type: string
+  description: Normalized price columns derived from another FIX price field.
+  fix: {name: PriceInferred}
 - name: bidsize
   type: double
   nullable: true
   description: Quantity of bid (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '134', type: Qty, name: BidSize, display: BidSize}
+  fix: {tag: '134', type: Qty, name: BidSize}
 - name: offersize
   type: double
   nullable: true
   description: Quantity of offer (Prior to FIX 4.2 this field was of type int)
-  fix: {tag: '135', type: Qty, name: OfferSize, display: OfferSize}
+  fix: {tag: '135', type: Qty, name: OfferSize}
 - name: defbidsize
   type: double
   nullable: true
   description: Default Bid Size.
-  fix: {tag: '293', type: Qty, name: DefBidSize, display: DefBidSize}
+  fix: {tag: '293', type: Qty, name: DefBidSize}
 - name: defoffersize
   type: double
   nullable: true
   description: Default Offer Size.
-  fix: {tag: '294', type: Qty, name: DefOfferSize, display: DefOfferSize}
+  fix: {tag: '294', type: Qty, name: DefOfferSize}
 - name: validuntiltime
   type: timestamp[us, tz=UTC]
   nullable: true
   description: Indicates expiration time of indication message (always expressed in UTC (Universal Time Coordinated, also known as "GMT")
-  fix: {tag: '62', type: UTCTimestamp, name: ValidUntilTime, display: ValidUntilTime}
+  fix: {tag: '62', type: UTCTimestamp, name: ValidUntilTime}
 - name: noquotesets
   type: int64
   nullable: true
   description: The number of sets of quotes in the message.
-  fix: {tag: '296', type: NumInGroup, name: NoQuoteSets, display: NoQuoteSets}
+  fix: {tag: '296', type: NumInGroup, name: NoQuoteSets}
 - name: noquoteentries
   type: int64
   nullable: true
   description: The number of quote entries for a QuoteSet.
-  fix: {tag: '295', type: NumInGroup, name: NoQuoteEntries, display: NoQuoteEntries}
+  fix: {tag: '295', type: NumInGroup, name: NoQuoteEntries}
 - name: quotesetid
   type: string
   nullable: true
   description: Unique id for the Quote Set.
-  fix: {tag: '302', type: String, name: QuoteSetID, display: QuoteSetID}
+  fix: {tag: '302', type: String, name: QuoteSetID}
 - name: quoteentryid
   type: string
   nullable: true
   description: Unique identifier for a quote. The QuoteEntryID stays with the quote as a static identifier even if the quote is updated.
-  fix: {tag: '299', type: String, name: QuoteEntryID, display: QuoteEntryID}
+  fix: {tag: '299', type: String, name: QuoteEntryID}
 - name: error
   type: string
   nullable: true
   description: Why FIX transcription degraded this row; null when it read whole.
-  fix: {display: Error}
 - name: securityaltid
   type: list
   nullable: true
   description: FIX SecAltIDGrp entries -- every other identifier; null when absent.
-  fix: {component: SecurityAltID, display: SecurityAltID}
+  fix: {component: SecurityAltID}
   item:
     type: struct
     fields:
@@ -653,183 +698,178 @@ fields:
       type: string
       nullable: true
       description: Alternate Security identifier value for this security of SecurityAltIDSource (456) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityAltIDSource.
-      fix: {tag: '455', type: String, name: SecurityAltID, display: SecurityAltID}
+      fix: {tag: '455', type: String, name: SecurityAltID}
     - name: securityaltidsource
       type: string
       nullable: true
       description: 'Identifies class or source of the SecurityAltID (455) value. Required if SecurityAltID is specified. Valid values: Same valid values as the SecurityIDSource (22) field'
-      fix: {tag: '456', type: String, name: SecurityAltIDSource, display: SecurityAltIDSource}
+      fix: {tag: '456', type: String, name: SecurityAltIDSource}
 - name: instrument
   type: struct
   description: FIX Instrument facts, with InstrmtLegGrp retained inside the component.
-  fix: {display: Instrument}
   fields:
   - name: symbolticker
     type: string
-    description: Canonical spelling selected from the FIX instrument identifiers.
-    fix: {display: SymbolTicker}
+    description: Canonical instrument spelling.
+    fix: {tag: '30020', type: String, name: SymbolTicker}
   - name: symbol
     type: string
     description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
-    fix: {tag: '55', type: String, name: Symbol, display: Symbol}
+    fix: {tag: '55', type: String, name: Symbol}
   - name: kind
     type: int64
     description: What it settles as, read from the first character of the CFI code.
-    fix: {display: Kind}
     enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","4846246242730115072":"CASH","4994867235166683136":"EQUITY","4919411096516820992":"DEBT","5068043009640103936":"FUND","4851874686865130329":"CURRENCY","4850180317955512576":"COMMODITY","5282234477571997696":"INDEX","4919428642901065728":"DERIVATIVE","5068049681104568320":"FUTURE","5715160600973017088":"OPTION","6005340439975034880":"SWAP","6287397068022371328":"WARRANT","5066358640526640128":"FORWARD","6004514729347007488":"STRUCTURED","6003388760686067712":"SPREAD","5572444038831555911":"MULTILEG","4774188662740221952":"BASKET","5064665298347705600":"FINANCING","5928232784735764480":"REPO","5498685473305919488":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}'}
   - name: securityid
     type: string
     nullable: true
     description: Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource.
-    fix: {tag: '48', type: String, name: SecurityID, display: SecurityID}
+    fix: {tag: '48', type: String, name: SecurityID}
   - name: securityidsource
     type: int32
     nullable: true
     description: Identifies class or source of the SecurityID (48) value. Required if SecurityID is specified. 100+ are reserved for private security identifications
-    fix: {tag: '22', type: String, name: SecurityIDSource, display: SecurityIDSource}
+    fix: {tag: '22', type: String, name: SecurityIDSource}
     enum: {name: SecurityIDSource, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1129665360":"CUSIP","1397048396":"SEDOL","1364543819":"QUIK","1230195022":"ISIN","1380532992":"RIC","1128487168":"ISO_CURRENCY","1129599577":"ISO_COUNTRY","1163412296":"EXCHANGE_SYMBOL","1129595136":"CTA","1111639808":"BLOOMBERG","1464552960":"WERTPAPIER","1146442819":"DUTCH","1447119951":"VALOREN","1397310287":"SICOVAM","1111837767":"BELGIAN","1129270606":"COMMON","1129075272":"CLEARING_HOUSE","1230193729":"ISDA_FPML_SPEC","1330664001":"OPRA","1179667788":"ISDA_FPML_URL","1280262912":"LETTER_OF_CREDIT","1296782416":"MARKETPLACE","1380205891":"MARKIT_RED_ENTITY","1380208707":"MARKIT_RED_PAIR","1128682563":"CFTC_COMMODITY","1229148752":"ISDA_COMMODITY","1179207497":"FIGI","1279609088":"LEI","1398361684":"SYNTHETIC","1179206733":"FIDESSA","1229866072":"INDEX_NAME","1431193926":"UNIFORM_SYMBOL","1146374400":"DIGITAL_TOKEN"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"BELGIAN":"BELG","BLOOMBERG":"BBG","Belgian":"BELGIAN","BloombergSymbol":"BLOOMBERG","CFTC_COMMODITY":"CFTC","CFTC_COMMODITY_CODE":"CFTC_COMMODITY","CLEARING_HOUSE":"CLRH","COMMON":"COMN","CUSIP":"CUSP","ClearingHouse":"CLEARING_HOUSE","Common":"COMMON","ConsolidatedTapeAssociation":"CTA","DIGITAL_TOKEN":"DTI","DIGITAL_TOKEN_IDENTIFIER":"DIGITAL_TOKEN","DUTCH":"DUTC","Dutch":"DUTCH","EXCHANGE_SYMBOL":"EXCH","ExchangeSymbol":"EXCHANGE_SYMBOL","FIDESSA":"FIDM","FIDESSA_INSTRUMENT_MNEMONIC":"FIDESSA","FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER":"FIGI","INDEX_NAME":"INDX","ISDAFpMLSpecification":"ISDA_FPML_SPEC","ISDAFpMLURL":"ISDA_FPML_URL","ISDA_COMMODITY":"ICRP","ISDA_COMMODITY_REFERENCE_PRICE":"ISDA_COMMODITY","ISDA_FPML_SPEC":"ISDA","ISDA_FPML_URL":"FPML","ISINNumber":"ISIN","ISOCountryCode":"ISO_COUNTRY","ISOCurrencyCode":"ISO_CURRENCY","ISO_COUNTRY":"CTRY","ISO_CURRENCY":"CCY","LEGAL_ENTITY_IDENTIFIER":"LEI","LETTER_OF_CREDIT":"LOC","LetterOfCredit":"LETTER_OF_CREDIT","MARKETPLACE":"MKTP","MARKIT_RED_ENTITY":"RDEC","MARKIT_RED_ENTITY_CLIP":"MARKIT_RED_ENTITY","MARKIT_RED_PAIR":"RDPC","MARKIT_RED_PAIR_CLIP":"MARKIT_RED_PAIR","MarketplaceAssignedIdentifier":"MARKETPLACE","OptionPriceReportingAuthority":"OPRA","RICCode":"RIC","SEDOL":"SEDL","SICOVAM":"SICO","SYNTHETIC":"SYNT","Sicovam":"SICOVAM","UNIFORM_SYMBOL":"UNIF","VALOREN":"VALO","Valoren":"VALOREN","WERTPAPIER":"WKN","Wertpapier":"WERTPAPIER"}', fix_aliases: '{"1":"CUSP","2":"SEDL","3":"QUIK","4":"ISIN","5":"RIC","6":"CCY","7":"CTRY","8":"EXCH","9":"CTA","A":"BBG","B":"WKN","C":"DUTC","D":"VALO","E":"SICO","F":"BELG","G":"COMN","H":"CLRH","I":"ISDA","J":"OPRA","K":"FPML","L":"LOC","M":"MKTP","N":"RDEC","P":"RDPC","Q":"CFTC","R":"ICRP","S":"FIGI","T":"LEI","U":"SYNT","V":"FIDM","W":"INDX","X":"UNIF","Y":"DTI"}'}
   - name: isincode
     type: string
     nullable: true
-    description: ISO 6166 identifier, wherever the message carried it; null when it did not.
+    description: ISIN carried by the rendered ISINCODE field.
     metadata: {iso: '6166'}
-    fix: {display: ISINCode}
+    fix: {type: String, name: ISINCODE}
   - name: securitytype
     type: string
     nullable: true
     description: 'Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties.'
-    fix: {tag: '167', type: String, name: SecurityType, display: SecurityType}
+    fix: {tag: '167', type: String, name: SecurityType}
   - name: cficode
     type: string
     nullable: true
     description: Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments. A subset of possible values applicable to FIX usage are identified in "Appendix 6-D CFICode Usage - ISO 10962 Classification of Financial Instruments (CFI code)"
-    fix: {tag: '461', type: String, name: CFICode, display: CFICode}
+    fix: {tag: '461', type: String, name: CFICode}
   - name: securityexchange
     type: string
     nullable: true
     description: 'Market used to help identify a security. Valid values: See "Appendix 6-C"'
-    fix: {tag: '207', type: Exchange, name: SecurityExchange, display: SecurityExchange}
+    fix: {tag: '207', type: Exchange, name: SecurityExchange}
   - name: currency
     type: int32
     nullable: true
     description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
-    fix: {tag: '15', type: Currency, name: Currency, display: Currency}
+    fix: {tag: '15', type: Currency, name: Currency}
     enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
   - name: contractmultiplier
     type: double
     nullable: true
     description: Specifies the ratio or multiply factor to convert from "nominal" units (e.g. contracts) to total units (e.g. shares) (e.g. 1.0, 100, 1000, etc). Applicable For Fixed Income, Convertible Bonds, Derivatives, etc. In general quantities for all calsses should be expressed in the basic unit of the instrument, e.g. shares for equities, norminal or par amount for bonds, currency for foreign exchange. When quantity is expressed in contracts, e.g. financing transactions and bond trade reporting, ContractMutliplier should contain the number of units in one contract and can be omitted if the multiplier is the default amount for the instrument, i.e. 1,000 par of bonds, 1,000,000 par for financing transactions.
-    fix: {tag: '231', type: float, name: ContractMultiplier, display: ContractMultiplier}
+    fix: {tag: '231', type: float, name: ContractMultiplier}
   - name: minpriceincrement
     type: double
     nullable: true
     description: Minimum price increase for a given exchange-traded Instrument
-    fix: {tag: '969', type: float, name: MinPriceIncrement, display: MinPriceIncrement}
+    fix: {tag: '969', type: float, name: MinPriceIncrement}
   - name: roundlot
     type: double
     nullable: true
     description: The trading lot size of a security
-    fix: {tag: '561', type: Qty, name: RoundLot, display: RoundLot}
+    fix: {tag: '561', type: Qty, name: RoundLot}
   - name: maturitydate
     type: timestamp[us]
     nullable: true
     description: Date of maturity.
-    fix: {tag: '541', type: LocalMktDate, name: MaturityDate, display: MaturityDate}
+    fix: {tag: '541', type: LocalMktDate, name: MaturityDate}
   - name: strikeprice
     type: double
     nullable: true
     description: Strike Price for an Option.
-    fix: {tag: '202', type: Price, name: StrikePrice, display: StrikePrice}
+    fix: {tag: '202', type: Price, name: StrikePrice}
   - name: putorcall
     type: int64
     description: Indicates whether an option contract is a put or call
-    fix: {tag: '201', type: int, name: PutOrCall, display: PutOrCall}
+    fix: {tag: '201', type: int, name: PutOrCall}
     enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}
   - name: securitydesc
     type: string
     nullable: true
     description: Can be used to provide an optional textual description for a financial instrument.
-    fix: {tag: '107', type: String, name: SecurityDesc, display: SecurityDesc}
+    fix: {tag: '107', type: String, name: SecurityDesc}
   - name: legs
     type: list
     nullable: true
     description: The legs of a multileg instrument, in the order the venue sent them.
-    fix: {display: Legs}
     item:
       type: struct
-      fix: {display: Item}
       fields:
       - name: symbolticker
         type: string
         description: Canonical instrument spelling derived from the leg's FIX identifiers.
-        fix: {display: SymbolTicker}
+        fix: {name: SymbolTicker}
       - name: symbol
         type: string
         description: Multileg instrument's individual security's Symbol. See Symbol (55) field for description
-        fix: {tag: '600', type: String, name: LegSymbol, display: LegSymbol}
+        fix: {tag: '600', type: String, name: LegSymbol}
       - name: side
         type: int32
         description: The side of this individual leg (multileg security). See Side (54) field for description and values
-        fix: {tag: '624', type: char, name: LegSide, display: LegSide}
+        fix: {tag: '624', type: char, name: LegSide}
         enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
       - name: ratio
         type: double
         nullable: true
         description: The ratio of quantity for this individual leg relative to the entire multileg security.
-        fix: {tag: '623', type: float, name: LegRatioQty, display: LegRatioQty}
+        fix: {tag: '623', type: float, name: LegRatioQty}
       - name: kind
         type: int64
         description: What the leg settles as, read from `LegCFICode <608>` or `LegSecurityType <609>`.
-        fix: {display: Kind}
         enum: {name: AssetKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","4846246242730115072":"CASH","4994867235166683136":"EQUITY","4919411096516820992":"DEBT","5068043009640103936":"FUND","4851874686865130329":"CURRENCY","4850180317955512576":"COMMODITY","5282234477571997696":"INDEX","4919428642901065728":"DERIVATIVE","5068049681104568320":"FUTURE","5715160600973017088":"OPTION","6005340439975034880":"SWAP","6287397068022371328":"WARRANT","5066358640526640128":"FORWARD","6004514729347007488":"STRUCTURED","6003388760686067712":"SPREAD","5572444038831555911":"MULTILEG","4774188662740221952":"BASKET","5064665298347705600":"FINANCING","5928232784735764480":"REPO","5498685473305919488":"LOAN"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"COMMODITY":"COMMDTY","DERIVATIVE":"DERIV","FINANCING":"FINANCE","STRUCTURED":"STRUCTD"}'}
       - name: securityid
         type: string
         nullable: true
         description: Multileg instrument's individual security's SecurityID. See SecurityID (48) field for description
-        fix: {tag: '602', type: String, name: LegSecurityID, display: LegSecurityID}
+        fix: {tag: '602', type: String, name: LegSecurityID}
       - name: securityidsource
         type: string
         nullable: true
         description: Multileg instrument's individual security's SecurityIDSource. See SecurityIDSource (22) field for description
-        fix: {tag: '603', type: String, name: LegSecurityIDSource, display: LegSecurityIDSource}
+        fix: {tag: '603', type: String, name: LegSecurityIDSource}
       - name: cficode
         type: string
         nullable: true
         description: Multileg instrument's individual security's CFICode. See CFICode (461) field for description
-        fix: {tag: '608', type: String, name: LegCFICode, display: LegCFICode}
+        fix: {tag: '608', type: String, name: LegCFICode}
       - name: securitytype
         type: string
         nullable: true
         description: Refer to definition of SecurityType(167)
-        fix: {tag: '609', type: String, name: LegSecurityType, display: LegSecurityType}
+        fix: {tag: '609', type: String, name: LegSecurityType}
       - name: securityexchange
         type: string
         nullable: true
         description: Multileg instrument's individual security's SecurityExchange. See SecurityExchange (207) field for description
-        fix: {tag: '616', type: Exchange, name: LegSecurityExchange, display: LegSecurityExchange}
+        fix: {tag: '616', type: Exchange, name: LegSecurityExchange}
       - name: currency
         type: int32
         nullable: true
         description: Currency associated with a particular Leg's quantity
-        fix: {tag: '556', type: Currency, name: LegCurrency, display: LegCurrency}
+        fix: {tag: '556', type: Currency, name: LegCurrency}
         enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
       - name: contractmultiplier
         type: double
         nullable: true
         description: Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier (23) field for description
-        fix: {tag: '614', type: float, name: LegContractMultiplier, display: LegContractMultiplier}
+        fix: {tag: '614', type: float, name: LegContractMultiplier}
       - name: maturitydate
         type: timestamp[us]
         nullable: true
         description: Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description
-        fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate, display: LegMaturityDate}
+        fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate}
       - name: strikeprice
         type: double
         nullable: true
         description: Multileg instrument's individual security's StrikePrice. See StrikePrice (202) field for description
-        fix: {tag: '612', type: Price, name: LegStrikePrice, display: LegStrikePrice}
+        fix: {tag: '612', type: Price, name: LegStrikePrice}
       - name: putorcall
         type: int64
         description: Refer to definition of PutOrCall(201)
-        fix: {tag: '1358', type: int, name: LegPutOrCall, display: LegPutOrCall}
+        fix: {tag: '1358', type: int, name: LegPutOrCall}
         enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}

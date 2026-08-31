@@ -12,7 +12,9 @@
    "component": "ApplicationMessageRequest",
    "msgtype": "BW",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

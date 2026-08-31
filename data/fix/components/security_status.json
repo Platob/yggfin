@@ -16,7 +16,9 @@
    "component": "SecurityStatus",
    "msgtype": "f",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

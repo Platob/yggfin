@@ -11,7 +11,9 @@
    "component": "PartyRiskLimitsUpdateReport",
    "msgtype": "CR",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

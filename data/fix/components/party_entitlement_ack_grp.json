@@ -10,8 +10,12 @@
   "fix": {
    "component": "PartyEntitlementAckGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyEntitlementsDefinitionRequestAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyEntitlementsDefinitionRequestAck"
+   ]
   },
   "fields": [
    {

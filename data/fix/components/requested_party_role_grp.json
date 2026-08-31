@@ -10,8 +10,14 @@
   "fix": {
    "component": "RequestedPartyRoleGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyDetailsListRequest\",\"PartyEntitlementsRequest\",\"PartyRiskLimitsRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyDetailsListRequest",
+    "PartyEntitlementsRequest",
+    "PartyRiskLimitsRequest"
+   ]
   },
   "fields": [
    {

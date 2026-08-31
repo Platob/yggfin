@@ -7,7 +7,7 @@ import datetime
 import pyarrow
 import pytest
 
-from rekep.fields import DISPLAY
+from rekep.enums import Currency
 from rekep.fix.columns import ENTRIES
 from rekep.fix.components import (
     LEGS,
@@ -683,12 +683,15 @@ def test_a_leg_is_the_exact_fix_named_shape() -> None:
     assert field.field("symbol").metadata["fix:tag"] == "600", (
         "the generic name, and the leg's own tag under it"
     )
-    assert field.field("symbol").metadata[DISPLAY] == "LegSymbol"
+    assert field.field("symbol").fix.name == "LegSymbol"
     assert field.field("maturitydate").dtype == pyarrow.timestamp("us"), (
         "a LocalMktDate is the instant the day begins, in a zone the message never names"
     )
     assert field.field("ratioqty").dtype == pyarrow.float64()
     assert field.field("putorcall").dtype == pyarrow.int32()
+    assert field.field("currency").dtype == pyarrow.int32()
+    assert field.field("currency").fix.type == "Currency"
+    assert Leg(currency=" usd ").currency is Currency.USD
     assert LEGS.value_field.nullable is False
 
 
@@ -744,7 +747,11 @@ def test_legs_resolve_through_the_shared_instrument_leg_component() -> None:
     assert (first["symbol"], first["side"], first["ratioqty"]) == ("AAPL", "1", 1.0)
     assert first["maturitydate"] == datetime.datetime(2027, 1, 15)
     assert first["strikeprice"] == 150.5
-    assert (second["symbol"], second["side"], second["currency"]) == ("MSFT", "2", "USD")
+    assert (second["symbol"], second["side"], second["currency"]) == (
+        "MSFT",
+        "2",
+        int(Currency.USD),
+    )
     assert _pairs(residual.to_pylist()[0]) == [(55, "SPREAD"), (10, "000")]
 
 

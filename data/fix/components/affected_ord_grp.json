@@ -13,8 +13,13 @@
   "fix": {
    "component": "AffectedOrdGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"OrderMassActionReport\",\"OrderMassCancelReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "OrderMassActionReport",
+    "OrderMassCancelReport"
+   ]
   },
   "fields": [
    {

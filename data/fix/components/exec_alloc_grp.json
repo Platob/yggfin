@@ -13,8 +13,15 @@
   "fix": {
    "component": "ExecAllocGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "Confirmation"
+   ]
   },
   "fields": [
    {

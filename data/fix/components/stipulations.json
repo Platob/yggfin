@@ -14,8 +14,39 @@
   "fix": {
    "component": "Stipulations",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"IOI\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteRequest\",\"QuoteRequestReject\",\"QuoteResponse\",\"QuoteStatusReport\",\"SecurityDefinition\",\"SecurityDefinitionRequest\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "CollateralAssignment",
+    "CollateralInquiry",
+    "CollateralReport",
+    "CollateralRequest",
+    "CollateralResponse",
+    "Confirmation",
+    "CrossOrderCancelReplaceRequest",
+    "ExecutionReport",
+    "IOI",
+    "NewOrderCross",
+    "NewOrderList",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote",
+    "QuoteRequest",
+    "QuoteRequestReject",
+    "QuoteResponse",
+    "QuoteStatusReport",
+    "SecurityDefinition",
+    "SecurityDefinitionRequest",
+    "SecurityDefinitionUpdateReport",
+    "SecurityList",
+    "SecurityListUpdateReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

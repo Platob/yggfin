@@ -15,7 +15,9 @@
    "component": "TradeCaptureReportRequest",
    "msgtype": "AD",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

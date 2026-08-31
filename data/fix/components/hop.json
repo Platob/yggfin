@@ -10,7 +10,9 @@
   "fix": {
    "component": "Hop",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

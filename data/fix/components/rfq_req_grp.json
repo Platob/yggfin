@@ -13,8 +13,12 @@
   "fix": {
    "component": "RFQReqGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"RFQRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "RFQRequest"
+   ]
   },
   "fields": [
    {

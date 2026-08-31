@@ -10,8 +10,20 @@
   "fix": {
    "component": "OrderAttributeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport",
+    "MultilegOrderCancelReplace",
+    "NewOrderList",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

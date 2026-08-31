@@ -10,8 +10,13 @@
   "fix": {
    "component": "RelatedMarketSegmentGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDefinition\",\"MarketDefinitionUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport"
+   ]
   },
   "fields": [
    {

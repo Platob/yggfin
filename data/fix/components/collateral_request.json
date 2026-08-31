@@ -14,7 +14,9 @@
    "component": "CollateralRequest",
    "msgtype": "AX",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -1,7 +1,7 @@
 # Execution
 
 One fill, correction or cancellation reported against an order. `lastqty` and
-`price` are that report's own `LastQty <32>` and `LastPx <31>`, not the
+`lastpx` are that report's own `LastQty <32>` and `LastPx <31>`, not the
 order's running totals.
 
 ```python
@@ -18,7 +18,7 @@ execution = [
 ][0]
 print(
     execution.lastqty,
-    execution.price,
+    execution.lastpx,
     execution.execid,
     execution.orderid,
     execution.codesource,

@@ -65,8 +65,13 @@ def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:
     checkout = next(
         step for step in job["steps"] if step.get("uses", "").startswith("actions/checkout@")
     )
+    assert checkout["uses"] == ("actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1")
     assert "refs/pull/{0}/merge" in checkout["with"]["ref"]
     assert checkout["with"]["persist-credentials"] == "false"
+    setup = next(
+        step for step in job["steps"] if step.get("uses", "").startswith("astral-sh/setup-uv@")
+    )
+    assert setup["uses"] == "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d"
 
     commands = [step["run"] for step in job["steps"] if "run" in step]
     assert any("pytest -q -m integration" in command for command in commands)

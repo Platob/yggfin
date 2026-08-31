@@ -164,7 +164,6 @@ def test_a_field_holds_a_name_a_type_and_metadata() -> None:
     assert member.dtype == pyarrow.string()
     assert member.metadata == {
         "description": "ISO 10383 market identifier.",
-        "fix:display": "MIC",
     }
     assert member.description == "ISO 10383 market identifier."
 
@@ -315,7 +314,6 @@ def test_a_dump_nests_rather_than_flattening() -> None:
         "name": "size",
         "type": "int32",
         "metadata": {"unit": "lots"},
-        "fix": {"display": "Size"},
     }
     assert by_name["root"]["nullable"] is True
     assert by_name["venues"]["item"]["type"] == "struct", "a list shows its item"

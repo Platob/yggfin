@@ -10,8 +10,12 @@
   "fix": {
    "component": "FundingSourceGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CollateralReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CollateralReport"
+   ]
   },
   "fields": [
    {

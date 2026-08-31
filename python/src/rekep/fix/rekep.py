@@ -9,7 +9,7 @@ import pyarrow
 
 from rekep.entries import ENTRIES
 from rekep.fields import Field
-from rekep.fix.entries import ANY_VERSION, ComponentRecord
+from rekep.fix.entries import ANY_VERSION, ComponentRecord, record_copy
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import block, field_member, reference_member
 
@@ -24,139 +24,182 @@ REKEP_TAG_OFFSET = 30000
 # Package fields use ordinary FIX names. A custom tag is already a complete
 # identity, so a namespace in its name would give one field two identities.
 
-REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
-    ("unix", "Unix", "int64", "Unix", "Event time in whole nanoseconds since the epoch."),
+REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str], ...] = (
+    ("unix", "Unix", "int64", "Event time in whole nanoseconds since the epoch."),
     (
         "unixpartition",
         "UnixPartition",
         "int32",
-        "UnixPartition",
         "Hour boundary of `unix` in whole epoch seconds.",
     ),
     (
         "eventtype",
         "MarketEventType",
         "int64",
-        "MarketEventType",
         "Packed rekep event-kind code.",
     ),
     (
         "creaunix",
         "CreaUnix",
         "int64",
-        "CreaUnix",
         "Creation time in whole nanoseconds since the epoch.",
     ),
     (
         "recunix",
         "RecUnix",
         "int64",
-        "RecUnix",
         "Recording time in whole nanoseconds since the epoch.",
     ),
     (
         "expunix",
         "ExpUnix",
         "int64",
-        "ExpUnix",
         "Expiry time in whole nanoseconds since the epoch.",
     ),
     (
         "snapunix",
         "SnapUnix",
         "int64",
-        "SnapUnix",
         "Source event time for a snapshot in whole epoch nanoseconds.",
     ),
-    ("hash", "Hash", "String", "Hash", "Time-anchored composition of `unix` and `vhash`."),
-    ("vhash", "VHash", "int64", "ValueHash", "Clock-free XXH3-64 value digest."),
+    ("hash", "Hash", "String", "Time-anchored composition of `unix` and `vhash`."),
+    ("vhash", "VHash", "int64", "Clock-free XXH3-64 value digest."),
     (
         "xhash",
         "XHash",
         "String",
-        "XHash",
-        "Creation-time composition of `creaunix` and the XXH3-64 `code` digest.",
+        "Direct XXH3-128 digest of the UTF-8 `code`.",
     ),
     (
         "prevhash",
         "PrevHash",
         "String",
-        "PrevHash",
         "Hash of the preceding lifecycle version.",
     ),
     (
         "prevunix",
         "PrevUnix",
         "int64",
-        "PrevUnix",
         "Event time of the preceding lifecycle version.",
     ),
     (
         "parenthash",
         "ParentHash",
         "String",
-        "ParentHash",
         "Ordered hashes of source events.",
     ),
     (
-        "linkxhashes",
-        "LinkXHashes",
+        "linkhashes",
+        "LinkHashes",
         "MultipleValueString",
-        "LinkXHashes",
-        "Ordered lifecycle hashes of related events.",
+        "Ordered exact hashes of related events.",
     ),
-    ("version", "Version", "int64", "Version", "Zero-based lifecycle version number."),
-    ("state", "State", "int64", "State", "Packed ranked lifecycle state."),
-    ("code", "Code", "String", "Code", "Readable lifecycle identifier."),
+    ("version", "Version", "int64", "Zero-based lifecycle version number."),
+    ("state", "State", "int64", "Packed ranked lifecycle state."),
+    ("code", "Code", "String", "Readable lifecycle identifier."),
     (
         "altids",
         "AltIDs",
         "String",
-        "AltIDs",
         "Other identifiers keyed by scheme or lifecycle field.",
     ),
-    ("mic", "MIC", "int32", "MIC", "ISO 10383 market identifier code."),
     (
         "reason",
         "Reason",
         "String",
-        "Reason",
         "Reason the event was rejected or could not be interpreted.",
     ),
     (
         "symbolticker",
         "SymbolTicker",
         "String",
-        "SymbolTicker",
         "Canonical instrument spelling.",
     ),
     (
         "unmap",
         "Unmap",
         "String",
-        "Unmapped",
         "Payload entries the registry did not resolve; null when all resolved.",
     ),
-    ("pxunit", "PxUnit", "String", "PxUnit", "Unit in which `price` is expressed."),
-    ("qtyunit", "QtyUnit", "String", "QtyUnit", "Unit in which `lastqty` is expressed."),
+    ("pxunit", "PxUnit", "String", "Unit in which `lastpx` is expressed."),
+    ("qtyunit", "QtyUnit", "String", "Unit in which `lastqty` is expressed."),
     (
         "notional",
         "Notional",
         "double",
-        "Notional",
-        "Producer-computed `price * lastqty * multiplier`.",
+        "Producer-computed `lastpx * lastqty * multiplier`.",
     ),
     (
         "codesource",
         "CodeSource",
         "String",
-        "CodeSource",
         "Field whose value supplied the readable lifecycle identifier.",
+    ),
+    (
+        "lastshares",
+        "LastShares",
+        "double",
+        "Vendor-reported share quantity, distinct from `LastQty <32>`.",
+    ),
+    (
+        "marketmarker",
+        "MarketMarker",
+        "Boolean",
+        "Whether the source marks the row as market activity.",
+    ),
+    (
+        "globalorderid",
+        "GlobalOrderId",
+        "String",
+        "Order identifier shared across source systems.",
+    ),
+    (
+        "creationtime",
+        "CreationTime",
+        "UTCTimestamp",
+        "Lifecycle creation timestamp expressed in UTC.",
+    ),
+    ("env", "Env", "String", "Source environment name."),
+    (
+        "rootorderid",
+        "RootOrderId",
+        "String",
+        "Identifier of the root order in the lifecycle.",
+    ),
+    (
+        "rootoriginatororderid",
+        "RootOriginatorOrderId",
+        "String",
+        "Originator identifier of the root order.",
+    ),
+    (
+        "orderflags",
+        "OrderFlags",
+        "String",
+        "Source flags attached to the order.",
+    ),
+    (
+        "orderoriginatorid",
+        "OrderOriginatorId",
+        "String",
+        "Identifier of the order's originating participant.",
+    ),
+    (
+        "conversationid",
+        "ConversationId",
+        "String",
+        "Identifier shared by messages in one conversation.",
+    ),
+    (
+        "bloombergcode",
+        "BloombergCode",
+        "String",
+        "Bloomberg identifier supplied by the source bridge.",
     ),
 )
 
 # Tags are written out because removing a field must not renumber every field
-# after it. Price and LastQty use FIX's existing tags 44 and 32, leaving the
+# after it. LastPx and LastQty use FIX's existing tags 31 and 32, leaving the
 # retired package slots 30022 and 30023 empty.
 REKEP_TAGS: Mapping[str, int] = MappingProxyType(
     {
@@ -173,12 +216,11 @@ REKEP_TAGS: Mapping[str, int] = MappingProxyType(
         "prevhash": 30010,
         "prevunix": 30011,
         "parenthash": 30012,
-        "linkxhashes": 30013,
+        "linkhashes": 30013,
         "version": 30014,
         "state": 30015,
         "code": 30016,
         "altids": 30017,
-        "mic": 30018,
         "reason": 30019,
         "symbolticker": 30020,
         "unmap": 30021,
@@ -186,6 +228,17 @@ REKEP_TAGS: Mapping[str, int] = MappingProxyType(
         "qtyunit": 30025,
         "notional": 30026,
         "codesource": 30027,
+        "lastshares": 30028,
+        "marketmarker": 30029,
+        "globalorderid": 30030,
+        "creationtime": 30031,
+        "env": 30032,
+        "rootorderid": 30033,
+        "rootoriginatororderid": 30034,
+        "orderflags": 30035,
+        "orderoriginatorid": 30036,
+        "conversationid": 30037,
+        "bloombergcode": 30038,
     }
 )
 
@@ -195,7 +248,7 @@ _REKEP_DTYPES: Mapping[str, pyarrow.DataType] = MappingProxyType(
         "xhash": pyarrow.binary(16),
         "prevhash": pyarrow.binary(16),
         "parenthash": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
-        "linkxhashes": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
+        "linkhashes": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
         "altids": pyarrow.map_(
             pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
         ),
@@ -218,12 +271,14 @@ REKEP_COMPONENT_NAMES: tuple[str, ...] = (
 )
 
 _HEADER_COLUMNS = (
-    *(column for column, *_ in REKEP_FIELD_DECLARATIONS[:20]),
+    *(column for column, *_ in REKEP_FIELD_DECLARATIONS[:18]),
+    "lastmkt",
+    "reason",
     "codesource",
 )
 _MARKET_COLUMNS = ("pxunit", "qtyunit", "notional")
 _OPTIONAL_HEADER_COLUMNS = frozenset(
-    {"expunix", "snapunix", "prevhash", "prevunix", "parenthash", "mic", "reason"}
+    {"expunix", "snapunix", "prevhash", "prevunix", "parenthash", "reason"}
 )
 _REQUIRED_MARKET_COLUMNS = frozenset({"pxunit", "qtyunit"})
 
@@ -231,6 +286,37 @@ _REQUIRED_MARKET_COLUMNS = frozenset({"pxunit", "qtyunit"})
 def register_rekep(registry: FixRegistry) -> FixRegistry:
     """Ensure one registry holds rekep's wildcard-version FIX vocabulary."""
     records = dict(registry.field_records())
+    lastqty = records.get("LastQty")
+    if lastqty is not None and any(
+        alias.folded == "lastshares" for alias in lastqty.fix.named_aliases
+    ):
+        # `LastShares` was tag 32's pre-4.3 name. The package field is a
+        # distinct vendor quantity, and retaining that alias would make one
+        # spelling claim two identities.
+        lastqty = record_copy(lastqty)
+        lastqty.fix.named_aliases = tuple(
+            alias for alias in lastqty.fix.named_aliases if alias.folded != "lastshares"
+        )
+        registry.update_field(lastqty)
+        records["LastQty"] = lastqty
+    lastmkt = records.get("LastMkt")
+    expected_lastmkt = _lastmkt_field(lastmkt)
+    if lastmkt is None:
+        registry.add_field(expected_lastmkt)
+    elif lastmkt.into_dict() != expected_lastmkt.into_dict():
+        registry.update_field(expected_lastmkt)
+    records["LastMkt"] = expected_lastmkt
+    for name, tag, description in (
+        ("SettlCurrency", 120, "Currency code of settlement denomination."),
+        ("LegCurrency", 556, "Currency code in which the leg is priced."),
+    ):
+        held = records.get(name)
+        expected = _currency_field(held, name, tag, description)
+        if held is None:
+            registry.add_field(expected)
+        elif held.into_dict() != expected.into_dict():
+            registry.update_field(expected)
+        records[name] = expected
     tagged = {entry.fix.tag: entry for entry in records.values() if entry.fix.tag is not None}
     for declared in REKEP_FIELD_DECLARATIONS:
         expected = _field(declared)
@@ -264,6 +350,18 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
 def rekep_is_registered(registry: FixRegistry) -> bool:
     """Whether every package-owned declaration is already exact."""
     records = registry.field_records()
+    lastqty = records.get("LastQty")
+    if lastqty is not None and any(
+        alias.folded == "lastshares" for alias in lastqty.fix.named_aliases
+    ):
+        return False
+    lastmkt = records.get("LastMkt")
+    if lastmkt is None or lastmkt.dtype != pyarrow.int32() or lastmkt.fix.tag != 30:
+        return False
+    for name, tag in (("SettlCurrency", 120), ("LegCurrency", 556)):
+        currency = records.get(name)
+        if currency is None or currency.dtype != pyarrow.int32() or currency.fix.tag != tag:
+            return False
     tagged = {entry.fix.tag: entry for entry in records.values() if entry.fix.tag is not None}
     for declared in REKEP_FIELD_DECLARATIONS:
         expected = _field(declared)
@@ -279,9 +377,9 @@ def rekep_is_registered(registry: FixRegistry) -> bool:
     return True
 
 
-def _field(declared: tuple[str, str, str, str, str]) -> Field:
+def _field(declared: tuple[str, str, str, str]) -> Field:
     """One package-owned field record from its frozen declaration."""
-    column, name, datatype, display, description = declared
+    column, name, datatype, description = declared
     built = fix_field(
         name,
         REKEP_TAGS[column],
@@ -290,7 +388,6 @@ def _field(declared: tuple[str, str, str, str, str]) -> Field:
     )
     built.fix.versions = (ANY_VERSION,)
     built.fix.column = column
-    built.fix.display = display
     if column in _REKEP_DTYPES:
         built = Field(
             name=built.name,
@@ -298,6 +395,43 @@ def _field(declared: tuple[str, str, str, str, str]) -> Field:
             nullable=built.nullable,
             metadata=built.metadata,
         )
+    return built
+
+
+def _lastmkt_field(held: Field | None) -> Field:
+    """The standard LastMkt identity with the market model's packed MIC storage."""
+    built = (
+        record_copy(held)
+        if held is not None
+        else fix_field(
+            "LastMkt",
+            30,
+            "Exchange",
+            description="Market of the last fill or routed order.",
+        )
+    )
+    built.dtype = pyarrow.int32()
+    if held is None:
+        built.fix.versions = (ANY_VERSION,)
+    return built
+
+
+def _currency_field(held: Field | None, name: str, tag: int, description: str) -> Field:
+    """A standard FIX Currency identity with packed Currency storage."""
+    built = (
+        record_copy(held)
+        if held is not None
+        else fix_field(
+            name,
+            tag,
+            "Currency",
+            description=description,
+        )
+    )
+    built.dtype = pyarrow.int32()
+    built.fix.type = "Currency"
+    if held is None:
+        built.fix.versions = (ANY_VERSION,)
     return built
 
 
@@ -314,7 +448,9 @@ def _component_records() -> tuple[ComponentRecord, ...]:
         declaration=block(
             "RekepHeader",
             tuple(
-                _member(column, required=column not in _OPTIONAL_HEADER_COLUMNS)
+                field_member("LastMkt", 30)
+                if column == "lastmkt"
+                else _member(column, required=column not in _OPTIONAL_HEADER_COLUMNS)
                 for column in _HEADER_COLUMNS
             ),
         ),
@@ -325,7 +461,7 @@ def _component_records() -> tuple[ComponentRecord, ...]:
         declaration=block(
             "RekepMarket",
             (
-                field_member("Price", 44),
+                field_member("LastPx", 31),
                 field_member("LastQty", 32),
                 *(
                     _member(column, required=column in _REQUIRED_MARKET_COLUMNS)
@@ -349,7 +485,7 @@ def _member(column: str, *, required: bool = False) -> Field:
     """One custom tagged field in a component declaration."""
     name = next(
         name
-        for declared, name, _type, _display, _description in REKEP_FIELD_DECLARATIONS
+        for declared, name, _type, _description in REKEP_FIELD_DECLARATIONS
         if declared == column
     )
     return field_member(name, REKEP_TAGS[column], required=required)

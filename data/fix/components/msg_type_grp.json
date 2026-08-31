@@ -13,7 +13,9 @@
   "fix": {
    "component": "MsgTypeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

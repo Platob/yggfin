@@ -11,8 +11,14 @@
   "fix": {
    "component": "DerivativeSecurityAltIDGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListRequest\",\"DerivativeSecurityListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList",
+    "DerivativeSecurityListRequest",
+    "DerivativeSecurityListUpdateReport"
+   ]
   },
   "fields": [
    {

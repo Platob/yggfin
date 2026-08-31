@@ -10,8 +10,19 @@
   "fix": {
    "component": "QuoteSizeRuleGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"DerivativeSecurityList\",\"DerivativeSecurityListUpdateReport\",\"MarketDefinition\",\"MarketDefinitionUpdateReport\",\"SecurityDefinition\",\"SecurityDefinitionUpdateReport\",\"SecurityList\",\"SecurityListUpdateReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "DerivativeSecurityList",
+    "DerivativeSecurityListUpdateReport",
+    "MarketDefinition",
+    "MarketDefinitionUpdateReport",
+    "SecurityDefinition",
+    "SecurityDefinitionUpdateReport",
+    "SecurityList",
+    "SecurityListUpdateReport"
+   ]
   },
   "fields": [
    {

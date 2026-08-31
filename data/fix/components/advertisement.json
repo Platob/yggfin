@@ -18,7 +18,9 @@
    "component": "Advertisement",
    "msgtype": "7",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

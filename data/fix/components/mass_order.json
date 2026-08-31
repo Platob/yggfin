@@ -11,7 +11,9 @@
    "component": "MassOrder",
    "msgtype": "DJ",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

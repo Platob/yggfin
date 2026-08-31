@@ -10,8 +10,12 @@
   "fix": {
    "component": "PayCollectGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AccountSummaryReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AccountSummaryReport"
+   ]
   },
   "fields": [
    {

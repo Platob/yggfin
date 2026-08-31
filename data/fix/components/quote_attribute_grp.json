@@ -10,8 +10,14 @@
   "fix": {
    "component": "QuoteAttributeGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"Quote\",\"QuoteAck\",\"QuoteStatusReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "Quote",
+    "QuoteAck",
+    "QuoteStatusReport"
+   ]
   },
   "fields": [
    {

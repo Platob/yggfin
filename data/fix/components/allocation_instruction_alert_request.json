@@ -11,7 +11,9 @@
    "component": "AllocationInstructionAlertRequest",
    "msgtype": "DU",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

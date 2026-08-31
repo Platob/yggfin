@@ -13,6 +13,7 @@ from typing import Any, Self
 
 import pyarrow.fs
 
+from rekep.arrow_path import ArrowPath
 from rekep.urls import HTTP, Url
 
 # Raw bytes moved from an object store are copied in the same request-sized
@@ -25,20 +26,28 @@ class _ArrowFile:
     """One path on an Arrow filesystem, with the small input-file contract we use."""
 
     def __init__(self, location: str, path: str, filesystem: pyarrow.fs.FileSystem) -> None:
-        self.location = location
-        self._path = path
-        self._filesystem = filesystem
+        self.arrow_path = ArrowPath(location, filesystem, filesystem_path=path)
+
+    @property
+    def location(self) -> str:
+        return self.arrow_path.location
+
+    @property
+    def _path(self) -> str:
+        return self.arrow_path.path
+
+    @property
+    def _filesystem(self) -> pyarrow.fs.FileSystem:
+        return self.arrow_path.filesystem
 
     def open(self, seekable: bool = True) -> pyarrow.NativeFile:
-        if seekable:
-            return self._filesystem.open_input_file(self._path)
-        return self._filesystem.open_input_stream(self._path)
+        return self.arrow_path.open_input(seekable=seekable)
 
     def exists(self) -> bool:
-        return self._filesystem.get_file_info(self._path).type == pyarrow.fs.FileType.File
+        return self.arrow_path.is_file()
 
     def __len__(self) -> int:
-        info = self._filesystem.get_file_info(self._path)
+        info = self.arrow_path.info()
         if info.type == pyarrow.fs.FileType.NotFound:
             raise FileNotFoundError(self.location)
         return info.size
@@ -122,7 +131,7 @@ class ArrowFile:
             filesystem, path = resolve(location)
         else:
             path = location
-        return _ArrowFile(location=path, path=path, filesystem=filesystem)
+        return _ArrowFile(location=location, path=path, filesystem=filesystem)
 
     def _spawn(self, opened: Any, *, temporary: bool) -> Self:
         return type(self)(opened=opened, temporary=temporary)
@@ -133,6 +142,7 @@ class ArrowFile:
             raise ValueError("ArrowFile is not bound to a file")
         self._close_stream()
         parts = openable_parts(self.opened)
+        owned = getattr(self.opened, "arrow_path", None)
         if parts is None and not hasattr(self.opened, "open"):
             raw = self.opened
             stream = raw if compression is None else pyarrow.CompressedInputStream(raw, compression)
@@ -143,7 +153,8 @@ class ArrowFile:
             stream = pyarrow.CompressedInputStream(raw, compression)
         else:
             filesystem, path = parts
-            stream = filesystem.open_input_stream(path, compression=compression)
+            resource = owned if isinstance(owned, ArrowPath) else ArrowPath(path, filesystem)
+            stream = resource.open_input_stream(compression=compression)
         self.__dict__["_stream"] = stream
         return stream
 
@@ -196,10 +207,7 @@ class ArrowFile:
         parts = openable_parts(self.opened)
         if parts is not None:
             filesystem, path = parts
-            try:
-                filesystem.delete_file(path)
-            except FileNotFoundError:
-                pass
+            ArrowPath(path, filesystem).delete()
         self._temporary_deleted = True
 
     def __enter__(self) -> Self:
@@ -234,8 +242,17 @@ def read_bytes(
         filesystem, path = resolve(location)
     else:
         path = location
-    with filesystem.open_input_stream(path) as stream:
-        return stream.read()
+    resource = ArrowPath(
+        location,
+        filesystem,
+        filesystem_path=path,
+    )
+    # This helper predates missing-safe reads: its source stays required, and
+    # it keeps Arrow's suffix codec detection.
+    payload = resource.read_bytes(strict=True, compression="detect")
+    if payload is None:  # pragma: no cover - `strict=True` raises instead
+        raise FileNotFoundError(location)
+    return payload
 
 
 def write_bytes(
@@ -252,11 +269,7 @@ def write_bytes(
         filesystem, path = resolve(location)
     else:
         path = location
-    parent = path.rpartition("/")[0]
-    if parent:
-        filesystem.create_dir(parent, recursive=True)
-    with filesystem.open_output_stream(path) as stream:
-        stream.write(payload)
+    ArrowPath(location, filesystem, filesystem_path=path).write_bytes(payload)
     return path
 
 
@@ -290,7 +303,8 @@ def spill_path(
     if local_path is not None:
         return local_path
 
-    info = filesystem.get_file_info(path)
+    source_path = ArrowPath(location, filesystem, filesystem_path=path)
+    info = source_path.info()
     if info.type == pyarrow.fs.FileType.NotFound:
         return None
     if info.type != pyarrow.fs.FileType.File:
@@ -303,7 +317,7 @@ def spill_path(
     target = directory / f"{digest}{suffix}"
     local_filesystem = pyarrow.fs.LocalFileSystem()
     if not temporary:
-        cached = local_filesystem.get_file_info(os.fspath(target))
+        cached = ArrowPath(target, local_filesystem).info()
         if info.size >= 0 and cached.type == pyarrow.fs.FileType.File and cached.size == info.size:
             return os.fspath(target)
 
@@ -322,7 +336,7 @@ def spill_path(
             chunk_size=SPILL_COPY_BYTE_SIZE,
             use_threads=False,
         )
-        copied = local_filesystem.get_file_info(os.fspath(scratch))
+        copied = ArrowPath(scratch, local_filesystem).info()
         if copied.type != pyarrow.fs.FileType.File or (info.size >= 0 and copied.size != info.size):
             raise OSError(f"spill of {location!r} copied {copied.size} bytes; expected {info.size}")
         if temporary:
@@ -341,6 +355,9 @@ def openable_parts(opened: Any | None) -> tuple[pyarrow.fs.FileSystem, str] | No
     """
     while opened is not None and hasattr(opened, "_inner"):
         opened = opened._inner
+    owned = getattr(opened, "arrow_path", None)
+    if isinstance(owned, ArrowPath):
+        return owned.filesystem, owned.path
     filesystem = getattr(opened, "_filesystem", None)
     path = getattr(opened, "_path", None)
     if isinstance(filesystem, pyarrow.fs.FileSystem) and isinstance(path, str):

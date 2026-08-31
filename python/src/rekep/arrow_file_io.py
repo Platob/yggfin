@@ -16,10 +16,11 @@ from typing import Any
 
 import pyarrow
 from pyiceberg.io import FileIO, InputFile, InputStream, OutputFile, OutputStream
-from pyiceberg.io.pyarrow import PyArrowFile, PyArrowFileIO
+from pyiceberg.io.pyarrow import BUFFER_SIZE, ONE_MEGABYTE, PyArrowFileIO
 from pyiceberg.typedef import EMPTY_DICT, Properties
 
-from rekep.filesystems import ArrowFile
+from rekep.arrow_path import ArrowPath
+from rekep.filesystems import ArrowFile, openable_parts
 from rekep.urls import S3, Url, s3_environment
 
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
@@ -212,9 +213,9 @@ class TrackedFileIO(FileIO):
         return getattr(self.delegate, name)
 
 
-def _immutable(location: str) -> bool:
+def _immutable(location: str | ArrowPath) -> bool:
     """Whether Iceberg promises never to rewrite the file at `location`."""
-    name = Url.from_string(location).name
+    name = location.name if isinstance(location, ArrowPath) else Url.from_string(location).name
     return name.endswith(".avro") or bool(_VERSIONED.match(name))
 
 
@@ -521,9 +522,66 @@ def inferred_properties(properties: Properties, *, locations: Iterable[str] = ()
     return {**environment, **normalized}
 
 
+class _ArrowPathFile(InputFile, OutputFile):
+    """PyIceberg's file protocol over one `ArrowPath`."""
+
+    def __init__(self, arrow_path: ArrowPath, buffer_size: int) -> None:
+        self.arrow_path = arrow_path
+        self._buffer_size = buffer_size
+        super().__init__(location=arrow_path.uri)
+
+    @property
+    def _filesystem(self) -> pyarrow.fs.FileSystem:
+        return self.arrow_path.filesystem
+
+    @property
+    def _path(self) -> str:
+        return self.arrow_path.path
+
+    def __len__(self) -> int:
+        info = self.arrow_path.info()
+        if info.type == pyarrow.fs.FileType.NotFound:
+            raise FileNotFoundError(self.location)
+        return info.size
+
+    def exists(self) -> bool:
+        return self.arrow_path.exists()
+
+    def open(self, seekable: bool = True) -> InputStream:
+        return self.arrow_path.open_input(
+            seekable=seekable,
+            buffer_size=self._buffer_size,
+        )
+
+    def create(self, overwrite: bool = False) -> OutputStream:
+        return self.arrow_path.open_output(
+            overwrite=overwrite,
+            buffer_size=self._buffer_size,
+        )
+
+    def to_input_file(self) -> _ArrowPathFile:
+        return self
+
+
+def _arrow_path_of(opened: InputFile | ArrowPath) -> ArrowPath:
+    """The path behind an Arrow or cached PyIceberg input handle."""
+    if isinstance(opened, ArrowPath):
+        return opened
+    current: Any = opened
+    while hasattr(current, "_inner"):
+        current = current._inner
+    owned = getattr(current, "arrow_path", None)
+    if isinstance(owned, ArrowPath):
+        return owned
+    parts = openable_parts(current)
+    if parts is None:
+        raise TypeError(f"{type(opened).__name__} does not expose an Arrow filesystem")
+    filesystem, path = parts
+    return ArrowPath(opened.location, filesystem, filesystem_path=path)
+
+
 class ArrowFileIO(ArrowFile, PyArrowFileIO):
-    """`PyArrowFileIO` whose locations are read the way this package reads every location, and
-    whose immutable metadata is fetched once."""
+    """Iceberg FileIO whose bound-file state is one `ArrowPath`."""
 
     def __init__(
         self,
@@ -531,7 +589,7 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         *,
         location: str | os.PathLike[str] | None = None,
         filesystem: pyarrow.fs.FileSystem | None = None,
-        opened: InputFile | None = None,
+        opened: InputFile | ArrowPath | None = None,
         temporary: bool = False,
     ) -> None:
         PyArrowFileIO.__init__(self, properties=inferred_properties(properties))
@@ -549,9 +607,27 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
             self,
             location=location,
             filesystem=filesystem,
-            opened=opened,
+            opened=None if opened is None else _arrow_path_of(opened),
             temporary=temporary,
         )
+
+    @property
+    def opened(self) -> ArrowPath | None:
+        """The bound Arrow path; None leaves this instance a catalog factory."""
+        return getattr(self, "_arrow_path", None)
+
+    @opened.setter
+    def opened(self, value: ArrowPath | None) -> None:
+        self._arrow_path = value
+
+    @property
+    def arrow_path(self) -> ArrowPath | None:
+        """The one object owning bound URL and filesystem state."""
+        return self.opened
+
+    @property
+    def _buffer_size(self) -> int:
+        return int(self.properties.get(BUFFER_SIZE, ONE_MEGABYTE))
 
     @staticmethod
     def parse_location(location: str, properties: Properties = EMPTY_DICT) -> tuple[str, str, str]:
@@ -565,16 +641,40 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
 
     def _new_openable(
         self, location: str, filesystem: pyarrow.fs.FileSystem | None = None
-    ) -> InputFile:
+    ) -> ArrowPath:
         if filesystem is not None:
-            return PyArrowFile(location=location, path=location, fs=filesystem)
-        return self.new_input(location)
+            return ArrowPath(location, filesystem)
+        return self._path_for(location)
 
-    def _spawn(self, opened: InputFile, *, temporary: bool) -> ArrowFileIO:
+    def _spawn(self, opened: ArrowPath, *, temporary: bool) -> ArrowFileIO:
         return type(self)(self.properties, opened=opened, temporary=temporary)
 
-    def _local_openable(self, target: str) -> PyArrowFile:
-        return PyArrowFile(location=target, path=target, fs=pyarrow.fs.LocalFileSystem())
+    def _local_openable(self, target: str) -> ArrowPath:
+        return ArrowPath(target, pyarrow.fs.LocalFileSystem())
+
+    def at(
+        self,
+        location: str | os.PathLike[str],
+        filesystem: pyarrow.fs.FileSystem | None = None,
+    ) -> ArrowFileIO:
+        """Return this bound owner or a peer bound to the requested Arrow path."""
+        selected = self._new_openable(os.fspath(location), filesystem)
+        if self.opened is not None and self.opened.same_path(selected):
+            return self
+        return self._spawn(selected, temporary=False)
+
+    def open(self, *, seekable: bool = True, compression: str | None = None) -> pyarrow.NativeFile:
+        """Open the bound path through its owning `ArrowPath`."""
+        if self.opened is None:
+            raise ValueError("ArrowFileIO is not bound to a file")
+        self._close_stream()
+        stream = self.opened.open_input(
+            seekable=seekable,
+            compression=compression,
+            buffer_size=self._buffer_size,
+        )
+        self.__dict__["_stream"] = stream
+        return stream
 
     def _spill_identity(self, path: str, filesystem: pyarrow.fs.FileSystem) -> str | None:
         # The store and the path, and no credentials: two keys reading one
@@ -582,19 +682,27 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         opened = self.opened
         if opened is None:
             return None
-        url = spelled(str(opened.location))
+        url = opened.url
         return "\0".join((*self._store_of(url), path)) if url.scheme else None
 
-    def content_identity(self, location: str) -> str:
+    def content_identity(self, location: str | ArrowPath | Url) -> str:
         """A cache key scoped to the S3-compatible store serving a location.
 
         The access key is in it where the spill identity leaves it out: this
         caches what a *reader* is allowed to see, and two keys on one store may
         be shown different objects under one name.
         """
-        url = spelled(location)
+        url = (
+            location.url
+            if isinstance(location, ArrowPath)
+            else location
+            if isinstance(location, Url)
+            else spelled(location)
+        )
         if url.scheme not in S3:
-            return location
+            if isinstance(location, ArrowPath):
+                return location.uri
+            return url.canonical if isinstance(location, Url) else location
         access_key = str(url.user or self.properties.get("s3.access-key-id", ""))
         region = str(url.region or self.properties.get("s3.region", ""))
         return "\0".join((*self._store_of(url), access_key, region, url.key))
@@ -615,7 +723,7 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         """The store this FileIO was configured for, or nothing."""
         return str(self.properties.get("s3.endpoint", ""))
 
-    def _described_filesystem(self, location: str) -> pyarrow.fs.FileSystem | None:
+    def _described_filesystem(self, url: Url) -> pyarrow.fs.FileSystem | None:
         """The store a location names itself, when it names one.
 
         `parse_location` hands PyIceberg the *bucket* as the netloc, so an
@@ -628,12 +736,11 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         The catalog fills what the location leaves unsaid, and the location
         wins where they disagree.
         """
-        url = Url.from_string(location)
         if url.scheme not in S3 or (url.endpoint is None and url.user is None):
             return None
         # Everything but the key, so one filesystem serves every file on a
         # store rather than one being built per file.
-        key = self.content_identity(location).rsplit("\0", 1)[0]
+        key = self.content_identity(url).rsplit("\0", 1)[0]
         filesystem = self._described.get(key)
         if filesystem is None:
             described = PyArrowFileIO({**self.properties, **url.into_properties()})
@@ -641,47 +748,43 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
             self._described[key] = filesystem
         return filesystem
 
-    def _described_file(self, location: str) -> PyArrowFile | None:
-        """That store's own handle on the location, or None where it has none."""
-        filesystem = self._described_filesystem(location)
+    def _path_for(self, location: str) -> ArrowPath:
+        """Resolve one location once, with any store it describes taking precedence."""
+        url = spelled(location)
+        scheme, netloc, path = self.parse_location(location, self.properties)
+        filesystem = self._described_filesystem(url)
         if filesystem is None:
-            return None
-        return PyArrowFile(fs=filesystem, location=location, path=spelled(location).store_path)
+            filesystem = self.fs_by_scheme(scheme, netloc)
+        return ArrowPath.from_parts(url, filesystem, path, uri=location)
 
     def new_input(self, location: str) -> InputFile:
-        # `is None`, not `or`: an input file's truthiness is its length, and
-        # asking for that is a HEAD request against the store.
-        described = self._described_file(location)
-        inner = super().new_input(location) if described is None else described
-        if self._content_cache is None or not _immutable(location):
+        path = self._path_for(location)
+        inner = _ArrowPathFile(path, self._buffer_size)
+        if self._content_cache is None or not _immutable(path):
             return inner
-        return CachedInputFile(inner, self._content_cache, self.content_identity(location))
+        return CachedInputFile(inner, self._content_cache, self.content_identity(path))
 
     def new_output(self, location: str) -> OutputFile:
         _record_output(location)
-        described = self._described_file(location)
-        inner = super().new_output(location) if described is None else described
-        if self._content_cache is None or not _immutable(location):
+        path = self._path_for(location)
+        inner = _ArrowPathFile(path, self._buffer_size)
+        if self._content_cache is None or not _immutable(path):
             return inner
-        return CachedOutputFile(inner, self._content_cache, self.content_identity(location))
+        return CachedOutputFile(inner, self._content_cache, self.content_identity(path))
 
     def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
         """Copy one local file to a location through this configured Arrow filesystem."""
         source_path = os.path.abspath(os.fspath(source))
         source_filesystem = pyarrow.fs.LocalFileSystem()
-        source_info = source_filesystem.get_file_info(source_path)
+        source_info = ArrowPath(source_path, source_filesystem).info()
         if source_info.type != pyarrow.fs.FileType.File:
             raise FileNotFoundError(source_path)
 
-        output = self.new_output(target)
-        filesystem = getattr(output, "_filesystem", None)
-        path = getattr(output, "_path", None)
-        if not isinstance(filesystem, pyarrow.fs.FileSystem) or not isinstance(path, str):
-            raise TypeError(f"{type(output).__name__} does not expose an Arrow filesystem")
-        parent = path.rpartition("/")[0]
-        if parent and filesystem.type_name == "local":
-            filesystem.create_dir(parent, recursive=True)
-        try:
+        _record_output(target)
+        destination = self._path_for(target)
+        filesystem, path = destination.filesystem, destination.path
+
+        def copy() -> None:
             pyarrow.fs.copy_files(
                 source_path,
                 path,
@@ -690,16 +793,20 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
                 chunk_size=1 << 22,
                 use_threads=False,
             )
-            copied = filesystem.get_file_info(path)
+
+        try:
+            try:
+                copy()
+            except FileNotFoundError:
+                destination.parent.mkdir()
+                copy()
+            copied = destination.info()
             if copied.type != pyarrow.fs.FileType.File or copied.size != source_info.size:
                 raise OSError(
                     f"copy to {target!r} wrote {copied.size} bytes; expected {source_info.size}"
                 )
         except Exception:
-            try:
-                filesystem.delete_file(path)
-            except FileNotFoundError:
-                pass
+            destination.delete()
             raise
         return target
 
@@ -708,8 +815,4 @@ class ArrowFileIO(ArrowFile, PyArrowFileIO):
         # cached copy of a file the caller wants gone is the copy that lies.
         name = location.location if isinstance(location, (InputFile, OutputFile)) else location
         CONTENT_CACHE.evict(self.content_identity(name))
-        filesystem = self._described_filesystem(name)
-        if filesystem is None:
-            super().delete(location)
-            return
-        filesystem.delete_file(self.parse_location(name)[2])
+        self._path_for(name).delete()

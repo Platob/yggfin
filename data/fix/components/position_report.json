@@ -14,7 +14,9 @@
    "component": "PositionReport",
    "msgtype": "AP",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

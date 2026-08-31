@@ -14,8 +14,31 @@
   "fix": {
    "component": "CommissionData",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"Allocation\",\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"BidResponse\",\"Confirmation\",\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"MultilegOrderCancelReplaceRequest\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"Quote\",\"QuoteResponse\",\"QuoteStatusReport\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "Allocation",
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "BidResponse",
+    "Confirmation",
+    "CrossOrderCancelReplaceRequest",
+    "ExecutionReport",
+    "MultilegOrderCancelReplace",
+    "MultilegOrderCancelReplaceRequest",
+    "NewOrderCross",
+    "NewOrderList",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "Quote",
+    "QuoteResponse",
+    "QuoteStatusReport",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

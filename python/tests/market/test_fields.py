@@ -14,7 +14,6 @@ import pytest
 from rekep.enums import MarketKind, Side, State, TimeInForce
 from rekep.fields import (
     DESCRIPTION,
-    DISPLAY,
     PARTITION_KEY,
     PRIMARY_KEY,
     Field,
@@ -92,19 +91,19 @@ def test_hash_widths_match_their_roles() -> None:
         field = shape.into_field()
         if "hash" in field.names:
             assert field.field("hash").dtype == HASH, shape.__name__
-        if "xhash" in field.names:
-            assert field.field("xhash").dtype == HASH, shape.__name__
-        for name in ("vhash", "instrumentxhash"):
+        for name in ("xhash", "instrumentxhash"):
             if name in field.names:
-                assert field.field(name).dtype == pyarrow.int64(), f"{shape.__name__}.{name}"
+                assert field.field(name).dtype == HASH, f"{shape.__name__}.{name}"
+        if "vhash" in field.names:
+            assert field.field("vhash").dtype == pyarrow.int64(), shape.__name__
     assert "xhash" not in Leg.into_field().names, "leg reference identity is derived, not stored"
     parenthash = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
-    linkxhashes = pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
+    linkhashes = pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
     for shape in (Event, InstrumentUpdate, MarketEvent, Order, Execution, Book):
         field = shape.into_field()
         assert field.field("prevhash").dtype == HASH, shape.__name__
         assert field.field("parenthash").dtype == parenthash, shape.__name__
-        assert field.field("linkxhashes").dtype == linkxhashes, shape.__name__
+        assert field.field("linkhashes").dtype == linkhashes, shape.__name__
 
 
 def test_a_market_code_column_is_as_wide_as_its_code_declares() -> None:
@@ -160,25 +159,22 @@ def test_a_key_inside_every_list_flavour_is_stripped_and_the_flavour_kept(flavou
         PRIMARY_KEY.encode(),
         PARTITION_KEY.encode(),
         DESCRIPTION.encode(),
-        DISPLAY.encode(),
     }
-    assert keys_in(stripped) == {DESCRIPTION.encode(), DISPLAY.encode()}, (
-        "the comments must survive the strip"
-    )
+    assert keys_in(stripped) == {DESCRIPTION.encode()}, "the comments must survive the strip"
 
 
 def test_a_fixed_size_list_keeps_the_width_that_is_part_of_its_type() -> None:
     inside = pyarrow.list_(pyarrow.field("item", Keyed.into_field().dtype), 3)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_fixed_size_list(stripped) and stripped.list_size == 3
-    assert keys_in(stripped) == {DESCRIPTION.encode(), DISPLAY.encode()}
+    assert keys_in(stripped) == {DESCRIPTION.encode()}
 
 
 def test_a_key_inside_a_map_is_stripped_on_both_halves() -> None:
     inside = pyarrow.map_(pyarrow.string(), Keyed.into_field().dtype, keys_sorted=True)
     stripped = unkeyed(inside)
     assert pyarrow.types.is_map(stripped) and stripped.keys_sorted
-    assert keys_in(stripped) == {DESCRIPTION.encode(), DISPLAY.encode()}
+    assert keys_in(stripped) == {DESCRIPTION.encode()}
 
 
 def test_a_leaf_comes_back_untouched() -> None:
@@ -281,7 +277,7 @@ def describe_enum_metadata(declared: type) -> dict[str, str]:
 
 
 def test_a_column_that_is_not_an_enum_says_nothing_about_one() -> None:
-    assert "name" not in Order.into_field().field("price").protocol("enum")
+    assert "name" not in Order.into_field().field("lastpx").protocol("enum")
     assert "name" not in Order.into_field().field("code").protocol("enum")
 
 

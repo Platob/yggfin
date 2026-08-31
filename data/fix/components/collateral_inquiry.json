@@ -14,7 +14,9 @@
    "component": "CollateralInquiry",
    "msgtype": "BB",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

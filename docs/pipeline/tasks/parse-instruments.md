@@ -31,10 +31,9 @@ observation is less complete -> no write
 ```
 
 `code` is the exact `symbolticker` and `codesource` is `SymbolTicker`.
-`InstrumentUpdate.versioned` preserves the lifecycle's creation time, so later
-reference facts keep its fixed-width `xhash`. Each batch finds the current row
-by its bounded set of codes, then overwrites by the declared `xhash` primary
-key. A replay that changes nothing commits no snapshot.
+Later reference facts keep the same sixteen-byte `xhash`. Each batch finds
+the current row by its bounded set of codes, then overwrites by the declared
+`xhash` primary key. A replay that changes nothing commits no snapshot.
 
 The `[start, end)` interval uses `FixMsg.unix`. Rows with a non-null `error`
 remain in `fix.market` for audit and are excluded here. Keep `fix_dictionary`

@@ -10,8 +10,23 @@
   "fix": {
    "component": "MiscFeesSubGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"CollateralAssignment\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\",\"Confirmation\",\"ExecutionReport\",\"MarketDefinition\",\"TradeCaptureReport\",\"TradeCaptureReportAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "CollateralAssignment",
+    "CollateralReport",
+    "CollateralRequest",
+    "CollateralResponse",
+    "Confirmation",
+    "ExecutionReport",
+    "MarketDefinition",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck"
+   ]
   },
   "fields": [
    {

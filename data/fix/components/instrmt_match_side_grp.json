@@ -10,8 +10,12 @@
   "fix": {
    "component": "InstrmtMatchSideGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

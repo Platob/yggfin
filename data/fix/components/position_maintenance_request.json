@@ -14,7 +14,9 @@
    "component": "PositionMaintenanceRequest",
    "msgtype": "AL",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

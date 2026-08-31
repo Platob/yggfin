@@ -13,8 +13,12 @@
   "fix": {
    "component": "MDRjctGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataRequestReject\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataRequestReject"
+   ]
   },
   "fields": [
    {

@@ -15,7 +15,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.entries import Entry
 from rekep.enums import Direction, EventType, Protocol
-from rekep.fields import scalar
+from rekep.fields import column_name, scalar
 from rekep.fields.arrays import sequence
 from rekep.fix.message import (
     BEGIN_STRING,
@@ -25,8 +25,8 @@ from rekep.fix.message import (
     carries_message,
 )
 
-#: Read a payload as numbered tags, as both, as rendered names, or not at all.
-CODECS: tuple[str, ...] = ("fix", "fixml", "ul", "none")
+#: Read a payload as numbered tags, as both, as rendered names, as XML, or not at all.
+CODECS: tuple[str, ...] = ("fix", "fixml", "ul", "xml", "none")
 
 #: The three a payload's own keys decide, and what each one means:
 #:
@@ -46,7 +46,13 @@ SHAPES: tuple[str, ...] = ("fix", "fixml", "ul")
 #: what it maps rather than for the word it maps to: three unrelated `NAMED`
 #: constants meant three things, and an import of one read as an import of
 #: another.
-CODEC_KEYS: dict[str, bool | None] = {"fix": False, "fixml": True, "ul": True, "none": None}
+CODEC_KEYS: dict[str, bool | None] = {
+    "fix": False,
+    "fixml": True,
+    "ul": True,
+    "xml": True,
+    "none": None,
+}
 
 #: What the `protocol` column stores, and so what every kernel here builds: a
 #: packed code and never the name it spells.
@@ -122,7 +128,20 @@ CODEC_ANCHORS: Mapping[str, str] = MappingProxyType(
         "fix": joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN),
         "fixml": joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN, NAMED_KEY),
         "ul": NAMED_KEY,
+        "xml": r"(?is)<(?:\?xml\b[^>]*>\s*<)?[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
     }
+)
+
+#: A bare XML document, an XmlApi transport line, or a direction prefix whose
+#: next token is XML. Requiring XML immediately after the direction delimiter
+#: keeps an XML value inside FIX `Text <58>` under the FIX rule that owns its
+#: envelope.
+XML_PAYLOAD_PATTERN = joined_pattern(
+    r"(?is)^[ \t]*(?:<\?xml\b[^>]*>\s*)?<[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
+    r"(?is)^[^<\r\n]*\bXmlApi\b[^<\r\n]*<"
+    r"(?:\?xml\b[^>]*>\s*<)?[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
+    r"(?is)^[ \t]*(?:Receiv(?:ing|ed)|Send(?:ing)?|Sent)[ \t]*:[ \t]*<"
+    r"(?:\?xml\b[^>]*>\s*<)?[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
 )
 
 
@@ -138,7 +157,7 @@ class Rule(Convertible):
     Empty matches every line, which is what makes a fall-through rule."""
 
     plugin_pattern: str | None = None
-    """Matched against `plugincode` as well, when the plugin is what tells them apart."""
+    """Matched against `plugin` as well, when the plugin is what tells them apart."""
 
     separator: str | None = None
     """What the message writes between fields; null detects it per column."""
@@ -149,8 +168,11 @@ class Rule(Convertible):
     extra_entry_separators: tuple[str, ...] = ()
     """Additional literals considered when an indexed-entry separator is detected."""
 
+    pop: dict[str, str] = dataclasses.field(default_factory=dict)
+    """Rendered source fields replaced by their target field before FIX resolution."""
+
     codec: str = "none"
-    """How to read the line: one of `SHAPES`, or `none` for "do not"."""
+    """How to read the line: one of `CODECS`."""
 
     def __post_init__(self) -> None:
         """Read the protocol as a code, and keep a direct separator one literal."""
@@ -167,6 +189,12 @@ class Rule(Convertible):
             self.extra_entry_separators = (self.extra_entry_separators,)
         else:
             self.extra_entry_separators = tuple(self.extra_entry_separators)
+        self.pop = dict(self.pop)
+        for source, target in self.pop.items():
+            if not source or not target:
+                raise ValueError("a popped field needs non-empty source and target names")
+            if column_name(source) == column_name(target):
+                raise ValueError(f"a popped field cannot replace itself: {source!r}")
 
     def into_dict(self) -> dict[str, Any]:
         """The rule as a document holds it, with the protocol spelled by name.
@@ -190,7 +218,9 @@ FIX = Rule(protocol=Protocol.FIX, codec="fix")
 
 FIXML = Rule(protocol=Protocol.FIXML, codec="fixml")
 
-UL = Rule(protocol=Protocol.UL, codec="ul")
+UL = Rule(protocol=Protocol.UL, codec="ul", pop={"DetailedCFICode": "CFICode"})
+
+XML = Rule(protocol=Protocol.XML, pattern=XML_PAYLOAD_PATTERN, codec="xml")
 
 #: Operational lines whose vocabulary is understood but which carry no market
 #: message. Keeping these known lines out of `unknown` makes that table a
@@ -212,7 +242,7 @@ OTHER = Rule(protocol=Protocol.OTHER, pattern="", codec="none")
 #: among themselves decides nothing; they lead the pattern rules because a FIX
 #: frame whose `Text <58>` says "heartbeat" is a message and not an
 #: operational line.
-DEFAULT_RULES: tuple[Rule, ...] = (FIX, FIXML, UL, MISC, OTHER)
+DEFAULT_RULES: tuple[Rule, ...] = (XML, FIX, FIXML, UL, MISC, OTHER)
 
 
 def _default_rules() -> list[Rule]:

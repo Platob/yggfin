@@ -10,8 +10,12 @@
   "fix": {
    "component": "AffectedMarketSegmentGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"OrderMassActionReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "OrderMassActionReport"
+   ]
   },
   "fields": [
    {

@@ -16,7 +16,9 @@
    "component": "Logout",
    "msgtype": "5",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

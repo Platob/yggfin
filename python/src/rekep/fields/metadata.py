@@ -15,10 +15,8 @@ view stays the `MutableMapping` it advertises.
 
 A FIX field's enumerated values are `FixFieldValue` records rather than
 several parallel maps: one value knows what it means and every spelling
-that names it, and the one lookup a parse needs -- a written spelling to
-the FIX value it names -- is derived from that list and cached, never
-stored beside it. There is no lookup the other way: the wire value is the
-fact, and the meaning is what it means.
+that names it. The scalar and Arrow codecs in both directions derive from
+that list and skip work when the declared mapping is an identity.
 """
 
 from __future__ import annotations
@@ -33,7 +31,7 @@ from typing import TYPE_CHECKING, Any
 
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
-from rekep.fields.names import column_name
+from rekep.fields.names import column_name, column_names
 
 if TYPE_CHECKING:
     from rekep.fields.field import Field
@@ -483,12 +481,6 @@ class FixMetadata(ProtocolMetadata):
     tag = _Number()
     type = _Text()
     name = _Text()
-    #: What this field is called for a reader: the dictionary's own spelling
-    #: where FIX has one, and the same shape where it does not -- capitalised
-    #: word by word and run together, never spaced. The column's own name is
-    #: folded, so this is the half the fold throws away -- recorded once
-    #: rather than guessed at by every consumer that has to print it.
-    display = _Text()
     version = _Text()
     column = _Folded()
     note = _Text()
@@ -642,6 +634,25 @@ class FixMetadata(ProtocolMetadata):
         """The FIX value a spelling names, or the spelling itself when none does."""
         return self.encoded.get(encoded_key(value), str(value))
 
+    def decode(self, value: Any) -> str:
+        """The declared symbolic spelling of one FIX value, or the value itself."""
+        spelled = str(value)
+        return self.symbols.get(spelled, spelled)
+
+    def arrow_encode(self, values: Any) -> Any:
+        """Encode a string array through the field's declared FIX values."""
+        translations = {
+            spelling: value
+            for spelling, value in self.encoded.items()
+            if spelling != encoded_key(value)
+        }
+        return _arrow_translate(values, translations, fold=True)
+
+    def arrow_decode(self, values: Any) -> Any:
+        """Decode a FIX value array to the dictionary's symbolic spellings."""
+        translations = {value: symbol for value, symbol in self.symbols.items() if value != symbol}
+        return _arrow_translate(values, translations)
+
     @property
     def symbols(self) -> Mapping[str, str]:
         """`{wire value: its symbolic name}`, for storing the scheme not the character."""
@@ -649,8 +660,7 @@ class FixMetadata(ProtocolMetadata):
 
     def symbol(self, value: Any) -> str:
         """The symbolic name of one wire value, or the value where it has none."""
-        spelled = str(value)
-        return self.symbols.get(spelled, spelled)
+        return self.decode(value)
 
     def value_of(self, value: Any) -> FixFieldValue | None:
         """The record for one wire value, or None where no version defines it."""
@@ -666,7 +676,7 @@ class FixMetadata(ProtocolMetadata):
         The prose before the symbol -- `Side <54>` value `1` is "Buy" for a
         person -- and None where nothing defines it.
         """
-        found = self.value_of(value)
+        found = self.value_of(self.encode(value))
         if found is None:
             return None
         return found.meaning or (found.aliases[0] if found.aliases else None)
@@ -683,6 +693,23 @@ class FixMetadata(ProtocolMetadata):
     def encoded(self) -> Mapping[str, str]:
         """`{normalized spelling: wire value}`, derived from what is stored."""
         return encodings_of(self.enumerated)[0]
+
+
+def _arrow_translate(values: Any, translations: Mapping[str, str], *, fold: bool = False) -> Any:
+    """Translate one Arrow column, returning it untouched for an identity map."""
+    if not translations:
+        return values
+    import pyarrow
+    import pyarrow.compute as compute
+
+    source = values.cast(pyarrow.string(), safe=False)
+    keys = column_names(source) if fold else source
+    declared = pyarrow.array(tuple(translations), pyarrow.string())
+    positions = compute.index_in(keys, value_set=declared)
+    translated = compute.take(
+        pyarrow.array(tuple(translations.values()), pyarrow.string()), positions
+    )
+    return compute.coalesce(translated, source)
 
 
 class IcebergMetadata(ProtocolMetadata):

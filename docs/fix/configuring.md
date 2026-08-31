@@ -29,7 +29,7 @@ from rekep import TextFile
 
 VENDOR = (
     r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
-    r"(?P<plugincode>[^|]*)\|(?P<message>.*)$"
+    r"(?P<plugin>[^|]*)\|(?P<body>.*)$"
 )
 
 with TextFile.from_path("vendor.log", header_pattern=VENDOR) as log:
@@ -50,7 +50,7 @@ lets a specific rule sit in front of a general one.
 A rule matches by what it declares. A rule that writes a `pattern` or a
 `plugin_pattern` is decided by those; one that writes neither is decided by
 the shape its codec names -- the keys the payload's own parsed pairs hold.
-That is how the three shipped protocol rules work, and why a value full of
+That is how the key-shaped shipped protocol rules work, and why a value full of
 digits or a `#A=1` quoted inside a `Text <58>` changes nothing.
 
 A rule carries one `pattern`; alternatives join with `|`, and
@@ -66,17 +66,17 @@ protocols:
       plugin_pattern: '^VenueBridge$'
       separator: ';'
       extra_entry_separators: ["\u001e\u001f"]
-      # `fix` is numbered tags alone, `ul` named keys alone, `fixml` both
-      # together, and `none` parses no pairs at all.
+      # `fix` is numbered tags alone, `ul` named keys alone, `fixml` both,
+      # `xml` ordered XML entries, and `none` parses no pairs at all.
       codec: fixml
     - protocol: OTHER
       pattern: ''       # empty patterns make this the fall-through
       codec: none
 ```
 
-`Rules.into_default()` reads a FIX trading log: `FIX`, `FIXML` and `UL` by
-the keys each payload holds, then known operational traffic as `MISC`, then
-everything else as `OTHER`. `entry_separator` fixes one indexed-entry
+`Rules.into_default()` reads bare and `XmlApi` XML as `XML`; then `FIX`,
+`FIXML` and `UL` by the keys each payload holds; then known operational traffic
+as `MISC`; then everything else as `OTHER`. `entry_separator` fixes one indexed-entry
 delimiter; `extra_entry_separators` extends literal auto-detection for that
 protocol. A rule's `protocol` is a [`Protocol`](../enums/protocol.md) code, so
 a name of its own is at most eight bytes of `[A-Z0-9._-]` and anything else is
@@ -194,8 +194,10 @@ codec = FixCodec(
 writes `<null>` for "the field is not set" does not store the string.
 
 ```yaml
-null_values: ["", "null", "<null>", "n/a"]
+null_values: ["", "null", "<null>", "n/a", "none"]
 ```
+
+Matching is case-insensitive, so `NONE` is absent too.
 
 ## Where each one is read
 
@@ -206,7 +208,7 @@ null_values: ["", "null", "<null>", "n/a"]
 | `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
 | `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
-| `technical_plugins` | parsed `plugincode` filter before persistence | `parse_messages` |
+| `technical_plugins` | parsed `plugin` filter before persistence | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
 | `protocols` | `Message.protocol`, then `FixCodec.rules` | both parse stages |
@@ -224,3 +226,15 @@ A custom `protocols` document must be identical in both task YAML files.
 `parse_messages` stores the selected protocol before the raw payload is
 projected away; `parse_fix` uses the same rule to interpret those stored
 arguments.
+
+The shipped UL rule prefers the bridge's detailed instrument classification:
+
+```yaml
+protocol: UL
+codec: ul
+pop: {DetailedCFICode: CFICode}
+```
+
+`pop` removes the rendered source field and any target value on the same row,
+then keeps the source value under the target name. Other rows and pair order
+are unchanged.

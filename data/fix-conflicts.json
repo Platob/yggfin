@@ -3,32 +3,13 @@
     "values": 522,
     "aliases": 223,
     "added": 16,
-    "type": 274,
+    "type": 197,
     "name": 59,
     "note": 18,
     "members": 65,
     "encoded": 134
   },
   "collapses": [
-    {
-      "name": "Account",
-      "tag": 1,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
     {
       "name": "AdvId",
       "tag": 2,
@@ -40,11 +21,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -59,30 +35,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "AdvTransType",
-      "tag": 5,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -135,25 +87,6 @@
       ]
     },
     {
-      "name": "BeginString",
-      "tag": 8,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "BodyLength",
       "tag": 9,
       "part": "type",
@@ -179,44 +112,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "int"
-        }
-      ]
-    },
-    {
-      "name": "CheckSum",
-      "tag": 10,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "ClOrdID",
-      "tag": 11,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -345,7 +240,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "(for CIV buy orders) percentage waived – cash discount",
+          "reading": "(for CIV buy orders) percentage waived \u00e2\u20ac\u201c cash discount",
           "key": "4"
         },
         {
@@ -357,7 +252,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "(for CIV buy orders) percentage waived – enhanced units",
+          "reading": "(for CIV buy orders) percentage waived \u00e2\u20ac\u201c enhanced units",
           "key": "5"
         },
         {
@@ -452,11 +347,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -850,11 +740,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -903,25 +788,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "IDSource"
-        }
-      ]
-    },
-    {
-      "name": "SecurityIDSource",
-      "tag": 22,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -1006,11 +872,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -1025,11 +886,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -1059,25 +915,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "IOIShares"
-        }
-      ]
-    },
-    {
-      "name": "IOIQty",
-      "tag": 27,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -1279,25 +1116,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "int"
-        }
-      ]
-    },
-    {
-      "name": "MsgType",
-      "tag": 35,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -2067,7 +1885,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Order – Single",
+          "reading": "Order \u00e2\u20ac\u201c Single",
           "key": "D"
         },
         {
@@ -2103,7 +1921,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Order – List",
+          "reading": "Order \u00e2\u20ac\u201c List",
           "key": "E"
         },
         {
@@ -2463,7 +2281,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Don’t Know Trade (DK)",
+          "reading": "Don\u00e2\u20ac\u2122t Know Trade (DK)",
           "key": "Q"
         },
         {
@@ -3290,25 +3108,6 @@
       ]
     },
     {
-      "name": "OrderID",
-      "tag": 37,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "OrderQty",
       "tag": 38,
       "part": "type",
@@ -3880,7 +3679,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Next Fund Valuation Point –(Forward pricing) (for CIV)",
+          "reading": "Next Fund Valuation Point \u00e2\u20ac\u201c(Forward pricing) (for CIV)",
           "key": "M"
         },
         {
@@ -3894,25 +3693,6 @@
           "source": "nanoconda",
           "reading": "Pegged (requires ExecInst = L, R, M, P or O)",
           "key": "P"
-        }
-      ]
-    },
-    {
-      "name": "OrigClOrdID",
-      "tag": 41,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -4003,25 +3783,6 @@
       ]
     },
     {
-      "name": "RelatdSym",
-      "tag": 46,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "Rule80A",
       "tag": 47,
       "part": "note",
@@ -4099,63 +3860,6 @@
           "source": "nanoconda",
           "reading": "Competing dealer trades",
           "key": "T"
-        }
-      ]
-    },
-    {
-      "name": "SecurityID",
-      "tag": 48,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SenderCompID",
-      "tag": 49,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SenderSubID",
-      "tag": 50,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -4309,82 +4013,6 @@
           "source": "nanoconda",
           "reading": "Opposite (for use with multileg instruments)",
           "key": "C"
-        }
-      ]
-    },
-    {
-      "name": "Symbol",
-      "tag": 55,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "TargetCompID",
-      "tag": 56,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "TargetSubID",
-      "tag": 57,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "Text",
-      "tag": 58,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -4575,40 +4203,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "SettlmntTyp"
-        }
-      ]
-    },
-    {
-      "name": "SettlType",
-      "tag": 63,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.2",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.3",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.4",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -4808,44 +4402,6 @@
       ]
     },
     {
-      "name": "SymbolSfx",
-      "tag": 65,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "ListID",
-      "tag": 66,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "TotNoOrders",
       "tag": 68,
       "part": "name",
@@ -4884,25 +4440,6 @@
       ]
     },
     {
-      "name": "ListExecInst",
-      "tag": 69,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "AllocID",
       "tag": 70,
       "part": "type",
@@ -4913,11 +4450,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -4971,11 +4503,6 @@
           "version": "4.0",
           "source": "nanoconda",
           "reading": "int"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -5057,25 +4584,6 @@
       ]
     },
     {
-      "name": "ExecBroker",
-      "tag": 76,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "PositionEffect",
       "tag": 77,
       "part": "name",
@@ -5144,25 +4652,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "int"
-        }
-      ]
-    },
-    {
-      "name": "AllocAccount",
-      "tag": 79,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -5520,25 +5009,6 @@
       ]
     },
     {
-      "name": "DlvyInst",
-      "tag": 86,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "onixs",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "AllocStatus",
       "tag": 87,
       "part": "values",
@@ -5877,25 +5347,6 @@
           "source": "nanoconda",
           "reading": "calculation difference",
           "key": "9"
-        }
-      ]
-    },
-    {
-      "name": "BrokerOfCredit",
-      "tag": 92,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -6695,82 +6146,6 @@
       ]
     },
     {
-      "name": "WaveNo",
-      "tag": 105,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "Issuer",
-      "tag": 106,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecurityDesc",
-      "tag": 107,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "ClientID",
-      "tag": 109,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "MinQty",
       "tag": 110,
       "part": "type",
@@ -6805,25 +6180,6 @@
           "version": "4.1",
           "source": "nanoconda",
           "reading": "int"
-        }
-      ]
-    },
-    {
-      "name": "TestReqID",
-      "tag": 112,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -6918,63 +6274,6 @@
     {
       "name": "LocateReqd",
       "tag": 114,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "OnBehalfOfCompID",
-      "tag": 115,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "OnBehalfOfSubID",
-      "tag": 116,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "QuoteID",
-      "tag": 117,
       "part": "type",
       "kept": "5.0.SP2",
       "keptsource": "nanoconda",
@@ -7478,44 +6777,6 @@
       ]
     },
     {
-      "name": "DeliverToCompID",
-      "tag": 128,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "DeliverToSubID",
-      "tag": 129,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "IOINaturalFlag",
       "tag": 130,
       "part": "type",
@@ -7570,25 +6831,6 @@
           "source": "nanoconda",
           "reading": "Not natural",
           "key": "N"
-        }
-      ]
-    },
-    {
-      "name": "QuoteReqID",
-      "tag": 131,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -7736,40 +6978,6 @@
       ]
     },
     {
-      "name": "MiscFeeType",
-      "tag": 139,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.0",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.2",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.3",
-          "source": "nanoconda",
-          "reading": "char"
-        },
-        {
-          "version": "4.4",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "PrevClosePx",
       "tag": 140,
       "part": "type",
@@ -7818,62 +7026,6 @@
       ]
     },
     {
-      "name": "SenderLocationID",
-      "tag": 142,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "TargetLocationID",
-      "tag": 143,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "OnBehalfOfLocationID",
-      "tag": 144,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "DeliverToLocationID",
-      "tag": 145,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "NoRelatedSym",
       "tag": 146,
       "part": "type",
@@ -7894,48 +7046,6 @@
           "version": "4.3",
           "source": "nanoconda",
           "reading": "int"
-        }
-      ]
-    },
-    {
-      "name": "Subject",
-      "tag": 147,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "Headline",
-      "tag": 148,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "URLLink",
-      "tag": 149,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -8229,34 +7339,6 @@
       ]
     },
     {
-      "name": "AllocText",
-      "tag": 161,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SettlInstID",
-      "tag": 162,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "SettlInstTransType",
       "tag": 163,
       "part": "values",
@@ -8268,20 +7350,6 @@
           "source": "nanoconda",
           "reading": "Restate (used where the Settlement Instruction is being used to communicate standing instructions which have not been changed or added to)",
           "key": "T"
-        }
-      ]
-    },
-    {
-      "name": "EmailThreadID",
-      "tag": 164,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -8313,7 +7381,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Broker’s Instructions",
+          "reading": "Broker\u00e2\u20ac\u2122s Instructions",
           "key": "1"
         },
         {
@@ -8337,36 +7405,8 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Institution’s Instructions",
+          "reading": "Institution\u00e2\u20ac\u2122s Instructions",
           "key": "2"
-        }
-      ]
-    },
-    {
-      "name": "SettlLocation",
-      "tag": 166,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecurityType",
-      "tag": 167,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -8721,34 +7761,6 @@
       ]
     },
     {
-      "name": "StandInstDbName",
-      "tag": 170,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "StandInstDbID",
-      "tag": 171,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "SettlDeliveryType",
       "tag": 172,
       "part": "values",
@@ -8766,216 +7778,6 @@
           "source": "nanoconda",
           "reading": "Free",
           "key": "1"
-        }
-      ]
-    },
-    {
-      "name": "SettlDepositoryCode",
-      "tag": 173,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SettlBrkrCode",
-      "tag": 174,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SettlInstCode",
-      "tag": 175,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecuritySettlAgentName",
-      "tag": 176,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecuritySettlAgentCode",
-      "tag": 177,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecuritySettlAgentAcctNum",
-      "tag": 178,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecuritySettlAgentAcctName",
-      "tag": 179,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecuritySettlAgentContactName",
-      "tag": 180,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "SecuritySettlAgentContactPhone",
-      "tag": 181,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "CashSettlAgentName",
-      "tag": 182,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "CashSettlAgentCode",
-      "tag": 183,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "CashSettlAgentAcctNum",
-      "tag": 184,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "CashSettlAgentAcctName",
-      "tag": 185,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "CashSettlAgentContactName",
-      "tag": 186,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
-      "name": "CashSettlAgentContactPhone",
-      "tag": 187,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -9116,20 +7918,6 @@
       ]
     },
     {
-      "name": "AllocLinkID",
-      "tag": 196,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
-        }
-      ]
-    },
-    {
       "name": "AllocLinkType",
       "tag": 197,
       "part": "values",
@@ -9183,20 +7971,6 @@
           "source": "nanoconda",
           "reading": "F/X Swap",
           "key": "1"
-        }
-      ]
-    },
-    {
-      "name": "SecondaryOrderID",
-      "tag": 198,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "nanoconda",
-          "reading": "char"
         }
       ]
     },
@@ -9544,7 +8318,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Bargain Conditions– see (234) for values",
+          "reading": "Bargain Conditions\u00e2\u20ac\u201c see (234) for values",
           "key": "BGNCON"
         },
         {
@@ -9580,7 +8354,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Issuer’s ticker",
+          "reading": "Issuer\u00e2\u20ac\u2122s ticker",
           "key": "ISSUER"
         },
         {
@@ -9610,7 +8384,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Type of redemption – values are: NonCallable, Callable, Prefunded, EscrowedToMaturity, Putable, Convertible",
+          "reading": "Type of redemption \u00e2\u20ac\u201c values are: NonCallable, Callable, Prefunded, EscrowedToMaturity, Putable, Convertible",
           "key": "REDEMPTION"
         },
         {
@@ -9640,7 +8414,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Weighted Average Coupon:value in percent (exact or range) plus ‘Gross’ or ‘Net’ of servicing spread (the default) (ex. 234=6.5- Net [minimum of 6.5% net of servicing fee])",
+          "reading": "Weighted Average Coupon:value in percent (exact or range) plus \u00e2\u20ac\u02dcGross\u00e2\u20ac\u2122 or \u00e2\u20ac\u02dcNet\u00e2\u20ac\u2122 of servicing spread (the default) (ex. 234=6.5- Net [minimum of 6.5% net of servicing fee])",
           "key": "WAC"
         },
         {
@@ -12825,7 +11599,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Discount – percentage points below par",
+          "reading": "Discount \u00e2\u20ac\u201c percentage points below par",
           "key": "4"
         },
         {
@@ -12837,7 +11611,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Premium – percentage points over par",
+          "reading": "Premium \u00e2\u20ac\u201c percentage points over par",
           "key": "5"
         },
         {
@@ -13099,7 +11873,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Exchange/switch CIV order – Sell driven",
+          "reading": "Exchange/switch CIV order \u00e2\u20ac\u201c Sell driven",
           "key": "3"
         },
         {
@@ -13111,7 +11885,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Exchange/switch CIV order – Buy driven, cash top-up (i.e. additional cash will be provided to fulfil the order)",
+          "reading": "Exchange/switch CIV order \u00e2\u20ac\u201c Buy driven, cash top-up (i.e. additional cash will be provided to fulfil the order)",
           "key": "4"
         },
         {
@@ -13123,7 +11897,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Exchange/switch CIV order – Buy driven, cash withdraw (i.e. additional cash will not be provided to fulfil the order)",
+          "reading": "Exchange/switch CIV order \u00e2\u20ac\u201c Buy driven, cash withdraw (i.e. additional cash will not be provided to fulfil the order)",
           "key": "5"
         }
       ]
@@ -13301,13 +12075,13 @@
         {
           "version": "4.3",
           "source": "onixs",
-          "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 — See Appendix 6-B )",
+          "reading": "BIC (Bank Identification Code\u00e2\u20ac\u201dSwift managed) code (ISO 9362 \u00e2\u20ac\u201d See Appendix 6-B )",
           "key": "B"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 - See \"Appendix 6-B\")",
+          "reading": "BIC (Bank Identification Code\u00e2\u20ac\u201dSwift managed) code (ISO 9362 - See \"Appendix 6-B\")",
           "key": "B"
         },
         {
@@ -13355,7 +12129,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Directed broker three character acronym as defined in ISITC ‘ETC Best Practice’ guidelines document",
+          "reading": "Directed broker three character acronym as defined in ISITC \u00e2\u20ac\u02dcETC Best Practice\u00e2\u20ac\u2122 guidelines document",
           "key": "I"
         }
       ]
@@ -13483,7 +12257,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Order Origination Trader (associated with Order Origination Firm – e.g. trader who initiates/submits the order)",
+          "reading": "Order Origination Trader (associated with Order Origination Firm \u00e2\u20ac\u201c e.g. trader who initiates/submits the order)",
           "key": "11"
         },
         {
@@ -13801,7 +12575,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "No – waiver agreement",
+          "reading": "No \u00e2\u20ac\u201c waiver agreement",
           "key": "M"
         },
         {
@@ -13813,7 +12587,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "No – execution only",
+          "reading": "No \u00e2\u20ac\u201c execution only",
           "key": "N"
         },
         {
@@ -13825,7 +12599,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "No – institutional.",
+          "reading": "No \u00e2\u20ac\u201c institutional.",
           "key": "O"
         }
       ]
@@ -13879,7 +12653,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Exempt – Below The Limit",
+          "reading": "Exempt \u00e2\u20ac\u201c Below The Limit",
           "key": "1"
         },
         {
@@ -13891,7 +12665,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Exempt – Client Money Type Exemption",
+          "reading": "Exempt \u00e2\u20ac\u201c Client Money Type Exemption",
           "key": "2"
         },
         {
@@ -13903,7 +12677,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Exempt – Authorised Credit or Financial Institution.",
+          "reading": "Exempt \u00e2\u20ac\u201c Authorised Credit or Financial Institution.",
           "key": "3"
         },
         {
@@ -14183,19 +12957,19 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Employee – current year (US)",
+          "reading": "Employee \u00e2\u20ac\u201c current year (US)",
           "key": "10"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Employer – current year (US)",
+          "reading": "Employer \u00e2\u20ac\u201c current year (US)",
           "key": "12"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Individual Retirement Account – Rollover (US)",
+          "reading": "Individual Retirement Account \u00e2\u20ac\u201c Rollover (US)",
           "key": "17"
         },
         {
@@ -14468,7 +13242,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Reminder – i.e. Registration Instructions are still outstanding",
+          "reading": "Reminder \u00e2\u20ac\u201c i.e. Registration Instructions are still outstanding",
           "key": "N"
         }
       ]
@@ -17936,13 +16710,13 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "discount – percentage points below par",
+          "reading": "discount \u00e2\u20ac\u201c percentage points below par",
           "key": "4"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "premium – percentage points over par",
+          "reading": "premium \u00e2\u20ac\u201c percentage points over par",
           "key": "5"
         },
         {
@@ -18629,13 +17403,13 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Strict – limit is a strict limit",
+          "reading": "Strict \u00e2\u20ac\u201c limit is a strict limit",
           "key": "1"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Or worse – for a buy the peg limit is a minimum and for a sell the peg limit is a maximum (for use for orders which have a price range)",
+          "reading": "Or worse \u00e2\u20ac\u201c for a buy the peg limit is a minimum and for a sell the peg limit is a maximum (for use for orders which have a price range)",
           "key": "2"
         }
       ]
@@ -18650,13 +17424,13 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "More aggressive – on a buy order round the price up round up to the nearest tick, on a sell round down to the nearest tick",
+          "reading": "More aggressive \u00e2\u20ac\u201c on a buy order round the price up round up to the nearest tick, on a sell round down to the nearest tick",
           "key": "1"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "More passive – on a buy order round down to nearest tick on a sell order round up to nearest tick",
+          "reading": "More passive \u00e2\u20ac\u201c on a buy order round down to nearest tick on a sell order round up to nearest tick",
           "key": "2"
         }
       ]
@@ -18686,13 +17460,13 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Strict – limit is a strict limit",
+          "reading": "Strict \u00e2\u20ac\u201c limit is a strict limit",
           "key": "1"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Or worse – for a buy the discretion price is a minimum and for a sell the discretion price is a maximum (for use for orders which have a price range)",
+          "reading": "Or worse \u00e2\u20ac\u201c for a buy the discretion price is a minimum and for a sell the discretion price is a maximum (for use for orders which have a price range)",
           "key": "2"
         }
       ]
@@ -18707,13 +17481,13 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "More aggressive – on a buy order round the price up round up to the nearest tick, on a sell round down to the nearest tick",
+          "reading": "More aggressive \u00e2\u20ac\u201c on a buy order round the price up round up to the nearest tick, on a sell round down to the nearest tick",
           "key": "1"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "More passive – on a buy order round down to nearest tick on a sell order round up to nearest tick",
+          "reading": "More passive \u00e2\u20ac\u201c on a buy order round down to nearest tick on a sell order round up to nearest tick",
           "key": "2"
         }
       ]
@@ -18815,7 +17589,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Escrowed to redemption date – callable. Supply redemption date in the InstrAttribValue (872) field",
+          "reading": "Escrowed to redemption date \u00e2\u20ac\u201c callable. Supply redemption date in the InstrAttribValue (872) field",
           "key": "13"
         },
         {
@@ -18959,13 +17733,13 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Not connected – down expected up",
+          "reading": "Not connected \u00e2\u20ac\u201c down expected up",
           "key": "2"
         },
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Not connected – down expected down",
+          "reading": "Not connected \u00e2\u20ac\u201c down expected down",
           "key": "3"
         }
       ]
@@ -18986,7 +17760,7 @@
         {
           "version": "4.4",
           "source": "nanoconda",
-          "reading": "Level of detail, then NoCompID’s becomes required",
+          "reading": "Level of detail, then NoCompID\u00e2\u20ac\u2122s becomes required",
           "key": "8"
         }
       ]
@@ -24670,7 +23444,7 @@
         {
           "version": "5.0.SP2",
           "source": "onixs",
-          "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 – See Appendix 6-B )",
+          "reading": "BIC (Bank Identification Code\u00e2\u20ac\u201dSwift managed) code (ISO 9362 \u00e2\u20ac\u201c See Appendix 6-B )",
           "key": "B"
         },
         {
@@ -25131,20 +23905,6 @@
           "source": "onixs",
           "reading": "Status for orders for a PartyID <448>",
           "key": "8"
-        }
-      ]
-    },
-    {
-      "name": "LegSettlType",
-      "tag": 587,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "5.0.SP2",
-          "source": "quickfix",
-          "reading": "STRING"
         }
       ]
     },
@@ -25955,20 +24715,6 @@
       ]
     },
     {
-      "name": "SettlMethod",
-      "tag": 1193,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "5.0.SP2",
-          "source": "quickfix",
-          "reading": "STRING"
-        }
-      ]
-    },
-    {
       "name": "TickRuleType",
       "tag": 1209,
       "part": "aliases",
@@ -26010,20 +24756,6 @@
       ]
     },
     {
-      "name": "DerivativeInstrumentPartyIDSource",
-      "tag": 1294,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "5.0.SP2",
-          "source": "quickfix",
-          "reading": "CHAR"
-        }
-      ]
-    },
-    {
       "name": "DerivativeExerciseStyle",
       "tag": 1299,
       "part": "type",
@@ -26048,20 +24780,6 @@
           "version": "5.0.SP2",
           "source": "quickfix",
           "reading": "MULTIPLECHARVALUE"
-        }
-      ]
-    },
-    {
-      "name": "DerivativeSettlMethod",
-      "tag": 1317,
-      "part": "type",
-      "kept": "5.0.SP2",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "5.0.SP2",
-          "source": "quickfix",
-          "reading": "STRING"
         }
       ]
     },
@@ -27440,7 +26158,7 @@
         {
           "version": "5.0.SP1",
           "source": "onixs",
-          "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 – See Appendix 6-B )",
+          "reading": "BIC (Bank Identification Code\u00e2\u20ac\u201dSwift managed) code (ISO 9362 \u00e2\u20ac\u201c See Appendix 6-B )",
           "key": "B"
         },
         {
@@ -29659,7 +28377,7 @@
         {
           "version": "5.0",
           "source": "onixs",
-          "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 – See Appendix 6-B )",
+          "reading": "BIC (Bank Identification Code\u00e2\u20ac\u201dSwift managed) code (ISO 9362 \u00e2\u20ac\u201c See Appendix 6-B )",
           "key": "B"
         },
         {
@@ -31056,20 +29774,6 @@
       ]
     },
     {
-      "name": "MiscFeeType",
-      "tag": 139,
-      "part": "type",
-      "kept": "4.4",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.4",
-          "source": "quickfix",
-          "reading": "STRING"
-        }
-      ]
-    },
-    {
       "name": "ExecType",
       "tag": 150,
       "part": "values",
@@ -31717,7 +30421,7 @@
         {
           "version": "4.4",
           "source": "onixs",
-          "reading": "BIC (Bank Identification Code—Swift managed) code (ISO 9362 – See Appendix 6-B )",
+          "reading": "BIC (Bank Identification Code\u00e2\u20ac\u201dSwift managed) code (ISO 9362 \u00e2\u20ac\u201c See Appendix 6-B )",
           "key": "B"
         },
         {
@@ -35066,20 +33770,6 @@
       ]
     },
     {
-      "name": "AffectedSecondaryOrderID",
-      "tag": 536,
-      "part": "type",
-      "kept": "4.3",
-      "keptsource": "onixs",
-      "dropped": [
-        {
-          "version": "4.3",
-          "source": "quickfix",
-          "reading": "STRING"
-        }
-      ]
-    },
-    {
       "name": "LegFutSettDate",
       "tag": 588,
       "part": "type",
@@ -36415,34 +35105,6 @@
           "source": "onixs",
           "reading": "Institution's Instructions",
           "key": "2"
-        }
-      ]
-    },
-    {
-      "name": "SettlLocation",
-      "tag": 166,
-      "part": "type",
-      "kept": "4.1",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "quickfix",
-          "reading": "STRING"
-        }
-      ]
-    },
-    {
-      "name": "SecurityType",
-      "tag": 167,
-      "part": "type",
-      "kept": "4.1",
-      "keptsource": "nanoconda",
-      "dropped": [
-        {
-          "version": "4.1",
-          "source": "quickfix",
-          "reading": "STRING"
         }
       ]
     },

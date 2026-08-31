@@ -11,7 +11,9 @@
    "component": "MassOrderAck",
    "msgtype": "DK",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -10,8 +10,12 @@
   "fix": {
    "component": "PartyRiskLimitsGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"PartyRiskLimitsReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "PartyRiskLimitsReport"
+   ]
   },
   "fields": [
    {

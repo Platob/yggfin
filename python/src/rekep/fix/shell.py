@@ -23,7 +23,14 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import FIX_SCALARS, fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
-from rekep.fix.store import DECLARATION_SUFFIXES, document_of, field_document, is_declaration
+from rekep.fix.store import (
+    DECLARATION_SUFFIXES,
+    component_from_document,
+    document_of,
+    field_document,
+    field_from_document,
+    is_declaration,
+)
 
 #: Answers that confirm a write; every other answer leaves the store unchanged.
 YES = ("y", "yes")
@@ -113,13 +120,13 @@ class Shell:
             ("versions", "every FIX version this store holds"),
             ("find <text>", "search fields by tag, name or description"),
             ("show <name|tag>", "one field, every version of it"),
-            ("components [text]", "component identities, filtered by name"),
-            ("component <name>", "one component's newest member tree"),
+            ("components [text]", "component and message identities, filtered by name"),
+            ("component <name>", "one component or message member tree"),
             ("add-field <path>", "register a field declaration file"),
             ("update-field <path>", "replace a field from a declaration file"),
-            ("add-component <path>", "register a component declaration"),
-            ("update-component <path>", "replace a component declaration"),
-            ("remove-component <name>", "delete a component identity"),
+            ("add-component <path>", "register a component or message declaration"),
+            ("update-component <path>", "replace a component or message declaration"),
+            ("remove-component <name>", "delete a component or message identity"),
             ("add", "register a field through guided prompts"),
             ("edit <name>", "change a field through guided prompts"),
             ("alias <name>", "record another spelling a capture used"),
@@ -155,7 +162,10 @@ class Shell:
         groups = (
             ("browse", {"versions", "find", "show", "components", "component"}),
             ("edit fields", {"add", "edit", "alias", "remove", "add-field", "update-field"}),
-            ("edit components", {"add-component", "update-component", "remove-component"}),
+            (
+                "edit components/messages",
+                {"add-component", "update-component", "remove-component"},
+            ),
             ("store", {"check", "load", "dump"}),
             ("session", {"help", "quit"}),
         )
@@ -251,7 +261,7 @@ class Shell:
         self.console.line()
 
     def _components(self, rest: str) -> None:
-        """Component identities, filtered by name when `rest` says one."""
+        """Component and message identities, filtered when `rest` says one."""
         wanted = rest.strip().lower()
         entries = sorted(
             (
@@ -278,14 +288,14 @@ class Shell:
         self.console.line()
 
     def _component(self, rest: str) -> None:
-        """One component's member tree, for the newest version that declares it."""
+        """One component or message tree, at the newest version declaring it."""
         if not rest:
             self.console.warn("name one: `component Parties`")
             return
         try:
             entry = self.registry.merged_component(rest)
         except KeyError:
-            self.console.fail(f"no component {rest!r} in this store")
+            self.console.fail(f"no component or message {rest!r} in this store")
             near = difflib.get_close_matches(
                 rest,
                 self.registry.component_records(),
@@ -299,7 +309,14 @@ class Shell:
         declared = entry.into_component(version)
         self.console.panel(
             f"{entry.name} @ {version}",
-            [f"{len(quickfix.members_of(declared))} top-level members"],
+            [
+                _detail(self.console, "msgtype", entry.msg_type or "-"),
+                _detail(
+                    self.console,
+                    "members",
+                    f"{len(quickfix.members_of(declared))} top-level",
+                ),
+            ],
         )
         members = list(quickfix.walk(declared))
         for member, path in members[:PAGE]:
@@ -321,7 +338,7 @@ class Shell:
         self.console.line()
 
     def _add_component(self, rest: str) -> None:
-        """Register the component declaration at `rest`."""
+        """Register the component or message declaration at `rest`."""
         entry = self._component_declaration(rest)
         if entry is None:
             return
@@ -332,7 +349,7 @@ class Shell:
         self.console.ok(f"added {stored.name}")
 
     def _update_component(self, rest: str) -> None:
-        """Replace the component declaration at `rest`."""
+        """Replace the component or message declaration at `rest`."""
         entry = self._component_declaration(rest)
         if entry is None:
             return
@@ -343,19 +360,20 @@ class Shell:
         self.console.ok(f"updated {stored.name}")
 
     def _remove_component(self, rest: str) -> None:
-        """Delete one component after showing what the name resolves to."""
+        """Delete one component or message after showing its identity."""
         if not rest:
             self.console.warn("name one: `remove-component Parties`")
             return
         try:
             entry = self.registry.merged_component(rest)
         except KeyError:
-            self.console.fail(f"no component {rest!r} in this store")
+            self.console.fail(f"no component or message {rest!r} in this store")
             return
         self.console.panel(
             entry.name,
             [
                 _detail(self.console, "versions", ", ".join(entry.versions)),
+                _detail(self.console, "msgtype", entry.msg_type or "-"),
                 _detail(self.console, "members", len(entry.members)),
             ],
         )
@@ -368,16 +386,23 @@ class Shell:
             self.console.fail(f"{entry.name} was not in this store")
 
     def _component_declaration(self, path: str) -> ComponentRecord | None:
-        """Read and preview one component document."""
+        """Read and preview one component or message document."""
         if not path:
             self.console.warn("say which: `add-component parties.json`")
             return None
         path = _unquoted(path)
-        entry = ComponentRecord.from_file(path)
+        spelled = f"{path}.yaml" if path.endswith(".yml") else path
+        if not is_declaration(spelled):
+            raise ValueError(
+                f"{path} is not a document this can read: name it "
+                f"{' or '.join(DECLARATION_SUFFIXES)}"
+            )
+        entry = component_from_document(document_of(read_bytes(path), spelled))
         self.console.panel(
             entry.name,
             [
                 _detail(self.console, "versions", ", ".join(entry.versions)),
+                _detail(self.console, "msgtype", entry.msg_type or "-"),
                 _detail(self.console, "members", len(entry.members)),
                 _detail(self.console, "source", path),
             ],
@@ -674,7 +699,7 @@ def _declaration(path: str) -> Field:
         raise ValueError(
             f"{path} is not a document this can read: name it {' or '.join(DECLARATION_SUFFIXES)}"
         )
-    return refuse_record(Field.from_dict(document_of(read_bytes(path), spelled)))
+    return refuse_record(field_from_document(document_of(read_bytes(path), spelled)))
 
 
 def _unquoted(text: str) -> str:

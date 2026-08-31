@@ -11,8 +11,12 @@
   "fix": {
    "component": "NestedParties4",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport"
+   ]
   },
   "fields": [
    {

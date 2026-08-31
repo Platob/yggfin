@@ -15,7 +15,9 @@
    "component": "SecurityTypeRequest",
    "msgtype": "v",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

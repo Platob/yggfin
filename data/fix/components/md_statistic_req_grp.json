@@ -10,8 +10,12 @@
   "fix": {
    "component": "MDStatisticReqGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataStatisticsRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataStatisticsRequest"
+   ]
   },
   "fields": [
    {

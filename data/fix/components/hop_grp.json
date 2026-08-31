@@ -13,7 +13,9 @@
   "fix": {
    "component": "HopGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

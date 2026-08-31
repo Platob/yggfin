@@ -10,8 +10,15 @@
   "fix": {
    "component": "ThrottleResponse",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"ExecutionReport\",\"MassOrderAck\",\"MassQuoteAck\",\"QuoteStatusReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "ExecutionReport",
+    "MassOrderAck",
+    "MassQuoteAck",
+    "QuoteStatusReport"
+   ]
   },
   "fields": [
    {

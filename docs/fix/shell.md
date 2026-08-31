@@ -20,6 +20,47 @@ Reads emit only JSON to `stdout`. Status and failures stay on `stderr`, so a
 pipe receives no styling or progress text. Run `--help` on a verb for its
 arguments.
 
+Fields have a complete scriptable lifecycle:
+
+```bash
+rekep fix registry add-field --store data/fix --name BRKR.VenueTier \
+  --type String --version '*' --description "The venue service tier."
+rekep fix registry alias-field --store data/fix --name BRKR.VenueTier \
+  --alias BROKER_VENUE_TIER --source broker-a
+rekep fix registry show --store data/fix BRKR.VenueTier > venue-tier.json
+# Edit the emitted declaration, then write it through the registry again.
+rekep fix registry update-field --store data/fix --declaration venue-tier.json
+rekep fix registry remove-field --store data/fix --name BRKR.VenueTier
+```
+
+Messages use the component verbs because both are one registry record; a
+message declaration differs only by its `fix.msgtype` value:
+
+```json
+{
+  "name": "VenueOrder",
+  "versions": ["*"],
+  "declaration": {
+    "name": "VenueOrder",
+    "type": "struct",
+    "fix": {"component": "VenueOrder", "msgtype": "U1"},
+    "fields": []
+  }
+}
+```
+
+```bash
+rekep fix registry add-component --store data/fix --declaration venue-order.json
+rekep fix registry components --store data/fix Venue
+rekep fix registry component --store data/fix VenueOrder > venue-order.json
+rekep fix registry update-component --store data/fix --declaration venue-order.json
+rekep fix registry remove-component --store data/fix --name VenueOrder
+```
+
+These commands are the supported writers. Do not edit files under
+`data/fix/fields` or `data/fix/components`; `FixRegistry` validates the whole
+post-change store before replacing a shard.
+
 ## Interactive shell
 
 ```bash

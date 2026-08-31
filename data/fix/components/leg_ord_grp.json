@@ -13,8 +13,15 @@
   "fix": {
    "component": "LegOrdGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MultilegOrderCancelReplace\",\"NewOrderMultileg\",\"PartyRiskLimitCheckRequest\",\"PartyRiskLimitCheckRequestAck\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MultilegOrderCancelReplace",
+    "NewOrderMultileg",
+    "PartyRiskLimitCheckRequest",
+    "PartyRiskLimitCheckRequestAck"
+   ]
   },
   "fields": [
    {

@@ -7,7 +7,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import FixMsg, FixRegistry
+from rekep import FixMsg, FixRegistry, Message
 from rekep.fix import (
     MARKED_VECTOR,
     MARKER,
@@ -110,6 +110,31 @@ def test_canonical_pairs_survive_value_round_trips() -> None:
 
     assert FixMsg.from_json(parsed.into_json()).pairs == parsed.pairs
     assert dataclasses.replace(parsed).pairs == parsed.pairs
+
+
+def test_inferred_prices_enrich_columns_without_inventing_wire_facts() -> None:
+    parsed = FixMsg.from_text("Side=1|Price=41.25")
+
+    assert (parsed.lastpx, parsed.bidpx, parsed.offerpx) == (41.25, 41.25, None)
+    assert parsed.priceinferred == "bidpx,lastpx"
+    assert parsed.pairs == [("Side", "1"), ("Price", "41.25")]
+    assert dataclasses.replace(parsed).pairs == parsed.pairs
+    assert FixMsg.from_json(parsed.into_json()).pairs == parsed.pairs
+
+
+def test_equal_explicit_prices_survive_arrow_storage_as_wire_facts() -> None:
+    source = Message.from_text("8=FIX.4.4|35=D|54=1|44=10|31=10|132=10|10=000|")
+
+    stored = FixMsg.from_message_batch([source])
+    reloaded = FixMsg.from_dict(stored.to_pylist()[0])
+    prices = dict(reloaded.pairs)
+
+    assert reloaded.priceinferred == ""
+    assert {tag: float(prices[tag]) for tag in ("44", "31", "132")} == {
+        "44": 10.0,
+        "31": 10.0,
+        "132": 10.0,
+    }
 
 
 def test_a_message_renders_back_and_parses_again() -> None:

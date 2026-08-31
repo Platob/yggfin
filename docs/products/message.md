@@ -7,29 +7,39 @@ every other field stays in `entries` in wire order.
 from rekep import Message
 
 line = "8=FIX.4.4|35=8|49=VENUE|56=DESK|34=7|52=20260101-10:00:00.000|11=C1|55=BTC-USD|54=1|10=000"
-row = Message.from_text(line, message=line, sourceurl="s3://logs/capture.log", sourcerownum=1)
+row = Message.from_text(
+    line,
+    plugin="VenueBridge",
+    sourceurl="s3://logs/capture.log",
+    sourcerownum=1,
+)
 
 print(row.protocol, row.msgtype, row.msgseqnum, row.sendercompid, row.targetcompid)
+print(row.plugin, row.body == line.encode())
 print([(entry.tag, entry.value) for entry in row.entries])
 ```
 
 ```text
 FIX 8 7 VENUE DESK
+VenueBridge True
 [(11, 'C1'), (55, 'BTC-USD'), (54, '1'), (10, '000')]
 ```
 
-!!! warning "`message=` is what makes the syntax columns answer"
+`plugin` names the source adapter that recorded the row and stays with the FIX
+and market rows derived from it. It is empty when the capture header names no
+plugin.
 
-    `protocol`, `eventtype` and `direction` are read off the raw text, not
-    off the pairs. Staged without it, direction stays `UNKNOWN` and the FIX
-    codec does not claim the row.
+!!! note "`body` keeps the exact bytes"
+
+    `from_text` retains its input as non-null binary `body`. Parsing uses a
+    UTF-8 view; identity and writes keep the original bytes.
 
     ```python
-    Message.from_text(line).protocol                # Protocol.OTHER
-    Message.from_text(line, message=line).protocol  # Protocol.FIX
+    Message.from_text(line).protocol  # Protocol.FIX
+    Message.from_text(line).body      # b"8=FIX.4.4|..."
     ```
 
-## Three protocols
+## Four structured protocols
 
 `protocol` says which grammar the payload is written in, and the keys decide
 it -- never the values, and never a MsgType. It stores a
@@ -40,6 +50,7 @@ it -- never the values, and never a MsgType. It stores a
 | `FIX` | numbered tags only |
 | `FIXML` | numbered tags and rendered names together |
 | `UL` | rendered names only |
+| `XML` | an XML document, bare or behind an `XmlApi` transport prefix |
 
 A frame is FIXML whether the names arrive inline (`8=FIX.4.4|55=IBM|#SIDE=1`)
 or inside an `XmlData <213>` document the FIX stage expands. The wire token
@@ -51,6 +62,24 @@ rather than a second field.
 A payload with no structure at all is `OTHER`, and the log prefix in front of
 one never changes the answer: classification reads the message, which starts
 where the prefix ends.
+
+```python
+xml = b'<Order ID="C1"><Leg Symbol="AAPL"/><Leg Symbol="MSFT"/></Order>'
+row = Message.from_text(xml)
+
+print(row.protocol)
+print([(entry.comp, entry.key, entry.value) for entry in row.entries])
+```
+
+```text
+XML
+[('Order[0]', 'ID', 'C1'), ('Order[0].Leg[0]', 'Symbol', 'AAPL'), ('Order[0].Leg[1]', 'Symbol', 'MSFT')]
+```
+
+XML attributes and leaf elements become ordered `entries`. Indexed element
+paths are stored in `comp`, so repeated nested elements remain
+component-compatible. A malformed document keeps the row with an empty entry
+list and a bounded diagnostic in `reason`.
 
 The standard header and trailer are lifted, in the order the FIX stage
 declares them, so a reader who has the header does not have to walk `entries`

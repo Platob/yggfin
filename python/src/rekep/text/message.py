@@ -13,7 +13,7 @@ import pyarrow.compute
 
 from rekep import txhash
 from rekep.enums import Direction, EventType, Protocol
-from rekep.fields import DISPLAY, Field, column_name, column_names, scalar
+from rekep.fields import Field, column_name, column_names, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
 from rekep.fix.message import (
@@ -25,7 +25,7 @@ from rekep.fix.message import (
 )
 from rekep.market.event import MICROSECOND, Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
-from rekep.text.entries import ENTRIES, Entry
+from rekep.text.entries import ENTRIES, Entry, xml_payload_arrow
 
 #: The standard header is lifted out of `entries` into columns of its own,
 #: and a lifted column is read back out of the list wherever it is empty --
@@ -85,7 +85,7 @@ SESSION_NAMES: tuple[tuple[str, str], ...] = tuple(
 
 #: The same, as the columns carry them: folded, beside the tag. A column is
 #: matched by its fold, so the dictionary's spelling is kept once above and
-#: read back off `fix:display` rather than respelled at each use.
+#: read back off `fix:name` rather than respelled at each use.
 SESSION_FIELDS: tuple[tuple[str, str], ...] = tuple(
     (column_name(name), tag) for name, tag in SESSION_NAMES
 )
@@ -104,7 +104,7 @@ def _session(name: str) -> Field:
     reading; what it does need is the spelling a reader knows the field by,
     which the fold removed from its name.
     """
-    return Field(metadata={DISPLAY: name})
+    return Field(metadata={"fix:name": name})
 
 
 #: `{folded spelling: column}` for every session field, which is the lookup a
@@ -148,10 +148,7 @@ class Message(Event):
     threadname: Annotated[str, Field.column("ThreadName")] = ""
     """Contents of the first bracketed header field."""
 
-    plugincode: Annotated[str, Field.column("PluginCode")] = ""
-    """Contents of the second bracketed header field."""
-
-    message: str = ""
+    body: bytes = b""
     """Payload after the fixed log header, with continuation lines folded in."""
 
     protocol: Protocol = Protocol.OTHER
@@ -259,9 +256,9 @@ class Message(Event):
     # Resolved by `parse_arrow`, where the raw line and its protocol reading
     # coexist -- the verb before the payload's own first token is the
     # direction, and prose inside the payload never answers. Resolved *here*
-    # because `parse_fix` reads these rows back with `message` projected out:
-    # the FIX stage re-answers any row still carrying its text and preserves
-    # this answer where the text is gone. UNKNOWN marks rows no directed
+    # because `parse_fix` may read these rows back with `body` projected out:
+    # the FIX stage re-answers any row still carrying its body and preserves
+    # this answer where the body is gone. UNKNOWN marks rows no directed
     # protocol claims and bridge re-log lines that repeat a payload without
     # repeating `Receiving`/`Sending`.
     direction: Direction = Direction.UNKNOWN
@@ -270,23 +267,30 @@ class Message(Event):
     def __post_init__(self) -> None:
         """Normalize arguments and promote the protocol-neutral discriminator."""
         Event.__post_init__(self)
+        if isinstance(self.body, str):
+            self.body = self.body.encode("utf-8")
+        elif not isinstance(self.body, bytes):
+            self.body = bytes(self.body)
         self.direction = Direction.from_str(self.direction)
         self.protocol = Protocol.from_str(self.protocol)
         implicit_entries = self.entries is None
         if implicit_entries:
             self.entries = []
-        # `protocol` and `direction` are read off the raw *text*, so a row
-        # carrying one answers them whoever tokenized its arguments:
-        # `from_text(line, message=line)` stored `OTHER` and UNKNOWN
-        # because it had passed its own `entries` in. Everything else here is
+        # `protocol` and `direction` are read off the raw body, so a row
+        # carrying one answers them whoever tokenized its arguments. Everything else here is
         # read off the arguments, and an explicit list of them is the answer.
-        if self.message and (implicit_entries or self.protocol is Protocol.OTHER):
-            parsed = self.parse_arrow(pyarrow.array([self.message]))
+        if self.body and (implicit_entries or self.protocol is Protocol.OTHER):
+            parsed = self.parse_arrow(
+                pyarrow.array([self.body], pyarrow.binary()),
+                plugins=pyarrow.array([self.plugin], pyarrow.string()),
+            )
             if self.protocol is Protocol.OTHER:
                 self.protocol = Protocol.from_int(parsed["protocol"][0].as_py())
             if self.direction is Direction.UNKNOWN:
                 self.direction = Direction.from_int(parsed["direction"][0].as_py())
-        if implicit_entries and self.message:
+            if (error := parsed["parseerror"][0].as_py()) is not None:
+                self.reason = _merged_reason(self.reason, error)
+        if implicit_entries and self.body:
             self.entries = parsed["entries"][0].as_py()
             for name, _ in SESSION_FIELDS:
                 if getattr(self, name) is None:
@@ -321,26 +325,26 @@ class Message(Event):
         that is the difference between the two readings, not a defect in
         either.
 
-        The raw text itself is retained only where a caller declares
-        `message=` -- the pairs carry every field -- and the syntax columns
-        `protocol`, `eventtype` and `direction` are read off that text, so
-        direction stays UNKNOWN without it.
+        The raw bytes are retained in `body`; parsing uses a decoded view and
+        leaves the original payload unchanged.
         """
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
-        return cls(entries=list(pairs), **declared)
+        declared.setdefault("body", text.encode("utf-8") if isinstance(text, str) else bytes(text))
+        entries = list(pairs)
+        return cls(entries=entries, **declared)
 
     @classmethod
     def parse_arrow(
         cls,
-        messages: Any,
+        bodies: Any,
         msg_type_event_types: Mapping[str, EventType | int | str] | None = None,
         plugins: Any | None = None,
         protocol_rules: Any | None = None,
     ) -> dict[str, Any]:
         """Promote discriminators and parse only structured payload rows."""
-        if isinstance(messages, pyarrow.ChunkedArray):
+        if isinstance(bodies, pyarrow.ChunkedArray):
             offsets, parts = 0, []
-            for chunk in messages.chunks:
+            for chunk in bodies.chunks:
                 plugin_chunk = None if plugins is None else plugins.slice(offsets, len(chunk))
                 parts.append(
                     cls.parse_arrow(
@@ -363,25 +367,29 @@ class Message(Event):
                     [part["protocol"] for part in parts], _PROTOCOL_CODE
                 ),
                 "entries": pyarrow.chunked_array([part["entries"] for part in parts], ENTRIES),
+                "parseerror": pyarrow.chunked_array(
+                    [part["parseerror"] for part in parts], pyarrow.string()
+                ),
                 "direction": pyarrow.chunked_array(
                     [part["direction"] for part in parts], _DIRECTION_CODE
                 ),
             }
 
-        rows = len(messages)
+        rows = len(bodies)
         if not rows:
             return {
                 **{name: pyarrow.nulls(0, pyarrow.string()) for name, _ in SESSION_FIELDS},
                 "eventtype": pyarrow.array([], _EVENT_CODE),
                 "protocol": pyarrow.array([], _PROTOCOL_CODE),
                 "entries": pyarrow.array([], type=ENTRIES),
+                "parseerror": pyarrow.array([], pyarrow.string()),
                 "direction": pyarrow.array([], _DIRECTION_CODE),
             }
 
         from rekep.fix.rules import Rules
 
         compute = pyarrow.compute
-        text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
+        text = _body_text_arrow(bodies)
         entries = Entry.payload_arrow(text)
         # The pairs this stage just split are what a protocol is decided by, so
         # they are handed over rather than parsed a second time -- and before
@@ -389,11 +397,14 @@ class Message(Event):
         # tag is a session field is still a frame.
         rules = Rules.into_default() if protocol_rules is None else protocol_rules
         protocols = rules.into_arrow_protocol_array(text, plugins, entries)
+        xml = compute.equal(Protocol.into_family_arrow(protocols), int(Protocol.XML))
+        xml_entries, parse_errors = xml_payload_arrow(bodies, xml)
+        entries = compute.if_else(xml, xml_entries, entries)
         session, entries = _session_columns(entries)
         msg_types = compute.coalesce(session[_MSG_TYPE], _msg_type_probe(text))
         event_types = _event_types(msg_types, msg_type_event_types)
         # Direction is resolved here, where the raw line and its protocol
-        # last coexist: `parse_fix` reads the stored rows with `message`
+        # last coexist: `parse_fix` may read the stored rows with `body`
         # projected out, so an answer not stored now is an answer lost. The
         # FIX stage re-resolves any row still carrying its text -- the same
         # computation -- and preserves this one where the text is gone.
@@ -404,17 +415,18 @@ class Message(Event):
             "protocol": protocols,
             _MSG_TYPE: msg_types,
             "entries": entries,
+            "parseerror": parse_errors,
             "direction": direction,
         }
 
     @classmethod
-    def msg_types_arrow(cls, messages: Any) -> Any:
+    def msg_types_arrow(cls, bodies: Any) -> Any:
         """Probe top-level message discriminators without splitting payload fields."""
-        if isinstance(messages, pyarrow.ChunkedArray):
+        if isinstance(bodies, pyarrow.ChunkedArray):
             return pyarrow.chunked_array(
-                [cls.msg_types_arrow(chunk) for chunk in messages.chunks], pyarrow.string()
+                [cls.msg_types_arrow(chunk) for chunk in bodies.chunks], pyarrow.string()
             )
-        text = pyarrow.compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
+        text = _body_text_arrow(bodies)
         return _msg_type_probe(text)
 
     def identify(self) -> Self:
@@ -422,9 +434,10 @@ class Message(Event):
         self._materialize_life_code()
         self.xhash = self.xhash or self.life_hash()
         if not self.vhash:
-            self.vhash = hash_bytes(self.message.encode("utf-8"))
+            self.vhash = hash_bytes(self.body)
         if not self.hash:
             self.hash = txhash.couple128(self.unix // MICROSECOND, self.vhash)
+        self._drop_self_link()
         return self
 
     @classmethod
@@ -432,14 +445,41 @@ class Message(Event):
         cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
     ) -> pyarrow.RecordBatch:
         """Build a batch after assigning raw row identities in Arrow kernels."""
-        columns["vhash"] = hash_bytes_arrow(columns["message"])
+        columns["vhash"] = hash_bytes_arrow(columns["body"])
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
-        columns["xhash"] = cls.xhash_arrow(columns["creaunix"], columns["code"])
+        columns["xhash"] = cls.xhash_arrow(columns["code"])
+        columns["linkhashes"] = cls._without_self_links_arrow(
+            columns["linkhashes"], columns["hash"]
+        )
         return pyarrow.RecordBatch.from_arrays(
             [columns[name] for name in schema.names], schema=schema
         )
+
+
+def _body_text_arrow(bodies: Any) -> pyarrow.Array:
+    """A fault-tolerant UTF-8 parsing view over exact binary bodies."""
+    if isinstance(bodies, pyarrow.ChunkedArray):
+        return pyarrow.chunked_array(
+            [_body_text_arrow(chunk) for chunk in bodies.chunks], pyarrow.string()
+        )
+    binary = bodies.cast(pyarrow.binary(), safe=False)
+    try:
+        return pyarrow.compute.fill_null(binary.cast(pyarrow.string()), "")
+    except pyarrow.ArrowInvalid:
+        return pyarrow.array(
+            [
+                "" if value is None else value.decode("utf-8", "replace")
+                for value in binary.to_pylist()
+            ],
+            pyarrow.string(),
+        )
+
+
+def _merged_reason(current: str | None, added: str) -> str:
+    """Append one parser diagnostic without hiding an earlier row reason."""
+    return f"{current}; {added}" if current else added
 
 
 def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[Entry]]:

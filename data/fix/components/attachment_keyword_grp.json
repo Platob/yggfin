@@ -10,8 +10,13 @@
   "fix": {
    "component": "AttachmentKeywordGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"Email\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "Email",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

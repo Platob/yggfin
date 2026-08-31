@@ -18,7 +18,9 @@
    "component": "ListExecute",
    "msgtype": "L",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -18,7 +18,9 @@
    "component": "DontKnowTrade",
    "msgtype": "Q",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -11,7 +11,9 @@
    "component": "QuoteAck",
    "msgtype": "CW",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

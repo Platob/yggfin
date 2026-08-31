@@ -12,8 +12,22 @@
   "fix": {
    "component": "DisplayInstruction",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CrossOrderCancelReplaceRequest\",\"ExecutionReport\",\"MultilegOrderCancelReplace\",\"NewOrderCross\",\"NewOrderList\",\"NewOrderMultileg\",\"NewOrderSingle\",\"OrderCancelReplaceRequest\",\"TradeCaptureReport\",\"TradeCaptureReportAck\",\"TradeMatchReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CrossOrderCancelReplaceRequest",
+    "ExecutionReport",
+    "MultilegOrderCancelReplace",
+    "NewOrderCross",
+    "NewOrderList",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "OrderCancelReplaceRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "TradeMatchReport"
+   ]
   },
   "fields": [
    {

@@ -8,11 +8,10 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import txhash
 from rekep.enums import Protocol
 from rekep.fix import FixRegistry
-from rekep.market import AssetKind, Currency, Instrument, InstrumentUpdate, Leg, Side
-from rekep.market.identity import HASH, NIL, hash_of
+from rekep.market import HASH, AssetKind, Currency, Instrument, InstrumentUpdate, Leg, Order, Side
+from rekep.market.identity import NIL
 from rekep.text import FixMsg
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -40,8 +39,7 @@ def test_scalar_component_and_update_conversion_is_bidirectional() -> None:
     update = InstrumentUpdate.from_instrument(component, unix=31).identify()
 
     assert update.instrument is component
-    assert update.xhash == txhash.couple128(0, component.xhash)
-    assert txhash.vhash_of(update.xhash) == component.xhash
+    assert update.xhash == component.xhash
     assert (update.creaunix, update.recunix) == (31, 31)
     assert Instrument.from_update(update) is component
     assert Instrument.from_(update) is component
@@ -77,6 +75,23 @@ def test_other_protocol_cannot_publish_a_carried_instrument() -> None:
     assert list(InstrumentUpdate.from_fixmsgs([message])) == []
 
 
+def test_reference_updates_keep_the_plugin_that_recorded_their_source() -> None:
+    event = Order(unix=3, plugin="market-reader").attach_instrument(Instrument(symbol="AAPL"))
+    message = FixMsg(
+        unix=4,
+        plugin="fix-reader",
+        protocol="FIX4.4",
+        beginstring="FIX.4.4",
+        instrument=Instrument(symbol="MSFT"),
+    )
+
+    (from_event,) = InstrumentUpdate.from_events([event])
+    (from_message,) = InstrumentUpdate.from_fixmsgs([message])
+
+    assert from_event.plugin == "market-reader"
+    assert from_message.plugin == "fix-reader"
+
+
 def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None:
     components = [
         spread(),
@@ -84,12 +99,15 @@ def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None
     ]
     component_batch = Instrument.into_field().into_arrow_batch(components, owner=Instrument)
 
+    plugins = pyarrow.array(["reference-a", "reference-b"])
     update_batch = InstrumentUpdate.from_instrument_arrow_batch(
-        component_batch, unix=pyarrow.array([31, 32], pyarrow.int64())
+        component_batch,
+        unix=pyarrow.array([31, 32], pyarrow.int64()),
+        plugin=plugins,
     )
     scalar = [
-        InstrumentUpdate.from_instrument(component, unix=unix).identify()
-        for component, unix in zip(components, (31, 32), strict=True)
+        InstrumentUpdate.from_instrument(component, unix=unix, plugin=plugin).identify()
+        for component, unix, plugin in zip(components, (31, 32), plugins.to_pylist(), strict=True)
     ]
 
     assert update_batch.equals(InstrumentUpdate.into_arrow_batch(scalar), check_metadata=True)
@@ -102,7 +120,9 @@ def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None
     assert nested["legs"][0]["maturitydate"] == datetime.datetime(2027, 3, 19)
     assert nested["legs"][0]["ratio"] == 2.0
     assert components[0].legs is not None
-    assert components[0].legs[0].xhash == hash_of(components[0].legs[0].symbolticker)
+    assert components[0].legs[0].xhash == InstrumentUpdate.xhash_of(
+        components[0].legs[0].symbolticker
+    )
     assert update_batch.schema.field("xhash").type == HASH
 
     restored = Instrument.from_update_arrow_batch(update_batch)
@@ -143,12 +163,12 @@ def test_fix_identifiers_choose_one_canonical_ticker_and_identity() -> None:
     )
     assert [built.symbolticker for built in variants] == ["AAPL", "XNAS:AAPL", "AAPL", "AAPL"]
     assert [built.xhash for built in variants] == [
-        hash_of(built.symbolticker) for built in variants
+        InstrumentUpdate.xhash_of(built.symbolticker) for built in variants
     ]
 
     updates = [InstrumentUpdate.from_instrument(built, xhash=7, code="wrong") for built in variants]
     assert [(update.xhash, update.code) for update in updates] == [
-        (InstrumentUpdate.xhash_of(0, built.symbolticker), built.symbolticker) for built in variants
+        (InstrumentUpdate.xhash_of(built.symbolticker), built.symbolticker) for built in variants
     ]
 
 
@@ -177,7 +197,7 @@ def test_two_readable_symbols_for_one_identifier_are_two_instruments() -> None:
 
 
 def test_a_feed_that_names_no_venue_still_gets_one_stable_identity() -> None:
-    assert Instrument(symbol="BTC-USD").xhash == hash_of("BTC-USD")
+    assert Instrument(symbol="BTC-USD").xhash == InstrumentUpdate.xhash_of("BTC-USD")
     assert Instrument(symbol="BTC-USD").xhash == Instrument(symbol="BTC-USD").xhash
 
 
@@ -344,7 +364,7 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
     ]
     merged = found[0]
     assert all(row.hash and row.vhash for row in found)
-    assert txhash.vhash_of(merged.xhash) == hash_of(merged.instrument.symbolticker)
+    assert merged.xhash == InstrumentUpdate.xhash_of(merged.instrument.symbolticker)
     assert merged.instrument.securitydesc == "Apple"
     assert merged.instrument.kind is AssetKind.EQUITY
     assert merged.instrument.minpriceincrement == 0.01

@@ -12,7 +12,9 @@
    "component": "SettlementObligationReport",
    "msgtype": "BQ",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

@@ -12,7 +12,9 @@
    "component": "UserNotification",
    "msgtype": "CB",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

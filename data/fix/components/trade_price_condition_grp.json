@@ -10,8 +10,19 @@
   "fix": {
    "component": "TradePriceConditionGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAlert\",\"AllocationReport\",\"Confirmation\",\"ExecutionReport\",\"MarketDataIncrementalRefresh\",\"MarketDataSnapshotFullRefresh\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAlert",
+    "AllocationReport",
+    "Confirmation",
+    "ExecutionReport",
+    "MarketDataIncrementalRefresh",
+    "MarketDataSnapshotFullRefresh",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

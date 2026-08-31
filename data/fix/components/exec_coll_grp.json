@@ -13,8 +13,17 @@
   "fix": {
    "component": "ExecCollGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"CollateralAssignment\",\"CollateralInquiry\",\"CollateralInquiryAck\",\"CollateralReport\",\"CollateralRequest\",\"CollateralResponse\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "CollateralAssignment",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "CollateralReport",
+    "CollateralRequest",
+    "CollateralResponse"
+   ]
   },
   "fields": [
    {

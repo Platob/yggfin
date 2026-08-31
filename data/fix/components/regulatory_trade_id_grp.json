@@ -10,8 +10,24 @@
   "fix": {
    "component": "RegulatoryTradeIDGrp",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"AllocationInstruction\",\"AllocationInstructionAck\",\"AllocationReport\",\"AllocationReportAck\",\"CollateralReport\",\"Confirmation\",\"ConfirmationAck\",\"ExecutionAck\",\"ExecutionReport\",\"PositionMaintenanceReport\",\"PositionReport\",\"QuoteRequest\",\"TradeCaptureReport\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "AllocationInstruction",
+    "AllocationInstructionAck",
+    "AllocationReport",
+    "AllocationReportAck",
+    "CollateralReport",
+    "Confirmation",
+    "ConfirmationAck",
+    "ExecutionAck",
+    "ExecutionReport",
+    "PositionMaintenanceReport",
+    "PositionReport",
+    "QuoteRequest",
+    "TradeCaptureReport"
+   ]
   },
   "fields": [
    {

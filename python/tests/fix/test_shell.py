@@ -172,23 +172,28 @@ def test_components_and_component_read_the_declaration(store: Offline) -> None:
     assert "required" in printed, "the spec's own rule, which is what nullability reads"
 
 
-def test_component_declarations_are_added_updated_and_removed(
-    store: Offline, tmp_path: Path
+@pytest.mark.parametrize(("name", "msg_type"), [("FakeLegs", ""), ("FakeMessage", "Z")])
+def test_component_and_message_declarations_are_added_updated_and_removed(
+    store: Offline, tmp_path: Path, name: str, msg_type: str
 ) -> None:
-    declaration = tmp_path / "legs.json"
+    declaration = tmp_path / f"{name}.json"
     ComponentRecord(
-        name="FakeLegs",
+        name=name,
         versions=("9.1",),
-        declaration=block("FakeLegs", [field_member("FakeCode", 90002)]),
+        declaration=block(name, [field_member("FakeCode", 90002)], msg_type),
     ).into_json(str(declaration))
-    assert "added FakeLegs" in _run(store, f"add-component {declaration}", "y", "quit")
-    assert store.merged_component("FakeLegs").members[0].name == "FakeCode"
+    added = _run(store, f"add-component {declaration}", "y", "quit")
+    assert f"added {name}" in added
+    assert store.merged_component(name).members[0].name == "FakeCode"
+    assert store.merged_component(name).msg_type == msg_type
+    if msg_type:
+        assert "msgtype" in added and msg_type in added
 
-    assert "updated FakeLegs" in _run(store, f"update-component {declaration}", "y", "quit")
-    assert "kept" in _run(store, "remove-component FakeLegs", "n", "quit")
-    assert "removed FakeLegs" in _run(store, "remove-component FakeLegs", "y", "quit")
-    with pytest.raises(KeyError, match="FakeLegs"):
-        store.merged_component("FakeLegs")
+    assert f"updated {name}" in _run(store, f"update-component {declaration}", "y", "quit")
+    assert "kept" in _run(store, f"remove-component {name}", "n", "quit")
+    assert f"removed {name}" in _run(store, f"remove-component {name}", "y", "quit")
+    with pytest.raises(KeyError, match=name):
+        store.merged_component(name)
 
 
 def test_complete_field_declarations_are_added_and_updated(store: Offline, tmp_path: Path) -> None:

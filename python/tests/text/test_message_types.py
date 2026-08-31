@@ -81,10 +81,10 @@ def test_the_configured_spelling_may_be_a_name_a_mnemonic_or_a_code() -> None:
 
 
 def test_a_spelling_no_event_kind_answers_to_is_refused() -> None:
-    """Better a loud refusal than a dead code every reader maps to UNKNOWN."""
+    """Malformed open codes and unknown stored integers are refused."""
     column = pyarrow.array(["8=FIX.4.4|35=D|11=one|"], pyarrow.string())
     with pytest.raises(ValueError, match="EventType"):
-        Message.parse_arrow(column, {"D": "XYZW"})
+        Message.parse_arrow(column, {"D": "TOO-LONG-CODE"})
     with pytest.raises(ValueError, match="EventType"):
         Message.parse_arrow(column, {"D": 999})
 
@@ -317,7 +317,7 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
 
 def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:
     stored = Message(
-        message="8=FIX.4.4|35=0|58=" + "A=1|" * 1000,
+        body="8=FIX.4.4|35=0|58=" + "A=1|" * 1000,
         protocol=Protocol.MISC,
         msgtype="0",
         eventtype=EventType.MISC,

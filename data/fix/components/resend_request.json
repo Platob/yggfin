@@ -16,7 +16,9 @@
    "component": "ResendRequest",
    "msgtype": "2",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {

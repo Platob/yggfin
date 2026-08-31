@@ -10,8 +10,13 @@
   "fix": {
    "component": "MDStatisticParameters",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]",
-   "msgtypes": "[\"MarketDataStatisticsReport\",\"MarketDataStatisticsRequest\"]"
+   "sources": [
+    "quickfix"
+   ],
+   "msgtypes": [
+    "MarketDataStatisticsReport",
+    "MarketDataStatisticsRequest"
+   ]
   },
   "fields": [
    {

@@ -125,6 +125,8 @@ class KeyCounts(Convertible):
 
     def add_messages(self, messages: Any, plugins: Any = None, source: str = "") -> KeyCounts:
         """Count one batch of raw log lines, and keep only what it spelled."""
+        from rekep.text.message import _body_text_arrow
+
         compute = pyarrow.compute
         if isinstance(messages, pyarrow.ChunkedArray):
             messages = messages.combine_chunks()
@@ -133,6 +135,7 @@ class KeyCounts(Convertible):
         self.lines += len(messages)
         if not len(messages):
             return self
+        messages = _body_text_arrow(messages)
         protocols = self.rules.into_arrow_protocol_array(messages, plugins)
         for code, where in groups_of(protocols):
             protocol = code.as_py()
@@ -438,7 +441,7 @@ def count_reader(
     One batch at a time, and only the counts are kept: the batch that carried
     a value is released before the next one is read.
 
-    `plugins` is a regular expression the line's `plugincode` must match --
+    `plugins` is a regular expression the line's `plugin` must match --
     `^UL` for a bridge's own traffic -- so a report can be about the plugins
     that matter rather than about a whole estate.
     """
@@ -475,11 +478,11 @@ def _batches(reader: Any) -> Iterator[pyarrow.RecordBatch]:
 
 
 def _columns(batch: pyarrow.RecordBatch) -> tuple[Any, Any]:
-    """The message column and the plugin column, by the names a `FixMsg` uses."""
+    """The body column and plugin column, by the names a `Message` uses."""
     names = batch.schema.names
-    if "message" not in names:
-        raise ValueError(f"a batch of log lines needs a 'message' column; got {names}")
-    return batch.column("message"), (batch.column("plugincode") if "plugincode" in names else None)
+    if "body" not in names:
+        raise ValueError(f"a batch of log lines needs a 'body' column; got {names}")
+    return batch.column("body"), (batch.column("plugin") if "plugin" in names else None)
 
 
 def count_files(

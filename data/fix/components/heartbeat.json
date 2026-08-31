@@ -16,7 +16,9 @@
    "component": "Heartbeat",
    "msgtype": "0",
    "source": "quickfix",
-   "sources": "[\"quickfix\"]"
+   "sources": [
+    "quickfix"
+   ]
   },
   "fields": [
    {
