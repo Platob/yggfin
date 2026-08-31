@@ -613,6 +613,8 @@ class InstrumentUpdate(Event):
 
         def observed() -> Iterator[InstrumentUpdate]:
             for log in logs:
+                if getattr(log, "error", None):
+                    continue
                 translated = log.into_fix_events(registry=registry)
                 for reader in translated._instrument_readers():
                     instrument = Instrument.from_fix_events(reader)

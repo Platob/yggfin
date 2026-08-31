@@ -236,7 +236,7 @@ ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTR
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 34
 EXPECTED_FLAT_COLUMNS = 85
-EXPECTED_LOG_COLUMNS = 109
+EXPECTED_LOG_COLUMNS = 110
 
 
 @pytest.fixture(scope="module")
@@ -261,7 +261,7 @@ def test_a_log_line_is_an_event() -> None:
     assert issubclass(FixMsg, Event)
     assert (
         FixMsg.into_field().into_arrow_schema().names
-        == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS + TRAILING_COMPONENTS
+        == ENVELOPE + SOURCE + LINE + MESSAGE + ADDED_COLUMNS + ["error"] + TRAILING_COMPONENTS
     )
 
 
@@ -475,7 +475,7 @@ def test_the_digest_is_every_column_but_the_clocks_and_the_identities() -> None:
     assert {"clordid", "price", "side", "orderqty", "parties", "instrument"} <= named, (
         "a lifted field is content"
     )
-    assert not named & {"unix", "recunix", "hash", "vhash", "xhash", "message"}
+    assert not named & {"unix", "recunix", "hash", "vhash", "xhash", "message", "error"}
 
 
 def test_two_orders_differing_only_in_lifted_fields_are_two_rows(codec: FixCodec) -> None:
@@ -545,6 +545,180 @@ def test_message_batches_transcribe_from_rows_and_arrow_alike() -> None:
         FixMsg.from_message_batch(["8=FIX.4.4|35=D|10=000"])
 
 
+def test_malformed_typed_values_report_the_row_without_stopping_its_batch(
+    codec: FixCodec,
+) -> None:
+    """Typed nulls remain best effort, and now retain why they became null."""
+    lines = [
+        "8=FIX.4.4|9=12|35=D|34=1|52=20260821-10:00:00|43=N|11=GOOD-1|55=AAPL|44=10.5|54=1|10=000|",
+        "8=FIX.4.4|9=12x|35=D|34=9223372036854775808|"
+        "52=20260230-25:61:00|43=perhaps|11=BAD|55=AAPL|44=abc|54=1|10=000|",
+        "8=FIX.4.4|9=12|35=D|34=3|52=20260821-10:00:02|43=N|11=GOOD-2|55=AAPL|44=11.5|54=1|10=000|",
+    ]
+    rows = [
+        Message(
+            message=line,
+            eventtype=EventType.ORDER,
+            reason="upstream truncation" if index == 1 else None,
+            recunix=index + 1,
+        )
+        for index, line in enumerate(lines)
+    ]
+
+    raw = _raw_batch(*rows)
+    parsed = FixMsg.from_message_batch(raw, codec)
+
+    assert parsed.slice(0, 1).equals(FixMsg.from_message_batch(_raw_batch(rows[0]), codec))
+    assert parsed.slice(2, 1).equals(FixMsg.from_message_batch(_raw_batch(rows[2]), codec))
+    assert parsed.column("clordid").to_pylist() == ["GOOD-1", "BAD", "GOOD-2"]
+    assert _instrument_column(parsed, "symbol").to_pylist() == ["AAPL"] * 3
+    assert parsed.column("price").to_pylist() == [10.5, None, 11.5]
+    assert parsed.column("reason").to_pylist() == [None, "upstream truncation", None]
+    assert parsed.column("error").to_pylist() == [
+        None,
+        "BodyLength <9>: invalid 12x; "
+        "MsgSeqNum <34>: invalid 9223372036854775808; "
+        "PossDupFlag <43>: invalid perhaps; "
+        "SendingTime <52>: invalid 20260230-25:61:00; "
+        "Price <44>: invalid abc",
+        None,
+    ]
+    assert parsed.column("entries")[1].as_py() == [
+        {"tag": 44, "key": "Price", "value": "abc", "comp": None}
+    ]
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
+    assert projected.column("error").to_pylist() == parsed.column("error").to_pylist()
+    assert projected.column("clordid").to_pylist() == ["GOOD-1", "BAD", "GOOD-2"]
+
+
+def test_degraded_projected_rows_keep_distinct_raw_identities(codec: FixCodec) -> None:
+    """Unreadable spellings cannot collapse onto one parsed-null merge key."""
+    rows = [
+        Message(
+            message=f"8=FIX.4.4|35=D|34={value}|11=BAD|10=000|",
+            unix=1_000_000,
+            recunix=1_000_000,
+        ).identify()
+        for value in ("abc", "xyz")
+    ]
+
+    parsed = FixMsg.from_message_batch(_raw_batch(*rows).drop_columns(["message"]), codec)
+
+    assert parsed.column("error").to_pylist() == [
+        "MsgSeqNum <34>: invalid abc",
+        "MsgSeqNum <34>: invalid xyz",
+    ]
+    assert parsed.column("vhash").to_pylist() == [row.vhash for row in rows]
+    assert parsed.column("hash").to_pylist() == [row.into_row()["hash"] for row in rows]
+    assert len(set(parsed.column("vhash").to_pylist())) == 2
+    assert len(set(parsed.column("hash").to_pylist())) == 2
+
+    unlinked = Message(
+        message="8=FIX.4.4|9=abc|35=0|10=000|",
+        unix=1_000_000,
+        recunix=1_000_000,
+    ).identify()
+    heartbeat = FixMsg.from_message_batch(_raw_batch(unlinked).drop_columns(["message"]), codec)
+    assert heartbeat.column("code").to_pylist() == [""]
+    assert heartbeat.column("vhash").to_pylist() == [unlinked.vhash]
+    assert heartbeat.column("xhash").to_pylist() == [unlinked.vhash]
+
+    # A caller can project a hand-built Arrow row before the raw stage has
+    # assigned identity. Its remaining raw readings still prevent a collision.
+    unassigned = [
+        Message(message=f"8=FIX.4.4|35=D|34={value}|11=BAD|10=000|") for value in ("abc", "xyz")
+    ]
+    fallback = FixMsg.from_message_batch(_raw_batch(*unassigned).drop_columns(["message"]), codec)
+    assert len(set(fallback.column("vhash").to_pylist())) == 2
+    assert len(set(fallback.column("hash").to_pylist())) == 2
+
+
+def test_configured_null_session_spellings_are_absent_not_errors(codec: FixCodec) -> None:
+    rows = [
+        Message(message="8=FIX.4.4|9=null|35=D|49=null|11=A|10=000|"),
+        Message(message="8=FIX.4.4|35=D|34= <NULL> |56= <NULL> |11=B|10=000|"),
+        Message(message="8=FIX.4.4|35=D|43= N/A |115= N/A |11=C|10=000|"),
+    ]
+
+    raw = _raw_batch(*rows)
+    parsed = FixMsg.from_message_batch(raw, codec)
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
+
+    for batch in (parsed, projected):
+        assert batch.column("bodylength").to_pylist() == [None, None, None]
+        assert batch.column("msgseqnum").to_pylist() == [None, None, None]
+        assert batch.column("possdupflag").to_pylist() == [None, None, None]
+        assert batch.column("sendercompid").to_pylist() == [None, None, None]
+        assert batch.column("targetcompid").to_pylist() == [None, None, None]
+        assert batch.column("onbehalfofcompid").to_pylist() == [None, None, None]
+        assert batch.column("error").to_pylist() == [None, None, None]
+
+    mixed = FixMsg.from_message_batch(
+        _raw_batch(
+            rows[0],
+            Message(message="toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#CLORDID=NAMED|"),
+        ),
+        codec,
+    )
+    assert mixed.column("sendercompid").to_pylist() == [None, None]
+
+
+def test_one_throwing_transcription_isolated_between_valid_rows(
+    registry: FixRegistry,
+) -> None:
+    """The vector path bisects only after failure and preserves input order."""
+
+    class FailingCodec(FixCodec):
+        def into_lifted_columns(
+            self, entries: object, version: str | None = None
+        ) -> tuple[dict[str, object], object]:
+            values = pyarrow.compute.struct_field(pyarrow.compute.list_flatten(entries), "value")
+            if pyarrow.compute.any(pyarrow.compute.equal(values, "FAIL"), min_count=0).as_py():
+                raise ValueError("synthetic transcription failure")
+            return super().into_lifted_columns(entries, version)
+
+    codec = FailingCodec(registry=registry)
+    rows = [
+        Message(
+            message=(f"8=FIX.4.4|35=D|11={clordid}|55=AAPL|54=1|38=5|40=2|44=10|10=000|"),
+            eventtype=EventType.ORDER,
+            sourceurl="capture.log",
+            sourcerownum=index,
+            unix=index,
+            recunix=index,
+            reason="source warning" if clordid == "FAIL" else None,
+        ).identify()
+        for index, clordid in enumerate(("GOOD-1", "FAIL", "GOOD-2"), 1)
+    ]
+
+    raw = _raw_batch(*rows)
+    parsed = FixMsg.from_message_batch(raw, codec)
+
+    assert parsed.slice(0, 1).equals(FixMsg.from_message_batch(_raw_batch(rows[0]), codec))
+    assert parsed.slice(2, 1).equals(FixMsg.from_message_batch(_raw_batch(rows[2]), codec))
+    assert parsed.column("clordid").to_pylist() == ["GOOD-1", None, "GOOD-2"]
+    assert parsed.column("sourcerownum").to_pylist() == [1, 2, 3]
+    assert parsed.column("reason").to_pylist() == [None, "source warning", None]
+    assert parsed.column("error").to_pylist() == [
+        None,
+        "FIX transcription failed: ValueError: synthetic transcription failure",
+        None,
+    ]
+    assert parsed.column("vhash")[1].as_py() == rows[1].vhash
+    assert parsed.column("hash")[1].as_py() == rows[1].into_row()["hash"]
+    assert "FAIL" in [entry["value"] for entry in parsed.column("entries")[1].as_py()]
+
+    projected = FixMsg.from_message_batch(raw.drop_columns(["message"]), codec)
+    assert projected.column("error").to_pylist() == parsed.column("error").to_pylist()
+    assert projected.column("sourcerownum").to_pylist() == [1, 2, 3]
+
+    messages = list(FixMsg.from_arrow_reader([parsed]))
+    assert list(messages[1].into_market_events(registry=registry)) == []
+    assert list(InstrumentUpdate.from_fixmsgs((messages[1],), registry=registry)) == []
+    translated = list(FixMsg.into_market_arrow_batches(parsed, registry=registry))
+    assert sum(batch.num_rows for _, batch in translated) == 2
+
+
 def _widened(batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
     """The batch as an Iceberg scan hands it back: every string 64-bit wide."""
 
@@ -588,6 +762,14 @@ def test_a_projected_batch_keeps_the_column_the_reader_left_behind() -> None:
     parsed = FixMsg.from_message_batch(_widened(projected))
     assert "message" not in parsed.schema.names or parsed.column("message").null_count == 1
     assert parsed.column("clordid").to_pylist() == ["C1"], "the stored entries still parse"
+
+
+def test_a_projection_without_text_or_protocol_is_a_batch_contract_error() -> None:
+    raw = _raw_batch(Message(message="8=FIX.4.4|35=D|11=C1|10=000|"))
+    projected = raw.drop_columns(["message", "protocol"])
+
+    with pytest.raises(ValueError, match="projected Message batch needs protocol"):
+        FixMsg.from_message_batch(projected)
 
 
 def test_a_stored_field_reads_through_its_own_structure() -> None:
@@ -786,6 +968,20 @@ def test_instrument_groups_resolve_into_their_structured_columns(
         ("MSFT", "SELL", 2.0),
     ]
     assert instrument == direct, "the resolved columns and the pair walk agree"
+
+
+def test_instrument_component_decimals_accept_fix_exponents(codec: FixCodec) -> None:
+    """Component gates and their casts accept the same valid numeric spellings."""
+    line = "8=FIX.4.4|35=d|55=SPREAD|555=1|600=AAPL|612=1e3|623=2.5E-1|624=1|10=000|"
+
+    parsed = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
+    (leg,) = _instrument_column(parsed, "legs")[0].as_py()
+
+    assert leg["strikeprice"] == 1_000.0
+    assert leg["ratio"] == 0.25
+    assert parsed.column("error").to_pylist() == [None]
+    assert 612 not in {entry["tag"] for entry in parsed.column("entries")[0].as_py()}
+    assert 623 not in {entry["tag"] for entry in parsed.column("entries")[0].as_py()}
 
 
 def test_nested_instrument_does_not_absorb_lifecycle_altids() -> None:
@@ -1648,7 +1844,7 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
     registry: FixRegistry,
 ) -> None:
     raw = _raw_batch(
-        Message(message="8=FIX.4.4|35=D|10=000|55=AFTER-CHECKSUM|"),
+        Message(message="8=FIX.4.4|35=D|49=null|10=000|55=AFTER-CHECKSUM|"),
         Message(message="8=FIX.4.4|35=D|10=000|52=20260814-09:30:00.000|"),
     )
     assert raw.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
@@ -1660,8 +1856,15 @@ def test_fixmsg_applies_checksum_semantics_to_the_stored_arguments(
     parsed = FixMsg.from_message_batch(raw, codec)
 
     assert _instrument_column(parsed, "symbol").to_pylist() == ["", ""]
+    assert raw.column("sendercompid").to_pylist() == ["null", None]
+    assert parsed.column("sendercompid").to_pylist() == [None, None]
     assert parsed.column("sendingtime").to_pylist() == [None, None]
-    assert all(entry["value"] != "AFTER-CHECKSUM" for entry in parsed.column("entries")[0].as_py())
+    assert (
+        parsed.column("error").to_pylist()
+        == ["FIX transcription failed: ValueError: CheckSum <10> is not the final field"] * 2
+    )
+    assert parsed.column("entries")[0].as_py()[-1]["value"] == "AFTER-CHECKSUM"
+    assert parsed.column("entries")[1].as_py()[-1]["key"] == "52"
 
 
 def test_fixmsg_consumes_a_hash_delimited_wire_message(
@@ -2378,6 +2581,66 @@ def test_a_missing_group_count_and_a_malformed_continuation_stay_visible(
     broken = "8=FIX.4.4|35=d|55=AAPL|454=|455=|10=000"
     survived = FixMsg.from_message_batch(_raw_batch(Message(message=broken)), codec)
     assert _instrument_column(survived, "symbol")[0].as_py() == "AAPL"
+
+
+def test_invalid_group_counts_are_diagnostic_and_incomplete_groups_stay_raw(
+    codec: FixCodec,
+) -> None:
+    lines = [
+        "8=FIX.4.4|35=D|11=A|453=x|448=P|447=D|452=1|10=000|",
+        "8=FIX.4.4|35=D|11=B|453=2|448=P|447=D|452=1|10=000|",
+        "8=FIX.4.4|35=D|11=C|453=1|448=P|447=D|452=1|10=000|",
+        "8=FIX.4.4|35=D|11=D|453=1|448=P|447=D|452=abc|10=000|",
+        "8=FIX.4.4|35=D|11=E|768=1|769=bad-time|770=1|10=000|",
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#REKEP.PX=bad-price|",
+    ]
+
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(*(Message(message=line) for line in lines)), codec
+    )
+
+    assert parsed.column("error").to_pylist() == [
+        "NoPartyIDs <453>: invalid x",
+        None,
+        None,
+        "PartyRole <452>: invalid abc",
+        "TrdRegTimestamp <769>: invalid bad-time",
+        "REKEP.Px <30022>: invalid bad-price",
+    ]
+    assert parsed.column("parties").to_pylist() == [
+        None,
+        None,
+        [{"partyid": "P", "partyidsource": "D", "partyrole": 1}],
+        [{"partyid": "P", "partyidsource": "D", "partyrole": None}],
+        None,
+        None,
+    ]
+    assert [parsed.column("entries")[row].as_py()[0]["value"] for row in (0, 1)] == [
+        "x",
+        "2",
+    ]
+    assert [parsed.column("entries")[row].as_py()[0]["value"] for row in (3, 4, 5)] == [
+        "abc",
+        "bad-time",
+        "bad-price",
+    ]
+
+
+def test_unknown_versions_and_tags_remain_forward_compatible_non_errors(
+    codec: FixCodec,
+) -> None:
+    line = "8=FIX.9.9|35=D|11=C1|9999=future|44=abc|10=000|"
+
+    parsed = FixMsg.from_message_batch(_raw_batch(Message(message=line)), codec)
+
+    assert parsed.column("protocolversion").to_pylist() == [None]
+    assert parsed.column("error").to_pylist() == [None]
+    retained = [
+        entry["value"]
+        for name in ("entries", "unmap")
+        for entry in (parsed.column(name)[0].as_py() or ())
+    ]
+    assert set(retained) == {"C1", "future", "abc", "000"}
 
 
 def test_the_scalar_row_and_the_batch_lift_the_same_instrument(codec: FixCodec) -> None:

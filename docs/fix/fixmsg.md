@@ -25,6 +25,38 @@ A `FixRegistry` alone is enough — the codec derives from it, the packaged one
 by default. A full `FixCodec` serves only feeds whose rules or field
 declarations differ.
 
+## Best-effort rows
+
+```python
+from rekep import FixMsg, Message
+
+line = "8=FIX.4.4|9=12x|35=D|11=C1|55=AAPL|44=abc|54=1|10=000|"
+row = FixMsg.from_message_batch([Message(message=line)]).to_pylist()[0]
+
+print(row["clordid"], row["instrument"]["symbol"], row["price"])
+print(row["error"])
+```
+
+```text
+C1 AAPL None
+BodyLength <9>: invalid 12x; Price <44>: invalid abc
+```
+
+Typed values that cannot be read become null and `error` says which readings
+degraded. Body and component spellings remain in `entries`; a lifted session
+spelling remains in its diagnostic because that field left `entries` at the raw
+stage. An unexpected data error first retries vector slices, then retains only
+the irreducible row with its raw arguments and exception text; valid neighbours
+keep their order and parsed columns. Schema/projection mistakes still raise
+before row isolation.
+
+`error` is processing metadata and is not digested. A degraded row keeps the
+raw stage's `vhash`, so changing parser wording cannot change its identity. It
+is separate from `reason`, which keeps FIX `Text <58>` and upstream business
+diagnostics.
+`parse_instruments` and `parse_market` push down `error IS NULL`, and the class
+conversion APIs enforce the same quarantine for callers outside the notebooks.
+
 The stage consumes the arguments `TextFile`/`TextFiles` already stored rather
 than tokenizing the payload again. A batch arriving from Iceberg carries
 `large_string` where the contract says `string`, so it is brought onto the
@@ -198,4 +230,5 @@ scans project `message` out, so every resulting `FixMsg.message` is null.
 Market readers consume only `fix.market`, ordered by
 `(unix, msgseqnum, hash)`. Each row carries its reference facts in the final
 `instrument` struct. `parse_instruments` turns those components into
-`InstrumentUpdate` events in `market.instruments`.
+`InstrumentUpdate` events in `market.instruments`. Failed rows remain in their
+original `fix.*` category for audit and are not translated downstream.

@@ -17,7 +17,8 @@ keys, partitioning, descriptions, enum members, FIX metadata, and Iceberg ids.
 `instrument.yaml` is the flat `InstrumentUpdate` event envelope followed by
 the same `Instrument` struct. Those two structs and `Instrument.legs` stay
 last in their owners so Iceberg's default column bounds still cover the flat
-leaves. Every contract is version 1.
+leaves. `FixMsg.error` records row-local transcription degradation without
+changing content identity. Every contract is version 1.
 
 ```python
 from rekep import Field

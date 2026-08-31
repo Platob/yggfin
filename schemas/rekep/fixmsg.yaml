@@ -636,6 +636,11 @@ fields:
   nullable: true
   description: Unique identifier for a quote. The QuoteEntryID stays with the quote as a static identifier even if the quote is updated.
   fix: {tag: '299', type: String, name: QuoteEntryID, display: QuoteEntryID}
+- name: error
+  type: string
+  nullable: true
+  description: Why FIX transcription degraded this row; null when it read whole.
+  fix: {display: Error}
 - name: securityaltid
   type: list
   nullable: true

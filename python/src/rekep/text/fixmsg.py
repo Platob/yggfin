@@ -14,7 +14,7 @@ import pyarrow.compute
 
 from rekep import txhash
 from rekep.enums import MIC, Direction, EventType, Protocol
-from rekep.fields import Field, column_name, scalar
+from rekep.fields import Field, column_name, column_names, scalar
 from rekep.fields.arrays import (
     build_list,
     build_map,
@@ -87,7 +87,34 @@ _UNDIGESTED: frozenset[str] = frozenset(
         "linkedhashes",
         "version",
         "message",
+        "error",
     }
+)
+
+# Ordinary data failures are isolated to one row. Resource exhaustion and I/O
+# failures still stop the caller: retrying those against smaller slices would
+# hide an unhealthy process or store rather than salvage a malformed message.
+_TRANSCRIPTION_EXCEPTIONS = (
+    pyarrow.ArrowIndexError,
+    pyarrow.ArrowInvalid,
+    pyarrow.ArrowNotImplementedError,
+    pyarrow.ArrowTypeError,
+    UnicodeError,
+    ValueError,
+    TypeError,
+    OverflowError,
+)
+_ERROR_VALUE_LENGTH = 160
+_ERROR_LENGTH = 2_048
+
+# A projected raw row no longer has its exact payload text. The raw stage's
+# `vhash` normally survives that projection; these are the payload readings
+# that still distinguish hand-built rows whose identity was never assigned.
+_PROJECTED_RAW_IDENTITY = (
+    "protocol",
+    "direction",
+    *(name for name, _ in SESSION_FIELDS),
+    "entries",
 )
 
 
@@ -321,6 +348,7 @@ class FixMsg(Message):
         self.code = value("code")
         self.altids = dict(value("altids") or ())
         self.reason = value("reason")
+        self.error = value("error")
         self.instrument = Instrument.from_dict(value("instrument"))
         self.vhash = value("vhash")
         self.hash = hash_int_of(value("hash")) or NIL
@@ -644,6 +672,9 @@ class FixMsg(Message):
 
     quoteentryid: Annotated[str | None, DECLARED["QuoteEntryID"]] = None
     """`QuoteEntryID <299>`: stable quote-entry identifier."""
+
+    error: str | None = None
+    """Why FIX transcription degraded this row; null when it read whole."""
 
     # Last, and nested: what the instrument's repeating groups carry. Last
     # because Iceberg counts leaf columns in declaration order for the bounds
@@ -1045,9 +1076,13 @@ class FixMsg(Message):
 
     @classmethod
     def _from_message_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
-        """Transcribe one classified raw `Message` batch under a FIX codec."""
+        """Transcribe one raw batch, isolating malformed rows from their neighbours."""
         if not isinstance(batch, pyarrow.RecordBatch):
             raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
+        # These are batch-contract failures, not readings of one row. Refuse
+        # them before best-effort isolation so a misspelled projection or a
+        # shadowed schema cannot turn into a table full of diagnostic rows.
+        cls._message_schema(batch.schema)
         # A batch scanned back out of Iceberg carries `large_string` where the
         # raw contract says `string`, and the vectorized path below joins those
         # columns against constants it builds itself -- which Arrow refuses
@@ -1057,9 +1092,47 @@ class FixMsg(Message):
         # filling a column the reader did not select would invent the text it
         # deliberately left behind.
         batch = Message.into_field().narrowed(batch.schema).cast_arrow_batch(batch)
+        if "message" not in batch.schema.names and "protocol" not in batch.schema.names:
+            raise ValueError(
+                "a projected Message batch needs protocol; reparse the "
+                "messages before dropping message"
+            )
+        return cls._best_effort_message_batch(batch, codec)
+
+    @classmethod
+    def _best_effort_message_batch(
+        cls, batch: pyarrow.RecordBatch, codec: Any
+    ) -> pyarrow.RecordBatch:
+        """Transcribe vector slices until one irreducible row needs a diagnostic."""
+        try:
+            parsed = cls._transcribe_message_batch(batch, codec)
+            return cls._with_transcription_errors(batch, parsed, codec)
+        except _TRANSCRIPTION_EXCEPTIONS as error:
+            if batch.num_rows <= 1:
+                if not batch.num_rows:
+                    raise
+                return cls._failed_message_batch(batch, codec, error)
+            middle = batch.num_rows // 2
+            left = cls._best_effort_message_batch(batch.slice(0, middle), codec)
+            right = cls._best_effort_message_batch(batch.slice(middle), codec)
+            return pyarrow.RecordBatch.from_arrays(
+                [
+                    pyarrow.concat_arrays([left.column(index), right.column(index)])
+                    for index in range(len(left.schema))
+                ],
+                schema=left.schema,
+            )
+
+    @classmethod
+    def _transcribe_message_batch(
+        cls, batch: pyarrow.RecordBatch, codec: Any
+    ) -> pyarrow.RecordBatch:
+        """The vectorized transcription of one already validated batch slice."""
+        if "entries" in batch.schema.names and _has_misplaced_checksum(batch.column("entries")):
+            raise ValueError("CheckSum <10> is not the final field")
         rows = batch.num_rows
         columns = {name: batch.column(name) for name in batch.schema.names}
-        columns.update(_session_batch_columns(columns))
+        columns.update(_session_batch_columns(columns, codec.null_values))
         messages = columns.get("message")
         if messages is not None:
             # Protocol and direction are both read off the raw line, so both are
@@ -1096,11 +1169,7 @@ class FixMsg(Message):
                 )
         else:
             protocols = columns.get("protocol")
-            if protocols is None:
-                raise ValueError(
-                    "a projected Message batch needs protocol; reparse the "
-                    "messages before dropping message"
-                )
+            assert protocols is not None
         from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch
 
         flat = into_flat_fixmsg_batch(cls, batch, codec, columns, protocols)
@@ -1111,6 +1180,7 @@ class FixMsg(Message):
         for where in flat_fixmsg_positions(codec, columns, protocols):
             taken = _take_record_batch(batch, where)
             taken_columns = {name: taken.column(name) for name in taken.schema.names}
+            taken_columns.update(_session_batch_columns(taken_columns, codec.null_values))
             translated = into_flat_fixmsg_batch(
                 cls,
                 taken,
@@ -1144,6 +1214,119 @@ class FixMsg(Message):
         return cls._from_message_batch_reference(batch, codec, columns, protocols)
 
     @classmethod
+    def _with_transcription_errors(
+        cls,
+        source: pyarrow.RecordBatch,
+        parsed: pyarrow.RecordBatch,
+        codec: Any,
+    ) -> pyarrow.RecordBatch:
+        """Attach deterministic diagnostics for typed values that read as null."""
+        rows = parsed.num_rows
+        errors = parsed.column("error")
+        declared = cls.into_field()
+        for name, dtype in _session_types().items():
+            if name not in source.schema.names:
+                continue
+            errors = _merge_error_columns(
+                errors,
+                _invalid_value_error(
+                    source.column(name), dtype, declared.field(name), codec.null_values
+                ),
+            )
+
+        entries = parsed.column("entries")
+        versions = pyarrow.compute.fill_null(parsed.column("protocolversion"), "")
+        parts: list[pyarrow.Array] = []
+        positions: list[pyarrow.Array] = []
+        for version, where in groups_of(versions):
+            value = version.as_py()
+            taken = entries if len(where) == rows else pyarrow.compute.take(entries, where)
+            if not value:
+                part = pyarrow.nulls(len(where), pyarrow.string())
+            else:
+                fields = dict(codec.flat_fields(value))
+                group_fields = {
+                    int(field.fix.tag): field
+                    for _, group, _ in _component_groups()
+                    if (field := codec.registry.field(group, value)) is not None and field.fix.tag
+                }
+                component_fields = {
+                    int(field.fix.tag): field
+                    for _, _, row in _component_groups()
+                    for field in row.into_field().fields
+                    if field.fix.tag
+                }
+                part = _invalid_entry_errors(
+                    taken,
+                    {**fields, **group_fields, **component_fields},
+                    len(where),
+                    codec.null_values,
+                )
+                part = _merge_error_columns(
+                    part,
+                    _invalid_named_entry_errors(
+                        taken, codec.named_fields(), len(where), codec.null_values
+                    ),
+                )
+            parts.append(part)
+            positions.append(where)
+        if parts:
+            errors = _merge_error_columns(errors, scattered(parts, positions))
+
+        at = parsed.schema.get_field_index("error")
+        parsed = parsed.set_column(at, parsed.schema.field(at), errors)
+        degraded = pyarrow.compute.is_valid(errors)
+        if not pyarrow.compute.any(degraded, min_count=0).as_py():
+            return parsed
+
+        # Parsed identity is the contract for clean rows. A degraded row must
+        # retain the raw identity because the spelling that failed to type is
+        # no longer present in its promoted column and may otherwise collide
+        # with a different unreadable spelling during merge-upsert.
+        vhash = pyarrow.compute.if_else(
+            degraded,
+            _raw_message_vhash(source, rows),
+            parsed.column("vhash"),
+        )
+        anchored = txhash.couple128_arrow(cls._clock_micros(parsed.column("unix")), vhash)
+        hashes = pyarrow.compute.if_else(degraded, anchored, parsed.column("hash"))
+        linked = pyarrow.compute.not_equal(parsed.column("code"), "")
+        raw_xhash = pyarrow.compute.if_else(linked, cls.hash_arrow(parsed.column("code")), vhash)
+        xhash = pyarrow.compute.if_else(degraded, raw_xhash, parsed.column("xhash"))
+        for name, column in (("vhash", vhash), ("hash", hashes), ("xhash", xhash)):
+            at = parsed.schema.get_field_index(name)
+            parsed = parsed.set_column(at, parsed.schema.field(at), column)
+        return parsed
+
+    @classmethod
+    def _failed_message_batch(
+        cls, source: pyarrow.RecordBatch, codec: Any, error: Exception
+    ) -> pyarrow.RecordBatch:
+        """One unread row with its raw envelope and failure preserved."""
+        schema = cls._message_schema(source.schema)
+        defaults = cls.into_arrow_batch((cls(),))
+        columns = {name: defaults.column(name) for name in defaults.schema.names}
+        for field in source.schema:
+            target = schema.field(field.name)
+            column = source.column(field.name)
+            columns[field.name] = (
+                column if column.type.equals(target.type) else cast_arrow_fix(column, target.type)
+            )
+        columns.update(_session_batch_columns(columns, codec.null_values))
+        columns["error"] = pyarrow.array([_error_text(error)], pyarrow.string())
+        built = cls.identified(columns, schema, 1, codec.registry)
+
+        # A failed parse has no parsed identity to earn. Keep the raw stage's
+        # exact-payload identity. A projected hand-built row falls back to the
+        # raw columns that remain rather than to an incomplete parsed shape.
+        vhash = _raw_message_vhash(source, 1)
+        anchored = txhash.couple128_arrow(cls._clock_micros(built.column("unix")), vhash)
+        for name, column in (("vhash", vhash), ("hash", anchored), ("xhash", vhash)):
+            at = built.schema.get_field_index(name)
+            built = built.set_column(at, built.schema.field(at), column)
+        return built
+
+    @classmethod
     def _from_message_batch_reference(
         cls,
         batch: pyarrow.RecordBatch,
@@ -1157,7 +1340,7 @@ class FixMsg(Message):
         # batch, including the fast path's fallback slice, so the header
         # columns the raw stage lifted are read as this stage stores them here
         # rather than at each caller.
-        columns = {**columns, **_session_batch_columns(columns)}
+        columns = {**columns, **_session_batch_columns(columns, codec.null_values)}
         parts, positions = [], []
         for protocol, where in groups_of(protocols):
             rule = codec.rules.rule(protocol.as_py())
@@ -1638,6 +1821,8 @@ class FixMsg(Message):
 
     def into_market_events(self, **declared: Any) -> Iterator[Any]:
         """Translate this parsed row into its ordered market events."""
+        if self.error:
+            return
         for event in self.into_fix_events(**declared):
             if self.reason and not event.reason:
                 event.reason = self.reason
@@ -1754,6 +1939,9 @@ class FixMsg(Message):
 
         for incoming in batches:
             batch = cls.into_field().cast_arrow_batch(incoming)
+            batch = batch.filter(pyarrow.compute.is_null(batch.column("error")))
+            if not batch.num_rows:
+                continue
             flat = flat_market_parts(batch, declared)
             if flat is not None:
                 for event_type, translated in zip(event_types, flat[:2], strict=True):
@@ -1818,6 +2006,190 @@ class FixMsg(Message):
         for event_type in event_types:
             if pending_rows[event_type]:
                 yield event_type, combined(event_type)
+
+
+def _has_misplaced_checksum(entries: Any) -> bool:
+    """Whether any row carries fields after its first FIX trailer."""
+    if isinstance(entries, pyarrow.ChunkedArray):
+        entries = entries.combine_chunks()
+    if not len(entries) or entries.null_count == len(entries):
+        return False
+    compute = pyarrow.compute
+    items = compute.list_flatten(entries)
+    if not len(items):
+        return False
+    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
+    tags = compute.struct_field(items, "tag")
+    keys = column_names(compute.struct_field(items, "key"))
+    checksum = compute.or_(
+        compute.fill_null(compute.equal(tags, 10), False),
+        compute.fill_null(compute.equal(keys, "checksum"), False),
+    )
+    if not compute.any(checksum, min_count=0).as_py():
+        return False
+    sizes = compute.fill_null(compute.list_value_length(entries), 0).cast(pyarrow.int64())
+    ends = compute.subtract(compute.cumulative_sum(sizes), 1)
+    checksum_parents = compute.filter(parents, checksum)
+    checksum_positions = compute.filter(sequence(len(items)), checksum)
+    misplaced = compute.not_equal(checksum_positions, compute.take(ends, checksum_parents))
+    return bool(compute.any(misplaced, min_count=0).as_py())
+
+
+def _invalid_entry_errors(
+    entries: Any,
+    fields: Mapping[int, Field],
+    rows: int,
+    null_values: Collection[str] = (),
+) -> pyarrow.Array:
+    """Diagnostics for retained typed fields whose source text cannot be read."""
+    typed = {
+        tag: field
+        for tag, field in fields.items()
+        if field.dtype is not None
+        and not (pyarrow.types.is_string(field.dtype) or pyarrow.types.is_large_string(field.dtype))
+    }
+    raw = FieldAccess.first_arrow_tags(entries, tuple(typed), rows)
+    errors = pyarrow.nulls(rows, pyarrow.string())
+    for tag in sorted(raw):
+        errors = _merge_error_columns(
+            errors,
+            _invalid_value_error(raw[tag], typed[tag].dtype, typed[tag], null_values),
+        )
+    return errors
+
+
+def _invalid_named_entry_errors(
+    entries: Any,
+    fields: Mapping[str, Field],
+    rows: int,
+    null_values: Collection[str] = (),
+) -> pyarrow.Array:
+    """Diagnostics for retained typed fields addressed by rendered names."""
+    typed = {
+        name: field
+        for name, field in fields.items()
+        if field.dtype is not None
+        and not (pyarrow.types.is_string(field.dtype) or pyarrow.types.is_large_string(field.dtype))
+    }
+    wanted = tuple((int(field.fix.tag or 0), name) for name, field in typed.items())
+    raw = FieldAccess.first_arrow_fields(entries, wanted, rows)
+    errors = pyarrow.nulls(rows, pyarrow.string())
+    for name in sorted(raw):
+        field = typed[name]
+        errors = _merge_error_columns(
+            errors,
+            _invalid_value_error(raw[name], field.dtype, field, null_values),
+        )
+    return errors
+
+
+def _invalid_value_error(
+    raw: Any,
+    dtype: pyarrow.DataType,
+    field: Field,
+    null_values: Collection[str] = (),
+) -> pyarrow.Array:
+    """One nullable diagnostic column for a typed FIX value."""
+    rows = len(raw)
+    if pyarrow.types.is_string(dtype) or pyarrow.types.is_large_string(dtype):
+        return pyarrow.nulls(rows, pyarrow.string())
+    compute = pyarrow.compute
+    text = raw.cast(pyarrow.string(), safe=False)
+    present = compute.and_(
+        compute.is_valid(text),
+        compute.not_equal(compute.utf8_trim_whitespace(text), ""),
+    )
+    reading = text
+    if null_values:
+        absent = _null_value_mask(text, null_values)
+        present = compute.and_(present, compute.invert(absent))
+        # The configured markers mean no value. Remove them before the cast as
+        # well as before diagnostics so a stricter custom type cannot turn an
+        # intentionally absent field into a row-level transcription failure.
+        reading = compute.if_else(absent, pyarrow.scalar(None, pyarrow.string()), text)
+    converted = cast_arrow_fix(reading, dtype)
+    invalid = compute.and_(compute.fill_null(present, False), compute.is_null(converted))
+    if not compute.any(invalid, min_count=0).as_py():
+        return pyarrow.nulls(rows, pyarrow.string())
+    display = field.fix.get("name") or field.name
+    tag = field.fix.get("tag")
+    label = f"{display} <{tag}>: invalid " if tag is not None else f"{display}: invalid "
+    clipped = compute.utf8_slice_codeunits(text, start=0, stop=_ERROR_VALUE_LENGTH)
+    detail = compute.binary_join_element_wise(
+        pyarrow.repeat(pyarrow.scalar(label), rows), compute.fill_null(clipped, ""), ""
+    )
+    return compute.if_else(invalid, detail, pyarrow.nulls(rows, pyarrow.string()))
+
+
+@functools.cache
+def _null_value_set(values: tuple[str, ...]) -> pyarrow.Array:
+    """Normalized configured absence spellings as one reusable Arrow set."""
+    return pyarrow.array(values, pyarrow.string())
+
+
+def _null_value_mask(values: Any, null_values: Collection[str]) -> pyarrow.Array:
+    """Which string readings the codec says are absent."""
+    normalized = tuple(sorted({str(value).strip().lower() for value in null_values}))
+    return pyarrow.compute.fill_null(
+        pyarrow.compute.is_in(
+            pyarrow.compute.utf8_lower(pyarrow.compute.utf8_trim_whitespace(values)),
+            value_set=_null_value_set(normalized),
+        ),
+        False,
+    )
+
+
+def _merge_error_columns(left: Any, right: Any) -> pyarrow.Array:
+    """Append nullable diagnostics without manufacturing text on clean rows."""
+    compute = pyarrow.compute
+    left = compute.fill_null(left.cast(pyarrow.string(), safe=False), "")
+    right = compute.fill_null(right.cast(pyarrow.string(), safe=False), "")
+    both = compute.and_(compute.not_equal(left, ""), compute.not_equal(right, ""))
+    separator = compute.if_else(both, "; ", "")
+    joined = compute.binary_join_element_wise(left, separator, right, "")
+    joined = compute.utf8_slice_codeunits(joined, start=0, stop=_ERROR_LENGTH)
+    return compute.if_else(
+        compute.equal(joined, ""), pyarrow.nulls(len(joined), pyarrow.string()), joined
+    )
+
+
+def _error_text(error: Exception) -> str:
+    """One bounded, single-line transcription failure for persisted audit."""
+    detail = " ".join(str(error).split()) or "no detail"
+    return f"FIX transcription failed: {type(error).__name__}: {detail}"[:_ERROR_LENGTH]
+
+
+def _raw_message_vhash(source: pyarrow.RecordBatch, rows: int) -> pyarrow.Array:
+    """Exact raw identity when available, or the remaining payload readings."""
+    compute = pyarrow.compute
+
+    def column(name: str) -> Any:
+        at = source.schema.get_field_index(name)
+        return None if at < 0 else source.column(at)
+
+    incoming = column("vhash")
+    if incoming is not None:
+        carries_identity = compute.and_(
+            compute.is_valid(incoming),
+            compute.not_equal(incoming, pyarrow.scalar(NIL, pyarrow.int64())),
+        )
+        if compute.all(carries_identity, min_count=0).as_py():
+            return incoming
+
+    projected = Message.hash_arrow(
+        *(_digest_text(column(name), rows) for name in _PROJECTED_RAW_IDENTITY)
+    )
+    messages = column("message")
+    if messages is None:
+        raw = projected
+    else:
+        text = _digest_text(messages, rows)
+        carries_text = compute.greater(compute.binary_length(text), 0)
+        raw = compute.if_else(carries_text, hash_bytes_arrow(text), projected)
+
+    if incoming is None:
+        return raw
+    return compute.if_else(carries_identity, incoming, raw)
 
 
 def _take_record_batch(batch: pyarrow.RecordBatch, where: pyarrow.Array) -> pyarrow.RecordBatch:
@@ -2022,21 +2394,36 @@ def _session_types() -> Mapping[str, Any]:
     }
 
 
-def _session_batch_columns(columns: Mapping[str, Any]) -> dict[str, Any]:
+def _session_batch_columns(
+    columns: Mapping[str, Any], null_values: Collection[str] = ()
+) -> dict[str, Any]:
     """The header columns the raw stage lifted, read as this stage stores them.
 
     The raw stage is protocol-neutral and keeps every one of them as text; a
-    `BodyLength` is a number here and a `SendingTime` an instant, so the three
-    that differ are cast once for the whole batch instead of being scanned for
-    again in `entries`.
+    `BodyLength` is a number here and a `SendingTime` an instant. Configured
+    absent spellings apply here too because these fields left `entries` before
+    the codec dropped its null values.
     """
+    compute = pyarrow.compute
     found: dict[str, Any] = {}
-    for name, dtype in _session_types().items():
+    typed = _session_types()
+    for name, _ in SESSION_FIELDS:
         column = columns.get(name)
         if column is None:
             continue
-        if pyarrow.types.is_string(column.type):
-            found[name] = cast_arrow_fix(column, dtype)
+        cleaned = column
+        if null_values and pyarrow.types.is_string(column.type):
+            text = column.cast(pyarrow.string(), safe=False)
+            cleaned = compute.if_else(
+                _null_value_mask(text, null_values),
+                pyarrow.scalar(None, pyarrow.string()),
+                text,
+            )
+        dtype = typed.get(name)
+        if dtype is not None and pyarrow.types.is_string(cleaned.type):
+            found[name] = cast_arrow_fix(cleaned, dtype)
+        elif cleaned is not column:
+            found[name] = cleaned
     return found
 
 

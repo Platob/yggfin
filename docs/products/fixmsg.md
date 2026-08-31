@@ -44,6 +44,9 @@ instrument.symbol 'BTC-USD'
 time are never confused. The chain is in
 [market lifecycle](../market/index.md#when-it-happened).
 
+Malformed typed values and isolated transcription failures remain as rows with
+a nullable `error`; see [best-effort rows](../fix/fixmsg.md#best-effort-rows).
+
 ## Lineage
 
 <div data-product-lineage data-product="fixmsg"

@@ -151,7 +151,7 @@ _NO_SECURITY_ALT_ID = "NoSecurityAltID"
 _NO_LEGS = "NoLegs"
 _UNSIGNED = r"^[0-9]{1,18}$"
 _SIGNED = r"^[+-]?[0-9]{1,18}$"
-_DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)$"
+_DECIMAL = r"^[+-]?(?:[0-9]{1,17}(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]{1,3})?$"
 _GROUP_STRIDE = 2**32
 
 
