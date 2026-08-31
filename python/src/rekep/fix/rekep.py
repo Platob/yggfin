@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 # FIX reserves 5000-9999 for users and venues commonly occupy 20000, so 30000+ avoids both.
 REKEP_TAG_OFFSET = 30000
 # `enums.ascii_codes.PRIVATE_RANK = 9000` is a rank band, not a FIX tag range.
-# Canonical wire names use `REKEP.` so standard identities keep their names;
-# `fix.column` holds the folded persisted spelling.
+# Package fields use ordinary FIX names. A custom tag is already a complete
+# identity, so a namespace in its name would give one field two identities.
 
 REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
     ("unix", "Unix", "int64", "Unix", "Event time in whole nanoseconds since the epoch."),
@@ -33,7 +33,13 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
         "UnixPartition",
         "Hour boundary of `unix` in whole epoch seconds.",
     ),
-    ("eventtype", "EventType", "int64", "EventType", "Packed rekep event-kind code."),
+    (
+        "eventtype",
+        "MarketEventType",
+        "int64",
+        "MarketEventType",
+        "Packed rekep event-kind code.",
+    ),
     (
         "creaunix",
         "CreaUnix",
@@ -64,7 +70,13 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
     ),
     ("hash", "Hash", "String", "Hash", "Time-anchored composition of `unix` and `vhash`."),
     ("vhash", "VHash", "int64", "ValueHash", "Clock-free XXH3-64 value digest."),
-    ("xhash", "XHash", "int64", "Xhash", "Stable lifecycle identity."),
+    (
+        "xhash",
+        "XHash",
+        "String",
+        "XHash",
+        "Creation-time composition of `creaunix` and the XXH3-64 `code` digest.",
+    ),
     (
         "prevhash",
         "PrevHash",
@@ -87,11 +99,11 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
         "Ordered hashes of source events.",
     ),
     (
-        "linkedhashes",
-        "LinkedHashes",
+        "linkxhashes",
+        "LinkXHashes",
         "MultipleValueString",
-        "LinkedHashes",
-        "Ordered exact hashes of related event versions.",
+        "LinkXHashes",
+        "Ordered lifecycle hashes of related events.",
     ),
     ("version", "Version", "int64", "Version", "Zero-based lifecycle version number."),
     ("state", "State", "int64", "State", "Packed ranked lifecycle state."),
@@ -125,34 +137,65 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str, str], ...] = (
         "Unmapped",
         "Payload entries the registry did not resolve; null when all resolved.",
     ),
-    ("px", "Px", "double", "Px", "Price in `pxunit`."),
-    ("qty", "Qty", "double", "Qty", "Quantity in `qtyunit`."),
-    ("pxunit", "PxUnit", "String", "PxUnit", "Unit in which `px` is expressed."),
-    ("qtyunit", "QtyUnit", "String", "QtyUnit", "Unit in which `qty` is expressed."),
+    ("pxunit", "PxUnit", "String", "PxUnit", "Unit in which `price` is expressed."),
+    ("qtyunit", "QtyUnit", "String", "QtyUnit", "Unit in which `lastqty` is expressed."),
     (
         "notional",
         "Notional",
         "double",
         "Notional",
-        "Producer-computed `px * qty * multiplier`.",
+        "Producer-computed `price * lastqty * multiplier`.",
+    ),
+    (
+        "codesource",
+        "CodeSource",
+        "String",
+        "CodeSource",
+        "Field whose value supplied the readable lifecycle identifier.",
     ),
 )
 
+# Tags are written out because removing a field must not renumber every field
+# after it. Price and LastQty use FIX's existing tags 44 and 32, leaving the
+# retired package slots 30022 and 30023 empty.
 REKEP_TAGS: Mapping[str, int] = MappingProxyType(
     {
-        column: REKEP_TAG_OFFSET + ordinal
-        for ordinal, (column, _name, _type, _display, _description) in enumerate(
-            REKEP_FIELD_DECLARATIONS
-        )
+        "unix": 30000,
+        "unixpartition": 30001,
+        "eventtype": 30002,
+        "creaunix": 30003,
+        "recunix": 30004,
+        "expunix": 30005,
+        "snapunix": 30006,
+        "hash": 30007,
+        "vhash": 30008,
+        "xhash": 30009,
+        "prevhash": 30010,
+        "prevunix": 30011,
+        "parenthash": 30012,
+        "linkxhashes": 30013,
+        "version": 30014,
+        "state": 30015,
+        "code": 30016,
+        "altids": 30017,
+        "mic": 30018,
+        "reason": 30019,
+        "symbolticker": 30020,
+        "unmap": 30021,
+        "pxunit": 30024,
+        "qtyunit": 30025,
+        "notional": 30026,
+        "codesource": 30027,
     }
 )
 
 _REKEP_DTYPES: Mapping[str, pyarrow.DataType] = MappingProxyType(
     {
         "hash": pyarrow.binary(16),
+        "xhash": pyarrow.binary(16),
         "prevhash": pyarrow.binary(16),
         "parenthash": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
-        "linkedhashes": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
+        "linkxhashes": pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False)),
         "altids": pyarrow.map_(
             pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
         ),
@@ -174,8 +217,11 @@ REKEP_COMPONENT_NAMES: tuple[str, ...] = (
     *(f"REKEP.{contract}" for contract, _msg_type in REKEP_MSG_TYPES),
 )
 
-_HEADER_COLUMNS = tuple(column for column, *_ in REKEP_FIELD_DECLARATIONS[:20])
-_MARKET_COLUMNS = ("px", "qty", "pxunit", "qtyunit", "notional")
+_HEADER_COLUMNS = (
+    *(column for column, *_ in REKEP_FIELD_DECLARATIONS[:20]),
+    "codesource",
+)
+_MARKET_COLUMNS = ("pxunit", "qtyunit", "notional")
 _OPTIONAL_HEADER_COLUMNS = frozenset(
     {"expunix", "snapunix", "prevhash", "prevunix", "parenthash", "mic", "reason"}
 )
@@ -186,8 +232,8 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
     """Ensure one registry holds rekep's wildcard-version FIX vocabulary."""
     records = dict(registry.field_records())
     tagged = {entry.fix.tag: entry for entry in records.values() if entry.fix.tag is not None}
-    for ordinal, declared in enumerate(REKEP_FIELD_DECLARATIONS):
-        expected = _field(ordinal, declared)
+    for declared in REKEP_FIELD_DECLARATIONS:
+        expected = _field(declared)
         by_tag = tagged.get(expected.fix.tag)
         by_name = records.get(expected.fix.canonical)
         if by_tag is None and by_name is None:
@@ -219,8 +265,8 @@ def rekep_is_registered(registry: FixRegistry) -> bool:
     """Whether every package-owned declaration is already exact."""
     records = registry.field_records()
     tagged = {entry.fix.tag: entry for entry in records.values() if entry.fix.tag is not None}
-    for ordinal, declared in enumerate(REKEP_FIELD_DECLARATIONS):
-        expected = _field(ordinal, declared)
+    for declared in REKEP_FIELD_DECLARATIONS:
+        expected = _field(declared)
         if not _same_field(tagged.get(expected.fix.tag), expected) or not _same_field(
             records.get(expected.fix.canonical), expected
         ):
@@ -233,12 +279,12 @@ def rekep_is_registered(registry: FixRegistry) -> bool:
     return True
 
 
-def _field(ordinal: int, declared: tuple[str, str, str, str, str]) -> Field:
-    """One package-owned field record from its frozen ordinal."""
+def _field(declared: tuple[str, str, str, str, str]) -> Field:
+    """One package-owned field record from its frozen declaration."""
     column, name, datatype, display, description = declared
     built = fix_field(
-        f"REKEP.{name}",
-        REKEP_TAG_OFFSET + ordinal,
+        name,
+        REKEP_TAGS[column],
         datatype,
         description=description,
     )
@@ -278,9 +324,13 @@ def _component_records() -> tuple[ComponentRecord, ...]:
         versions=(ANY_VERSION,),
         declaration=block(
             "RekepMarket",
-            tuple(
-                _member(column, required=column in _REQUIRED_MARKET_COLUMNS)
-                for column in _MARKET_COLUMNS
+            (
+                field_member("Price", 44),
+                field_member("LastQty", 32),
+                *(
+                    _member(column, required=column in _REQUIRED_MARKET_COLUMNS)
+                    for column in _MARKET_COLUMNS
+                ),
             ),
         ),
     )
@@ -297,15 +347,12 @@ def _component_records() -> tuple[ComponentRecord, ...]:
 
 def _member(column: str, *, required: bool = False) -> Field:
     """One custom tagged field in a component declaration."""
-    ordinal = next(
-        index
-        for index, (declared, _name, _type, _display, _description) in enumerate(
-            REKEP_FIELD_DECLARATIONS
-        )
+    name = next(
+        name
+        for declared, name, _type, _display, _description in REKEP_FIELD_DECLARATIONS
         if declared == column
     )
-    name = REKEP_FIELD_DECLARATIONS[ordinal][1]
-    return field_member(f"REKEP.{name}", REKEP_TAG_OFFSET + ordinal, required=required)
+    return field_member(name, REKEP_TAGS[column], required=required)
 
 
 def _message_members(name: str) -> tuple[Field, ...]:

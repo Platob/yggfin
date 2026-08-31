@@ -50,10 +50,11 @@ def test_hash_widths_are_preserved_in_every_engine() -> None:
     schema = MarketEvent.into_field().into_iceberg_schema()
     assert str(schema.find_field("hash").field_type) == "fixed[16]"
     assert str(schema.find_field("vhash").field_type) == "long"
-    assert str(schema.find_field("xhash").field_type) == "long"
+    assert str(schema.find_field("xhash").field_type) == "fixed[16]"
     assert str(schema.find_field("instrumentxhash").field_type) == "long"
     back = StructField.from_iceberg_schema(schema)
     assert back.field("hash").dtype == HASH
+    assert back.field("xhash").dtype == HASH
     assert back.field("vhash").dtype == pyarrow.int64()
 
 

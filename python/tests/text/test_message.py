@@ -648,7 +648,8 @@ def test_raw_identity_depends_only_on_the_payload() -> None:
     changed = Message(message="different", sourceurl="one.log", sourcerownum=2).identify()
 
     expected = hash_bytes(b"same")
-    assert first.vhash == copied.vhash == first.xhash == expected
+    assert first.vhash == copied.vhash == expected
+    assert first.xhash == copied.xhash == 0, "an unnamed raw line has no lifecycle"
     assert first.hash == copied.hash == txhash.couple128(0, expected)
     assert changed.vhash != first.vhash
 
@@ -682,7 +683,9 @@ def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: P
     assert table.column("eventtype").to_pylist() == [int(EventType.ORDER)]
     assert table.column("mic").to_pylist() == [None]
     expected = hash_bytes(payload.encode("utf-8"))
-    assert table.column("vhash").to_pylist() == table.column("xhash").to_pylist() == [expected]
+    assert table.column("vhash").to_pylist() == [expected]
+    assert table.column("xhash").to_pylist() == [txhash.wide_bytes(0)]
+    assert table.column("codesource").to_pylist() == [""]
     assert txhash.vhash_of(table.column("hash")[0].as_py()) == expected
 
 

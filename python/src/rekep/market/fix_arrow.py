@@ -603,18 +603,19 @@ def _orders(
     orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
-    named = _first_nonempty(orderid, previous_client_id, client_id, fallback="")
+    named, codesource = _first_nonempty_and_source(
+        (orderid, "OrderID"),
+        (previous_client_id, "OrigClOrdID"),
+        (client_id, "ClOrdID"),
+        fallback="",
+    )
     symbolticker = shared.take(shared.symbolticker, where)
     code = named
     instrumentxhash = shared.take(shared.instrumentxhash, where)
     mic = shared.take(shared.mic, where)
-    named_life = compute.not_equal(named, "")
-    xhash = compute.if_else(
-        named_life,
-        Order.hash_arrow(arrow_of(instrumentxhash), mic, named, side),
-        pyarrow.scalar(NIL, pyarrow.int64()),
-    )
-    px = shared.take(values.number("Price"), where)
+    creaunix = shared.take(shared.creaunix, where)
+    xhash = Order.xhash_arrow(creaunix, code)
+    price = shared.take(values.number("Price"), where)
     currency = shared.take(shared.currency, where)
     reason = shared.take(shared.reason, where)
     vwap = pyarrow.nulls(len(where), pyarrow.float64())
@@ -630,14 +631,14 @@ def _orders(
     null_text = pyarrow.nulls(len(where), pyarrow.string())
     vhash = _value_hash_arrow(
         Order,
-        (arrow_of(xhash), eventtype, state, mic, code, reason),
+        (eventtype, state, mic, code, codesource, reason),
         altids,
         (
             arrow_of(instrumentxhash),
             symbolticker,
             kind,
             side,
-            px,
+            price,
             pxunit,
             currency,
             current,
@@ -666,16 +667,17 @@ def _orders(
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
         "eventtype": eventtype,
-        "creaunix": shared.take(shared.creaunix, where),
+        "creaunix": creaunix,
         "recunix": shared.take(shared.recunix, where),
         "expunix": expunix,
         "hash": event_hash,
         "vhash": vhash,
         "xhash": xhash,
-        "linkedhashes": _empty_lists(len(where), Order.into_field().field("linkedhashes").dtype),
+        "linkxhashes": _empty_lists(len(where), Order.into_field().field("linkxhashes").dtype),
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
+        "codesource": codesource,
         "altids": altids,
         "prevhash": pyarrow.nulls(len(where), HASH),
         "mic": mic,
@@ -684,10 +686,10 @@ def _orders(
         "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
-        "px": px,
+        "price": price,
         "pxunit": pxunit,
         "currency": currency,
-        "qty": current,
+        "lastqty": current,
         "prevqty": previous,
         "qtyunit": qtyunit,
         "metadata": metadata,
@@ -727,7 +729,12 @@ def _executions(
     kind = shared.take(values.mapped("ExecType", tags.execution_kinds, MarketKind.UNKNOWN), where)
     execid = shared.take(values.text("ExecID"), where)
     execrefid = shared.take(values.text("ExecRefID"), where)
-    tradeid = shared.take(_first_nonempty(values.text("TradeID"), values.text("TrdMatchID")), where)
+    all_tradeid, all_trade_source = _first_nonempty_and_source(
+        (values.text("TradeID"), "TradeID"),
+        (values.text("TrdMatchID"), "TrdMatchID"),
+    )
+    tradeid = shared.take(all_tradeid, where)
+    trade_source = shared.take(all_trade_source, where)
     corrected = compute.and_(
         compute.is_in(
             state,
@@ -737,34 +744,39 @@ def _executions(
         ),
         compute.fill_null(compute.not_equal(execrefid, ""), False),
     )
-    named = compute.fill_null(
-        compute.if_else(corrected, execrefid, _first_nonempty(execid, tradeid)), ""
+    ordinary, ordinary_source = _first_nonempty_and_source((execid, "ExecID"), (tradeid, "TradeID"))
+    # `tradeid` is the normalized slot; retain the exact field that supplied it.
+    ordinary_source = compute.if_else(
+        compute.fill_null(
+            compute.and_(compute.equal(ordinary_source, "TradeID"), compute.not_equal(tradeid, "")),
+            False,
+        ),
+        trade_source,
+        ordinary_source,
     )
+    named = compute.fill_null(compute.if_else(corrected, execrefid, ordinary), "")
+    codesource = compute.if_else(compute.fill_null(corrected, False), "ExecRefID", ordinary_source)
     symbolticker = shared.take(shared.symbolticker, where)
     code = named
     instrumentxhash = shared.take(shared.instrumentxhash, where)
     mic = shared.take(shared.mic, where)
-    named_life = compute.not_equal(named, "")
-    xhash = compute.if_else(
-        named_life,
-        Execution.hash_arrow(arrow_of(instrumentxhash), mic, named, side),
-        pyarrow.scalar(NIL, pyarrow.int64()),
-    )
+    creaunix = shared.take(shared.creaunix, where)
+    xhash = Execution.xhash_arrow(creaunix, code)
     orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
-    px = shared.take(values.number("LastPx"), where)
-    qty = shared.take(values.number("LastQty"), where)
+    price = shared.take(values.number("LastPx"), where)
+    lastqty = shared.take(values.number("LastQty"), where)
     filled = shared.take(values.number("CumQty"), where)
     leaves = shared.take(values.number("LeavesQty"), where)
     first_fill = compute.and_(
         compute.equal(state, int(State.FILLED)),
         compute.and_(
-            compute.and_(compute.is_valid(filled), compute.is_valid(qty)),
-            compute.equal(filled, qty),
+            compute.and_(compute.is_valid(filled), compute.is_valid(lastqty)),
+            compute.equal(filled, lastqty),
         ),
     )
-    vwap = compute.if_else(first_fill, px, pyarrow.scalar(None, pyarrow.float64()))
+    vwap = compute.if_else(first_fill, price, pyarrow.scalar(None, pyarrow.float64()))
     aggressor_text = shared.take(values.text("AggressorIndicator"), where)
     aggressor_head = compute.utf8_upper(
         compute.utf8_slice_codeunits(compute.utf8_trim_whitespace(aggressor_text), 0, 1)
@@ -780,11 +792,12 @@ def _executions(
     )
     order_by_source = _order_lookup(orders, order_at, where)
     order_hash = order_by_source["hash"]
+    order_xhash = order_by_source["xhash"]
     linked_sizes = compute.if_else(reported, 1, 0).cast(pyarrow.int64())
     linked = build_list(
-        Execution.into_field().field("linkedhashes").dtype,
+        Execution.into_field().field("linkxhashes").dtype,
         linked_sizes,
-        compute.filter(order_hash, reported),
+        compute.filter(order_xhash, reported),
     )
     parent = build_list(
         Execution.into_field().field("parenthash").dtype,
@@ -796,7 +809,6 @@ def _executions(
     null_float = pyarrow.nulls(rows, pyarrow.float64())
     eventtype = _constant(rows, int(EventType.EXECUTION), pyarrow.int64())
     altids = shared.take(shared.altids, where)
-    altids = _with_order_roots(altids, order_by_source["code"], reported)
     pxunit = shared.take(shared.pxunit, where)
     qtyunit = _constant(rows, "", pyarrow.string())
     metadata = shared.take(shared.metadata, where)
@@ -810,10 +822,10 @@ def _executions(
         symbolticker,
         kind,
         side,
-        px,
+        price,
         pxunit,
         currency,
-        qty,
+        lastqty,
         qtyunit,
         null_float,
     )
@@ -835,7 +847,7 @@ def _executions(
     )
     vhash = _value_hash_arrow(
         Execution,
-        (arrow_of(xhash), eventtype, state, mic, code, reason),
+        (eventtype, state, mic, code, codesource, reason),
         altids,
         market_values,
         metadata,
@@ -846,15 +858,16 @@ def _executions(
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
         "eventtype": eventtype,
-        "creaunix": shared.take(shared.creaunix, where),
+        "creaunix": creaunix,
         "recunix": shared.take(shared.recunix, where),
         "hash": event_hash,
         "vhash": vhash,
         "xhash": xhash,
-        "linkedhashes": linked,
+        "linkxhashes": linked,
         "version": _constant(rows, 0, pyarrow.int64()),
         "state": state,
         "code": code,
+        "codesource": codesource,
         "altids": altids,
         "prevhash": pyarrow.nulls(rows, HASH),
         "parenthash": parent,
@@ -864,10 +877,10 @@ def _executions(
         "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
-        "px": px,
+        "price": price,
         "pxunit": pxunit,
         "currency": currency,
-        "qty": qty,
+        "lastqty": lastqty,
         "qtyunit": qtyunit,
         "metadata": metadata,
         "execid": execid,
@@ -898,13 +911,13 @@ def _link_report_orders(
     locations = compute.index_in(order_at, value_set=execution_at)
     matched = compute.is_valid(locations)
     safe_locations = compute.fill_null(locations, 0)
-    execution_hashes = compute.take(executions.column("hash"), safe_locations)
+    execution_xhashes = compute.take(executions.column("xhash"), safe_locations)
     linked = build_list(
-        Order.into_field().field("linkedhashes").dtype,
+        Order.into_field().field("linkxhashes").dtype,
         matched.cast(pyarrow.int64()),
-        compute.filter(execution_hashes, matched),
+        compute.filter(execution_xhashes, matched),
     )
-    at = orders.schema.get_field_index("linkedhashes")
+    at = orders.schema.get_field_index("linkxhashes")
     return orders.set_column(at, orders.schema.field(at), linked)
 
 
@@ -915,51 +928,15 @@ def _order_lookup(
     if orders is None:
         return {
             "hash": pyarrow.nulls(rows, HASH),
+            "xhash": pyarrow.nulls(rows, HASH),
             "code": pyarrow.nulls(rows, pyarrow.string()),
+            "codesource": pyarrow.nulls(rows, pyarrow.string()),
         }
     locations = compute.index_in(execution_at, value_set=order_at)
-    return {name: compute.take(orders.column(name), locations) for name in ("hash", "code")}
-
-
-def _with_order_roots(
-    altids: pyarrow.Array, roots: pyarrow.Array, reported: pyarrow.Array
-) -> pyarrow.Array:
-    """Carry a report Order's readable lifecycle root on its Execution."""
-    item = pyarrow.struct(
-        [
-            pyarrow.field("key", altids.type.key_type, nullable=False),
-            pyarrow.field("value", altids.type.item_type, nullable=altids.type.item_field.nullable),
-        ]
-    )
-    listed = altids.cast(pyarrow.list_(item), safe=False)
-    entries = compute.list_flatten(listed)
-    parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
-    keys = compute.struct_field(entries, "key")
-    items = compute.struct_field(entries, "value")
-    ranks = sequence(len(entries))
-    keep = compute.not_equal(keys, "orderroot")
-    parents = compute.filter(parents, keep)
-    keys = compute.filter(keys, keep)
-    items = compute.filter(items, keep)
-    ranks = compute.filter(ranks, keep)
-
-    add = compute.and_(reported, compute.fill_null(compute.not_equal(roots, ""), False))
-    added_parents = compute.indices_nonzero(add).cast(pyarrow.int64())
-    parents = pyarrow.concat_arrays([parents, added_parents])
-    keys = pyarrow.concat_arrays(
-        [keys, pyarrow.repeat(pyarrow.scalar("orderroot"), len(added_parents))]
-    )
-    items = pyarrow.concat_arrays([items, compute.filter(roots, add)])
-    ranks = pyarrow.concat_arrays([ranks, compute.add(sequence(len(added_parents)), len(entries))])
-    if len(parents):
-        order = compute.sort_indices(
-            pyarrow.record_batch([parents, ranks], names=["parent", "rank"]),
-            sort_keys=[("parent", "ascending"), ("rank", "ascending")],
-        )
-        parents = compute.take(parents, order)
-        keys = compute.take(keys, order)
-        items = compute.take(items, order)
-    return build_map(altids.type, dense_counts(parents, len(altids)), keys, items)
+    return {
+        name: compute.take(orders.column(name), locations)
+        for name in ("hash", "xhash", "code", "codesource")
+    }
 
 
 def _quantity_transition(
@@ -1330,6 +1307,23 @@ def _first_nonempty(*columns: pyarrow.Array, fallback: str | None = None) -> pya
         )
         found = compute.if_else(compute.and_(compute.is_null(found), present), column, found)
     return compute.fill_null(found, fallback) if fallback is not None else found
+
+
+def _first_nonempty_and_source(
+    *columns: tuple[pyarrow.Array, str], fallback: str | None = None
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """First nonblank value and the reader-facing name of its source field."""
+    rows = len(columns[0][0])
+    found = pyarrow.nulls(rows, pyarrow.string())
+    source = pyarrow.repeat(pyarrow.scalar(""), rows)
+    for column, display in columns:
+        present = compute.fill_null(
+            compute.and_(compute.is_valid(column), compute.not_equal(column, "")), False
+        )
+        use = compute.and_(compute.is_null(found), present)
+        found = compute.if_else(use, column, found)
+        source = compute.if_else(use, display, source)
+    return (compute.fill_null(found, fallback) if fallback is not None else found), source
 
 
 def _nonnegative(column: pyarrow.Array) -> pyarrow.Array:

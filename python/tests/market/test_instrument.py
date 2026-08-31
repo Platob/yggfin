@@ -8,10 +8,11 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep import txhash
 from rekep.enums import Protocol
 from rekep.fix import FixRegistry
 from rekep.market import AssetKind, Currency, Instrument, InstrumentUpdate, Leg, Side
-from rekep.market.identity import NIL, hash_of
+from rekep.market.identity import HASH, NIL, hash_of
 from rekep.text import FixMsg
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -39,7 +40,8 @@ def test_scalar_component_and_update_conversion_is_bidirectional() -> None:
     update = InstrumentUpdate.from_instrument(component, unix=31).identify()
 
     assert update.instrument is component
-    assert update.xhash == component.xhash
+    assert update.xhash == txhash.couple128(0, component.xhash)
+    assert txhash.vhash_of(update.xhash) == component.xhash
     assert (update.creaunix, update.recunix) == (31, 31)
     assert Instrument.from_update(update) is component
     assert Instrument.from_(update) is component
@@ -96,8 +98,12 @@ def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None
         update.into_row()["hash"] for update in scalar
     ]
     nested = update_batch.column("instrument")[0].as_py()
+    assert "xhash" not in nested["legs"][0]
     assert nested["legs"][0]["maturitydate"] == datetime.datetime(2027, 3, 19)
     assert nested["legs"][0]["ratio"] == 2.0
+    assert components[0].legs is not None
+    assert components[0].legs[0].xhash == hash_of(components[0].legs[0].symbolticker)
+    assert update_batch.schema.field("xhash").type == HASH
 
     restored = Instrument.from_update_arrow_batch(update_batch)
     assert restored.equals(component_batch, check_metadata=True)
@@ -142,7 +148,7 @@ def test_fix_identifiers_choose_one_canonical_ticker_and_identity() -> None:
 
     updates = [InstrumentUpdate.from_instrument(built, xhash=7, code="wrong") for built in variants]
     assert [(update.xhash, update.code) for update in updates] == [
-        (built.xhash, built.symbolticker) for built in variants
+        (InstrumentUpdate.xhash_of(0, built.symbolticker), built.symbolticker) for built in variants
     ]
 
 
@@ -338,7 +344,7 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
     ]
     merged = found[0]
     assert all(row.hash and row.vhash for row in found)
-    assert merged.xhash == hash_of(merged.instrument.symbolticker)
+    assert txhash.vhash_of(merged.xhash) == hash_of(merged.instrument.symbolticker)
     assert merged.instrument.securitydesc == "Apple"
     assert merged.instrument.kind is AssetKind.EQUITY
     assert merged.instrument.minpriceincrement == 0.01
@@ -386,7 +392,7 @@ def test_a_stored_record_only_gains_a_version_when_a_fact_is_added() -> None:
     stored = InstrumentUpdate.from_instrument(
         Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD"), unix=10
     ).identify()
-    by_ticker = {stored.xhash: stored}
+    by_ticker = {stored.instrument.symbolticker: stored}
 
     restated = InstrumentUpdate.from_instrument(
         Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD"), unix=20

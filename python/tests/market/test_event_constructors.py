@@ -21,7 +21,7 @@ def test_promoted_columns_precede_entries_and_explicit_values_precede_both() -> 
         hash=101,
         vhash=102,
         xhash=103,
-        linkedhashes=[104],
+        linkxhashes=[104],
         code="source-row",
         price=10.5,
         side="1",
@@ -32,19 +32,19 @@ def test_promoted_columns_precede_entries_and_explicit_values_precede_both() -> 
     )
 
     promoted = Order.from_fixmsg(source)
-    overridden = Order.from_fixmsg(source, px=30, side=Side.SELL)
+    overridden = Order.from_fixmsg(source, price=30, side=Side.SELL)
 
     assert (promoted.unix, promoted.recunix, promoted.altids) == (
         11,
         12,
         {"clordid": "CLIENT-1"},
     )
-    assert (promoted.px, promoted.stoppx) == (10.5, 9.5)
+    assert (promoted.price, promoted.stoppx) == (10.5, 9.5)
     assert promoted.side is Side.BUY and promoted.timeinforce is TimeInForce.GTD
     assert promoted.orderid == "ORDER-1"
-    assert (promoted.hash, promoted.vhash, promoted.xhash, promoted.linkedhashes) == (0, 0, 0, [])
+    assert (promoted.hash, promoted.vhash, promoted.xhash, promoted.linkxhashes) == (0, 0, 0, [])
     assert promoted.code == "" and promoted.eventtype is EventType.ORDER
-    assert overridden.px == 30.0 and overridden.side is Side.SELL
+    assert overridden.price == 30.0 and overridden.side is Side.SELL
 
 
 def test_generic_dispatch_reads_numeric_entries_through_the_registry() -> None:
@@ -56,14 +56,14 @@ def test_generic_dispatch_reads_numeric_entries_through_the_registry() -> None:
     ]
 
     built = Order.from_(entries, version="4.4", unix=23)
-    overridden = Order.from_entries(entries, version="4.4", px=13)
+    overridden = Order.from_entries(entries, version="4.4", price=13)
 
-    assert (built.unix, built.px, built.orderid) == (23, 12.5, "ORDER-2")
+    assert (built.unix, built.price, built.orderid) == (23, 12.5, "ORDER-2")
     assert built.side is Side.BUY and built.timeinforce is TimeInForce.GTD
-    assert overridden.px == 13.0
+    assert overridden.price == 13.0
 
 
-def test_subclass_declarations_select_their_abstract_market_slots() -> None:
+def test_subclass_declarations_select_their_exact_fix_fields() -> None:
     source = FixMsg(
         price=99,
         orderqty=10,
@@ -73,10 +73,13 @@ def test_subclass_declarations_select_their_abstract_market_slots() -> None:
         side="2",
     )
 
-    built = Execution.from_fixmsg(source)
+    order = Order.from_fixmsg(source)
+    execution = Execution.from_fixmsg(source)
 
-    assert (built.px, built.qty, built.execid) == (101.5, 2.0, "EXEC-1")
-    assert built.side is Side.SELL
+    assert order.price == 99.0
+    assert order.lastqty is None
+    assert (execution.price, execution.lastqty, execution.execid) == (101.5, 2.0, "EXEC-1")
+    assert execution.side is Side.SELL
 
 
 def test_promoted_components_convert_by_their_declared_fix_fields() -> None:

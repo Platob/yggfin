@@ -27,6 +27,30 @@ shape = Field.from_yaml("schemas/rekep/message.yaml")
 reader = shape.cast_arrow(reader)
 ```
 
+The committed contracts make lifecycle links wide and preserve explicitly UTC
+FIX fields:
+
+```python
+from rekep import Field
+
+order = Field.from_yaml("schemas/rekep/order.yaml")
+fixmsg = Field.from_yaml("schemas/rekep/fixmsg.yaml")
+for shape, name in (
+    (order, "codesource"),
+    (order, "xhash"),
+    (order, "linkxhashes"),
+    (fixmsg, "origtime"),
+):
+    print(f"{name:12} {shape.field(name).dtype}")
+```
+
+```text
+codesource   string
+xhash        fixed_size_binary[16]
+linkxhashes  list<item: fixed_size_binary[16] not null>
+origtime     timestamp[us, tz=UTC]
+```
+
 Descriptions are short contract facts. Protocol identity uses top-level
 `fix: { ... }`, `enum: { ... }`, and `iceberg: { ... }` maps; loading restores
 their members as prefixed Arrow metadata. Repeated FIX data uses ordered lists

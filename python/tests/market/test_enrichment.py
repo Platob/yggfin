@@ -217,7 +217,7 @@ def test_a_leg_identifies_the_way_an_instrument_does_so_it_joins_to_one() -> Non
 
 
 def test_a_currency_pair_leg_uses_the_same_symbol_rules_as_an_instrument() -> None:
-    leg = Leg(symbol="EUR/USD", xhash=7)
+    leg = Leg(symbol="EUR/USD")
     instrument = Instrument(symbol=leg.symbol)
     assert (leg.symbolticker, leg.xhash, leg.kind, leg.currency) == (
         instrument.symbolticker,

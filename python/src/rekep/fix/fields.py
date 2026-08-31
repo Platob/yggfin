@@ -34,6 +34,12 @@ UTC_DATATYPES: frozenset[str] = frozenset(
     {"utctimestamp", "utcdateonly", "utcdate", "utctimeonly", "tztimestamp", "tztimeonly"}
 )
 
+
+def documented_utc(description: str | None) -> bool:
+    """Whether a FIX field's own description explicitly fixes it in UTC."""
+    return "expressed in utc" in (description or "").casefold()
+
+
 #: FIX datatype -> Arrow type, keyed lowercase because the spellings drift
 #: across versions (`Boolean`/`boolean`, `MultipleValueString` before FIX 4.4,
 #: `MultipleStringValue` after). Two deliberate widenings:
@@ -149,6 +155,14 @@ def arrow_type_of(datatype: str | None) -> pyarrow.DataType:
     return FIX_SCALARS.get(datatype.strip().lower(), pyarrow.string())
 
 
+def field_type_of(datatype: str | None, description: str | None = None) -> pyarrow.DataType:
+    """The stored type one FIX field's datatype and description establish."""
+    dtype = arrow_type_of(datatype)
+    if pyarrow.types.is_timestamp(dtype) and documented_utc(description):
+        return pyarrow.timestamp(dtype.unit, tz="UTC")
+    return dtype
+
+
 def declared_arrow_type(text: str) -> pyarrow.DataType | None:
     """The type `text` names, in either spelling a document may use; None for neither.
 
@@ -183,7 +197,12 @@ def fix_field(
     its enumerated values all land in the `fix` protocol's metadata, where
     `field.fix["tag"]` reads them back without the prefix.
     """
-    built = Field(name=name, dtype=arrow_type_of(datatype), nullable=True, metadata=metadata)
+    built = Field(
+        name=name,
+        dtype=field_type_of(datatype, description),
+        nullable=True,
+        metadata=metadata,
+    )
     if description:
         built.description = description
     fix = built.fix
@@ -212,7 +231,7 @@ def namespaced_field(
     `fix_field` without the one thing it cannot have. Declared for every
     version, because a rendered bridge field belongs to no FIX release.
     """
-    built = Field(name=name, dtype=arrow_type_of(datatype), nullable=True)
+    built = Field(name=name, dtype=field_type_of(datatype, description), nullable=True)
     if description:
         built.description = description
     fix = built.fix

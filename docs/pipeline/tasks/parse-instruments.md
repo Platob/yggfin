@@ -30,10 +30,11 @@ observation adds facts       -> enriched replacement under the same xhash
 observation is less complete -> no write
 ```
 
-`xhash` is derived from the exact `symbolticker`, so later reference facts do
-not move the identity. The writer overwrites by that declared primary key.
-Each batch looks up its bounded set of `xhash` values with one table predicate.
-A replay that changes nothing commits no snapshot.
+`code` is the exact `symbolticker` and `codesource` is `SymbolTicker`.
+`InstrumentUpdate.versioned` preserves the lifecycle's creation time, so later
+reference facts keep its fixed-width `xhash`. Each batch finds the current row
+by its bounded set of codes, then overwrites by the declared `xhash` primary
+key. A replay that changes nothing commits no snapshot.
 
 The `[start, end)` interval uses `FixMsg.unix`. Rows with a non-null `error`
 remain in `fix.market` for audit and are excluded here. Keep `fix_dictionary`

@@ -52,13 +52,13 @@ fields:
   description: XXH3-64 of the framed value parts, with every clock excluded.
   fix: {display: ValueHash}
 - name: xhash
-  type: int64
-  description: Identity of the thing across every version of it -- the lifecycle.
+  type: fixed_size_binary[16]
+  description: Creation-anchored composition of `creaunix` and the XXH3-64 of `code`.
   fix: {display: Xhash}
-- name: linkedhashes
+- name: linkxhashes
   type: list
-  description: Exact hashes of related event versions, with the primary match first.
-  fix: {display: LinkedHashes}
+  description: Related lifecycle `xhash` values, with the primary match first.
+  fix: {display: LinkXHashes}
   item:
     type: fixed_size_binary[16]
 - name: version
@@ -74,6 +74,10 @@ fields:
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
   fix: {display: Code}
+- name: codesource
+  type: string
+  description: Column whose value supplied `code`; empty when the lifecycle is unnamed.
+  fix: {display: CodeSource}
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
@@ -129,7 +133,7 @@ fields:
   description: 'Side of order (see Volume : "Glossary" for value definitions)'
   fix: {tag: '54', type: char, name: Side, display: Side}
   enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
-- name: px
+- name: price
   type: double
   nullable: true
   description: Price per unit of quantity (e.g. per share)
@@ -141,7 +145,7 @@ fields:
   fix: {display: PrevPx}
 - name: pxunit
   type: string
-  description: 'How to read `px`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
+  description: 'How to read `price`: a currency, or `PCT`, `BPS`, `YIELD`; empty when unstated.'
   fix: {display: PxUnit}
 - name: currency
   type: int32
@@ -149,11 +153,11 @@ fields:
   description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
   fix: {tag: '15', type: Currency, name: Currency, display: Currency}
   enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
-- name: qty
+- name: lastqty
   type: double
   nullable: true
   description: Current remaining quantity after this transition; null when indeterminable.
-  fix: {display: Qty}
+  fix: {display: LastQty}
 - name: prevqty
   type: double
   nullable: true
@@ -161,12 +165,12 @@ fields:
   fix: {display: PrevQty}
 - name: qtyunit
   type: string
-  description: 'How to read `qty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
+  description: 'How to read `lastqty`: `SHARES`, `LOTS`, `NOMINAL`; empty when unstated.'
   fix: {display: QtyUnit}
 - name: notional
   type: double
   nullable: true
-  description: '`px * qty * multiplier` in the instrument''s currency, as the producer computed it.'
+  description: '`price * lastqty * multiplier` in the instrument''s currency, as computed.'
   fix: {display: Notional}
 - name: prevnotional
   type: double

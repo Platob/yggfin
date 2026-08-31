@@ -65,12 +65,13 @@ Every width the standard writes lands on one Arrow type:
 from rekep.fix import FixRegistry
 
 registry = FixRegistry.from_builtin()
-for name in ("TransactTime", "MDEntryDate", "MDEntryTime", "MaturityMonthYear"):
+for name in ("OrigTime", "TransactTime", "MDEntryDate", "MDEntryTime", "MaturityMonthYear"):
     field = registry.field(name, "4.4")
     print(f"{field.fix.type:14} {field.dtype}")
 ```
 
 ```text
+UTCTimestamp   timestamp[us, tz=UTC]
 UTCTimestamp   timestamp[us]
 UTCDateOnly    timestamp[us]
 UTCTimeOnly    timestamp[us]
@@ -83,11 +84,12 @@ all three to the same epoch nanoseconds -- only the projection was throwing
 the difference away, and a `date32` column is the one shape a timezone can no
 longer be applied to.
 
-The parsed-log projection then says which zone it is: a datatype the standard
-fixes in UTC, or one whose value carries the offset that puts it there, lands
-in `timestamp[us, tz=UTC]`; a `LocalMktDate` is a wall clock in a place the
-message never names, so its column stays naive rather than claiming a zone it
-does not have.
+The registry keeps the zone when the field's own description explicitly says
+UTC, as `OrigTime <42>` does. The parsed-log projection also applies what the
+FIX datatype establishes: a UTC datatype, or one whose value carries its UTC
+offset, lands in `timestamp[us, tz=UTC]`. A `LocalMktDate` is a wall clock in a
+place the message never names, so its column stays naive rather than claiming
+a zone it does not have.
 
 ```python
 from rekep.market import Execution, Instrument
@@ -145,7 +147,7 @@ components/new_order_single.json a message
 The document holding a tag is `tag // 500` -- arithmetic, so there is no index,
 no lookup table and no scan, and `registry.lookup(54)` deserializes one shard
 rather than the dictionary. The tag space is sparse, and an empty shard is
-simply absent: fifteen shards hold 6,098 tagged fields and `fields/999999.json`
+simply absent: fifteen shards hold 6,097 tagged fields and `fields/999999.json`
 holds three rendered ones.
 
 JSON, and measured: every process importing this package parses a projection of
@@ -308,7 +310,7 @@ from rekep.fix import FixRegistry
 FixRegistry.set_builtin(FixRegistry(cache_dir="data/fix.zip"))
 ```
 
-It refuses a registry missing rekep's own twenty-seven identities, and it
+It refuses a registry missing rekep's own 26 identities, and it
 does **not** move the published Arrow contracts: `rekep.fix.columns` reads the
 default while its module body runs, and those declarations are what
 `schemas/rekep/*.yaml` publishes. `set_builtin(None)` restores the packaged
@@ -405,10 +407,15 @@ Protocol-specific code should normalize values, not duplicate registry tables.
 
 ### What the wheel carries
 
-`data/fix.zip` is the whole dictionary plus rekep's 27 frozen fields and stays
+`data/fix.zip` is the whole dictionary plus rekep's 26 frozen fields and stays
 beside the repository. The wheel ships `rekep/fix/registry.zip`: the standard
 keys `rekep.fix.publish.PROJECTED` names, those same package fields, and every
 version's declarations, messages included, whole.
+
+Package fields have bare canonical names. `MarketEventType <30002>` avoids the
+standard `EventType <865>`; the six package message declarations keep their
+`REKEP.` namespace. Tags 30022 and 30023 are unassigned because
+`RekepMarket` references standard `Price <44>` and `LastQty <32>` directly.
 
 A component says where a repeating group starts and ends, so a projection that
 selected its members alongside the fields would end the group somewhere else,

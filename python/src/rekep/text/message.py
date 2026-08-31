@@ -419,11 +419,12 @@ class Message(Event):
 
     def identify(self) -> Self:
         """Give this raw row the identity of its exact payload."""
+        self._materialize_life_code()
+        self.xhash = self.xhash or self.life_hash()
         if not self.vhash:
             self.vhash = hash_bytes(self.message.encode("utf-8"))
         if not self.hash:
             self.hash = txhash.couple128(self.unix // MICROSECOND, self.vhash)
-        self.xhash = self.vhash
         return self
 
     @classmethod
@@ -435,7 +436,7 @@ class Message(Event):
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
-        columns["xhash"] = columns["vhash"]
+        columns["xhash"] = cls.xhash_arrow(columns["creaunix"], columns["code"])
         return pyarrow.RecordBatch.from_arrays(
             [columns[name] for name in schema.names], schema=schema
         )

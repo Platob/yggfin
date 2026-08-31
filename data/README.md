@@ -20,7 +20,7 @@ A field's record is cross-version by nature: one tag, one reading, and
 tags each and are named by the shard index, so the document holding a tag is
 `tag // 500` and nothing has to be looked up; a field FIX never numbered keys
 by its name and lands in `999999`, the one index no tag reaches. The tag space
-is sparse, so fifteen shards hold 6,098 tagged fields and `999999.json` holds
+is sparse, so fifteen shards hold 6,097 tagged fields and `999999.json` holds
 three rendered ones. Empty ranges are absent, and a lookup reads one shard.
 
 Three ordered sources fill it. Nanoconda supplies the first reading and the
@@ -39,6 +39,28 @@ registry = FixRegistry(cache_dir="data/fix")
 field = registry.field("Side", "4.4")
 field.fix.encode("BUY")  # '1'
 ```
+
+The registry is also the source of the package fields and per-field timezone
+refinements:
+
+```python
+for name in ("OrigTime", "MarketEventType", "XHash", "LinkXHashes", "CodeSource"):
+    field = registry.field(name, "5.0.SP2")
+    print(f"{name:18} {field.dtype}")
+```
+
+```text
+OrigTime           timestamp[us, tz=UTC]
+MarketEventType    int64
+XHash              fixed_size_binary[16]
+LinkXHashes        list<item: fixed_size_binary[16] not null>
+CodeSource         string
+```
+
+Package fields use bare names. `MarketEventType <30002>` distinguishes the
+package event kind from standard `EventType <865>`; the six package message
+declarations retain `REKEP.`. Tags 30022 and 30023 stay empty:
+`RekepMarket` references standard `Price <44>` and `LastQty <32>`.
 
 ```bash
 cd python
@@ -83,7 +105,7 @@ publish_full('../data/fix', '../data/fix.zip')"
 ```
 
 Then rebuild the projection the wheel ships. It selects the standard keys
-`rekep.fix.publish.PROJECTED` names, adds rekep's 27 frozen fields, and carries
+`rekep.fix.publish.PROJECTED` names, adds rekep's 26 frozen fields, and carries
 every declaration, messages included:
 
 ```bash

@@ -726,7 +726,7 @@ class FixRegistry(Convertible):
         """Install the default `from_builtin` hands back, and return it.
 
         None restores the packaged projection. The registry has to carry
-        rekep's own vocabulary -- the twenty-seven identities every product
+        rekep's own vocabulary -- the 26 identities every product
         contract is declared against -- so an installed one that does not is
         refused here rather than reported as a missing field halfway through a
         parse.

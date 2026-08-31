@@ -17,13 +17,14 @@ from rekep.market import (
     EventType,
     Execution,
     Instrument,
+    InstrumentUpdate,
     MarketEvent,
     Order,
     Side,
     State,
 )
 from rekep.market.event import ALTIDS_TYPE, DAY, HOUR, SECOND
-from rekep.market.identity import NIL, hash_bytes_of, hash_int_of
+from rekep.market.identity import NIL, hash_int_of, hash_of
 
 SHAPES = {
     Order: EventType.ORDER,
@@ -185,7 +186,7 @@ def test_event_object_streams_cross_the_arrow_boundary_in_bounded_batches() -> N
             unix=1,
             code="A",
             altids={"orderid": "A", "clordid": "C1"},
-            linkedhashes=[7],
+            linkxhashes=[7],
             side=Side.BUY,
         ).identify(),
         Order(unix=2, code="B", side=Side.SELL).identify(),
@@ -227,6 +228,61 @@ def test_an_unhashed_event_carries_the_nil_identifier_rather_than_a_null() -> No
     assert Order().prevhash is None
 
 
+@pytest.mark.parametrize("creaunix", (1_710_374_400_000_000_123, -1))
+def test_xhash_composes_creation_microseconds_and_the_code_digest(creaunix: int) -> None:
+    built = Event(creaunix=creaunix, code="ORD-1").identify()
+    expected_digest = hash_of("ORD-1")
+
+    assert built.xhash == txhash.couple128(creaunix // 1_000, expected_digest)
+    assert txhash.micros_of(built.xhash) == creaunix // 1_000
+    assert txhash.vhash_of(built.xhash) == expected_digest
+
+
+def test_xhash_changes_at_the_next_creation_microsecond() -> None:
+    first = Event(creaunix=1_999, code="ORD-1").identify()
+    same_microsecond = Event(creaunix=1_000, code="ORD-1").identify()
+    next_microsecond = Event(creaunix=2_000, code="ORD-1").identify()
+
+    assert first.xhash == same_microsecond.xhash
+    assert next_microsecond.xhash != first.xhash
+
+
+def test_xhash_needs_a_readable_code() -> None:
+    assert Event(creaunix=1_000).identify().xhash == NIL
+
+
+def test_xhash_ignores_the_event_shape_and_market_scope() -> None:
+    creation = 1_710_374_400_000_000_123
+    events = (
+        Event(creaunix=creation, code="ORD-1"),
+        Order(
+            creaunix=creation,
+            instrumentxhash=1,
+            mic=MIC.from_str("XNAS"),
+            side=Side.BUY,
+            code="ORD-1",
+        ),
+        Execution(
+            creaunix=creation,
+            instrumentxhash=2,
+            mic=MIC.from_str("XLON"),
+            side=Side.SELL,
+            code="ORD-1",
+        ),
+    )
+
+    assert len({event.identify().xhash for event in events}) == 1
+
+
+def test_a_lifecycle_cannot_link_to_itself() -> None:
+    own = Event.xhash_of(1_000, "ORD-1")
+    other = Event.xhash_of(2_000, "ORD-2")
+    built = Event(creaunix=1_000, code="ORD-1", linkxhashes=[own, other]).identify()
+
+    assert built.linkxhashes == [other]
+    assert built.link_to(built, other).linkxhashes == [other]
+
+
 def test_mic_and_reason_distinguish_otherwise_identical_event_versions() -> None:
     xpar = MIC.from_str("XPAR")
     base = Event(unix=1, code="A", mic=xpar, reason="bad quantity").identify()
@@ -247,8 +303,12 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     declared = Event.into_field()
     assert "fix:tag" not in declared.field("code").metadata, "a lifecycle is not a FIX field"
     assert declared.field("code").dtype == pyarrow.string()
+    assert declared.field("xhash").dtype == HASH
+    assert declared.field("linkxhashes").dtype.value_type == HASH
     assert declared.field("altids").dtype == ALTIDS_TYPE
-    assert declared.names.index("altids") == declared.names.index("code") + 1
+    assert declared.names.index("codesource") == declared.names.index("code") + 1
+    assert declared.field("codesource").fix.display == "CodeSource"
+    assert declared.names.index("altids") == declared.names.index("codesource") + 1
     assert declared.field("prevhash").dtype == HASH
     assert declared.field("prevhash").nullable
     assert declared.names.index("prevhash") == declared.names.index("prevunix") + 1
@@ -259,6 +319,35 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     assert declared.names.count("reason") == 1
     assert "venue" not in MarketEvent.into_field().names
     assert "symbol" not in MarketEvent.into_field().names, "symbolticker is the flat spelling"
+
+
+@pytest.mark.parametrize(
+    "event,code,source",
+    (
+        (Event(code="GENERIC"), "GENERIC", "Code"),
+        (Book(instrumentxhash=1, symbolticker="AAPL"), "AAPL", "SymbolTicker"),
+        (Order(orderid="O-1"), "O-1", "OrderID"),
+        (Order(origclordid="C-0", clordid="C-1"), "C-0", "OrigClOrdID"),
+        (Order(clordid="C-1"), "C-1", "ClOrdID"),
+        (Execution(execid="E-1"), "E-1", "ExecID"),
+        (Execution(tradeid="T-1"), "T-1", "TradeID"),
+        (
+            Execution(state=State.CANCELLED, execid="E-2", execrefid="E-1"),
+            "E-1",
+            "ExecRefID",
+        ),
+    ),
+)
+def test_a_lifecycle_code_names_the_field_that_supplied_it(
+    event: Event, code: str, source: str
+) -> None:
+    event.identify()
+    assert (event.code, event.codesource) == (code, source)
+
+
+def test_an_instrument_update_names_the_nested_ticker_as_its_code_source() -> None:
+    update = InstrumentUpdate.from_instrument(Instrument(symbolticker="AAPL")).identify()
+    assert (update.code, update.codesource) == ("AAPL", "SymbolTicker")
 
 
 @pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)
@@ -291,20 +380,20 @@ def test_market_currency_input_is_normalized_to_its_compact_enum() -> None:
 
 
 def test_market_float_members_match_their_arrow_physical_type_before_hashing() -> None:
-    integer_input = Order(unix=1, code="BTC-USD", px=100, qty=2).with_previous(None)
-    float_input = Order(unix=1, code="BTC-USD", px=100.0, qty=2.0).with_previous(None)
+    integer_input = Order(unix=1, code="BTC-USD", price=100, lastqty=2).with_previous(None)
+    float_input = Order(unix=1, code="BTC-USD", price=100.0, lastqty=2.0).with_previous(None)
 
     assert integer_input is not None and float_input is not None
-    assert (integer_input.px, integer_input.qty) == (100.0, 2.0)
+    assert (integer_input.price, integer_input.lastqty) == (100.0, 2.0)
     assert integer_input.hash == float_input.hash
 
 
-def test_the_market_fallback_stores_the_readable_part_its_scoped_hash_uses() -> None:
+def test_the_market_fallback_stores_the_readable_part_its_xhash_uses() -> None:
     instrument = Instrument(symbol="BTC-USD")
     built = Book(side=Side.UNKNOWN).attach_instrument(instrument).with_previous(None)
     assert built is not None
-    assert built.code == instrument.symbolticker
-    assert built.xhash == Book.hash_of(hash_bytes_of(instrument.xhash), built.code, Side.UNKNOWN)
+    assert (built.code, built.codesource) == (instrument.symbolticker, "SymbolTicker")
+    assert built.xhash == Event.xhash_of(built.creaunix, built.code)
 
 
 def test_the_instrument_identity_is_flat_required_and_not_partitioned_on() -> None:

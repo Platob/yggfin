@@ -23,6 +23,7 @@ IDENTITY_PROTOCOL = "rekep-identity-v1"
 #: An identifier nothing has computed yet. Zero rather than null, because
 #: `hash`, `vhash`, and `xhash` are NOT NULL columns: a stored zero exposes a
 #: row nobody hashed as a repeated key rather than a late constraint failure.
+#: Wide identities use sixteen zero bytes for the same sentinel at Arrow boundaries.
 NIL = 0
 
 #: The length an absent part is framed with. Not zero -- that is an empty part,
@@ -220,8 +221,8 @@ def stored_member(name: str, value: Any) -> Any:
     """One member as a column stores it, by the name that says what it is.
 
     Named rather than typed because the vectorized builders assemble a batch
-    member by member and never hold the whole row: `hash`, `prevhash`, and the
-    event-hash lists use the same stored width wherever they appear.
+    member by member and never hold the whole row: event and lifecycle hashes
+    use the same stored width wherever they appear.
     """
     if value is None:
         return None
@@ -248,11 +249,11 @@ def read_member(name: str, value: Any) -> Any:
     return value
 
 
-#: Members whose Arrow representation is a sixteen-byte event hash.
-_WIDE_MEMBERS = frozenset(("hash", "prevhash"))
+#: Members whose Arrow representation is a sixteen-byte anchored hash.
+_WIDE_MEMBERS = frozenset(("hash", "xhash", "prevhash"))
 
-#: Lists whose items use the same sixteen-byte event-hash representation.
-_WIDE_LIST_MEMBERS = frozenset(("linkedhashes", "parenthash"))
+#: Lists whose items use the same sixteen-byte anchored-hash representation.
+_WIDE_LIST_MEMBERS = frozenset(("linkxhashes", "parenthash"))
 
 #: Every member a stored row spells differently from a document.
 ROW_SPELLED = frozenset((*_WIDE_MEMBERS, *_WIDE_LIST_MEMBERS))
@@ -264,8 +265,8 @@ ROW_SPELLED = frozenset((*_WIDE_MEMBERS, *_WIDE_LIST_MEMBERS))
 def _int64_bytes(value: int) -> bytes:
     """One integer part, eight bytes, refusing what Rust cannot hold as an `i64`.
 
-    A time-anchored event hash is wider and enters a frame through
-    `hash_bytes_of`; lifecycle and value hashes already fit this width.
+    A time-anchored event or lifecycle hash is wider and enters a frame through
+    `hash_bytes_of`; value and reference hashes already fit this width.
     """
     try:
         return LENGTH.pack(value)

@@ -22,8 +22,9 @@ flowchart LR
 | [Book](book.md) | both sides of one book, flat | `BookIterator.from_events` |
 
 Every event product is keyed `(unix, hash)` except `InstrumentUpdate`, whose
-current row is keyed by `xhash`. All six are sorted by `hash` and partitioned
-on `unixpartition` alone:
+current row is keyed by its fixed-width Event `xhash`. Instrument and leg
+reference identities remain clock-free `int64` values. All six are sorted by
+`hash` and partitioned on `unixpartition` alone:
 
 ```bash
 rekep fields load --target schemas/rekep/order.yaml | tail -2

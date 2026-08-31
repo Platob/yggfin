@@ -314,6 +314,7 @@ def levels(depth: int, base: float) -> list[dict[str, object]]:
 def envelope(rows: int) -> dict[str, object]:
     """The NOT NULL half of any market event, one column per row."""
     vhashes = [index + 1 for index in range(rows)]
+    codes = [f"S{index % 5000}" for index in range(rows)]
     return {
         "unix": [UNIX] * rows,
         "unixpartition": [UNIX_PARTITION] * rows,
@@ -322,11 +323,14 @@ def envelope(rows: int) -> dict[str, object]:
         "recunix": [UNIX] * rows,
         "hash": [txhash.wide_bytes(txhash.couple128(UNIX // 1_000, vhash)) for vhash in vhashes],
         "vhash": vhashes,
-        "xhash": [index + 1 for index in range(rows)],
-        "linkedhashes": [[] for _ in range(rows)],
+        "xhash": [
+            txhash.wide_bytes(txhash.couple128(UNIX // 1_000, hash_of(code))) for code in codes
+        ],
+        "linkxhashes": [[] for _ in range(rows)],
         "version": [1] * rows,
         "state": [210] * rows,
-        "code": [f"S{index % 5000}" for index in range(rows)],
+        "code": codes,
+        "codesource": ["Code"] * rows,
         "altids": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
         "instrumentxhash": [index % 5000 + 1 for index in range(rows)],
         "symbolticker": [f"S{index % 5000}" for index in range(rows)],
@@ -496,8 +500,8 @@ def stream(events: int) -> list[object]:
                 ready(
                     Execution(
                         unix=unix,
-                        px=100.0 + generate.randrange(-20, 20) * 0.01,
-                        qty=1.0,
+                        price=100.0 + generate.randrange(-20, 20) * 0.01,
+                        lastqty=1.0,
                         state=State.FILLED,
                         execid=f"E{index}",
                     )
@@ -510,8 +514,8 @@ def stream(events: int) -> list[object]:
                 Order(
                     unix=unix,
                     side=side,
-                    px=float("nan") if index % 20 == 0 else quoted,
-                    qty=float(generate.randrange(1, 50)),
+                    price=float("nan") if index % 20 == 0 else quoted,
+                    lastqty=float(generate.randrange(1, 50)),
                     orderid=named,
                     state=State.CANCELLED if shape == 2 else State.NEW,
                     kind=MarketKind.LIMIT_ORDER if index % 20 == 0 else MarketKind.UNKNOWN,
@@ -538,8 +542,8 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
             unix=unix,
             creaunix=unix,
             side=Side.BID,
-            px=100.0 - level * 0.01,
-            qty=1.0 + cycle % 2,
+            price=100.0 - level * 0.01,
+            lastqty=1.0 + cycle % 2,
             orderid=f"M{slot}",
             state=State.NEW,
         )
@@ -594,15 +598,15 @@ def bench_standing(rows: int, repeat: int) -> None:
                     orderid=f"O{index}",
                     clordid=f"CL{index}",
                     side=Side.BID,
-                    px=100.0,
-                    qty=1.0,
+                    price=100.0,
+                    lastqty=1.0,
                     state=State.NEW,
                 )
             )
         target = side.orders[live // 2 + 1]
         cases = (
             ("exact xhash", Order(xhash=target.xhash)),
-            ("linked xhash", Execution(linkedhashes=[target.xhash])),
+            ("linked xhash", Execution(linkxhashes=[target.xhash])),
             ("venue code", Order(altids={"secondary_order_id": f"V{live // 2}"})),
             ("client code", Order(altids={"secondary_cl_ord_id": f"C{live // 2}"})),
             ("code miss", Order(altids={"secondary_order_id": "missing"})),
@@ -610,7 +614,7 @@ def bench_standing(rows: int, repeat: int) -> None:
 
         def linear(event: Order | Execution, side: _Side = side) -> Order | None:
             identities = ([event.xhash] if event.is_order() and event.xhash else []) + [
-                identity for identity in event.linkedhashes
+                identity for identity in event.linkxhashes
             ]
             if identities:
                 return next(
@@ -766,7 +770,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
     """Value-hash comparison and indexed explicit-expiry lookup."""
     from rekep.market import Order, Side, State
 
-    previous = next(one for one in stream(4) if isinstance(one, Order) and one.px == one.px)
+    previous = next(one for one in stream(4) if isinstance(one, Order) and one.price == one.price)
     current = copy.copy(previous)
     pictured = copy.copy(previous)
     pictured.snapunix = previous.unix
@@ -802,8 +806,8 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 altids={"symbol": "BTC-USD"},
                 orderid=f"O{index}",
                 side=Side.BID,
-                px=100.0,
-                qty=1.0,
+                price=100.0,
+                lastqty=1.0,
                 state=State.NEW,
                 expunix=expiry if index % 100 == 0 else None,
             )
@@ -853,8 +857,8 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 altids={"symbol": "BTC-USD"},
                 orderid=f"O{index}",
                 side=Side.BID,
-                px=float(live - index),
-                qty=1.0,
+                price=float(live - index),
+                lastqty=1.0,
                 state=State.NEW,
             )
         )
@@ -863,7 +867,11 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
         return heapq.nlargest(
             1,
             capped.orders.values(),
-            key=lambda order: (-(order.px or 0.0), order.creaunix or order.unix, order.xhash),
+            key=lambda order: (
+                -(order.price or 0.0),
+                order.creaunix or order.unix,
+                order.xhash,
+            ),
         )
 
     scanned, expected = timed(global_scan, repeat)

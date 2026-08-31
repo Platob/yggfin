@@ -15,7 +15,9 @@ staged = Message.from_text(line, message=line)
 row = FixMsg.from_message_batch([staged]).to_pylist()[0]
 
 row["protocol"] = Protocol.from_int(row["protocol"]).code
-for name in ("protocol", "side", "lastpx", "ordstatus", "unix", "unixsource"):
+for name in (
+    "protocol", "side", "lastpx", "ordstatus", "unix", "unixsource", "code", "codesource"
+):
     print(f"{name:17} {row[name]!r}")
 print(f"{'instrument.symbol':17} {row['instrument']['symbol']!r}")
 ```
@@ -27,6 +29,8 @@ lastpx            100.25
 ordstatus         '2'
 unix              1767261600000000000
 unixsource        'TransactTime'
+code              'O1'
+codesource        'OrderID'
 instrument.symbol 'BTC-USD'
 ```
 
@@ -45,6 +49,9 @@ instrument.symbol 'BTC-USD'
 `unixsource` names which rung answered, so a transaction time and a print
 time are never confused. The chain is in
 [market lifecycle](../market/index.md#when-it-happened).
+
+`codesource` names the promoted field that supplied `code`. Together with
+`creaunix`, that code produces the fixed-width lifecycle `xhash`.
 
 Malformed typed values and isolated transcription failures remain as rows with
 a nullable `error`; see [best-effort rows](../fix/fixmsg.md#best-effort-rows).

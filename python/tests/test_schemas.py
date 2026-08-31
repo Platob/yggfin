@@ -67,7 +67,7 @@ def test_message_contracts_keep_time_keys(name: str) -> None:
 def test_market_contract_keeps_protocol_metadata() -> None:
     order = Field.from_yaml(str(SCHEMAS / "rekep" / "order.yaml"))
     assert order.field("timeinforce").fix["tag"] == "59"
-    assert order.field("px").fix["name"] == "Price"
+    assert order.field("price").fix["name"] == "Price"
     assert order.field("side").fix["tag"] == "54"
     assert "fix:tag" not in order.field("code").metadata, "a lifecycle is not a FIX field"
     assert "instrument" not in order.names
@@ -136,7 +136,7 @@ def test_every_column_says_what_it_is_called(path: Path) -> None:
     A FIX column displays the dictionary's own name and an analytical one
     displays what `display_name` writes -- and either folds back onto
     something the column already is: its own name, or the FIX field it says it
-    reads. `px` displays `Price` because that is what tag 44 is called; it is
+    reads. `price` displays `Price` because that is what tag 44 is called; it is
     a spelling of the column's source, not a second name for the column.
     """
     for member in _columns(Field.from_(str(path))):

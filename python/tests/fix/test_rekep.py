@@ -22,33 +22,39 @@ from rekep.market import Event, MarketEvent
 from rekep.text import FixMsg
 
 EXPECTED_FIELDS: tuple[tuple[str, str, int], ...] = (
-    ("unix", "REKEP.Unix", 30000),
-    ("unixpartition", "REKEP.UnixPartition", 30001),
-    ("eventtype", "REKEP.EventType", 30002),
-    ("creaunix", "REKEP.CreaUnix", 30003),
-    ("recunix", "REKEP.RecUnix", 30004),
-    ("expunix", "REKEP.ExpUnix", 30005),
-    ("snapunix", "REKEP.SnapUnix", 30006),
-    ("hash", "REKEP.Hash", 30007),
-    ("vhash", "REKEP.VHash", 30008),
-    ("xhash", "REKEP.XHash", 30009),
-    ("prevhash", "REKEP.PrevHash", 30010),
-    ("prevunix", "REKEP.PrevUnix", 30011),
-    ("parenthash", "REKEP.ParentHash", 30012),
-    ("linkedhashes", "REKEP.LinkedHashes", 30013),
-    ("version", "REKEP.Version", 30014),
-    ("state", "REKEP.State", 30015),
-    ("code", "REKEP.Code", 30016),
-    ("altids", "REKEP.AltIDs", 30017),
-    ("mic", "REKEP.MIC", 30018),
-    ("reason", "REKEP.Reason", 30019),
-    ("symbolticker", "REKEP.SymbolTicker", 30020),
-    ("unmap", "REKEP.Unmap", 30021),
-    ("px", "REKEP.Px", 30022),
-    ("qty", "REKEP.Qty", 30023),
-    ("pxunit", "REKEP.PxUnit", 30024),
-    ("qtyunit", "REKEP.QtyUnit", 30025),
-    ("notional", "REKEP.Notional", 30026),
+    ("unix", "Unix", 30000),
+    ("unixpartition", "UnixPartition", 30001),
+    ("eventtype", "MarketEventType", 30002),
+    ("creaunix", "CreaUnix", 30003),
+    ("recunix", "RecUnix", 30004),
+    ("expunix", "ExpUnix", 30005),
+    ("snapunix", "SnapUnix", 30006),
+    ("hash", "Hash", 30007),
+    ("vhash", "VHash", 30008),
+    ("xhash", "XHash", 30009),
+    ("prevhash", "PrevHash", 30010),
+    ("prevunix", "PrevUnix", 30011),
+    ("parenthash", "ParentHash", 30012),
+    ("linkxhashes", "LinkXHashes", 30013),
+    ("version", "Version", 30014),
+    ("state", "State", 30015),
+    ("code", "Code", 30016),
+    ("altids", "AltIDs", 30017),
+    ("mic", "MIC", 30018),
+    ("reason", "Reason", 30019),
+    ("symbolticker", "SymbolTicker", 30020),
+    ("unmap", "Unmap", 30021),
+    ("pxunit", "PxUnit", 30024),
+    ("qtyunit", "QtyUnit", 30025),
+    ("notional", "Notional", 30026),
+    ("codesource", "CodeSource", 30027),
+)
+
+HEADER_FIELDS = (*EXPECTED_FIELDS[:20], EXPECTED_FIELDS[-1])
+MARKET_FIELDS = (
+    ("price", "Price", 44),
+    ("lastqty", "LastQty", 32),
+    *EXPECTED_FIELDS[22:25],
 )
 
 EXPECTED_MESSAGES: tuple[tuple[str, str], ...] = (
@@ -87,8 +93,13 @@ def test_rekep_field_tags_are_frozen_and_round_trip_through_the_registry() -> No
         assert by_tag.description.endswith(".")
 
     assert registry.resolve("EventType").fix.tag == 865
-    assert registry.resolve("REKEP.EventType").fix.tag == 30002
-    assert registry.resolve("unix") is None
+    assert registry.resolve("MarketEventType").fix.tag == 30002
+    assert registry.resolve("REKEP.Unix") is None
+    assert registry.resolve("unix").fix.tag == 30000
+    assert registry.field(30022) is None
+    assert registry.field(30023) is None
+    assert registry.resolve("Price").fix.tag == 44
+    assert registry.resolve("LastQty").fix.tag == 32
 
 
 def test_rekep_components_and_contract_msg_types_are_frozen() -> None:
@@ -114,10 +125,10 @@ def test_rekep_components_and_contract_msg_types_are_frozen() -> None:
     components = registry.component_records()
     messages = registry.message_records()
     assert [member.name for member in members_of(components["RekepHeader"].declaration)] == [
-        canonical for _column, canonical, _tag in EXPECTED_FIELDS[:20]
+        canonical for _column, canonical, _tag in HEADER_FIELDS
     ]
     assert [member.name for member in members_of(components["RekepMarket"].declaration)] == [
-        canonical for _column, canonical, _tag in EXPECTED_FIELDS[22:]
+        canonical for _column, canonical, _tag in MARKET_FIELDS
     ]
     assert {msg_type: messages[msg_type].name for _contract, msg_type in EXPECTED_MESSAGES} == {
         msg_type: f"REKEP.{contract}" for contract, msg_type in EXPECTED_MESSAGES
@@ -129,11 +140,11 @@ def test_rekep_components_and_contract_msg_types_are_frozen() -> None:
 
     expected_members = {
         "REKEP.Message": ("RekepHeader",),
-        "REKEP.FixMsg": ("RekepHeader", "REKEP.SymbolTicker", "REKEP.Unmap"),
-        "REKEP.Instrument": ("RekepHeader", "REKEP.SymbolTicker"),
-        "REKEP.Order": ("RekepHeader", "REKEP.SymbolTicker", "RekepMarket"),
-        "REKEP.Execution": ("RekepHeader", "REKEP.SymbolTicker", "RekepMarket"),
-        "REKEP.Book": ("RekepHeader", "REKEP.SymbolTicker", "RekepMarket"),
+        "REKEP.FixMsg": ("RekepHeader", "SymbolTicker", "Unmap"),
+        "REKEP.Instrument": ("RekepHeader", "SymbolTicker"),
+        "REKEP.Order": ("RekepHeader", "SymbolTicker", "RekepMarket"),
+        "REKEP.Execution": ("RekepHeader", "SymbolTicker", "RekepMarket"),
+        "REKEP.Book": ("RekepHeader", "SymbolTicker", "RekepMarket"),
     }
     assert {
         name: tuple(member.name for member in members_of(components[name].declaration))
@@ -144,12 +155,16 @@ def test_rekep_components_and_contract_msg_types_are_frozen() -> None:
 def test_rekep_component_projection_matches_the_persisted_event_fields() -> None:
     registry = FixRegistry.from_builtin()
     displays = {
-        column: display
-        for column, _name, _datatype, display, _description in REKEP_FIELD_DECLARATIONS
+        "price": "Price",
+        "lastqty": "LastQty",
+        **{
+            column: display
+            for column, _name, _datatype, display, _description in REKEP_FIELD_DECLARATIONS
+        },
     }
     expected = {
-        "RekepHeader": (Event, EXPECTED_FIELDS[:20]),
-        "RekepMarket": (MarketEvent, EXPECTED_FIELDS[22:]),
+        "RekepHeader": (Event, HEADER_FIELDS),
+        "RekepMarket": (MarketEvent, MARKET_FIELDS),
     }
 
     for component, (shape, declarations) in expected.items():
@@ -180,7 +195,7 @@ def test_registering_rekep_twice_does_not_mutate_the_store(tmp_path: Path) -> No
 
 def test_registration_refuses_an_extra_alias(tmp_path: Path) -> None:
     registry = register_rekep(FixRegistry(cache_dir=tmp_path / "registry"))
-    registry.alias_field("REKEP.Unix", "PackageUnix")
+    registry.alias_field("Unix", "PackageUnix")
 
     assert not rekep_is_registered(registry)
     with pytest.raises(ValueError, match="does not own tag"):

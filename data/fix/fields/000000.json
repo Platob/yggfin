@@ -750,7 +750,7 @@
  },
  "42": {
   "name": "OrigTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\"))",
   "fix": {
@@ -929,7 +929,7 @@
  },
  "52": {
   "name": "SendingTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -1112,7 +1112,7 @@
  },
  "62": {
   "name": "ValidUntilTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Indicates expiration time of indication message (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -2181,7 +2181,7 @@
  },
  "122": {
   "name": "OrigSendingTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request.",
   "fix": {
@@ -2254,7 +2254,7 @@
  },
  "126": {
   "name": "ExpireTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") The meaning of expiration is specific to the context where the field is used. For orders, this is the expiration time of a Good Til Date TimeInForce. For Quotes - this is the expiration of the quote. Expiration time is provided across the quote message dialog to control the length of time of the overall quoting process. For collateral requests, this is the time by which collateral must be assigned. For collateral assignments, this is the time by which a response to the assignment is expected.",
   "fix": {
@@ -3014,7 +3014,7 @@
  },
  "168": {
   "name": "EffectiveTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Time the details within the message should take effect (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -6612,7 +6612,7 @@
  },
  "367": {
   "name": "QuoteSetValidUntilTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Indicates expiration time of this particular QuoteSet (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {
@@ -6667,7 +6667,7 @@
  },
  "370": {
   "name": "OnBehalfOfSendingTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Deprecated in FIX.4.3 See Appendix 6-F: 13.Removed Deprecated Field: OnBehalfOfSendingTime (tag 370) [Deprecated and Replaced in FIX 4.3, Removed in FIX 4.4] Used when a message is sent via a 'hub' or 'service bureau'. If A sends to Q (the hub) who then sends to B via a separate FIX session, then when Q sends to B the value of this field should represent the SendingTime on the message A sent to Q. (always expressed in UTC (Universal Time Coordinated, also known as 'GMT')",
   "fix": {
@@ -7884,7 +7884,7 @@
  },
  "438": {
   "name": "ContraTradeTime",
-  "type": "timestamp[us]",
+  "type": "timestamp[us, tz=UTC]",
   "nullable": true,
   "description": "Identifes the time of the trade with the ContraBroker (375). (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")",
   "fix": {

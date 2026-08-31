@@ -21,14 +21,14 @@
     "fields": []
    },
    {
-    "name": "REKEP.SymbolTicker",
+    "name": "SymbolTicker",
     "type": "string",
     "fix": {
      "tag": "30020"
     }
    },
    {
-    "name": "REKEP.Unmap",
+    "name": "Unmap",
     "type": "string",
     "nullable": true,
     "fix": {

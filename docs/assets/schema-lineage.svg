@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows with a nested Instrument component at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions InstrumentUpdate events. Book order and execution lists flatten into their own tables. Orders and Executions relate by exact final event hashes; parenthash carries construction provenance.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows with a nested Instrument component at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions InstrumentUpdate events. Book order and execution lists flatten into their own tables. Orders and Executions relate by lifecycle xhash; parenthash carries exact construction provenance.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
@@ -40,8 +40,8 @@
 
   <rect class="origin" x="1135" y="30" width="420" height="90" rx="14"/>
   <text class="label" x="1345" y="63">Shared Event envelope</text>
-  <text class="small" x="1345" y="88">hash | vhash | xhash | prevhash | linkedhashes</text>
-  <text class="small" x="1345" y="108">unix | eventtype | state | reason | parenthash</text>
+  <text class="small" x="1345" y="88">hash | vhash | xhash | prevhash | linkxhashes</text>
+  <text class="small" x="1345" y="108">code | codesource | state | reason | parenthash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 
   <rect class="contract" x="45" y="150" width="355" height="72" rx="15"/>
@@ -66,7 +66,7 @@
   <rect class="market" x="525" y="175" width="345" height="175" rx="15"/>
   <text class="label" x="698" y="208">InstrumentUpdate contract</text>
   <text class="small" x="698" y="236">event envelope + nested Instrument</text>
-  <text class="small" x="698" y="258">one current event per xhash</text>
+  <text class="small" x="698" y="258">one current event per Event xhash</text>
   <image href="logos/apache-iceberg.svg" x="565" y="285" width="102" height="28"/>
   <text class="small" x="755" y="306">market.instruments</text>
 
@@ -74,14 +74,14 @@
   <text class="label" x="698" y="508">Book contract</text>
   <text class="small" x="698" y="536">instrumentxhash | bidlevels | asklevels</text>
   <text class="small" x="698" y="558">deltas | executions | bidalive | askalive</text>
-  <text class="small" x="698" y="580">best values | VWAP | imbalance</text>
+  <text class="small" x="698" y="580">price | lastqty | VWAP | imbalance</text>
   <image href="logos/apache-iceberg.svg" x="565" y="610" width="102" height="28"/>
   <text class="small" x="755" y="631">market.books</text>
 
   <rect class="contract" x="1040" y="350" width="245" height="205" rx="15"/>
   <text class="label" x="1163" y="383">Order contract</text>
   <text class="small" x="1163" y="411">ids | side | kind | timeinforce</text>
-  <text class="small" x="1163" y="433">px | qty | hiddenqty | expiry</text>
+  <text class="small" x="1163" y="433">price | lastqty | hiddenqty | expiry</text>
   <text class="small" x="1163" y="455">Book.hash in parenthash provenance</text>
   <image href="logos/apache-iceberg.svg" x="1080" y="493" width="94" height="26"/>
   <text class="small" x="1195" y="532">market.orders</text>
@@ -89,8 +89,8 @@
   <rect class="contract" x="1330" y="350" width="245" height="205" rx="15"/>
   <text class="label" x="1453" y="383">Execution contract</text>
   <text class="small" x="1453" y="411">execution ids + order ids</text>
-  <text class="small" x="1453" y="433">px | qty | notional | currency</text>
-  <text class="small" x="1453" y="455">exact Order.hash in linkedhashes</text>
+  <text class="small" x="1453" y="433">price | lastqty | notional | currency</text>
+  <text class="small" x="1453" y="455">Order.xhash in linkxhashes</text>
   <image href="logos/apache-iceberg.svg" x="1370" y="493" width="94" height="26"/>
   <text class="small" x="1485" y="532">market.executions</text>
 
@@ -107,7 +107,7 @@
   <text class="edge-label" x="955" y="494">deltas</text>
 
   <path class="flow" d="M870 575 C1010 660 1240 650 1330 500"/>
-  <text class="edge-label" x="1115" y="665">executions + exact event links</text>
+  <text class="edge-label" x="1115" y="665">executions + lifecycle links</text>
 
   <path class="inherit" d="M1345 120 V135 H223 V150"/>
   <path class="inherit" d="M1345 145 H698 V175"/>

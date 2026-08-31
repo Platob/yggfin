@@ -18,6 +18,7 @@ import pyarrow
 import pytest
 
 from rekep.fix.columns import COLUMNS, COMMON, FLAT, QUOTE, SESSION, STAMPS, TAGS
+from rekep.fix.fields import documented_utc
 from rekep.fix.registry import FixRegistry
 
 #: The dictionary this repository publishes, beside `python/`.
@@ -100,8 +101,10 @@ def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
     the dictionary and a day to a reader, and it is stored without a zone.
     """
     for tag in STAMPS:
-        assert registry.field(tag).dtype == pyarrow.timestamp("us"), tag
-    timestamps = {tag for tag, _ in FLAT if registry.field(tag).dtype == pyarrow.timestamp("us")}
+        member = registry.field(tag)
+        expected = pyarrow.timestamp("us", tz="UTC" if documented_utc(member.description) else None)
+        assert member.dtype == expected, tag
+    timestamps = {tag for tag, _ in FLAT if pyarrow.types.is_timestamp(registry.field(tag).dtype)}
     assert STAMPS <= timestamps, "and every documented clock is a lifted timestamp"
 
 

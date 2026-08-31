@@ -92,17 +92,19 @@ def test_hash_widths_match_their_roles() -> None:
         field = shape.into_field()
         if "hash" in field.names:
             assert field.field("hash").dtype == HASH, shape.__name__
-        for name in ("vhash", "xhash", "instrumentxhash"):
+        if "xhash" in field.names:
+            assert field.field("xhash").dtype == HASH, shape.__name__
+        for name in ("vhash", "instrumentxhash"):
             if name in field.names:
                 assert field.field(name).dtype == pyarrow.int64(), f"{shape.__name__}.{name}"
-    assert Leg.into_field().field("xhash").dtype == pyarrow.int64()
+    assert "xhash" not in Leg.into_field().names, "leg reference identity is derived, not stored"
     parenthash = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
-    linkedhashes = pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
+    linkxhashes = pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
     for shape in (Event, InstrumentUpdate, MarketEvent, Order, Execution, Book):
         field = shape.into_field()
         assert field.field("prevhash").dtype == HASH, shape.__name__
         assert field.field("parenthash").dtype == parenthash, shape.__name__
-        assert field.field("linkedhashes").dtype == linkedhashes, shape.__name__
+        assert field.field("linkxhashes").dtype == linkxhashes, shape.__name__
 
 
 def test_a_market_code_column_is_as_wide_as_its_code_declares() -> None:
@@ -279,7 +281,7 @@ def describe_enum_metadata(declared: type) -> dict[str, str]:
 
 
 def test_a_column_that_is_not_an_enum_says_nothing_about_one() -> None:
-    assert "name" not in Order.into_field().field("px").protocol("enum")
+    assert "name" not in Order.into_field().field("price").protocol("enum")
     assert "name" not in Order.into_field().field("code").protocol("enum")
 
 

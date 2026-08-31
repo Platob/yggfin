@@ -30,7 +30,7 @@ from rekep.market import (
 from rekep.market.book import _resting, _Side
 from rekep.market.event import DAY, HOUR
 from rekep.market.fix_arrow import into_flat_market_batches
-from rekep.market.identity import hash_bytes_of
+from rekep.market.identity import hash_of
 from rekep.text import FixMsg
 
 DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -61,8 +61,8 @@ def order(unix: int, about: Instrument, side: Side, px: float, qty: float, named
     declared = {
         "unix": unix,
         "side": side,
-        "px": px,
-        "qty": qty,
+        "price": px,
+        "lastqty": qty,
         "orderid": named,
         "state": State.NEW,
     }
@@ -358,9 +358,8 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
     report_order = expected[Order][1]
     report_execution = expected[Execution][0]
     assert report_execution.parenthash == [report_order.hash]
-    assert report_execution.linkedhashes == [report_order.hash]
-    assert report_order.linkedhashes == [report_execution.hash]
-    assert report_execution.altids["orderroot"] == report_order.code
+    assert report_execution.linkxhashes == [report_order.xhash]
+    assert report_order.linkxhashes == [report_execution.xhash]
     assert report_execution.altids["tradeid"] == "TRADE-1"
     assert report_execution.metadata["9998"] == "report-meta"
 
@@ -948,8 +947,8 @@ def test_a_blank_ticker_is_not_replaced_by_an_instrument_hash() -> None:
         unix=BASE,
         instrumentxhash=BTC.xhash,
         side=Side.BID,
-        px=100.0,
-        qty=5.0,
+        price=100.0,
+        lastqty=5.0,
         orderid="B1",
         state=State.NEW,
     )
@@ -1215,7 +1214,7 @@ def test_each_delta_reads_both_incremental_side_summaries() -> None:
         (100.0, 5.0, 1, 100.4, 2.0, 2),
         (100.0, 5.0, 2, 100.4, 2.0, 2),
     ]
-    assert found[1].px == pytest.approx(100.25)
+    assert found[1].price == pytest.approx(100.25)
     assert found[2].vwap == pytest.approx((100.0 * 2.0 + 100.4 * 5.0) / 7.0)
 
 
@@ -1228,8 +1227,8 @@ def test_a_trade_counts_as_the_side_moving() -> None:
             Execution(
                 unix=BASE + 20,
                 side=Side.BID,
-                px=100.0,
-                qty=2.0,
+                price=100.0,
+                lastqty=2.0,
                 state=State.FILLED,
                 execid="EX-1",
             )
@@ -1238,7 +1237,7 @@ def test_a_trade_counts_as_the_side_moving() -> None:
     first, _, third = BookIterator.from_events(events, snapshot_every=0).books
     assert first.bidqty == 5.0 and third.bidqty == 3.0
     assert [(level.px, level.qty) for level in third.bidlevels] == [(100.0, 3.0)]
-    assert [(one.px, one.qty) for one in third.executions] == [(100.0, 2.0)]
+    assert [(one.price, one.lastqty) for one in third.executions] == [(100.0, 2.0)]
 
 
 def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
@@ -1248,8 +1247,8 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
             Execution(
                 unix=BASE + 10,
                 side=Side.BID,
-                px=100.0,
-                qty=2.0,
+                price=100.0,
+                lastqty=2.0,
                 state=State.FILLED,
                 execid="EX-1",
             )
@@ -1258,8 +1257,8 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
             Execution(
                 unix=BASE + 20,
                 side=Side.BID,
-                px=100.0,
-                qty=2.0,
+                price=100.0,
+                lastqty=2.0,
                 state=State.CANCELLED,
                 execid="EX-2",
                 execrefid="EX-1",
@@ -1298,7 +1297,7 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
             one.prevexecpx,
         ) == (None, None, None, None, None)
         assert [order.orderid for order in one.bidalive] == ["B1"]
-        assert one.linkedhashes == [order.hash for order in one.bidalive]
+        assert one.linkxhashes == [order.xhash for order in one.bidalive]
 
 
 def test_forgetting_the_delta_does_not_empty_the_row_it_pictures() -> None:
@@ -1424,7 +1423,7 @@ def test_the_live_state_a_book_is_identified_by_follows_every_revision() -> None
     assert before == live(side) == (placed.vhash,)
 
     revised = order(BASE + 10, BTC, Side.BID, 100.0, 5.0, "B1", state=State.PARTIALLY_FILLED)
-    assert revised.px == placed.px and _resting(revised) == _resting(placed)
+    assert revised.price == placed.price and _resting(revised) == _resting(placed)
     side.apply(revised)
     after = side.order_vhashes()
     assert after == live(side) and after != before, (
@@ -1442,8 +1441,8 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
         Order(
             unix=BASE,
             side=Side.BID,
-            px=100.0,
-            qty=5.0,
+            price=100.0,
+            lastqty=5.0,
             clordid="client-1",
             state=State.NEW,
         ),
@@ -1481,8 +1480,8 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
         Order(
             unix=BASE + 10,
             side=Side.BID,
-            px=100.0,
-            qty=5.0,
+            price=100.0,
+            lastqty=5.0,
             clordid="CL-1",
             altids={"clordid": "CL-1"},
             state=State.NEW,
@@ -1493,8 +1492,8 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
         Order(
             unix=BASE + 20,
             side=Side.BID,
-            px=100.0,
-            qty=4.0,
+            price=100.0,
+            lastqty=4.0,
             orderid="ORD-1",
             clordid="CL-2",
             origclordid="CL-1",
@@ -1683,7 +1682,8 @@ def test_an_identifier_beside_the_symbol_keeps_one_book() -> None:
     (nested,) = book.deltas
     assert book.instrumentxhash == nested.instrumentxhash == richer.xhash
     assert book.instrumentxhash == canonical.xhash
-    assert nested.xhash == Order.hash_of(hash_bytes_of(richer.xhash), nested.mic, "B1", nested.side)
+    assert txhash.micros_of(nested.xhash) == nested.creaunix // 1_000
+    assert txhash.vhash_of(nested.xhash) == hash_of("B1")
 
 
 def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions() -> None:
@@ -1699,10 +1699,10 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
             unix=BASE + 1,
             state=State.FILLED,
             side=Side.BID,
-            px=100.0,
-            qty=1.0,
+            price=100.0,
+            lastqty=1.0,
             execid="X1",
-            linkedhashes=[placed.hash],
+            linkxhashes=[placed.xhash],
             parenthash=[placed.hash],
         )
         .attach_instrument(richer)
@@ -1713,7 +1713,7 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
 
     nested_order = books[0].deltas[0]
     nested_fill = books[-1].executions[0]
-    assert nested_fill.primary_linked_hash == nested_order.hash
+    assert nested_fill.primary_linked_xhash == nested_order.xhash
     assert nested_order.hash in nested_fill.parenthash
 
 
@@ -1947,8 +1947,8 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
         Execution(
             unix=BASE + 10,
             side=Side.BID,
-            px=-37.0,
-            qty=-1.0,
+            price=-37.0,
+            lastqty=-1.0,
             state=State.FILLED,
             execid="E1",
         )
@@ -1976,24 +1976,24 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
         Execution(
             unix=BASE + 10,
             side=Side.BID,
-            px=100.0,
-            qty=400.0,
+            price=100.0,
+            lastqty=400.0,
             leavesqty=800.0,
             cumqty=400.0,
             state=State.FILLED,
             execid="E1",
-            linkedhashes=[placed.hash],
+            linkxhashes=[placed.xhash],
         )
     )
 
     latest = list(BookIterator.from_events([placed, remaining, fill], snapshot_every=0))[-1]
 
     assert latest.bidqty == 800.0 and latest.biddepth == 1
-    assert latest.deltas[0].px == 100.0 and latest.deltas[0].qty == 800.0
+    assert latest.deltas[0].price == 100.0 and latest.deltas[0].lastqty == 800.0
     assert latest.deltas[0].prevqty == 1_200.0
     assert latest.deltas[0].version == 1 and latest.deltas[0].prevunix == placed.unix
     assert latest.deltas[0].prevhash == placed.hash
-    assert latest.executions[0].qty == 400.0
+    assert latest.executions[0].lastqty == 400.0
 
 
 def test_a_book_says_which_instrument_it_is_of_readably_and_by_hash() -> None:
@@ -2029,18 +2029,18 @@ def test_purge_alive_ends_them_as_auditable_versions() -> None:
     books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0, purge_alive=True))
     purged = [one for book in books for one in book.deltas if one.state is State.INTERNAL_EXPIRED]
     assert len(purged) == 2, "one terminal version per side, and no more"
-    assert {one.qty for one in purged} == {0.0}
+    assert {one.lastqty for one in purged} == {0.0}
     assert all("still resting when the stream ended" in (one.reason or "") for one in purged)
     assert (books[-1].biddepth, books[-1].askdepth) == (0, 0)
 
 
 def test_purging_leaves_the_lifecycles_it_ended_linked_to_their_book() -> None:
-    """An expiry nobody can join back to its order is an expiry nobody can audit."""
+    """An expiry links its lifecycle into the book that records it."""
     books = list(BookIterator.from_events(_resting_stream(), snapshot_every=0, purge_alive=True))
     last = books[-1]
     purged = [one for one in last.deltas if one.state is State.INTERNAL_EXPIRED]
-    linked = set(last.linkedhashes)
-    assert {one.hash for one in purged} <= linked
+    linked = set(last.linkxhashes)
+    assert {one.xhash for one in purged} <= linked
 
 
 def test_purge_alive_on_an_empty_stream_emits_nothing() -> None:

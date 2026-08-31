@@ -476,33 +476,15 @@ def test_a_sliced_identity_column_keeps_its_sign_and_nulls() -> None:
     assert [hash_int_of(one) for one in arrow_of(values).to_pylist()] == [-1, None, 2]
 
 
-def test_exact_event_hash_members_change_spelling_in_a_stored_row() -> None:
+def test_wide_hash_members_change_spelling_in_a_stored_row() -> None:
     version = (17 << 64) | ((-9) & ((1 << 64) - 1))
-    assert stored_member("hash", version) == hash_bytes_of(version)
-    assert stored_member("prevhash", version) == hash_bytes_of(version)
+    for name in ("hash", "xhash", "prevhash"):
+        assert stored_member(name, version) == hash_bytes_of(version)
+        assert read_member(name, hash_bytes_of(version)) == version
     assert stored_member("parenthash", [version]) == [hash_bytes_of(version)]
-    assert stored_member("linkedhashes", [version]) == [hash_bytes_of(version)]
-    assert read_member("hash", hash_bytes_of(version)) == version
+    assert stored_member("linkxhashes", [version]) == [hash_bytes_of(version)]
     assert read_member("parenthash", [hash_bytes_of(version)]) == [version]
-    assert read_member("linkedhashes", [hash_bytes_of(version)]) == [version]
-    for name in ("vhash", "xhash", "instrumentxhash"):
+    assert read_member("linkxhashes", [hash_bytes_of(version)]) == [version]
+    for name in ("vhash", "instrumentxhash"):
         assert stored_member(name, -9) == -9
         assert read_member(name, -9) == -9
-
-
-def test_a_supported_unhashable_lifecycle_part_bypasses_the_cache() -> None:
-    """A mutable bytes view is portable even though the lifecycle cache cannot key it."""
-    import dataclasses
-
-    from rekep.market import Order
-    from rekep.market.identity import hash_of
-
-    @dataclasses.dataclass
-    class Binary(Order):
-        """An order whose lifecycle is raw protocol bytes."""
-
-        def life_parts(self) -> tuple[object, ...]:
-            return (bytearray(b"order-1"),)
-
-    one = Binary(unix=1, code="BTC-USD")
-    assert one.life_hash() == hash_of("Binary", bytearray(b"order-1"))

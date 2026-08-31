@@ -29,7 +29,7 @@ uv pip install --extra-index-url https://artifacts.example.net/api/pypi/pypi/sim
 ## 2. The FIX registry
 
 The wheel carries a **reduced** registry — the 180 standard fields the shipped
-contracts promote and 27 frozen rekep fields. The full store is 6,101:
+contracts promote and 26 frozen rekep fields. The full store is 6,100:
 
 ```python
 from rekep.fix import FixRegistry
@@ -38,7 +38,7 @@ print(len(FixRegistry.from_builtin().field_records()))
 ```
 
 ```text
-207
+206
 ```
 
 !!! danger "A missing registry path is silent"

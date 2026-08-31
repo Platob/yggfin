@@ -34,6 +34,7 @@ from rekep.market import (
     InstrumentUpdate,
     OptionKind,
     Side,
+    hash_of,
 )
 from rekep.market.event import HOUR, SECOND
 from rekep.market.fix import FixEvents
@@ -56,10 +57,11 @@ ENVELOPE = [
     "hash",
     "vhash",
     "xhash",
-    "linkedhashes",
+    "linkxhashes",
     "version",
     "state",
     "code",
+    "codesource",
     "altids",
     "prevunix",
     "prevhash",
@@ -235,7 +237,7 @@ ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTR
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 35
 EXPECTED_FLAT_COLUMNS = 86
-EXPECTED_LOG_COLUMNS = 109
+EXPECTED_LOG_COLUMNS = 110
 
 
 @pytest.fixture(scope="module")
@@ -468,9 +470,25 @@ def test_scalar_and_arrow_identification_share_the_registry_projection() -> None
     )
 
     assert scalar.code == arrow.column("code")[0].as_py() == "C1"
+    assert scalar.codesource == arrow.column("codesource")[0].as_py() == "ClOrdID"
     assert scalar.vhash == arrow.column("vhash")[0].as_py()
-    assert scalar.xhash == arrow.column("xhash")[0].as_py()
+    assert scalar.into_row()["xhash"] == arrow.column("xhash")[0].as_py()
+    assert txhash.micros_of(scalar.xhash) == scalar.creaunix // 1_000
+    assert txhash.vhash_of(scalar.xhash) == hash_of(scalar.code)
     assert scalar.into_row()["hash"] == arrow.column("hash")[0].as_py()
+
+
+def test_a_precomputed_named_row_still_fills_its_lifecycle_identity() -> None:
+    clock = 1_700_000_000_123_456_789
+    vhash = hash_of("parsed value")
+    event_hash = txhash.couple128(clock // 1_000, vhash)
+    row = FixMsg(unix=clock, creaunix=clock - 10_000, code="C1", hash=event_hash, vhash=vhash)
+
+    row.identify()
+
+    assert (row.hash, row.vhash) == (event_hash, vhash)
+    assert row.xhash == Event.xhash_of(row.creaunix, "C1")
+    assert row.codesource == "Code"
 
 
 @pytest.mark.parametrize(
@@ -650,12 +668,12 @@ def test_creation_uses_only_origination_and_transmission_evidence(codec: FixCode
     ]
 
 
-def test_rekep_clocks_override_inference_but_not_the_local_recording_clock(
+def test_stated_clocks_override_inference_but_not_the_local_recording_clock(
     codec: FixCodec,
 ) -> None:
     line = (
         "BEGINSTRING=FIX.4.4|MSGTYPE=D|CLORDID=C1|SYMBOL=AAPL|"
-        "REKEP.UNIX=100|REKEP.CREAUNIX=90|REKEP.RECUNIX=110|"
+        "UNIX=100|CREAUNIX=90|RECUNIX=110|"
         "TRANSACTTIME=20260821-10:00:00|SENDINGTIME=20260821-09:59:59|"
     )
     parsed = FixMsg.from_message_batch(
@@ -663,7 +681,7 @@ def test_rekep_clocks_override_inference_but_not_the_local_recording_clock(
     )
 
     assert parsed.column("unix").to_pylist() == [100, 100]
-    assert parsed.column("unixsource").to_pylist() == ["REKEP.Unix", "REKEP.Unix"]
+    assert parsed.column("unixsource").to_pylist() == ["Unix", "Unix"]
     assert parsed.column("creaunix").to_pylist() == [90, 90]
     assert parsed.column("recunix").to_pylist() == [110, 120]
     assert parsed.column("unmap").to_pylist() == [None, None]
@@ -673,7 +691,7 @@ def test_rekep_clocks_override_inference_but_not_the_local_recording_clock(
         100,
         90,
         110,
-        "REKEP.Unix",
+        "Unix",
     )
 
 
@@ -831,8 +849,9 @@ def test_degraded_projected_rows_keep_distinct_raw_identities(codec: FixCodec) -
     ).identify()
     heartbeat = FixMsg.from_message_batch(_raw_batch(unlinked).drop_columns(["message"]), codec)
     assert heartbeat.column("code").to_pylist() == [""]
+    assert heartbeat.column("codesource").to_pylist() == [""]
     assert heartbeat.column("vhash").to_pylist() == [unlinked.vhash]
-    assert heartbeat.column("xhash").to_pylist() == [unlinked.vhash]
+    assert heartbeat.column("xhash").to_pylist() == [txhash.wide_bytes(0)]
 
     # A caller can project a hand-built Arrow row before the raw stage has
     # assigned identity. Its remaining raw readings still prevent a collision.
@@ -1472,11 +1491,11 @@ def test_every_unix_column_declares_its_unit() -> None:
 
 
 def test_hash_widths_match_their_roles() -> None:
-    """Version provenance stays wide while value and lifecycle joins are int64."""
-    for name in ("hash", "prevhash"):
+    """Exact versions and event lifecycles are wide; value identity is int64."""
+    for name in ("hash", "prevhash", "xhash"):
         assert FixMsg.into_field().field(name).dtype == HASH, name
-    for name in ("vhash", "xhash"):
-        assert FixMsg.into_field().field(name).dtype == pyarrow.int64(), name
+    assert FixMsg.into_field().field("vhash").dtype == pyarrow.int64()
+    assert FixMsg.into_field().field("linkxhashes").dtype.value_type == HASH
     assert FixMsg.into_field().field("unix").dtype == pyarrow.int64()
 
 
@@ -2869,7 +2888,7 @@ def test_a_conflicting_numeric_and_named_copy_stays_visible(codec: FixCodec) -> 
 def test_lifecycle_identifiers_are_their_own_columns(codec: FixCodec) -> None:
     """`OrigClOrdID` and the bridge's parent keys are FIX fields, and stay so.
 
-    None of them is `prevhash` or `linkedhashes`: those relate stored versions
+    None of them is `prevhash` or `linkxhashes`: those relate stored versions
     and lifecycles, where these are what the sender wrote.
     """
     line = (
@@ -2884,7 +2903,7 @@ def test_lifecycle_identifiers_are_their_own_columns(codec: FixCodec) -> None:
     assert batch.column("parentclordid")[0].as_py() == "ROOT-1"
     assert batch.column("parentorderid")[0].as_py() == "ROOT-ORD"
     assert batch.column("prevhash")[0].as_py() is None
-    assert batch.column("linkedhashes")[0].as_py() == []
+    assert batch.column("linkxhashes")[0].as_py() == []
 
 
 def test_a_missing_group_count_and_a_malformed_continuation_stay_visible(
@@ -2914,7 +2933,7 @@ def test_invalid_group_counts_are_diagnostic_and_incomplete_groups_stay_raw(
         "8=FIX.4.4|35=D|11=C|453=1|448=P|447=D|452=1|10=000|",
         "8=FIX.4.4|35=D|11=D|453=1|448=P|447=D|452=abc|10=000|",
         "8=FIX.4.4|35=D|11=E|768=1|769=bad-time|770=1|10=000|",
-        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#REKEP.PX=bad-price|",
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=D|#PRICE=bad-price|",
     ]
 
     parsed = FixMsg.from_message_batch(
@@ -2927,7 +2946,7 @@ def test_invalid_group_counts_are_diagnostic_and_incomplete_groups_stay_raw(
         None,
         "PartyRole <452>: invalid abc",
         "TrdRegTimestamp <769>: invalid bad-time",
-        "REKEP.Px <30022>: invalid bad-price",
+        "Price <44>: invalid bad-price",
     ]
     assert parsed.column("parties").to_pylist() == [
         None,

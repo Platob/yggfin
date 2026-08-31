@@ -355,9 +355,9 @@ def test_isincode_is_lifted_from_rendered_names_without_losing_repeats(
 
 
 def test_no_version_lifts_only_package_owned_fields(codec: FixCodec) -> None:
-    """REKEP fields are versionless; standard and venue fields remain raw."""
+    """Package fields are versionless; standard and venue fields remain raw."""
     parsed = parse_arrow_array(
-        pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|#REKEP.UNIX=100|"]),
+        pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|#UNIX=100|"]),
         "|",
         named=True,
     )

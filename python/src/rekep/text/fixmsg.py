@@ -58,7 +58,7 @@ from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
-from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
+from rekep.market.identity import HASH, NIL, hash_bytes_arrow, hash_int_of
 from rekep.market.instrument import Instrument
 from rekep.text.message import SESSION_FIELDS, Message, _event_types
 
@@ -84,7 +84,7 @@ _UNDIGESTED: frozenset[str] = frozenset(
         "xhash",
         "prevhash",
         "parenthash",
-        "linkedhashes",
+        "linkxhashes",
         "version",
         "message",
         "error",
@@ -292,8 +292,8 @@ class FixMsg(Message):
         """Contract metadata published with parsed log schemas."""
         return _CONTRACT_METADATA
 
-    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
-    """Digest of `code`, or `vhash` when no correlation code exists."""
+    xhash: Annotated[int, Field(dtype=HASH)] = NIL
+    """Creation-anchored lifecycle identity; zero when no code names one."""
 
     code: str = ""
     """Best lifecycle identifier present on this line."""
@@ -353,7 +353,9 @@ class FixMsg(Message):
 
     def identify(self) -> FixMsg:
         """Give the parsed event the identities its registry projection earns."""
-        if self.hash and self.vhash and self.xhash:
+        self._materialize_life_code()
+        if self.hash and self.vhash:
+            self.xhash = self.xhash or self.life_hash()
             return self
         codec = type(self).into_codec(self.registry)
         staged_values = {
@@ -426,13 +428,14 @@ class FixMsg(Message):
         self.recunix = value("recunix")
         self.unixsource = value("unixsource")
         self.code = value("code")
+        self.codesource = value("codesource")
         self.altids = dict(value("altids") or ())
         self.reason = value("reason")
         self.error = value("error")
         self.instrument = Instrument.from_dict(value("instrument"))
         self.vhash = value("vhash")
         self.hash = hash_int_of(value("hash")) or NIL
-        self.xhash = value("xhash")
+        self.xhash = hash_int_of(value("xhash")) or NIL
         self.__raw_clocks = False
         return self
 
@@ -828,7 +831,7 @@ class FixMsg(Message):
             {
                 "message": source.message or None,
                 "entries": list(source.entries or ()),
-                "linkedhashes": list(source.linkedhashes),
+                "linkxhashes": list(source.linkxhashes),
                 "altids": dict(source.altids),
                 "parenthash": None if source.parenthash is None else list(source.parenthash),
                 "hash": NIL,
@@ -1415,8 +1418,7 @@ class FixMsg(Message):
         )
         anchored = txhash.couple128_arrow(cls._clock_micros(parsed.column("unix")), vhash)
         hashes = pyarrow.compute.if_else(degraded, anchored, parsed.column("hash"))
-        linked = pyarrow.compute.not_equal(parsed.column("code"), "")
-        raw_xhash = pyarrow.compute.if_else(linked, cls.hash_arrow(parsed.column("code")), vhash)
+        raw_xhash = cls.xhash_arrow(parsed.column("creaunix"), parsed.column("code"))
         xhash = pyarrow.compute.if_else(degraded, raw_xhash, parsed.column("xhash"))
         for name, column in (("vhash", vhash), ("hash", hashes), ("xhash", xhash)):
             at = parsed.schema.get_field_index(name)
@@ -1446,7 +1448,8 @@ class FixMsg(Message):
         # raw columns that remain rather than to an incomplete parsed shape.
         vhash = _raw_message_vhash(source, 1)
         anchored = txhash.couple128_arrow(cls._clock_micros(built.column("unix")), vhash)
-        for name, column in (("vhash", vhash), ("hash", anchored), ("xhash", vhash)):
+        xhash = cls.xhash_arrow(built.column("creaunix"), built.column("code"))
+        for name, column in (("vhash", vhash), ("hash", anchored), ("xhash", xhash)):
             at = built.schema.get_field_index(name)
             built = built.set_column(at, built.schema.field(at), column)
         return built
@@ -1845,7 +1848,7 @@ class FixMsg(Message):
                 compute.equal(eventtypes, int(EventType.UNKNOWN)), classified, eventtypes
             )
         columns["instrument"] = Instrument.from_fix_arrow(columns, rows, registry=registry)
-        columns["code"] = cls.code_arrow(columns, rows)
+        columns["code"], columns["codesource"] = cls.code_and_source_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
         columns["recunix"] = resolve_recorded_arrow(
@@ -1869,10 +1872,7 @@ class FixMsg(Message):
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
         )
-        linked = compute.not_equal(columns["code"], "")
-        columns["xhash"] = compute.if_else(
-            linked, cls.hash_arrow(columns["code"]), columns["vhash"]
-        )
+        columns["xhash"] = cls.xhash_arrow(columns["creaunix"], columns["code"])
         # `cast_arrow_fix` and not a plain cast, because the session columns
         # arrive as the text the wire carried: `20260814-09:30:00.123` is an
         # instant and `Y` is a boolean, and Arrow's own cast raises on both.
@@ -1955,12 +1955,33 @@ class FixMsg(Message):
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         """Best readable lifecycle identifier available in parsed FIX columns."""
-        found = _first_text(columns, cls.into_code_columns(), rows)
+        return cls.code_and_source_arrow(columns, rows)[0]
+
+    @classmethod
+    def code_and_source_arrow(
+        cls, columns: Mapping[str, Any], rows: int
+    ) -> tuple[pyarrow.Array, pyarrow.Array]:
+        """Readable lifecycle identifier and the field spelling that supplied it."""
+        found, source = _first_text_and_source(
+            columns,
+            tuple(
+                (name, cls.into_field().field(name).fix.display) for name in cls.into_code_columns()
+            ),
+            rows,
+        )
         instrument = columns.get("instrument")
         if instrument is None:
-            return found
+            return found, source
         ticker = pyarrow.compute.struct_field(instrument, "symbolticker")
-        return pyarrow.compute.if_else(pyarrow.compute.equal(found, ""), ticker, found)
+        fallback = pyarrow.compute.equal(found, "")
+        return (
+            pyarrow.compute.if_else(fallback, ticker, found),
+            pyarrow.compute.if_else(
+                pyarrow.compute.and_(fallback, pyarrow.compute.not_equal(ticker, "")),
+                "SymbolTicker",
+                source,
+            ),
+        )
 
     @classmethod
     def altids_arrow(
@@ -2499,6 +2520,30 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
         if found.null_count == 0:
             break
     return compute.fill_null(found, "")
+
+
+def _first_text_and_source(
+    columns: Mapping[str, Any], names: Sequence[tuple[str, str]], rows: int
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """First nonblank value and the reader-facing name of its column."""
+    compute = pyarrow.compute
+    found: Any = pyarrow.nulls(rows, pyarrow.string())
+    source: Any = pyarrow.repeat(pyarrow.scalar(""), rows)
+    for name, display in names:
+        value = columns.get(name)
+        if value is None or value.null_count == rows:
+            continue
+        value = value.cast(pyarrow.string(), safe=False)
+        present = compute.and_(
+            compute.is_valid(value),
+            compute.not_equal(compute.utf8_trim_whitespace(value), ""),
+        )
+        use = compute.and_(compute.is_null(found), compute.fill_null(present, False))
+        found = compute.if_else(use, value, found)
+        source = compute.if_else(use, display, source)
+        if found.null_count == 0:
+            break
+    return compute.fill_null(found, ""), source
 
 
 def _mic_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:

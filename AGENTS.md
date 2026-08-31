@@ -118,11 +118,15 @@ halves for every published contract.
 
 A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
 `clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is
-`minpriceincrement`. Two exceptions, both deliberate:
+`minpriceincrement`. Three exceptions, all deliberate:
 
-- `px` and `qty` are the abstract slot every market row shares. One attribute,
-  and which FIX field it holds is the subclass's to declare -- `Price <44>` on
-  an order, `LastPx <31>` on a report, `MDEntryPx <270>` on a level.
+- `price` and `lastqty` are the flat summary slots every `MarketEvent` shares.
+  An Order holds its limit and remaining live quantity, an Execution holds
+  `LastPx <31>` and `LastQty <32>`, and a Book holds its midpoint and touch
+  size. Their unit columns remain `pxunit` and `qtyunit`.
+- A nested book `Level` keeps the compact `px` and `qty`; the nesting already
+  says they are `MDEntryPx <270>` and `MDEntrySize <271>`. Flat touch columns
+  keep the side in their names: `bidpx`, `bidqty`, `askpx`, `askqty`.
 - A nested struct takes the *generic* spelling, because the nesting already
   says whose it is: a leg's `LegCFICode <608>` is `cficode`, the same name its
   instrument's `CFICode <461>` has, not `legcficode`.
@@ -179,27 +183,32 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 
 ## Market data
 
-- Events are immutable versions. `vhash` identifies a clock-free value,
-  `hash` anchors it to one event time, `xhash` identifies a lifecycle,
-  `prevhash` its previous version, and `linkedhashes` names exact related
-  event versions by `hash`. `parenthash` records construction provenance.
-- `linkedhashes` is excluded from `vhash`, so two final events such as an
-  Order and its Execution can point at each other without circular identities.
+- Events are immutable versions. `vhash` identifies a clock-free value and
+  `hash` anchors it to `unix`; `prevhash` names the preceding exact version
+  and `parenthash` records exact construction provenance.
+- `xhash` identifies a lifecycle as `txhash(creaunix // 1_000,
+  hash_of(code))`, stored as sixteen bytes. `codesource` names the field that
+  supplied `code`; `linkxhashes` names related lifecycles by their `xhash`.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
-  `vhash` and lifecycle identities are signed `int64`; `hash` composes epoch
-  microseconds over `vhash` and is stored as sixteen big-endian bytes. Numbers
-  are never formatted as text.
+  `vhash` and reference identities are signed `int64`; event `hash` and
+  lifecycle `xhash` are sixteen big-endian bytes. Numbers are never formatted
+  as text.
 - Store market notions as ASCII codes packed into one integer, left-justified
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage
   scan pushes the finite code set `ranked_at_least` names.
-- Nest nothing a reader filters on. `InstrumentUpdate.xhash` keeps the nested
-  instrument's identity flat; book summary values stay flat too.
+- Nest nothing a reader filters on. `InstrumentUpdate.xhash` keeps the event
+  lifecycle flat; book summary values stay flat too.
 - `Instrument` is the event-free FIX component of reference facts, nested in
   `FixMsg` and `InstrumentUpdate`. `InstrumentUpdate` is the latest persisted
-  reference event, keyed by `xhash = hash_of(instrument.symbolticker)`.
+  reference event, keyed by its event `xhash`. `Instrument.xhash`, leg
+  identities and `instrumentxhash` remain clock-free `hash_of(symbolticker)`
+  reference identities.
 - FIX transcription preserves repeated tags and wire order in lists, not maps.
+- Package fields use bare FIX names. `MarketEventType <30002>` avoids the
+  standard `EventType <865>`; the six package message declarations retain the
+  `REKEP.` namespace.
 - The registry owns FIX names, types, descriptions, tags, and values across
   versions. Hard-code only normalization rules the registry cannot express.
 - Generic `Event` owns snapshot and idle-expiry behavior. Finished states do

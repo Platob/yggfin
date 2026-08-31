@@ -52,6 +52,7 @@ from rekep.fix.message import (
     stored_entry_separators,
 )
 from rekep.fix.registry import FixRegistry
+from rekep.fix.rekep import REKEP_TAGS
 from rekep.fix.rules import Rules
 
 #: `XmlData <213>` as a rendered key and as a wire tag, which are the two ways
@@ -59,6 +60,10 @@ from rekep.fix.rules import Rules
 _XML_DATA_KEY = FLAT_DEFAULTS[XML_DATA_TAG].fix.canonical
 _XML_DATA_NAME = pyarrow.scalar(column_name(_XML_DATA_KEY))
 _XML_DATA_TAG = pyarrow.scalar(str(XML_DATA_TAG))
+
+# Package tags apply to every protocol version, including an unversioned UL
+# row. Their frozen identities say that directly now their names are ordinary.
+_REKEP_TAG_VALUES = frozenset(REKEP_TAGS.values())
 
 #: What a payload writes between its fields. Neither of the two things
 #: `separators_of` reads -- a BeginString or a `#` -- is inside one, so this
@@ -831,7 +836,7 @@ class FixCodec(Convertible):
             else {
                 spelling: field
                 for spelling, field in declared.items()
-                if field.fix.canonical.startswith("REKEP.")
+                if field.fix.tag in _REKEP_TAG_VALUES
             }
         )
         declared_by_tag = {
@@ -849,8 +854,8 @@ class FixCodec(Convertible):
             return columns, entries
         compute = pyarrow.compute
         # Package-owned columns belong to every protocol version. That is why
-        # a bare UL document can lift `REKEP.Unix`; other namespaced fields
-        # still need the version whose dictionary makes their identity clear.
+        # a bare UL document can lift `Unix`; unnumbered vendor fields still
+        # need the version whose dictionary makes their identity clear.
         fields = {**self.flat_fields(version), **declared_by_tag}
         lengths, parents, items = _flattened(entries)
         tags = compute.struct_field(items, "tag")

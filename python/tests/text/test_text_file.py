@@ -598,7 +598,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("unixpartition").type == pyarrow.int32()
     assert schema.field("hash").type == HASH
     assert schema.field("vhash").type == pyarrow.int64()
-    assert schema.field("xhash").type == pyarrow.int64()
+    assert schema.field("xhash").type == HASH
     assert schema.field("eventtype").type == pyarrow.int64()
     assert schema.field("protocol").type == pyarrow.int64()
     assert schema.field("message").type == pyarrow.string()
@@ -621,7 +621,8 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     ]
     assert table.column("mic").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
-    assert table.column("vhash").to_pylist() == table.column("xhash").to_pylist()
+    assert table.column("codesource").to_pylist() == [""] * 3
+    assert table.column("xhash").to_pylist() == [txhash.wide_bytes(0)] * 3
     assert [txhash.vhash_of(one) for one in table.column("hash").to_pylist()] == table.column(
         "vhash"
     ).to_pylist()
@@ -1170,7 +1171,7 @@ def test_the_value_hash_is_per_line_and_a_signed_int64(plain: Path) -> None:
     assert len(set(hashes)) == EXPECTED_RECORDS, "distinct lines hash distinctly"
     assert all(-(2**63) <= digest < 2**63 for digest in hashes)
     assert [txhash.vhash_of(one) for one in stored] == hashes
-    assert table.column("xhash").to_pylist() == hashes, "a line is its own lifecycle"
+    assert table.column("xhash").to_pylist() == [txhash.wide_bytes(0)] * EXPECTED_RECORDS
 
 
 def test_event_hash_is_stable_across_reads(plain: Path) -> None:

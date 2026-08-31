@@ -39,11 +39,12 @@ guessing would make bad data look valid.
 
 ## Keep identities portable
 
-Lifecycle and value identities are signed `int64`. A version `hash` composes
-epoch microseconds over its value identity and stores the result as sixteen
-big-endian bytes: `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
-Composite keys use the exact [binary frame](../contracts/identity.md), not
-Python formatting or process-local hashes.
+Value and reference identities are signed `int64`. Event `hash` and lifecycle
+`xhash` compose epoch microseconds over a value digest and store the result as
+sixteen big-endian bytes: `fixed_size_binary(16)` in Arrow and `fixed[16]` in
+Iceberg. Composite keys use the exact
+[binary frame](../contracts/identity.md), not Python formatting or
+process-local hashes.
 Enums persist integer codes with their member table in field metadata, so an
 unknown future code is retained.
 

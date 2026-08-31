@@ -2,11 +2,12 @@
 
 One current reference-data event for a tradable instrument. `Instrument` is
 the nested FIX component of reference facts; `InstrumentUpdate` adds the event
-envelope that `market.instruments` stores. `xhash` is the table key and the
-framed XXH3-64 identity of `instrument.symbolticker`.
+envelope that `market.instruments` stores. Its fixed-width `xhash` is the table
+key: creation microseconds over the framed XXH3-64 digest of `code`.
 
 ```python
 from rekep import FixMsg, Instrument, InstrumentUpdate
+from rekep.txhash import micros_of
 
 line = (
     "8=FIX.4.4|35=d|49=VENUE|56=DESK|34=2|52=20260101-09:00:00.000|"
@@ -14,6 +15,7 @@ line = (
 )
 update = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)]))
 instrument = Instrument.from_update(update)
+print(update.codesource, micros_of(update.xhash) == update.creaunix // 1_000)
 print(
     instrument.symbolticker,
     instrument.symbol,
@@ -24,6 +26,7 @@ print(
 ```
 
 ```text
+SymbolTicker True
 XCME:BTC-USD BTC-USD CURRENCY USD XCME
 ```
 
@@ -40,6 +43,10 @@ identifier without its source is no key at all.
 classifies the instrument as currency and supplies `NOK` as its quote currency
 when those facts are otherwise absent.
 
+`Instrument.xhash`, each `Leg.xhash`, and flat `instrumentxhash` joins remain
+signed `int64` reference identities derived from `symbolticker`. They carry no
+event clock and are distinct from the sixteen-byte `InstrumentUpdate.xhash`.
+
 ## Lineage
 
 <div data-product-lineage data-product="instrument"
@@ -49,5 +56,5 @@ when those facts are otherwise absent.
 
 `InstrumentUpdate.versioned` enriches observations without revising known
 facts. [Parse instruments](../pipeline/tasks/parse-instruments.md) overwrites
-the current row for the same `xhash`; the nested component remains the
+the current row for the same event `xhash`; the nested component remains the
 readable reference record.

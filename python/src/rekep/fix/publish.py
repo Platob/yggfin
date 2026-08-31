@@ -240,7 +240,7 @@ BRIDGE_FIELDS: tuple[str, ...] = (
 NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID")
 
 #: Every standard key the packaged projection selects, in declaration order.
-#: `register_rekep` adds the 27 package-owned identities after this selection.
+#: `register_rekep` adds the 26 package-owned identities after this selection.
 PROJECTED: tuple[str, ...] = tuple(
     dict.fromkeys((*FIXMSG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
 )

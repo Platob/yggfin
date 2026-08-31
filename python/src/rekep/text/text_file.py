@@ -721,6 +721,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "version": _zeros(count, pyarrow.int64()),
             "state": _zeros(count, pyarrow.int64()),
             "code": pyarrow.repeat("", count),
+            "codesource": pyarrow.repeat("", count),
             "altids": pyarrow.repeat(pyarrow.scalar({}, ALTIDS_TYPE), count),
             "prevunix": pyarrow.nulls(count, pyarrow.int64()),
             "parenthash": pyarrow.nulls(count, PARENTS),
@@ -746,9 +747,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         # `Message.identified` fills these once every raw column is here.
         for name in ("hash", "vhash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
-        linkedhashes = schema.field("linkedhashes")
+        linkxhashes = schema.field("linkxhashes")
         columns.setdefault(
-            "linkedhashes", pyarrow.repeat(pyarrow.scalar([], type=linkedhashes.type), count)
+            "linkxhashes", pyarrow.repeat(pyarrow.scalar([], type=linkxhashes.type), count)
         )
         missing_required = [
             field.name for field in schema if field.name not in columns and not field.nullable

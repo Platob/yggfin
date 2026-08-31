@@ -40,11 +40,8 @@ from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import (
     HASH,
     NIL,
-    arrow_of,
     framed_arrow,
-    hash_arrow,
     hash_bytes_arrow,
-    hash_bytes_of,
     hash_of,
 )
 from rekep.market.ticker import SymbolTicker
@@ -53,9 +50,6 @@ from rekep.market.ticker import SymbolTicker
 @scalar(slots=True, weakref_slot=True)
 class Leg(MarketConvertible):
     """One leg of a multileg instrument: a spread's near and far, an option's pair."""
-
-    xhash: Annotated[int, Field(dtype=pyarrow.int64())] = NIL
-    """The instrument this leg is of, derived the same way any other one is."""
 
     symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
     """Canonical instrument spelling derived from the leg's FIX identifiers."""
@@ -103,7 +97,7 @@ class Leg(MarketConvertible):
     """Which way the leg points, where it is an option."""
 
     def __post_init__(self) -> None:
-        """Derive `xhash` the way an instrument does, so a leg joins to one."""
+        """Normalize the reference facts once."""
         self.maturitydate = _local_timestamp(self.maturitydate)
         self.normalize_float_members()
         if self.currency is not None:
@@ -121,7 +115,11 @@ class Leg(MarketConvertible):
                 self.kind = ticker.kind
             if self.currency is None:
                 self.currency = ticker.currency
-        self.xhash = hash_of(self.symbolticker) if self.symbolticker else NIL
+
+    @property
+    def xhash(self) -> int:
+        """Stable reference digest of `symbolticker`; zero when it is empty."""
+        return hash_of(self.symbolticker) if self.symbolticker else NIL
 
     @classmethod
     def from_fix_arrow(
@@ -145,7 +143,6 @@ class Leg(MarketConvertible):
         )
         currency = compute.coalesce(currency, pair_currency)
         values: dict[str, Any] = {
-            "xhash": hash_arrow(ticker),
             "symbolticker": ticker,
             "symbol": compute.fill_null(_text(columns.get("symbol"), rows), ""),
             "side": _enum_arrow(columns.get("side"), rows, Side, "from_fix"),
@@ -449,10 +446,10 @@ class InstrumentUpdate(Event):
     """Time-anchored composition of `unix` and `vhash`."""
 
     # A current-reference table replaces one lifecycle at a time. The nested
-    # ticker cannot be an Iceberg identifier field, so its stable digest is the
-    # top-level key every engine can merge on.
-    xhash: Annotated[int, Field.primary_key(dtype=pyarrow.int64())] = NIL
-    """Digest of `instrument.symbolticker`; zero when the ticker is empty."""
+    # ticker cannot be an Iceberg identifier field, so the event's top-level
+    # lifecycle key is the merge key every engine can use.
+    xhash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
+    """Creation-anchored lifecycle identity of the instrument update."""
 
     # Last because Iceberg counts nested leaves in declaration order for the
     # bounds it collects; see docs/market/index.md.
@@ -463,10 +460,12 @@ class InstrumentUpdate(Event):
         """Make the envelope identity agree with its component."""
         if not isinstance(self.instrument, Instrument):
             self.instrument = Instrument.from_dict(self.instrument)
-        self.xhash = self.instrument.xhash
         self.code = self.instrument.symbolticker
+        self.codesource = "SymbolTicker" if self.code else ""
         Event.__post_init__(self)
         self._materialize_life_code()
+        self.xhash = self.life_hash()
+        self._drop_self_link()
 
     @classmethod
     @functools.cache
@@ -550,7 +549,8 @@ class InstrumentUpdate(Event):
 
         clock = _broadcast(unix, rows, pyarrow.int64())
         ticker = compute.struct_field(component, "symbolticker")
-        xhash = hash_arrow(ticker)
+        creation = clock if creaunix is None else _broadcast(creaunix, rows, pyarrow.int64())
+        xhash = cls.xhash_arrow(creation, ticker)
         field = cls.into_field()
         values = _default_columns(field, rows)
         values.update(
@@ -558,12 +558,11 @@ class InstrumentUpdate(Event):
                 "unix": clock,
                 "unixpartition": unix_partition_arrow(clock),
                 "eventtype": _broadcast(int(EventType.INSTRUMENT), rows, pyarrow.int64()),
-                "creaunix": (
-                    clock if creaunix is None else _broadcast(creaunix, rows, pyarrow.int64())
-                ),
+                "creaunix": creation,
                 "recunix": clock if recunix is None else _broadcast(recunix, rows, pyarrow.int64()),
                 "xhash": xhash,
                 "code": ticker,
+                "codesource": compute.if_else(compute.equal(ticker, ""), "", "SymbolTicker"),
                 "instrument": component,
             }
         )
@@ -577,10 +576,6 @@ class InstrumentUpdate(Event):
     def life_code(self) -> str:
         """The canonical ticker that names this reference lifecycle."""
         return self.instrument.symbolticker
-
-    def life_parts(self) -> tuple[Any, ...]:
-        """An instrument lifecycle exists only when its ticker does."""
-        return (hash_bytes_of(self.xhash),) if self.xhash else ()
 
     def version_parts(self) -> tuple[Any, ...]:
         """Envelope values followed by the complete component declaration."""
@@ -669,11 +664,11 @@ class InstrumentUpdate(Event):
     def versioned(
         cls,
         observed: Iterable[InstrumentUpdate],
-        stored: Mapping[int | str, InstrumentUpdate],
+        stored: Mapping[str, InstrumentUpdate],
     ) -> Iterator[InstrumentUpdate]:
         """Observations that add a fact to the stored lifecycle."""
         for row in observed:
-            known = stored.get(row.xhash) or stored.get(row.instrument.symbolticker)
+            known = stored.get(row.instrument.symbolticker)
             if known is not None and known.vhash == row.vhash:
                 continue
             enriched = row if known is None else known.enriched_with(row)
@@ -1049,11 +1044,11 @@ def _update_vhash_arrow(
     """`InstrumentUpdate.version_parts` over whole columns."""
     event = framed_arrow(
         cls.__name__,
-        arrow_of(values["xhash"]),
         values["eventtype"],
         values["state"],
         values["mic"],
         values["code"],
+        values["codesource"],
         values["reason"],
         True,
         0,

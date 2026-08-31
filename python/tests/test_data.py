@@ -124,12 +124,16 @@ VERSIONS: list[str] = INDEX["versions"]
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
 EXPECTED_FIELD_DOCUMENTS = 16
-EXPECTED_FIELD_RECORDS = 6101
+EXPECTED_FIELD_RECORDS = 6100
 EXPECTED_COMPONENT_FILES = 907
 #: Of which these are messages: a message is a component that arrives under a MsgType.
 EXPECTED_MESSAGE_FILES = 176
 
 REKEP_TAG_VALUES = frozenset(REKEP_TAGS.values())
+REKEP_FIELD_NAMES = {
+    REKEP_TAGS[column]: name
+    for column, name, _datatype, _display, _description in REKEP_FIELD_DECLARATIONS
+}
 REKEP_COMPONENTS = frozenset(REKEP_COMPONENT_NAMES)
 
 #: The collapse report, committed beside the dictionary it describes.
@@ -228,7 +232,7 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
         tags.add(fix["tag"])
         if int(key) in REKEP_TAG_VALUES:
             assert fix["versions"] == [ANY_VERSION], key
-            assert str(record["name"]).startswith("REKEP."), key
+            assert record["name"] == REKEP_FIELD_NAMES[int(key)], key
         else:
             assert set(fix["versions"]) <= set(VERSIONS), key
     assert vendor == 3, "ISINCODE and the parent identities the log gives columns"
@@ -244,11 +248,7 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
         fix = stored_fix(record)
         if "tag" in fix:
             name = str(record["name"])
-            assert (
-                name.removeprefix("REKEP.").isalnum()
-                if int(fix["tag"]) in REKEP_TAG_VALUES
-                else name.isalnum()
-            ), key
+            assert name.isalnum(), key
             assert all(str(alias["name"]).isalnum() for alias in fix.get("aliases", ())), key
         assert all(str(name).isalnum() for name in fix.get("msgtypes", ())), key
         assert all(str(name).isalnum() for name in fix.get("components", ())), key
@@ -469,9 +469,9 @@ def test_the_builtin_projection_matches_the_published_versions(
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
     # Derived from `publish.PROJECTED`, then pinned: 181 standard keys resolve
-    # to 180 records, and the package adds its 27 frozen field identities.
-    assert len(builtin.tags()) == 208
-    assert len(builtin.field_records()) == 207
+    # to 180 records, and the package adds its 26 frozen field identities.
+    assert len(builtin.tags()) == 207
+    assert len(builtin.field_records()) == 206
     assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
     package_tags = set(REKEP_TAGS.values())
     selected = {
@@ -498,8 +498,7 @@ def test_the_builtin_projection_matches_the_published_versions(
             version
         )
         assert [member.name for member in packaged if member.fix.tag in package_tags] == [
-            f"REKEP.{name}"
-            for _column, name, _datatype, _display, _description in REKEP_FIELD_DECLARATIONS
+            name for _column, name, _datatype, _display, _description in REKEP_FIELD_DECLARATIONS
         ]
     # A field FIX never numbered holds for every version and sorts after the
     # numbered ones, so the named identities are the tail of the newest
@@ -655,6 +654,26 @@ def test_every_datatype_the_dictionary_names_is_projected(registry: FixRegistry)
     assert registry.field("RatioQty", "4.3").dtype == pyarrow.float64()
     assert registry.field("MaturityDay", "4.1").dtype == pyarrow.int64()
     assert registry.field("LegFutSettDate", "4.3").dtype == pyarrow.timestamp("us")
+
+
+def test_fields_whose_descriptions_fix_utc_store_a_zoned_timestamp() -> None:
+    documented = {
+        record["name"]: record["type"]
+        for record in records().values()
+        if "expressed in utc" in str(record.get("description", "")).casefold()
+    }
+
+    assert documented == {
+        "ContraTradeTime": "timestamp[us, tz=UTC]",
+        "EffectiveTime": "timestamp[us, tz=UTC]",
+        "ExpireTime": "timestamp[us, tz=UTC]",
+        "OnBehalfOfSendingTime": "timestamp[us, tz=UTC]",
+        "OrigSendingTime": "timestamp[us, tz=UTC]",
+        "OrigTime": "timestamp[us, tz=UTC]",
+        "QuoteSetValidUntilTime": "timestamp[us, tz=UTC]",
+        "SendingTime": "timestamp[us, tz=UTC]",
+        "ValidUntilTime": "timestamp[us, tz=UTC]",
+    }
 
 
 def test_published_versions_keep_the_promoted_field_boundary(registry: FixRegistry) -> None:

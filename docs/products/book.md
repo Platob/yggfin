@@ -1,7 +1,8 @@
 # Book
 
-Both sides of one book, flat, plus the prices that only exist across them:
-`spread`, `px` (the midpoint), `vwap` and `imbalance`.
+Both sides of one book, flat, plus values that only exist across them:
+`spread`, `price` (the midpoint), `lastqty` (bid plus ask touch size), `vwap`
+and `imbalance`. `price` and `lastqty` stay null until both touches exist.
 
 ```python
 from rekep import FixMsg
@@ -19,12 +20,20 @@ events = [
     for event in FixMsg.from_text(line).into_market_events(fix_version="4.4")
 ]
 for book in BookIterator.from_events(events):
-    print(book.bidpx, book.bidqty, book.askpx, book.askqty, book.spread, book.px)
+    print(
+        book.bidpx,
+        book.bidqty,
+        book.askpx,
+        book.askqty,
+        book.spread,
+        book.price,
+        book.lastqty,
+    )
 ```
 
 ```text
-99.5 5.0 None None None None
-99.5 5.0 100.5 4.0 1.0 100.0
+99.5 5.0 None None None None None
+99.5 5.0 100.5 4.0 1.0 100.0 9.0
 ```
 
 `BookIterator` is deliberately single-threaded: order state is sequential.

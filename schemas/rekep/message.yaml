@@ -52,13 +52,13 @@ fields:
   description: XXH3-64 of the framed value parts, with every clock excluded.
   fix: {display: ValueHash}
 - name: xhash
-  type: int64
-  description: Identity of the thing across every version of it -- the lifecycle.
+  type: fixed_size_binary[16]
+  description: Creation-anchored composition of `creaunix` and the XXH3-64 of `code`.
   fix: {display: Xhash}
-- name: linkedhashes
+- name: linkxhashes
   type: list
-  description: Exact hashes of related event versions, with the primary match first.
-  fix: {display: LinkedHashes}
+  description: Related lifecycle `xhash` values, with the primary match first.
+  fix: {display: LinkXHashes}
   item:
     type: fixed_size_binary[16]
 - name: version
@@ -74,6 +74,10 @@ fields:
   type: string
   description: Readable identifier of this lifecycle, shared by every version of it.
   fix: {display: Code}
+- name: codesource
+  type: string
+  description: Column whose value supplied `code`; empty when the lifecycle is unnamed.
+  fix: {display: CodeSource}
 - name: altids
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.

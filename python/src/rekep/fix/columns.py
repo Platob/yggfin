@@ -15,7 +15,7 @@ from rekep.entries import TAG as TAG
 from rekep.entries import Entry as Entry
 from rekep.enums import SecurityIDSource
 from rekep.fields import Field, column_name
-from rekep.fix.fields import UTC_DATATYPES, arrow_type_of
+from rekep.fix.fields import UTC_DATATYPES, arrow_type_of, documented_utc
 from rekep.fix.registry import FixRegistry
 
 # Ordered by the log schema, using the registry's canonical names so no tag is
@@ -181,7 +181,7 @@ _INSTRUMENT_GROUP_FIELDS: tuple[str, ...] = (
     "NoLegs",
 )
 
-# FIX's documentation establishes UTC for these four timestamps.
+# FIX's documentation establishes UTC for these timestamps.
 _STAMP_FIELDS: tuple[str, ...] = (
     "SendingTime",
     "OrigSendingTime",
@@ -207,8 +207,7 @@ def physical_type(member: Field) -> pyarrow.DataType | None:
         dtype = inferred
     if not (pyarrow.types.is_date(dtype) or pyarrow.types.is_timestamp(dtype)):
         return dtype
-    documented = (member.description or "").lower()
-    zoned = datatype in UTC_DATATYPES or "expressed in utc" in documented
+    zoned = datatype in UTC_DATATYPES or documented_utc(member.description)
     return pyarrow.timestamp("us", tz="UTC" if zoned else None)
 
 

@@ -2,7 +2,7 @@ use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64_with_seed;
 
 type ValueHash = i64;
-type LifecycleHash = i64;
+type LifecycleHash = i128;
 type AnchoredHash = i128;
 
 #[derive(Deserialize)]
@@ -138,22 +138,29 @@ fn main() {
         assert_eq!(digest as i64, vector.signed_i64, "{} signed", vector.name);
     }
     let micros = 1_700_000_000_000_000_i64;
+    let creation_micros = 1_699_999_999_000_000_i64;
     let vhash: ValueHash = -4_872_843_452_109_876_543;
-    let xhash: LifecycleHash = 7_239_864_127_593_011_337;
+    let code_hash = xxh3_64_with_seed(
+        &frame(&[Part::Utf8 {
+            value: "ORDER-7".to_owned(),
+        }]),
+        corpus.seed,
+    ) as i64;
+    let xhash: LifecycleHash = couple128(creation_micros, code_hash);
     let hash = couple128(micros, vhash);
     let prevhash: AnchoredHash = hash;
-    let linkedhashes: Vec<LifecycleHash> = vec![xhash];
+    let linkxhashes: Vec<LifecycleHash> = vec![xhash];
     assert_eq!(micros_of(hash), micros);
     assert_eq!(vhash_of(hash), vhash);
     assert_eq!(i128::from_be_bytes(hash.to_be_bytes()), hash);
     assert_eq!(std::mem::size_of::<ValueHash>(), 8);
-    assert_eq!(std::mem::size_of::<LifecycleHash>(), 8);
+    assert_eq!(std::mem::size_of::<LifecycleHash>(), 16);
     assert_eq!(std::mem::size_of::<AnchoredHash>(), 16);
     assert_eq!(prevhash.to_be_bytes(), hash.to_be_bytes());
-    assert_eq!(linkedhashes, vec![xhash]);
+    assert_eq!(linkxhashes, vec![xhash]);
 
     println!(
-        "{}: {} raw + {} framed vectors and event-hash composition match",
+        "{}: {} raw + {} framed vectors and event and lifecycle hash composition match",
         corpus.protocol,
         corpus.raw_vectors.len(),
         corpus.vectors.len()

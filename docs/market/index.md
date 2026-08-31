@@ -2,10 +2,9 @@
 
 Market tables store immutable event versions. `vhash` identifies its value,
 `hash` anchors that value to the event time, `prevhash` names its predecessor,
-and `xhash` identifies its lifecycle. `linkedhashes` holds ordered, exact
-`hash` values of related event versions. Links are deduplicated and never
-point at the event itself; `parenthash` separately records construction
-provenance.
+and `xhash` anchors its lifecycle code to its creation time. `codesource`
+names the field that supplied the code. `linkxhashes` holds ordered lifecycle
+`xhash` values; `parenthash` separately records exact construction provenance.
 
 Each product has its own page: [Instrument update](../products/instrument.md),
 [Order](../products/order.md), [Execution](../products/execution.md),
@@ -17,26 +16,31 @@ from rekep import FixMsg
 line = "8=FIX.4.4|35=8|11=C1|37=O1|17=E1|55=BTC-USD|54=1|31=100.25|32=10|38=10|39=2|150=F|10=000"
 events = list(FixMsg.from_text(line).into_market_events(fix_version="4.4"))
 for event in events:
-    print(type(event).__name__, event.state.name, event.qty)
+    print(type(event).__name__, event.state.name, event.price, event.lastqty)
 
 order, execution = events
-print(order.linkedhashes == [execution.hash])
-print(execution.linkedhashes == [order.hash])
+print(order.codesource, execution.codesource)
+print(order.linkxhashes == [execution.xhash])
+print(execution.linkxhashes == [order.xhash])
 ```
 
 ```text
-Order FILLED 0.0
-Execution FILLED 10.0
+Order FILLED None 0.0
+Execution FILLED 100.25 10.0
+OrderID ExecID
 True
 True
 ```
 
-Relations do not enter `vhash`, so the two final event hashes can point at
-each other without a circular identity. The complete byte contract is in
-[Identity and binary conversions](../contracts/identity.md).
+The related rows point at lifecycles, not individual versions. `prevhash` and
+`parenthash` continue to point at exact event `hash` values. The complete byte
+contract is in [Identity and binary conversions](../contracts/identity.md).
 
-`MarketEvent` adds `instrumentxhash` and its readable `symbolticker`,
-kind, side, price, quantity, notional, currency, and their previous values.
+`MarketEvent` adds `instrumentxhash` and its readable `symbolticker`, kind,
+side, `price`, `lastqty`, notional, currency, and their previous values. An
+Order uses limit price and remaining live quantity; an Execution uses
+`LastPx <31>` and `LastQty <32>`; a Book uses midpoint and touch-size sum.
+`pxunit` and `qtyunit` keep their names and qualify those two summaries.
 Protocol spelling stays in metadata; stored fields use common semantics.
 Parsed logs retain FIX wire order as `MsgSeqNum`; normalized market events do
 not repeat it.
@@ -92,13 +96,14 @@ The three clocks answer different questions:
 
 | column | meaning | precedence |
 | --- | --- | --- |
-| `unix` | when this transaction happened | `REKEP.Unix`, then the FIX transaction chain below, then `recunix` |
-| `creaunix` | when this lifecycle was created upstream | `REKEP.CreaUnix`, `OrigTime`, `OrigSendingTime`, `OnBehalfOfSendingTime`, `SendingTime` |
-| `recunix` | when this capture recorded the row | local log header, then `REKEP.RecUnix` |
+| `unix` | when this transaction happened | `Unix <30000>`, then the FIX transaction chain below, then `recunix` |
+| `creaunix` | when this lifecycle was created upstream | `CreaUnix <30003>`, `OrigTime`, `OrigSendingTime`, `OnBehalfOfSendingTime`, `SendingTime` |
+| `recunix` | when this capture recorded the row | local log header, then `RecUnix <30004>` |
 
 `TransactTime` never fabricates `creaunix`. A later version of the same
 lifecycle keeps its first known nonzero creation time; it may fill an unknown
-one, but completion from another `xhash` does not copy it. Zero means the
+one, but completion from another `xhash` does not copy it. Event `xhash` stores
+`creaunix // 1_000` over the framed XXH3-64 digest of `code`. Zero means the
 clock is unknown.
 
 `rekep.market.transacted` owns these rules. The parse stage applies them to
@@ -123,8 +128,8 @@ BOOK      (9, 2, 1)
 ```
 
 Below every rung is `recunix`. The local capture clock leads a carried
-`REKEP.RecUnix`, because the receiving log is authoritative about when it
-recorded the row. `REKEP.Unix` bypasses the chain as an explicit event-time
+`RecUnix <30004>`, because the receiving log is authoritative about when it
+recorded the row. `Unix <30000>` bypasses the chain as an explicit event-time
 statement.
 
 `MDEntryTime <273>` without `MDEntryDate <272>` uses the UTC day from

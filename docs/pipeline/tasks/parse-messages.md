@@ -27,12 +27,16 @@ entries:
   - {tag: 11, key: "11", value: ORD-1}
   - {tag: 10, key: "10", value: "001"}
 unix: 1787306400123000000       # recording clock
+code: ""                       # FIX has not selected a lifecycle field yet
+codesource: ""
 sourceurl: file:///capture.log
 sourcerownum: 1
 ```
 
 Repeated tags remain repeated list items in wire order. `vhash` identifies the
-payload bytes, `hash` adds `unix`, and `xhash` initially equals `vhash`.
+payload bytes and `hash` adds `unix`. The raw stage has no lifecycle code, so
+its fixed-width `xhash` is zero; `parse_fix` fills `code`, `codesource`, and
+`xhash = txhash(creaunix // 1_000, hash_of(code))`.
 
 ## Filters and bounds
 

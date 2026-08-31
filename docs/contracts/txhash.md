@@ -11,10 +11,17 @@ assert vhash_of(value) == vhash
 assert len(wide_bytes(value)) == 16
 ```
 
-An event `hash` is the exact composition
-`(unix // 1_000 << 64) | (vhash & ((1 << 64) - 1))`. The high signed
-64 bits are epoch microseconds and the low 64 bits preserve the signed
-`vhash` bit-for-bit. Composition does not hash the value again.
+Both wide identities use the same composition:
+
+```text
+hash  = couple128(unix     // 1_000, vhash)
+xhash = couple128(creaunix // 1_000, hash_of(code))
+```
+
+The high signed 64 bits are epoch microseconds and the low 64 bits preserve
+the signed digest bit-for-bit. `hash_of(code)` is the framed
+`rekep-identity-v1` XXH3-64 digest. `CodeSource` says which field supplied the
+code; it is not part of the composition.
 
 The result is stored as sixteen big-endian two's-complement bytes:
 `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg. Nonnegative epoch

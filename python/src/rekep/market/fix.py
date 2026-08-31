@@ -59,6 +59,7 @@ CARRIED_FIELDS: tuple[str, ...] = (
     "ExposureDurationUnit",
     "OrdStatus",
     "OrdType",
+    "OrderQty",
     "ExecType",
     "ExecTransType",
     "CxlRejReason",
@@ -970,12 +971,12 @@ class FixEvents(Convertible):
         if not populated and kind in {"AI", "AJ", "Z"} and (get("QuoteEntryID") or get("QuoteID")):
             named_side = Side.from_fix(get("Side"), Side.UNKNOWN)
             populated = [side for side in sides if side[0] is named_side] or list(sides)
-        for side, px, qty, default_qty in populated:
+        for side, price_field, quantity_field, default_quantity_field in populated:
             yield self._quote_order(
                 side,
                 state,
-                px=_number(get(px)),
-                qty=_number(get(qty) or get(default_qty)),
+                price=_number(get(price_field)),
+                lastqty=_number(get(quantity_field) or get(default_quantity_field)),
             )
 
     def _quote_state(self, kind: str) -> State:
@@ -1022,7 +1023,7 @@ class FixEvents(Convertible):
             Order,
             expunix=self._expires(timeinforce, self.unix, duration),
             state=transition.state,
-            qty=transition.current_qty,
+            lastqty=transition.current_qty,
             prevqty=transition.previous_qty,
             kind=_coded(self.dictionary.order_kinds, get("OrdType"), MarketKind.UNKNOWN),
             timeinforce=timeinforce,
@@ -1034,33 +1035,59 @@ class FixEvents(Convertible):
         side: Side,
         state: State,
         *,
-        px: float | None,
-        qty: float | None,
+        price: float | None,
+        lastqty: float | None,
     ) -> Order:
         """Map one quote side onto the generic Order declaration."""
         get = self.get
+        quote_entry_id = get("QuoteEntryID")
+        quote_id = get("QuoteID")
+        quote_request_id = get("QuoteReqID")
         return self._event(
             Order,
             expunix=unix_value(get("ValidUntilTime")),
             state=state,
             side=side,
-            px=px,
-            qty=qty,
+            price=price,
+            lastqty=lastqty,
             kind=MarketKind.LIMIT_ORDER,
             indicative=True,
-            orderid=get("QuoteEntryID") or get("QuoteID"),
-            clordid=get("QuoteReqID"),
+            orderid=quote_entry_id or quote_id,
+            clordid=quote_request_id,
+            codesource=(
+                "QuoteEntryID"
+                if quote_entry_id
+                else "QuoteID"
+                if quote_id
+                else "QuoteReqID"
+                if quote_request_id
+                else ""
+            ),
         )
 
     def _execution(self, order: Order | None = None) -> Execution:
         """Apply execution semantics and links to the declared FIX fields."""
         get = self.get
+        trade_id = get("TradeID")
+        match_id = get("TrdMatchID")
+        state = self.execution_state()
         return self._event(
             Execution,
             order,
-            state=self.execution_state(),
+            state=state,
             kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
-            tradeid=get("TradeID") or get("TrdMatchID"),
+            tradeid=trade_id or match_id,
+            codesource=(
+                "ExecRefID"
+                if state in (State.REPLACED, State.CANCELLED) and get("ExecRefID")
+                else "ExecID"
+                if get("ExecID")
+                else "TradeID"
+                if trade_id
+                else "TrdMatchID"
+                if match_id
+                else ""
+            ),
             parenthash=[],
         )
 
@@ -1073,33 +1100,47 @@ class FixEvents(Convertible):
         that interest, so it is the lifecycle identity when there is one.
         """
         get = self.get
+        entry_id = get("MDEntryID")
+        entry_px = get("MDEntryPx")
         return self._event(
             Order,
             state=self.state_of("MDUpdateAction", State.NEW if snapshot else State.OPEN),
             side=side,
-            px=_number(get("MDEntryPx")),
-            qty=_number(get("MDEntrySize")),
+            price=_number(get("MDEntryPx")),
+            lastqty=_number(get("MDEntrySize")),
             kind=MarketKind.LIMIT_ORDER,
             indicative=True,
             # An entry with no id of its own is a *level*, not an order, so
             # the price is what persists across its updates: that is what
             # `MDUpdateAction <279>` addresses when it says Change or Delete,
             # and it is what makes a level's own lifecycle findable.
-            orderid=get("MDEntryID")
-            or (f"{side.name}@{get('MDEntryPx')}" if get("MDEntryPx") else None),
+            orderid=entry_id or (f"{side.name}@{entry_px}" if entry_px else None),
+            codesource="MDEntryID" if entry_id else "MDEntryPx" if entry_px else "",
         )
 
     def _entry_execution(self) -> Execution:
         """One market-data entry of type Trade <2> as the execution it reports."""
         get = self.get
+        entry_id = get("MDEntryID")
+        trade_id = get("TradeID")
+        match_id = get("TrdMatchID")
         return self._event(
             Execution,
             state=State.FILLED,
             kind=MarketKind.TRADE,
-            px=_number(get("MDEntryPx")),
-            qty=_number(get("MDEntrySize")),
-            execid=get("MDEntryID"),
-            tradeid=get("TradeID") or get("TrdMatchID"),
+            price=_number(get("MDEntryPx")),
+            lastqty=_number(get("MDEntrySize")),
+            execid=entry_id,
+            tradeid=trade_id or match_id,
+            codesource=(
+                "MDEntryID"
+                if entry_id
+                else "TradeID"
+                if trade_id
+                else "TrdMatchID"
+                if match_id
+                else ""
+            ),
         )
 
     @functools.cached_property
@@ -1264,7 +1305,7 @@ class FixEvents(Convertible):
 
     def _rekep_clock(self, name: str) -> int | None:
         """One package-owned epoch-nanosecond field, or None when malformed."""
-        found = self.get(f"REKEP.{name}")
+        found = self.get(name)
         if found is None:
             return None
         try:

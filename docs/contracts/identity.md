@@ -36,29 +36,44 @@ deliberately distinct and have pinned tests; an empty composite is refused.
 
 ```text
 hash:         fixed_size_binary[16]
+xhash:        fixed_size_binary[16]
 prevhash:     fixed_size_binary[16]
-linkedhashes: list<item: fixed_size_binary[16]>
+linkxhashes:  list<item: fixed_size_binary[16]>
 parenthash:   list<item: fixed_size_binary[16]>
 ```
 
-XXH3-64 digests are signed `int64` columns. `vhash` identifies an event's
-clock-free value, `xhash` identifies its lifecycle, and `instrumentxhash`
-joins a market row to its instrument.
+```python
+from rekep.market.identity import hash_of
+from rekep.txhash import couple128, micros_of, vhash_of
+
+creaunix = 1_700_000_000_123_456_789
+code_digest = hash_of("ORD-1")
+xhash = couple128(creaunix // 1_000, code_digest)
+
+assert micros_of(xhash) == creaunix // 1_000
+assert vhash_of(xhash) == code_digest
+```
+
+`CodeSource <30027>` records the reader-facing field that supplied `code`, such
+as `OrderID`, `ExecID`, or `SymbolTicker`. It explains the lifecycle key but
+does not add another identity part.
 
 An event `hash` composes its epoch microseconds with its `vhash` without
 hashing the payload again. It is stored as sixteen big-endian two's-complement
 bytes -- `fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
-`prevhash` has the same width. `linkedhashes` lists exact hashes of related
-event versions; an Order and its Execution hold each other's final `hash`.
-`parenthash` instead lists the events used to construct this one. The
-[time-anchored hash contract](txhash.md) defines the reversible composition.
+`prevhash` names the preceding exact event version and `parenthash` names the
+exact event versions used to construct this one. `xhash` instead composes
+`creaunix` in whole microseconds with the framed XXH3-64 digest of `code`.
+`linkxhashes` (`LinkXHashes <30013>`) lists related lifecycle `xhash` values; an
+Order and its Execution hold each other's lifecycle identity. The
+[time-anchored hash contract](txhash.md) defines both reversible compositions.
 
-`linkedhashes` is excluded from `vhash`. Both event hashes can therefore be
-final before the mutual relation is attached, with no circular identity.
-Construction provenance in `parenthash` is excluded for the same reason.
-An `int64` identity nested in another identity frame enters as its
-sign-extended sixteen-byte representation; Book value hashes keep their native
-signed `int64` payloads.
+XXH3-64 digests remain signed `int64`. `vhash` is the clock-free event value;
+`Instrument.xhash`, `Leg.xhash`, and `instrumentxhash` are clock-free
+reference identities derived from `symbolticker`. They are distinct from the
+sixteen-byte Event `xhash`. An `int64` reference identity nested in another
+identity frame enters as its sign-extended sixteen-byte representation; Book
+value hashes keep their native signed `int64` payloads.
 
 ## Scalar payloads
 
@@ -111,7 +126,7 @@ both scalar and Arrow builders against every vector.
 ## Rust reference
 
 The executable in `python/examples/identity-rust` reads the same golden corpus.
-Its frame digest and event-hash composition are:
+Its frame digest and wide identity compositions are:
 
 ```rust
 use xxhash_rust::xxh3::xxh3_64_with_seed;
@@ -119,6 +134,8 @@ use xxhash_rust::xxh3::xxh3_64_with_seed;
 let digest: u64 = xxh3_64_with_seed(&frame, 0);
 let vhash: i64 = digest as i64;
 let hash: i128 = ((micros as i128) << 64) | ((vhash as u64) as i128);
+let xhash: i128 = ((creation_micros as i128) << 64) | ((code_hash as u64) as i128);
+let linkxhashes: Vec<i128> = vec![xhash];
 let stored: [u8; 16] = hash.to_be_bytes();
 ```
 
@@ -127,7 +144,7 @@ Run the complete reference with:
 
 ```console
 cargo run --release --locked --manifest-path python/examples/identity-rust/Cargo.toml
-# rekep-identity-v1: 3 raw + 16 framed vectors and event-hash composition match
+# rekep-identity-v1: 3 raw + 16 framed vectors and event and lifecycle hash composition match
 ```
 
 [`xxhash-rust::xxh3_64_with_seed`](https://docs.rs/xxhash-rust/0.8.15/xxhash_rust/xxh3/fn.xxh3_64_with_seed.html)

@@ -356,7 +356,7 @@ CREATED: tuple[Stamped, ...] = tuple(
 
 #: Source recorded when the package-owned event-time field states `unix`
 #: directly rather than leaving it to the standard FIX clock chain.
-STATED_EVENT_TIME = "REKEP.Unix"
+STATED_EVENT_TIME = "Unix"
 
 #: What `resolve` records when no clock the message carries answered, and the
 #: log's own header time is all there is.

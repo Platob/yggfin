@@ -11,11 +11,18 @@ from typing import Annotated, Any
 
 import pyarrow
 
+from rekep import txhash
 from rekep.enums import EventType, State, TimeInForce
 from rekep.fields import Field, column_name, scalar
-from rekep.market.event import Event, MarketEvent, _declared_value_parts, _local_timestamp
+from rekep.market.event import (
+    MICROSECOND,
+    Event,
+    MarketEvent,
+    _declared_value_parts,
+    _local_timestamp,
+)
 from rekep.market.fields import fix_tag
-from rekep.market.identity import NIL, hash_bytes_of
+from rekep.market.identity import NIL
 
 # Exact source fields stay on Order/Execution. These two namespaces are only
 # the lookup meaning of those fields: equal text in OrderID and ClOrdID is not
@@ -23,18 +30,18 @@ from rekep.market.identity import NIL, hash_bytes_of
 VENUE_ORDER_CODE = "order"
 CLIENT_ORDER_CODE = "client_order"
 
-_ORDER_CODE_NAMES = MappingProxyType(
+_ORDER_CODE_FIELDS = MappingProxyType(
     {
-        "orderid": VENUE_ORDER_CODE,
-        "secondaryorderid": VENUE_ORDER_CODE,
-        "quoteentryid": VENUE_ORDER_CODE,
-        "quoteid": VENUE_ORDER_CODE,
-        "mdentryid": VENUE_ORDER_CODE,
-        "mdentryrefid": VENUE_ORDER_CODE,
-        "origclordid": CLIENT_ORDER_CODE,
-        "clordid": CLIENT_ORDER_CODE,
-        "secondaryclordid": CLIENT_ORDER_CODE,
-        "quotereqid": CLIENT_ORDER_CODE,
+        "orderid": (VENUE_ORDER_CODE, "OrderID"),
+        "secondaryorderid": (VENUE_ORDER_CODE, "SecondaryOrderID"),
+        "quoteentryid": (VENUE_ORDER_CODE, "QuoteEntryID"),
+        "quoteid": (VENUE_ORDER_CODE, "QuoteID"),
+        "mdentryid": (VENUE_ORDER_CODE, "MDEntryID"),
+        "mdentryrefid": (VENUE_ORDER_CODE, "MDEntryRefID"),
+        "origclordid": (CLIENT_ORDER_CODE, "OrigClOrdID"),
+        "clordid": (CLIENT_ORDER_CODE, "ClOrdID"),
+        "secondaryclordid": (CLIENT_ORDER_CODE, "SecondaryClOrdID"),
+        "quotereqid": (CLIENT_ORDER_CODE, "QuoteReqID"),
     }
 )
 
@@ -141,7 +148,7 @@ class Order(MarketEvent):
         """Event kind fixed by this shape."""
         return EventType.ORDER
 
-    qty: float | None = None
+    lastqty: Annotated[float | None, Field.column("LastQty")] = None
     """Current remaining quantity after this transition; null when indeterminable."""
 
     prevqty: Annotated[float | None, Field.column("PrevQty")] = None
@@ -151,7 +158,7 @@ class Order(MarketEvent):
     """How long it lives. `GTD` expires at `expunix`, where every expiry here lives."""
 
     stoppx: Annotated[float | None, fix_tag("StopPx")] = None
-    """Trigger price of a stop order; `px` is the limit that applies once triggered."""
+    """Trigger price of a stop order; `price` is the limit that applies once triggered."""
 
     hiddenqty: Annotated[float | None, Field.column("HiddenQty")] = None
     """Current quantity hidden from the displayed book; null when unstated."""
@@ -191,6 +198,7 @@ class Order(MarketEvent):
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means."""
         same_named_life = self._continues_named_life(previous)
+        linked_life = self._linked_order_life(previous)
         MarketEvent.complete_from(self, previous)
         # By name, for the reason `_carry` gives. `vwap` means the same thing
         # wherever it appears, unlike the abstract price and quantity slots.
@@ -201,33 +209,36 @@ class Order(MarketEvent):
             "vwap",
             "orderid",
         )
-        if self.qty is None and isinstance(previous, Execution):
-            self.qty = previous.leavesqty
+        if self.lastqty is None and isinstance(previous, Execution):
+            self.lastqty = previous.leavesqty
         if self.hiddenqty is None and isinstance(previous, Order):
             displayed = (
                 None
-                if previous.qty is None or previous.hiddenqty is None
-                else max(previous.qty - previous.hiddenqty, 0.0)
+                if previous.lastqty is None or previous.hiddenqty is None
+                else max(previous.lastqty - previous.hiddenqty, 0.0)
             )
-            if displayed is not None and self.qty is not None:
-                self.hiddenqty = max(self.qty - displayed, 0.0)
+            if displayed is not None and self.lastqty is not None:
+                self.hiddenqty = max(self.lastqty - displayed, 0.0)
         _carry_code(self, previous, "timeinforce")
         named = getattr(previous, "clordid", None)
         if self.clordid is None:
             self.clordid = named
         elif self.origclordid is None and named not in (None, self.clordid):
             self.origclordid = named
-        anchor = (
-            previous.code or previous.life_code()
+        anchor, source, creation = (
+            (previous.code or previous.life_code(), previous.life_code_source(), None)
             if same_named_life
-            else self._parent_order_life_code(previous)
+            else linked_life
         )
         if anchor:
             # A later acknowledgement may introduce the venue's OrderID. The
             # exact field keeps it, while the lifecycle stays on its first
-            # readable anchor. Rehash even when its text already agrees:
-            # completion may just have supplied the instrument or venue scope.
+            # readable anchor. Clear the incoming identity so the envelope
+            # composes that anchor with the recovered lifecycle creation.
             self.code = anchor
+            self.codesource = source
+            if creation is not None:
+                self.creaunix = creation
             self.xhash = NIL
 
     def derive(self) -> None:
@@ -235,9 +246,9 @@ class Order(MarketEvent):
         if self.expires_on_arrival:
             self.expunix = self.unix
         if self.state.is_terminal:
-            if self.prevqty is None and self.qty is not None:
-                self.prevqty = self.qty
-            self.qty = 0.0
+            if self.prevqty is None and self.lastqty is not None:
+                self.prevqty = self.lastqty
+            self.lastqty = 0.0
             self.hiddenqty = 0.0
         MarketEvent.derive(self)
 
@@ -245,25 +256,31 @@ class Order(MarketEvent):
         """Prefer an observed prior Order quantity over source reconstruction."""
         MarketEvent._remember_previous(self, previous)
         if isinstance(previous, Order):
-            self.prevqty = previous.qty
+            self.prevqty = previous.lastqty
 
     @property
     def expires_on_arrival(self) -> bool:
         """Whether FIX says unfilled quantity can never rest."""
         return TimeInForce.IMMEDIATE <= self.timeinforce < TimeInForce.SESSION
 
-    def life_parts(self) -> tuple[Any, ...]:
-        """An order's lifecycle is the identifier that survives its amendments."""
-        code = self.life_code()
-        return (hash_bytes_of(self.instrumentxhash), self.mic, code, self.side) if code else ()
-
     def life_code(self) -> str:
         """The order identifier that survives amendments, or nothing."""
         return self.code or self._named_life_code()
 
+    def life_code_source(self) -> str:
+        """The exact order field that supplied the readable identifier."""
+        if self.code:
+            return self.codesource or "Code"
+        source, _ = self._named_life_key()
+        return source
+
     def _named_life_code(self) -> str:
         """The strongest typed order identifier this version carries."""
-        return next((value for _, value in self.lookup_altids_of(self)), "")
+        return self._named_life_key()[1]
+
+    def _named_life_key(self) -> tuple[str, str]:
+        """Reader-facing source name and strongest order identifier."""
+        return next(((source, value) for _, source, value in self._code_fields_of(self)), ("", ""))
 
     @classmethod
     def lookup_altids_of(cls, event: MarketEvent) -> Iterator[tuple[str, str]]:
@@ -273,23 +290,29 @@ class Order(MarketEvent):
         at their strength within that order so hand-built rows remain indexed.
         Parsed `altids` retains identifiers not promoted to dedicated columns.
         """
+        yield from ((namespace, value) for namespace, _, value in cls._code_fields_of(event))
+
+    @classmethod
+    def _code_fields_of(cls, event: MarketEvent) -> Iterator[tuple[str, str, str]]:
+        """Typed order identifiers with the exact field that supplied each value."""
         found: set[tuple[str, str]] = set()
-        parsed: list[tuple[str, str]] = []
+        parsed: list[tuple[str, str, str]] = []
         for name, value in event.altids.items():
-            namespace = _ORDER_CODE_NAMES.get(_code_name(name))
-            if namespace is not None and value:
-                parsed.append((namespace, str(value)))
+            field = _ORDER_CODE_FIELDS.get(_code_name(name))
+            if field is not None and value:
+                namespace, source = field
+                parsed.append((namespace, source, str(value)))
         candidates = [
-            (VENUE_ORDER_CODE, getattr(event, "orderid", None)),
+            (VENUE_ORDER_CODE, "OrderID", getattr(event, "orderid", None)),
             *(key for key in parsed if key[0] == VENUE_ORDER_CODE),
-            (CLIENT_ORDER_CODE, getattr(event, "origclordid", None)),
-            (CLIENT_ORDER_CODE, getattr(event, "clordid", None)),
+            (CLIENT_ORDER_CODE, "OrigClOrdID", getattr(event, "origclordid", None)),
+            (CLIENT_ORDER_CODE, "ClOrdID", getattr(event, "clordid", None)),
             *(key for key in parsed if key[0] == CLIENT_ORDER_CODE),
         ]
-        for namespace, value in candidates:
+        for namespace, source, value in candidates:
             if value and (key := (namespace, str(value))) not in found:
                 found.add(key)
-                yield key
+                yield namespace, source, str(value)
 
     def _continues_named_life(self, previous: Event) -> bool:
         """Whether FIX identifiers link this row to the preceding Order."""
@@ -305,24 +328,23 @@ class Order(MarketEvent):
         )
         return bool(same_order or same_client_version or amends_client_version)
 
-    def _parent_order_life_code(self, previous: Event) -> str:
-        """The readable Order root carried across a related Execution."""
-        if previous.primary_linked_hash is None:
-            return ""
-        root = previous.altids.get("orderroot")
-        if not root:
-            return ""
-        candidates = dict.fromkeys(
-            (
-                self.orderid,
-                self.origclordid,
-                self.clordid,
-                getattr(previous, "orderid", None),
-                getattr(previous, "origclordid", None),
-                getattr(previous, "clordid", None),
-            )
-        )
-        return root if root in candidates else ""
+    def _linked_order_life(self, previous: Event) -> tuple[str, str, int | None]:
+        """Order code, source, and creation recovered through an Execution link."""
+        if not isinstance(previous, Execution):
+            return "", "", None
+        linked = previous.primary_linked_xhash
+        if not linked:
+            return "", "", None
+        current = set(self.lookup_altids_of(self))
+        prior = set(self.lookup_altids_of(previous))
+        if not current or current.isdisjoint(prior):
+            return "", "", None
+        creation = txhash.micros_of(linked) * MICROSECOND
+        candidates = (*self._code_fields_of(previous), *self._code_fields_of(self))
+        for _namespace, source, code in candidates:
+            if Event.xhash_of(creation, code) == linked:
+                return code, source, creation
+        return "", "", None
 
     def version_parts(self) -> tuple[Any, ...]:
         """An order's version moves with what it asked for, and how far it got."""
@@ -354,17 +376,13 @@ class Execution(MarketEvent):
         """Event kind fixed by this shape."""
         return EventType.EXECUTION
 
-    # The abstract slots, re-declared for the one thing a subclass owns about
-    # them: which FIX field they actually hold. `MarketEvent` tags them
-    # `Price <44>` and `OrderQty <38>` because that is what an order's are,
-    # and a report's are `LastPx` and `LastQty` -- the *last fill*, not the
-    # order. Re-declaring keeps the column exactly where it was (a dataclass
-    # field re-annotated keeps its position) and stops the schema naming a
-    # field it does not carry.
-    px: Annotated[float | None, fix_tag("LastPx")] = None
+    # The shared names remain stable while this declaration states the exact
+    # report fields. An execution carries the last fill, not the order limit
+    # or its remaining quantity.
+    price: Annotated[float | None, fix_tag("LastPx")] = None
     """What traded on this report -- the fill's price, not the order's limit."""
 
-    qty: Annotated[float | None, fix_tag("LastQty")] = None
+    lastqty: Annotated[float | None, fix_tag("LastQty")] = None
     """What traded on this report -- the fill's quantity, not the order's."""
 
     execid: Annotated[str | None, fix_tag("ExecID")] = None
@@ -437,43 +455,41 @@ class Execution(MarketEvent):
             and self.execrefid in (previous.execid, previous.execrefid, previous.code)
         )
         if previous.is_order():
-            if previous.code:
-                # An exact event hash cannot be inverted to the Order's
-                # readable lifecycle root. Carry that root beside the link so
-                # a later Order can recover it across this Execution.
-                self.altids["orderroot"] = previous.code
             self.link_to(previous, primary=True)
         if same_report_life and previous.code:
             self.code = previous.code
+            self.codesource = previous.codesource
             self.xhash = NIL
         done, left, average = _totals_of(previous)
         known_done = done
         delta = None
         revised_average = average
         if same_report_life and isinstance(previous, Execution):
-            prior_qty = previous.qty
-            replacement_qty = 0.0 if self.state is State.CANCELLED else self.qty
+            prior_qty = previous.lastqty
+            replacement_qty = 0.0 if self.state is State.CANCELLED else self.lastqty
             if prior_qty is not None and replacement_qty is not None:
                 delta = replacement_qty - prior_qty
                 revised_average = (
                     _replaced_average(
                         average,
                         known_done,
-                        previous.px,
+                        previous.price,
                         prior_qty,
-                        self.px,
+                        self.price,
                         replacement_qty,
                     )
                     if known_done is not None
                     else (
-                        average if replacement_qty == prior_qty and self.px == previous.px else None
+                        average
+                        if replacement_qty == prior_qty and self.price == previous.price
+                        else None
                     )
                 )
-        elif self.state is State.FILLED and self.qty is not None:
-            if known_done is None and self.cumqty is not None and self.cumqty >= self.qty:
-                known_done = self.cumqty - self.qty
-            delta = self.qty
-            revised_average = _weighted(average, known_done, self.px, self.qty)
+        elif self.state is State.FILLED and self.lastqty is not None:
+            if known_done is None and self.cumqty is not None and self.cumqty >= self.lastqty:
+                known_done = self.cumqty - self.lastqty
+            delta = self.lastqty
+            revised_average = _weighted(average, known_done, self.price, self.lastqty)
         if self.cumqty is None:
             self.cumqty = (
                 max(known_done + delta, 0.0)
@@ -485,26 +501,29 @@ class Execution(MarketEvent):
         if self.vwap is None:
             self.vwap = revised_average
 
-    def life_parts(self) -> tuple[Any, ...]:
-        """An execution's lifecycle is the report the venue identified it by.
-
-        `ExecID <17>` first, which the standard makes unique per report;
-        `TradeID <1003>` after it, which both sides of a trade share and which
-        is what a trade-capture report carries instead. A correction uses
-        `ExecRefID <19>` to stay on the report it amends.
-        """
-        code = self.life_code()
-        return (hash_bytes_of(self.instrumentxhash), self.mic, code, self.side) if code else ()
-
     def life_code(self) -> str:
         """The report identifier that survives corrections, or nothing."""
         return self.code or self._named_life_code()
 
+    def life_code_source(self) -> str:
+        """The exact execution field that supplied the readable identifier."""
+        if self.code:
+            return self.codesource or "Code"
+        return self._named_life_key()[0]
+
     def _named_life_code(self) -> str:
         """The strongest execution identifier this version carries itself."""
+        return self._named_life_key()[1]
+
+    def _named_life_key(self) -> tuple[str, str]:
+        """Reader-facing source name and strongest execution identifier."""
         if self.state in (State.REPLACED, State.CANCELLED) and self.execrefid:
-            return self.execrefid
-        return self.execid or self.tradeid or ""
+            return "ExecRefID", self.execrefid
+        if self.execid:
+            return "ExecID", self.execid
+        if self.tradeid:
+            return "TradeID", self.tradeid
+        return "", ""
 
     def version_parts(self) -> tuple[Any, ...]:
         """An execution's version moves when what it says about the trade does."""
@@ -561,7 +580,7 @@ def _totals_of(previous: MarketEvent) -> tuple[float | None, float | None, float
         # what remains. Later order versions deliberately carry no cumulative
         # total; an execution must then use the source's explicit totals.
         done = 0.0 if previous.prevqty is None and previous.state.is_live else None
-        return done, previous.qty, previous.vwap
+        return done, previous.lastqty, previous.vwap
     return previous.cumqty, previous.leavesqty, previous.vwap
 
 

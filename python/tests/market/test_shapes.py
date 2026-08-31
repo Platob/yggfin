@@ -40,10 +40,11 @@ ENVELOPE = [
     "hash",
     "vhash",
     "xhash",
-    "linkedhashes",
+    "linkxhashes",
     "version",
     "state",
     "code",
+    "codesource",
     "altids",
     "prevunix",
     "prevhash",
@@ -60,11 +61,11 @@ PRICED = [
     "symbolticker",
     "kind",
     "side",
-    "px",
+    "price",
     "prevpx",
     "pxunit",
     "currency",
-    "qty",
+    "lastqty",
     "prevqty",
     "qtyunit",
     "notional",
@@ -176,7 +177,7 @@ def test_hot_persisted_rows_are_slotted_and_round_trip_through_arrow(shape: type
 
 def test_transient_instrument_uses_a_slot_but_not_a_market_column() -> None:
     instrument = Instrument(symbol="AAPL", contractmultiplier=2.0)
-    order = Order(px=3.0, qty=4.0).attach_instrument(instrument)
+    order = Order(price=3.0, lastqty=4.0).attach_instrument(instrument)
     assert order.into_instrument() is instrument
     assert order.into_notional() == 24.0
     assert "_MarketEvent__instrument" not in order.into_dict()
@@ -202,12 +203,13 @@ def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
     assert MarketEvent.into_field().field("pxunit").dtype == pyarrow.string()
 
 
-def test_every_event_uses_one_typed_list_for_exact_event_links() -> None:
-    link = Execution.into_field().field("linkedhashes")
+def test_every_event_uses_one_typed_list_for_lifecycle_links() -> None:
+    link = Execution.into_field().field("linkxhashes")
     assert link.dtype.equals(
         pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
     )
     assert not link.nullable
+    assert Execution.into_field().field("xhash").dtype == HASH
     assert "order_xhash" not in Execution.into_field().names
     assert "order_xcode" not in Execution.into_field().names
     assert (
@@ -242,8 +244,15 @@ def test_a_book_keeps_only_compact_best_first_level_lists() -> None:
 
 def test_a_price_and_a_quantity_may_be_absent_because_zero_is_a_price() -> None:
     for shape in EVENTS:
-        assert shape.into_field().field("px").nullable, shape.__name__
-        assert shape.into_field().field("qty").nullable, shape.__name__
+        assert shape.into_field().field("price").nullable, shape.__name__
+        assert shape.into_field().field("lastqty").nullable, shape.__name__
+
+
+def test_derived_remaining_quantities_keep_the_fix_word_break_without_a_tag() -> None:
+    for shape in (Order, Book):
+        quantity = shape.into_field().field("lastqty")
+        assert quantity.fix.display == "LastQty"
+        assert quantity.fix.tag is None
 
 
 def test_a_level_is_not_an_event_because_it_has_no_life_of_its_own() -> None:
@@ -279,7 +288,7 @@ FILTERED = {
         "code",
         "instrumentxhash",
         "side",
-        "px",
+        "price",
     ),
     Execution: (
         "unix",
@@ -288,14 +297,14 @@ FILTERED = {
         "state",
         "code",
         "instrumentxhash",
-        "px",
+        "price",
     ),
     Book: (
         "unix",
         "unixpartition",
         "eventtype",
         "instrumentxhash",
-        "px",
+        "price",
         "spread",
         "vwap",
         "execpx",

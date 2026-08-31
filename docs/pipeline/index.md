@@ -41,10 +41,11 @@ stored `eventtype`.
 
 `parse_instruments` reads the rows `parse_fix` wrote to `fix.market` and
 versions `market.instruments` from their nested `Instrument` components. One
-current `InstrumentUpdate` is keyed by `xhash`, with `instrument.symbolticker`
-as its readable identity. It is a second reader of that table rather than a
-second writer of it: the FIX stage owns translation and the clock, while the
-model owns ticker derivation and reference-data versioning.
+current `InstrumentUpdate` is keyed by its fixed-width Event `xhash`, with
+`instrument.symbolticker` as its readable identity. The component's clock-free
+reference identity remains separate. It is a second reader of that table
+rather than a second writer of it: the FIX stage owns translation and the
+clock, while the model owns ticker derivation and reference-data versioning.
 
 `books: false` skips the fold and writes only the Order and Execution events
 each FIX message carries -- and so creates no snapshots, no synthetic

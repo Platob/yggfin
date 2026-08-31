@@ -72,24 +72,26 @@ carries a space, because no FIX field name does.
 from rekep import Field
 
 order = Field.from_yaml("schemas/rekep/order.yaml")
-for name in ("clordid", "px", "unixpartition"):
+for name in ("clordid", "price", "unixpartition"):
     print(f"{name:16} {order.field(name).fix.display}")
 ```
 
 ```text
 clordid          ClOrdID
-px               Price
+price            Price
 unixpartition    UnixPartition
 ```
 
 A column that reads a FIX field is named after that field, so a reader who
 knows the dictionary knows the column: `ClOrdID <11>` is `clordid`,
-`MinPriceIncrement <969>` is `minpriceincrement`. Two names stay generic on
-purpose. `px` and `qty` are the one slot every market row shares — which FIX
-field they hold is the row's kind to say, `Price <44>` on an order and
-`LastPx <31>` on a report — and a nested struct drops the prefix the wire
-needs, so a leg's `LegCFICode <608>` is `cficode`, exactly as its instrument's
-`CFICode <461>` is.
+`MinPriceIncrement <969>` is `minpriceincrement`. A `MarketEvent` uses the
+flat summary slots `price` and `lastqty`: an Order holds limit price and
+remaining live quantity, an Execution holds `LastPx <31>` and `LastQty <32>`,
+and a Book holds midpoint and touch-size sum. A nested book `Level` keeps
+compact `px` and `qty`; its nesting supplies the `MDEntryPx <270>` and
+`MDEntrySize <271>` context. A nested protocol struct likewise drops the wire
+prefix, so a leg's `LegCFICode <608>` is `cficode`, exactly as its
+instrument's `CFICode <461>` is.
 
 ## Evolution
 

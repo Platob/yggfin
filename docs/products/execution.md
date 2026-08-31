@@ -1,8 +1,8 @@
 # Execution
 
-One fill, correction or cancellation reported against an order. `qty` and
-`px` are that report's own quantity and price -- `LastQty <32>` and
-`LastPx <31>` -- not the order's running totals.
+One fill, correction or cancellation reported against an order. `lastqty` and
+`price` are that report's own `LastQty <32>` and `LastPx <31>`, not the
+order's running totals.
 
 ```python
 from rekep import FixMsg
@@ -16,11 +16,18 @@ execution = [
     for event in FixMsg.from_text(line).into_market_events(fix_version="4.4")
     if type(event).__name__ == "Execution"
 ][0]
-print(execution.qty, execution.px, execution.execid, execution.orderid, execution.state.name)
+print(
+    execution.lastqty,
+    execution.price,
+    execution.execid,
+    execution.orderid,
+    execution.codesource,
+    execution.state.name,
+)
 ```
 
 ```text
-10.0 100.25 E1 O1 FILLED
+10.0 100.25 E1 O1 ExecID FILLED
 ```
 
 Missing identifiers may resolve against indexed live order names. Venue

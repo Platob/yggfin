@@ -153,6 +153,19 @@ def test_a_fix_field_is_a_generic_field_with_fix_metadata() -> None:
     assert built.fix.value_of("1").meaning == "Buy"
 
 
+def test_a_fix_field_keeps_the_utc_its_description_establishes() -> None:
+    origtime = fix_field(
+        "OrigTime",
+        42,
+        "UTCTimestamp",
+        description="Time of message origination (always expressed in UTC)",
+    )
+    unstated = fix_field("TransactTime", 60, "UTCTimestamp")
+
+    assert origtime.dtype == pyarrow.timestamp("us", tz="UTC")
+    assert unstated.dtype == pyarrow.timestamp("us"), "the registry description must say UTC"
+
+
 # -- booleans ----------------------------------------------------------------
 
 

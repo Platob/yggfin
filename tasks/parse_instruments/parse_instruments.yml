@@ -43,7 +43,7 @@ parameters:
   branch: root
   target: market.instruments
   # How many observations one stored-record lookup covers. The lookup is an
-  # `IN` over the batch's xhash values, so this bounds the predicate as well.
+  # `IN` over the batch's stable top-level codes, so this bounds the predicate.
   batch_row_size: 65536
   commit_row_size: 250000
   # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
