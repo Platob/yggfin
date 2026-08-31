@@ -10,7 +10,8 @@ parameters:
   end: null
   # The FIX dictionary. A directory, a zip, or either on a bucket:
   # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
-  fix_dictionary: data/fix
+  # Null reads the registry bundled in the installed package.
+  fix_dictionary: null
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.

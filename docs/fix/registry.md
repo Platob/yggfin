@@ -50,9 +50,11 @@ replayed without network access:
 
 ```bash
 rekep fix registry scrape --output data/fix \
+  --source-cache data/.fix-sources \
   --source fix-latest --source quickfix \
   --source fixtrading-udf --source clear-street
 rekep fix registry scrape --output data/fix \
+  --source-cache data/.fix-sources \
   --source fix-latest --source quickfix \
   --source fixtrading-udf --source clear-street --offline
 rekep fix registry coverage --store data/fix
@@ -112,9 +114,8 @@ definitions = venue.load("data/.fix-sources").fields
 ```
 
 Several words are every one of them, so `order qty` reaches `OrderQty` by its
-name. The browser below ranks by the same rule as
-[`FixRegistry.search`](index.md#resolving-a-name); a result set that fell back
-to the prose says so beside its count.
+name. The browser below ranks by the same rule as `FixRegistry.search`; a
+result set that fell back to prose says so beside its count.
 
 <div class="fix-registry" data-fix-registry data-source="../../assets/fix-registry.json"
      data-repository="https://github.com/Platob/yggfin/blob/main/data/fix">

@@ -1752,16 +1752,17 @@ def _protocol_maps(
 def _document_metadata(mapping: Mapping[str, Any]) -> dict[str, Any]:
     """Restore top-level protocol maps to Arrow's prefixed metadata keys."""
     metadata = dict(mapping.get("metadata") or {})
+    prefixed = sorted(key for key in metadata if ":" in str(key))
+    if prefixed:
+        raise ValueError(
+            f"field {mapping.get(NAME, '')!r} puts protocol metadata in `metadata`: "
+            f"{prefixed}; declare each protocol as its own top-level map"
+        )
     for prefix, values in mapping.items():
         if prefix in _DOCUMENT_KEYS or not isinstance(values, Mapping):
             continue
         for key, value in values.items():
             full = f"{prefix}:{key}"
-            if full in metadata and str(metadata[full]) != str(value):
-                raise ValueError(
-                    f"field {mapping.get(NAME, '')!r} declares {full!r} in both "
-                    "metadata and its protocol map"
-                )
             metadata[full] = value
     return metadata
 
@@ -1785,9 +1786,7 @@ def arrow_type_for(text: str) -> pyarrow.DataType:
     return pyarrow.type_for_alias(text)
 
 
-#: How a dumped list flavour is built back. Every flavour used to dump itself
-#: as `list`, so a contract file read back narrowed a `large_list` to 32-bit
-#: offsets and turned a view into a list -- silently, since both cast.
+#: How each dumped list flavour keeps its offset width and view semantics.
 #: `fixed_size_list` is not here: its width is a second argument, so it is
 #: rebuilt where that argument is read.
 _LIST_KINDS: dict[str, Callable[[pyarrow.Field], pyarrow.DataType]] = {
@@ -1882,9 +1881,8 @@ def _list_size(mapping: Mapping[str, Any]) -> int:
 def _flag(mapping: Mapping[str, Any], key: str) -> bool:
     """A boolean a document states, read strictly.
 
-    `bool("false")` is True, so a hand-written `keys_sorted: 'false'` used to
-    turn the flag *on* -- and `keys_sorted` is part of a map's Arrow type, so
-    that is a different type read back from the same file.
+    Python truthiness would read the text `"false"` as true. These flags are
+    part of the Arrow type and therefore accept only boolean spellings.
     """
     value = mapping.get(key, False)
     if isinstance(value, bool):

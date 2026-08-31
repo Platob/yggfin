@@ -8,7 +8,7 @@ import pyarrow
 
 from rekep.fix import FixRegistry
 
-side = FixRegistry.from_builtin().resolve("Side").fix
+side = FixRegistry().resolve("Side").fix
 
 print(side.decode("1"))
 print(side.meaning("1"))

@@ -345,14 +345,13 @@ def test_a_dump_promotes_protocol_metadata_to_named_maps() -> None:
     assert Field.from_dict(dumped) == original
 
 
-def test_a_protocol_map_and_legacy_metadata_cannot_disagree() -> None:
-    with pytest.raises(ValueError, match="fix:tag"):
+def test_protocol_metadata_only_has_one_document_spelling() -> None:
+    with pytest.raises(ValueError, match="top-level map"):
         Field.from_dict(
             {
                 "name": "side",
                 "type": "int32",
                 "metadata": {"fix:tag": "54"},
-                "fix": {"tag": "55"},
             }
         )
 

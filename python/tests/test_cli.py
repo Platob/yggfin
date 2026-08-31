@@ -175,8 +175,8 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
     field = FixMsg.into_field()
-    assert len(field.names) == 123
-    assert field.names[-1] == "instrument"
+    assert len(field.names) == 125
+    assert field.names[-2:] == ["instrument", "omsorders"]
     assert field.field("instrument").names == [
         "symbolticker",
         "symbol",
@@ -191,13 +191,15 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
         "contractmultiplier",
         "minpriceincrement",
         "roundlot",
+        "quantitytype",
         "maturitydate",
         "strikeprice",
         "putorcall",
         "securitydesc",
         "legs",
+        "tickladder",
     ]
-    assert "FixMsg: 123 columns, builds" in printed
+    assert "FixMsg: 125 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unixpartition: int32  [partition identity]" in printed
     assert (
@@ -460,11 +462,16 @@ def test_a_numbered_field_is_registered_for_the_versions_it_names(store: Path) -
             "String",
             "--version",
             "9.1",
+            "--tag-alias",
+            "90003",
+            "--tag-alias",
+            "90004",
         )
         == 0
     )
     entry = reopened(store).resolve("FakeCode")
     assert entry.fix.tag == 90002 and entry.fix.versions == ("9.1",)
+    assert entry.fix.tags == (90003, 90004)
     assert reopened(store).field(90002, "9.1").name == "FakeCode"
 
 
@@ -835,7 +842,7 @@ def test_a_message_uses_component_crud(
         reopened(store).merged_component("FakeMessage")
 
 
-def test_scrape_forwards_source_configuration(
+def test_scrape_forwards_adapter_configuration(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
     target = tmp_path / "fresh"
@@ -845,8 +852,12 @@ def test_scrape_forwards_source_configuration(
     class Scraped:
         cache_dir = target
         conflicts = ConflictReport()
+        source_status = ()
 
-        def field_records(self) -> dict[str, object]:
+        def namespaces(self) -> tuple[str, ...]:
+            return ("standard",)
+
+        def field_records(self, _namespace: str = "standard") -> dict[str, object]:
             return {"FakeRole": object()}
 
         def component_records(self) -> dict[str, object]:
@@ -866,23 +877,19 @@ def test_scrape_forwards_source_configuration(
             str(target),
             "--conflicts",
             str(conflicts),
-            "--nanoconda-url",
-            "https://dictionary.example",
-            "--quickfix-url",
-            "https://spec.example",
-            "--max-workers",
+            "--source",
+            "fix-latest",
+            "--source-cache",
+            str(tmp_path / "sources"),
+            "--timeout",
             "3",
         )
         == 0
     )
     assert called["output"] == str(target)
-    sources = called["sources"]
-    assert sources[0].name == "nanoconda"
-    assert sources[0].url == "https://dictionary.example"
-    assert sources[1].name == "quickfix"
-    assert sources[1].url == "https://spec.example"
-    assert called["max_workers"] == 3
-    assert called["source_ids"] == ()
+    assert called["source_ids"] == ("fix-latest",)
+    assert called["source_cache"] == str(tmp_path / "sources")
+    assert called["timeout"] == 3
     assert called["offline"] is False
     assert called["refresh_sources"] is False
     assert json.loads(conflicts.read_text())["counts"]["encoded"] == 0
@@ -928,7 +935,7 @@ def test_scrape_selects_one_cached_source_offline(
     )
     assert called["source_ids"] == ("fixtrading-udf",)
     assert called["offline"] is True
-    assert called["rebuild_standard"] is False
+    assert "rebuild_standard" not in called
 
 
 def test_scrape_refuses_offline_with_a_network_refresh(
@@ -948,6 +955,17 @@ def test_scrape_refuses_offline_with_a_network_refresh(
     assert stopped.value.code == 2
     error = capsys.readouterr().err
     assert "--offline" in error and "--refresh" in error and "not allowed" in error
+
+
+@pytest.mark.parametrize("option", ["--nanoconda-url", "--onixs-url", "--quickfix-url"])
+def test_scrape_accepts_only_declared_adapter_sources(
+    option: str, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run("fix", "registry", "scrape", "--output", str(tmp_path / "fix"), option, "unused")
+
+    assert stopped.value.code == 2
+    assert "unrecognized arguments" in capsys.readouterr().err
 
 
 def test_partial_scrape_preserves_and_deduplicates_conflict_artifact(
@@ -1041,4 +1059,4 @@ def test_scrape_defaults_to_fetchable_complete_file_adapters(
         source_id for source_id, adapter in ADAPTERS_BY_ID.items() if adapter.default
     )
     assert "sources" not in called
-    assert called["rebuild_standard"] is False
+    assert "rebuild_standard" not in called

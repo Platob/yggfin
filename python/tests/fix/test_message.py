@@ -18,7 +18,14 @@ from rekep.fix import (
     rendered_keys,
     tag_arrow_array,
 )
-from rekep.fix.message import _TAG_PROBE, DATA_TAGS, _Names, group_segment_pairs, parse_pairs
+from rekep.fix.message import (
+    _TAG_PROBE,
+    DATA_TAGS,
+    _Names,
+    group_segment_pairs,
+    parse_pairs,
+    split_glued_group_value,
+)
 
 PIPE = "8=FIX.4.2|9=2058|35=8|49=BRK|54=1|58=hello world|10=045"
 SOHED = PIPE.replace("|", SOH)
@@ -28,6 +35,30 @@ NOISY = "2026-08-14 00:05:01 [T] [ULBridge] (INFO) sent 8=FIX4.2|9=12|35=D|58=a=
 #: Derived from the fixture, then pinned: the pipe message splits into this
 #: many fields, and a broken separator rule cannot move both sides together.
 EXPECTED_FIELDS = 7
+
+
+def test_glued_group_values_split_only_at_declared_member_names() -> None:
+    parts, ambiguities = split_glued_group_value(
+        "P-1PartyIDSource=DPartyRole=1",
+        ("PartyID", "IDSource", "PartyIDSource", "PartyRole"),
+    )
+
+    assert parts == (
+        (None, "P-1"),
+        ("PartyIDSource", "D"),
+        ("PartyRole", "1"),
+    )
+    assert ambiguities == (("PartyIDSource", "IDSource"),)
+
+
+def test_undeclared_equals_signs_stay_inside_a_group_value() -> None:
+    parts, ambiguities = split_glued_group_value(
+        "desk=a=bPartyRole=1",
+        ("PartyRole",),
+    )
+
+    assert parts == ((None, "desk=a=b"), ("PartyRole", "1"))
+    assert ambiguities == ()
 
 
 def _raw(message: FixMsg, field: int | str, default: str | None = None) -> str | None:
@@ -1037,7 +1068,7 @@ def test_the_data_tags_are_the_ones_the_dictionary_types_data() -> None:
     """A field the registry types `data` and this set does not is a value cut short.
 
     The shipped dictionary is the authority and has to match exactly. The
-    packaged projection carries the fields declarations use, so it is checked
+    packaged registry carries the fields declarations use, so it is checked
     the one way that says anything: nothing in it may be missing here.
     """
     shipped = Path(__file__).resolve().parents[3] / "data" / "fix"

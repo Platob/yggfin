@@ -1207,6 +1207,7 @@ def fold_field(held: Field | None, member: Field, version: str) -> Field:
     built.fix.components = _union(held.fix.components, fresh.fix.components)
     built.fix.sources = _union(_union(built.fix.sources, held.fix.sources), fresh.fix.sources)
     built.fix.source = built.fix.source or held.fix.source or fresh.fix.source
+    built.fix.tags = tuple(dict.fromkeys((*built.fix.tags, *held.fix.tags, *fresh.fix.tags)))
     built.fix.column = held.fix.column or fresh.fix.column
     return built
 

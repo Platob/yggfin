@@ -500,12 +500,9 @@ class Ascii32(enum.IntEnum):
 
     # -- the wire codes, which belong to the dictionary ----------------------
     #
-    # A member used to carry its FIX code beside its spelling. That made the
-    # enum a second copy of one field's enumerated values -- and the two could
-    # disagree, silently, in the direction that mis-parses a message. The
-    # codes are read from the dictionary now, matched to members by the
-    # spellings the registry declares for each value, and cached: `from_fix` runs
-    # once per row and must stay a dictionary lookup.
+    # The registry is the only copy of a field's wire codes. Codes match members
+    # through declared value spellings and are cached because `from_fix` runs
+    # once per row.
 
     @classmethod
     def _fix_declaration(cls) -> Any:

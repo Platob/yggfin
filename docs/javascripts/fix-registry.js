@@ -674,14 +674,13 @@
             : "";
           if (!nested) return `<li>${line}${prose}</li>`;
           const count = `${number.format(direct.length)} direct`;
-          const opened = depth === 0 && member.kind === "group" ? " open" : "";
           const attributes = referenced
             ? ` data-component-members="${escape(member.name)}" data-component-depth="${depth}" data-component-seen="${encodeURIComponent(JSON.stringify([...seen]))}"`
             : "";
           const children = referenced
             ? '<div data-tree-children></div>'
             : memberTree(member.members, depth + 1, seen);
-          return `<li><details class="fix-registry__tree-node fix-registry__tree-node--${escape(member.kind)}"${attributes}${opened}>
+          return `<li><details class="fix-registry__tree-node fix-registry__tree-node--${escape(member.kind)}"${attributes}>
             <summary>${line}<span class="fix-registry__tree-count">${count}</span></summary>
             ${prose}${children}
           </details></li>`;

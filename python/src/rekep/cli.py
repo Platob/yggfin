@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import importlib
 import json
 import pathlib
@@ -25,7 +24,7 @@ from rekep.fix.entries import (
     refuse_record,
 )
 from rekep.fix.fields import fix_field, namespaced_field
-from rekep.fix.registry import DEFAULT_SOURCES, FixRegistry
+from rekep.fix.registry import FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import (
     ConflictReport,
@@ -320,6 +319,7 @@ def update_field(arguments: argparse.Namespace) -> int:
     if held is not None and not arguments.declaration:
         fresh = record_copy(fresh)
         fresh.fix.named_aliases = held.fix.named_aliases or fresh.fix.named_aliases
+        fresh.fix.tags = fresh.fix.tags or held.fix.tags
     entry = registry.update_field(fresh)
     CONSOLE.ok(
         f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
@@ -411,42 +411,20 @@ def check_registry(arguments: argparse.Namespace) -> int:
 
 
 def scrape_registry(arguments: argparse.Namespace) -> int:
-    """Scrape and atomically replace a complete local registry."""
+    """Refresh complete-file adapters into one local registry."""
     configuration = {
         name: value
         for name, value in (
             ("timeout", arguments.timeout),
-            ("max_workers", arguments.max_workers),
             ("retries", arguments.retries),
             ("backoff", arguments.backoff),
         )
         if value is not None
     }
-    source_urls = {
-        "nanoconda": arguments.nanoconda_url,
-        "onixs": arguments.onixs_url,
-        "quickfix": arguments.quickfix_url,
-    }
-    configured = tuple(
-        dataclasses.replace(source, url=source_urls[source.name] or source.url)
-        for source in DEFAULT_SOURCES
-    )
     from rekep.fix.adapters import ADAPTERS_BY_ID, SOURCE_CATALOG
 
-    asked = tuple(
-        dict.fromkeys(
-            (
-                *(arguments.source or ()),
-                *(source for source, url in source_urls.items() if url),
-            )
-        )
-    )
-    overridden = {source for source, url in source_urls.items() if url}
-    unknown = [
-        source
-        for source in asked
-        if source not in SOURCE_CATALOG and source not in {entry.name for entry in configured}
-    ]
+    asked = tuple(dict.fromkeys(arguments.source or ()))
+    unknown = [source for source in asked if source not in SOURCE_CATALOG]
     if unknown:
         raise ValueError(f"unknown FIX registry sources {unknown!r}")
     excluded = [
@@ -461,7 +439,7 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
             asked
             or tuple(source_id for source_id, adapter in ADAPTERS_BY_ID.items() if adapter.default)
         )
-        if source in ADAPTERS_BY_ID and source not in overridden
+        if source in ADAPTERS_BY_ID
     )
     restricted = [
         source_id
@@ -472,24 +450,13 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
         raise ValueError(
             f"FIX sources {restricted!r} cannot be fetched; cache their files and use --offline"
         )
-    legacy = tuple(
-        source
-        for source in configured
-        if source.name in asked and (source.name not in ADAPTERS_BY_ID or source.name in overridden)
-    )
-    if legacy:
-        configuration["sources"] = legacy
     configuration["source_ids"] = adapter_ids
+    if arguments.source_cache:
+        configuration["source_cache"] = arguments.source_cache
     configuration["offline"] = arguments.offline
     configuration["refresh_sources"] = arguments.refresh
-    configuration["rebuild_standard"] = bool(legacy) and not arguments.offline
-    configuration["announce"] = CONSOLE.note
     previous_conflicts = None
-    if (
-        arguments.conflicts
-        and not configuration["rebuild_standard"]
-        and pathlib.Path(arguments.conflicts).is_file()
-    ):
+    if arguments.conflicts and pathlib.Path(arguments.conflicts).is_file():
         previous_conflicts = ConflictReport.from_json(arguments.conflicts)
     target = arguments.output or "~/.config/fix"
     with CONSOLE.spinner(f"scraping into {target}"):
@@ -502,20 +469,14 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
         )
     if arguments.conflicts:
         report.into_json(arguments.conflicts)
-    statuses = tuple(getattr(registry, "source_status", ()))
+    statuses = registry.source_status
     for status in statuses:
         CONSOLE.note(
             f"{status['source_id']} [{status['namespace']}]: {status['fields']} fields, "
             f"{status['additions']} additions, {status['updates']} updates, "
             f"{status.get('conflicts', 0)} conflicts, {status.get('fallbacks', 0)} fallbacks"
         )
-    namespaces = registry.namespaces() if hasattr(registry, "namespaces") else ("standard",)
-    fields = sum(
-        len(registry.field_records(namespace))
-        if hasattr(registry, "namespaces")
-        else len(registry.field_records())
-        for namespace in namespaces
-    )
+    fields = sum(len(registry.field_records(namespace)) for namespace in registry.namespaces())
     counts = report.counts()
     fallbacks = sum(int(status.get("fallbacks", 0)) for status in statuses)
     CONSOLE.ok(
@@ -552,6 +513,7 @@ def _field_entry(arguments: argparse.Namespace) -> Field:
         fix.column = arguments.column
     if arguments.alias:
         fix.named_aliases = [{"name": alias} for alias in arguments.alias]
+    fix.tags = arguments.tag_alias
     return refuse_record(record)
 
 
@@ -635,11 +597,8 @@ def _replay(executed: Mapping[str, Any]) -> None:
     """What the notebook said, where the person who ran it is looking.
 
     Papermill captures a kernel's `stderr` into the executed document and
-    nothing else surfaces it, so a run at a terminal used to print one dict
-    and none of the records that say how it was reached. The records go back
-    to `stderr` -- they are the library's, and `Console` owns this stream's
-    styling -- and the last cell's value to `stdout`, which is what a pipe
-    into `jq` wants.
+    nothing else surfaces it. Records return to `stderr`, while the last cell's
+    value goes to `stdout` for pipelines such as `jq`.
     """
     cells = executed.get("cells", [])
     for cell in cells:
@@ -900,6 +859,13 @@ def _parser() -> argparse.ArgumentParser:
         action.add_argument(
             "--alias", action="append", default=[], help="another spelling; repeatable"
         )
+        action.add_argument(
+            "--tag-alias",
+            action="append",
+            type=int,
+            default=[],
+            help="an equivalent numeric tag in fallback order; repeatable",
+        )
         return action
 
     verb("versions", "write stored versions and field counts as JSON", registry_versions)
@@ -1045,14 +1011,17 @@ def _parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="write the attributed conflict report as JSON",
     )
-    scraping.add_argument("--nanoconda-url", default=None, help="Nanoconda source URL")
-    scraping.add_argument("--onixs-url", default=None, help="OnixS source URL")
-    scraping.add_argument("--quickfix-url", default=None, help="QuickFIX source URL")
     scraping.add_argument(
         "--source",
         action="append",
         default=[],
         help="one source ID to refresh; repeatable and omitted for default sources",
+    )
+    scraping.add_argument(
+        "--source-cache",
+        default=None,
+        metavar="PATH",
+        help="complete-file cache; defaults beside the output store",
     )
     cache_mode = scraping.add_mutually_exclusive_group()
     cache_mode.add_argument(
@@ -1066,9 +1035,6 @@ def _parser() -> argparse.ArgumentParser:
         help="redownload selected complete sources instead of reusing the cache",
     )
     scraping.add_argument("--timeout", type=float, default=None, help="request timeout in seconds")
-    scraping.add_argument(
-        "--max-workers", type=int, default=None, help="maximum concurrent source requests"
-    )
     scraping.add_argument("--retries", type=int, default=None, help="retries per source request")
     scraping.add_argument(
         "--backoff", type=float, default=None, help="initial retry backoff in seconds"

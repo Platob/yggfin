@@ -180,6 +180,35 @@ def test_a_record_refuses_unreadable_or_unattributed_source_metadata() -> None:
         )
 
 
+def test_alternate_tags_are_ordered_distinct_numeric_metadata() -> None:
+    entry = _entry()
+    entry.fix.tags = (44, 270, 44, 90001)
+
+    assert entry.fix.tags == (44, 270)
+    assert entry.fix.tag_priority == (90001, 44, 270)
+    assert Field.from_dict(entry.into_dict()).fix.tags == (44, 270)
+
+
+@pytest.mark.parametrize(
+    "declared",
+    ("[44,44]", "[90001]", '["44"]', '"44"', "not-json"),
+)
+def test_a_record_refuses_invalid_alternate_tags(declared: str) -> None:
+    entry = _entry()
+    entry.fix["tags"] = declared
+
+    with pytest.raises(ValueError, match="fix:tags"):
+        refuse_record(entry)
+
+
+def test_an_unnumbered_field_cannot_declare_alternate_tags() -> None:
+    entry = _entry(name="FAKE.CODE", tag=None)
+    entry.fix.tags = (44,)
+
+    with pytest.raises(ValueError, match="canonical tag"):
+        refuse_record(entry)
+
+
 def test_which_kind_a_record_is_is_the_tag_and_nothing_beside_it() -> None:
     """A record used to state its kind as well, and the two could disagree.
 

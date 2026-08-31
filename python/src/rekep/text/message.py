@@ -25,7 +25,7 @@ from rekep.fix.message import (
 )
 from rekep.market.event import MICROSECOND, Event
 from rekep.market.identity import hash_bytes, hash_bytes_arrow
-from rekep.text.entries import ENTRIES, Entry, xml_payload_arrow
+from rekep.text.entries import ENTRIES, Entry, referential_payload_arrow, xml_payload_arrow
 
 #: The standard header is lifted out of `entries` into columns of its own,
 #: and a lifted column is read back out of the list wherever it is empty --
@@ -328,8 +328,20 @@ class Message(Event):
         The raw bytes are retained in `body`; parsing uses a decoded view and
         leaves the original payload unchanged.
         """
+        raw = text.encode("utf-8") if isinstance(text, str) else bytes(text)
+        declared.setdefault("body", raw)
+        # This grammar needs its bracket-depth scanner. Let the same column
+        # parser used by text files own the scalar reading as well.
+        from rekep.fix.rules import Rules
+
+        protocol = (
+            Rules.into_default()
+            .into_arrow_protocol_array(pyarrow.array([raw], pyarrow.binary()))[0]
+            .as_py()
+        )
+        if Protocol.from_int(protocol) is Protocol.REFERENTIAL:
+            return cls(**declared)
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
-        declared.setdefault("body", text.encode("utf-8") if isinstance(text, str) else bytes(text))
         entries = list(pairs)
         return cls(entries=entries, **declared)
 
@@ -403,13 +415,26 @@ class Message(Event):
         # tag is a session field is still a frame.
         rules = Rules.into_default() if protocol_rules is None else protocol_rules
         protocols = rules.into_arrow_protocol_array(text, plugins, entries)
-        xml = compute.equal(Protocol.into_family_arrow(protocols), int(Protocol.XML))
+        families = Protocol.into_family_arrow(protocols)
+        xml = compute.equal(families, int(Protocol.XML))
+        referential = compute.equal(families, int(Protocol.REFERENTIAL))
         xml_entries, parse_errors = xml_payload_arrow(bodies, xml)
         xml_entries = Entry.normalized_arrow(xml_entries, plugins, plugin_keys, null_values)
         entries = compute.if_else(xml, xml_entries, entries)
+        referential_entries, referential_errors = referential_payload_arrow(bodies, referential)
+        referential_entries = Entry.normalized_arrow(
+            referential_entries, plugins, plugin_keys, null_values
+        )
+        entries = compute.if_else(referential, referential_entries, entries)
+        parse_errors = compute.coalesce(parse_errors, referential_errors)
         session, entries = _session_columns(entries)
         msg_types = compute.coalesce(session[_MSG_TYPE], _msg_type_probe(text))
         event_types = _event_types(msg_types, msg_type_event_types)
+        event_types = compute.if_else(
+            referential,
+            pyarrow.scalar(int(EventType.INSTRUMENT), _EVENT_CODE),
+            event_types,
+        )
         # Direction is resolved here, where the raw line and its protocol
         # last coexist: `parse_fix` may read the stored rows with `body`
         # projected out, so an answer not stored now is an answer lost. The
@@ -570,18 +595,33 @@ def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], p
     keys = compute.struct_field(entries, "key")
     values = compute.struct_field(entries, "value")
     normalized = column_names(keys)
-    checksums = compute.fill_null(
-        compute.is_in(normalized, value_set=pyarrow.array(_CHECKSUM_KEYS)), False
+    # A batch normally carries fewer than ten session identities. Asking
+    # Arrow which keys occur once avoids walking every entry for all thirty
+    # declarations, while the per-column work below remains kernel-only.
+    present = frozenset(compute.unique(normalized).to_pylist())
+    if present.intersection(_CHECKSUM_KEYS):
+        checksums = compute.fill_null(
+            compute.is_in(normalized, value_set=pyarrow.array(_CHECKSUM_KEYS)), False
+        )
+        checksum_at = _first_by_parent(positions, parents, checksums, rows)
+        before_checksum = compute.fill_null(
+            compute.less(positions, compute.take(checksum_at, parents)), True
+        )
+    else:
+        before_checksum = pyarrow.repeat(pyarrow.scalar(True), len(entries))
+    has_msg_type = "35" in present or "msgtype" in present
+    named_values = (
+        compute.fill_null(compute.match_substring_regex(values, _MSG_TYPE_VALUE), False)
+        if has_msg_type
+        else pyarrow.repeat(pyarrow.scalar(False), len(entries))
     )
-    checksum_at = _first_by_parent(positions, parents, checksums, rows)
-    before_checksum = compute.fill_null(
-        compute.less(positions, compute.take(checksum_at, parents)), True
-    )
-    named_values = compute.fill_null(compute.match_substring_regex(values, _MSG_TYPE_VALUE), False)
 
     found: dict[str, pyarrow.Array] = {}
-    claimed = pyarrow.array([False] * len(entries), type=pyarrow.bool_())
+    claimed = pyarrow.repeat(pyarrow.scalar(False), len(entries))
     for name, tag in SESSION_FIELDS:
+        if tag not in present and (name != _MSG_TYPE or not has_msg_type):
+            found[name] = pyarrow.nulls(rows, pyarrow.string())
+            continue
         spelled = compute.equal(normalized, tag)
         if name == _MSG_TYPE:
             spelled = compute.or_(spelled, compute.equal(normalized, "msgtype"))

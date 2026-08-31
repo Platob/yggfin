@@ -40,6 +40,7 @@ LINES = {
     "8=FIX.4.4|35=D|11=ORDER-1|SYMBOL=AAPL|SIDE=1|10=000": "FIXML",
     "toBridge #ISINCODE=XX|#SYMBOL=TTF|#SIDE=1": "UL",
     "ACCOUNT=A1|MSGTYPE=D|CLORDID=ORDER-1|SYMBOL=AAPL|SIDE=1": "UL",
+    "Referential(dbi|equity|dbi;GB00BN7SWP63_XLON_GBX|[quantity-type=])": "REFER",
     "<Order ClOrdID='XML-1'><Instrument><Symbol>IBM</Symbol></Instrument></Order>": "XML",
     "Receiving XmlApi: <Execution ExecID='E1'><LastQty>2</LastQty></Execution>": "XML",
     "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR": "OTHER",
@@ -50,8 +51,8 @@ LINES = {
 
 #: Derived from the rule set, then pinned, so a renamed built-in cannot move
 #: both sides of the assertions below together.
-EXPECTED_RULES = 6
-EXPECTED_PROTOCOLS = 6
+EXPECTED_RULES = 7
+EXPECTED_PROTOCOLS = 7
 DEFAULT = Rules.into_default()
 
 
@@ -84,6 +85,7 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
         "FIX",
         "FIXML",
         "XML",
+        "REFER",
         "UL",
         "MISC",
         "OTHER",
@@ -91,7 +93,15 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
     assert len({rule.protocol for rule in DEFAULT_RULES}) == EXPECTED_PROTOCOLS
     assert {rule.protocol for rule in DEFAULT_RULES} == set(Protocol) - {Protocol.UNKNOWN}
     assert OTHER.protocol is Protocol.OTHER
-    assert [rule.codec for rule in DEFAULT.rules] == ["fix", "fixml", "xml", "ul", "none", "none"]
+    assert [rule.codec for rule in DEFAULT.rules] == [
+        "fix",
+        "fixml",
+        "xml",
+        "ul",
+        "ul",
+        "none",
+        "none",
+    ]
 
 
 @pytest.mark.parametrize(("message", "expected"), LINES.items(), ids=lambda v: str(v)[:28])
@@ -237,11 +247,11 @@ def test_a_lone_marked_key_in_prose_is_not_a_document() -> None:
 def test_default_rule_instances_are_isolated() -> None:
     assert Rules.into_default() is DEFAULT
     first, second = Rules(), Rules()
-    first.rules[4].pattern = "first only"
-    assert second.rules[4].pattern != "first only"
-    assert DEFAULT.rules[4].pattern != "first only"
+    first.rules[5].pattern = "first only"
+    assert second.rules[5].pattern != "first only"
+    assert DEFAULT.rules[5].pattern != "first only"
     assert MISC.pattern != "first only"
-    assert first.rules[4] is not second.rules[4]
+    assert first.rules[5] is not second.rules[5]
 
 
 def test_a_null_message_is_other_rather_than_null() -> None:
@@ -286,6 +296,7 @@ def test_every_structured_protocol_reads_direction_the_same_way() -> None:
         Protocol.XML,
         Protocol.FIX,
         Protocol.FIXML,
+        Protocol.REFERENTIAL,
         Protocol.UL,
     }
 
@@ -415,12 +426,14 @@ def test_a_codec_says_how_a_line_of_that_protocol_is_read() -> None:
     assert CODEC_KEYS[DEFAULT.rule("FIX").codec] is False
     assert CODEC_KEYS[DEFAULT.rule("FIXML").codec] is True
     assert CODEC_KEYS[DEFAULT.rule("UL").codec] is True
+    assert CODEC_KEYS[DEFAULT.rule("REFERENTIAL").codec] is True
     assert CODEC_KEYS[DEFAULT.rule("XML").codec] is True
     assert DEFAULT.rule(Protocol.OTHER).named is None, "and OTHER is not read at all"
 
 
 def test_the_ul_rule_promotes_its_detailed_cfi_reading() -> None:
     assert DEFAULT.rule("UL").pop == {"DetailedCFICode": "CFICode"}
+    assert DEFAULT.rule("REFERENTIAL").pop == {"DetailedCFICode": "CFICode"}
 
 
 def test_a_pop_rule_requires_two_distinct_field_names() -> None:

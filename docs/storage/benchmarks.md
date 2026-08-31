@@ -51,6 +51,41 @@ Directional, not comparable across machines.
 Append remains the fastest write by a wide margin; prefer it and monotonic
 insert where their semantics fit.
 
+### Empty-table keyed writes
+
+2026-08-31, Windows 11, Python 3.12.13, PyArrow 25.0.1, local SQLite catalog
+and filesystem warehouse. The before and after runs used the same generated
+log and benchmark command.
+
+| path | rows / partitions | before | after |
+| --- | ---: | ---: | ---: |
+| Fresh keyed merge, quick | 5,000 / 4 | 6,567–8,156 rows/s; 4 snapshots | 20,571–21,289 rows/s; 1 snapshot |
+| Fresh keyed merge, one commit | 100,000 / 8 | 48,095 rows/s; 8 snapshots | 204,535 rows/s; 1 snapshot |
+| Monotonic insert, six bounded commits | 100,000 | — | 226,128 rows/s |
+| Read one partition, three columns | 1,250 of 5,000 | — | 42,765 rows/s; 1 of 4 files planned |
+| Delete one partition | 1,250 of 5,000 | — | 11,745 removed rows/s; 2 files planned |
+| Delete part of one file | 625 of 5,000 | — | 5,915 removed rows/s; 1 file planned |
+| Delete with no match | 5,000 | — | 23 ms; 0 files planned; 0 snapshots |
+| Cached store calls, one-partition read | 1,250 of 5,000 | 6 GETs without cache | 2 GETs with cache; data files only |
+
+The changed path removes partition-recursive commits only while the selected
+branch has no snapshot. Once rows exist, exact per-partition matching and
+bounded rewrites remain unchanged.
+
+### Complete message layers
+
+2026-09-01, Windows 11, Python 3.12.13, PyArrow 25.0.1. The mixed 50,000-row
+capture is 60% OTHER, 25% FIX and 15% FIXML.
+
+| command | body to `Message` | `Message` to `FixMsg` |
+| --- | ---: | ---: |
+| `bench_text_file.py --quick --only messages` | 31,662 rows/s | 5,921 rows/s |
+| `bench_text_file.py --rows 50000 --repeat 3 --only messages` | 26,248 rows/s | 6,316 rows/s |
+
+Vector tokenization reaches 68,262–370,264 rows/s and tag resolution reaches
+29.5M keys/s on the repeated run. The complete `Message` and `FixMsg` shapes
+remain below 50,000 rows/s.
+
 ## Where the parse stages spend their time
 
 2026-08-27, same machine, over `bench_text_file.py`'s mixed capture — 100,000

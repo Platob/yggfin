@@ -93,11 +93,13 @@ rekep fix registry scrape --output data/fix
 cd python
 uv run python -c "from rekep.fix.publish import publish_full; \
 publish_full('../data/fix', '../data/fix.zip')"
+uv run python -c "from rekep.fix.publish import publish_builtin; \
+publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
 ```
 
-`scrape` is the only command that reads the source dictionaries. A cold default
-store downloads the repository's main-branch zip; an unavailable archive uses
-the packaged projection and never starts a source scrape implicitly.
+`scrape` is the only command that reads source dictionaries. Ordinary
+construction opens the complete packaged registry and never refreshes or
+downloads it.
 
-See the [registry internals](index.md) for bootstrap and storage rules, or
+See the [registry guide](registry.md) for sources and storage rules, or
 [browse the published registry](registry.md) without installing the package.

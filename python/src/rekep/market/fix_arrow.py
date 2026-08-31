@@ -9,13 +9,14 @@ import pyarrow
 import pyarrow.compute as compute
 
 from rekep import txhash
-from rekep.enums import Currency, EventType, MarketKind, Side, State, TimeInForce
-from rekep.fields import column_names, encoded_key
+from rekep.enums import MIC, Currency, EventType, MarketKind, Side, State, TimeInForce
+from rekep.fields import TimestampField, column_names, encoded_key
 from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
 from rekep.fields.names import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_field, cast_arrow_fix
-from rekep.market.event import Event, _declared_temporal_arrow
+from rekep.fix.oms import OMS_FIX_VERSION
+from rekep.market.event import Event, _declared_temporal_arrow, unix_partition_arrow
 from rekep.market.fix import (
     _TRADE_EVIDENCE_FIELDS,
     CANCEL_REJECT_HANDLER,
@@ -59,6 +60,7 @@ _COMPLEX_FIELDS = (
 )
 _READ_FIELDS = (
     "AggressorIndicator",
+    "AvgPx",
     "ClOrdID",
     "ClOrdLinkID",
     "CumQty",
@@ -67,6 +69,7 @@ _READ_FIELDS = (
     "ExecID",
     "ExecRefID",
     "ExecType",
+    "GrossTradeAmt",
     "LastPx",
     "LastQty",
     "LeavesQty",
@@ -94,8 +97,10 @@ _READ_FIELDS = (
     *_COMPLEX_FIELDS,
 )
 _FLOAT_FIELDS = (
+    "AvgPx",
     "CumQty",
     "CxlQty",
+    "GrossTradeAmt",
     "LastPx",
     "LastQty",
     "LeavesQty",
@@ -111,8 +116,7 @@ _SIDE_CODES = {**Side.worded_codes(), **Side._fix_codes()}
 _TIF_CODES = {**TimeInForce.worded_codes(), **TimeInForce._fix_codes()}
 #: Resolved component columns whose presence sends a row to the scalar
 #: translator. The regulatory clocks steer transaction time; the instrument
-#: groups feed `altids` and `legs` -- their count tags in `entries` used to
-#: mark these rows, and the resolved column is where that presence lives now.
+#: groups feed `altids` and `legs`, so the resolved columns mark their presence.
 #: `Parties` is deliberately absent: order and execution rows never read it.
 _COMPONENT_EXCLUSIONS = (
     "trdregtimestamps",
@@ -152,10 +156,12 @@ def flat_market_parts(
     entries = columns.get("entries")
     if msg_type is None or entries is None:
         return None
-    if version.null_count:
-        return None
     configured_version = declared.get("fix_version")
-    if configured_version is None:
+    if configured_version is not None:
+        version = compute.fill_null(version, pyarrow.scalar(configured_version))
+    elif version.null_count:
+        return None
+    else:
         versions = compute.unique(version)
         if len(versions) != 1:
             return None
@@ -179,7 +185,11 @@ def flat_market_parts(
     if supported.null_count or not compute.all(supported, min_count=0).as_py():
         return None
     if any(
-        (column := columns.get(name)) is not None and column.null_count < batch.num_rows
+        (column := columns.get(name)) is not None
+        and compute.any(
+            compute.greater(compute.fill_null(compute.list_value_length(column), 0), 0),
+            min_count=0,
+        ).as_py()
         for name in _COMPONENT_EXCLUSIONS
     ):
         return None
@@ -254,6 +264,191 @@ def flat_market_parts(
     if orders is not None and executions is not None:
         orders = _link_report_orders(orders, order_at, executions, execution_at)
     return orders, executions, order_at, execution_at
+
+
+def oms_market_parts(
+    batch: pyarrow.RecordBatch, declared: Mapping[str, Any]
+) -> (
+    tuple[
+        pyarrow.RecordBatch | None,
+        pyarrow.RecordBatch | None,
+        pyarrow.Array,
+        pyarrow.Array,
+        pyarrow.Array,
+        pyarrow.Array,
+    ]
+    | None
+):
+    """Translate nested OMS XML orders through the shared flat FIX kernels."""
+    at = batch.schema.get_field_index("omsorders")
+    if at < 0 or not batch.num_rows:
+        return None
+    nested = batch.column(at)
+    if isinstance(nested, pyarrow.ChunkedArray):
+        nested = nested.combine_chunks()
+    items = compute.list_flatten(nested)
+    if not len(items):
+        return None
+    origins = compute.list_parent_indices(nested).cast(pyarrow.int64())
+    expanded = _oms_expanded_batch(batch, items, origins, declared)
+    translated = flat_market_parts(
+        expanded,
+        {**declared, "fix_version": declared.get("fix_version") or OMS_FIX_VERSION},
+    )
+    if translated is None:
+        return None
+    orders, executions, order_at, execution_at = translated
+    ranks = _ranks_within(origins)
+    return (
+        orders,
+        executions,
+        compute.take(origins, order_at),
+        compute.take(origins, execution_at),
+        compute.take(ranks, order_at),
+        compute.take(ranks, execution_at),
+    )
+
+
+_OMS_COLUMNS = (
+    "account",
+    "clordid",
+    "currency",
+    "execid",
+    "grosstradeamt",
+    "lastpx",
+    "lastqty",
+    "leavesqty",
+    "orderid",
+    "orderqty",
+    "ordtype",
+    "price",
+    "avgpx",
+    "cumqty",
+    "securityexchange",
+    "side",
+    "timeinforce",
+    "transacttime",
+)
+
+
+def _oms_expanded_batch(
+    source: pyarrow.RecordBatch,
+    orders: pyarrow.StructArray,
+    origins: pyarrow.Array,
+    declared: Mapping[str, Any],
+) -> pyarrow.RecordBatch:
+    """One source row per nested order, preserving its capture envelope."""
+    rows = len(orders)
+    columns = {
+        name: compute.take(source.column(name), origins)
+        for name in source.schema.names
+        if name != "omsorders"
+    }
+    for name in _OMS_COLUMNS:
+        columns[name] = compute.struct_field(orders, name)
+    reason = compute.struct_field(orders, "reason")
+    columns["reason"] = compute.coalesce(reason, columns["reason"])
+    status = compute.struct_field(orders, "ordstatus")
+    columns["ordstatus"] = _oms_order_status(status, reason)
+    lastpx = compute.struct_field(orders, "lastpx")
+    lastqty = compute.struct_field(orders, "lastqty")
+    traded = compute.and_(
+        compute.is_valid(lastpx),
+        compute.fill_null(compute.greater(lastqty, 0.0), False),
+    )
+    columns["exectype"] = compute.if_else(
+        traded, pyarrow.scalar("F"), pyarrow.scalar(None, pyarrow.string())
+    )
+    event_ids = compute.struct_field(orders, "eventid")
+    columns["execid"] = compute.if_else(
+        traded,
+        compute.coalesce(compute.struct_field(orders, "execid"), event_ids),
+        pyarrow.scalar(None, pyarrow.string()),
+    )
+    columns["msgtype"] = pyarrow.repeat(pyarrow.scalar("8"), rows)
+    columns["entries"] = pyarrow.nulls(rows, source.schema.field("entries").type)
+    if "unmap" in columns:
+        columns["unmap"] = pyarrow.nulls(rows, source.schema.field("unmap").type)
+    columns["error"] = pyarrow.nulls(rows, pyarrow.string())
+
+    registry = declared.get("registry")
+    instrument = Instrument.from_instrument_keys_arrow(
+        compute.struct_field(orders, "instrumentid"),
+        venue=compute.struct_field(orders, "securityexchange"),
+        registry=registry,
+    )
+    columns["instrument"] = instrument
+    columns["lastmkt"] = _mic_arrow(compute.struct_field(instrument, "securityexchange"))
+
+    parent_unix = columns["unix"].cast(pyarrow.int64(), safe=False)
+    columns["unix"] = _timestamp_unix(compute.struct_field(orders, "transacttime"), parent_unix)
+    columns["unixpartition"] = unix_partition_arrow(columns["unix"])
+    columns["creaunix"] = _timestamp_unix(
+        compute.struct_field(orders, "creationtime"),
+        columns["creaunix"].cast(pyarrow.int64(), safe=False),
+    )
+    columns["expunix"] = _timestamp_unix(
+        compute.struct_field(orders, "expiretime"),
+        columns["expunix"].cast(pyarrow.int64(), safe=False),
+    )
+    # `expunix` now carries the parsed deadline. Keeping `ExpireTime` as well
+    # would deliberately route the row to the scalar fallback for no new fact.
+    if "expiretime" in columns:
+        columns["expiretime"] = pyarrow.nulls(rows, columns["expiretime"].type)
+    return pyarrow.RecordBatch.from_arrays(list(columns.values()), names=list(columns))
+
+
+def _oms_order_status(status: pyarrow.Array, reason: pyarrow.Array) -> pyarrow.Array:
+    """OMS lifecycle words as the standard `OrdStatus` codes they mean."""
+    folded = column_names(compute.fill_null(status, ""))
+    keys = pyarrow.array(
+        [
+            "new",
+            "open",
+            "partiallyfilled",
+            "partial",
+            "filled",
+            "cancelled",
+            "canceled",
+            "expired",
+            "rejected",
+        ]
+    )
+    values = pyarrow.array(["0", "0", "1", "1", "2", "4", "4", "C", "8"])
+    mapped = compute.take(values, compute.index_in(folded, value_set=keys))
+    terminated = compute.equal(folded, "terminated")
+    expired = compute.equal(column_names(compute.fill_null(reason, "")), "expired")
+    mapped = compute.if_else(
+        terminated,
+        compute.if_else(expired, pyarrow.scalar("C"), pyarrow.scalar("4")),
+        mapped,
+    )
+    return compute.coalesce(mapped, status)
+
+
+def _timestamp_unix(column: pyarrow.Array, fallback: pyarrow.Array) -> pyarrow.Array:
+    """One optional timestamp over an already resolved event clock."""
+    if column.null_count == len(column):
+        return fallback
+    return compute.coalesce(TimestampField.into_unix_arrow(column), fallback)
+
+
+def _mic_arrow(column: pyarrow.Array) -> pyarrow.Array:
+    """MIC spellings packed once per distinct value."""
+    values = compute.unique(column)
+    packed = pyarrow.array(
+        [None if value is None else int(MIC.from_str(value)) for value in values.to_pylist()],
+        MIC.into_arrow_type().index_type,
+    )
+    found = compute.take(packed, compute.index_in(column, value_set=values))
+    return compute.fill_null(found, 0)
+
+
+def _ranks_within(parents: pyarrow.Array) -> pyarrow.Array:
+    """Zero-based document order within each source message."""
+    positions = sequence(len(parents))
+    starts = compute.index_in(parents, value_set=parents).cast(pyarrow.int64())
+    return compute.subtract(positions, starts)
 
 
 def flat_market_positions(

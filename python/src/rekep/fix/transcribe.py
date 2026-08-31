@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
 from types import MappingProxyType
 from typing import Any
@@ -18,7 +18,7 @@ from rekep.entries import ENTRIES, ENTRY_PARTS, TAG, Entry
 from rekep.entries import IS_TAG as _IS_TAG
 from rekep.enums import Protocol
 from rekep.fields import Field, column_name, column_names, encoded_key
-from rekep.fields.arrays import groups_of, scattered, sequence
+from rekep.fields.arrays import build_list, dense_counts, groups_of, scattered, sequence
 from rekep.fix.columns import COLUMNS as FLAT_COLUMNS
 from rekep.fix.columns import DECLARATIONS as FLAT_DEFAULTS
 from rekep.fix.columns import (
@@ -46,11 +46,13 @@ from rekep.fix.message import (
     SEPARATORS,
     SOH,
     XML_DATA_TAG,
+    _glued_group_boundaries,
     carries_message,
     parse_arrow_array,
     parse_entries_array,
     stored_entry_separators,
 )
+from rekep.fix.quickfix import entry_of, members_of
 from rekep.fix.registry import FixRegistry
 from rekep.fix.rekep import REKEP_TAGS
 from rekep.fix.rules import Rules
@@ -107,6 +109,7 @@ NULL_VALUES: frozenset[str] = frozenset({"", "null", "<null>", "n/a", "none"})
 #: either transport or application evidence.
 BEGIN_STRING_SOURCE = "begin_string"
 APPLICATION_VERSION_SOURCE = "application_version"
+PROTOCOL_DEFAULT_SOURCE = "protocol_default"
 NO_SOURCE = "none"
 
 _APPL_VERSIONS = {
@@ -124,6 +127,13 @@ _APPL_VERSION_VALUES = pyarrow.array(list(_APPL_VERSIONS.values()), pyarrow.stri
 _BEGIN_KEYS = pyarrow.array(["8", "beginstring"], pyarrow.string())
 _APPLICATION_KEYS = pyarrow.array(["1128", "applverid"], pyarrow.string())
 _DEFAULT_APPLICATION_KEYS = pyarrow.array(["1137", "defaultapplverid"], pyarrow.string())
+
+# An indexed component is already an unambiguous group-entry boundary. The
+# optional lead remains part of its identity so equal indices under two outer
+# entries never collapse together.
+_INDEXED_COMPONENT = r"(?s)^(?:(?P<lead>.*)\.)?(?P<group>[^.\[\]]+)\[(?P<index>[0-9]+)\]$"
+_GLUED_MARKER = "\x1eREKEP_GROUP\x1f"
+_GLUED_MEMBER = r"(?s)^(?P<key>[^=]+)=(?P<value>.*)$"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -315,12 +325,12 @@ class FixCodec(Convertible):
     #: document says otherwise.
     rules: Rules = dataclasses.field(default_factory=Rules)
 
-    #: The dictionary names resolve through: the packaged projection unless
+    #: The dictionary names resolve through: the packaged registry unless
     #: `FixRegistry.set_builtin` installed another. A registry serving a store
     #: never scrapes, because a parse that met its first bridge line and
     #: answered it by fetching fourteen thousand pages mid-batch would be a
-    #: worse surprise than an unresolved name. Point it at `data/fix/` or
-    #: `data/fix.zip` for the dictionary this repository publishes.
+    #: worse surprise than an unresolved name. Pass a complete store only
+    #: when a deployment intentionally replaces the packaged registry.
     registry: FixRegistry = dataclasses.field(default_factory=FixRegistry.from_builtin)
 
     #: Values that mean the field is absent, dropped from the pairs before
@@ -333,6 +343,17 @@ class FixCodec(Convertible):
     #: reading of that field, because every one of them resolves through
     #: `tag_field` and casts through `cast_arrow_fix`.
     fields: FieldRules = dataclasses.field(default_factory=FieldRules)
+
+    #: Application version used only for a UL row that states no version
+    #: evidence. The selected version is embedded in `FixMsg.protocol`, so a
+    #: stored row never depends on this setting when read again.
+    ul_default_version: str | None = "4.4"
+
+    def __post_init__(self) -> None:
+        """Normalize the optional UL application-version declaration."""
+        if self.ul_default_version is not None:
+            stated = str(self.ul_default_version).strip()
+            self.ul_default_version = stated or None
 
     # -- the seam -----------------------------------------------------------
 
@@ -618,7 +639,11 @@ class FixCodec(Convertible):
         return Entry.structure_arrow(keys, values)
 
     def versions_of_entries(
-        self, entries: Any, begin_strings: Any, application_versions: Any = None
+        self,
+        entries: Any,
+        begin_strings: Any,
+        application_versions: Any = None,
+        protocols: Any = None,
     ) -> tuple[Any, Any]:
         """`(version, where it came from)` per row, off the structured fields.
 
@@ -689,6 +714,16 @@ class FixCodec(Convertible):
             compute.if_else(fixt, APPLICATION_VERSION_SOURCE, BEGIN_STRING_SOURCE),
             NO_SOURCE,
         )
+        default_version = self._ul_default
+        if protocols is not None and default_version is not None:
+            families = Protocol.into_family_arrow(_as_array(protocols, rows))
+            unstated = _all_absent(begins, application, default)
+            selected = compute.and_(
+                compute.equal(families, int(Protocol.UL)),
+                compute.and_(compute.is_null(versions), unstated),
+            )
+            versions = compute.if_else(selected, default_version, versions)
+            sources = compute.if_else(selected, PROTOCOL_DEFAULT_SOURCE, sources)
         return versions, sources
 
     def complete_entries(self, entries: Any, version: str | None = None) -> Any:
@@ -989,11 +1024,144 @@ class FixCodec(Convertible):
         self, entries: Any, version: str | None = None
     ) -> tuple[dict[str, Any], Any]:
         """Structured FIX components and what is left of `entries`."""
+        columns, rest, _ = self.into_component_columns_with_errors(entries, version)
+        return columns, rest
+
+    def into_component_columns_with_errors(
+        self, entries: Any, version: str | None = None
+    ) -> tuple[dict[str, Any], Any, Any]:
+        """Structured components, residual entries and non-fatal group diagnostics."""
         columns: dict[str, Any] = {}
         rest = entries
+        errors = pyarrow.nulls(len(entries), pyarrow.string())
         for column in self.into_components():
-            columns[column], rest = self.component_of(column, version).into_arrow_arrays(rest)
-        return columns, rest
+            columns[column], rest, found = self.component_of(
+                column, version
+            ).into_arrow_arrays_with_errors(rest)
+            errors = _merge_group_errors(errors, found)
+        return columns, rest, errors
+
+    def split_group_entries(self, entries: Any, version: str | None) -> tuple[Any, Any]:
+        """Expand separator-free indexed group values under one registry version."""
+        if isinstance(entries, pyarrow.ChunkedArray):
+            parts = [self.split_group_entries(chunk, version) for chunk in entries.chunks]
+            return (
+                pyarrow.chunked_array([found for found, _ in parts], type=ENTRIES),
+                pyarrow.chunked_array([error for _, error in parts], type=pyarrow.string()),
+            )
+        rows = len(entries)
+        declared = self._group_member_names(version)
+        if not rows or entries.null_count == rows or not declared:
+            return entries, pyarrow.nulls(rows, pyarrow.string())
+
+        compute = pyarrow.compute
+        lengths, parents, items = _flattened(entries)
+        if not len(items):
+            return entries, pyarrow.nulls(rows, pyarrow.string())
+        tags = compute.struct_field(items, "tag")
+        keys = compute.struct_field(items, "key")
+        values = compute.struct_field(items, "value")
+        components = compute.struct_field(items, "comp")
+        if components.null_count == len(components):
+            return entries, pyarrow.nulls(rows, pyarrow.string())
+        view = compute.extract_regex(compute.fill_null(components, ""), _INDEXED_COMPONENT)
+        groups = column_names(compute.struct_field(view, "group"))
+        counts = pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), len(items))
+        expanded: list[tuple[Any, Any, Any, Any]] = []
+        entry_errors = pyarrow.nulls(len(items), pyarrow.string())
+
+        for folded, (display, members) in declared.items():
+            selected = compute.fill_null(compute.equal(groups, folded), False)
+            if not compute.any(selected, min_count=0).as_py():
+                continue
+            raw = compute.filter(values, selected)
+            marked = compute.replace_substring_regex(
+                raw,
+                pattern=_glued_member_pattern(members),
+                replacement=f"{_GLUED_MARKER}\\1=",
+            )
+            selected_parts = compute.split_pattern(marked, pattern=_GLUED_MARKER)
+            selected_counts = compute.list_value_length(selected_parts).cast(pyarrow.int32())
+            part_values = compute.list_flatten(selected_parts)
+            _, part_rank = _repeated(selected_counts)
+            readings = compute.extract_regex(part_values, _GLUED_MEMBER)
+            part_keys = compute.if_else(
+                compute.equal(part_rank, 0),
+                pyarrow.scalar(None, pyarrow.string()),
+                compute.struct_field(readings, "key"),
+            )
+            part_values = compute.if_else(
+                compute.equal(part_rank, 0),
+                part_values,
+                compute.struct_field(readings, "value"),
+            )
+            counts = compute.if_else(
+                selected,
+                _scattered_int(selected, selected_counts),
+                counts,
+            )
+            found_errors = _glued_ambiguity_errors(display, raw, members)
+            entry_errors = compute.coalesce(
+                entry_errors,
+                _scattered_values(selected, found_errors),
+            )
+            expanded.append((selected, part_keys, part_values, selected_counts))
+
+        if not expanded:
+            return entries, pyarrow.nulls(rows, pyarrow.string())
+
+        taken, rank = _repeated(counts)
+        built_tags = compute.take(tags, taken)
+        built_keys = compute.take(keys, taken)
+        built_values = compute.take(values, taken)
+        built_components = compute.take(components, taken)
+        for selected, part_keys, part_values, _ in expanded:
+            slots = compute.take(selected, taken)
+            original_keys = compute.filter(built_keys, slots)
+            replacement_keys = compute.coalesce(part_keys, original_keys)
+            replacement_tags = compute.if_else(
+                compute.equal(compute.filter(rank, slots), 0),
+                compute.filter(built_tags, slots),
+                pyarrow.scalar(0, TAG),
+            )
+            built_tags = compute.replace_with_mask(built_tags, slots, replacement_tags)
+            built_keys = compute.replace_with_mask(built_keys, slots, replacement_keys)
+            built_values = compute.replace_with_mask(built_values, slots, part_values)
+
+        output = pyarrow.StructArray.from_arrays(
+            [built_tags, built_keys, built_values, built_components],
+            fields=list(ENTRIES.value_type),
+        )
+        expanded_entries = build_list(
+            ENTRIES,
+            _row_totals(entries, lengths, counts),
+            output,
+            mask=compute.is_null(entries) if entries.null_count else None,
+        )
+        return expanded_entries, _entry_errors(entry_errors, parents, rows)
+
+    def _group_member_names(self, version: str | None) -> Mapping[str, tuple[str, tuple[str, ...]]]:
+        """Indexed group names and their direct registry-declared members."""
+        if version not in self._group_members:
+            found: dict[str, tuple[str, tuple[str, ...]]] = {}
+            if version is not None:
+                for extractor in self.into_components().values():
+                    try:
+                        group = self.registry.component_group_field(
+                            extractor.component, extractor.group, version
+                        )
+                    except (KeyError, OSError, ValueError):
+                        group = None
+                    if group is None:
+                        continue
+                    names = tuple(
+                        str(member.fix.get("name") or member.name)
+                        for member in members_of(entry_of(group))
+                    )
+                    if names:
+                        found[column_name(extractor.group)] = (extractor.group, names)
+            self._group_members[version] = MappingProxyType(found)
+        return self._group_members[version]
 
     # -- versions -----------------------------------------------------------
 
@@ -1004,18 +1172,29 @@ class FixCodec(Convertible):
         if message:
             parse_protocol = Protocol.from_str(protocol)
             if parse_protocol is Protocol.OTHER:
-                parse_protocol = self.rules.into_arrow_protocol_array(
-                    pyarrow.array([message], pyarrow.string())
-                )[0].as_py()
+                parse_protocol = Protocol.from_str(
+                    self.rules.into_arrow_protocol_array(
+                        pyarrow.array([message], pyarrow.string())
+                    )[0].as_py()
+                )
             pairs = self.into_pairs(pyarrow.array([message]), parse_protocol)
             begin_column, application_column, default_column = _version_columns(pairs)
             begin = begin_column[0].as_py()
-            return _version_from_evidence(
+            version, source = _version_from_evidence(
                 begin,
                 application_column[0].as_py(),
                 default_column[0].as_py(),
                 self._spellings,
             )
+            if version is None and parse_protocol is Protocol.UL and self._ul_default is not None:
+                evidence = (
+                    begin,
+                    application_column[0].as_py(),
+                    default_column[0].as_py(),
+                )
+                if all(not str(value or "").strip() for value in evidence):
+                    return self._ul_default, PROTOCOL_DEFAULT_SOURCE
+            return version, source
         return None, NO_SOURCE
 
     def versions_of(
@@ -1033,7 +1212,7 @@ class FixCodec(Convertible):
         parts, positions = [], []
         for code, where in groups:
             pairs = self.into_pairs(pyarrow.compute.take(messages, where), code.as_py())
-            parts.append(self.versions_of_pairs(pairs, Protocol.OTHER))
+            parts.append(self.versions_of_pairs(pairs, code.as_py()))
             positions.append(where)
         return scattered(parts, positions)
 
@@ -1082,6 +1261,15 @@ class FixCodec(Convertible):
                     pyarrow.scalar(named),
                     versions,
                 )
+        if declared is Protocol.UL and self._ul_default is not None:
+            versions = compute.if_else(
+                compute.and_(
+                    compute.is_null(versions),
+                    _all_absent(begins, application, default_application),
+                ),
+                self._ul_default,
+                versions,
+            )
         return versions
 
     def version_named(self, begin_string: str) -> str | None:
@@ -1259,6 +1447,10 @@ class FixCodec(Convertible):
         return {}
 
     @cached_property
+    def _group_members(self) -> dict[str | None, Mapping[str, tuple[str, tuple[str, ...]]]]:
+        return {}
+
+    @cached_property
     def _spellings(self) -> dict[str, str]:
         """`{version key: canonical spelling}` for every version the store holds."""
         return dict(version_spellings(self.registry))
@@ -1269,6 +1461,13 @@ class FixCodec(Convertible):
         return (
             pyarrow.array(list(self._spellings), pyarrow.string()),
             pyarrow.array(list(self._spellings.values()), pyarrow.string()),
+        )
+
+    @cached_property
+    def _ul_default(self) -> str | None:
+        """Canonical declared UL default, or None when the registry lacks it."""
+        return (
+            None if self.ul_default_version is None else self.version_named(self.ul_default_version)
         )
 
     def _tags(self, version: str | None) -> dict[str, int]:
@@ -1615,6 +1814,98 @@ def _scattered_int(mask: Any, values: Any) -> Any:
         pyarrow.scalar(None, pyarrow.int32()),
     )
     return compute.fill_null(compute.take(values, slots), 0).cast(pyarrow.int32())
+
+
+def _scattered_values(mask: Any, values: Any) -> Any:
+    """Masked values put back at their source entries, null elsewhere."""
+    compute = pyarrow.compute
+    slots = compute.if_else(
+        mask,
+        compute.subtract(
+            compute.cumulative_sum(mask.cast(pyarrow.int32())),
+            pyarrow.scalar(1, pyarrow.int32()),
+        ),
+        pyarrow.scalar(None, pyarrow.int32()),
+    )
+    return compute.take(values, slots)
+
+
+def _entry_errors(errors: Any, parents: Any, rows: int) -> Any:
+    """Flattened entry diagnostics joined once per source row."""
+    compute = pyarrow.compute
+    valid = compute.is_valid(errors)
+    if not compute.any(valid, min_count=0).as_py():
+        return pyarrow.nulls(rows, pyarrow.string())
+    found = compute.filter(errors, valid)
+    sizes = dense_counts(compute.filter(parents, valid), rows)
+    listed = build_list(
+        pyarrow.list_(pyarrow.string()),
+        sizes,
+        found,
+    )
+    joined = compute.binary_join(listed, "; ")
+    return compute.if_else(compute.equal(joined, ""), pyarrow.scalar(None), joined)
+
+
+def _merge_group_errors(left: Any, right: Any) -> Any:
+    """Append nullable group diagnostics without text on clean rows."""
+    compute = pyarrow.compute
+    left = compute.fill_null(left.cast(pyarrow.string(), safe=False), "")
+    right = compute.fill_null(right.cast(pyarrow.string(), safe=False), "")
+    separator = compute.if_else(
+        compute.and_(compute.not_equal(left, ""), compute.not_equal(right, "")),
+        "; ",
+        "",
+    )
+    joined = compute.binary_join_element_wise(left, separator, right, "")
+    return compute.if_else(compute.equal(joined, ""), pyarrow.scalar(None), joined)
+
+
+def _glued_group_error(group: str, ambiguities: Sequence[Sequence[str]]) -> str | None:
+    """A deterministic note for every longest-match boundary choice."""
+    if not ambiguities:
+        return None
+    choices = [f"{names[0]} over {', '.join(names[1:])}" for names in ambiguities]
+    return f"{group} glued member boundary was ambiguous; chose " + "; ".join(choices)
+
+
+@functools.cache
+def _glued_member_pattern(members: tuple[str, ...]) -> str:
+    """Declared group-member boundaries, longest alternative first."""
+    ordered = tuple(member for member, _ in _glued_group_boundaries(members))
+    return "(?i)(" + "|".join(re.escape(member) for member in ordered) + ")="
+
+
+def _glued_ambiguity_errors(group: str, values: Any, members: tuple[str, ...]) -> Any:
+    """Longest-match diagnostics over a group-value column."""
+    compute = pyarrow.compute
+    errors = pyarrow.nulls(len(values), pyarrow.string())
+    for selected, matches in _glued_group_boundaries(members):
+        if len(matches) < 2:
+            continue
+        carries = compute.fill_null(
+            compute.match_substring_regex(values, f"(?i){re.escape(selected)}="),
+            False,
+        )
+        detail = _glued_group_error(group, (matches,))
+        found = compute.if_else(
+            carries,
+            pyarrow.scalar(detail, pyarrow.string()),
+            pyarrow.scalar(None, pyarrow.string()),
+        )
+        errors = _merge_group_errors(errors, found)
+    return errors
+
+
+def _all_absent(*columns: Any) -> Any:
+    """Whether every evidence column is null or empty after trimming."""
+    compute = pyarrow.compute
+    empty = None
+    for column in columns:
+        text = column.cast(pyarrow.string(), safe=False)
+        absent = compute.fill_null(compute.equal(compute.utf8_trim_whitespace(text), ""), True)
+        empty = absent if empty is None else compute.and_(empty, absent)
+    return empty
 
 
 def _repeated(counts: Any) -> tuple[Any, Any]:

@@ -12,6 +12,7 @@ tags are its own, and the parts the pages carry are carried through.
 import json
 import urllib.request
 import zipfile
+from functools import cache
 from importlib.resources import files
 from pathlib import Path
 
@@ -27,8 +28,7 @@ from rekep.fix.publish import (
     CONFLICT_BASELINE,
     FIXMSG_FIELDS,
     MARKET_FIELDS,
-    NAMESPACE_FIELDS,
-    PROJECTED,
+    REQUIRED_FIELDS,
     beyond_baseline,
     missing_from,
     publish_builtin,
@@ -50,6 +50,7 @@ from rekep.market.fix import CARRIED_FIELDS, market_tags
 DATA = Path(__file__).resolve().parents[2] / "data" / "fix.zip"
 
 
+@cache
 def member(name: str) -> dict[str, object]:
     """One document out of the published archive, read without a registry.
 
@@ -60,6 +61,7 @@ def member(name: str) -> dict[str, object]:
         return json.loads(archive.read(name).decode("utf-8"))
 
 
+@cache
 def members(folder: str) -> dict[str, dict[str, object]]:
     """Every document under one folder of the archive, by its file name."""
     with zipfile.ZipFile(DATA) as archive:
@@ -70,6 +72,7 @@ def members(folder: str) -> dict[str, dict[str, object]]:
         }
 
 
+@cache
 def records() -> dict[str, dict[str, object]]:
     """Every field record in the archive, by the key its shard files it under."""
     return {key: record for shard in members("fields").values() for key, record in shard.items()}
@@ -518,51 +521,18 @@ def test_a_projection_refuses_missing_fields_and_its_source(
         registry.into_projection(DATA, ["Side"])
 
 
-def test_the_builtin_projection_matches_the_published_versions(
+def test_the_bundled_registry_matches_the_published_registry(
     registry: FixRegistry,
 ) -> None:
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
-    # Derived from `publish.PROJECTED`, then pinned: the standard projection
-    # plus the package's 36 frozen field identities.
-    assert len(builtin.tags()) == 216
-    assert len(builtin.field_records()) == 216
+    assert builtin.namespaces() == registry.namespaces()
     assert builtin.resolve("ISINCODE").fix.tag is None, "and is still resolvable by name"
-    package_tags = set(REKEP_TAGS.values())
-    selected = {
-        int(tag)
-        for version in registry.versions
-        for member in builtin.fields(version)
-        if (tag := member.fix.get("tag")) and int(tag) not in package_tags
+    assert builtin.field(9001, namespace="fixtrading-udf").name == "MaxShow"
+    assert {field.fix.get("namespace") for field in builtin.definitions(9001)} == {
+        "fixtrading-udf",
+        "clear-street",
     }
-    named = {
-        member.name
-        for version in registry.versions
-        for member in builtin.fields(version)
-        if not member.fix.get("tag")
-    }
-    assert named == set(NAMESPACE_FIELDS), "and every field FIX never numbered, by name"
-    for version in registry.versions:
-        expected = [
-            member
-            for member in registry.fields(version)
-            if (int(tag) in selected if (tag := member.fix.get("tag")) else member.name in named)
-        ]
-        packaged = builtin.fields(version)
-        assert [member for member in packaged if member.fix.tag not in package_tags] == expected, (
-            version
-        )
-        assert [member.name for member in packaged if member.fix.tag in package_tags] == [
-            name for _column, name, _datatype, _description in REKEP_FIELD_DECLARATIONS
-        ]
-    # A field FIX never numbered holds for every version and sorts after the
-    # numbered ones, so the named identities are the tail of the newest
-    # version too.
-    assert [member.name for member in builtin.fields("5.0.SP2")[-3:]] == [
-        "ISINCODE",
-        "ParentClOrdID",
-        "ParentOrderID",
-    ]
 
 
 def test_full_and_builtin_registries_match_the_rekep_declarations(
@@ -572,8 +542,8 @@ def test_full_and_builtin_registries_match_the_rekep_declarations(
     assert rekep_is_registered(FixRegistry.from_builtin())
 
 
-def test_the_builtin_projection_is_what_publishing_it_produces(tmp_path: Path) -> None:
-    """Byte for byte, from the published dictionary and the declared key list.
+def test_the_bundled_registry_is_what_publishing_it_produces(tmp_path: Path) -> None:
+    """Byte for byte, from the published offline dictionary.
 
     The wheel's registry is generated, and a generated artifact nobody can
     regenerate is a hand-edited one. This is the command in `data/README.md`,
@@ -584,25 +554,25 @@ def test_the_builtin_projection_is_what_publishing_it_produces(tmp_path: Path) -
     assert rebuilt.read_bytes() == packaged.read_bytes()
 
 
-def test_the_builtin_projection_answers_every_key_the_package_looks_up(
+def test_the_bundled_registry_answers_every_key_the_package_looks_up(
     registry: FixRegistry,
 ) -> None:
-    """`publish.PROJECTED` is a hand-written list, and these are its authorities.
+    """`publish.REQUIRED_FIELDS` is a hand-written contract coverage list.
 
     A field added to the log schema or to market translation but not to the
     list would ship a registry that cannot answer for it -- which is the same
     silence as a name nobody has ever seen, and reads as one downstream.
     """
-    assert not missing_from(registry, PROJECTED), "the dictionary answers for every key"
+    assert not missing_from(registry, REQUIRED_FIELDS), "the dictionary answers for every key"
     assert set(FIXMSG_FIELDS) == set(_ORDER)
-    assert set(PROJECTED) >= set(CARRIED_FIELDS)
+    assert set(REQUIRED_FIELDS) >= set(CARRIED_FIELDS)
     assert set(MARKET_FIELDS).isdisjoint(FIXMSG_FIELDS), "each name declared once"
     builtin = FixRegistry.from_builtin()
-    assert not missing_from(builtin, PROJECTED)
+    assert not missing_from(builtin, REQUIRED_FIELDS)
     assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"
 
 
-def test_the_builtin_projection_carries_the_component_declarations(
+def test_the_bundled_registry_carries_the_component_declarations(
     registry: FixRegistry,
 ) -> None:
     """The regression: a projection that drops these extracts no party at all.

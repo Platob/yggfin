@@ -143,6 +143,7 @@ MESSAGE = [
 TRAILING_COMPONENTS = [
     "securityaltid",
     "instrument",
+    "omsorders",
 ]
 
 #: Raw FIX names stay distinct from the protocol-neutral event envelope.
@@ -236,9 +237,9 @@ ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTR
 # Price provenance has no wire tag, so it sits beside the slots it qualifies.
 ADDED_COLUMNS.insert(ADDED_COLUMNS.index("offerpx") + 1, "priceinferred")
 EXPECTED_SESSION_COLUMNS = 33
-EXPECTED_COMMON_COLUMNS = 49
-EXPECTED_FLAT_COLUMNS = 100
-EXPECTED_LOG_COLUMNS = 123
+EXPECTED_COMMON_COLUMNS = 50
+EXPECTED_FLAT_COLUMNS = 101
+EXPECTED_LOG_COLUMNS = 125
 
 
 @pytest.fixture(scope="module")
@@ -2128,7 +2129,7 @@ def test_lifted_numeric_keeps_only_a_raw_spelling_typing_cannot_reproduce(
     ] == [[(6, "0010.5000")], []]
 
 
-def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
+def test_numeric_fixmsg_arrow_falls_back_as_one_mixed_batch(
     codec: FixCodec, registry: FixRegistry, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import rekep.text.fixmsg_arrow as fixmsg_arrow
@@ -2148,54 +2149,11 @@ def test_numeric_fixmsg_arrow_falls_back_when_one_row_has_no_version(
     monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", observed)
     translated = FixMsg.from_message_batch(source, codec)
 
-    assert activated == [False, True]
+    assert activated == [False]
     assert translated.column("clordid").to_pylist() == ["A", None]
     assert _instrument_column(translated, "symbol").to_pylist() == ["IBM", ""]
     assert [entry["tag"] for entry in translated.column("entries")[1].as_py()] == [11, 55, 10]
     assert translated.column("unmap")[1].as_py() is None
-
-
-def test_mixed_fixmsg_batch_keeps_flat_rows_fast_and_scatters_exactly(
-    codec: FixCodec, registry: FixRegistry, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    import rekep.text.fixmsg_arrow as fixmsg_arrow
-
-    lines = (
-        "8=FIX.4.4|35=D|11=A|55=IBM|10=000|",
-        "8=FIX.4.4|35=UL|#MSGTYPE=D|#CLORDID=UL-1|10=000|",
-        "8=FIX.4.4|35=F|41=A|11=B|55=IBM|10=000|",
-        "8=FIX.4.4|35=D|453=1|448=P1|447=D|452=1|11=C|10=000|",
-        "8=FIX.4.4|35=G|41=B|11=D|55=IBM|10=000|",
-        "35=D|11=NO-VERSION|55=MSFT|10=000|",
-        "8=FIX.4.4|35=AE|17=E1|55=IBM|31=10|32=1|10=000|",
-        "8=FIX.4.4|35=D|11=VENDOR|VendorField=x|10=000|",
-    )
-    source = _raw_batch(*(Message(body=line) for line in lines)).drop_columns(["body"])
-    original = fixmsg_arrow.into_flat_fixmsg_batch
-    activated: list[bool] = []
-
-    def observed(*args, **kwargs):
-        translated = original(*args, **kwargs)
-        activated.append(translated is not None)
-        return translated
-
-    monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", observed)
-    translated = FixMsg.from_message_batch(source, codec)
-    monkeypatch.setattr(fixmsg_arrow, "into_flat_fixmsg_batch", lambda *args, **kwargs: None)
-    reference = FixMsg.from_message_batch(source, codec)
-
-    assert activated == [False, True]
-    assert translated.equals(reference, check_metadata=True)
-    assert translated.column("clordid").to_pylist() == [
-        "A",
-        "UL-1",
-        "B",
-        "C",
-        "D",
-        None,
-        None,
-        "VENDOR",
-    ]
 
 
 def test_raw_direction_words_do_not_change_projected_mic(
@@ -2347,13 +2305,13 @@ def test_a_header_column_that_is_empty_is_read_back_out_of_the_entries(
     ]
     for name in LIFTED_HEADER:
         stored[name] = None
-    legacy = pyarrow.RecordBatch.from_pylist(
+    stored_batch = pyarrow.RecordBatch.from_pylist(
         [stored], schema=Message.into_field().into_arrow_schema()
     )
 
-    read = FixMsg.from_message_batch(legacy, codec)
+    read = FixMsg.from_message_batch(stored_batch, codec)
     absent = FixMsg.from_message_batch(
-        legacy.drop_columns([name for name in LIFTED_HEADER if name != "msgtype"]), codec
+        stored_batch.drop_columns([name for name in LIFTED_HEADER if name != "msgtype"]), codec
     )
 
     for batch in (read, absent):
@@ -2551,7 +2509,7 @@ def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
     """One name, folded to store and spelled to read: the fold is the column and
     the dictionary's own spelling is what the column says it is called."""
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 133
+    assert len(names) == 134
     assert all(field.name == column_name(field.fix["name"]) for field in DECLARATIONS.values())
     assert all(field.fix.canonical == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
@@ -2848,6 +2806,39 @@ def test_ul_enum_names_become_their_real_fix_wire_values(codec: FixCodec) -> Non
     assert parsed.column("error").to_pylist() == [None, None]
 
 
+def test_ul_glued_explicit_groups_are_partial_lossless_and_row_isolated(
+    codec: FixCodec,
+) -> None:
+    group = (
+        "#NOPARTYIDS[3]=PARTYROLE=client id|"
+        "#NOPARTYIDS[3].VENUEFLAG=kept|"
+        "#NOPARTYIDS[1]=PARTYID=P-1PARTYIDSOURCE=proprietary custom code"
+    )
+    clean = Message(body=f"toBridge #MSGTYPE=D|#NOPARTYIDS=2|{group}")
+    mismatched = Message(body=f"toBridge #MSGTYPE=D|#NOPARTYIDS=3|{group}")
+
+    parsed = FixMsg.from_message_batch(_raw_batch(clean, mismatched), codec)
+
+    assert _protocols(parsed) == ["UL4.4", "UL4.4"]
+    expected = [
+        {"partyid": None, "partyidsource": None, "partyrole": 3},
+        {"partyid": "P-1", "partyidsource": "D", "partyrole": None},
+    ]
+    assert parsed.column("parties").to_pylist() == [expected, expected]
+    assert parsed.column("error").to_pylist() == [
+        None,
+        "NoPartyIDs count mismatch: declared 3, found 2 indexed groups",
+    ]
+    assert [
+        [(entry["comp"], entry["key"], entry["value"]) for entry in row]
+        for row in parsed.column("unmap").to_pylist()
+    ] == [
+        [("NOPARTYIDS[3]", "VENUEFLAG", "kept")],
+        [("NOPARTYIDS[3]", "VENUEFLAG", "kept")],
+    ]
+    assert "protocolversion" not in parsed.schema.names
+
+
 def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: FixRegistry) -> None:
     """One classifier, so the FIX stage's reading of a row it still has the text
     for is the message stage's reading. An enrichment echo writing real bridge
@@ -2870,25 +2861,23 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert batch.column("msgtype").to_pylist()[0] == "D"
     assert batch.column("entries").to_pylist()[1] is None, "operational rows stay unread"
 
-    # Without a version the body names stay raw. MsgType is already a promoted
-    # field with one known tag, so its merged enumeration still supplies the
-    # real wire value and the event classification.
+    # The task's UL default supplies a reproducible dictionary version where
+    # the bridge states none, and the resolved token persists that choice.
     bare = Message(
         body="After Enrichment -> ACCOUNT=59.1|MSGTYPE=NewOrderSingle|CLORDID=PL9|SIDE=2"
     )
     assert bare.protocol is Protocol.UL
     lone = FixMsg.from_message_batch(_raw_batch(bare), codec)
-    assert _protocols(lone) == ["UL"]
+    assert _protocols(lone) == ["UL4.4"]
     assert "protocolversion" not in lone.schema.names
     assert lone.column("msgtype").to_pylist() == ["D"]
     assert lone.column("eventtype").to_pylist() == [int(EventType.ORDER)]
     assert lone.column("entries").to_pylist() == [[]]
-    assert [(entry["key"], entry["value"]) for entry in lone.column("unmap").to_pylist()[0]] == [
-        ("ACCOUNT", "59.1"),
-        ("CLORDID", "PL9"),
-        ("SIDE", "2"),
-    ]
-    assert lone.column("altids").to_pylist() == [[]]
+    assert lone.column("unmap").to_pylist() == [None]
+    assert lone.column("account").to_pylist() == ["59.1"]
+    assert lone.column("clordid").to_pylist() == ["PL9"]
+    assert lone.column("side").to_pylist() == ["2"]
+    assert lone.column("altids").to_pylist() == [[("clordid", "PL9")]]
 
 
 def test_direction_reads_the_verb_before_the_payload(
@@ -2939,7 +2928,7 @@ def test_direction_reads_the_verb_before_the_payload(
     named = Message(body="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
     assert named.protocol is Protocol.UL
     document = FixMsg.from_message_batch(_raw_batch(named), codec)
-    assert _protocols(document) == ["UL"]
+    assert _protocols(document) == ["UL4.4"]
     assert document.column("direction").to_pylist() == [int(Direction.SENT)]
 
     # A projected row reparsed without its raw message keeps the resolved

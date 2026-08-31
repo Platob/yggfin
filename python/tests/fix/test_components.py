@@ -305,6 +305,45 @@ def test_a_bad_count_refuses_partial_extraction(declared: str) -> None:
     assert residual.to_pylist() == source.to_pylist()
 
 
+def test_explicit_indices_extract_partial_out_of_order_groups_without_losing_unknowns() -> None:
+    def entry(tag: int, value: str, comp: str | None = None) -> dict[str, object]:
+        return {"tag": tag, "key": str(tag), "value": value, "comp": comp}
+
+    source = pyarrow.array(
+        [
+            [
+                entry(453, "3"),
+                entry(452, "1", "NoPartyIDs[7]"),
+                entry(0, "kept", "NoPartyIDs[7]"),
+                entry(448, "B", "NoPartyIDs[2]"),
+                entry(447, "D", "NoPartyIDs[2]"),
+                entry(447, "G", "NoPartyIDs[7]"),
+            ],
+            [entry(453, "1"), entry(448, "C", "NoPartyIDs[4]")],
+            [entry(453, "1"), entry(448, "plain")],
+        ],
+        type=ENTRIES,
+    )
+
+    parties, residual, errors = _parties().into_arrow_arrays_with_errors(source)
+
+    assert parties.to_pylist() == [
+        [
+            {"partyid": None, "partyidsource": "G", "partyrole": 1},
+            {"partyid": "B", "partyidsource": "D", "partyrole": None},
+        ],
+        [{"partyid": "C", "partyidsource": None, "partyrole": None}],
+        [{"partyid": "plain", "partyidsource": None, "partyrole": None}],
+    ]
+    assert _pairs(residual.to_pylist()[0]) == [(453, "3"), (0, "kept")]
+    assert residual.to_pylist()[1:] == [[], []]
+    assert errors.to_pylist() == [
+        "NoPartyIDs count mismatch: declared 3, found 2 indexed groups",
+        None,
+        None,
+    ]
+
+
 def test_multiple_parties_blocks_stay_residual_without_owner_context() -> None:
     source = _tags(
         [

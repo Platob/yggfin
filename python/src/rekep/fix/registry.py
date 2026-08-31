@@ -1,14 +1,10 @@
-"""Every FIX field of every FIX version, scraped once and kept for offline use."""
+"""The stored FIX dictionary and its explicit complete-file refresh."""
 
 from __future__ import annotations
 
-import concurrent.futures
-import contextlib
 import dataclasses
 import hashlib
-import html
 import importlib.resources
-import io
 import json
 import os
 import pathlib
@@ -16,58 +12,44 @@ import re
 import shutil
 import sys
 import tempfile
-import time
-import urllib.error
-import urllib.request
 import warnings
-import zipfile
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from functools import cached_property, lru_cache
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from functools import cached_property
 from types import MappingProxyType
 from typing import Any, Self, cast
 
 import pyarrow
+import pyarrow.compute as compute
 import pyarrow.fs
 
 from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
-from rekep.fields import Field, StructField, column_name, newest_rank
-from rekep.fields.metadata import canonical_versions, encoded_key, values_of
-from rekep.filesystems import local_path, read_bytes, resolve, spill_path
+from rekep.fields import Field, ListField, StructField, column_name, newest_rank
+from rekep.fields.metadata import canonical_versions
+from rekep.filesystems import local_path, resolve, spill_path
 from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
     Alias,
     ComponentRecord,
-    FixFieldValue,
     fold,
     merged_record,
-    name_of,
     record_copy,
     record_kind,
     records_for,
     refuse_record,
 )
-from rekep.fix.fields import datatype_identity, fix_field, namespaced_field
+from rekep.fix.fields import cast_arrow_field, datatype_identity, namespaced_field
 from rekep.fix.quickfix import (
-    QUICKFIX_URL,
-    SPEC_VERSIONS,
-    SpecField,
     declared_group,
     entry_of,
     first_declared_name,
     is_group,
     is_reference,
-    parse_declarations,
-    parse_session,
-    parse_session_components,
-    parse_spec,
-    spec_name,
     walk,
 )
 from rekep.fix.store import (
-    ADDED,
     ALIASES,
     COMPONENTS,
     DECLARED,
@@ -93,7 +75,6 @@ from rekep.fix.store import (
     collapse,
     component_document,
     component_from_document,
-    document_of,
     documents_of,
     field_document,
     field_from_document,
@@ -103,23 +84,10 @@ from rekep.fix.store import (
 )
 from rekep.urls import HTTP, LOCAL, Url
 
-#: The ordered prose dictionaries: Nanoconda names every enumerated value and
-#: OnixS fills anything it does not carry.
-NANOCONDA_URL = "https://nanoconda.com/fix-reference"
-ONIXS_URL = "https://www.onixs.biz/fix-dictionary"
-
-# Sent with every request so scrape traffic identifies its client.
-_USER_AGENT = "rekep-fix-registry"
-
 #: Where the scrape persists: the tag shards, the components and the version
 #: list, so everything after the first scrape works offline -- including on a
 #: machine that was never online, by copying the directory.
 CACHE_DIRECTORY = pathlib.Path.home() / ".config" / "fix"
-
-#: Optional full-registry archive and bearer token used to fill a cold default store.
-REGISTRY_URL_ENVIRONMENT = "REKEP_FIX_REGISTRY_URL"
-REGISTRY_TOKEN_ENVIRONMENT = "REKEP_FIX_REGISTRY_TOKEN"
-GITHUB_REPOSITORY_ARCHIVE = "https://github.com/Platob/yggfin/archive/refs/heads/main.zip"
 
 #: Lookup priority is a protocol contract. Standard definitions always win;
 #: registered UDFs fill the numeric space FIX reserved for them; configured
@@ -130,104 +98,12 @@ UDF_NAMESPACE = "fixtrading-udf"
 # Bump when parsed records project or reconcile differently without source
 # bytes changing. The parsed-output checksum catches parser and mapping changes;
 # this marker makes registry-only changes invalidate an otherwise warm refresh.
-_ADAPTER_PROJECTION = "rekep-fix-registry-v6"
+_ADAPTER_PROJECTION = "rekep-fix-registry-v1"
 
-#: Registry data is small; these bounds reject corrupt or hostile archives.
-_REGISTRY_ARCHIVE_MAX_BYTES = 64 * 1024 * 1024
-_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES = 128 * 1024 * 1024
-_REGISTRY_ARCHIVE_MAX_DOCUMENTS = 10_000
-_REGISTRY_ARCHIVE_READ_BYTE_SIZE = 64 * 1024
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Refuse authenticated redirects so a bearer token reaches one HTTPS URL."""
-
-    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
-        return None
-
-
-#: Versions in a per-version directory name: `4.4`, `5.0.SP2`, `FIXT1.1`.
-_VERSION_LINK = re.compile(r"/fix-dictionary/([^/\"'#]+)/index\.html")
-
-#: Nanoconda spells application versions with the `FIX.` prefix and service
-#: packs without the dot used by the local canonical spelling.
-_NANOCONDA_VERSION_LINK = re.compile(r'href="(FIX(?:T)?\.[^/\"#]+?)/index\.html"')
-
-#: One field on a `fields_by_tag.html` page: the link and the text inside it.
-_TAG_LINK = re.compile(r"<a[^>]+href=\"tagNum_(\d+)\.html\"[^>]*>(.*?)</a>", re.DOTALL)
-_NANOCONDA_TAG_LINK = re.compile(r'<a[^>]+href="fields/(\d+)\.html"[^>]*>(.*?)</a>', re.DOTALL)
-
-#: The `Type: <a ...>char</a>` line of a field page, tags tolerated anywhere.
-_TYPE = re.compile(r"Type:\s*(?:<[^>]*>\s*)*([A-Za-z][A-Za-z0-9]*)")
-
-#: The field page title: `FIX 4.4 : TimeInForce <59> field`, entities or not.
-_TITLE = re.compile(r"<h\d[^>]*>(?:[^<]*:)?\s*([^<>&]+?)\s*(?:&lt;|<)\s*(\d+)\s*(?:&gt;|>)")
-
-#: One enumerated value: `0 = Day (or session)`. Some versions spell an
-#: enumeration as a list and others as one paragraph per value, so an item is
-#: either -- a scrape that only read `<li>` came back from the live pages with
-#: every field's values empty and no error to say so.
-_VALUE_ITEM = re.compile(r"<(li|p)[^>]*>\s*(.*?)\s*</\1\s*>", re.DOTALL | re.IGNORECASE)
-_VALUE = re.compile(r"^\s*(\S+)\s*=\s*(.+?)\s*$", re.DOTALL)
-
-#: What opens each part of a field page. The prose, the enumeration and the
-#: messages are markers in one flat run of paragraphs, not containers, so each
-#: part runs from its own opener to the next one. The `Description` heading is
-#: preferred over the anchor that precedes it: cutting at the anchor leaves the
-#: heading's own text in front of the prose.
-_DESCRIPTION_HEADING = re.compile(r"<h\d[^>]*>\s*Description\s*</h\d\s*>", re.IGNORECASE)
-_DESCRIPTION_ANCHOR = re.compile(r"<a[^>]+name=[\"']Description[\"'][^>]*>", re.IGNORECASE)
-_VALID_VALUES = re.compile(r"Valid values[^<]*", re.IGNORECASE)
-
-#: The messages section: the anchor the page links to, or the heading itself.
-#: Never the `<a href="#UsedIn">` link that sits *above* the description -- it
-#: is navigation, and cutting there would take the description with it.
-_USED_IN = re.compile(
-    r"<a[^>]+name=[\"']UsedIn[\"'][^>]*>|<h\d[^>]*>\s*Used\s+in\s*</h\d\s*>", re.IGNORECASE
-)
-
-#: What a `Used In` link points at: one message, or one component block. Both
-#: kinds sit in the same section, and reading only the first left every field
-#: FIX carries inside a component recorded as used nowhere.
-MESSAGE_LINK = "msgType"
-COMPONENT_LINK = "compBlock"
-
-#: A component link's whole text is `<Name>`; the name is what is inside it.
-_COMPONENT_NAME = re.compile(r"^\s*<\s*(.+?)\s*>\s*$")
-
-_NANOCONDA_TITLE = re.compile(
-    r'<div[^>]+class="tag-number"[^>]*>\s*Tag\s+(\d+)\s*</div>\s*<h1[^>]*>(.*?)</h1>',
-    re.DOTALL | re.IGNORECASE,
-)
-_NANOCONDA_META = re.compile(
-    r'<span[^>]+class="label"[^>]*>(.*?)</span>\s*'
-    r'<span[^>]+class="value"[^>]*>(.*?)</span>',
-    re.DOTALL | re.IGNORECASE,
-)
-_NANOCONDA_DESCRIPTION = re.compile(
-    r'<div[^>]+class="card-header"[^>]*>\s*<h3>\s*Description\s*</h3>\s*</div>\s*'
-    r'<div[^>]+class="card-body"[^>]*>(.*?)</div>',
-    re.DOTALL | re.IGNORECASE,
-)
-_NANOCONDA_ENUMERATED = re.compile(
-    r"<h3>\s*Enumerated Values\s*</h3>.*?<tbody>(.*?)</tbody>",
-    re.DOTALL | re.IGNORECASE,
-)
-_NANOCONDA_VALUE = re.compile(
-    r'<tr>\s*<td>\s*<span[^>]+class="enum-value"[^>]*>(.*?)</span>\s*</td>\s*'
-    r'<td[^>]+class="enum-name"[^>]*>(.*?)</td>\s*'
-    r'<td[^>]+class="enum-desc"[^>]*>(.*?)</td>',
-    re.DOTALL | re.IGNORECASE,
-)
-_NANOCONDA_USED = re.compile(r'href="\.\./messages/([^/\"#]+)\.html"')
-
-#: A parenthetical note beside a name on the by-tag page -- `(no longer
-#: used)`, `(replaced)` -- which is the one deprecation signal the site has.
-_NOTE = re.compile(r"\(([^)]*)\)\s*$")
 
 #: The tiers `resolve` walks, in the order it walks them: an identity's own
-#: name, then a declared alias -- a rendered spelling, a legacy name, or the
-#: name an older version gave the tag, which the collapse records as one.
+#: name, then a declared alias -- a rendered spelling or a prior version's
+#: name for the same tag, which the collapse records as one.
 _CANONICAL = "canonical"
 _ALIASED = "aliased"
 TIERS: tuple[str, ...] = (_CANONICAL, _ALIASED)
@@ -295,357 +171,40 @@ def remote_cache() -> pathlib.Path:
     return CACHE_DIRECTORY.with_name(f"{CACHE_DIRECTORY.name}-remote")
 
 
-def builtin_projection() -> str:
-    """Where the packaged standard projection and rekep vocabulary live.
-
-    `rekep.fix.publish` calls it a projection because that is what it is -- it
-    parses common traffic and misses the long tail -- and nothing here ever
-    presents it as the whole dictionary.
-    """
+def builtin_registry() -> str:
+    """Where the complete packaged offline registry lives."""
     resource = importlib.resources.files(__package__).joinpath("registry.zip")
     return os.fspath(cast(os.PathLike[str], resource))
 
 
-_TAGS = re.compile(r"<[^>]+>")
-_SPACES = re.compile(r"\s+")
 _DEFAULT = object()
-
-
-@dataclasses.dataclass(frozen=True)
-class RegistrySource:
-    """One FIX dictionary with the three readings a scrape needs."""
-
-    name: str
-    url: str
-    workers: int = 8
-    shared_field_page: bool = False
-    field_pause_seconds: float = 0.0
-
-    def versions(self, fetch: Callable[[str], str]) -> tuple[str, ...]:
-        """Every version this source carries."""
-        raise NotImplementedError
-
-    def tags(self, fetch: Callable[[str], str], version: str) -> dict[int, tuple[str, str]]:
-        """The tags and names this source carries for one version."""
-        raise NotImplementedError
-
-    def field(self, fetch: Callable[[str], str], version: str, tag: int) -> dict[str, Any]:
-        """One field reading, or nothing where this source has no page."""
-        raise NotImplementedError
-
-
-@dataclasses.dataclass(frozen=True)
-class NanocondaSource(RegistrySource):
-    """Nanoconda's FIX reference, including symbolic value names."""
-
-    name: str = "nanoconda"
-    url: str = NANOCONDA_URL
-
-    def versions(self, fetch: Callable[[str], str]) -> tuple[str, ...]:
-        url = f"{self.url}/index.html"
-        page = fetch(url)
-        found = dict.fromkeys(
-            _from_nanoconda_version(version) for version in _NANOCONDA_VERSION_LINK.findall(page)
-        )
-        if not found:
-            raise ValueError(f"{url} lists no FIX versions; is the source layout new?")
-        return tuple(sorted(found, key=newest_rank, reverse=True))
-
-    def tags(self, fetch: Callable[[str], str], version: str) -> dict[int, tuple[str, str]]:
-        url = f"{self.url}/{_into_nanoconda_version(version)}/fields.html"
-        listed = _linked_tags(fetch(url), _NANOCONDA_TAG_LINK)
-        if not listed:
-            raise ValueError(f"{url} lists no FIX fields; is the source layout new?")
-        return listed
-
-    def field(self, fetch: Callable[[str], str], version: str, tag: int) -> dict[str, Any]:
-        url = f"{self.url}/{_into_nanoconda_version(version)}/fields/{tag}.html"
-        page = _optional_page(fetch, url)
-        if not page:
-            return {}
-        detail: dict[str, Any] = {}
-        title = _NANOCONDA_TITLE.search(page)
-        if not title or title[1] != str(tag):
-            raise ValueError(f"{url} does not describe FIX field {tag}; is the source layout new?")
-        detail["name"] = name_of(_text(title[2]))
-        metadata = {
-            _text(key).casefold(): _text(value) for key, value in _NANOCONDA_META.findall(page)
-        }
-        if metadata.get("type"):
-            detail["type"] = metadata["type"]
-        if metadata.get("added"):
-            detail["added"] = _from_nanoconda_version(metadata["added"])
-        described = _NANOCONDA_DESCRIPTION.search(page)
-        if described and (description := _text(described[1])):
-            detail["description"] = description
-        enumerated = _NANOCONDA_ENUMERATED.search(page)
-        values: list[FixFieldValue] = []
-        if enumerated:
-            for value, name, meaning in _NANOCONDA_VALUE.findall(enumerated[1]):
-                wire, alias, prose = _text(value), _text(name), _text(meaning)
-                if wire:
-                    values.append(
-                        FixFieldValue(
-                            value=wire,
-                            meaning=prose,
-                            # `encoded_key` already erases case and punctuation; one
-                            # source spelling serves Fill, fill and FILL.
-                            aliases=(alias,) if alias else (),
-                        )
-                    )
-        if values:
-            detail["values"] = tuple(values)
-        used_at = enumerated.end() if enumerated else 0
-        used = list(dict.fromkeys(_NANOCONDA_USED.findall(page[used_at:])))
-        if used:
-            detail["used_in"] = used
-        return detail
-
-
-@dataclasses.dataclass(frozen=True)
-class OnixSSource(RegistrySource):
-    """OnixS's FIX dictionary."""
-
-    name: str = "onixs"
-    url: str = ONIXS_URL
-    workers: int = 1
-    field_pause_seconds: float = 1.0
-
-    def versions(self, fetch: Callable[[str], str]) -> tuple[str, ...]:
-        url = f"{self.url}.html"
-        page = fetch(url)
-        found = dict.fromkeys(_VERSION_LINK.findall(page))
-        found.pop("latest", None)
-        if not found:
-            raise ValueError(f"{url} lists no FIX versions; is the source layout new?")
-        return tuple(sorted(found, key=newest_rank, reverse=True))
-
-    def tags(self, fetch: Callable[[str], str], version: str) -> dict[int, tuple[str, str]]:
-        url = f"{self.url}/{version}/fields_by_tag.html"
-        listed = _linked_tags(fetch(url), _TAG_LINK)
-        if not listed:
-            raise ValueError(f"{url} lists no FIX fields; is the source layout new?")
-        return listed
-
-    def field(self, fetch: Callable[[str], str], version: str, tag: int) -> dict[str, Any]:
-        url = f"{self.url}/{version}/tagNum_{tag}.html"
-        page = _optional_page(fetch, url)
-        if not page:
-            return {}
-        detail: dict[str, Any] = {}
-        title = _TITLE.search(page)
-        if not title or title[2] != str(tag):
-            raise ValueError(f"{url} does not describe FIX field {tag}; is the source layout new?")
-        detail["name"] = name_of(_text(title[1]))
-        typed = _TYPE.search(page)
-        if typed:
-            detail["type"] = typed[1]
-        prose, listed, carried = _sections(page, typed.end() if typed else 0)
-        if description := _description(prose):
-            detail["description"] = description
-        if values := _values(listed, names=tag == 35):
-            detail["values"] = values
-        if used := _used_in(carried):
-            detail["used_in"] = used
-        if components := _used_in(carried, COMPONENT_LINK):
-            detail["components"] = components
-        return detail
-
-
-@dataclasses.dataclass(frozen=True)
-class QuickFixSource(RegistrySource):
-    """The QuickFIX machine-readable specification."""
-
-    name: str = "quickfix"
-    url: str = QUICKFIX_URL
-    workers: int = 1
-    shared_field_page: bool = True
-
-    def versions(self, fetch: Callable[[str], str]) -> tuple[str, ...]:
-        available = _optional_page(fetch, f"{self.url}/{spec_name('4.4')}")
-        return SPEC_VERSIONS if available else ()
-
-    def tags(self, fetch: Callable[[str], str], version: str) -> dict[int, tuple[str, str]]:
-        document = self.document(fetch, version)
-        if not document:
-            return {}
-        reading = _parsed_quickfix(document)
-        if not reading.fields:
-            raise ValueError(f"{self.url}/{spec_name(version)} lists no FIX fields")
-        return {tag: (field.name, "") for tag, field in reading.fields.items()}
-
-    def field(self, fetch: Callable[[str], str], version: str, tag: int) -> dict[str, Any]:
-        document = self.document(fetch, version)
-        if not document:
-            return {}
-        reading = _parsed_quickfix(document)
-        known = reading.fields.get(tag)
-        if known is None:
-            return {}
-        values = tuple(
-            FixFieldValue(value=value, aliases=(symbol,)) for value, symbol in known.values.items()
-        )
-        detail: dict[str, Any] = {"name": known.name, "type": known.datatype, "values": values}
-        used_in, components = reading.usage.get(known.name, ((), ()))
-        if used_in:
-            detail["used_in"] = used_in
-        if components:
-            detail["components"] = components
-        return detail
-
-    def document(self, fetch: Callable[[str], str], version: str) -> str:
-        """The XML document that also owns sessions and components."""
-        return _optional_page(fetch, f"{self.url}/{spec_name(version)}")
-
-
-DEFAULT_SOURCES: tuple[RegistrySource, ...] = (
-    NanocondaSource(),
-    OnixSSource(),
-    QuickFixSource(),
-)
-
-
-@dataclasses.dataclass(frozen=True)
-class _QuickFixReading:
-    """One parsed QuickFIX document and its field usage."""
-
-    fields: Mapping[int, SpecField]
-    declarations: Mapping[str, Field]
-    usage: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]]
-
-
-@lru_cache(maxsize=len(SPEC_VERSIONS) * 2)
-def _parsed_quickfix(document: str) -> _QuickFixReading:
-    """A bounded immutable reading per exact QuickFIX document."""
-    fields = MappingProxyType(parse_spec(document))
-    declarations = MappingProxyType(parse_declarations(document))
-    usage: dict[str, tuple[list[str], list[str]]] = {}
-
-    def add(field: str, slot: int, owner: str) -> None:
-        owners = usage.setdefault(field, ([], []))[slot]
-        if owner not in owners:
-            owners.append(owner)
-
-    # Direct owners lead the graph-reachable parents in stored metadata.
-    for declared in declarations.values():
-        slot = 0 if declared.fix.msgtype else 1
-        for member, _ in walk(declared):
-            if is_reference(member):
-                continue
-            add(member.name, slot, declared.name)
-
-    expanded: dict[str, tuple[str, ...]] = {}
-
-    def fields_of(name: str) -> tuple[str, ...]:
-        held = expanded.get(name)
-        if held is not None:
-            return held
-        names: list[str] = []
-        for member, _ in walk(declarations[name]):
-            if is_reference(member):
-                names.extend(fields_of(member.name))
-            else:
-                names.append(member.name)
-        found = tuple(dict.fromkeys(names))
-        expanded[name] = found
-        return found
-
-    for declared in declarations.values():
-        slot = 0 if declared.fix.msgtype else 1
-        for name in fields_of(declared.name):
-            add(name, slot, declared.name)
-    for name, component in parse_session_components(document):
-        add(name, 1, component)
-    return _QuickFixReading(
-        fields,
-        declarations,
-        MappingProxyType(
-            {
-                name: (tuple(messages), tuple(components))
-                for name, (messages, components) in usage.items()
-            }
-        ),
-    )
 
 
 @dataclasses.dataclass(eq=False)
 class FixRegistry(Convertible):
     """The FIX dictionary as local `Field` declarations."""
 
-    #: Dictionaries in priority order; the first stated reading wins and later
-    #: sources fill its gaps.
-    sources: tuple[RegistrySource, ...] = DEFAULT_SOURCES
-
     #: Venue namespaces after the two protocol-owned tiers. A copied store
     #: still discovers every namespace, but configuration decides which venue
     #: wins an otherwise unscoped lookup.
     namespace_priority: tuple[str, ...] = ()
 
-    #: Where scrapes persist: a directory of JSON, or a `.zip` of the same
-    #: files. The extension is what says which -- like every other inference
-    #: here -- so one path names either, and a dictionary that travels as one
-    #: file and a dictionary that travels as a directory are the same
-    #: dictionary. `None` means `CACHE_DIRECTORY`, and is the only spelling
-    #: that asks to be bootstrapped: a store somebody named is that store,
-    #: cold or not.
+    #: A directory of JSON, or a `.zip` of the same files. `None` names the
+    #: bundled registry; only `scrape` writes or refreshes a registry.
     cache_dir: str | os.PathLike[str] | None = None
 
     #: Optional filesystem for `cache_dir`, whose value is then a path on it.
     filesystem: pyarrow.fs.FileSystem | None = None
 
-    #: Repository archive used to fill an empty default store.
-    registry_url: str | None = None
-
-    #: Optional bearer token for `registry_url`; consumed and never serialised.
-    registry_token: dataclasses.InitVar[str | None] = None
-
-    #: Seconds one page fetch may take, and the maximum fetched at once. Each
-    #: source may lower the latter to stay within its own throttle.
+    #: Complete-source request timeout and retry policy used only by `scrape`.
     timeout: float = 30.0
-    max_workers: int = 8
-
-    #: How many times a fetch that was refused *for now* is asked again, and
-    #: the first pause before it is. The pause doubles per attempt (capped at
-    #: a minute each), so six retries wait about two minutes in total: the
-    #: dictionary is fourteen thousand pages, the sites throttle harder the
-    #: further in a scrape gets, and half a minute of patience was measured
-    #: to be too little to finish one. Still short enough that a site which is
-    #: really down is reported as down rather than waited on.
     retries: int = 6
     backoff: float = 2.0
 
-    #: Where a bootstrap's start and finish lines are surfaced. `stderr` by
-    #: default, so a person waiting on the fetch sees it; the CLI and the
-    #: notebooks pass their own writer. `warnings.warn` carries the same lines
-    #: for the record, because a warning is filterable and shows once, which is
-    #: wrong for an operation somebody is waiting on.
-    announce: Any = None
-
-    #: Successful raw pages held outside an incomplete explicit scrape.
-    _source_page_cache: pathlib.Path | None = dataclasses.field(
-        init=False, default=None, repr=False
-    )
-
-    def __post_init__(self, registry_token: str | None) -> None:
-        """Normalise the locations once, then bootstrap the default store."""
-        self.sources = tuple(
-            dataclasses.replace(
-                source,
-                url=Url.from_string(str(source.url)).into_string().rstrip("/"),
-            )
-            for source in self.sources
-        )
-        if not self.sources:
-            raise ValueError("a FIX registry needs at least one source")
-        names = [source.name for source in self.sources]
-        if any(not name for name in names) or len(set(names)) != len(names):
-            raise ValueError("FIX registry source names must be non-empty and distinct")
-        if self.max_workers < 1 or any(source.workers < 1 for source in self.sources):
-            raise ValueError("FIX registry source worker counts must be positive")
+    def __post_init__(self) -> None:
+        """Normalise the store location and lookup priority once."""
         if self.timeout <= 0 or self.retries < 0 or self.backoff < 0:
             raise ValueError("FIX registry timeout must be positive and retries non-negative")
-        if any(source.field_pause_seconds < 0 for source in self.sources):
-            raise ValueError("FIX registry source field pauses cannot be negative")
         self.namespace_priority = tuple(
             dict.fromkeys(str(namespace).strip().lower() for namespace in self.namespace_priority)
         )
@@ -659,67 +218,13 @@ class FixRegistry(Convertible):
             for namespace in self.namespace_priority
         ):
             raise ValueError("configured FIX venue namespaces must be lowercase path-safe names")
-        if self.registry_url is None:
-            self.registry_url = os.environ.get(REGISTRY_URL_ENVIRONMENT, GITHUB_REPOSITORY_ARCHIVE)
-        self.__dict__["_registry_token"] = (
-            registry_token
-            if registry_token is not None
-            else os.environ.get(REGISTRY_TOKEN_ENVIRONMENT)
-        )
-        if self.registry_url:
-            source = Url.from_string(self.registry_url)
-            if source.user is not None:
-                raise ValueError("registry_url cannot contain credentials; use registry_token")
-            if source.query:
-                raise ValueError("registry_url cannot contain a query")
-            if self.__dict__["_registry_token"] and source.scheme == "http":
-                raise ValueError("registry_token requires an HTTPS registry_url")
-            self.registry_url = source.into_string()
-        named = self.cache_dir is not None
         if self.cache_dir is None:
-            self.cache_dir = CACHE_DIRECTORY
-        # Asked once, of the location it was pointed at, before anything here
-        # can write to it. Asked again later it would answer differently the
-        # moment a scrape wrote its first document, and stop the scrape it is
-        # inside.
-        self.__dict__["_found_a_store"] = named or bool(self._documents.names())
-        self.__dict__["_installed"] = self.bootstrap()
+            self.cache_dir = builtin_registry()
 
     @property
     def offline(self) -> bool:
-        """Whether this registry answers from its store alone.
-
-        Inferred rather than declared, and inferred from the one thing that
-        says it: which store this registry was pointed at. Naming a
-        `cache_dir` *is* saying where the answers come from -- `data/fix.zip`,
-        a directory a worker mounts, a bucket -- so a registry that was given
-        one serves it, warm or cold, and never reaches a source. That is what
-        a pipeline needs and what every caller used to have to remember to
-        ask for.
-
-        The default store, `~/.config/fix`, is the only one nobody chose. Cold,
-        it may fill itself, and says what that will cost before it starts;
-        once it holds documents it answers from them like any other.
-
-        `scrape` is the one operation which opens source dictionaries. Nothing
-        else does, so no read can turn into a fourteen-thousand-page scrape.
-        """
-        return self.__dict__.get("_found_a_store", False)
-
-    @property
-    def _serves_stored(self) -> bool:
-        """`offline`, unless a fetch verb has opened the door right now."""
-        return self.offline and not self.__dict__.get("_may_fetch")
-
-    @contextlib.contextmanager
-    def _fetching(self) -> Iterator[None]:
-        """The window in which this registry may reach its sources."""
-        held = self.__dict__.get("_may_fetch", 0)
-        self.__dict__["_may_fetch"] = held + 1
-        try:
-            yield
-        finally:
-            self.__dict__["_may_fetch"] = held
+        """Whether reads are confined to the named local or remote store."""
+        return True
 
     @property
     def revision(self) -> int:
@@ -730,8 +235,7 @@ class FixRegistry(Convertible):
     def from_builtin(cls) -> Self:
         """The default dictionary every unconfigured lookup resolves through.
 
-        The packaged standard projection and rekep vocabulary, unless
-        `set_builtin` installed another.
+        The complete packaged registry, unless `set_builtin` installed another.
         """
         held = _BUILTIN
         if held is not None and isinstance(held, cls):
@@ -742,7 +246,7 @@ class FixRegistry(Convertible):
     def set_builtin(cls, registry: Self | None = None) -> Self:
         """Install the default `from_builtin` hands back, and return it.
 
-        None restores the packaged projection. The registry has to carry
+        None restores the packaged registry. The registry has to carry
         rekep's own vocabulary -- the 36 identities every product
         contract is declared against -- so an installed one that does not is
         refused here rather than reported as a missing field halfway through a
@@ -771,10 +275,10 @@ class FixRegistry(Convertible):
 
     @classmethod
     def _checked_builtin(cls) -> Self:
-        """The packaged projection, refusing one that lost rekep's vocabulary."""
+        """The packaged registry, refusing one that lost rekep's vocabulary."""
         from rekep.fix.rekep import rekep_is_registered
 
-        registry = cls(cache_dir=builtin_projection())
+        registry = cls(cache_dir=builtin_registry())
         if not rekep_is_registered(registry):
             raise RuntimeError("the packaged FIX registry lacks rekep's declared vocabulary")
         return registry
@@ -785,12 +289,29 @@ class FixRegistry(Convertible):
         dump_folder: str | os.PathLike[str] | None = None,
         **configuration: Any,
     ) -> Self:
-        """Scrape a fresh registry, resuming pages, then replace one local directory."""
-        source_ids = tuple(str(source) for source in configuration.pop("source_ids", ()))
+        """Refresh selected complete-file adapters, then replace one local directory."""
+        from rekep.fix.adapters import ADAPTERS_BY_ID
+
+        source_ids = tuple(
+            dict.fromkeys(str(source) for source in configuration.pop("source_ids", ()))
+        ) or tuple(source_id for source_id, adapter in ADAPTERS_BY_ID.items() if adapter.default)
         offline = bool(configuration.pop("offline", False))
-        rebuild_standard = bool(configuration.pop("rebuild_standard", True))
         refresh_sources = bool(configuration.pop("refresh_sources", False))
         source_cache_value = configuration.pop("source_cache", None)
+        if offline and refresh_sources:
+            raise ValueError("offline FIX refresh cannot redownload source files")
+        unknown = [source_id for source_id in source_ids if source_id not in ADAPTERS_BY_ID]
+        if unknown:
+            raise KeyError(f"unknown FIX registry sources {unknown!r}")
+        restricted = [
+            source_id
+            for source_id in source_ids
+            if not offline and not ADAPTERS_BY_ID[source_id].fetch_allowed
+        ]
+        if restricted:
+            raise ValueError(
+                f"FIX sources {restricted!r} cannot be fetched; cache their files and use offline"
+            )
         reserved = {"cache_dir", "filesystem"} & configuration.keys()
         if reserved:
             raise TypeError(f"scrape configures {sorted(reserved)} through dump_folder")
@@ -801,43 +322,26 @@ class FixRegistry(Convertible):
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists() and (not target.is_dir() or target.is_symlink()):
             raise ValueError(f"the FIX registry dump target is not a directory: {target}")
-        page_cache = target.with_name(f".{target.name}-source-pages")
-        if page_cache.exists() and (not page_cache.is_dir() or page_cache.is_symlink()):
-            raise ValueError(f"the FIX registry source page cache is not a directory: {page_cache}")
         source_cache = pathlib.Path(
             source_cache_value or target.with_name(f".{target.name}-sources")
         )
         if source_cache.exists() and (not source_cache.is_dir() or source_cache.is_symlink()):
             raise ValueError(f"the FIX registry source cache is not a directory: {source_cache}")
-        local_fields, local_components, local_overlays = (
-            cls._local_declarations(target) if rebuild_standard and not offline else ((), (), ())
-        )
 
         report = ConflictReport()
         unchanged = False
         with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
             root = pathlib.Path(scratch)
             staged = root / target.name
-            if (offline or not rebuild_standard) and target.exists():
+            if target.exists():
                 shutil.copytree(target, staged, copy_function=_stage_registry_file)
             source = cls(cache_dir=staged, **configuration)
-            source._source_page_cache = page_cache
-            if rebuild_standard and not offline:
-                report = source._rebuild_sources()
-                source._restore_local_declarations(local_fields, local_components, local_overlays)
-            else:
-                report = ConflictReport()
-                source.__dict__["_conflicts"] = report
-            if source_ids:
-                source._ingest_adapters(
-                    source_ids, source_cache, offline=offline, refresh=refresh_sources
-                )
-                report = source.conflicts
-                unchanged = (
-                    target.exists()
-                    and not rebuild_standard
-                    and not source.__dict__.get("_refresh_changed", True)
-                )
+            source.__dict__["_conflicts"] = report
+            source._ingest_adapters(
+                source_ids, source_cache, offline=offline, refresh=refresh_sources
+            )
+            report = source.conflicts
+            unchanged = target.exists() and not source.__dict__.get("_refresh_changed", True)
             if not unchanged:
                 cls._validate_registry_store(source._documents)
                 previous = root / "previous"
@@ -852,228 +356,7 @@ class FixRegistry(Convertible):
         installed = cls(cache_dir=target, **configuration)
         installed.__dict__["_conflicts"] = report
         installed.__dict__["_source_status"] = source.__dict__.get("_source_status", ())
-        if page_cache.exists():
-            shutil.rmtree(page_cache)
         return installed
-
-    @classmethod
-    def _local_declarations(
-        cls, target: pathlib.Path
-    ) -> tuple[tuple[Field, ...], tuple[ComponentRecord, ...], tuple[Field, ...]]:
-        """Local declarations and field configuration a scrape carries forward."""
-        if not target.exists():
-            return (), (), ()
-        try:
-            held = cls(cache_dir=target)
-            declarations = held._preserved_declarations()
-        except (OSError, TypeError, ValueError, pyarrow.ArrowException):
-            return (), (), ()
-        return declarations
-
-    def _preserved_declarations(
-        self,
-    ) -> tuple[tuple[Field, ...], tuple[ComponentRecord, ...], tuple[Field, ...]]:
-        """Local declarations and overlays not owned by a source dictionary."""
-        fields = tuple(
-            record_copy(entry)
-            for entry in self.field_records().values()
-            if ANY_VERSION in entry.fix.versions
-        )
-        components = tuple(
-            ComponentRecord.from_dict(entry.into_dict())
-            for entry in self.component_records().values()
-            if ANY_VERSION in entry.versions
-        )
-        overlays = tuple(
-            record_copy(entry)
-            for entry in self.field_records().values()
-            if ANY_VERSION not in entry.fix.versions
-            and (
-                entry.fix.event_types
-                or entry.fix.states
-                or entry.fix.column
-                or _local_aliases(entry)
-            )
-        )
-        return fields, components, overlays
-
-    def _restore_local_declarations(
-        self,
-        fields: Sequence[Field],
-        components: Sequence[ComponentRecord],
-        overlays: Sequence[Field],
-    ) -> None:
-        """Restore local declarations and overlays after a source rebuild."""
-        for entry in fields:
-            self.add_field(entry)
-        for entry in components:
-            self.add_component(entry)
-        for overlay in overlays:
-            held = self._entries[0].get(overlay.fix.key)
-            if held is None:
-                continue
-            restored = record_copy(held)
-            restored.fix.event_types = {**held.fix.event_types, **overlay.fix.event_types}
-            restored.fix.states = {**held.fix.states, **overlay.fix.states}
-            restored.fix.column = overlay.fix.column or held.fix.column
-            aliases = held.fix.named_aliases
-            folded = {alias.folded for alias in aliases}
-            restored.fix.named_aliases = (
-                *aliases,
-                *(alias for alias in _local_aliases(overlay) if alias.folded not in folded),
-            )
-            self.update_field(restored)
-
-    # -- bootstrapping the default store --------------------------------------
-
-    def bootstrap(self) -> bool:
-        """Fill the default store from the GitHub archive; True when it did.
-
-        A failed archive serves the packaged projection. Scraping upstream
-        dictionaries is an explicit `scrape` operation and never a side effect
-        of constructing or reading a registry.
-
-        Only the *default* store is bootstrapped. A `cache_dir` somebody named
-        is that store, cold or not -- it is about to be written, or it is a
-        projection that is complete for what it projects.
-
-        Both channels carry it: `warnings.warn` is the record, and `announce`
-        is the foreground line a person waiting on the fetch reads.
-        """
-        cache_dir = cast(str | os.PathLike[str], self.cache_dir)
-        if os.fspath(cache_dir) != os.fspath(CACHE_DIRECTORY):
-            return False
-        if self._documents.names():
-            return False
-        if self.offline:
-            self._reduced("it serves a stored dictionary")
-            return False
-        if not self.registry_url:  # pragma: no cover - __post_init__ supplies GitHub
-            self._reduced("no repository archive is configured")
-            return False
-        source = Url.from_string(self.registry_url)
-        self._say(
-            f"no FIX registry at {self.cache_dir}; downloading the main repository "
-            f"archive from {source.masked}"
-        )
-        started = time.monotonic()
-        try:
-            counted = self._install_registry_archive()
-        except (OSError, ValueError, zipfile.BadZipFile, pyarrow.ArrowException) as error:
-            self._reduced(f"the repository archive could not be installed ({error})")
-            return False
-        self._say(
-            f"the FIX registry is installed at {self.cache_dir}: {counted} documents, "
-            f"in {time.monotonic() - started:.0f}s"
-        )
-        return True
-
-    def _install_registry_archive(self) -> int:
-        """Download, validate and expand the configured registry archive."""
-        if not self.registry_url:  # pragma: no cover - guarded by bootstrap
-            raise ValueError("a FIX registry archive URL is required")
-        payload = self._registry_archive_payload()
-        documents = self._registry_archive_documents(payload)
-        return self._install_registry_documents(documents)
-
-    def _registry_archive_payload(self) -> bytes:
-        """Read the compressed archive in bounded chunks."""
-        if not self.registry_url:  # pragma: no cover - guarded by bootstrap
-            raise ValueError("a FIX registry archive URL is required")
-        source = Url.from_string(self.registry_url)
-        token = self.__dict__.get("_registry_token")
-        if source.scheme in HTTP:
-            headers = {"User-Agent": _USER_AGENT}
-            if token and source.scheme == "https":
-                headers["Authorization"] = f"Bearer {token}"
-            request = urllib.request.Request(self.registry_url, headers=headers)
-            if "Authorization" in headers:
-                response = urllib.request.build_opener(_NoRedirect()).open(
-                    request, timeout=self.timeout
-                )
-            else:
-                response = urllib.request.urlopen(request, timeout=self.timeout)  # noqa: S310
-            with response:
-                return self._bounded_registry_archive(response)
-        filesystem, path = resolve(self.registry_url)
-        archive = ArrowPath(
-            self.registry_url,
-            filesystem,
-            filesystem_path=path,
-        )
-        # The configured archive is a required input. Opening it stays strict,
-        # while the bounded reader below remains the one size authority.
-        with archive.open_input_stream() as stream:
-            return self._bounded_registry_archive(stream)
-
-    @staticmethod
-    def _bounded_registry_archive(stream: Any) -> bytes:
-        """Read at most the configured compressed archive size."""
-        length = getattr(stream, "headers", {}).get("Content-Length")
-        if (
-            str(length or "").isdigit()
-            and int(str(length)) > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES
-        ):
-            raise ValueError(
-                "the FIX registry archive exceeds "
-                f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
-            )
-        chunks: list[bytes] = []
-        total = 0
-        while True:
-            read_size = min(
-                _REGISTRY_ARCHIVE_READ_BYTE_SIZE,
-                _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES - total + 1,
-            )
-            try:
-                chunk = stream.read(read_size)
-            except (OSError, EOFError, RuntimeError, pyarrow.ArrowException) as error:
-                raise OSError(f"the FIX registry archive download failed: {error}") from error
-            if not chunk:
-                break
-            payload = bytes(chunk)
-            total += len(payload)
-            if total > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES:
-                raise ValueError(
-                    "the FIX registry archive exceeds "
-                    f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
-                )
-            chunks.append(payload)
-        return b"".join(chunks)
-
-    def _install_registry_documents(self, documents: Mapping[str, Mapping[str, Any]]) -> int:
-        """Stage a complete default store beside its final path, then rename it."""
-        if self.filesystem is not None:
-            raise ValueError("a downloaded FIX registry requires the local default store")
-        target = pathlib.Path(os.fspath(cast(str | os.PathLike[str], self.cache_dir)))
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
-            staged = pathlib.Path(scratch) / target.name
-            place = DirectoryDocuments(pyarrow.fs.LocalFileSystem(), staged.as_posix())
-            for name in sorted(documents):
-                place.write(name, documents[name])
-            if set(place.names()) != set(documents):
-                raise OSError("the staged FIX registry is incomplete")
-            counted = self._validate_registry_store(place)
-            try:
-                target.rmdir()
-            except FileNotFoundError:
-                pass
-            except OSError:
-                return self._accept_registry_winner(target)
-            try:
-                staged.replace(target)
-            except OSError:
-                return self._accept_registry_winner(target)
-        self._forget()
-        return counted
-
-    def _accept_registry_winner(self, target: pathlib.Path) -> int:
-        """Accept a complete store installed by a concurrent process."""
-        place = DirectoryDocuments(pyarrow.fs.LocalFileSystem(), target.as_posix())
-        counted = self._validate_registry_store(place)
-        self._forget()
-        return counted
 
     @staticmethod
     def _validate_registry_store(place: Documents) -> int:
@@ -1291,171 +574,6 @@ class FixRegistry(Convertible):
         if problems:
             raise ValueError(f"the FIX registry is inconsistent: {problems[0]}")
         return len(names)
-
-    @staticmethod
-    def _registry_archive_documents(payload: bytes) -> dict[str, dict[str, Any]]:
-        """Read registry documents from a registry or GitHub repository archive."""
-        documents: dict[str, dict[str, Any]] = {}
-        expanded = 0
-        try:
-            archive = zipfile.ZipFile(io.BytesIO(payload))
-        except (OSError, EOFError, RuntimeError, NotImplementedError, zipfile.BadZipFile) as error:
-            raise ValueError(f"the FIX registry archive cannot be decoded: {error}") from error
-        with archive:
-            try:
-                members = [member for member in archive.infolist() if not member.is_dir()]
-            except (OSError, EOFError, RuntimeError, zipfile.BadZipFile) as error:
-                raise ValueError(f"the FIX registry archive cannot be decoded: {error}") from error
-            for member in members:
-                path = pathlib.PurePosixPath(member.filename)
-                if (
-                    path.is_absolute()
-                    or "\\" in member.filename
-                    or any(part in ("", ".", "..") for part in path.parts)
-                ):
-                    raise ValueError(f"unsafe FIX registry archive member {member.filename!r}")
-            roots = []
-            for member in members:
-                path = pathlib.PurePosixPath(member.filename)
-                if path.name != VERSIONS_FILE:
-                    continue
-                if len(path.parts) == 1:
-                    roots.append(())
-                elif len(path.parts) >= 3 and path.parts[-3:-1] == ("data", "fix"):
-                    roots.append(path.parts[:-1])
-            roots = list(dict.fromkeys(roots))
-            if len(roots) != 1:
-                raise ValueError("the FIX registry archive has no unique registry root")
-            root = roots[0]
-            selected: list[tuple[zipfile.ZipInfo, str]] = []
-            for member in members:
-                parts = pathlib.PurePosixPath(member.filename).parts
-                if tuple(parts[: len(root)]) != root:
-                    continue
-                relative = parts[len(root) :]
-                nested = len(relative) == 2 and relative[0] in (
-                    FIELDS,
-                    COMPONENTS,
-                    REPGROUP,
-                )
-                namespaced = (
-                    len(relative) == 4
-                    and relative[0] == NAMESPACES
-                    and relative[2] in (FIELDS, COMPONENTS, REPGROUP)
-                )
-                if not (relative in ((VERSIONS_FILE,), (SOURCES_FILE,)) or nested or namespaced):
-                    continue
-                name = pathlib.PurePosixPath(*relative).as_posix()
-                if pathlib.PurePosixPath(name).suffix != DOCUMENT_SUFFIX:
-                    continue
-                selected.append((member, name))
-            if len(selected) > _REGISTRY_ARCHIVE_MAX_DOCUMENTS:
-                raise ValueError("the FIX registry archive has too many documents")
-            for member, name in selected:
-                if name in documents:
-                    raise ValueError(f"duplicate FIX registry archive member {name!r}")
-                if member.flag_bits & 1:
-                    raise ValueError(f"FIX registry archive member {name!r} is encrypted")
-                expanded += member.file_size
-                if expanded > _REGISTRY_ARCHIVE_MAX_BYTES:
-                    raise ValueError("the FIX registry archive expands beyond 64 MiB")
-                try:
-                    document = document_of(archive.read(member), name)
-                except (
-                    OSError,
-                    EOFError,
-                    RuntimeError,
-                    NotImplementedError,
-                    UnicodeError,
-                    ValueError,
-                    zipfile.BadZipFile,
-                ) as error:
-                    raise ValueError(
-                        f"FIX registry archive member {name!r} cannot be decoded: {error}"
-                    ) from error
-                if not isinstance(document, dict):
-                    raise ValueError(f"FIX registry archive member {name!r} is not an object")
-                documents[name] = document
-        index = documents.get(VERSIONS_FILE)
-        versions = index.get("versions") if index is not None else None
-        if not isinstance(versions, list) or not any(
-            name.startswith(f"{FIELDS}/") or name.startswith(f"{NAMESPACES}/") for name in documents
-        ):
-            raise ValueError("the FIX registry archive has no version index or fields")
-        return documents
-
-    @property
-    def installed(self) -> bool:
-        """Whether construction filled the default store."""
-        return bool(self.__dict__.get("_installed"))
-
-    def _reduced(self, why: str) -> None:
-        """Serve the packaged projection instead, and never quietly."""
-        self.__dict__["_documents"] = ArchiveDocuments(builtin_projection())
-        self._say(
-            f"no FIX registry at {self.cache_dir} and {why}, so a reduced one is served: "
-            "the packaged projection parses common traffic and misses the long tail. "
-            "Run `rekep fix registry scrape` to install the whole dictionary."
-        )
-
-    def _say(self, line: str) -> None:
-        """One bootstrap line, on both channels: the record, then the foreground."""
-        warnings.warn(line, RuntimeWarning, stacklevel=3)
-        announce = self.announce
-        if announce is None:
-            print(line, file=sys.stderr)
-        else:
-            announce(line)
-
-    def _rebuild_sources(self, *versions: str) -> ConflictReport:
-        """Scrape whole versions and write the store, collapsed, in one pass.
-
-        Where `fields` folds one version into what is held, this is the bulk
-        build: a version at a time cannot see what two versions disagree about,
-        so this is the only place the collapse -- and its report -- is whole.
-        """
-        local_fields, local_components, local_overlays = self._preserved_declarations()
-        self.__dict__.pop("_source_pages", None)
-        self.__dict__.pop("_source_conflicts", None)
-        with self._fetching():
-            return self._rebuilt(versions, local_fields, local_components, local_overlays)
-
-    def _rebuilt(
-        self,
-        versions: Sequence[str],
-        local_fields: Sequence[Field],
-        local_components: Sequence[ComponentRecord],
-        local_overlays: Sequence[Field],
-    ) -> ConflictReport:
-        """The scrape body, inside the window that lets it reach a source."""
-        try:
-            order = (
-                tuple(self._spelling(version) for version in versions) or self._scrape_versions()
-            )
-            declarations: dict[str, list[Field]] = {}
-            sessions: dict[str, Sequence[tuple[str, bool]]] = {}
-            components: dict[str, Sequence[Field]] = {}
-            reads_spec = any(isinstance(source, QuickFixSource) for source in self.sources)
-            for version in order:
-                document = self._spec_document(version)
-                if reads_spec and not document:
-                    raise ValueError(f"the QuickFIX source has no document for {version}")
-                declarations[version] = self._scrape_version(version)
-                if document:
-                    sessions[version] = parse_session(document)
-                    components[version] = self._component_declarations(document)
-            entries, component_records, report = collapse(order, declarations, components)
-            report = dataclasses.replace(
-                report,
-                collapses=(*report.collapses, *self.__dict__.get("_source_conflicts", ())),
-            )
-            self._write(documents_of(order, entries, component_records, sessions, components))
-            self._restore_local_declarations(local_fields, local_components, local_overlays)
-            self.__dict__["_conflicts"] = report
-            return report
-        finally:
-            self.__dict__.pop("_source_pages", None)
-            self.__dict__.pop("_source_conflicts", None)
 
     @property
     def conflicts(self) -> ConflictReport:
@@ -1749,23 +867,6 @@ class FixRegistry(Convertible):
     def versions(self) -> tuple[str, ...]:
         """Every FIX version the dictionary carries, newest first."""
         return self._stored_versions() or self._known_versions()
-
-    def _scrape_versions(self) -> tuple[str, ...]:
-        """The union of the configured sources' versions, newest first."""
-        found: dict[str, None] = {}
-        for source in self.sources:
-            try:
-                versions = self._read_source(source.versions)
-            except OSError as error:
-                if not _is_missing(error):
-                    raise
-                continue
-            for version in versions:
-                found.setdefault(version, None)
-        versions = tuple(sorted(found, key=newest_rank, reverse=True))
-        if not versions:
-            raise ValueError("the configured FIX sources list no versions")
-        return versions
 
     def _versions(self, version: str | None) -> tuple[str, ...]:
         """The versions a call walks: all of them, or the one it named.
@@ -2126,6 +1227,63 @@ class FixRegistry(Convertible):
             metadata=declared,
         )
 
+    def field_tags(
+        self,
+        key: int | str,
+        version: str | None = None,
+        *,
+        namespace: str | None = None,
+    ) -> tuple[int, ...]:
+        """Canonical and equivalent numeric tags in lift priority."""
+        source = self.field(key, version, namespace=namespace)
+        return () if source is None else source.fix.tag_priority
+
+    def coalesce_tags(
+        self,
+        key: int | str,
+        values: Mapping[int | str, Any],
+        *,
+        version: str | None = None,
+        namespace: str | None = None,
+        default: Any = None,
+    ) -> Any:
+        """First non-null scalar carried by a field's equivalent tags."""
+        source = self.field(key, version, namespace=namespace)
+        if source is None:
+            raise KeyError(f"no FIX field {key!r} in {version or 'the registry'}")
+        for tag in source.fix.tag_priority:
+            value = values.get(tag, values.get(str(tag)))
+            if value is not None:
+                return value
+        return default
+
+    def arrow_coalesce_tags(
+        self,
+        key: int | str,
+        values: Mapping[int | str, Any],
+        rows: int,
+        *,
+        version: str | None = None,
+        namespace: str | None = None,
+    ) -> Any:
+        """One typed Arrow column from a field's equivalent tag columns."""
+        source = self.field(key, version, namespace=namespace)
+        if source is None:
+            raise KeyError(f"no FIX field {key!r} in {version or 'the registry'}")
+        if rows < 0:
+            raise ValueError("Arrow tag coalescing needs a non-negative row count")
+        columns = []
+        for tag in source.fix.tag_priority:
+            column = values.get(tag, values.get(str(tag)))
+            if column is None:
+                continue
+            if len(column) != rows:
+                raise ValueError(f"FIX tag {tag} has {len(column)} rows; expected {rows}")
+            columns.append(cast_arrow_field(column, source, source.dtype))
+        if not columns:
+            return pyarrow.nulls(rows, type=source.dtype)
+        return columns[0] if len(columns) == 1 else compute.coalesce(*columns)
+
     def tags(self, version: str | None = None) -> dict[str, int]:
         """Every folded field name to its tag number, newest version winning."""
         mapping: dict[str, int] = {}
@@ -2364,6 +1522,46 @@ class FixRegistry(Convertible):
             fields=self._component_fields_by_name(version),
             components={found.folded: found for found in self._entries[1].values()},
         )
+
+    def component_group_field(
+        self,
+        root: str,
+        groups: str | Sequence[str],
+        version: str | None = None,
+    ) -> Field | None:
+        """Terminal repeating-group field under one component or message root."""
+        path = (groups,) if isinstance(groups, str) else tuple(groups)
+        if not path:
+            raise ValueError("a FIX component group path cannot be empty")
+        try:
+            entry = self.merged_component(root)
+        except KeyError:
+            return None
+        try:
+            spelling = self._spelling(version) if version is not None else entry.newest
+            projected = self.component_field(root, spelling)
+        except KeyError:
+            return None
+        if projected is None:
+            return None
+        members = projected.fields
+        selected: Field | None = None
+        for group in path:
+            wanted = column_name(group)
+            matches = [
+                member
+                for member in members
+                if wanted in {column_name(member.name), column_name(member.fix.name)}
+            ]
+            if not matches:
+                return None
+            if len(matches) != 1:
+                raise ValueError(f"FIX group {group!r} is ambiguous under {root!r}")
+            selected = matches[0]
+            if not isinstance(selected, ListField):
+                raise ValueError(f"FIX member {group!r} under {root!r} is not a group")
+            members = selected.item.fields
+        return selected
 
     def component_scalar(self, name: str, version: str) -> type | None:
         """One component as a class, built from its declaration rather than by hand.
@@ -2665,6 +1863,7 @@ class FixRegistry(Convertible):
         built.fix.versions = canonical_versions((*held.fix.versions, *fresh.fix.versions))
         built.fix.sources = tuple(dict.fromkeys((*winner.fix.sources, *dropped.fix.sources)))
         built.fix.source = winner.fix.source or dropped.fix.source
+        built.fix.tags = tuple(dict.fromkeys((*winner.fix.tags, *dropped.fix.tags)))
         aliases = list(winner.fix.named_aliases)
         aliased = {alias.folded for alias in aliases}
         for alias in dropped.fix.named_aliases:
@@ -2745,17 +1944,15 @@ class FixRegistry(Convertible):
         return built
 
     def _source_priority(self, source: str) -> int:
-        """Manifest priority, then configured legacy-source order."""
+        """Active adapter priority, then the stored source manifest."""
         active = self.__dict__.get("_refresh_priorities", {})
         if source in active:
             return int(active[source])
-        for order, declared in enumerate(self._layout.source_manifest()):
+        manifest = self._layout.source_manifest()
+        for order, declared in enumerate(manifest):
             if str(declared.get("source_id") or "") == source:
                 return int(declared.get("priority", order))
-        for order, declared in enumerate(self.sources):
-            if declared.name == source:
-                return 10_000 + order
-        return 20_000 + len(self.sources) + len(self._layout.source_manifest())
+        return 20_000 + len(manifest)
 
     def _record_namespace_conflict(
         self,
@@ -3007,105 +2204,6 @@ class FixRegistry(Convertible):
                 held = self._indexes[version] = None
         return list(held or ())
 
-    # -- scraping ------------------------------------------------------------
-
-    def _scrape_version(self, version: str) -> list[Field]:
-        """One version, with each source filling what higher priorities omit."""
-        listings: list[tuple[RegistrySource, dict[int, tuple[str, str]]]] = []
-        missing: list[OSError] = []
-        for source in self.sources:
-            try:
-                listed = self._read_source(source.tags, version)
-            except OSError as error:
-                if not _is_missing(error):
-                    raise
-                missing.append(error)
-                continue
-            if listed:
-                listings.append((source, listed))
-        tags = sorted({tag for _, listed in listings for tag in listed})
-        if not tags:
-            if missing:
-                raise missing[-1]
-            raise ValueError(f"the configured FIX sources list no fields for {version}")
-
-        def read(job: tuple[RegistrySource, int]) -> tuple[RegistrySource, int, dict[str, Any]]:
-            source, tag = job
-            detail = self._read_source(
-                source.field,
-                version,
-                tag,
-                shared=source.shared_field_page,
-                pause_seconds=source.field_pause_seconds,
-            )
-            return source, tag, detail
-
-        by_source: dict[tuple[str, int], dict[str, Any]] = {}
-
-        def fetch_fields(source: RegistrySource, tags: Sequence[int]) -> None:
-            if not tags:
-                return
-            workers = 1 if source.shared_field_page else min(self.max_workers, source.workers)
-            with concurrent.futures.ThreadPoolExecutor(workers) as pool:
-                fetched = pool.map(read, ((source, tag) for tag in tags))
-                by_source.update(
-                    ((found.name, tag), detail) for found, tag, detail in fetched if detail
-                )
-
-        # A lower-priority page can carry usage or an alias no higher source
-        # exposes, so every source is asked about every tag it lists.
-        for source, listed in listings:
-            fetch_fields(source, tuple(listed))
-
-        fields: list[Field] = []
-        for tag in tags:
-            readings = _ordered_source_readings(tag, listings, by_source)
-            if not readings:
-                continue
-            detail = _merged_source_field(readings, version, tag)
-            self.__dict__.setdefault("_source_conflicts", []).extend(detail.pop("conflicts", ()))
-            built = fix_field(
-                name_of(detail.get("name") or str(tag)),
-                tag,
-                detail.get("type"),
-                description=detail.get("description"),
-                version=version,
-                values=detail.get("values"),
-            )
-            built.fix.source = detail["source"]
-            built.fix.sources = detail["sources"]
-            built.fix.origins = detail["origins"]
-            if detail.get("added"):
-                built.fix.added = detail["added"]
-            if detail.get("note"):
-                built.fix.note = detail["note"]
-            used = detail.get("used_in")
-            if used:
-                built.fix.msgtypes = used
-            components = detail.get("components")
-            if components:
-                built.fix.components = components
-            fields.append(built)
-        return fields
-
-    def _spec_document(self, version: str) -> str:
-        """The configured QuickFIX document, or empty text when absent."""
-        for source in self.sources:
-            if isinstance(source, QuickFixSource):
-                return self._read_source(source.document, version)
-        return ""
-
-    def _component_declarations(self, document: str) -> tuple[Field, ...]:
-        """QuickFIX component trees stamped with their source."""
-        source = next((one.name for one in self.sources if isinstance(one, QuickFixSource)), "")
-        declarations: list[Field] = []
-        for entry in _parsed_quickfix(document).declarations.values():
-            declared = record_copy(entry)
-            declared.fix.source = source
-            declared.fix.sources = (source,) if source else ()
-            declarations.append(declared)
-        return tuple(declarations)
-
     # -- the store -----------------------------------------------------------
     #
     # Seven methods, and they are the whole of where the dictionary is kept.
@@ -3206,7 +2304,7 @@ class FixRegistry(Convertible):
 
         Read off the extension, and only off the extension: a path that does
         not exist yet has to say what it will be before anything is written
-        to it, and `data/fix.zip` says it.
+        to it, and its `.zip` suffix says it.
         """
         location = Url.from_string(os.fspath(cast(str | os.PathLike[str], self.cache_dir)))
         return pathlib.PurePosixPath(location.path).suffix.lower() == ".zip"
@@ -3384,117 +2482,6 @@ class FixRegistry(Convertible):
             documents_of(versions, selected, self._entries[1], sessions, declared),
         )
 
-    def _source_fetch(self, url: str) -> str:
-        """One source page per registry operation, shared by every source question."""
-        pages = self.__dict__.setdefault("_source_pages", {})
-        if url not in pages:
-            pages[url] = self._fetch(url)
-        return pages[url]
-
-    def _read_source(
-        self,
-        reader: Callable[..., Any],
-        *arguments: Any,
-        shared: bool = True,
-        pause_seconds: float = 0.0,
-    ) -> Any:
-        """One validated source answer, resuming pages an interrupted scrape fetched."""
-        pending: dict[str, str] = {}
-        used: dict[str, None] = {}
-
-        def fetch(url: str) -> str:
-            used[url] = None
-            pages = self.__dict__.setdefault("_source_pages", {}) if shared else None
-            if pages is not None and url in pages:
-                return pages[url]
-            cached = self._cached_source_page(url)
-            if cached is not None:
-                if pages is not None:
-                    pages[url] = cached
-                return cached
-            if pause_seconds:
-                time.sleep(pause_seconds)
-            page = (self._source_fetch if shared else self._fetch)(url)
-            pending[url] = page
-            return page
-
-        try:
-            answer = reader(fetch, *arguments)
-        except ValueError:
-            for url in used:
-                self._remove_source_page(url)
-            raise
-        for url, page in pending.items():
-            self._store_source_page(url, page)
-        return answer
-
-    def _cached_source_page(self, url: str) -> str | None:
-        """One successful page from an interrupted scrape, or None when absent."""
-        path = self._source_page_path(url)
-        if path is None:
-            return None
-        try:
-            return path.read_text(encoding="utf-8")
-        except (OSError, UnicodeError):
-            return None
-
-    def _store_source_page(self, url: str, page: str) -> None:
-        """Keep one successful page atomically outside the published registry."""
-        path = self._source_page_path(url)
-        if path is None:
-            return
-        path.parent.mkdir(parents=True, exist_ok=True)
-        scratch = path.with_suffix(".tmp")
-        scratch.write_text(page, encoding="utf-8")
-        scratch.replace(path)
-
-    def _remove_source_page(self, url: str) -> None:
-        """Forget a page that failed its source parser."""
-        path = self._source_page_path(url)
-        if path is not None:
-            path.unlink(missing_ok=True)
-        self.__dict__.get("_source_pages", {}).pop(url, None)
-
-    def _source_page_path(self, url: str) -> pathlib.Path | None:
-        """The sharded cache path for one exact source URL."""
-        if self._source_page_cache is None:
-            return None
-        digest = hashlib.sha256(url.encode()).hexdigest()
-        return self._source_page_cache / digest[:2] / f"{digest[2:]}.page"
-
-    def _fetch(self, url: str) -> str:
-        """One page, as text, retried while the site says "later".
-
-        The one place the network is reached on a read, and so the one place
-        a registry that serves a store refuses to: `_fetching` is what the
-        verbs that mean to scrape open, and nothing else opens it.
-        """
-        if self._serves_stored:
-            raise OSError(
-                f"{url} was not fetched: {self.cache_dir} is the dictionary this "
-                "registry serves. Call FixRegistry.scrape() to refresh from sources."
-            )
-        request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-        pause = self.backoff
-        for _ in range(self.retries):
-            try:
-                return self._read(request)
-            except OSError as error:
-                if not _is_transient(error):
-                    raise
-                time.sleep(_wait_for(error, pause))
-                pause *= 2
-        # The last attempt is the one whose failure is the caller's.
-        try:
-            return self._read(request)
-        except urllib.error.HTTPError as error:
-            error.msg = f"{error.msg}: {url}"
-            raise
-
-    def _read(self, request: urllib.request.Request) -> str:
-        """One page fetch, once. The single place the network is touched."""
-        return read_bytes(request, timeout=self.timeout).decode("utf-8", "replace")
-
 
 # -- the store, as a directory or as a zip ------------------------------------
 
@@ -3552,74 +2539,6 @@ def _source_definitions_checksum(registry: Any) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
-# -- the wire ----------------------------------------------------------------
-
-#: Answers that mean "later" rather than "no": a scrape waits these out.
-_RETRIED = frozenset({408, 425, 429, 500, 502, 503, 504})
-
-#: A pause the site asked for is honoured up to this, so one absurd
-#: `Retry-After` cannot park a whole scrape for an afternoon.
-_MAX_WAIT = 60.0
-
-
-def _is_transient(error: Exception) -> bool:
-    """Whether an error means "ask again later" rather than "there is none"."""
-    if isinstance(error, urllib.error.HTTPError):
-        return error.code in _RETRIED
-    return isinstance(error, urllib.error.URLError | TimeoutError | ConnectionError)
-
-
-def _is_missing(error: Exception) -> bool:
-    """Whether a source answered that this exact page does not exist."""
-    if isinstance(error, urllib.error.HTTPError):
-        return error.code == 404
-    return bool(re.search(r"^\s*404(?:\D|$)", str(error)))
-
-
-def _wait_for(error: Exception, pause: float) -> float:
-    """How long to wait: what the site asked for, else the caller's pause.
-
-    `Retry-After` is seconds or an HTTP date, and only the seconds spelling is
-    read -- a date is the site's clock, and the two clocks are not the same.
-    """
-    headers = getattr(error, "headers", None)
-    asked = headers.get("Retry-After", "") if headers is not None else ""
-    seconds = float(asked) if str(asked).strip().isdigit() else pause
-    return min(seconds, _MAX_WAIT)
-
-
-# -- page parsing ------------------------------------------------------------
-
-
-def _text(markup: str) -> str:
-    """Markup as one line of text: tags out, entities decoded, spaces folded."""
-    return _SPACES.sub(" ", html.unescape(_TAGS.sub(" ", markup))).strip()
-
-
-def _optional_page(fetch: Callable[[str], str], url: str) -> str:
-    """One source page, empty only when that source never published it."""
-    try:
-        return fetch(url)
-    except OSError as error:
-        # Missing is no contribution. Refused is an incomplete scrape and must
-        # not become the stored reading every later offline call trusts.
-        if _is_missing(error):
-            return ""
-        raise
-
-
-def _local_aliases(entry: Field) -> tuple[Alias, ...]:
-    """Aliases attributed outside the source dictionaries."""
-    source_owned = {
-        str(source).casefold() for source in (*entry.fix.versions, *entry.fix.sources) if source
-    }
-    return tuple(
-        alias
-        for alias in entry.fix.named_aliases
-        if not alias.source or alias.source.casefold() not in source_owned
-    )
-
-
 def _definition_types(entry: Field) -> tuple[str, ...]:
     """Authoritative type readings retained by one reconciled definition."""
     encoded = entry.fix.get("disputed_types")
@@ -3663,272 +2582,6 @@ def _with_disputed_key(winner: Field, dropped: Field) -> Field:
         [unique[key] for key in sorted(unique)], separators=(",", ":"), sort_keys=True
     )
     return built
-
-
-def _into_nanoconda_version(version: str) -> str:
-    """`5.0.SP2` -> `FIX.5.0SP2`; `FIXT1.1` -> `FIXT.1.1`."""
-    text = str(version).strip().upper()
-    if text.startswith("FIXT"):
-        return f"FIXT.{text.removeprefix('FIXT').lstrip('.')}"
-    application = text.removeprefix("FIX.").removeprefix("FIX")
-    return f"FIX.{application.replace('.SP', 'SP')}"
-
-
-def _from_nanoconda_version(version: str) -> str:
-    """Nanoconda's version spelling as the registry's canonical spelling."""
-    text = str(version).strip().upper()
-    if text.startswith("FIXT."):
-        return f"FIXT{text.removeprefix('FIXT.')}"
-    application = text.removeprefix("FIX.")
-    return re.sub(r"(?<=\d)SP(?=\d+$)", ".SP", application)
-
-
-def _linked_tags(page: str, pattern: re.Pattern[str]) -> dict[int, tuple[str, str]]:
-    """A source's repeated tag/name links as `{tag: (name, note)}`."""
-    listed: dict[int, tuple[str, str]] = {}
-    for tag_text, label in pattern.findall(page):
-        tag = int(tag_text)
-        text = _text(label)
-        if not text or text == tag_text:
-            listed.setdefault(tag, ("", ""))
-            continue
-        name, note = _split_note(text)
-        known = listed.get(tag)
-        if known is None or not known[0]:
-            listed[tag] = (name_of(name), note)
-    return {tag: listed[tag] for tag in sorted(listed)}
-
-
-def _ordered_source_readings(
-    tag: int,
-    listings: Sequence[tuple[RegistrySource, Mapping[int, tuple[str, str]]]],
-    fetched: Mapping[tuple[str, int], Mapping[str, Any]],
-) -> list[dict[str, Any]]:
-    """One field's fetched readings in configured priority order."""
-    readings: list[dict[str, Any]] = []
-    for source, listed in listings:
-        detail = fetched.get((source.name, tag))
-        if detail is None:
-            continue
-        name, note = listed[tag]
-        readings.append({"name": name, "note": note, **detail, "source": source.name})
-    return readings
-
-
-def _merged_source_field(
-    readings: Sequence[Mapping[str, Any]], version: str, tag: int
-) -> dict[str, Any]:
-    """One field from ordered sources, first reading winning each stated part.
-
-    Name, type, description and value meaning come from the first source that
-    states them. Values merge by wire value and names remain aliases in source
-    order, deduplicated by the same fold the value decoder uses. A valid-value
-    row without a source name is prose or a constraint, not an enumeration.
-    """
-    merged: dict[str, Any] = {}
-    origins: dict[str, Any] = {}
-    sources: list[str] = []
-    values: dict[str, FixFieldValue] = {}
-    value_origins: dict[str, dict[str, str]] = {VALUES: {}, ALIASES: {}}
-    for reading in readings:
-        source = str(reading.get("source") or "")
-        if source:
-            sources.append(source)
-        for part in ("name", "type", "description", "note", "added"):
-            if part not in merged and reading.get(part):
-                merged[part] = reading[part]
-                if source:
-                    origins[part] = source
-        for part in ("used_in", "components"):
-            if reading.get(part):
-                merged[part] = list(dict.fromkeys((*merged.get(part, ()), *reading[part])))
-        for fresh in values_of(reading.get("values")):
-            held = values.get(fresh.value)
-            if held is None:
-                values[fresh.value] = fresh
-                if source and fresh.meaning:
-                    value_origins[VALUES][fresh.value] = source
-                if source and fresh.aliases:
-                    value_origins[ALIASES][fresh.value] = source
-                continue
-            aliases = list(held.aliases)
-            folded = {encoded_key(alias) for alias in aliases}
-            for alias in fresh.aliases:
-                key = encoded_key(alias)
-                if key not in folded:
-                    folded.add(key)
-                    aliases.append(alias)
-            if source and not held.meaning and fresh.meaning:
-                value_origins[VALUES][fresh.value] = source
-            if source and not held.aliases and aliases:
-                value_origins[ALIASES][fresh.value] = source
-            values[fresh.value] = dataclasses.replace(
-                held,
-                meaning=held.meaning or fresh.meaning,
-                aliases=tuple(aliases),
-            )
-    merged["source"] = sources[0]
-    merged["sources"] = tuple(dict.fromkeys(sources))
-    enumerated = {wire: value for wire, value in values.items() if value.aliases}
-    if enumerated:
-        merged["values"] = tuple(enumerated.values())
-    for part, stated in value_origins.items():
-        kept = {wire: source for wire, source in stated.items() if wire in enumerated}
-        if kept:
-            origins[part] = kept
-    merged["origins"] = origins
-    merged["conflicts"] = _source_conflicts(readings, merged, version, tag)
-    return merged
-
-
-def _source_conflicts(
-    readings: Sequence[Mapping[str, Any]],
-    merged: Mapping[str, Any],
-    version: str,
-    tag: int,
-) -> tuple[Collapse, ...]:
-    """Same-version source disagreements in the registry's conflict shape."""
-    name = name_of(str(merged.get("name") or tag))
-    conflicts: list[Collapse] = []
-    for key, part, compared in (
-        ("name", NAME, fold),
-        ("added", ADDED, str),
-        ("type", TYPE, datatype_identity),
-        ("note", NOTE, str),
-    ):
-        kept = str(merged.get(key) or "")
-        keptsource = next(
-            (str(reading.get("source") or "") for reading in readings if reading.get(key)),
-            "",
-        )
-        dropped = tuple(
-            Dropped(
-                version=version,
-                reading=str(reading[key]),
-                source=str(reading.get("source") or ""),
-            )
-            for reading in readings
-            if reading.get(key) and compared(str(reading[key])) != compared(kept)
-        )
-        if dropped:
-            conflicts.append(Collapse(name, part, version, dropped, tag, keptsource))
-
-    by_value: dict[str, list[tuple[str, FixFieldValue]]] = {}
-    named = {value.value for value in values_of(merged.get("values"))}
-    for reading in readings:
-        source = str(reading.get("source") or "")
-        for value in values_of(reading.get("values")):
-            if value.value in named:
-                by_value.setdefault(value.value, []).append((source, value))
-    for part, read in (
-        (VALUES, lambda value: value.meaning),
-        (ALIASES, lambda value: value.aliases[0] if value.aliases else ""),
-    ):
-        grouped: dict[str, list[Dropped]] = {}
-        for value, stated in sorted(by_value.items()):
-            keptsource, kept = next(
-                ((source, read(one)) for source, one in stated if read(one)),
-                ("", ""),
-            )
-            compared = encoded_key if part == ALIASES else str
-            for source, one in stated:
-                reading = read(one)
-                if reading and compared(reading) != compared(kept):
-                    grouped.setdefault(keptsource, []).append(
-                        Dropped(version, reading, value, source)
-                    )
-        conflicts.extend(
-            Collapse(name, part, version, tuple(dropped), tag, keptsource)
-            for keptsource, dropped in grouped.items()
-        )
-    return tuple(conflicts)
-
-
-def _split_note(label: str) -> tuple[str, str]:
-    """`Name (no longer used)` -> `("Name", "no longer used")`."""
-    note = _NOTE.search(label)
-    if note is None:
-        return label, ""
-    return label[: note.start()].strip(), note[1].strip()
-
-
-def _sections(page: str, start: int) -> tuple[str, str, str]:
-    """A field page cut into its three parts: prose, values, messages."""
-    body = page[start:]
-    used_in = ""
-    carried = _USED_IN.search(body)
-    if carried is not None:
-        body, used_in = body[: carried.start()], body[carried.end() :]
-    values = ""
-    valid = _VALID_VALUES.search(body)
-    if valid is not None:
-        body, values = body[: valid.start()], body[valid.end() :]
-    described = _DESCRIPTION_HEADING.search(body) or _DESCRIPTION_ANCHOR.search(body)
-    prose = body[described.end() :] if described is not None else _until_section(body)
-    return prose, values, used_in
-
-
-def _until_section(markup: str) -> str:
-    """The prose of a page that never says `Description`, up to what follows it.
-
-    The markers are what the older pages put after the field's own paragraph;
-    the length cap is what stops a page carrying *none* of them from making
-    its whole body one description.
-    """
-    window = markup[:8000]
-    for marker in ("Used in", "Used In", "<h3", "<ul", "<table"):
-        cut = window.find(marker)
-        if cut >= 0:
-            window = window[:cut]
-    return window
-
-
-def _description(prose: str) -> str:
-    """The field's own paragraphs, as one line of text."""
-    return _text(prose[:8000])
-
-
-def _values(markup: str, *, names: bool = False) -> tuple[FixFieldValue, ...]:
-    """The enumerated values a field page lists, in their wire order."""
-    found: dict[str, FixFieldValue] = {}
-    for _, item in _VALUE_ITEM.findall(markup):
-        text = _text(item)
-        value = _VALUE.match(text)
-        if value:
-            label = name_of(value[2]) if names else value[2]
-            if label:
-                found.setdefault(
-                    value[1],
-                    FixFieldValue(
-                        value=value[1],
-                        meaning="" if names else label,
-                        aliases=(label,) if names else (),
-                    ),
-                )
-    return tuple(found.values())
-
-
-def _used_in(markup: str, kind: str = MESSAGE_LINK) -> list[str]:
-    """What a field page's `Used In` links name: its messages, or its components.
-
-    Two kinds of link sit in the same section, and reading only the first left
-    every field that FIX carries *inside a component block* -- `TrdRegTimestamp
-    <769>`, and three hundred others in 4.4 alone -- recorded as used nowhere.
-    """
-    names = []
-    seen: set[str] = set()
-    pattern = rf"<a[^>]+href=\"{kind}_[^\"]+\"[^>]*>(.*?)</a>"
-    for match in re.finditer(pattern, markup, re.DOTALL):
-        name, _ = _split_note(_text(match[1]))
-        # A component link's own angle brackets are its name, unlike the tag
-        # suffix on a message link.
-        name = _COMPONENT_NAME.sub(r"\1", name) if kind == COMPONENT_LINK else name
-        name = name_of(name)
-        folded = fold(name)
-        if name and folded not in seen:
-            names.append(name)
-            seen.add(folded)
-    return names
 
 
 # -- ordering and matching ---------------------------------------------------

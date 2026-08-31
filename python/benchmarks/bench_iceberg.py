@@ -481,7 +481,7 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
 def sweep_fs(rows: int, days: int) -> None:
     """Every flow again, in store calls: what S3 would be asked, not seconds.
 
-    Counted on `PyArrowFile` itself -- *below* the FileIO content cache, so a
+    Counted on `ArrowPath` itself -- *below* the FileIO content cache, so a
     count is a call the store actually served. The same sweep runs with the
     cache off and on, because the cache is the answer to most of what the off
     leg shows: everything it removes is a manifest, manifest list or
@@ -489,9 +489,8 @@ def sweep_fs(rows: int, days: int) -> None:
     """
     import contextlib
 
-    from pyiceberg.io.pyarrow import PyArrowFile
-
-    from rekep.arrow_file_io import CONTENT_CACHE
+    from rekep.arrow_file_io import CONTENT_CACHE, ArrowFileIO
+    from rekep.arrow_path import ArrowPath
 
     counts: dict[str, int] = {}
 
@@ -507,7 +506,12 @@ def sweep_fs(rows: int, days: int) -> None:
 
     @contextlib.contextmanager
     def counted():
-        originals = {"open": PyArrowFile.open, "create": PyArrowFile.create}
+        originals = {
+            "input_file": ArrowPath.open_input_file,
+            "input_stream": ArrowPath.open_input_stream,
+            "output": ArrowPath.open_output_stream,
+            "copy": ArrowFileIO.copy_from_local,
+        }
 
         def watched(verb: str, original: Callable[..., Any]) -> Callable[..., Any]:
             def call(self: Any, *args: Any, **kwargs: Any) -> Any:
@@ -517,13 +521,22 @@ def sweep_fs(rows: int, days: int) -> None:
 
             return call
 
-        PyArrowFile.open = watched("get", originals["open"])
-        PyArrowFile.create = watched("put", originals["create"])
+        def copied(self: Any, source: Any, target: str) -> Any:
+            key = f"put {sort(target)}"
+            counts[key] = counts.get(key, 0) + 1
+            return originals["copy"](self, source, target)
+
+        ArrowPath.open_input_file = watched("get", originals["input_file"])
+        ArrowPath.open_input_stream = watched("get", originals["input_stream"])
+        ArrowPath.open_output_stream = watched("put", originals["output"])
+        ArrowFileIO.copy_from_local = copied
         try:
             yield
         finally:
-            PyArrowFile.open = originals["open"]
-            PyArrowFile.create = originals["create"]
+            ArrowPath.open_input_file = originals["input_file"]
+            ArrowPath.open_input_stream = originals["input_stream"]
+            ArrowPath.open_output_stream = originals["output"]
+            ArrowFileIO.copy_from_local = originals["copy"]
 
     def fresh(root: pathlib.Path, name: str, cached: bool) -> IcebergDataset:
         warehouse = root / f"wh-{name}"
@@ -776,6 +789,59 @@ def sweep_update(rows: int, days: int) -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def sweep_delete(rows: int, days: int, repeat: int) -> None:
+    """Partition-pruned, partial-file, and empty streamed deletes."""
+    rows = min(rows, 50_000)
+    symbols = max(rows // max(days, 1), 1)
+    source = quote_rows(symbols, days)
+    first = datetime.date(2026, 8, 14)
+    cases = (
+        ("one partition", f"day = '{first.isoformat()}'"),
+        ("part of one file", f"size < {max(symbols // 2, 1)}"),
+        ("no match", "size < 0"),
+    )
+    print(f"\n== delete: {source.num_rows:,} rows over {days} days ==")
+    header(
+        ("case", "best sec", "removed", "rows/s", "planned", "files after", "snapshots"),
+        (18, 10, 10, 12, 8, 11, 9),
+    )
+    for label, predicate in cases:
+        runs = []
+        for trial in range(max(repeat, 1)):
+            root = pathlib.Path(tempfile.mkdtemp(prefix=f"rekep-bench-delete-{trial}-"))
+            try:
+                target = (
+                    catalog(root)
+                    .dataset("bench.quotes", field=Quote.into_field(), table_properties=OPTIMISED)
+                    .create_with()
+                )
+                target.append_arrow(
+                    batches(source, 4_096),
+                    commit_row_size=max(source.num_rows // max(days * 2, 1), 1),
+                )
+                planned = target.scan_plan(predicate)["files"]
+                before = len(target.iceberg_table.snapshots())
+                seconds, removed = timed(functools.partial(target.delete_where, predicate))
+                report = {
+                    "seconds": seconds,
+                    "removed": removed,
+                    "planned": planned,
+                    "files": target.refresh().data_files().num_rows,
+                    "snapshots": len(target.iceberg_table.snapshots()) - before,
+                }
+                assert target.read_arrow_table().num_rows == source.num_rows - removed
+                runs.append(report)
+            finally:
+                shutil.rmtree(root, ignore_errors=True)
+        best = min(runs, key=lambda report: report["seconds"])
+        rate = best["removed"] / best["seconds"] if best["removed"] else 0
+        print(
+            f"{label:>18} {best['seconds']:>10.3f} {best['removed']:>10,} "
+            f"{rate:>12,.0f} {best['planned']:>8,} {best['files']:>11,} "
+            f"{best['snapshots']:>9,}"
+        )
+
+
 def tick_rows(count: int) -> pyarrow.Table:
     """`count` ticks under a key neither half of which repeats."""
     source = random.Random(20_260_821)
@@ -914,7 +980,17 @@ def main() -> int:
     options.add_argument("--days", type=int, default=8)
     options.add_argument(
         "--only",
-        choices=["write", "insert", "polars", "read", "fs", "maintain", "update", "backfill"],
+        choices=[
+            "write",
+            "insert",
+            "polars",
+            "read",
+            "fs",
+            "maintain",
+            "update",
+            "delete",
+            "backfill",
+        ],
         default=None,
     )
     arguments = options.parse_args()
@@ -935,6 +1011,8 @@ def main() -> int:
         sweep_maintain(min(rows, 100_000), days)
     if arguments.only in (None, "update"):
         sweep_update(min(rows, 100_000), days)
+    if arguments.only in (None, "delete"):
+        sweep_delete(rows, days, 1 if arguments.quick else min(arguments.repeat, 2))
     if arguments.only in (None, "backfill"):
         sweep_backfill(min(rows, 100_000), days)
     return 0

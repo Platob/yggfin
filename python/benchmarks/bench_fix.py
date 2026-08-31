@@ -322,11 +322,14 @@ def _race_keys(keys: list[str], names: dict[str, int], repeat: int) -> None:
 
 def main() -> None:
     arguments = parser(__doc__, rows=100_000).parse_args()
-    rows = 10_000 if arguments.quick else arguments.rows
-    repeat = 3 if arguments.quick else arguments.repeat
-    sweep_parsing(rows, repeat, 500 if arguments.quick else 2_000)
+    # `--quick` is the CI smoke leg: one measured vector pass and a bounded
+    # scalar reference are enough to exercise every assertion. Statistical
+    # timing remains the default benchmark's job.
+    rows = 1_000 if arguments.quick else arguments.rows
+    repeat = 1 if arguments.quick else arguments.repeat
+    sweep_parsing(rows, repeat, 5 if arguments.quick else 2_000)
     sweep_tags(rows, repeat)
-    sweep_pairs(rows, repeat, 1_000 if arguments.quick else 10_000)
+    sweep_pairs(rows, repeat, 10 if arguments.quick else 10_000)
 
 
 if __name__ == "__main__":

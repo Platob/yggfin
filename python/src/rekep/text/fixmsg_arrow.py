@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping
 from typing import Any
 
 import pyarrow
@@ -118,68 +118,6 @@ def into_flat_fixmsg_batch(
     return shape.identified(output, schema, rows, codec.registry)
 
 
-def flat_fixmsg_positions(
-    codec: Any,
-    columns: Mapping[str, pyarrow.Array],
-    protocols: pyarrow.Array,
-) -> Iterator[pyarrow.Array]:
-    """Yield version-homogeneous rows accepted by the flat transcription."""
-    entries = columns.get("entries")
-    rows = len(protocols)
-    if not rows or entries is None or not _supports(codec):
-        return
-    items = compute.list_flatten(entries)
-    tags = compute.struct_field(items, "tag")
-    keys = compute.struct_field(items, "key")
-    values = compute.struct_field(items, "value")
-    component = compute.struct_field(items, "comp")
-    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
-
-    good = compute.and_(compute.is_valid(tags), compute.greater(tags, 0))
-    good = compute.and_(good, compute.is_valid(values))
-    good = compute.and_(good, compute.is_null(component))
-    good = compute.and_(good, compute.not_equal(tags, 213))
-    good = compute.and_(good, compute.equal(keys, tags.cast(pyarrow.string())))
-    good = compute.and_(good, compute.equal(values, compute.utf8_trim_whitespace(values)))
-    if codec.null_values:
-        absent = compute.is_in(
-            compute.utf8_lower(values),
-            value_set=pyarrow.array(sorted(codec.null_values), pyarrow.string()),
-        )
-        good = compute.and_(good, compute.invert(compute.fill_null(absent, True)))
-    eligible = compute.and_(compute.is_valid(entries), compute.equal(protocols, Protocol.FIX))
-    invalid_rows = _marked_rows(parents, compute.invert(good), rows)
-    eligible = compute.and_(eligible, compute.invert(invalid_rows))
-    eligible = compute.and_(eligible, compute.invert(_duplicate_rows(parents, tags, rows)))
-    misplaced = _misplaced_checksum_rows(entries, parents, tags)
-    eligible = compute.and_(eligible, compute.invert(misplaced))
-    column_tags = _namespaced_column_tags(codec, tags.type)
-    if len(column_tags):
-        namespaced = compute.is_in(tags, value_set=column_tags)
-        eligible = compute.and_(
-            eligible,
-            compute.invert(_marked_rows(parents, namespaced, rows)),
-        )
-
-    versions, _ = _versions(
-        codec, entries, tags, values, rows, columns.get("beginstring"), columns.get("applverid")
-    )
-    eligible = compute.and_(eligible, compute.is_valid(versions))
-    positions = sequence(rows)
-    for version in compute.drop_null(compute.unique(compute.filter(versions, eligible))).sort():
-        selected = compute.and_(eligible, compute.equal(versions, version))
-        group_tags = codec.registry.group_count_tags(version.as_py())
-        if group_tags:
-            grouped = compute.is_in(
-                tags,
-                value_set=pyarrow.array(sorted(group_tags), tags.type),
-            )
-            selected = compute.and_(selected, compute.invert(_marked_rows(parents, grouped, rows)))
-        where = compute.filter(positions, selected)
-        if len(where):
-            yield where
-
-
 def _supports(codec: Any) -> bool:
     """Whether the codec has exactly the behavior this specialization mirrors."""
     from rekep.fix.transcribe import FixCodec
@@ -205,45 +143,6 @@ def _namespaced_column_tags(codec: Any, dtype: pyarrow.DataType) -> pyarrow.Arra
         ),
         dtype,
     )
-
-
-def _marked_rows(parents: pyarrow.Array, marked: pyarrow.Array, rows: int) -> pyarrow.Array:
-    """Mark rows having at least one selected child entry."""
-    bad = compute.unique(compute.filter(parents, compute.fill_null(marked, True)))
-    return compute.is_in(sequence(rows), value_set=bad)
-
-
-def _duplicate_rows(parents: pyarrow.Array, tags: pyarrow.Array, rows: int) -> pyarrow.Array:
-    """Mark rows carrying one numeric tag more than once."""
-    valid = compute.and_(compute.is_valid(tags), compute.greater(tags, 0))
-    valid_parents = compute.filter(parents, valid)
-    valid_tags = compute.filter(tags, valid).cast(pyarrow.int64())
-    identities = compute.add(
-        compute.multiply(valid_parents, pyarrow.scalar(1 << 32, pyarrow.int64())),
-        valid_tags,
-    )
-    counted = compute.value_counts(identities)
-    repeated = compute.filter(counted.field("values"), compute.greater(counted.field("counts"), 1))
-    if not len(repeated):
-        return pyarrow.repeat(pyarrow.scalar(False), rows)
-    found = compute.index_in(repeated, value_set=identities)
-    return compute.is_in(sequence(rows), value_set=compute.take(valid_parents, found))
-
-
-def _misplaced_checksum_rows(
-    entries: pyarrow.Array, parents: pyarrow.Array, tags: pyarrow.Array
-) -> pyarrow.Array:
-    """Mark rows whose CheckSum is not their final field."""
-    rows = len(entries)
-    checksum = compute.fill_null(compute.equal(tags, 10), False)
-    if not compute.any(checksum, min_count=0).as_py():
-        return pyarrow.repeat(pyarrow.scalar(False), rows)
-    sizes = compute.fill_null(compute.list_value_length(entries), 0).cast(pyarrow.int64())
-    ends = compute.subtract(compute.cumulative_sum(sizes), 1)
-    checksum_parents = compute.filter(parents, checksum)
-    checksum_positions = compute.filter(sequence(len(tags)), checksum)
-    misplaced = compute.not_equal(checksum_positions, compute.take(ends, checksum_parents))
-    return compute.is_in(sequence(rows), value_set=compute.filter(checksum_parents, misplaced))
 
 
 def _versions(

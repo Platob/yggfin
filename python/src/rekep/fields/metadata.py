@@ -223,6 +223,16 @@ def _aliases(declared: Any) -> tuple[str, ...]:
     return tuple(found)
 
 
+def _tag_numbers(declared: Iterable[Any], name: str) -> tuple[int, ...]:
+    """Distinct positive FIX tags, retaining the declared priority."""
+    found: dict[int, None] = {}
+    for value in declared:
+        if type(value) is not int or value <= 0:
+            raise ValueError(f"{name} fix:tags must be positive integers")
+        found.setdefault(value, None)
+    return tuple(found)
+
+
 def values_of(declared: Any) -> tuple[FixFieldValue, ...]:
     """One field's enumerated values from whatever spelling declared them.
 
@@ -502,6 +512,36 @@ class FixMetadata(ProtocolMetadata):
     sources = _Document(shape=tuple)
     origins = _Document(shape=dict)
     aliases = _Document(shape=tuple)
+
+    @property
+    def tags(self) -> tuple[int, ...]:
+        """Alternate numeric tags for this semantic slot, in lookup order."""
+        declared = self.get("tags")
+        if not declared:
+            return ()
+        try:
+            values = json.loads(declared)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"{self.field.name or 'field'} has invalid fix:tags") from error
+        if not isinstance(values, list):
+            raise ValueError(f"{self.field.name or 'field'} has invalid fix:tags")
+        return _tag_numbers(values, self.field.name or "field")
+
+    @tags.setter
+    def tags(self, value: Iterable[int] | None) -> None:
+        declared = _tag_numbers(value or (), self.field.name or "field")
+        canonical = self.tag
+        alternate = tuple(tag for tag in declared if tag != canonical)
+        if not alternate:
+            self.pop("tags", None)
+            return
+        self["tags"] = json.dumps(alternate, separators=(",", ":"))
+
+    @property
+    def tag_priority(self) -> tuple[int, ...]:
+        """Canonical tag followed by its ordered equivalent tags."""
+        canonical = self.tag
+        return self.tags if canonical is None else (canonical, *self.tags)
 
     @property
     def enumerated(self) -> tuple[FixFieldValue, ...]:

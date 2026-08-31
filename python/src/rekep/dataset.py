@@ -380,10 +380,7 @@ def _polars_reader(
     if isinstance(source, polars.DataFrame):
         frames = iter((source,))
     elif isinstance(source, polars.LazyFrame):
-        collect_batches = getattr(source, "collect_batches", None)
-        if collect_batches is None:
-            raise ImportError("streaming a LazyFrame requires Polars with collect_batches support")
-        frames = collect_batches(
+        frames = source.collect_batches(
             chunk_size=batch_row_size,
             maintain_order=True,
             engine="streaming",
@@ -401,10 +398,9 @@ def _polars_reader(
 
 def _polars_table(frame: Any, target: StructField, polars: Any) -> pyarrow.Table:
     """Export at the newest compatible level, then enforce the Arrow contract."""
-    compatibility = getattr(polars, "CompatLevel", None)
     options = {}
-    if compatibility is not None and not _needs_compatible_polars_arrow(target.dtype):
-        options["compat_level"] = compatibility.newest()
+    if not _needs_compatible_polars_arrow(target.dtype):
+        options["compat_level"] = polars.CompatLevel.newest()
     return target.cast_arrow_table(frame.to_arrow(**options))
 
 

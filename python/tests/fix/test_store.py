@@ -1,10 +1,10 @@
-"""A whole store: the shards it is written in, editing it, bootstrapping it.
+"""A whole store: the shards it is written in, editing it, and loading it.
 
 `test_entries.py` holds one record to its schema and `test_data.py` reads the
 published dictionary. These are about the store around them -- which document a
 tag lands in and how few are read to answer for it, what a change to one record
-is allowed to do, what a name resolves to, what a cold registry does about
-being cold, and which explicit operation may read source dictionaries.
+is allowed to do, what a name resolves to, and which explicit operation may
+read source dictionaries.
 
 Every identity is synthetic. The one real name any of this uses is a FIX
 version, which is a schema fact and not data.
@@ -12,13 +12,11 @@ version, which is a schema fact and not data.
 
 from __future__ import annotations
 
-import io
 import json
 import re
 import socket
-import urllib.request
 import zipfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +38,7 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, field_member, group_member, members_of
-from rekep.fix.registry import FixRegistry, QuickFixSource, _problems
+from rekep.fix.registry import FixRegistry, _problems
 from rekep.fix.store import (
     SHARD_SPAN,
     ConflictReport,
@@ -79,48 +77,8 @@ def _record(
     return record
 
 
-def _registry_documents() -> dict[str, dict[str, Any]]:
-    field = _record("FakeRole", 90001, "int")
-    component = ComponentRecord(name="FakeParties", versions=("9.1",))
-    return {
-        "versions.json": {
-            "versions": ["9.1"],
-            "stored": ["9.1"],
-            "declared": ["9.1"],
-            "sessions": {"9.1": [["FakeRole", True]]},
-        },
-        field_document(90001): {"90001": field.into_dict()},
-        "components/fake_parties.json": component.into_dict(),
-    }
-
-
-def _registry_archive(documents: dict[str, dict[str, Any]]) -> bytes:
-    payload = io.BytesIO()
-    with zipfile.ZipFile(payload, "w", zipfile.ZIP_DEFLATED) as archive:
-        for name, document in documents.items():
-            archive.writestr(name, json.dumps(document))
-    return payload.getvalue()
-
-
-class _Response(io.BytesIO):
-    """A context-managed HTTP response fixture."""
-
-    def __init__(self, payload: bytes, length: bool = True) -> None:
-        super().__init__(payload)
-        self.headers = {"Content-Length": str(len(payload))} if length else {}
-
-    def __enter__(self) -> _Response:
-        return self
-
-    def __exit__(self, *_args: object) -> None:
-        self.close()
-
-
 class Offline(FixRegistry):
     """A registry that must answer from the store alone."""
-
-    def _fetch(self, url: str) -> str:
-        raise OSError(f"offline: {url}")
 
 
 def _pairs(array: pyarrow.Array, row: int = 0) -> list[tuple[object, str]]:
@@ -184,6 +142,16 @@ def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
         "90001",
         "90002",
     ]
+
+
+def test_alternate_tags_round_trip_as_readable_ordered_metadata(store: Offline) -> None:
+    entry = record_copy(store.field(90001))
+    entry.fix.tags = (90011, 90012)
+    store.update_field(entry)
+
+    document = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
+    assert document["90001"]["fix"]["tags"] == [90011, 90012]
+    assert Offline(cache_dir=store.cache_dir).field(90001).fix.tags == (90011, 90012)
 
 
 def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> None:
@@ -774,48 +742,6 @@ def test_an_unstated_added_version_is_not_a_conflict() -> None:
     assert not [entry for entry in report.collapses if entry.part == "added"]
 
 
-def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) -> None:
-    class Building(Offline):
-        def _spec_document(self, version: str) -> str:
-            return "<fix><header/><trailer/><messages/><components/><fields/></fix>"
-
-        def _scrape_version(self, version: str) -> list[Field]:
-            return [
-                fix_field(
-                    "ExecType",
-                    150,
-                    "char",
-                    version=version,
-                    values={
-                        "0": "New",
-                        "1": "Partial fill",
-                        "F": "Trade",
-                        "G": "Trade correct",
-                        "H": "Trade cancel",
-                    },
-                )
-            ]
-
-    registry = Building(cache_dir=tmp_path / "fix")
-    registry._rebuild_sources("9.1")
-    mapping = State.fix_mapping()
-
-    assert mapping is State.fix_mapping()
-    assert mapping[150]["1"] is State.PARTIALLY_FILLED
-    assert registry.state_values("ExecType") == {
-        "0": State.NEW,
-        "1": State.PARTIALLY_FILLED,
-        "F": State.PARTIALLY_FILLED,
-        "G": State.REPLACED,
-        "H": State.CANCELLED,
-    }
-    stored = json.loads((tmp_path / "fix" / field_document(150)).read_text())
-    assert stored["150"]["fix"]["states"]["G"] == "REPLACED"
-    assert Offline(cache_dir=registry.cache_dir).state_values("ExecType") == (
-        registry.state_values("ExecType")
-    )
-
-
 def test_a_collapse_reports_every_encoding_two_values_share() -> None:
     member = fix_field(
         "FakeRole", 90001, "char", version="9.1", values={"1": "Cross", "2": "cross"}
@@ -910,292 +836,7 @@ def test_the_published_dictionary_answers_what_a_copy_of_it_answers(tmp_path: Pa
     assert published.verify(copied) == []
 
 
-# -- bootstrapping the default store -----------------------------------------
-
-
-class Refused(FixRegistry):
-    """A registry whose bootstrap cannot read the repository archive."""
-
-    def _registry_archive_payload(self) -> bytes:
-        raise OSError("the repository host is down")
-
-
-@pytest.fixture
-def default_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """`CACHE_DIRECTORY`, pointed somewhere a test may write."""
-    target = tmp_path / "config-fix"
-    monkeypatch.setattr(registry_module, "CACHE_DIRECTORY", target)
-    return target
-
-
-def test_a_cold_default_store_is_fetched_once_and_says_so_both_times(
-    default_store: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Announced before, announced after, and the next process finds a store."""
-    payload = _registry_archive(_registry_documents())
-    monkeypatch.setattr(
-        urllib.request,
-        "urlopen",
-        lambda *_args, **_kwargs: _Response(payload),
-    )
-    said: list[str] = []
-    with pytest.warns(RuntimeWarning, match="no FIX registry at"):
-        first = FixRegistry(announce=said.append)
-    assert first.installed
-    assert len(said) == 2, "one line before the fetch and one after it"
-    assert "downloading the main repository archive" in said[0]
-    assert "is installed at" in said[1]
-    assert (default_store / "fields" / "000090.json").exists(), "the sharded layout, cold"
-
-    second = FixRegistry(announce=said.append)
-    assert not second.installed, "the repository archive is installed once"
-    assert len(said) == 2, "and a store that is there is served silently"
-    assert second.field(90001, "9.1").name == "FakeRole"
-
-
-def test_a_cold_default_store_installs_the_configured_full_archive(
-    default_store: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    said: list[str] = []
-    monkeypatch.setenv("REKEP_FIX_REGISTRY_URL", str(PUBLISHED))
-
-    with pytest.warns(RuntimeWarning, match="downloading the main repository archive"):
-        registry = FixRegistry(announce=said.append)
-
-    assert registry.installed
-    assert len(list(default_store.rglob("*.json"))) > 700
-    assert registry.field("Side", "4.4").fix["tag"] == "54"
-    assert "downloading the main repository archive" in said[0]
-    assert "is installed" in said[-1]
-
-
-def test_an_https_registry_receives_the_private_bearer_token(
-    default_store: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    payload = _registry_archive(_registry_documents())
-    seen: dict[str, object] = {}
-
-    class Opener:
-        def open(self, request: urllib.request.Request, timeout: float) -> _Response:
-            seen.update(request=request, timeout=timeout)
-            return _Response(payload)
-
-    monkeypatch.setattr(urllib.request, "build_opener", lambda *_handlers: Opener())
-    with pytest.warns(RuntimeWarning, match="downloading the main repository archive"):
-        registry = FixRegistry(
-            registry_url="https://artifactory.example/fix-registry.zip",
-            registry_token="secret",
-            announce=lambda _line: None,
-        )
-
-    request = seen["request"]
-    assert isinstance(request, urllib.request.Request)
-    assert request.get_header("Authorization") == "Bearer secret"
-    assert request.get_header("User-agent") == "rekep-fix-registry"
-    assert registry.installed and registry.field(90001, "9.1").name == "FakeRole"
-
-
-@pytest.mark.parametrize(
-    ("url", "message"),
-    [
-        ("http://artifactory.example/fix-registry.zip", "requires an HTTPS"),
-        ("https://user:secret@artifactory.example/fix-registry.zip", "cannot contain credentials"),
-        ("https://artifactory.example/fix-registry.zip?token=secret", "cannot contain a query"),
-    ],
-)
-def test_registry_credentials_cannot_use_an_unsafe_url(
-    tmp_path: Path,
-    url: str,
-    message: str,
-) -> None:
-    with pytest.raises(ValueError, match=message):
-        FixRegistry(
-            cache_dir=tmp_path / "named",
-            registry_url=url,
-            registry_token="secret",
-        )
-
-
-def test_registry_archive_download_stops_at_the_compressed_limit(
-    default_store: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(registry_module, "_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES", 8)
-    monkeypatch.setattr(
-        urllib.request,
-        "urlopen",
-        lambda *_args, **_kwargs: _Response(b"123456789", length=False),
-    )
-    said: list[str] = []
-
-    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
-        registry = FixRegistry(
-            registry_url="https://artifactory.example/fix-registry.zip",
-            announce=said.append,
-        )
-
-    assert not registry.installed
-    assert any("exceeds 8 compressed bytes" in line for line in said)
-
-
-def test_a_failed_registry_archive_stream_serves_the_projection(
-    default_store: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    class BrokenResponse(_Response):
-        def read(self, _size: int = -1) -> bytes:
-            raise RuntimeError("connection ended")
-
-    monkeypatch.setattr(
-        urllib.request,
-        "urlopen",
-        lambda *_args, **_kwargs: BrokenResponse(b"", length=False),
-    )
-    said: list[str] = []
-
-    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
-        registry = FixRegistry(
-            registry_url="https://artifactory.example/fix-registry.zip",
-            announce=said.append,
-        )
-
-    assert not registry.installed
-    assert any("archive download failed: connection ended" in line for line in said)
-
-
-def test_a_refused_registry_archive_serves_the_projection(
-    default_store: Path,
-    tmp_path: Path,
-) -> None:
-    broken = tmp_path / "broken.zip"
-    broken.write_bytes(b"not a zip")
-    said: list[str] = []
-
-    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
-        registry = FixRegistry(registry_url=str(broken), announce=said.append)
-
-    assert not registry.installed
-    assert registry.field("Side").fix.tag == 54
-    assert any("could not be installed" in line for line in said)
-
-
-def test_an_undecodable_registry_member_serves_the_projection(
-    default_store: Path,
-    tmp_path: Path,
-) -> None:
-    archive = tmp_path / "undecodable.zip"
-    with zipfile.ZipFile(archive, "w") as opened:
-        opened.writestr("versions.json", b"\xff")
-        opened.writestr("fields/000000.json", "{}")
-    said: list[str] = []
-
-    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
-        registry = FixRegistry(registry_url=str(archive), announce=said.append)
-
-    assert not registry.installed
-    assert any("cannot be decoded" in line for line in said)
-
-
-def test_a_registry_archive_token_is_not_serialised(tmp_path: Path) -> None:
-    registry = FixRegistry(
-        cache_dir=tmp_path / "named",
-        registry_url="https://artifactory.example/fix-registry.zip",
-        registry_token="secret-token",
-    )
-
-    dumped = registry.into_dict()
-    assert "registry_token" not in dumped
-    assert "secret-token" not in repr(registry)
-    assert "secret-token" not in json.dumps(dumped)
-
-
-def test_an_explicit_empty_registry_token_suppresses_the_environment(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("REKEP_FIX_REGISTRY_TOKEN", "another-registry-token")
-    registry = FixRegistry(
-        cache_dir=tmp_path / "named",
-        registry_url="http://artifactory.example/fix-registry.zip",
-        registry_token="",
-    )
-
-    assert registry.__dict__["_registry_token"] == ""
-
-
-@pytest.mark.parametrize("malformed", ["index", "field", "component"])
-def test_malformed_registry_documents_never_leave_the_staging_directory(
-    tmp_path: Path,
-    malformed: str,
-) -> None:
-    documents = _registry_documents()
-    if malformed == "index":
-        documents["versions.json"]["sessions"] = {"9.1": [["FakeRole", "yes"]]}
-    elif malformed == "field":
-        documents[field_document(90001)]["90001"]["fix"]["versions"] = "9.1"
-    else:
-        documents["components/fake_parties.json"]["declaration"] = "not-a-document"
-    target = tmp_path / malformed
-    registry = FixRegistry(cache_dir=target)
-
-    with pytest.raises(ValueError, match="FIX"):
-        registry._install_registry_documents(documents)
-
-    assert not target.exists()
-
-
-def test_a_complete_concurrent_registry_wins_without_a_scrape(
-    default_store: Path,
-    tmp_path: Path,
-) -> None:
-    archive = tmp_path / "incoming.zip"
-    archive.write_bytes(_registry_archive(_registry_documents()))
-    winner = _registry_documents()
-
-    class Racing(FixRegistry):
-        def _install_registry_documents(self, documents: Mapping[str, Mapping[str, Any]]) -> int:
-            place = registry_module.DirectoryDocuments(
-                pyarrow.fs.LocalFileSystem(), Path(self.cache_dir).as_posix()
-            )
-            for name, document in winner.items():
-                place.write(name, document)
-            return super()._install_registry_documents(documents)
-
-    with pytest.warns(RuntimeWarning, match="downloading the main repository archive"):
-        registry = Racing(registry_url=str(archive), announce=lambda _line: None)
-
-    assert registry.installed
-    assert registry.field(90001, "9.1").name == "FakeRole"
-
-
-def test_an_interrupted_registry_install_leaves_no_partial_store(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    target = tmp_path / "fix"
-    registry = FixRegistry(cache_dir=target)
-    documents = {
-        "versions.json": {"versions": ["9.1"]},
-        "fields/000000.json": {},
-    }
-    write = registry_module.DirectoryDocuments.write
-    written = 0
-
-    def interrupt(place: object, name: str, document: dict[str, object]) -> None:
-        nonlocal written
-        written += 1
-        if written == 2:
-            raise OSError("interrupted")
-        write(place, name, document)
-
-    monkeypatch.setattr(registry_module.DirectoryDocuments, "write", interrupt)
-    with pytest.raises(OSError, match="interrupted"):
-        registry._install_registry_documents(documents)
-
-    assert not target.exists()
+# -- stored runtime dictionaries ---------------------------------------------
 
 
 def test_a_whole_store_rebuild_drops_the_documents_it_no_longer_declares(
@@ -1212,31 +853,6 @@ def test_a_whole_store_rebuild_drops_the_documents_it_no_longer_declares(
 
     assert place.names() == ("fields/000000.json",)
     assert place.read("fields/000000.json") == {"new": True}
-
-
-def test_a_registry_archive_cannot_write_outside_the_default_store(tmp_path: Path) -> None:
-    archive = tmp_path / "hostile.zip"
-    with zipfile.ZipFile(archive, "w") as opened:
-        opened.writestr("versions.json", '{"versions": ["9.1"]}')
-        opened.writestr("fields/000000.json", "{}")
-        opened.writestr("../outside.json", "{}")
-
-    with pytest.raises(ValueError, match="unsafe FIX registry archive member"):
-        FixRegistry._registry_archive_documents(archive.read_bytes())
-
-    assert not (tmp_path / "outside.json").exists()
-
-
-def test_a_bootstrap_the_network_refuses_serves_the_projection_and_says_it_is_reduced(
-    default_store: Path,
-) -> None:
-    said: list[str] = []
-    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
-        registry = Refused(announce=said.append)
-    assert not default_store.exists(), "nothing was installed over a failed fetch"
-    assert "misses the long tail" in said[-1]
-    assert "rekep fix registry scrape" in said[-1]
-    assert registry.field("Side").fix["tag"] == "54", "and the projection answers"
 
 
 def test_a_store_somebody_named_opens_no_socket(
@@ -1259,42 +875,17 @@ def test_a_store_somebody_named_opens_no_socket(
 
     assert registry.offline, "it was pointed at a store"
     assert registry.versions == () and registry._stored_versions() == ()
-    assert registry.lookup("Side") == [], "no packaged projection stood in for it"
+    assert registry.lookup("Side") == [], "no packaged registry stood in for it"
     assert not registry.fields_available("4.4")
 
 
-def test_a_cold_default_store_is_the_one_that_may_fill_itself(default_store: Path) -> None:
-    """Nobody chose `~/.config/fix`, so it is the only store that fetches.
-
-    Refused here, which is the same path a machine with no route out takes:
-    it serves the packaged projection and says the registry is reduced.
-    """
-    said: list[str] = []
-    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
-        registry = Refused(announce=said.append)
-    assert not registry.offline, "nothing was found where it looked"
-    assert "rekep fix registry scrape" in said[-1]
-    assert registry.field("Side").fix["tag"] == "54", "served reduced, and never silently"
-
-
-def test_the_packaged_projection_is_bootstrapped_by_being_what_it_is() -> None:
-    """`from_builtin` names its store, so it is served rather than announced."""
+def test_the_default_registry_is_the_packaged_archive() -> None:
+    default = FixRegistry()
     builtin = FixRegistry.from_builtin()
-    assert builtin.offline and builtin.field("Side").fix["tag"] == "54"
 
-
-# -- explicit scraping ------------------------------------------------------
-
-
-def test_registry_reads_never_refresh_configured_sources(store: Offline) -> None:
-    class NoRead(FixRegistry):
-        def _read(self, _request: urllib.request.Request) -> str:
-            raise AssertionError("a registry read reached a source")
-
-    registry = NoRead(cache_dir=store.cache_dir, sources=(QuickFixSource(),))
-    assert registry.fields("9.1")
-    assert registry.components("9.1")
-    assert registry.field(90001, "9.1").name == "FakeRole"
+    assert default.offline and default.cache_dir == registry_module.builtin_registry()
+    assert default.field("Side").fix.tag == 54
+    assert builtin.cache_dir == registry_module.builtin_registry()
 
 
 # -- a field FIX never numbered, end to end ----------------------------------

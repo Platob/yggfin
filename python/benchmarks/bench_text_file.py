@@ -39,7 +39,7 @@ from rekep.fix.message import (  # noqa: E402
     _tag_numbers,
     parse_pairs,
 )
-from rekep.text import TextFile, TextFiles  # noqa: E402
+from rekep.text import FixMsg, Message, TextFile, TextFiles  # noqa: E402
 from rekep.text.text_file import (  # noqa: E402
     DEFAULT_BATCH_ROW_SIZE,
     HEADER_PATTERN,
@@ -465,6 +465,41 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
         columns = _protocol_columns(path, protocols, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192)
         _pairs_stage(columns, repeat)
         _tags_stage(columns, repeat)
+        _message_layers_stage(path, repeat, DEFAULT_BATCH_ROW_SIZE if not quick else 8_192)
+
+
+def _message_layers_stage(path: pathlib.Path, repeat: int, batch_row_size: int) -> None:
+    """Measure the two complete Arrow boundaries the pipeline composes."""
+    registry = FixRegistry()
+    with TextFile.from_path(path) as log:
+        batch = next(log.into_arrow_batches(batch_row_size=batch_row_size))
+    bodies = batch.column("body")
+    plugins = batch.column("plugin")
+
+    def messages() -> dict[str, object]:
+        return Message.parse_arrow(
+            bodies,
+            registry.msg_type_event_types(),
+            plugins=plugins,
+        )
+
+    staged = messages()
+    assert staged["protocol"].equals(batch.column("protocol"))
+    assert staged["entries"].equals(batch.column("entries"))
+
+    def fixmsgs() -> pyarrow.RecordBatch:
+        return FixMsg.from_message_batch(batch, registry)
+
+    parsed = fixmsgs()
+    assert parsed.num_rows == batch.num_rows
+    print("\n  complete Arrow message layers")
+    print(f"    {'boundary':>34} {'rows/s':>12}")
+    for label, reading in (
+        ("body -> Message columns", messages),
+        ("Message -> FixMsg", fixmsgs),
+    ):
+        seconds = best_of(reading, repeat)
+        print(f"    {label:>34} {batch.num_rows / seconds:>12,.0f}")
 
 
 def _header_stage(path: pathlib.Path, repeat: int) -> None:
@@ -661,11 +696,8 @@ def _bridge_keys(column: pyarrow.Array) -> pyarrow.Array:
 
 
 def _dictionary() -> dict[str, int]:
-    """`{name: tag}` out of the dictionary this repository publishes."""
-    archive = pathlib.Path(__file__).resolve().parent.parent.parent / "data" / "fix.zip"
-    if not archive.exists():
-        return {}
-    return FixRegistry(cache_dir=archive).tags()
+    """`{name: tag}` out of the packaged dictionary production opens."""
+    return FixRegistry().tags()
 
 
 def _python_tags(lowered: pyarrow.Array, names: dict[str, int]) -> pyarrow.Array:

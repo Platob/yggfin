@@ -43,7 +43,7 @@
 .fix-registry__coverage > summary {
   color: var(--registry-muted);
   font-size: 0.68rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .fix-registry__coverage[open] > summary {
@@ -66,7 +66,7 @@
 .fix-registry__summary strong {
   color: var(--md-default-fg-color);
   font-size: 1.25rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -74,7 +74,7 @@
 .fix-registry__eyebrow {
   color: var(--rekep-muted);
   font-size: 0.58rem;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.015em;
 }
 
@@ -133,7 +133,7 @@
   background: var(--registry-panel);
   color: var(--md-default-fg-color);
   font-size: 0.68rem;
-  font-weight: 500;
+  font-weight: 400;
   text-decoration: none;
   transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
@@ -545,6 +545,7 @@
   align-items: center;
   gap: 0.45rem;
   cursor: pointer;
+  font-weight: 400;
   list-style: none;
 }
 

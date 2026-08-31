@@ -2072,6 +2072,25 @@ def test_insert_collapses_duplicate_keys_to_the_first(dataset: IcebergDataset) -
     assert stored_sizes(dataset) == {"A": 1}
 
 
+@pytest.mark.parametrize("verb", ["insert_arrow_table", "merge_arrow_table"])
+def test_an_initial_keyed_write_lands_all_partitions_in_one_snapshot(
+    dataset: IcebergDataset, verb: str
+) -> None:
+    today = quotes(3)
+    tomorrow = today.set_column(
+        today.schema.get_field_index("day"),
+        today.schema.field("day"),
+        pyarrow.array([datetime.date(2026, 8, 15)] * today.num_rows),
+    )
+    source = pyarrow.concat_tables([today, tomorrow])
+
+    getattr(dataset, verb)(source)
+
+    assert dataset.read_arrow_table().num_rows == 6
+    assert len(dataset.iceberg_table.snapshots()) == 1
+    assert dataset.data_files().num_rows == 2, "PyIceberg still writes one file per partition"
+
+
 def test_insert_refuses_a_null_or_nan_key(dataset: IcebergDataset) -> None:
     dataset.get_or_create_table()
     day = datetime.date(2026, 8, 14)
@@ -2257,7 +2276,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMsg.into_field().names) == 123
+    assert len(FixMsg.into_field().names) == 125
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -2360,7 +2379,7 @@ def test_the_leaf_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> 
     """
     logs.append_arrow_table(log_table(FIX_LINE))
     leaves = FixMsg.into_field().leaf_names()
-    assert len(leaves) == 168
+    assert len(leaves) == 217
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]

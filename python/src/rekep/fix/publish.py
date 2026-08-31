@@ -1,17 +1,14 @@
-"""What the published FIX registries hold, and the calls that rebuild them.
+"""What the published FIX registry holds, and the calls that rebuild it.
 
-The published dictionary (`data/fix.zip`) is the whole standard plus rekep's
-frozen vocabulary and is far too large to ship in a wheel;
-`rekep/fix/registry.zip` is its standard-field projection plus that vocabulary.
-The projection key list lives here as reviewable data and is checked against
-what the package actually looks up.
+`data/fix.zip` and `rekep/fix/registry.zip` are byte-identical complete offline
+registries. The field lists below remain reviewable coverage declarations for
+the parsing and market contracts; they no longer decide what a wheel can read.
 """
 
 from __future__ import annotations
 
 import os
 import pathlib
-import tempfile
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
@@ -114,6 +111,7 @@ FIXMSG_FIELDS: tuple[str, ...] = (
     "LeavesQty",
     "LastPx",
     "LastQty",
+    "GrossTradeAmt",
     "LastShares",
     "LastMkt",
     "MarketMarker",
@@ -181,6 +179,9 @@ FIXMSG_FIELDS: tuple[str, ...] = (
 #: holds this list to it. Kept here rather than imported because `fix` is
 #: underneath `market` and must not depend on it.
 MARKET_FIELDS: tuple[str, ...] = (
+    "QuantityType",
+    "StartTickPriceRange",
+    "TickIncrement",
     "TradeDate",
     "ExpireDate",
     "ExposureDuration",
@@ -251,9 +252,8 @@ BRIDGE_FIELDS: tuple[str, ...] = (
 #: Selected by name, because a name is all such a field has.
 NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID")
 
-#: Every standard key the packaged projection selects, in declaration order.
-#: `register_rekep` adds the 36 package-owned identities after this selection.
-PROJECTED: tuple[str, ...] = tuple(
+#: Every dictionary key the shipped parsing and market contracts require.
+REQUIRED_FIELDS: tuple[str, ...] = tuple(
     dict.fromkeys((*FIXMSG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
 )
 
@@ -262,12 +262,8 @@ def publish_builtin(
     source: str | os.PathLike[str],
     target: str | os.PathLike[str],
 ) -> pathlib.Path | str:
-    """Rebuild the wheel's registry from the published dictionary, and name it."""
-    registry = FixRegistry(cache_dir=source)
-    with tempfile.TemporaryDirectory(prefix="rekep-fix-projection-") as scratch:
-        staged = registry.into_projection(pathlib.Path(scratch) / "registry.zip", PROJECTED)
-        projected = register_rekep(FixRegistry(cache_dir=staged))
-        return projected.into_zip(target)
+    """Rebuild the wheel's complete offline registry, and name it."""
+    return publish_full(source, target)
 
 
 def publish_full(
@@ -279,7 +275,7 @@ def publish_full(
     return registry.into_zip(target)
 
 
-def missing_from(registry: FixRegistry, keys: Sequence[str] = PROJECTED) -> list[str]:
+def missing_from(registry: FixRegistry, keys: Sequence[str] = REQUIRED_FIELDS) -> list[str]:
     """Which `keys` a registry cannot answer, so a short artifact fails loudly."""
     return [key for key in keys if not registry.lookup(key)]
 

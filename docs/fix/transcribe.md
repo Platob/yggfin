@@ -4,7 +4,7 @@ Decode or encode FIX, FIXML and UL in the browser. Pair order, repeating
 groups, and unknown values are preserved.
 
 The structure view nests each group under its component and each subgroup
-under its entry; deeper groups start collapsed.
+under its entry. Open only the branches you need, or expand the whole result.
 
 <div class="fix-registry fix-transcribe" data-fix-transcribe
      data-source="../../assets/fix-registry.json" data-registry="../registry/">
@@ -101,7 +101,11 @@ under its entry; deeper groups start collapsed.
             <p class="fix-registry__eyebrow">Resolved structure</p>
             <h3 id="decode-structure-title">Components &amp; repeating groups</h3>
           </div>
-          <span class="fix-transcribe__structure-count" data-decode-structure-count></span>
+          <div class="fix-transcribe__structure-actions">
+            <span class="fix-transcribe__structure-count" data-decode-structure-count></span>
+            <button type="button" data-structure-toggle="decode" data-open="true">Expand</button>
+            <button type="button" data-structure-toggle="decode" data-open="false">Collapse</button>
+          </div>
         </header>
         <div data-decode-structure></div>
       </section>
@@ -225,7 +229,11 @@ under its entry; deeper groups start collapsed.
             <p class="fix-registry__eyebrow">Resolved structure</p>
             <h3 id="encode-structure-title">Components &amp; repeating groups</h3>
           </div>
-          <span class="fix-transcribe__structure-count" data-encode-structure-count></span>
+          <div class="fix-transcribe__structure-actions">
+            <span class="fix-transcribe__structure-count" data-encode-structure-count></span>
+            <button type="button" data-structure-toggle="encode" data-open="true">Expand</button>
+            <button type="button" data-structure-toggle="encode" data-open="false">Collapse</button>
+          </div>
         </header>
         <div data-encode-structure></div>
       </section>

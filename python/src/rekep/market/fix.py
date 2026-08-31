@@ -1430,11 +1430,8 @@ class FixEvents(Convertible):
     def _reason(self) -> str | None:
         """The first structured reject/restatement reason, completed by FIX text.
 
-        The code leads because it is typed and `Text <58>` is prose: a reject
-        carrying both used to keep the prose alone, and the code -- the one
-        part a filter can match -- was dropped with it. `CxlRejResponseTo
-        <434>` says which request a reject answers, so it rides beside the
-        reason rather than landing only in the untyped metadata map.
+        The typed code leads the prose in `Text <58>`. `CxlRejResponseTo <434>`
+        says which request a reject answers and stays beside the reason.
         """
         parts: list[str] = []
         for name in (

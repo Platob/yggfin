@@ -8,8 +8,13 @@ parameters:
   end: null
   # The FIX dictionary. A directory, a zip, or either on a bucket:
   # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
-  fix_dictionary: data/fix
+  # null uses the package's registry.zip; set a directory, zip or bucket URL
+  # only to pin a separately published dictionary.
+  fix_dictionary: null
   null_values: ["", "null", "<null>", "n/a", "none"]
+  # ULBridge rows without version evidence are read under this application
+  # dictionary and persist it in `protocol`; null leaves them unresolved.
+  ul_default_version: "4.4"
   # Each rule may extend indexed-group delimiter detection with
   # `extra_entry_separators`; keep this document aligned with parse_messages.
   # The shipped UL rule pops `DetailedCFICode` into `CFICode`, so the detailed

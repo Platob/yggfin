@@ -28,8 +28,7 @@ ROOTED_DRIVE = re.compile(r"^/+(?=[A-Za-z]:[/\\])")
 
 #: A scheme and what follows it. Two letters at least, which is what tells a
 #: scheme from a Windows drive: `C:/x` is a path, `s3://b/k` and `file:/x` are
-#: URIs -- the second being the authority-less spelling a store writes into
-#: Iceberg metadata, and one this used to read as a relative path.
+#: URIs. The authority-less `file:/x` form is also valid Iceberg metadata.
 SCHEME = re.compile(
     r"^(?P<scheme>[A-Za-z][A-Za-z0-9+.\-]+):(?P<slashes>//)?(?P<rest>.*)$", re.DOTALL
 )
@@ -138,7 +137,7 @@ PRIVATE_HOSTS = frozenset(
 
 #: One of Amazon's own S3 hostnames, and the bucket in front of it when the
 #: location is spelled virtual-hosted style. Every published form is here:
-#: `s3.amazonaws.com`, `s3.<region>.amazonaws.com`, the legacy
+#: `s3.amazonaws.com`, `s3.<region>.amazonaws.com`, the dash-region
 #: `s3-<region>.amazonaws.com`, `s3-fips`/`s3-accelerate`/`s3-accesspoint`,
 #: `.dualstack`, China's `.amazonaws.com.cn`, and any of them with a bucket
 #: label in front. The bucket is greedy so the *rightmost* `s3` label is the
@@ -152,7 +151,7 @@ AWS_HOST = re.compile(
     re.IGNORECASE,
 )
 
-#: A region label, which is what tells the legacy `s3-eu-west-1` from the
+#: A region label, which tells `s3-eu-west-1` from the
 #: `s3-accelerate` and `s3-fips` that are spelled exactly like it.
 REGION = re.compile(r"^[a-z]{2}-[a-z0-9\-]+-\d+$", re.IGNORECASE)
 
@@ -396,7 +395,7 @@ class Url:
     def transport(self) -> str:
         """The scheme Arrow serves this location under.
 
-        The one place Hadoop's `s3a` and the legacy `s3n` become `s3`: they are
+        The one place Hadoop's `s3a` and `s3n` become `s3`: they are
         three spellings a caller may write for one object store, so they share a
         filesystem, a cache entry and a set of properties, and nothing below
         this needs a branch for them. What is *written back* keeps the caller's

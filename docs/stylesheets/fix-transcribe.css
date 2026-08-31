@@ -283,6 +283,7 @@
 .fix-transcribe__component > summary,
 .fix-transcribe__group > summary {
   cursor: pointer;
+  font-weight: 400;
   list-style: none;
 }
 
@@ -316,6 +317,22 @@
   border-color: var(--registry-border);
   background: transparent;
   color: var(--registry-muted);
+}
+
+.fix-transcribe__structure-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.fix-transcribe__structure-actions button {
+  min-height: 1.55rem;
+  padding: 0.15rem 0.45rem;
+  border-color: var(--registry-border);
+  background: transparent;
+  color: var(--registry-muted);
+  font-size: 0.54rem;
+  font-weight: 400;
 }
 
 .fix-transcribe__structure-empty {

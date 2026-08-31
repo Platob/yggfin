@@ -131,7 +131,7 @@ fields:
 - name: protocol
   type: int64
   description: Protocol syntax detected without interpreting its fields.
-  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6362825411428089856":"XML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
+  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6362825411428089856":"XML","6146287591453884416":"UL","5928221748045545472":"REFERENTIAL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"REFERENTIAL":"REFER"}', pattern: '[A-Z0-9._-]{1,8}'}
 - name: beginstring
   type: string
   nullable: true

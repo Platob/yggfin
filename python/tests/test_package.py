@@ -23,10 +23,8 @@ from rekep import Field, FixMsg, scalar
 from rekep.enums import Protocol
 from rekep.fields import PARTITION_KEY, PRIMARY_KEY, SORT_KEY
 from rekep.fix import (
-    CACHE_DIRECTORY,
     CODECS,
     COMMON,
-    DEFAULT_SOURCES,
     FLAT,
     QUOTE,
     SESSION,
@@ -34,6 +32,7 @@ from rekep.fix import (
     Rule,
     Rules,
 )
+from rekep.fix.registry import builtin_registry
 
 PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 
@@ -68,7 +67,7 @@ def test_everything_exported_is_importable(package: str) -> None:
 
 
 def test_scalar_is_the_only_public_decorator_name() -> None:
-    """The old decorator spelling must not linger as a compatibility API."""
+    """One public decorator keeps declarations on one searchable spelling."""
     assert callable(scalar)
     assert "scalar" in rekep.__all__
     assert "field" not in rekep.__all__
@@ -99,11 +98,12 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
     assert dict(Row.into_field().field("hour").metadata)[PARTITION_KEY] == "identity"
 
 
-def test_the_registry_defaults_are_the_exported_ones() -> None:
-    """Both are exported and referenced nowhere else; they are the defaults."""
+def test_the_registry_default_is_the_bundled_archive() -> None:
     registry = FixRegistry()
-    assert registry.sources == DEFAULT_SOURCES
-    assert str(registry.cache_dir) == str(pathlib.Path(CACHE_DIRECTORY))
+    assert str(registry.cache_dir) == builtin_registry()
+    assert registry.offline
+    assert not hasattr(registry, "sources")
+    assert not hasattr(rekep.fix, "DEFAULT_SOURCES")
 
 
 # -- the FIX surface a consumer reads a parsed log through --------------------
@@ -116,7 +116,7 @@ def test_the_published_column_list_is_the_one_the_parser_lifts_by() -> None:
     not have, and nothing inside would notice.
     """
     assert dict(FLAT) == dict(rekep.fix.columns.COLUMNS)
-    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 49, 18, 100)
+    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 50, 18, 101)
     assert len(dict(FLAT)) == len(FLAT), "one tag, one column"
 
 

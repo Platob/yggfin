@@ -12,7 +12,8 @@ parameters:
   # MsgType metadata maps values to EventType codes before protocol translation.
   # The FIX dictionary. A directory, a zip, or either on a bucket:
   # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
-  fix_dictionary: data/fix
+  # Null reads the registry bundled in the installed package.
+  fix_dictionary: null
   # Protocol syntax classification. Null uses the shipped default rules; keep
   # custom rules aligned with parse_fix. Rules may add literal nested-group
   # delimiters through `extra_entry_separators`.

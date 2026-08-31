@@ -1,14 +1,12 @@
 # Deploy from scratch
 
-Three things have to exist before the first task runs: the **package**, a **FIX
-registry**, and a **catalog with a warehouse**. Everything else the pipeline
-creates for itself.
+The package and a catalog with a warehouse must exist before the first task.
+The wheel already contains the FIX registry used by an unconfigured worker.
 
 !!! warning "A wheel by itself is not a deployment"
 
     DAG parsing reads the YAML under `tasks/`, workers execute the adjacent
-    notebooks, and the FIX registry is a separate artifact. Keep package, DAG,
-    YAML, notebooks, schemas and registry on one revision — see
+    notebooks. Keep package, DAG, YAML, notebooks, and schemas on one revision — see
     [Deploy and operate with Airflow](airflow.md).
 
 ## 1. Install
@@ -28,56 +26,33 @@ uv pip install --extra-index-url https://artifacts.example.net/api/pypi/pypi/sim
 
 ## 2. The FIX registry
 
-The wheel carries a **reduced** registry — the 180 standard fields the shipped
-contracts promote and 36 frozen rekep fields. The full store is 6,110:
+The wheel carries the complete deterministic registry used by `FixMsg`,
+`FixCodec`, market conversion, and schema declarations:
 
 ```python
 from rekep.fix import FixRegistry
 
-print(len(FixRegistry.from_builtin().field_records()))
+registry = FixRegistry()
+print(registry.field("Side", "4.4").fix.tag)
 ```
 
 ```text
-216
+54
 ```
 
-!!! danger "A missing registry path is silent"
-
-    `fix_dictionary` pointing at a path that does not exist yields an **empty
-    registry**, not an error. The pipeline then runs and transcribes nothing.
-
-    ```python
-    from rekep.fix import FixRegistry
-
-    absent = FixRegistry(cache_dir="/no/such/place")
-    print(len(absent.versions), len(absent.field_records()))
-    ```
-
-    ```text
-    0 0
-    ```
-
-Check it on every worker before the first run:
-
-```bash
-rekep fix registry check --store data/fix
-```
-
-A store is a directory or a zip — `data/fix.zip` works as a `fix_dictionary`
-value directly, which is what makes shipping one to workers a single file:
+Leave the task setting null to use that package-owned archive:
 
 ```yaml
 # tasks/parse_fix/parse_fix.yml
 parameters:
-  fix_dictionary: data/fix.zip
+  fix_dictionary: null
 ```
 
-The release workflow publishes the full store beside the wheel, so a
-deployment fetches it rather than scraping:
+Name another complete directory or zip only when the deployment intentionally
+adds venue definitions. Validate that explicit store before starting workers:
 
 ```bash
-curl --fail -H "Authorization: Bearer $ARTIFACTORY_TOKEN" \
-  -o data/fix.zip "$REKEP_FIX_REGISTRY_URL"
+rekep fix registry check --store s3://example/registries/venue.zip
 ```
 
 ## 3. Catalog and warehouse
@@ -174,10 +149,9 @@ Encryption is the bucket's own default; `s3.sse.type: kms` and `s3.sse.key`
 are refused rather than ignored — see
 [Encryption at rest](../../storage/iceberg.md#encryption-at-rest).
 
-**2. Put the dictionary and the capture where the workers can read them.**
+**2. Put the capture where the workers can read it.**
 
 ```bash
-aws s3 cp data/fix.zip s3://rekep-warehouse/fix/fix.zip
 aws s3 sync ./capture s3://rekep-capture/2026-08-30/
 ```
 
@@ -187,7 +161,7 @@ under `tasks/`:
 ```yaml
 # tasks/parse_messages/parse_messages.yml
 source: s3://rekep-capture/2026-08-30
-fix_dictionary: s3://rekep-warehouse/fix/fix.zip
+fix_dictionary: null # Use the registry.zip bundled in the installed wheel.
 catalog:
   catalog_name: rekep-production
   properties:
@@ -197,11 +171,6 @@ catalog:
     s3.region: eu-west-1     # Warehouse region.
     # The bucket rule above owns KMS; per-request s3.sse.* is unsupported.
 ```
-
-A registry on a bucket is fetched **once** and kept under
-`~/.config/fix-remote`, reused across processes by identity and size — a zip
-is read by seeking, and seeking over an object store reads it whole every
-lookup. A dictionary given as a *directory* is served in place.
 
 The capture `source` is resolved on its own rather than through
 `catalog.properties`, so an endpoint or region for that bucket comes from the
@@ -300,11 +269,11 @@ uv build --no-sources
 ```
 
 ```text
-Successfully built dist/rekep-0.1.0.tar.gz
-Successfully built dist/rekep-0.1.0-py3-none-any.whl
+Successfully built dist/rekep-1.tar.gz
+Successfully built dist/rekep-1-py3-none-any.whl
 ```
 
-A pure-Python universal wheel, plus the reduced registry as its one non-Python
+A pure-Python universal wheel, plus the bundled registry as its one non-Python
 payload (`rekep/fix/registry.zip`).
 
 `.github/workflows/release.yml` publishes both artifacts on a published
@@ -315,8 +284,8 @@ uv publish --no-attestations dist/rekep-*.whl dist/rekep-*.tar.gz
 ```
 
 It reads `UV_PUBLISH_URL`, `UV_PUBLISH_CHECK_URL`, `UV_PUBLISH_USERNAME` and
-`UV_PUBLISH_PASSWORD` from the `artifactory` GitHub environment, then uploads
-the **full** registry zip to `REKEP_FIX_REGISTRY_URL` with its SHA-256.
+`UV_PUBLISH_PASSWORD` from the `artifactory` GitHub environment. The registry
+is already inside both distributions and is not a second deployment artifact.
 
 ### Serving the wheel from S3
 

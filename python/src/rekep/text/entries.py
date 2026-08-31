@@ -60,6 +60,12 @@ _DEFAULT_SEPARATOR = "\x01"
 _XML_START = re.compile(rb"<(?:\?xml\b|[A-Za-z_:])", re.IGNORECASE)
 _EVENT_XML_START = re.compile(rb"<event(?:\s|>)", re.IGNORECASE)
 _XML_ERROR_LENGTH = 2_048
+_REFERENTIAL_START = re.compile(r"(?:^|[^A-Za-z0-9_])Referential[ \t]*\(", re.IGNORECASE)
+_REFERENTIAL_ERROR_LENGTH = 2_048
+_NUMBER = re.compile(r"^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$")
+_TICK_SIZE_SCALE_ID = column_name("tick-size-scale-id")
+_QUANTITY_TYPE = column_name("quantity-type")
+_REFERENTIAL_COMP = "Referential"
 
 
 #: What makes a row worth tokenising: two delimiter-separated assignments, or
@@ -263,19 +269,13 @@ def xml_payload_arrow(bodies: Any, selected: Any = None) -> tuple[pyarrow.Array,
     """
     if isinstance(bodies, pyarrow.ChunkedArray):
         bodies = bodies.combine_chunks()
-    if isinstance(selected, pyarrow.ChunkedArray):
-        selected = selected.combine_chunks()
     rows = len(bodies)
     if not rows:
         return pyarrow.array([], type=ENTRIES), pyarrow.array([], pyarrow.string())
-    wanted = [True] * rows if selected is None else selected.to_pylist()
+    selected_bodies, selected_at, other_at = _selected_payloads(bodies, selected)
     parsed: list[list[dict[str, Any]]] = []
     errors: list[str | None] = []
-    for body, keep in zip(bodies.to_pylist(), wanted, strict=True):
-        if not keep:
-            parsed.append([])
-            errors.append(None)
-            continue
+    for body in selected_bodies.to_pylist():
         try:
             raw = body.encode("utf-8") if isinstance(body, str) else bytes(body or b"")
             root = _xml_root(raw)
@@ -285,7 +285,250 @@ def xml_payload_arrow(bodies: Any, selected: Any = None) -> tuple[pyarrow.Array,
             parsed.append([])
             detail = " ".join(str(error).split()) or "no detail"
             errors.append(f"XML parse failed: {type(error).__name__}: {detail}"[:_XML_ERROR_LENGTH])
-    return pyarrow.array(parsed, type=ENTRIES), pyarrow.array(errors, pyarrow.string())
+    return _restored_payloads(
+        pyarrow.array(parsed, type=ENTRIES),
+        pyarrow.array(errors, pyarrow.string()),
+        selected_at,
+        other_at,
+    )
+
+
+def referential_payload_arrow(
+    bodies: Any, selected: Any = None
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """Parse selected `Referential(...)` envelopes and isolate bad rows."""
+    if isinstance(bodies, pyarrow.ChunkedArray):
+        bodies = bodies.combine_chunks()
+    rows = len(bodies)
+    if not rows:
+        return pyarrow.array([], type=ENTRIES), pyarrow.array([], pyarrow.string())
+    selected_bodies, selected_at, other_at = _selected_payloads(bodies, selected)
+    parsed: list[list[dict[str, Any]]] = []
+    errors: list[str | None] = []
+    for body in selected_bodies.to_pylist():
+        try:
+            text = body.decode("utf-8") if isinstance(body, bytes) else str(body or "")
+            entries, detail = _referential_entries(text)
+            parsed.append([entry.into_dict() for entry in entries])
+            errors.append(detail)
+        except (UnicodeError, TypeError, ValueError) as error:
+            parsed.append([])
+            detail = " ".join(str(error).split()) or "no detail"
+            errors.append(
+                f"Referential parse failed: {type(error).__name__}: {detail}"[
+                    :_REFERENTIAL_ERROR_LENGTH
+                ]
+            )
+    return _restored_payloads(
+        pyarrow.array(parsed, type=ENTRIES),
+        pyarrow.array(errors, pyarrow.string()),
+        selected_at,
+        other_at,
+    )
+
+
+def _selected_payloads(
+    bodies: pyarrow.Array,
+    selected: Any,
+) -> tuple[pyarrow.Array, pyarrow.Array | None, pyarrow.Array | None]:
+    """Only documents one protocol selected, with positions for restoration."""
+    if selected is None:
+        return bodies, None, None
+    if isinstance(selected, pyarrow.ChunkedArray):
+        selected = selected.combine_chunks()
+    compute = pyarrow.compute
+    selected = compute.fill_null(selected, False)
+    if compute.all(selected, min_count=0).as_py():
+        return bodies, None, None
+    positions = sequence(len(bodies))
+    selected_at = compute.filter(positions, selected)
+    other_at = compute.filter(positions, compute.invert(selected))
+    return compute.take(bodies, selected_at), selected_at, other_at
+
+
+def _restored_payloads(
+    entries: pyarrow.Array,
+    errors: pyarrow.Array,
+    selected_at: pyarrow.Array | None,
+    other_at: pyarrow.Array | None,
+) -> tuple[pyarrow.Array, pyarrow.Array]:
+    """Restore a protocol slice without building Python placeholders."""
+    if selected_at is None or other_at is None:
+        return entries, errors
+    return (
+        scattered([entries, pyarrow.nulls(len(other_at), ENTRIES)], [selected_at, other_at]),
+        scattered(
+            [errors, pyarrow.nulls(len(other_at), pyarrow.string())],
+            [selected_at, other_at],
+        ),
+    )
+
+
+def _referential_entries(text: str) -> tuple[list[Entry], str | None]:
+    """One Referential envelope as ordered source and canonical tick entries."""
+    found = _REFERENTIAL_START.search(text)
+    if found is None:
+        raise ValueError("no Referential envelope start")
+    opened = text.find("(", found.start(), found.end())
+    closed = _closing_parenthesis(text, opened)
+    header = _depth_split(text[opened + 1 : closed], "|", maxsplit=3)
+    if len(header) != 4:
+        raise ValueError("expected venue|class|instrument-key|[bag]")
+    venue, asset_class, instrument_key, raw_bag = (part.strip() for part in header)
+    if not instrument_key:
+        raise ValueError("instrument key is empty")
+    bag = _unwrap_brackets(raw_bag)
+    if bag == raw_bag.strip():
+        raise ValueError("referential bag must be bracketed")
+
+    entries = [
+        *([Entry(key="Venue", value=venue, comp=_REFERENTIAL_COMP)] if venue else []),
+        *(
+            [Entry(key="AssetClass", value=asset_class, comp=_REFERENTIAL_COMP)]
+            if asset_class
+            else []
+        ),
+        Entry(key="InstrumentKey", value=instrument_key, comp=_REFERENTIAL_COMP),
+    ]
+    diagnostics: list[str] = []
+    for token in _depth_split(bag, ","):
+        token = token.strip()
+        if not token:
+            continue
+        key, marker, value = token.partition("=")
+        key, value = key.strip(), value.strip()
+        if not marker or not key:
+            diagnostics.append(f"invalid bag member {token!r}")
+            continue
+        # Entry values are required. Absence is represented by absence, which
+        # lets nullable typed fields remain null without inventing a spelling.
+        if not value:
+            continue
+        folded = column_name(key)
+        if folded == _QUANTITY_TYPE:
+            entries.append(Entry(key="QuantityType", value=value, comp=_REFERENTIAL_COMP))
+            continue
+        if folded == _TICK_SIZE_SCALE_ID:
+            try:
+                entries.extend(_tick_rule_entries(value))
+            except ValueError as error:
+                # Keep a source value an unknown grammar could not normalize;
+                # one proprietary extension must not erase the instrument.
+                entries.append(Entry(key=key, value=value, comp=_REFERENTIAL_COMP))
+                diagnostics.append(str(error))
+            continue
+        entries.append(Entry(key=key, value=value, comp=_REFERENTIAL_COMP))
+    detail = "; ".join(diagnostics)
+    error = (
+        f"Referential parse failed: ValueError: {detail}"[:_REFERENTIAL_ERROR_LENGTH]
+        if detail
+        else None
+    )
+    return entries, error
+
+
+def _closing_parenthesis(text: str, opened: int) -> int:
+    """Closing parenthesis outside nested square brackets."""
+    if opened < 0:
+        raise ValueError("no Referential opening parenthesis")
+    parentheses = 1
+    brackets = 0
+    for index in range(opened + 1, len(text)):
+        char = text[index]
+        if char == "[":
+            brackets += 1
+        elif char == "]":
+            brackets -= 1
+            if brackets < 0:
+                raise ValueError("unmatched closing bracket")
+        elif not brackets and char == "(":
+            parentheses += 1
+        elif not brackets and char == ")":
+            parentheses -= 1
+            if not parentheses:
+                return index
+    raise ValueError("unclosed Referential envelope")
+
+
+def _depth_split(text: str, separator: str, *, maxsplit: int = -1) -> list[str]:
+    """Split one-character separators only outside square brackets."""
+    parts: list[str] = []
+    start = 0
+    depth = 0
+    splits = 0
+    for index, char in enumerate(text):
+        if char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth < 0:
+                raise ValueError("unmatched closing bracket")
+        elif char == separator and not depth and (maxsplit < 0 or splits < maxsplit):
+            parts.append(text[start:index])
+            start = index + 1
+            splits += 1
+    if depth:
+        raise ValueError("unclosed bracket")
+    parts.append(text[start:])
+    return parts
+
+
+def _unwrap_brackets(text: str) -> str:
+    """Remove one pair only where it encloses the complete value."""
+    stripped = text.strip()
+    if not stripped.startswith("["):
+        return stripped
+    depth = 0
+    for index, char in enumerate(stripped):
+        if char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth < 0:
+                raise ValueError("unmatched closing bracket")
+            if not depth:
+                return stripped[1:index].strip() if index == len(stripped) - 1 else stripped
+    raise ValueError("unclosed bracket")
+
+
+def _tick_rule_entries(value: str) -> list[Entry]:
+    """A source tick ladder normalized to FIX TickRules member names."""
+    source = value.strip()
+    first_bracket = source.find("[")
+    scale_id = source[:first_bracket].rstrip(" |:=") if first_bracket > 0 else ""
+    ladder = source[first_bracket:] if first_bracket >= 0 else source
+    ladder = _unwrap_brackets(ladder)
+    bands = [band.strip() for band in _depth_split(ladder, ",") if band.strip()]
+    if not bands:
+        raise ValueError("tick-size-scale-id has no bands")
+    entries: list[Entry] = []
+    if scale_id:
+        entries.append(Entry(key="TickSizeScaleID", value=scale_id, comp=_REFERENTIAL_COMP))
+    for index, band in enumerate(bands):
+        parts = _depth_split(_unwrap_brackets(band), "|", maxsplit=1)
+        if len(parts) != 2:
+            raise ValueError(f"tick band {index} needs from|tick")
+        start, tick = (_tick_number(part) for part in parts)
+        if tick is None:
+            raise ValueError(f"tick band {index} has no increment")
+        component = f"TickRules[{index}]"
+        if start is not None:
+            entries.append(Entry(key="StartTickPriceRange", value=start, comp=component))
+        entries.append(Entry(key="TickIncrement", value=tick, comp=component))
+    return entries
+
+
+def _tick_number(value: str) -> str | None:
+    """One optional decimal spelling, allowing a named source member."""
+    stripped = _unwrap_brackets(value).strip()
+    if "=" in stripped:
+        _name, stripped = stripped.split("=", 1)
+        stripped = stripped.strip()
+    if not stripped:
+        return None
+    if not _NUMBER.fullmatch(stripped):
+        raise ValueError(f"invalid tick number {stripped!r}")
+    return stripped
 
 
 def _xml_root(raw: bytes) -> ElementTree.Element:
@@ -498,9 +741,18 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
     assignments = compute.find_substring_regex(text, _ASSIGNMENT)
     punctuation = compute.find_substring_regex(text, _SEPARATOR_BEFORE_ASSIGNMENT)
     hashes = compute.find_substring(text, "#")
+    marked = compute.starts_with(compute.utf8_ltrim_whitespace(text), "#")
     common: Any = pyarrow.nulls(len(text), pyarrow.string())
     for separator in ("|", "\x01", "\x04\x03"):
         found = compute.find_substring_regex(text, rf"{re.escape(separator)}{_WS}*{_ASSIGNMENT}")
+        # A marked bridge frame declares its outer boundary by repeating the
+        # marker. Inner group members may use SOH before the first outer pipe,
+        # so the generic "first punctuation" rule would otherwise inspect the
+        # expensive inference path and can choose the group's delimiter.
+        marked_found = compute.find_substring_regex(
+            text, rf"{re.escape(separator)}{_WS}*#{_BARE_KEY}{_WS}*="
+        )
+        marked_selected = compute.and_(marked, compute.greater_equal(marked_found, 0))
         selected = compute.and_(
             compute.and_(compute.greater_equal(found, 0), compute.equal(found, punctuation)),
             compute.and_(
@@ -511,6 +763,7 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
                 compute.or_(compute.less(hashes, 0), compute.less(punctuation, hashes)),
             ),
         )
+        selected = compute.or_(marked_selected, selected)
         common = compute.if_else(selected, pyarrow.scalar(separator), common)
     return common
 
@@ -518,8 +771,6 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
 def _parse_style(text: Any, separator: str) -> pyarrow.Array:
     """Parse one homogeneous separator style in Arrow kernels."""
     compute = pyarrow.compute
-    marked_body = compute.struct_field(compute.extract_regex(text, _MARKED_BODY), "body")
-    unmarked_body = compute.struct_field(compute.extract_regex(text, _UNMARKED_BODY), "body")
     marked_at = compute.find_substring_regex(text, rf"#{_BARE_KEY}{_WS}*=")
     unmarked_at = compute.find_substring_regex(
         text, rf"(?:^|[^A-Za-z0-9_.\-\]#]){_BARE_KEY}{_WS}*="
@@ -528,7 +779,14 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
         compute.greater_equal(marked_at, 0),
         compute.or_(compute.less(unmarked_at, 0), compute.less(marked_at, unmarked_at)),
     )
-    body = compute.fill_null(compute.if_else(use_marked, marked_body, unmarked_body), "")
+    direct = compute.or_(compute.equal(marked_at, 0), compute.equal(unmarked_at, 0))
+    if compute.all(direct, min_count=0).as_py():
+        body = text
+    else:
+        marked_body = compute.struct_field(compute.extract_regex(text, _MARKED_BODY), "body")
+        unmarked_body = compute.struct_field(compute.extract_regex(text, _UNMARKED_BODY), "body")
+        extracted = compute.fill_null(compute.if_else(use_marked, marked_body, unmarked_body), "")
+        body = compute.if_else(direct, text, extracted)
     # Split by the lengths a row declares where it declares one: a FIX `data`
     # value may hold the delimiter, and this stage's arguments are what the FIX
     # stage reads instead of the payload -- so a value cut here is cut for good.

@@ -193,6 +193,15 @@
     select("[data-copy-encode-debug]").addEventListener("click", (event) =>
       copy(encodedDebug, event.currentTarget),
     );
+    app.querySelectorAll("[data-structure-toggle]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = select(`[data-${button.dataset.structureToggle}-structure]`);
+        const open = button.dataset.open === "true";
+        target.querySelectorAll("details").forEach((details) => {
+          details.open = open;
+        });
+      });
+    });
 
     function renderDecode() {
       const parsed = parseInput(
@@ -1525,7 +1534,7 @@
     const registryLink = reference.kind === "none"
       ? ""
       : `<a href="${escape(href)}">Registry ↗</a>`;
-    return `<details class="fix-transcribe__component" open>
+    return `<details class="fix-transcribe__component">
       <summary>
         <div><span>${label}</span><h4>${escape(container.name)}</h4></div>
         ${registryLink}
@@ -1552,7 +1561,7 @@
           )
           .join("")}</ol>`
       : '<p class="fix-transcribe__structure-empty">Declared empty group.</p>';
-    return `<details class="fix-transcribe__group"${depth === 0 ? " open" : ""}>
+    return `<details class="fix-transcribe__group">
       <summary>
         <div><span>Repeating group</span><h5>${escape(group.name)}${tag}</h5></div>
         <div class="fix-transcribe__group-meta">${stateBadge(group.state)}<span>${escape(declared)}</span></div>

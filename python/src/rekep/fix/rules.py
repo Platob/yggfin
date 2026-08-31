@@ -119,6 +119,11 @@ def joined_pattern(*patterns: str) -> str:
     return "|".join(branches)
 
 
+#: One ULBridge reference envelope. The closing grammar is parsed by
+#: `text.entries`; this prefix alone is enough to classify it before the
+#: generic key/value splitter mistakes its nested pipes for field separators.
+REFERENTIAL_PAYLOAD_PATTERN = r"(?is)(?:^|[^A-Za-z0-9_])Referential[ \t]*\("
+
 #: Where a payload of each shape starts, which is what a direction verb has to
 #: precede. Classification reads the parsed keys and this reads the raw line,
 #: so the two meet here: the anchor is the first token the payload could open
@@ -127,7 +132,7 @@ CODEC_ANCHORS: Mapping[str, str] = MappingProxyType(
     {
         "fix": joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN),
         "fixml": joined_pattern(BEGIN_STRING, FIX_MSG_TYPE_PATTERN, NAMED_KEY),
-        "ul": NAMED_KEY,
+        "ul": joined_pattern(REFERENTIAL_PAYLOAD_PATTERN, NAMED_KEY),
         "xml": r"(?is)<(?:\?xml\b[^>]*>\s*<)?[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
     }
 )
@@ -211,10 +216,9 @@ class Rule(Convertible):
         return CODEC_KEYS.get(self.codec)
 
 
-#: The three structured protocols, each named by the shape its codec reads.
-#: They carry no pattern, so the keys of a parsed payload are what decides
-#: them; a rule that does carry one is decided by it instead, which is how a
-#: `35=0` session rule sits in front of the general one.
+#: The generic structured protocols are named by the shape their codec reads.
+#: They carry no pattern, so the keys of a parsed payload decide them; a
+#: grammar-specific rule such as `REFERENTIAL` carries its own pattern.
 FIX = Rule(protocol=Protocol.FIX, codec="fix")
 
 FIXML = Rule(protocol=Protocol.FIXML, codec="fixml")
@@ -222,6 +226,13 @@ FIXML = Rule(protocol=Protocol.FIXML, codec="fixml")
 UL = Rule(protocol=Protocol.UL, codec="ul", pop={"DetailedCFICode": "CFICode"})
 
 XML = Rule(protocol=Protocol.XML, pattern=XML_PAYLOAD_PATTERN, codec="xml")
+
+REFERENTIAL = Rule(
+    protocol=Protocol.REFERENTIAL,
+    pattern=REFERENTIAL_PAYLOAD_PATTERN,
+    codec="ul",
+    pop={"DetailedCFICode": "CFICode"},
+)
 
 #: Operational lines whose vocabulary is understood but which carry no market
 #: message. Keeping these known lines out of `unknown` makes that table a
@@ -240,10 +251,11 @@ MISC = Rule(
 OTHER = Rule(protocol=Protocol.OTHER, pattern="", codec="none")
 
 #: First match wins. Numbered envelopes lead XML so a complete event inside
-#: `Text <58>` remains one FIX field. XML then leads the named shape because
-#: its attributes also resemble assignments. Every structured rule leads the
-#: operational patterns, so a message saying "heartbeat" remains a message.
-DEFAULT_RULES: tuple[Rule, ...] = (FIX, FIXML, XML, UL, MISC, OTHER)
+#: `Text <58>` remains one FIX field. XML and Referential lead the generic
+#: named shape because each contains assignment-like text with its own nesting.
+#: Every structured rule leads the operational patterns, so a message saying
+#: "heartbeat" remains a message.
+DEFAULT_RULES: tuple[Rule, ...] = (FIX, FIXML, XML, REFERENTIAL, UL, MISC, OTHER)
 
 
 def _default_rules() -> list[Rule]:

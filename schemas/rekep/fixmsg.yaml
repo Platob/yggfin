@@ -128,7 +128,7 @@ fields:
 - name: protocol
   type: int64
   description: Protocol grammar and resolved version; OTHER carries neither.
-  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6362825411428089856":"XML","6146287591453884416":"UL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, pattern: '[A-Z0-9._-]{1,8}'}
+  enum: {name: Protocol, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5064676012978077696":"FIX","5064676344965627904":"FIXML","6362825411428089856":"XML","6146287591453884416":"UL","5928221748045545472":"REFERENTIAL","5569073961448243200":"MISC","5716273289605677056":"OTHER"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"REFERENTIAL":"REFER"}', pattern: '[A-Z0-9._-]{1,8}'}
 - name: beginstring
   type: string
   nullable: true
@@ -542,6 +542,11 @@ fields:
   nullable: true
   description: Quantity (e.g. shares) bought/sold on this (last) fill.
   fix: {tag: '32', type: Qty, name: LastQty}
+- name: grosstradeamt
+  type: double
+  nullable: true
+  description: Total amount traded expressed in units of currency - usually quantity * price. For FX Futures this is used to express the notional value of a fill when quantity fields are expressed in terms of contract size (i.e. quantity * price * contract size).
+  fix: {tag: '381', type: Amt, name: GrossTradeAmt}
 - name: lastshares
   type: double
   nullable: true
@@ -773,6 +778,11 @@ fields:
     nullable: true
     description: The trading lot size of a security
     fix: {tag: '561', type: Qty, name: RoundLot}
+  - name: quantitytype
+    type: int32
+    nullable: true
+    description: Deprecated in FIX 4.4. See QtyType <854> Designates the type of quantities (e.g. OrderQty <38> ) specified. Used for MBS and TIPS Fixed Income security types.
+    fix: {tag: '465', type: int, name: QuantityType}
   - name: maturitydate
     type: timestamp[us]
     nullable: true
@@ -873,3 +883,245 @@ fields:
         description: Indicates whether a leg option contract is a put, call, chooser or undetermined.
         fix: {tag: '1358', type: int, name: LegPutOrCall}
         enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}
+  - name: tickladder
+    type: list
+    nullable: true
+    description: Price bands in ascending source order, each carrying its active increment.
+    item:
+      type: struct
+      fields:
+      - name: starttickpricerange
+        type: double
+        nullable: true
+        description: Starting price range for specified tick increment
+        fix: {tag: '1206', type: Price, name: StartTickPriceRange}
+      - name: tickincrement
+        type: double
+        description: Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded
+        fix: {tag: '1208', type: Price, name: TickIncrement}
+- name: omsorders
+  type: list
+  nullable: true
+  description: Indexed OMS XML orders with their event and action provenance.
+  item:
+    type: struct
+    fields:
+    - name: orderpath
+      type: string
+      description: Indexed XML path that distinguishes peer order facts.
+    - name: owner
+      type: string
+      description: '`event` for a direct child and `action` for an action-owned order.'
+    - name: eventid
+      type: string
+      nullable: true
+      description: Identifier on the enclosing XML event.
+    - name: eventkind
+      type: string
+      nullable: true
+      description: Type on the enclosing XML event.
+    - name: actionid
+      type: string
+      nullable: true
+      description: Identifier on the owning action; null for an event-owned order.
+    - name: actiontype
+      type: string
+      nullable: true
+      description: Type on the owning action; null for an event-owned order.
+    - name: actionuserid
+      type: string
+      nullable: true
+      description: User on the owning action; null for an event-owned order.
+    - name: instrumentid
+      type: string
+      nullable: true
+      description: Source instrument key consumed by `Instrument.from_instrument_keys_arrow`.
+    - name: orderid
+      type: string
+      nullable: true
+      description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
+      fix: {tag: '37', type: String, name: OrderID}
+    - name: clordid
+      type: string
+      nullable: true
+      description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
+      fix: {tag: '11', type: String, name: ClOrdID}
+    - name: execid
+      type: string
+      nullable: true
+      description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)).
+      fix: {tag: '17', type: String, name: ExecID}
+    - name: account
+      type: string
+      nullable: true
+      description: Account mnemonic as agreed between buy and sell sides, e.g. broker and institution or investor/intermediary and fund manager.
+      fix: {tag: '1', type: String, name: Account}
+    - name: securityexchange
+      type: string
+      nullable: true
+      description: Market used to help identify a security.
+      fix: {tag: '207', type: Exchange, name: SecurityExchange}
+    - name: currency
+      type: string
+      nullable: true
+      description: Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent.
+      fix: {tag: '15', type: Currency, name: Currency}
+    - name: side
+      type: string
+      nullable: true
+      description: 'Side of order (see Volume : "Glossary" for value definitions)'
+      fix: {tag: '54', type: char, name: Side}
+    - name: ordtype
+      type: string
+      nullable: true
+      description: Order type.
+      fix: {tag: '40', type: char, name: OrdType}
+    - name: timeinforce
+      type: string
+      nullable: true
+      description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.
+      fix: {tag: '59', type: char, name: TimeInForce}
+    - name: ordstatus
+      type: string
+      nullable: true
+      description: 'Identifies current status of order. *** SOME VALUES HAVE BEEN REPLACED - See "Replaced Features and Supported Approach" *** (see Volume : "Glossary" for value definitions)'
+      fix: {tag: '39', type: char, name: OrdStatus}
+    - name: orderqty
+      type: double
+      nullable: true
+      description: Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments.
+      fix: {tag: '38', type: Qty, name: OrderQty}
+    - name: price
+      type: double
+      nullable: true
+      description: Price per unit of quantity (e.g. per share)
+      fix: {tag: '44', type: Price, name: Price}
+    - name: avgpx
+      type: double
+      nullable: true
+      description: Calculated average price of all fills on this order.
+      fix: {tag: '6', type: Price, name: AvgPx}
+    - name: cumqty
+      type: double
+      nullable: true
+      description: Total quantity (e.g. number of shares) filled.
+      fix: {tag: '14', type: Qty, name: CumQty}
+    - name: leavesqty
+      type: double
+      nullable: true
+      description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14).
+      fix: {tag: '151', type: Qty, name: LeavesQty}
+    - name: lastpx
+      type: double
+      nullable: true
+      description: Price of this (last) fill.
+      fix: {tag: '31', type: Price, name: LastPx}
+    - name: lastqty
+      type: double
+      nullable: true
+      description: Quantity (e.g. shares) bought/sold on this (last) fill.
+      fix: {tag: '32', type: Qty, name: LastQty}
+    - name: grosstradeamt
+      type: double
+      nullable: true
+      description: Total amount traded expressed in units of currency - usually quantity * price. For FX Futures this is used to express the notional value of a fill when quantity fields are expressed in terms of contract size (i.e. quantity * price * contract size).
+      fix: {tag: '381', type: Amt, name: GrossTradeAmt}
+    - name: transacttime
+      type: timestamp[us, tz=UTC]
+      nullable: true
+      description: Timestamp when the business transaction represented by the message occurred.
+      fix: {tag: '60', type: UTCTimestamp, name: TransactTime}
+    - name: creationtime
+      type: timestamp[us, tz=UTC]
+      nullable: true
+      description: Lifecycle creation timestamp expressed in UTC.
+      fix: {tag: '30031', type: UTCTimestamp, name: CreationTime}
+    - name: expiretime
+      type: timestamp[us, tz=UTC]
+      nullable: true
+      description: Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as "GMT")
+      fix: {tag: '126', type: UTCTimestamp, name: ExpireTime}
+    - name: reason
+      type: string
+      nullable: true
+      description: Termination reason; null outside a terminating fact.
+    - name: ullink
+      type: list
+      nullable: true
+      description: Declared values from visible, invisible, and persisted ULLINK blocks.
+      item:
+        type: struct
+        fields:
+        - name: source
+          type: string
+          description: '`visible`, `invisible`, or `persisted`.'
+        - name: orderid
+          type: string
+          nullable: true
+          description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
+          fix: {tag: '37', type: String, name: OrderID}
+        - name: clordid
+          type: string
+          nullable: true
+          description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
+          fix: {tag: '11', type: String, name: ClOrdID}
+        - name: execid
+          type: string
+          nullable: true
+          description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)).
+          fix: {tag: '17', type: String, name: ExecID}
+        - name: account
+          type: string
+          nullable: true
+          description: Account mnemonic as agreed between buy and sell sides, e.g. broker and institution or investor/intermediary and fund manager.
+          fix: {tag: '1', type: String, name: Account}
+        - name: orderqty
+          type: double
+          nullable: true
+          description: Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments.
+          fix: {tag: '38', type: Qty, name: OrderQty}
+        - name: cumqty
+          type: double
+          nullable: true
+          description: Total quantity (e.g. number of shares) filled.
+          fix: {tag: '14', type: Qty, name: CumQty}
+        - name: leavesqty
+          type: double
+          nullable: true
+          description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14).
+          fix: {tag: '151', type: Qty, name: LeavesQty}
+        - name: lastqty
+          type: double
+          nullable: true
+          description: Quantity (e.g. shares) bought/sold on this (last) fill.
+          fix: {tag: '32', type: Qty, name: LastQty}
+        - name: price
+          type: double
+          nullable: true
+          description: Price per unit of quantity (e.g. per share)
+          fix: {tag: '44', type: Price, name: Price}
+        - name: avgpx
+          type: double
+          nullable: true
+          description: Calculated average price of all fills on this order.
+          fix: {tag: '6', type: Price, name: AvgPx}
+        - name: lastpx
+          type: double
+          nullable: true
+          description: Price of this (last) fill.
+          fix: {tag: '31', type: Price, name: LastPx}
+        - name: timeinforce
+          type: string
+          nullable: true
+          description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.
+          fix: {tag: '59', type: char, name: TimeInForce}
+        - name: transacttime
+          type: timestamp[us, tz=UTC]
+          nullable: true
+          description: Timestamp when the business transaction represented by the message occurred.
+          fix: {tag: '60', type: UTCTimestamp, name: TransactTime}
+        - name: creationtime
+          type: timestamp[us, tz=UTC]
+          nullable: true
+          description: Lifecycle creation timestamp expressed in UTC.
+          fix: {tag: '30031', type: UTCTimestamp, name: CreationTime}

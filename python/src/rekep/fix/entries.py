@@ -78,19 +78,14 @@ def slug_of(name: str) -> str:
 
 # -- a field record, which is a field ---------------------------------------
 #
-# A record used to be a dataclass beside the `Field` it projected into. It is
-# the field now: everything a shard stores about an identity has a `fix:` key,
-# so the record and the declaration are one object and nothing is written
-# twice. What is left here is the two directions the store needs -- the
-# document it holds on disk, and the version a caller asked about.
+# A record is the `Field` it declares: everything a shard stores about an
+# identity has a `fix:` key, so one object serves storage and projection.
 
 
 def refuse_record(record: Field) -> Field:
     """Refuse a field record no lookup could answer for; return it otherwise.
 
-    Whether a record is standard or namespaced is the presence of its tag,
-    so the two used to be checked against each other and now cannot disagree.
-    What is left is what a document can still get wrong.
+    The presence of a tag determines whether a record is standard or namespaced.
     """
     fix = record.fix
     name = fix.canonical
@@ -99,6 +94,14 @@ def refuse_record(record: Field) -> Field:
     if not fix.versions:
         raise ValueError(f"FIX field {name!r} is declared for no version")
     _refuse_source_metadata(fix, name)
+    if declared_tags := fix.get("tags"):
+        tags = fix.tags
+        if fix.tag is None:
+            raise ValueError(f"FIX field {name!r} needs a canonical tag before fix:tags")
+        if fix.tag in tags:
+            raise ValueError(f"FIX field {name!r} repeats its canonical tag in fix:tags")
+        if len(json.loads(declared_tags)) != len(tags):
+            raise ValueError(f"FIX field {name!r} needs distinct fix:tags")
     # The one tag written down rather than asked for. This runs while the
     # store is being read, and asking the registry which tag `MsgType` is
     # would re-enter the read that is calling it.
@@ -234,6 +237,7 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
     # The same refusals a stored document meets: a collapse is a write, and a
     # record no lookup could answer for must not reach a shard from either side.
     fix.event_types = event_types
+    fix.tags = tuple(dict.fromkeys(tag for member in reversed(members) for tag in member.fix.tags))
     refuse_record(built)
     values, origins = folded_field_values(members)
     fix.enumerated = values

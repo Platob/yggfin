@@ -19,7 +19,6 @@ from rekep.enums import Protocol
 from rekep.fix import (
     FixCodec,
     FixRegistry,
-    NanocondaSource,
     Rule,
     Rules,
     infer_version_from_pairs,
@@ -44,6 +43,7 @@ from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
     NO_SOURCE,
+    PROTOCOL_DEFAULT_SOURCE,
     TagIndex,
     _version_from_evidence,
     _version_key,
@@ -678,9 +678,28 @@ def test_a_protocol_rule_does_not_supply_a_fix_version(codec: FixCodec) -> None:
     assert own.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == [None]
 
 
-def test_nobody_saying_which_version_is_an_answer_too() -> None:
+def test_ul_uses_its_declared_default_only_without_version_evidence() -> None:
     bare = FixCodec(registry=FixRegistry(cache_dir=DATA))
-    assert bare.version_of("toBridge #A=1|#B=2") == (None, NO_SOURCE)
+    assert bare.version_of("toBridge #A=1|#B=2") == (
+        "4.4",
+        PROTOCOL_DEFAULT_SOURCE,
+    )
+    assert bare.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == ["4.4"]
+
+    disabled = FixCodec(registry=bare.registry, ul_default_version=None)
+    assert disabled.version_of("toBridge #A=1|#B=2") == (None, NO_SOURCE)
+
+
+def test_ul_version_evidence_leads_the_declared_default(codec: FixCodec) -> None:
+    messages = pyarrow.array(
+        [
+            "toBridge #BEGINSTRING=FIX.4.2|#MSGTYPE=D",
+            "toBridge #BEGINSTRING=FIX.unknown|#MSGTYPE=D",
+            "toBridge #MSGTYPE=D",
+        ]
+    )
+
+    assert codec.versions_of(messages, "UL").to_pylist() == ["4.2", None, "4.4"]
 
 
 @pytest.mark.parametrize(
@@ -743,10 +762,7 @@ def test_an_offline_registry_never_reaches_the_site(tmp_path: Path) -> None:
     reach for it would hang on the retry ladder rather than fail quickly --
     which is exactly the failure this flag exists to make impossible.
     """
-    registry = FixRegistry(
-        sources=(NanocondaSource(url="http://127.0.0.1:9/nope"),),
-        cache_dir=tmp_path,
-    )
+    registry = FixRegistry(cache_dir=tmp_path)
     assert registry.versions == (), "what it holds, rather than an error it never earned"
     assert registry.tags() == {}
     assert FixCodec().registry.offline is True
@@ -1066,10 +1082,10 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
 ) -> None:
     """One column per declared tag, typed from the registry declaration."""
     columns, _ = codec.into_lifted_columns(wire_tags, "4.2")
-    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 49, 18), (
+    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 50, 18), (
         "the session layer, shared components, then quote fields"
     )
-    assert len(FLAT) == 100
+    assert len(FLAT) == 101
     namespaced = {field.name for field in NAMESPACE_COLUMNS.values()}
     assert set(columns) == set(COLUMNS.values()) | namespaced, (
         "one pass lifts both kinds, so it answers with both"
@@ -1325,6 +1341,44 @@ def test_multicharacter_entry_separator_reaches_a_populated_component(
     ]
     assert parties.to_pylist() == [[{"partyid": "99106.003", "partyidsource": "D", "partyrole": 3}]]
     assert residual.to_pylist() == [[]]
+
+
+def test_vector_glued_split_records_the_longest_declared_boundary(codec: FixCodec) -> None:
+    own = FixCodec(registry=codec.registry)
+    own._group_members["4.4"] = {
+        "nopartyids": (
+            "NoPartyIDs",
+            ("PartyID", "IDSource", "PartyIDSource"),
+        )
+    }
+    entries = pyarrow.array(
+        [
+            [
+                {
+                    "tag": 0,
+                    "key": "PartyID",
+                    "value": "P-1PartyIDSource=D",
+                    "comp": "NoPartyIDs[0]",
+                }
+            ]
+        ],
+        type=ENTRIES,
+    )
+
+    split, errors = own.split_group_entries(entries, "4.4")
+
+    assert [(entry["key"], entry["value"]) for entry in split.to_pylist()[0]] == [
+        ("PartyID", "P-1"),
+        ("PartyIDSource", "D"),
+    ]
+    assert errors.to_pylist() == [
+        "NoPartyIDs glued member boundary was ambiguous; chose PartyIDSource over IDSource"
+    ]
+
+    chunked = pyarrow.chunked_array([entries, entries], type=ENTRIES)
+    chunked_split, chunked_errors = own.split_group_entries(chunked, "4.4")
+    assert chunked_split.combine_chunks().to_pylist() == split.to_pylist() * 2
+    assert chunked_errors.combine_chunks().to_pylist() == errors.to_pylist() * 2
 
 
 def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec) -> None:

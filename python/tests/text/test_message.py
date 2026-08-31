@@ -523,7 +523,7 @@ def test_pipe_and_soh_fast_paths_equal_complete_separator_inference() -> None:
         "|",
         "\x01",
         None,
-        None,
+        "|",
     ]
 
 
@@ -836,6 +836,60 @@ def test_malformed_xml_isolated_to_its_row() -> None:
     assert parsed["parseerror"].to_pylist()[2] is None
     assert parsed["entries"].to_pylist()[1] == []
     assert Message(body=bodies[1].as_py()).reason.startswith("XML parse failed: ParseError:")
+
+
+def test_referential_uses_depth_aware_headers_and_canonical_tick_members() -> None:
+    body = (
+        "Receiving: Referential(XLON|equity|dbi;GB00BN7SWP63_XLON_GBX|["
+        "quantity-type=, tick-size-scale-id=PRIMARY|[[0|0.01], [100|0.05]], "
+        "vendor-note=[inside|the, value]])"
+    )
+
+    row = Message.from_text(body)
+
+    assert row.protocol is Protocol.REFERENTIAL
+    assert row.direction is Direction.RECV
+    assert row.eventtype is EventType.INSTRUMENT
+    assert row.msgtype is None
+    assert [(entry.comp, entry.key, entry.value) for entry in row.entries] == [
+        ("Referential", "Venue", "XLON"),
+        ("Referential", "AssetClass", "equity"),
+        ("Referential", "InstrumentKey", "dbi;GB00BN7SWP63_XLON_GBX"),
+        ("Referential", "TickSizeScaleID", "PRIMARY"),
+        ("TickRules[0]", "StartTickPriceRange", "0"),
+        ("TickRules[0]", "TickIncrement", "0.01"),
+        ("TickRules[1]", "StartTickPriceRange", "100"),
+        ("TickRules[1]", "TickIncrement", "0.05"),
+        ("Referential", "vendor-note", "[inside|the, value]"),
+    ]
+    assert all(entry.key != "QuantityType" for entry in row.entries), (
+        "an empty source value is absence, not a null Entry value"
+    )
+
+
+def test_malformed_referential_isolated_to_its_row() -> None:
+    bodies = pyarrow.array(
+        [
+            "Referential(XLON|equity|dbi;GB00BN7SWP63_XLON_GBX|[quantity-type=1])",
+            "Referential(XLON|equity|dbi;GB00BN7SWP63_XLON_GBX|[unclosed=1)",
+            "ACCOUNT=A1|MSGTYPE=D|SIDE=1",
+        ]
+    )
+
+    parsed = Message.parse_arrow(bodies)
+
+    assert [Protocol.from_int(code) for code in parsed["protocol"].to_pylist()] == [
+        Protocol.REFERENTIAL,
+        Protocol.REFERENTIAL,
+        Protocol.UL,
+    ]
+    assert parsed["parseerror"].to_pylist()[0] is None
+    assert parsed["parseerror"].to_pylist()[1].startswith("Referential parse failed: ValueError:")
+    assert parsed["parseerror"].to_pylist()[2] is None
+    assert parsed["entries"].to_pylist()[1] == []
+    assert Message(body=bodies[1].as_py()).reason.startswith(
+        "Referential parse failed: ValueError:"
+    )
 
 
 def test_the_discriminator_agrees_with_itself_before_it_is_lifted() -> None:

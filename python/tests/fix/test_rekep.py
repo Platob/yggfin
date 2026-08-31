@@ -10,7 +10,7 @@ import pytest
 from rekep.fields import Field
 from rekep.fix import ANY_VERSION, Alias, fix_field
 from rekep.fix.quickfix import members_of
-from rekep.fix.registry import FixRegistry, builtin_projection
+from rekep.fix.registry import FixRegistry, builtin_registry
 from rekep.fix.rekep import (
     REKEP_COMPONENT_NAMES,
     REKEP_MSG_TYPES,
@@ -142,7 +142,8 @@ def test_rekep_field_tags_are_frozen_and_round_trip_through_the_registry() -> No
         "Currency",
         pyarrow.int32(),
     )
-    assert registry.resolve("MIC") is None
+    assert registry.field("MIC", namespace="standard") is None
+    assert registry.resolve("MIC").fix.get("namespace") == "fixtrading-udf"
     assert registry.field(30018) is None
     assert registry.resolve("XHash").dtype == pyarrow.binary(16)
     assert registry.resolve("LinkHashes").dtype == pyarrow.list_(
@@ -282,7 +283,7 @@ def test_registration_refuses_changed_versions(tmp_path: Path) -> None:
 
 
 def test_the_builtin_registry_is_read_without_rewriting_its_archive() -> None:
-    archive = Path(builtin_projection())
+    archive = Path(builtin_registry())
     before = archive.read_bytes(), archive.stat().st_mtime_ns
     FixMsg.into_registry.cache_clear()
     try:

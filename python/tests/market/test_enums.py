@@ -108,6 +108,8 @@ def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
     assert Protocol.from_str("FIX5SP2").version == "5.0.SP2"
     assert Protocol.from_str("FXML5SP2").family is Protocol.FIXML
     assert Protocol.XML.family is Protocol.XML and Protocol.XML.version is None
+    assert Protocol.from_str("REFERENTIAL") is Protocol.REFERENTIAL
+    assert Protocol.REFERENTIAL.code == "REFER"
     assert Protocol.with_version(Protocol.from_str("SBE"), "4.4").code == "SBE"
 
 
@@ -421,6 +423,7 @@ PROTOCOL_CODES = {
     "FIX": int.from_bytes(b"FIX".ljust(8, b"\0"), "big"),
     "FIXML": int.from_bytes(b"FIXML".ljust(8, b"\0"), "big"),
     "XML": int.from_bytes(b"XML".ljust(8, b"\0"), "big"),
+    "REFERENTIAL": int.from_bytes(b"REFER".ljust(8, b"\0"), "big"),
     "UL": int.from_bytes(b"UL".ljust(8, b"\0"), "big"),
     "MISC": int.from_bytes(b"MISC".ljust(8, b"\0"), "big"),
     "OTHER": int.from_bytes(b"OTHER".ljust(8, b"\0"), "big"),
@@ -537,7 +540,7 @@ def test_the_codes_are_the_dictionary_s_and_are_not_written_down_here(
 
     entry = FixRegistry.from_builtin().scalar(field)
     assert declared.FIX_FIELD == field
-    assert entry.fix.tag, f"{field} is in the packaged projection"
+    assert entry.fix.tag, f"{field} is in the packaged registry"
     for code, member in declared._fix_codes().items():
         assert entry.fix.value_of(code) is not None, f"{code} is one the dictionary declares"
         assert member.into_fix() == code

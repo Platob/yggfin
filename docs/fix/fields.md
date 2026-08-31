@@ -5,7 +5,7 @@ Read a field by tag, canonical name, or recorded alias:
 ```python
 from rekep.fix import FixRegistry
 
-registry = FixRegistry(cache_dir="data/fix.zip")
+registry = FixRegistry()
 side = registry.field("Side", "4.4")
 
 print(side.name, side.fix.tag, side.dtype)

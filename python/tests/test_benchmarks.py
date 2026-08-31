@@ -6,10 +6,9 @@ that way -- two on a name that no longer existed, one on a column that had
 become NOT NULL -- and every one was an import or a first call, which is what
 this catches for the price of importing six modules.
 
-Running them is the integration-marked half: `--quick` is about three and a
-half minutes of real work across the six, which is a CI job and not a unit
-test. Each script bounds its own scalar legs there, because a reference that
-runs at hundreds of rows a second prices at a sample as well as at full width.
+Running them is the integration-marked half. `--quick` is one complete smoke
+pass through every assertion; statistically repeated timings remain the
+standalone benchmark's job. Scalar references use bounded samples there.
 """
 
 from __future__ import annotations

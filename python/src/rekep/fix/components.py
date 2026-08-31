@@ -12,8 +12,8 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.enums import Currency
-from rekep.fields import Field, column_name, scalar
-from rekep.fields.arrays import build_list, dense_counts, sequence
+from rekep.fields import Field, column_name, column_names, scalar
+from rekep.fields.arrays import build_list, dense_counts, scattered, sequence
 from rekep.fix.columns import DECLARED, ENTRIES
 from rekep.fix.fields import cast_arrow_field
 from rekep.fix.quickfix import entry_of, is_group, is_reference, members_of
@@ -158,6 +158,8 @@ _NO_SECURITY_ALT_ID = "NoSecurityAltID"
 _NO_LEGS = "NoLegs"
 _UNSIGNED = r"^[0-9]{1,18}$"
 _GROUP_STRIDE = 2**32
+_INDEXED_COMPONENT = r"(?s)^(?:(?P<lead>.*)\.)?(?P<group>[^.\[\]]+)\[(?P<index>[0-9]+)\]$"
+_INDEXED_ANCESTOR = r"\[[0-9]+\](?:\.|$)"
 
 
 @dataclasses.dataclass(eq=False)
@@ -225,17 +227,64 @@ class ComponentGroup:
 
     def into_arrow_arrays(self, tags: Any) -> tuple[Any, Any]:
         """Return `(entries, residual_tags)`, preserving row validity and order."""
+        entries, residual, _ = self.into_arrow_arrays_with_errors(tags)
+        return entries, residual
+
+    def into_arrow_arrays_with_errors(self, tags: Any) -> tuple[Any, Any, Any]:
+        """Extract entries and retain non-fatal indexed-group diagnostics."""
         entries_type = self.into_entries_type()
         if isinstance(tags, pyarrow.ChunkedArray):
-            parts = [self.into_arrow_arrays(chunk) for chunk in tags.chunks]
+            parts = [self.into_arrow_arrays_with_errors(chunk) for chunk in tags.chunks]
             return (
-                pyarrow.chunked_array([found for found, _ in parts], type=entries_type),
-                pyarrow.chunked_array([rest for _, rest in parts], type=ENTRIES),
+                pyarrow.chunked_array([found for found, _, _ in parts], type=entries_type),
+                pyarrow.chunked_array([rest for _, rest, _ in parts], type=ENTRIES),
+                pyarrow.chunked_array([error for _, _, error in parts], type=pyarrow.string()),
             )
         if not isinstance(tags, pyarrow.Array) or tags.type != ENTRIES:
             actual = getattr(tags, "type", type(tags).__name__)
             raise TypeError(f"{type(self).__name__} needs {ENTRIES}, got {actual}")
-        return self._extract(tags)
+        return self._extract_with_errors(tags)
+
+    def _extract_with_errors(self, tags: pyarrow.Array) -> tuple[Any, Any, Any]:
+        """Choose explicit indexed boundaries where the wire supplied them."""
+        compute = pyarrow.compute
+        rows = len(tags)
+        entries = compute.list_flatten(tags)
+        if not len(entries):
+            extracted, residual = self._extract(tags)
+            return extracted, residual, pyarrow.nulls(rows, pyarrow.string())
+        components = compute.fill_null(compute.struct_field(entries, "comp"), "")
+        view = compute.extract_regex(components, _INDEXED_COMPONENT)
+        groups = column_names(compute.struct_field(view, "group"))
+        explicit = compute.fill_null(compute.equal(groups, column_name(self.group)), False)
+        if self.scoped:
+            lead = compute.fill_null(compute.struct_field(view, "lead"), "")
+            explicit = compute.and_(
+                explicit,
+                compute.invert(compute.match_substring_regex(lead, _INDEXED_ANCESTOR)),
+            )
+        if not compute.any(explicit, min_count=0).as_py():
+            extracted, residual = self._extract(tags)
+            return extracted, residual, pyarrow.nulls(rows, pyarrow.string())
+
+        parents = compute.list_parent_indices(tags).cast(pyarrow.int64())
+        indexed_rows = compute.greater(dense_counts(compute.filter(parents, explicit), rows), 0)
+        row_positions = sequence(rows)
+        indexed_at = compute.filter(row_positions, indexed_rows)
+        plain_at = compute.filter(row_positions, compute.invert(indexed_rows))
+        indexed = self._extract_indexed(compute.take(tags, indexed_at))
+        if not len(plain_at):
+            return indexed
+        plain_entries, plain_residual = self._extract(compute.take(tags, plain_at))
+        plain_error = pyarrow.nulls(len(plain_at), pyarrow.string())
+        return tuple(
+            scattered([indexed_part, plain_part], [indexed_at, plain_at])
+            for indexed_part, plain_part in zip(
+                indexed,
+                (plain_entries, plain_residual, plain_error),
+                strict=True,
+            )
+        )
 
     def _extract(self, tags: pyarrow.Array) -> tuple[pyarrow.Array, pyarrow.Array]:
         """One physical Arrow chunk through the component state machine."""
@@ -396,6 +445,104 @@ class ComponentGroup:
             mask=compute.is_null(tags) if tags.null_count else None,
         )
         return extracted, residual
+
+    def _extract_indexed(self, tags: pyarrow.Array) -> tuple[Any, Any, Any]:
+        """Explicit component indices as group boundaries, even when partial."""
+        compute = pyarrow.compute
+        entries_type = self.into_entries_type()
+        rows = len(tags)
+        entries = compute.list_flatten(tags)
+        keys = compute.struct_field(entries, "tag")
+        values = compute.struct_field(entries, "value")
+        components = compute.fill_null(compute.struct_field(entries, "comp"), "")
+        parents = compute.list_parent_indices(tags).cast(pyarrow.int64())
+        positions = sequence(len(entries))
+        row_ids = sequence(rows)
+
+        view = compute.extract_regex(components, _INDEXED_COMPONENT)
+        groups = column_names(compute.struct_field(view, "group"))
+        explicit = compute.fill_null(compute.equal(groups, column_name(self.group)), False)
+        if self.scoped:
+            lead = compute.fill_null(compute.struct_field(view, "lead"), "")
+            explicit = compute.and_(
+                explicit,
+                compute.invert(compute.match_substring_regex(lead, _INDEXED_ANCESTOR)),
+            )
+        declared_member = compute.and_(
+            explicit,
+            compute.is_in(keys, value_set=self._member_array),
+        )
+        identity = compute.binary_join_element_wise(
+            parents.cast(pyarrow.string()), "\x00", compute.utf8_lower(components), ""
+        )
+        party_groups = compute.unique(compute.filter(identity, declared_member))
+        first_positions = compute.index_in(party_groups, value_set=identity)
+        party_parents = compute.take(parents, first_positions)
+        party_sizes = dense_counts(party_parents, rows)
+
+        row_field = self.into_row().into_field()
+        lifted: list[Any] = []
+        projected = pyarrow.repeat(pyarrow.scalar(False), len(entries))
+        for column, member in self.into_projection():
+            matched = compute.and_(
+                declared_member,
+                compute.is_in(keys, value_set=self._tags_named(member)),
+            )
+            text, at = _first_for_party(values, positions, identity, matched, party_groups)
+            declared = row_field.field(column)
+            target = declared.dtype
+            converted = cast_arrow_field(text, declared, target)
+            readable = compute.is_valid(converted)
+            lifted.append(compute.if_else(readable, converted, pyarrow.scalar(None, target)))
+            projected = compute.or_(
+                projected, _positions_are(positions, compute.filter(at, readable))
+            )
+
+        entry_struct = pyarrow.StructArray.from_arrays(lifted, fields=row_field.arrow_fields)
+        extracted = build_list(
+            entries_type,
+            party_sizes,
+            entry_struct,
+            mask=compute.equal(party_sizes, 0),
+        )
+
+        count_match = compute.is_in(keys, value_set=self._count_array)
+        count_occurrences = dense_counts(compute.filter(parents, count_match), rows)
+        count_values = _first_by_parent(values, parents, count_match, row_ids)
+        count_is_numeric = compute.fill_null(
+            compute.match_substring_regex(count_values, _UNSIGNED), False
+        )
+        declared_count = compute.if_else(count_is_numeric, count_values, pyarrow.scalar("0")).cast(
+            pyarrow.int64()
+        )
+        one_count = compute.equal(count_occurrences, 1)
+        count_valid = _all(
+            one_count,
+            count_is_numeric,
+            compute.equal(declared_count, party_sizes),
+        )
+        diagnostics = _indexed_count_errors(
+            self.group,
+            count_occurrences,
+            count_values,
+            count_is_numeric,
+            declared_count,
+            party_sizes,
+        )
+
+        remove = compute.or_(
+            projected,
+            compute.and_(count_match, compute.take(count_valid, parents)),
+        )
+        keep = compute.invert(remove)
+        residual_sizes = dense_counts(compute.filter(parents, keep), rows)
+        residual = build_list(
+            ENTRIES,
+            residual_sizes,
+            _kept(entries, keep),
+            mask=compute.is_null(tags) if tags.null_count else None,
+        )
+        return extracted, residual, diagnostics
 
     @cached_property
     def _declaration(
@@ -769,6 +916,64 @@ class Legs(ComponentGroup):
                 "LegRatioQty",
             )
         )
+
+
+def _indexed_count_errors(
+    group: str,
+    occurrences: Any,
+    values: Any,
+    numeric: Any,
+    declared: Any,
+    actual: Any,
+) -> pyarrow.Array:
+    """Count assertions that disagree with explicit indexed group members."""
+    compute = pyarrow.compute
+    rows = len(occurrences)
+    prefix = pyarrow.repeat(pyarrow.scalar(f"{group} count "), rows)
+    occurrence_detail = compute.binary_join_element_wise(
+        prefix,
+        "assertion has ",
+        occurrences.cast(pyarrow.string()),
+        " values; found ",
+        actual.cast(pyarrow.string()),
+        " indexed groups",
+        "",
+    )
+    invalid_detail = compute.binary_join_element_wise(
+        prefix,
+        "assertion '",
+        compute.fill_null(values, ""),
+        "' is invalid; found ",
+        actual.cast(pyarrow.string()),
+        " indexed groups",
+        "",
+    )
+    mismatch_detail = compute.binary_join_element_wise(
+        prefix,
+        "mismatch: declared ",
+        declared.cast(pyarrow.string()),
+        ", found ",
+        actual.cast(pyarrow.string()),
+        " indexed groups",
+        "",
+    )
+    multiple = compute.not_equal(occurrences, 1)
+    detail = compute.if_else(
+        multiple,
+        occurrence_detail,
+        compute.if_else(compute.invert(numeric), invalid_detail, mismatch_detail),
+    )
+    mismatched = _all(
+        compute.greater(occurrences, 0),
+        compute.invert(
+            _all(
+                compute.equal(occurrences, 1),
+                numeric,
+                compute.equal(declared, actual),
+            )
+        ),
+    )
+    return compute.if_else(mismatched, detail, pyarrow.nulls(rows, pyarrow.string()))
 
 
 def _kept(entries: Any, keep: Any) -> pyarrow.StructArray:

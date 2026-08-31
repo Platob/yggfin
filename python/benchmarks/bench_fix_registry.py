@@ -54,11 +54,15 @@ def unpacked(into: pathlib.Path) -> pathlib.Path:
     return directory
 
 
-def check(folder: pathlib.Path) -> None:
+def check(folder: pathlib.Path, *, exhaustive: bool = True) -> None:
     """The archived answer *is* the directory's answer, asserted before timing."""
     directory = FixRegistry(cache_dir=folder, retries=0)
     archived = FixRegistry(cache_dir=ARCHIVE, retries=0)
     assert archived.versions == directory.versions
+    assert archived.field(54, "4.4") == directory.field(54, "4.4")
+    if not exhaustive:
+        return
+    assert archived.definitions(9001) == directory.definitions(9001)
     for label, question in QUESTIONS.items():
         assert question(archived) == question(directory), label
     for version in directory.versions:
@@ -143,20 +147,38 @@ def sweep_sources(adapters: tuple[SourceAdapter, ...], repeat: int) -> None:
         )
 
 
-def sweep_publication(folder: pathlib.Path, repeat: int) -> None:
+def sweep_publication(folder: pathlib.Path, repeat: int, *, warm: bool = True) -> None:
     """Build the two artifacts callers actually publish."""
     with tempfile.TemporaryDirectory() as scratch:
         root = pathlib.Path(scratch)
         full = root / "fix.zip"
         builtin = root / "registry.zip"
-        full_seconds = best_of(lambda: publish_full(folder, full), repeat)
-        builtin_seconds = best_of(lambda: publish_builtin(full, builtin), repeat)
+        full_seconds = best_of(lambda: publish_full(folder, full), repeat, warm=warm)
+        builtin_seconds = best_of(lambda: publish_builtin(full, builtin), repeat, warm=warm)
         print(f"\npublication, best of {repeat} (ms)")
         print(f"{'full registry':>32} {full_seconds * 1000:>12.1f} {full.stat().st_size:>12,} B")
         print(
-            f"{'wheel projection':>32} {builtin_seconds * 1000:>12.1f} "
+            f"{'wheel registry':>32} {builtin_seconds * 1000:>12.1f} "
             f"{builtin.stat().st_size:>12,} B"
         )
+
+
+def sweep_quick(folder: pathlib.Path) -> None:
+    """One complete archive load, warm lookup, and deterministic publication."""
+    import time
+
+    registry = FixRegistry(cache_dir=ARCHIVE, retries=0)
+    started = time.perf_counter()
+    loaded = registry.load()
+    load_seconds = time.perf_counter() - started
+    started = time.perf_counter()
+    for _ in range(1_000):
+        assert registry.field(54, "4.4") is not None
+    lookup_seconds = time.perf_counter() - started
+    print("\nquick registry smoke")
+    print(f"{'archive load':>32} {load_seconds * 1000:>12.1f} {len(loaded):>12,} fields")
+    print(f"{'warm field lookup':>32} {lookup_seconds * 1_000:>12.1f} ms / 1,000")
+    sweep_publication(folder, 1, warm=False)
 
 
 def _zip(documents: dict[str, bytes], target: pathlib.Path, level: int | None) -> None:
@@ -169,7 +191,7 @@ def _zip(documents: dict[str, bytes], target: pathlib.Path, level: int | None) -
 
 def main() -> None:
     arguments = parser(__doc__, repeat=7).parse_args()
-    repeat = 2 if arguments.quick else arguments.repeat
+    repeat = arguments.repeat
 
     if not ARCHIVE.exists():
         raise SystemExit(f"no dictionary to measure: {ARCHIVE} is not there")
@@ -178,8 +200,12 @@ def main() -> None:
         versions = FixRegistry(cache_dir=folder, retries=0).versions
         fields = sum(len(FixRegistry(cache_dir=folder, retries=0).fields(v)) for v in versions)
         print(f"{ARCHIVE.name}: {len(versions)} versions, {fields:,} fields")
-        check(folder)
+        check(folder, exhaustive=not arguments.quick)
         print("every answer matches between the two stores")
+        if arguments.quick:
+            sweep_construction(folder, 1)
+            sweep_quick(folder)
+            return
         sweep_construction(folder, repeat)
         sweep_questions(folder, repeat)
         sweep_sources(ADAPTERS, repeat)

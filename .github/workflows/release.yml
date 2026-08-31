@@ -85,8 +85,6 @@ jobs:
       UV_PUBLISH_CHECK_URL: ${{ vars.ARTIFACTORY_PYPI_CHECK_URL }}
       UV_PUBLISH_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
       UV_PUBLISH_PASSWORD: ${{ secrets.ARTIFACTORY_TOKEN }}
-      REKEP_FIX_REGISTRY_URL: ${{ vars.REKEP_FIX_REGISTRY_URL }}
-      ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,23 +95,8 @@ jobs:
         run: |
           test -n "$UV_PUBLISH_URL" || { echo "ARTIFACTORY_PYPI_URL is not set" >&2; exit 1; }
           test -n "$UV_PUBLISH_CHECK_URL" || { echo "ARTIFACTORY_PYPI_CHECK_URL is not set" >&2; exit 1; }
-          test -n "$REKEP_FIX_REGISTRY_URL" || { echo "REKEP_FIX_REGISTRY_URL is not set" >&2; exit 1; }
-          test -n "$ARTIFACTORY_TOKEN" || { echo "ARTIFACTORY_TOKEN is not set" >&2; exit 1; }
+          test -n "$UV_PUBLISH_PASSWORD" || { echo "ARTIFACTORY_TOKEN is not set" >&2; exit 1; }
       - name: Build rekep
         run: uv build --no-sources
-      - name: Build full FIX registry
-        run: >-
-          uv run python -c "from rekep.fix.publish import publish_full;
-          publish_full('../data/fix', 'dist/fix-registry.zip')"
       - name: Publish rekep
         run: uv publish --no-attestations dist/rekep-*.whl dist/rekep-*.tar.gz
-      - name: Publish full FIX registry
-        shell: bash
-        run: |
-          checksum="$(sha256sum dist/fix-registry.zip | cut -d ' ' -f1)"
-          curl --fail-with-body --silent --show-error \
-            --request PUT \
-            --header "Authorization: Bearer ${ARTIFACTORY_TOKEN}" \
-            --header "X-Checksum-Sha256: ${checksum}" \
-            --upload-file dist/fix-registry.zip \
-            "$REKEP_FIX_REGISTRY_URL"

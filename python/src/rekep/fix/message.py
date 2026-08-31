@@ -1488,6 +1488,66 @@ def _entry_members(key: str, value: str, entry_separator: str) -> list[tuple[str
     return built
 
 
+def split_glued_group_value(
+    value: str, members: Sequence[str]
+) -> tuple[tuple[tuple[str | None, str], ...], tuple[tuple[str, ...], ...]]:
+    """A separator-free group value cut at its registry-declared member names.
+
+    The first pair keeps the caller's existing key, represented by None. A
+    name is a boundary only immediately before `=`; where several declared
+    names are suffixes of the same spelling the longest wins and every choice
+    is returned for the row diagnostic.
+    """
+    boundaries = _glued_group_boundaries(members)
+    declared = tuple(member for member, _ in boundaries)
+    shadowed = dict(boundaries)
+    if not declared or "=" not in value:
+        return ((None, value),), ()
+
+    folded = value.casefold()
+    start = 0
+    key: str | None = None
+    parts: list[tuple[str | None, str]] = []
+    ambiguities: list[tuple[str, ...]] = []
+    for equals in (index for index, char in enumerate(value) if char == "="):
+        matches = tuple(
+            member
+            for member in declared
+            if (boundary := equals - len(member)) >= start
+            and folded[boundary:equals] == member.casefold()
+        )
+        if not matches:
+            continue
+        selected = matches[0]
+        boundary = equals - len(selected)
+        parts.append((key, value[start:boundary]))
+        if len(matches) > 1:
+            ambiguities.append(shadowed[selected])
+        key = value[boundary:equals]
+        start = equals + 1
+    parts.append((key, value[start:]))
+    return tuple(parts), tuple(ambiguities)
+
+
+def _glued_group_boundaries(
+    members: Sequence[str],
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Declared boundaries and every shorter suffix each one shadows."""
+    ordered = tuple(
+        sorted(
+            dict.fromkeys(str(member) for member in members if str(member)),
+            key=lambda member: (-len(member), member.casefold(), member),
+        )
+    )
+    return tuple(
+        (
+            selected,
+            tuple(member for member in ordered if selected.casefold().endswith(member.casefold())),
+        )
+        for selected in ordered
+    )
+
+
 def _entry_separator_candidates(extra: Iterable[str] = ()) -> tuple[str, ...]:
     """Configured and default entry delimiters, longest literals first."""
     unique = dict.fromkeys((*extra, *SEPARATORS))

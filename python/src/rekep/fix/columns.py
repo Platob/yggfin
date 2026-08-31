@@ -101,6 +101,7 @@ _COMMON_FIELDS: tuple[str, ...] = (
     "LeavesQty",
     "LastPx",
     "LastQty",
+    "GrossTradeAmt",
     "LastShares",
     "LastMkt",
     "MarketMarker",
@@ -243,6 +244,7 @@ _COLUMN_METADATA: tuple[str, ...] = (
     "description",
     "fix:aliases",
     "fix:tag",
+    "fix:tags",
     "fix:name",
     "fix:type",
 )

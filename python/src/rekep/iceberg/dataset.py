@@ -721,10 +721,10 @@ class IcebergDataset(Dataset):
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             for chunk in arrow_chunks(reader, rows):
-                chunk = self.sorted(chunk)
                 if self.plan_merges or partitions:
                     self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
                 else:
+                    chunk = self.sorted(chunk)
                     table = self._commit_with_retry(
                         table,
                         reference,
@@ -998,10 +998,26 @@ class IcebergDataset(Dataset):
             # for it would read the table to discover that, and `_key_ranges`
             # has no bounds to build from.
             return 0, 0
+        reference = self._branch_name(branch)
+        head = self._branch_head(table, reference)
         partitions = _partition_columns(table)
         partition = None
         if partitions:
             runs = list(_partition_runs(_grouped_partition_chunk(chunk, partitions), partitions))
+            if head is None:
+                # PyIceberg already writes every partition of one table in
+                # parallel. With no stored snapshot there is nothing to match,
+                # so the initial merge is one transaction across every part.
+                additions = [_checked_merge_chunk(table, run, join) for _, _, run in runs]
+                fresh = pyarrow.concat_tables(additions, promote_options="none")
+                self._append_chunk(
+                    table,
+                    fresh,
+                    reference,
+                    properties or {},
+                    rebuild=False,
+                )
+                return 0, fresh.num_rows
             if len(runs) > 1:
                 updated = inserted = 0
                 for _, _, run in runs:
@@ -1022,7 +1038,6 @@ class IcebergDataset(Dataset):
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
         shape = Field.from_(chunk.schema)
-        reference = self._branch_name(branch)
         derived = self.derived_columns()
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         scan = self._branch_scan(table, scan, reference)
@@ -1192,7 +1207,7 @@ class IcebergDataset(Dataset):
             inserted = 0
             for chunk in arrow_chunks(reader, rows):
                 inserted += self.insert_arrow_table(
-                    self.sorted(chunk), join, branch=reference, properties=properties
+                    chunk, join, branch=reference, properties=properties
                 )
             return inserted
         finally:
@@ -1235,10 +1250,29 @@ class IcebergDataset(Dataset):
             )
         if chunk.num_rows == 0:
             return 0
+        reference = self._branch_name(branch)
+        head = self._branch_head(table, reference)
         partitions = _partition_columns(table)
         partition = None
         if partitions:
             runs = list(_partition_runs(_grouped_partition_chunk(chunk, partitions), partitions))
+            if head is None:
+                # An empty table has no keys to scan. Collapse duplicates
+                # within each transformed partition, then let PyIceberg land
+                # every partition in one append transaction.
+                additions = [first_rows(normalised_keys(run, join), join) for _, _, run in runs]
+                fresh = pyarrow.concat_tables(additions, promote_options="none")
+                _validate_merge_keys(fresh, join)
+                table = self._append_chunk(
+                    table,
+                    fresh,
+                    reference,
+                    properties or {},
+                    rebuild=False,
+                )
+                span = self._insert_span(fresh, join, reference, None)
+                self._remember_inserted(span, table, establish=True)
+                return fresh.num_rows
             if len(runs) > 1:
                 return sum(
                     self._insert_arrow_table(
@@ -1251,8 +1285,6 @@ class IcebergDataset(Dataset):
                 )
             _, partition, chunk = runs[0]
         chunk = first_rows(normalised_keys(chunk, join), join)
-        reference = self._branch_name(branch)
-        head = self._branch_head(table, reference)
         # `_key_ranges` raises on a null or NaN key before the scan is even
         # built, which is the same refusal a merge makes.
         row_filter = _key_ranges(chunk, join, self.derived_columns())
@@ -2066,15 +2098,9 @@ class IcebergDataset(Dataset):
         """`orphan_files`, as `(filesystem, path, location, size)`."""
         table = self.iceberg_table
         cutoff = datetime.datetime.now(datetime.UTC) - older_than
-        # **One** live set, against **every** listing. The two halves used to
-        # guard only their own directory, which holds exactly as long as the
-        # two directories are disjoint -- and `write.data.path` is an arbitrary
-        # location, so they need not be. Point it at the table root, which is
-        # what a table written flat does, and the data listing walks
-        # `metadata/` too: measured, ten orphans reported and all ten of them
-        # the current pointer, the manifest lists and the manifests. `cleanup`
-        # would have deleted the table. A file is live when *anything* live
-        # names it, never when the directory it happens to sit under does.
+        # One live set guards every listing. `write.data.path` may overlap the
+        # metadata root, so a file is live when anything live names it, never
+        # because of the directory listing that happened to find it.
         data, files = self._live(table)
         live = data | files
         directories = [self._data_path(table)]

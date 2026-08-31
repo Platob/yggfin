@@ -28,13 +28,14 @@ from rekep.market import (
     MarketEvent,
     Order,
     SymbolTicker,
+    TickRule,
 )
 from rekep.tasks import Task
 from rekep.text import Entry, FixMsg, Message, TextFile, TextFiles
 from rekep.times import datetime_of, unix_of
 from rekep.urls import Url
 
-__version__ = "0.1.0"
+__version__ = "1"
 
 __all__ = [
     "ArrowPath",
@@ -74,6 +75,7 @@ __all__ = [
     "Task",
     "TextFile",
     "TextFiles",
+    "TickRule",
     "Url",
     "__version__",
     "datetime_of",

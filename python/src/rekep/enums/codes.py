@@ -289,7 +289,7 @@ class Protocol(Ascii64):
     """Protocol grammar and resolved version in one eight-byte ASCII name.
 
     Open, because the vocabulary belongs to the logs and not to this package:
-    `rekep.fix.rules` ships the five below, and a desk whose rule names its
+    `rekep.fix.rules` ships the grammars below, and a desk whose rule names its
     own bridge stores that name as a code without a release here. FIX service
     packs use the compact `FIX5SP2` spelling so the exact version still fits.
     """
@@ -321,6 +321,9 @@ class Protocol(Ascii64):
 
     UL = "UL"
     """Named keys alone."""
+
+    REFERENTIAL = "REFER"
+    """ULBridge reference data in a depth-delimited `Referential(...)` envelope."""
 
     MISC = "MISC"
     """Operational traffic whose vocabulary is known but carries no message."""

@@ -9,7 +9,7 @@ import pyarrow
 
 from rekep.entries import ENTRIES
 from rekep.fields import Field
-from rekep.fix.entries import ANY_VERSION, ComponentRecord, record_copy
+from rekep.fix.entries import ANY_VERSION, STANDARD, ComponentRecord, record_copy
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import block, field_member, reference_member
 
@@ -318,12 +318,13 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
             registry.update_field(expected)
         records[name] = expected
     tagged = {entry.fix.tag: entry for entry in records.values() if entry.fix.tag is not None}
+    additions: list[Field] = []
     for declared in REKEP_FIELD_DECLARATIONS:
         expected = _field(declared)
         by_tag = tagged.get(expected.fix.tag)
         by_name = records.get(expected.fix.canonical)
         if by_tag is None and by_name is None:
-            registry.add_field(expected)
+            additions.append(expected)
             records[expected.fix.canonical] = expected
             tagged[expected.fix.tag] = expected
             continue
@@ -332,6 +333,10 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
                 f"rekep FIX field {expected.fix.canonical!r} does not own tag "
                 f"{expected.fix.tag} and column {expected.fix.column!r}"
             )
+    if additions:
+        # Package fields share one shard. Reconcile them together so an archive
+        # refresh rewrites that shard once and invalidates the registry once.
+        registry.add_definitions(additions, STANDARD)
 
     for expected in _component_records():
         held = registry.component_records().get(expected.name)

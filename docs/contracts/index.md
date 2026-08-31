@@ -94,21 +94,8 @@ instrument's `CFICode <461>` is.
 
 ## Evolution
 
-Schema changes update declarations and generated contracts together while the
-project is pre-release; there are no compatibility aliases in the contracts.
-
-After compatibility is established, ordinary evolution is additive and
-nullable. Dropping or retyping a field requires a new contract version.
-Producers cast before writing; consumers load the same contract and may use
-`merge_schema=True` to retain additive fields from a newer producer.
-
-**Every contract is at 1.** The numbers used to count the shapes each one had
-been through, which was a history no reader could act on: nothing in the
-package reads a stored version, nothing branches on one, and there is no
-migration path -- a store, a registry document or an Iceberg table written by
-an earlier release is rebuilt rather than read or appended to. So the counters
-were reset to where they are useful, which is the first number a consumer of
-*this* shape will see change.
+**Every contract is version 1.** Schema changes update the declaration and
+generated contract together. Data written to another shape is rebuilt.
 
 The version is not part of a table's identity either: PyIceberg carries no
 schema-level metadata, so it never survives the round trip and no write is

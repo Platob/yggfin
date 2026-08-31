@@ -54,6 +54,7 @@ from rekep.fix.message import (
     normalized_pairs,
     render_fix_value,
 )
+from rekep.fix.oms import OMS_ORDERS, OmsOrder, OmsOrders
 from rekep.fix.registry import FixRegistry
 from rekep.fix.transcribe import FixCodec, infer_version_from_pairs
 from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
@@ -151,7 +152,7 @@ def _component_groups() -> tuple[tuple[str, str, type[Any]], ...]:
 
 #: The parsed columns that hold one structured component each. What
 #: `FixMsg.into_first_values` checks before taking its flat shortcut.
-COMPONENT_COLUMNS: tuple[str, ...] = tuple(FixCodec.into_components())
+COMPONENT_COLUMNS: tuple[str, ...] = (*FixCodec.into_components(), "omsorders")
 
 
 def _component_value(message: FixMsg, name: str) -> Any:
@@ -710,6 +711,9 @@ class FixMsg(Message):
     lastqty: Annotated[float | None, DECLARED["LastQty"]] = None
     """`LastQty <32>`: the size of this fill."""
 
+    grosstradeamt: Annotated[float | None, DECLARED["GrossTradeAmt"]] = None
+    """`GrossTradeAmt <381>`: gross value in the order currency."""
+
     lastshares: Annotated[float | None, DECLARED["LastShares"]] = None
     """Vendor share quantity, distinct from `LastQty <32>`."""
 
@@ -819,6 +823,9 @@ class FixMsg(Message):
 
     instrument: Instrument = dataclasses.field(default_factory=Instrument)
     """FIX Instrument facts, with InstrmtLegGrp retained inside the component."""
+
+    omsorders: Annotated[list[OmsOrder] | None, Field(dtype=OMS_ORDERS)] = None
+    """Indexed OMS XML orders with their event and action provenance."""
 
     @classmethod
     def from_text(
@@ -1383,7 +1390,6 @@ class FixMsg(Message):
         """The vectorized transcription of one already validated batch slice."""
         if "entries" in batch.schema.names and _has_misplaced_checksum(batch.column("entries")):
             raise ValueError("CheckSum <10> is not the final field")
-        rows = batch.num_rows
         columns = {name: batch.column(name) for name in batch.schema.names}
         columns.update(_session_batch_columns(columns, codec.null_values))
         bodies = columns.get("body")
@@ -1395,7 +1401,7 @@ class FixMsg(Message):
             # is then parsed with -- and a row whose text a projection dropped
             # keeps the answer the message stage stored, because there is no
             # other. Direction is written back onto the batch, appended where
-            # the batch has no such column, so the fast path's slices carry it.
+            # the batch has no such column, so either conversion path carries it.
             carries_text = pyarrow.compute.fill_null(
                 pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
             )
@@ -1424,47 +1430,15 @@ class FixMsg(Message):
         else:
             protocols = columns.get("protocol")
             assert protocols is not None
-        from rekep.text.fixmsg_arrow import flat_fixmsg_positions, into_flat_fixmsg_batch
+        from rekep.text.fixmsg_arrow import into_flat_fixmsg_batch
 
         flat = into_flat_fixmsg_batch(cls, batch, codec, columns, protocols)
         if flat is not None:
             return flat
-        fast_parts: list[pyarrow.RecordBatch] = []
-        fast_positions: list[pyarrow.Array] = []
-        for where in flat_fixmsg_positions(codec, columns, protocols):
-            taken = _take_record_batch(batch, where)
-            taken_columns = {name: taken.column(name) for name in taken.schema.names}
-            taken_columns.update(_session_batch_columns(taken_columns, codec.null_values))
-            translated = into_flat_fixmsg_batch(
-                cls,
-                taken,
-                codec,
-                taken_columns,
-                pyarrow.compute.take(protocols, where),
-            )
-            if translated is not None:
-                fast_parts.append(translated)
-                fast_positions.append(where)
-        if fast_parts:
-            claimed = pyarrow.concat_arrays(fast_positions)
-            all_rows = sequence(rows)
-            fallback_at = pyarrow.compute.filter(
-                all_rows,
-                pyarrow.compute.invert(pyarrow.compute.is_in(all_rows, value_set=claimed)),
-            )
-            if len(fallback_at):
-                fallback = _take_record_batch(batch, fallback_at)
-                fallback_columns = {name: fallback.column(name) for name in fallback.schema.names}
-                fast_parts.append(
-                    cls._from_message_batch_reference(
-                        fallback,
-                        codec,
-                        fallback_columns,
-                        pyarrow.compute.take(protocols, fallback_at),
-                    )
-                )
-                fast_positions.append(fallback_at)
-            return _scatter_record_batches(fast_parts, fast_positions)
+        # A partial fast slice identifies hundreds of columns once per slice
+        # and scatters all of them back together. Mixed capture benchmarks put
+        # that path 28% behind one reference pass, while a homogeneous numeric
+        # batch still benefits from the whole-batch specialization above.
         return cls._from_message_batch_reference(batch, codec, columns, protocols)
 
     @classmethod
@@ -1618,15 +1592,23 @@ class FixMsg(Message):
     ) -> pyarrow.RecordBatch:
         """Transcribe rows through the registry's complete configurable path."""
         rows = batch.num_rows
-        # Every way into this method hands over columns taken straight off a
-        # batch, including the fast path's fallback slice, so the header
-        # columns the raw stage lifted are read as this stage stores them here
-        # rather than at each caller.
+        # Columns come straight off the batch, so the header columns the raw
+        # stage lifted are read as this stage stores them here rather than at
+        # each caller.
         columns = {**columns, **_session_batch_columns(columns, codec.null_values)}
         parts, positions = [], []
         for protocol, where in groups_of(protocols):
             rule = codec.rules.rule(protocol.as_py())
-            if rule.named is None:
+            if Protocol.from_int(protocol.as_py()).family is Protocol.XML:
+                # `xml_payload_arrow` already supplied indexed structured
+                # entries. Re-tokenizing them as delimiter text drops nested
+                # siblings before their component declaration can lift them.
+                parts.append(
+                    columns["entries"]
+                    if len(where) == rows
+                    else pyarrow.compute.take(columns["entries"], where)
+                )
+            elif rule.named is None:
                 parts.append(pyarrow.nulls(len(where), ENTRIES))
             else:
                 entries = (
@@ -1642,7 +1624,12 @@ class FixMsg(Message):
             positions.append(where)
         entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
         begin_strings = cls._begin_strings_arrow(columns, rows)
-        versions, _ = codec.versions_of_entries(entries, begin_strings, columns.get("applverid"))
+        versions, _ = codec.versions_of_entries(
+            entries,
+            begin_strings,
+            columns.get("applverid"),
+            protocols,
+        )
         public_versions = pyarrow.compute.coalesce(versions, begin_strings)
         # The raw classifier owns the grammar. Version evidence decorates a
         # protocol it claimed; it must not reclaim a row one configured rule
@@ -1717,10 +1704,13 @@ class FixMsg(Message):
         entries = columns.get("entries")
         if entries is None:
             entries = pyarrow.nulls(rows, ENTRIES)
-        inferred, _ = codec.versions_of_entries(
-            entries, cls._begin_strings_arrow(columns, rows), columns.get("applverid")
-        )
         protocols = columns.get("protocol")
+        inferred, _ = codec.versions_of_entries(
+            entries,
+            cls._begin_strings_arrow(columns, rows),
+            columns.get("applverid"),
+            protocols,
+        )
         if protocols is None:
             return inferred
         embedded = Protocol.into_versions_arrow(protocols)
@@ -1781,11 +1771,23 @@ class FixMsg(Message):
         cls, columns: Mapping[str, Any], codec: Any, version: str | None, rows: int
     ) -> dict[str, Any]:
         """One homogeneous slice: `entries` completed, and what it gives up to columns."""
-        entries = codec.complete_entries(columns["entries"], version)
-        entries = cls._prefer_named_entries(
-            columns["entries"], entries, codec.registry.group_count_tags(version)
+        source_entries, split_errors = codec.split_group_entries(columns["entries"], version)
+        omsorders, source_entries, oms_errors = OmsOrders().into_arrow_arrays_with_errors(
+            source_entries
         )
-        components, entries = codec.into_component_columns(entries, version)
+        entries = codec.complete_entries(source_entries, version)
+        entries = cls._prefer_named_entries(
+            source_entries, entries, codec.registry.group_count_tags(version)
+        )
+        components, entries, component_errors = codec.into_component_columns_with_errors(
+            entries, version
+        )
+        errors = _merge_error_columns(
+            _merge_error_columns(split_errors, oms_errors), component_errors
+        )
+        stored_errors = columns.get("error")
+        if stored_errors is not None:
+            errors = _merge_error_columns(stored_errors, errors)
         lifted, entries = codec.into_lifted_columns(entries, version)
         promoted = cls._wire_session_columns(columns, codec, version, lifted)
         entries, unmap = cls._partition_entries(entries, codec, version)
@@ -1795,9 +1797,31 @@ class FixMsg(Message):
             # The raw stage already chose among duplicate session spellings.
             # Its canonical value leads; a rendered entry fills a null one.
             **promoted,
+            "omsorders": omsorders,
             "entries": entries,
             "unmap": unmap,
+            "error": errors,
         }
+        eventtypes = columns.get("eventtype")
+        if eventtypes is not None:
+            # OMS XML has no FIX MsgType, so the raw stage can only call it
+            # MISC. A lifted order is the market discriminator the document
+            # itself supplies; an explicit classifier remains authoritative.
+            oms_rows = pyarrow.compute.greater(
+                pyarrow.compute.fill_null(pyarrow.compute.list_value_length(omsorders), 0),
+                0,
+            )
+            unclassified = pyarrow.compute.is_in(
+                eventtypes,
+                value_set=pyarrow.array(
+                    [int(EventType.UNKNOWN), int(EventType.MISC)], eventtypes.type
+                ),
+            )
+            found["eventtype"] = pyarrow.compute.if_else(
+                pyarrow.compute.and_(oms_rows, unclassified),
+                pyarrow.scalar(int(EventType.ORDER), eventtypes.type),
+                eventtypes,
+            )
         for name, private in _STATED_CLOCKS.items():
             found[private] = lifted.get(name, pyarrow.nulls(rows, pyarrow.int64()))
         found[_LOCAL_RECORDED] = columns.get("recunix", pyarrow.nulls(rows, pyarrow.int64()))
@@ -1806,7 +1830,11 @@ class FixMsg(Message):
         # and the wire is the authority on what it says.
         for name, column in found.items():
             stored = columns.get(name)
-            if name not in {"entries", "unmap"} and stored is not None and stored.null_count < rows:
+            if (
+                name not in {"entries", "unmap", "error"}
+                and stored is not None
+                and stored.null_count < rows
+            ):
                 found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
         return found
 
@@ -2404,7 +2432,11 @@ class FixMsg(Message):
         shapes fall back to the scalar authority. Each event type retains message
         order. `None` drains each type only at the end for one atomic commit.
         """
-        from rekep.market.fix_arrow import flat_market_parts, flat_market_positions
+        from rekep.market.fix_arrow import (
+            flat_market_parts,
+            flat_market_positions,
+            oms_market_parts,
+        )
         from rekep.market.orders import Execution, Order
 
         if batch_row_size is not None and batch_row_size <= 0:
@@ -2520,6 +2552,24 @@ class FixMsg(Message):
                 event_type: [] for event_type in event_types
             }
             claimed: list[pyarrow.Array] = []
+            oms = oms_market_parts(batch, declared)
+            if oms is not None:
+                oms_batches = oms[:2]
+                oms_origins = oms[2:4]
+                oms_ranks = oms[4:]
+                claimed.append(pyarrow.compute.unique(oms_origins[0]))
+                for event_type, event_batch, origins, ranks in zip(
+                    event_types,
+                    oms_batches,
+                    oms_origins,
+                    oms_ranks,
+                    strict=True,
+                ):
+                    if event_batch is None:
+                        continue
+                    translated_parts[event_type].append(event_batch)
+                    translated_at[event_type].append(origins)
+                    translated_ranks[event_type].append(ranks)
             for where in flat_market_positions(batch, declared):
                 taken = _take_record_batch(batch, where)
                 translated = flat_market_parts(taken, declared)

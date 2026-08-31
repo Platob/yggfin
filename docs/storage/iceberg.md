@@ -91,8 +91,9 @@ the same value in another partition is another row. The raw partition source is
 not row equality: two timestamps in the same `day(timestamp)` partition still
 name one key.
 
-Each bounded input chunk is split by transformed partition, and merge or
-insert plans, reads, and commits one touched partition at a time. Deletes use
+An initial keyed chunk on an empty table lands every transformed partition in
+one PyIceberg transaction. Later merge or insert chunks plan, read, and commit
+one touched partition at a time. Deletes use
 the matched stored row's source values, so their exact predicate cannot reach
 the same key in another partition.
 

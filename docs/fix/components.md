@@ -5,7 +5,7 @@ A component is an Arrow struct in FIX wire order:
 ```python
 from rekep.fix import FixRegistry
 
-registry = FixRegistry(cache_dir="data/fix.zip")
+registry = FixRegistry()
 parties = registry.component_field("Parties", "4.4")
 
 print(type(parties.dtype).__name__)

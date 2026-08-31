@@ -30,6 +30,7 @@ line no rule recognised is `OTHER`, so the column is NOT NULL.
 | `FIX` | `FIX` | 5064676012978077696 | Numbered FIX tags alone. |
 | `FIXML` | `FIXML` | 5064676344965627904 | Numbered tags and named keys together. |
 | `XML` | `XML` | 6362825411428089856 | Structured XML events without a FIX version. |
+| `REFERENTIAL` | `REFER` | 5928221748045545472 | Depth-delimited ULBridge instrument reference data. |
 | `UL` | `UL` | 6146287591453884416 | Named keys alone. |
 | `MISC` | `MISC` | 5569073961448243200 | Known operational traffic carrying no message. |
 | `OTHER` | `OTHER` | 5716273289605677056 | The fall-through: a line no rule recognised. |

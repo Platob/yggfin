@@ -9,10 +9,20 @@ import pyarrow
 import pytest
 
 from rekep.enums import Protocol
-from rekep.fix import FixRegistry
-from rekep.market import HASH, AssetKind, Currency, Instrument, InstrumentUpdate, Leg, Order, Side
+from rekep.fix import FixCodec, FixRegistry
+from rekep.market import (
+    HASH,
+    AssetKind,
+    Currency,
+    Instrument,
+    InstrumentUpdate,
+    Leg,
+    Order,
+    Side,
+    TickRule,
+)
 from rekep.market.identity import NIL
-from rekep.text import FixMsg
+from rekep.text import FixMsg, Message
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
@@ -61,12 +71,94 @@ def test_the_component_contains_reference_facts_and_no_event_envelope() -> None:
         "contractmultiplier",
         "minpriceincrement",
         "roundlot",
+        "quantitytype",
         "maturitydate",
         "strikeprice",
         "putorcall",
         "securitydesc",
         "legs",
+        "tickladder",
     ]
+
+
+def test_referential_key_and_tick_ladder_use_the_component_api() -> None:
+    body = (
+        "Referential(XLON|equity|dbi;GB00BN7SWP63_XLON_GBX|["
+        "quantity-type=shares, tick-size-scale-id=PRIMARY|[[0|0.01], [100|0.05]], "
+        "vendor-note=[inside|the, value]])"
+    )
+    message = Message.from_text(body)
+    registry = FixRegistry(cache_dir=FIX_DATA)
+
+    scalar = Instrument.from_referential_entries(message.entries, registry=registry)
+    arrow = Instrument.from_referential_arrow(
+        pyarrow.array(
+            [[entry.into_dict() for entry in message.entries]],
+            type=Message.into_field().field("entries").dtype,
+        ),
+        registry=registry,
+    )[0].as_py()
+
+    assert scalar == Instrument.from_dict(arrow)
+    assert scalar.symbolticker == "XLON:ISINNumber:GB00BN7SWP63"
+    assert scalar.kind is AssetKind.EQUITY
+    assert scalar.securityid == scalar.isincode == "GB00BN7SWP63"
+    assert scalar.securityidsource.name == "ISIN"
+    assert scalar.securityexchange == "XLON"
+    assert scalar.currency is Currency.from_str("GBX")
+    assert scalar.quantitytype == 1
+    assert scalar.tickladder == [
+        TickRule(starttickpricerange=0, tickincrement=0.01),
+        TickRule(starttickpricerange=100, tickincrement=0.05),
+    ]
+
+    parsed = FixMsg.from_message(message, registry=registry)
+    (update,) = InstrumentUpdate.from_fixmsgs([parsed], registry=registry)
+    assert update.instrument == scalar
+    assert any(entry.key == "vendor-note" for entry in (*parsed.entries, *parsed.unmap))
+
+    raw = next(iter(Message.into_arrow_reader([message])))
+    parsed_batch = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
+    assert Instrument.from_dict(parsed_batch.column("instrument")[0].as_py()) == scalar
+    (stored,) = FixMsg.from_arrow_reader([parsed_batch])
+    (stored_update,) = InstrumentUpdate.from_fixmsgs([stored], registry=registry)
+    assert stored_update.instrument == scalar
+
+
+def test_oms_and_referential_share_vectorized_instrument_key_derivation() -> None:
+    keys = pyarrow.array(["dbi;GB00BN7SWP63_XLON_GBX", "dbi;US0378331005_XNAS_USD"])
+
+    found = Instrument.from_instrument_keys_arrow(
+        keys,
+        kind=pyarrow.array([int(AssetKind.EQUITY), int(AssetKind.EQUITY)]),
+    )
+    scalar = Instrument.from_instrument_key("dbi;GB00BN7SWP63_XLON_GBX", kind=AssetKind.EQUITY)
+
+    assert Instrument.from_dict(found[0].as_py()) == scalar
+    assert pyarrow.compute.struct_field(found, "symbolticker").to_pylist() == [
+        "XLON:ISINNumber:GB00BN7SWP63",
+        "XNAS:ISINNumber:US0378331005",
+    ]
+    assert pyarrow.compute.struct_field(found, "currency").to_pylist() == [
+        int(Currency.from_str("GBX")),
+        int(Currency.USD),
+    ]
+
+
+def test_tick_ladder_versions_reference_facts_without_moving_the_lifecycle() -> None:
+    first = Instrument(
+        symbol="AAPL",
+        tickladder=[TickRule(starttickpricerange=0, tickincrement=0.01)],
+    )
+    revised = Instrument(
+        symbol="AAPL",
+        tickladder=[TickRule(starttickpricerange=0, tickincrement=0.05)],
+    )
+    first_update = InstrumentUpdate.from_instrument(first, unix=1).identify()
+    revised_update = InstrumentUpdate.from_instrument(revised, unix=1).identify()
+
+    assert first_update.xhash == revised_update.xhash
+    assert first_update.vhash != revised_update.vhash
 
 
 def test_other_protocol_cannot_publish_a_carried_instrument() -> None:

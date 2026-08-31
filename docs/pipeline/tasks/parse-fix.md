@@ -63,8 +63,9 @@ best-effort basis.
 The adjacent task document owns estate-specific readings:
 
 ```yaml
-fix_dictionary: data/fix
+fix_dictionary: null # Packaged registry.zip; set a path or URL to override it.
 null_values: ["", "null", "<null>", "n/a", "none"]
+ul_default_version: "4.4" # Stored as UL4.4 when the row states no version.
 fields:
   rules:
     - field: "9999"

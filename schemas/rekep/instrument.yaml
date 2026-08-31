@@ -181,6 +181,11 @@ fields:
     nullable: true
     description: The trading lot size of a security
     fix: {tag: '561', type: Qty, name: RoundLot}
+  - name: quantitytype
+    type: int32
+    nullable: true
+    description: Deprecated in FIX 4.4. See QtyType <854> Designates the type of quantities (e.g. OrderQty <38> ) specified. Used for MBS and TIPS Fixed Income security types.
+    fix: {tag: '465', type: int, name: QuantityType}
   - name: maturitydate
     type: timestamp[us]
     nullable: true
@@ -281,3 +286,19 @@ fields:
         description: Indicates whether a leg option contract is a put, call, chooser or undetermined.
         fix: {tag: '1358', type: int, name: LegPutOrCall}
         enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}
+  - name: tickladder
+    type: list
+    nullable: true
+    description: Price bands in ascending source order, each carrying its active increment.
+    item:
+      type: struct
+      fields:
+      - name: starttickpricerange
+        type: double
+        nullable: true
+        description: Starting price range for specified tick increment
+        fix: {tag: '1206', type: Price, name: StartTickPriceRange}
+      - name: tickincrement
+        type: double
+        description: Tick increment for stated price range. Specifies the valid price increments at which a security can be quoted and traded
+        fix: {tag: '1208', type: Price, name: TickIncrement}

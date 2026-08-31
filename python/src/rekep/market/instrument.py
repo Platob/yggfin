@@ -13,6 +13,7 @@ import pyarrow
 import pyarrow.compute as compute
 
 from rekep import txhash
+from rekep.entries import ENTRIES, Entry
 from rekep.enums import (
     Ascii32,
     AssetKind,
@@ -23,8 +24,15 @@ from rekep.enums import (
     SecurityIDSource,
     Side,
 )
-from rekep.fields import Field, scalar
-from rekep.fields.arrays import build_list, list_parts, null_mask, sequence, struct_columns
+from rekep.fields import Field, column_name, column_names, scalar
+from rekep.fields.arrays import (
+    build_list,
+    dense_counts,
+    list_parts,
+    null_mask,
+    sequence,
+    struct_columns,
+)
 from rekep.fix.columns import ISIN_SCHEME, isin_identity
 from rekep.fix.fields import cast_arrow_fix, scalar_fix_temporal
 from rekep.fix.registry import FixRegistry
@@ -166,6 +174,21 @@ class Leg(MarketConvertible):
 
 
 @scalar(slots=True)
+class TickRule(MarketConvertible):
+    """One price threshold and the tick increment that applies from it."""
+
+    starttickpricerange: Annotated[float | None, fix_tag("StartTickPriceRange")] = None
+    """Lowest price at which this increment applies; null for the first open band."""
+
+    tickincrement: Annotated[float, fix_tag("TickIncrement")] = 0.0
+    """Smallest price change accepted inside this band."""
+
+    def __post_init__(self) -> None:
+        """Normalize numeric spellings once."""
+        self.normalize_float_members()
+
+
+@scalar(slots=True)
 class Instrument(MarketConvertible):
     """FIX instrument facts independent of any event that carried them."""
 
@@ -231,6 +254,9 @@ class Instrument(MarketConvertible):
     roundlot: Annotated[float | None, fix_tag("RoundLot")] = None
     """Quantity increment the venue trades in."""
 
+    quantitytype: Annotated[int | None, fix_tag("QuantityType", dtype=pyarrow.int32())] = None
+    """FIX quantity convention used by the instrument reference."""
+
     maturitydate: Annotated[datetime.datetime | None, fix_tag("MaturityDate")] = None
     """When the contract expires; null for anything that does not."""
 
@@ -243,18 +269,23 @@ class Instrument(MarketConvertible):
     securitydesc: Annotated[str | None, fix_tag("SecurityDesc")] = None
     """Human description, as reference data publishes it."""
 
-    # Last, and a list: a multileg instrument is a handful of legs and every
-    # other instrument has none. Last because Iceberg counts leaf columns in
-    # declaration order for the bounds it collects, and a nested member
-    # declared earlier pushes a flat one past the cutoff -- see
-    # `docs/market/index.md`.
+    # Nested members stay last because Iceberg counts leaf columns in
+    # declaration order for the bounds it collects; see docs/market/index.md.
     legs: list[Leg] | None = None
     """The legs of a multileg instrument, in the order the venue sent them."""
+
+    tickladder: list[TickRule] | None = None
+    """Price bands in ascending source order, each carrying its active increment."""
 
     def __post_init__(self) -> None:
         """Normalize facts and settle the canonical ticker once."""
         self.maturitydate = _local_timestamp(self.maturitydate)
         self.normalize_float_members()
+        if self.tickladder is not None:
+            self.tickladder = [
+                rule if isinstance(rule, TickRule) else TickRule.from_dict(rule)
+                for rule in self.tickladder
+            ]
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
         self.securityid, self.securityidsource, self.isincode = isin_identity(
@@ -300,6 +331,66 @@ class Instrument(MarketConvertible):
         return dataclasses.replace(self, **filled)
 
     @classmethod
+    def from_referential_entries(
+        cls,
+        entries: Iterable[Entry | Mapping[str, Any] | tuple[Any, Any]],
+        *,
+        registry: FixRegistry | None = None,
+    ) -> Instrument:
+        """Build one component from normalized Referential entries."""
+        stored = [Entry.from_stored(entry).into_dict() for entry in entries]
+        found = cls.from_referential_arrow(pyarrow.array([stored], type=ENTRIES), registry=registry)
+        return cls.from_dict(found[0].as_py())
+
+    @classmethod
+    def from_instrument_key(
+        cls,
+        key: str,
+        *,
+        venue: str | None = None,
+        kind: AssetKind | str | None = None,
+        registry: FixRegistry | None = None,
+    ) -> Instrument:
+        """Build one component from a `dbi;<isin>_<mic>_<ccy>` identity."""
+        found = cls.from_instrument_keys_arrow(
+            pyarrow.array([key]), venue=venue, kind=kind, registry=registry
+        )
+        return cls.from_dict(found[0].as_py())
+
+    @classmethod
+    def from_instrument_keys_arrow(
+        cls,
+        keys: Any,
+        *,
+        venue: Any = None,
+        kind: Any = None,
+        registry: FixRegistry | None = None,
+    ) -> pyarrow.StructArray:
+        """Build components from OMS/ULBridge instrument-key columns."""
+        if isinstance(keys, pyarrow.ChunkedArray):
+            keys = keys.combine_chunks()
+        elif not isinstance(keys, pyarrow.Array):
+            keys = pyarrow.array(keys if isinstance(keys, list | tuple) else [keys])
+        columns: dict[str, Any] = {"instrumentkey": keys}
+        if venue is not None:
+            columns["securityexchange"] = venue
+        if kind is not None:
+            columns["referentialkind"] = kind
+        return cls.from_fix_arrow(columns, len(keys), registry=registry)
+
+    @classmethod
+    def from_referential_arrow(
+        cls,
+        entries: pyarrow.Array | pyarrow.ChunkedArray,
+        *,
+        registry: FixRegistry | None = None,
+    ) -> pyarrow.StructArray:
+        """Build components from Referential entry rows without materializing rows."""
+        if isinstance(entries, pyarrow.ChunkedArray):
+            entries = entries.combine_chunks()
+        return cls.from_fix_arrow({"entries": entries}, len(entries), registry=registry)
+
+    @classmethod
     def from_fix_arrow(
         cls,
         source: pyarrow.RecordBatch | Mapping[str, Any],
@@ -319,17 +410,38 @@ class Instrument(MarketConvertible):
             else (_row_count(columns) if rows is None else rows)
         )
         nested = columns.get("instrument")
+        referential = _referential_columns_arrow(columns, rows, registry)
+        referential_rows = compute.is_valid(referential["instrumentkey"])
         if nested is not None:
             if isinstance(nested, pyarrow.ChunkedArray):
                 nested = nested.combine_chunks()
-            if nested.null_count < rows:
+            if nested.null_count < rows and not compute.any(referential_rows, min_count=0).as_py():
                 return cls.into_field().cast_arrow_array(nested)
         identifiers = _identifier_arrow(columns, rows)
+        identifiers = {
+            "securityid": compute.coalesce(identifiers["securityid"], referential["securityid"]),
+            "securityidsource": compute.coalesce(
+                identifiers["securityidsource"], referential["securityidsource"]
+            ),
+            "isincode": compute.coalesce(identifiers["isincode"], referential["isincode"]),
+        }
         columns.update(identifiers)
-        ticker = SymbolTicker.into_arrow_array(columns, rows, registry)
+        columns["securityexchange"] = compute.coalesce(
+            _text(columns.get("securityexchange"), rows),
+            referential["securityexchange"],
+        )
+        ticker_columns = dict(columns)
+        ticker_columns["securityidsource"] = compute.if_else(
+            compute.is_valid(referential["securityid"]),
+            pyarrow.scalar("ISIN", pyarrow.string()),
+            _text(columns.get("securityidsource"), rows),
+        )
+        ticker = SymbolTicker.into_arrow_array(ticker_columns, rows, registry)
         currency = _enum_arrow(columns.get("currency"), rows, Currency, "from_fix", nullable=True)
+        currency = compute.coalesce(currency, referential["currency"])
         pair_currency = SymbolTicker.currency_arrow(ticker)
         kind = _classified_arrow(columns.get("cficode"), columns.get("securitytype"), rows)
+        kind = compute.if_else(compute.equal(kind, 0), referential["kind"], kind)
         kind = compute.if_else(
             compute.and_(compute.equal(kind, 0), compute.is_valid(pair_currency)),
             pyarrow.scalar(int(AssetKind.CURRENCY), pyarrow.int64()),
@@ -350,11 +462,15 @@ class Instrument(MarketConvertible):
             "isincode": identifiers["isincode"],
             "securitytype": _text(columns.get("securitytype"), rows),
             "cficode": _text(columns.get("cficode"), rows),
-            "securityexchange": _text(columns.get("securityexchange"), rows),
+            "securityexchange": columns["securityexchange"],
             "currency": compute.coalesce(currency, pair_currency),
             "contractmultiplier": columns.get("contractmultiplier"),
             "minpriceincrement": columns.get("minpriceincrement"),
             "roundlot": columns.get("roundlot"),
+            "quantitytype": compute.coalesce(
+                _quantity_type_arrow(columns.get("quantitytype"), rows, registry),
+                referential["quantitytype"],
+            ),
             "maturitydate": _maturity_arrow(
                 columns.get("maturitydate"), columns.get("maturitymonthyear"), rows
             ),
@@ -364,8 +480,18 @@ class Instrument(MarketConvertible):
             ),
             "securitydesc": _text(columns.get("securitydesc"), rows),
             "legs": _legs_arrow(columns.get("legs"), rows, registry),
+            "tickladder": referential["tickladder"],
         }
-        return _struct_of(cls, values, rows)
+        built = _struct_of(cls, values, rows)
+        if nested is None or nested.null_count == rows:
+            return built
+        nested = cls.into_field().cast_arrow_array(nested)
+        enriched = _enriched_instrument_arrow(nested, built)
+        return compute.if_else(
+            compute.is_valid(nested),
+            compute.if_else(referential_rows, enriched, nested),
+            built,
+        )
 
     @classmethod
     def from_update(cls, source: InstrumentUpdate) -> Instrument:
@@ -410,6 +536,12 @@ class Instrument(MarketConvertible):
             isincode=altids.get(ISIN_SCHEME),
             maturitydate=_date(get("MaturityDate")) or _month_year(get("MaturityMonthYear")),
         )
+        if source.message.protocol.family is Protocol.REFERENTIAL:
+            referential = cls.from_referential_entries(
+                (*source.message.entries, *source.message.unmap),
+                registry=source.registry,
+            )
+            built = referential.enriched_with(built) or referential
         built.legs = _normalized_legs(source, built.legs or source._declared_legs())
         parent = source.__dict__.get("_parent_reference")
         if parent is None:
@@ -782,6 +914,203 @@ def _normalized_legs(source: Any, legs: list[Leg] | None) -> list[Leg] | None:
     return normalized
 
 
+def _referential_columns_arrow(
+    columns: Mapping[str, Any], rows: int, registry: FixRegistry | None
+) -> dict[str, pyarrow.Array]:
+    """Reference facts normalized from a Referential row's residual entries."""
+    sources = _entry_arrays(columns, rows)
+    instrument_key = compute.coalesce(
+        _text(columns.get("instrumentkey"), rows),
+        _first_entry_arrow(sources, "InstrumentKey", rows),
+    )
+    identity = _instrument_key_columns_arrow(instrument_key, rows)
+    stated_kind = _asset_kind_arrow(columns.get("referentialkind"), rows)
+    entry_kind = _asset_kind_arrow(_first_entry_arrow(sources, "AssetClass", rows), rows)
+    return {
+        "instrumentkey": instrument_key,
+        **identity,
+        "kind": compute.if_else(compute.equal(stated_kind, 0), entry_kind, stated_kind),
+        "quantitytype": _quantity_type_arrow(
+            _first_entry_arrow(sources, "QuantityType", rows), rows, registry
+        ),
+        "tickladder": _tick_ladder_arrow(sources, rows),
+    }
+
+
+def _instrument_key_columns_arrow(keys: Any, rows: int) -> dict[str, pyarrow.Array]:
+    """Shared Arrow reading of `dbi;<isin>_<mic>_<ccy>` identities."""
+    parsed = compute.extract_regex(
+        _text(keys, rows),
+        r"(?i)^dbi;(?P<isin>[^_]+)_(?P<mic>[^_]+)_(?P<currency>[^_]+)$",
+    )
+    isin = compute.struct_field(parsed, "isin")
+    security_source = compute.if_else(
+        compute.is_valid(isin),
+        pyarrow.scalar(int(SecurityIDSource.ISIN), SecurityIDSource.into_arrow_type().index_type),
+        pyarrow.scalar(None, SecurityIDSource.into_arrow_type().index_type),
+    )
+    return {
+        "securityid": isin,
+        "securityidsource": security_source,
+        "isincode": isin,
+        "securityexchange": compute.struct_field(parsed, "mic"),
+        "currency": _enum_arrow(
+            compute.struct_field(parsed, "currency"),
+            rows,
+            Currency,
+            "from_str",
+            nullable=True,
+        ),
+    }
+
+
+def _asset_kind_arrow(source: Any, rows: int) -> pyarrow.Array:
+    """Packed AssetKind values or their textual spellings."""
+    dtype = AssetKind.into_arrow_type().index_type
+    if isinstance(source, pyarrow.ChunkedArray):
+        source = source.combine_chunks()
+    if isinstance(source, pyarrow.Array) and pyarrow.types.is_integer(source.type):
+        return compute.fill_null(source.cast(dtype, safe=False), pyarrow.scalar(0, dtype))
+    if isinstance(source, Ascii32):
+        return _broadcast(int(source), rows, dtype)
+    return _mapped_arrow(source, rows, lambda value: int(AssetKind.from_str(value)), dtype)
+
+
+def _entry_arrays(columns: Mapping[str, Any], rows: int) -> tuple[pyarrow.Array, ...]:
+    """Entry-list columns that can carry unpromoted Referential members."""
+    found: list[pyarrow.Array] = []
+    for name in ("entries", "unmap"):
+        source = columns.get(name)
+        if isinstance(source, pyarrow.ChunkedArray):
+            source = source.combine_chunks()
+        if (
+            isinstance(source, pyarrow.Array)
+            and len(source) == rows
+            and (pyarrow.types.is_list(source.type) or pyarrow.types.is_large_list(source.type))
+            and pyarrow.types.is_struct(source.type.value_type)
+            and {"key", "value", "comp"}.issubset(source.type.value_type.names)
+        ):
+            found.append(source)
+    return tuple(found)
+
+
+def _first_entry_arrow(sources: Iterable[pyarrow.Array], name: str, rows: int) -> pyarrow.Array:
+    """First terminal key per row across retained then unmapped entries."""
+    wanted = column_name(name)
+    result = pyarrow.nulls(rows, pyarrow.string())
+    for source in sources:
+        items = compute.list_flatten(source)
+        if not len(items):
+            continue
+        parents = compute.list_parent_indices(source).cast(pyarrow.int64())
+        keys = _text(compute.struct_field(items, "key"), len(items))
+        terminal = compute.struct_field(
+            compute.extract_regex(keys, r"^(?:.*\.)?(?P<name>[^.]*)$"), "name"
+        )
+        matched = compute.fill_null(compute.equal(column_names(terminal), wanted), False)
+        if not compute.any(matched, min_count=0).as_py():
+            continue
+        matched_parents = compute.filter(parents, matched)
+        matched_values = compute.filter(
+            _text(compute.struct_field(items, "value"), len(items)), matched
+        )
+        positions = compute.index_in(sequence(rows), value_set=matched_parents)
+        result = compute.coalesce(result, compute.take(matched_values, positions))
+    return result
+
+
+def _quantity_type_arrow(column: Any, rows: int, registry: FixRegistry | None) -> pyarrow.Array:
+    """QuantityType spellings encoded by the selected FIX dictionary."""
+    source = _text(column, rows)
+    declared = (registry or FixRegistry.from_builtin()).field("QuantityType")
+    if declared is not None:
+        source = declared.fix.arrow_encode(source)
+    valid = compute.fill_null(compute.match_substring_regex(source, r"^[+-]?[0-9]+$"), False)
+    numeric = compute.if_else(valid, source, pyarrow.scalar(None, pyarrow.string()))
+    return numeric.cast(pyarrow.int32(), safe=False)
+
+
+def _tick_ladder_arrow(sources: Iterable[pyarrow.Array], rows: int) -> pyarrow.Array:
+    """Canonical TickRules entries grouped as the instrument's typed ladder."""
+    dtype = Instrument.into_field().field("tickladder").dtype
+    ladders = [_tick_ladder_one_arrow(source, rows, dtype) for source in sources]
+    return compute.coalesce(*ladders) if ladders else pyarrow.nulls(rows, dtype)
+
+
+def _tick_ladder_one_arrow(
+    source: pyarrow.Array, rows: int, dtype: pyarrow.DataType
+) -> pyarrow.Array:
+    """One entry-list column projected to nullable ordered tick bands."""
+    items = compute.list_flatten(source)
+    if not len(items):
+        return pyarrow.nulls(rows, dtype)
+    parents = compute.list_parent_indices(source).cast(pyarrow.int64())
+    keys = column_names(compute.struct_field(items, "key"))
+    comps = _text(compute.struct_field(items, "comp"), len(items))
+    indexed = compute.extract_regex(comps, r"(?i)(?:^|\.)TickRules\[(?P<index>[0-9]+)\]$")
+    has_index = compute.is_valid(indexed)
+    start_key = compute.equal(keys, column_name("StartTickPriceRange"))
+    tick_key = compute.equal(keys, column_name("TickIncrement"))
+    values = _text(compute.struct_field(items, "value"), len(items))
+    numeric = compute.fill_null(
+        compute.match_substring_regex(
+            values,
+            r"^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+        ),
+        False,
+    )
+    relevant = compute.and_(has_index, compute.and_(compute.or_(start_key, tick_key), numeric))
+    if not compute.any(relevant, min_count=0).as_py():
+        return pyarrow.nulls(rows, dtype)
+    indices = compute.if_else(
+        has_index,
+        compute.struct_field(indexed, "index"),
+        pyarrow.scalar(None, pyarrow.string()),
+    ).cast(pyarrow.int64(), safe=False)
+    identities = compute.add(
+        compute.multiply(parents, pyarrow.scalar(1 << 32, pyarrow.int64())), indices
+    )
+    starts = compute.and_(relevant, start_key)
+    ticks = compute.and_(relevant, tick_key)
+    tick_parents = compute.filter(parents, ticks)
+    tick_ids = compute.filter(identities, ticks)
+    tick_values = compute.filter(values, ticks).cast(pyarrow.float64(), safe=False)
+    start_ids = compute.filter(identities, starts)
+    start_values = compute.filter(values, starts).cast(pyarrow.float64(), safe=False)
+    start_at = compute.index_in(tick_ids, value_set=start_ids)
+    start_values = compute.take(start_values, start_at)
+    rule = pyarrow.StructArray.from_arrays(
+        [start_values, tick_values], fields=TickRule.into_field().arrow_fields
+    )
+    sizes = dense_counts(tick_parents, rows)
+    return build_list(dtype, sizes, rule, compute.equal(sizes, 0))
+
+
+def _enriched_instrument_arrow(
+    primary: pyarrow.StructArray, fallback: pyarrow.StructArray
+) -> pyarrow.StructArray:
+    """Nested facts first, with Referential values filling only their gaps."""
+    field = Instrument.into_field()
+    defaults = Instrument().into_row()
+    valid_parent = compute.is_valid(primary)
+    columns: list[pyarrow.Array] = []
+    for index, member in enumerate(field.fields):
+        owned = compute.struct_field(primary, index)
+        known = compute.is_valid(owned)
+        if pyarrow.types.is_string(member.dtype):
+            known = compute.and_(known, compute.not_equal(owned, ""))
+        elif pyarrow.types.is_list(member.dtype) or pyarrow.types.is_large_list(member.dtype):
+            known = compute.and_(known, compute.greater(compute.list_value_length(owned), 0))
+        elif not member.nullable:
+            known = compute.and_(
+                known,
+                compute.not_equal(owned, pyarrow.scalar(defaults[member.name], member.dtype)),
+            )
+        known = compute.and_(valid_parent, compute.fill_null(known, False))
+        columns.append(compute.if_else(known, owned, compute.struct_field(fallback, index)))
+    return pyarrow.StructArray.from_arrays(columns, fields=field.arrow_fields)
+
+
 def _row_count(columns: Mapping[str, Any]) -> int:
     """Length shared by a mapping of Arrow columns."""
     for column in columns.values():
@@ -887,7 +1216,7 @@ def _classified_arrow(cfi: Any, securitytype: Any, rows: int) -> pyarrow.Array:
 
 
 def _maturity_arrow(date: Any, monthyear: Any, rows: int) -> pyarrow.Array:
-    """FIX maturity date, with the older month-resolution spelling as fallback."""
+    """FIX maturity date, filled from month resolution where exact dates are absent."""
     dtype = pyarrow.timestamp("us")
 
     def parsed(column: Any, convert: Any) -> pyarrow.Array:

@@ -78,7 +78,7 @@ def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:
     assert all("comment.body" not in command for command in commands)
 
 
-def test_the_release_publishes_rekep_before_the_full_registry() -> None:
+def test_the_release_publishes_the_wheel_with_its_bundled_registry() -> None:
     workflow = _workflow("release.yml")
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["on"]["release"]["types"] == ["published"]
@@ -90,24 +90,16 @@ def test_the_release_publishes_rekep_before_the_full_registry() -> None:
     assert "environment" in job
     assert job["env"]["UV_PUBLISH_URL"] == "${{ vars.ARTIFACTORY_PYPI_URL }}"
     assert job["env"]["UV_PUBLISH_CHECK_URL"] == ("${{ vars.ARTIFACTORY_PYPI_CHECK_URL }}")
-    assert job["env"]["REKEP_FIX_REGISTRY_URL"] == "${{ vars.REKEP_FIX_REGISTRY_URL }}"
-    assert job["env"]["ARTIFACTORY_TOKEN"] == "${{ secrets.ARTIFACTORY_TOKEN }}"
+    assert job["env"]["UV_PUBLISH_PASSWORD"] == "${{ secrets.ARTIFACTORY_TOKEN }}"
 
     steps = job["steps"]
     checkout = next(step for step in steps if step.get("uses", "").startswith("actions/checkout@"))
     assert checkout["with"]["persist-credentials"] == "false"
     commands = {step["name"]: step["run"] for step in steps if "name" in step and "run" in step}
-    names = [step.get("name") for step in steps]
     assert "uv build --no-sources" in commands["Build rekep"]
-    assert "fix-registry.zip" in commands["Build full FIX registry"]
-    assert "publish_full" in commands["Build full FIX registry"]
     assert "UV_PUBLISH_CHECK_URL" in commands["Check Artifactory configuration"]
     assert "uv publish --no-attestations" in commands["Publish rekep"]
-    registry = commands["Publish full FIX registry"]
-    assert "--request PUT" in registry
-    assert "X-Checksum-Sha256" in registry
-    assert '"$REKEP_FIX_REGISTRY_URL"' in registry
-    assert names.index("Publish rekep") < names.index("Publish full FIX registry")
+    assert not any("FIX registry" in name for name in commands)
 
 
 def test_pages_builds_the_strict_docs_and_deploys_only_trusted_code() -> None:

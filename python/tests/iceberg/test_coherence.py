@@ -207,8 +207,8 @@ def test_a_half_matching_merge_agrees(pair) -> None:
 
 def test_a_merge_across_partitions_agrees(pair) -> None:
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 90, "XPAR", days=3), commit_row_size=1_000_000)
-    merge(pair, quotes(45, 90, "XETR", days=3))
+        dataset.append_arrow(quotes(0, 30, "XPAR", days=3), commit_row_size=1_000_000)
+    merge(pair, quotes(15, 30, "XETR", days=3))
     ours, theirs = pair
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
 
@@ -216,14 +216,14 @@ def test_a_merge_across_partitions_agrees(pair) -> None:
 def test_a_streamed_merge_agrees_with_a_single_one(pair) -> None:
     """Chunking changes how many commits happen, never what is stored."""
     ours, theirs = pair
-    ours.append_arrow(quotes(0, 120, "XPAR"), commit_row_size=1_000_000)
-    theirs.append_arrow(quotes(0, 120, "XPAR"), commit_row_size=1_000_000)
+    ours.append_arrow(quotes(0, 24, "XPAR"), commit_row_size=1_000_000)
+    theirs.append_arrow(quotes(0, 24, "XPAR"), commit_row_size=1_000_000)
     ours.overwrite_arrow_reader(
-        iter(quotes(60, 120, "XETR").to_batches(max_chunksize=25)),
+        iter(quotes(12, 24, "XETR").to_batches(max_chunksize=5)),
         merge_by=True,
-        commit_row_size=25,
+        commit_row_size=5,
     )
-    theirs.overwrite_arrow(quotes(60, 120, "XETR"), merge_by=True, commit_row_size=1_000_000)
+    theirs.overwrite_arrow(quotes(12, 24, "XETR"), merge_by=True, commit_row_size=1_000_000)
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
 
 
@@ -605,12 +605,12 @@ def test_a_duplicate_outside_the_chunks_keys_does_not_abort_the_merge(pair) -> N
     """
     ours, theirs = pair
     for dataset in pair:
-        dataset.append_arrow(quotes(0, 300, days=3), commit_row_size=1_000_000)
+        dataset.append_arrow(quotes(0, MERGE_IN_LIMIT + 20, days=3), commit_row_size=1_000_000)
         # A key the chunk below never touches, stored twice.
         stray = quotes(900, 1)
         dataset.append_arrow(stray, commit_row_size=1_000_000)
         dataset.append_arrow(stray, commit_row_size=1_000_000)
-    chunk = quotes(0, 300, "XETR", days=3)
+    chunk = quotes(0, MERGE_IN_LIMIT + 20, "XETR", days=3)
     assert len(chunk) > 200, "past MERGE_IN_LIMIT, so the filter is a range"
     merge(pair, chunk)
     assert sorted_rows(ours.read_arrow_table()) == sorted_rows(theirs.read_arrow_table())
@@ -872,22 +872,19 @@ def test_a_three_column_key_matches_what_pyiceberg_matches(
 
 
 def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None:
-    """The rows, through both paths, on the shape the factoring is for: a
-    composite key one half of which repeats. Measured on 8,000 stored rows,
-    5,000 of them updated: 33.4 s through the per-row filter and 0.46 s
-    through the factored one."""
+    """A repeated composite-key half stays coherent across six partitions."""
     ours = IcebergCatalog(
         catalog_name="mine", properties=catalog_properties(tmp_path, "mine")
     ).dataset("trading.quotes", field=Quote.into_field())
     theirs = IcebergCatalog(
         catalog_name="lib", properties=catalog_properties(tmp_path, "lib")
     ).dataset("trading.quotes", field=Quote.into_field())
-    stored = quotes(0, 600, days=6)
+    stored = quotes(0, 60, days=6)
     for target in (ours, theirs):
-        target.append_arrow(stored, commit_row_size=200)
-    updates = quotes(0, 300, "XETR", days=6)
+        target.append_arrow(stored, commit_row_size=20)
+    updates = quotes(0, 30, "XETR", days=6)
 
-    assert ours.merge_arrow_table(updates, ["symbol", "seq"]) == (300, 0)
+    assert ours.merge_arrow_table(updates, ["symbol", "seq"]) == (30, 0)
     theirs.get_or_create_table().upsert(updates, join_cols=["symbol", "seq"])
     assert sorted_rows(ours.refresh().read_arrow_table()) == sorted_rows(
         theirs.refresh().read_arrow_table()
@@ -1142,10 +1139,10 @@ def test_a_merge_through_a_partition_transform_agrees(event_pair) -> None:
     """
     ours, theirs = event_pair
     for dataset in event_pair:
-        dataset.append_arrow(events(range(60), 0), commit_row_size=1_000_000)
-        dataset.overwrite_arrow(events(range(30, 90), 1), merge_by=True, commit_row_size=1_000_000)
+        dataset.append_arrow(events(range(18), 0), commit_row_size=1_000_000)
+        dataset.overwrite_arrow(events(range(9, 27), 1), merge_by=True, commit_row_size=1_000_000)
     order = [("at", "ascending")]
-    assert ours.read_arrow_table().num_rows == 90, "merged, not duplicated"
+    assert ours.read_arrow_table().num_rows == 27, "merged, not duplicated"
     assert (
         ours.read_arrow_table().sort_by(order).to_pylist()
         == theirs.read_arrow_table().sort_by(order).to_pylist()

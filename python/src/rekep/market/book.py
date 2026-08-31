@@ -727,9 +727,8 @@ class _Side:
     def best(self) -> Order | None:
         """The order at the touch, or None when nothing is resting.
 
-        The largest at the best price, which is the second key of the
-        ordering -- read over that level's own members and never over every
-        live order, which is what a `min()` across the book used to cost.
+        The largest at the best price is the second ordering key, so this reads
+        only the touch level's members and remains independent of book depth.
         """
         level = self.best_level
         if level is None or not level.resting:

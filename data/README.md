@@ -210,9 +210,9 @@ complete file before selecting it. `sources.json` records the source ID,
 namespace, version, URL, format, checksum, and license or terms URL for every
 artifact that contributed data.
 
-Then rebuild the projection the wheel ships. It selects the standard keys
-`rekep.fix.publish.PROJECTED` names, adds rekep's 36 frozen fields, and carries
-every declaration, messages included:
+Then rebuild the complete registry bundled in the wheel. It contains the same
+standard, registered-UDF, venue, provenance, component, and message records as
+the published archive:
 
 ```bash
 cd python
@@ -221,5 +221,5 @@ publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
 ```
 
 `python/tests/test_data.py` checks completeness, byte-stable archive
-rebuilding, that the published projection is what publishing produces, and
-that the committed conflict report is what the collapse reports.
+rebuilding, that both published archives are identical, and that the committed
+conflict report is what the collapse reports.
