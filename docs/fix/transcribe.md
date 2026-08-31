@@ -3,6 +3,9 @@
 Decode or encode FIX, FIXML and UL in the browser. Pair order, repeating
 groups, and unknown values are preserved.
 
+The structure view nests each group under its component and each subgroup
+under its entry; deeper groups start collapsed.
+
 <div class="fix-registry fix-transcribe" data-fix-transcribe
      data-source="../../assets/fix-registry.json" data-registry="../registry/">
   <p class="fix-registry__status" data-transcribe-status role="status" aria-live="polite">

@@ -746,6 +746,29 @@ class FixCodec(Convertible):
         found = compute.take(resolved, compute.index_in(composite, value_set=spelled))
         return compute.if_else(compute.is_valid(found), found, values)
 
+    def into_wire_values(self, field: int | str, values: Any, version: str | None) -> Any:
+        """One promoted FIX field's values in their canonical wire spelling.
+
+        Promoted session fields no longer sit in `entries` when completion
+        translates its values, so they pass through the same tag-scoped
+        registry lookup explicitly here.
+        """
+        try:
+            declared = self.registry.field(field, version)
+        except (KeyError, OSError, ValueError):
+            declared = None
+        tag = None if declared is None else declared.fix.tag
+        if tag is None or not declared.fix.encoded:
+            return values
+        source = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
+        if not (pyarrow.types.is_string(source.type) or pyarrow.types.is_large_string(source.type)):
+            return values
+        return self._encoded(
+            pyarrow.repeat(pyarrow.scalar(int(tag), TAG), len(source)),
+            source,
+            version,
+        )
+
     def _canonical_names(self, version: str | None) -> tuple[Any, Any]:
         """`(tag, the registry's spelling of it)` for one version, built once."""
         if version not in self._canonicals:
@@ -753,10 +776,12 @@ class FixCodec(Convertible):
         return self._canonicals[version]
 
     def _encodings(self, version: str | None) -> tuple[Any, Any]:
-        """`(tag and folded spelling, the value it names)` for one version.
+        """`(tag and folded spelling, the value it names)` for one reading.
 
         The job's own declared spellings lead the dictionary's, so a rule wins
-        a collision: `index_in` takes the first occurrence of a value.
+        a collision: `index_in` takes the first occurrence of a value. A
+        versionless promoted field uses the merged registry record; its tag
+        already fixes which enumeration owns the value.
         """
         if version not in self._encoded_values:
             spelled, resolved = _encodings(self.registry, version)
@@ -800,6 +825,18 @@ class FixCodec(Convertible):
         """
         rows = len(entries)
         declared = self.named_fields()
+        liftable = (
+            declared
+            if version is not None
+            else {
+                spelling: field
+                for spelling, field in declared.items()
+                if field.fix.canonical.startswith("REKEP.")
+            }
+        )
+        declared_by_tag = {
+            int(field.fix.tag): field for field in liftable.values() if field.fix.tag is not None
+        }
         columns: dict[str, Any] = {
             name: pyarrow.nulls(rows, FLAT_TYPES[tag]) for tag, name in FLAT_COLUMNS.items()
         }
@@ -808,10 +845,13 @@ class FixCodec(Convertible):
         )
         if isinstance(entries, pyarrow.ChunkedArray):
             entries = entries.combine_chunks()
-        if not rows or entries.null_count == rows or version is None:
+        if not rows or entries.null_count == rows:
             return columns, entries
         compute = pyarrow.compute
-        fields = self.flat_fields(version)
+        # Package-owned columns belong to every protocol version. That is why
+        # a bare UL document can lift `REKEP.Unix`; other namespaced fields
+        # still need the version whose dictionary makes their identity clear.
+        fields = {**self.flat_fields(version), **declared_by_tag}
         lengths, parents, items = _flattened(entries)
         tags = compute.struct_field(items, "tag")
         keys = compute.struct_field(items, "key")
@@ -821,7 +861,7 @@ class FixCodec(Convertible):
         # rendered name. Distinct codes are all `_liftable` needs, and one
         # integer key spares the composite string a mixed column would take.
         numbered = compute.fill_null(compute.is_in(tags, value_set=_tags_of(fields)), False)
-        named = pyarrow.array(list(declared), pyarrow.string())
+        named = pyarrow.array(list(liftable), pyarrow.string())
         matched = _declared_index(keys, _lead_of(items), named)
         wanted = numbered
         code = tags
@@ -865,9 +905,10 @@ class FixCodec(Convertible):
             identities = selected_identities.slice(at, run)
             at += run
             if one >= 0:
-                column = _cast(raw, fields[one], FLAT_TYPES[one])
+                field = fields[one]
+                column = _cast(raw, field, FLAT_TYPES.get(one, field.dtype))
             else:
-                field = declared[named[-1 - one].as_py()]
+                field = liftable[named[-1 - one].as_py()]
                 column = cast_arrow_fix(raw, field.dtype)
             changed = _raw_spelling_changed(raw, column)
             if compute.any(changed, min_count=0).as_py():
@@ -877,7 +918,7 @@ class FixCodec(Convertible):
             if run != rows:
                 column = compute.take(column, compute.index_in(row_ids, value_set=column_rows))
             if one >= 0:
-                columns[FLAT_COLUMNS[one]] = column
+                columns[FLAT_COLUMNS.get(one, field.name)] = column
             else:
                 columns[field.name] = column
         keep = compute.or_(compute.invert(lift), _quote_group_structure(parents, tags))
@@ -1652,28 +1693,28 @@ def _canonical_names(registry: FixRegistry, version: str | None) -> tuple[Any, A
 
 
 def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
-    """`(tag and folded spelling, the value it names)` for one version.
+    """`(tag and folded spelling, the value it names)` for one reading.
 
     The dictionary's own `encoded`, as the value set one kernel probes:
     `side=Buy` and `side=BUY` both reach `1`, and a spelling two values share
     reaches neither -- which is the record's rule, applied here rather than
-    reimplemented.
+    reimplemented. None reads the merged record for a promoted field whose
+    tag is already known even when the message did not state a version.
     """
     spelled: list[str] = []
     resolved: list[str] = []
-    if version is not None:
-        try:
-            entries = registry.field_records()
-        except (KeyError, OSError, ValueError):
-            entries = {}
-        for entry in entries.values():
-            fix = entry.fix
-            tag, encoded = fix.tag, fix.encoded
-            if tag is None or not encoded or not fix.declares(version):
-                continue
-            for spelling, value in encoded.items():
-                spelled.append(f"{tag}\x00{spelling}")
-                resolved.append(value)
+    try:
+        entries = registry.field_records()
+    except (KeyError, OSError, ValueError):
+        entries = {}
+    for entry in entries.values():
+        fix = entry.fix
+        tag, encoded = fix.tag, fix.encoded
+        if tag is None or not encoded or (version is not None and not fix.declares(version)):
+            continue
+        for spelling, value in encoded.items():
+            spelled.append(f"{tag}\x00{spelling}")
+            resolved.append(value)
     return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())
 
 

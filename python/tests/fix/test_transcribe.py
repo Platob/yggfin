@@ -346,14 +346,19 @@ def test_isincode_is_lifted_from_rendered_names_without_losing_repeats(
     assert _entries_column(rest, 2) is None
 
 
-def test_no_version_keeps_every_field_raw(codec: FixCodec) -> None:
-    """Nothing resolves and nothing lifts, but the fields are all still there."""
-    parsed = parse_arrow_array(pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|"]), "|", named=True)
+def test_no_version_lifts_only_package_owned_fields(codec: FixCodec) -> None:
+    """REKEP fields are versionless; standard and venue fields remain raw."""
+    parsed = parse_arrow_array(
+        pyarrow.array(["#55=TTF|#ISINCODE=XX0000084733|#REKEP.UNIX=100|"]),
+        "|",
+        named=True,
+    )
 
     entries, columns = codec.into_fixmsg_columns(parsed)
 
     assert _entries_column(entries) == [(55, "55", "TTF"), (0, "ISINCODE", "XX0000084733")]
     assert columns["isincode"].to_pylist() == [None]
+    assert columns["unix"].to_pylist() == [100]
 
 
 def test_wire_tags_resolve_without_any_dictionary_at_all(codec: FixCodec) -> None:
@@ -1037,16 +1042,17 @@ def test_every_declared_flat_field_comes_back_as_its_own_column(
 ) -> None:
     """One column per declared tag, typed from the registry declaration."""
     columns, _ = codec.into_lifted_columns(wire_tags, "4.2")
-    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 34, 18), (
+    assert (len(SESSION), len(COMMON), len(QUOTE)) == (33, 35, 18), (
         "the session layer, shared components, then quote fields"
     )
-    assert len(FLAT) == 85
+    assert len(FLAT) == 86
     namespaced = {field.name for field in NAMESPACE_COLUMNS.values()}
     assert set(columns) == set(COLUMNS.values()) | namespaced, (
         "one pass lifts both kinds, so it answers with both"
     )
-    assert sorted(STAMPS) == [52, 60, 62, 122, 370], (
-        "SendingTime, TransactTime, ValidUntilTime, OrigSendingTime, OnBehalfOfSendingTime"
+    assert sorted(STAMPS) == [42, 52, 60, 62, 122, 370], (
+        "OrigTime, SendingTime, TransactTime, ValidUntilTime, "
+        "OrigSendingTime, OnBehalfOfSendingTime"
     )
     assert {name: column.type for name, column in columns.items()} == {
         name: TYPES[tag] for tag, name in COLUMNS.items()

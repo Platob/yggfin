@@ -273,6 +273,21 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
     assert not hasattr(entry.fix, "decode"), "there is no reverse: the wire value is the fact"
 
 
+def test_a_value_resolves_the_standard_s_parenthesized_abbreviation() -> None:
+    entry = _entry(
+        enumerated={
+            "6": "Good Till Date (GTD)",
+            "B": "Broken date; SettlDate (64) is required",
+            "S": "Swap Value Factor (SVP) through a central counterparty (CCP)",
+        }
+    )
+
+    assert entry.fix.encode("gtd") == "6"
+    assert entry.fix.encode("64") == "64", "a referenced tag is not a value spelling"
+    assert entry.fix.encode("svp") == "S"
+    assert entry.fix.encode("ccp") == "ccp", "context is not the value's abbreviation"
+
+
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
     """An ambiguous translation that picks one silently is worse than none."""
     found, collisions = encodings_of(values_of({"1": "Cross", "2": "cross!"}))

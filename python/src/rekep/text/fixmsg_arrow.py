@@ -40,6 +40,7 @@ def into_flat_fixmsg_batch(
     keys = compute.struct_field(items, "key")
     values = compute.struct_field(items, "value")
     component = compute.struct_field(items, "comp")
+    column_tags = _namespaced_column_tags(codec, tags.type)
     if (
         tags.null_count
         or values.null_count
@@ -50,6 +51,10 @@ def into_flat_fixmsg_batch(
         or not compute.all(
             compute.equal(values, compute.utf8_trim_whitespace(values)), min_count=0
         ).as_py()
+        or (
+            len(column_tags)
+            and compute.any(compute.is_in(tags, value_set=column_tags), min_count=0).as_py()
+        )
     ):
         return None
     if codec.null_values:
@@ -103,6 +108,7 @@ def into_flat_fixmsg_batch(
             "entries": residual,
             "unmap": unmap,
             **promoted,
+            **shape._wire_session_columns(columns, codec, version, promoted),
         }
     )
     for field in schema:
@@ -149,6 +155,13 @@ def flat_fixmsg_positions(
     eligible = compute.and_(eligible, compute.invert(_duplicate_rows(parents, tags, rows)))
     misplaced = _misplaced_checksum_rows(entries, parents, tags)
     eligible = compute.and_(eligible, compute.invert(misplaced))
+    column_tags = _namespaced_column_tags(codec, tags.type)
+    if len(column_tags):
+        namespaced = compute.is_in(tags, value_set=column_tags)
+        eligible = compute.and_(
+            eligible,
+            compute.invert(_marked_rows(parents, namespaced, rows)),
+        )
 
     versions, _ = _versions(
         codec, entries, tags, values, rows, columns.get("beginstring"), columns.get("applverid")
@@ -179,6 +192,20 @@ def _supports(codec: Any) -> bool:
         and not bool(codec.fields)
         and rule.named is False
         and rule.entry_separator is None
+    )
+
+
+def _namespaced_column_tags(codec: Any, dtype: pyarrow.DataType) -> pyarrow.Array:
+    """Numeric identities whose registry fields target named log columns."""
+    return pyarrow.array(
+        sorted(
+            {
+                int(field.fix.tag)
+                for field in codec.named_fields().values()
+                if field.fix.tag is not None
+            }
+        ),
+        dtype,
     )
 
 

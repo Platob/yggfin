@@ -21,7 +21,7 @@ from rekep.fix.columns import (
     _physical_type,
     column_metadata,
 )
-from rekep.fix.fields import fix_field
+from rekep.fix.fields import fix_field, unix_of
 from rekep.market import (
     HASH,
     MIC,
@@ -36,6 +36,7 @@ from rekep.market import (
     Side,
 )
 from rekep.market.event import HOUR, SECOND
+from rekep.market.fix import FixEvents
 from rekep.text import Entry
 from rekep.text.fixmsg import _UNDIGESTED
 
@@ -234,9 +235,9 @@ _INSTRUMENT_COLUMNS = {
 }
 ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTRUMENT_COLUMNS]
 EXPECTED_SESSION_COLUMNS = 33
-EXPECTED_COMMON_COLUMNS = 34
-EXPECTED_FLAT_COLUMNS = 85
-EXPECTED_LOG_COLUMNS = 110
+EXPECTED_COMMON_COLUMNS = 35
+EXPECTED_FLAT_COLUMNS = 86
+EXPECTED_LOG_COLUMNS = 111
 
 
 @pytest.fixture(scope="module")
@@ -464,6 +465,210 @@ def test_scalar_and_arrow_identification_share_the_registry_projection() -> None
     assert scalar.vhash == arrow.column("vhash")[0].as_py()
     assert scalar.xhash == arrow.column("xhash")[0].as_py()
     assert scalar.into_row()["hash"] == arrow.column("hash")[0].as_py()
+
+
+@pytest.mark.parametrize(
+    "line",
+    (
+        (
+            "8=FIX.4.4|35=D|11=C1|55=AAPL|60=20260821-10:00:00|"
+            "42=20260821-09:59:57|122=20260821-09:59:58|"
+            "52=20260821-09:59:59|10=000|"
+        ),
+        (
+            "BEGINSTRING=FIX.4.4|MSGTYPE=D|CLORDID=C1|SYMBOL=AAPL|"
+            "TRANSACTTIME=20260821-10:00:00|ORIGTIME=20260821-09:59:57|"
+            "ORIGSENDINGTIME=20260821-09:59:58|SENDINGTIME=20260821-09:59:59|"
+        ),
+    ),
+    ids=("fix", "ul"),
+)
+def test_standard_fix_clocks_fill_distinct_generic_times(line: str, codec: FixCodec) -> None:
+    """Descriptions decide the mapping: transaction, origination, then capture."""
+    recorded = unix_of("20260821-10:00:02")
+    assert recorded is not None
+    source = _raw_batch(Message(message=line, recunix=recorded))
+
+    whole = FixMsg.from_message_batch(source, codec)
+    projected = FixMsg.from_message_batch(source.drop_columns(["message"]), codec)
+
+    for parsed in (whole, projected):
+        row = parsed.to_pylist()[0]
+        assert row["unix"] == unix_of("20260821-10:00:00")
+        assert row["unixsource"] == "TransactTime"
+        assert row["creaunix"] == unix_of("20260821-09:59:57")
+        assert row["recunix"] == recorded
+        assert row["origtime"] == datetime.datetime(2026, 8, 21, 9, 59, 57, tzinfo=datetime.UTC)
+
+
+@pytest.mark.parametrize(
+    ("fields", "recorded", "expected"),
+    (
+        (
+            "52=20260821-00:00:00|272=20260821|273=10:30:00|",
+            "20260822-01:00:00",
+            "20260821-10:30:00",
+        ),
+        (
+            "52=20260821-00:00:00|273=10:30:00|",
+            "20260822-01:00:00",
+            "20260821-10:30:00",
+        ),
+        (
+            "273=10:30:00|",
+            "20260822-01:00:00",
+            "20260822-10:30:00",
+        ),
+        (
+            "52=19691231-12:00:00|273=23:30:00|",
+            "19700102-01:00:00",
+            "19691231-23:30:00",
+        ),
+        (
+            "52=19691231-12:00:00|273=19691230-23:30:00|",
+            "19700102-01:00:00",
+            "19691231-23:30:00",
+        ),
+    ),
+    ids=(
+        "date-and-time",
+        "sending-day",
+        "recording-day",
+        "pre-epoch-day",
+        "pre-epoch-clock-spelling",
+    ),
+)
+def test_residual_mdentry_clocks_match_scalar_resolution(
+    fields: str, recorded: str, expected: str
+) -> None:
+    """A time-only market stamp uses the nearest known day, never 1970 by casting."""
+    line = f"8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|{fields}10=000|"
+    recunix = unix_of(recorded)
+    parsed = FixMsg.from_message_batch([Message(message=line, recunix=recunix)])
+    row = parsed.to_pylist()[0]
+    scalar = FixEvents.from_text(line, recunix=recunix, fix_version="4.4").transacted
+
+    assert (row["unix"], row["unixsource"]) == (unix_of(expected), "MDEntry")
+    assert (scalar.unix, scalar.source) == (row["unix"], row["unixsource"])
+    assert [entry["tag"] for entry in row["entries"]] == (
+        [272, 273] if "272=" in fields else [273]
+    ), "clock projection must not consume the residual facts"
+
+
+def test_count_free_indexed_mdentries_do_not_set_the_enclosing_message_clock() -> None:
+    """A component path is group evidence even where a bridge omits tag 268."""
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=X|#SYMBOL=AAPL|"
+        "#SENDINGTIME=20260821-10:30:00.250|"
+        "#NOMDENTRIES[0].MDUPDATEACTION=0|#NOMDENTRIES[0].MDENTRYTYPE=0|"
+        "#NOMDENTRIES[0].MDENTRYPX=100|#NOMDENTRIES[0].MDENTRYSIZE=5|"
+        "#NOMDENTRIES[0].MDENTRYDATE=20260821|"
+        "#NOMDENTRIES[0].MDENTRYTIME=10:29:59.100|"
+        "#NOMDENTRIES[1].MDUPDATEACTION=0|#NOMDENTRIES[1].MDENTRYTYPE=1|"
+        "#NOMDENTRIES[1].MDENTRYPX=100.5|#NOMDENTRIES[1].MDENTRYSIZE=7|"
+        "#NOMDENTRIES[1].MDENTRYDATE=20260821|"
+        "#NOMDENTRIES[1].MDENTRYTIME=10:29:59.200"
+    )
+
+    parsed = FixMsg.from_message_batch([Message(message=line)])
+    row = parsed.to_pylist()[0]
+    events = list(FixMsg.from_dict(row).into_market_events())
+
+    assert (row["unix"], row["unixsource"]) == (
+        unix_of("20260821-10:30:00.250"),
+        "SendingTime",
+    )
+    assert {entry["comp"] for entry in row["entries"] if entry["comp"] is not None} == {
+        "NOMDENTRIES[0]",
+        "NOMDENTRIES[1]",
+    }
+    assert [event.unix for event in events] == [
+        unix_of("20260821-10:29:59.100"),
+        unix_of("20260821-10:29:59.200"),
+    ]
+
+
+def test_scalar_from_message_resolves_raw_envelope_clocks_like_arrow(
+    codec: FixCodec,
+) -> None:
+    """Raw unix/creaunix are staging columns; recunix is the capture clock."""
+    line = "8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|52=20260821-10:30:00|10=000|"
+    raw = Message(message=line, unix=999, creaunix=998, recunix=997)
+    fresh = FixMsg.from_message(raw, registry=codec.registry)
+    parsed = FixMsg.from_message_batch([raw], codec)
+    row = parsed.to_pylist()[0]
+
+    scalar_event = next(fresh.into_market_events())
+    arrow_event = next(FixMsg.from_dict(row).into_market_events())
+    expected = unix_of("20260821-10:30:00")
+
+    assert (scalar_event.unix, scalar_event.creaunix, scalar_event.recunix) == (
+        expected,
+        expected,
+        997,
+    )
+    assert (arrow_event.unix, arrow_event.creaunix, arrow_event.recunix) == (
+        scalar_event.unix,
+        scalar_event.creaunix,
+        scalar_event.recunix,
+    )
+    identified = FixMsg.from_message(raw, registry=codec.registry).identify()
+    assert (identified.unix, identified.creaunix, identified.recunix) == (
+        row["unix"],
+        row["creaunix"],
+        row["recunix"],
+    )
+
+
+def test_creation_uses_only_origination_and_transmission_evidence(codec: FixCodec) -> None:
+    """A transaction time alone does not claim when its lifecycle was created."""
+    prefix = "8=FIX.4.4|35=D|11=C1|55=AAPL|60=20260821-10:00:00|"
+    lines = (
+        prefix + "42=20260821-09:59:57|122=20260821-09:59:58|52=20260821-09:59:59|10=000|",
+        prefix + "122=20260821-09:59:58|370=20260821-09:59:58.5|52=20260821-09:59:59|10=000|",
+        prefix + "370=20260821-09:59:58.5|52=20260821-09:59:59|10=000|",
+        prefix + "52=20260821-09:59:59|10=000|",
+        prefix + "10=000|",
+    )
+
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(*(Message(message=line) for line in lines)), codec
+    )
+
+    assert parsed.column("creaunix").to_pylist() == [
+        unix_of("20260821-09:59:57"),
+        unix_of("20260821-09:59:58"),
+        unix_of("20260821-09:59:58.5"),
+        unix_of("20260821-09:59:59"),
+        0,
+    ]
+
+
+def test_rekep_clocks_override_inference_but_not_the_local_recording_clock(
+    codec: FixCodec,
+) -> None:
+    line = (
+        "BEGINSTRING=FIX.4.4|MSGTYPE=D|CLORDID=C1|SYMBOL=AAPL|"
+        "REKEP.UNIX=100|REKEP.CREAUNIX=90|REKEP.RECUNIX=110|"
+        "TRANSACTTIME=20260821-10:00:00|SENDINGTIME=20260821-09:59:59|"
+    )
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(Message(message=line), Message(message=line, recunix=120)), codec
+    )
+
+    assert parsed.column("unix").to_pylist() == [100, 100]
+    assert parsed.column("unixsource").to_pylist() == ["REKEP.Unix", "REKEP.Unix"]
+    assert parsed.column("creaunix").to_pylist() == [90, 90]
+    assert parsed.column("recunix").to_pylist() == [110, 120]
+    assert parsed.column("unmap").to_pylist() == [None, None]
+
+    scalar = FixMsg.from_text(line, registry=codec.registry).identify()
+    assert (scalar.unix, scalar.creaunix, scalar.recunix, scalar.unixsource) == (
+        100,
+        90,
+        110,
+        "REKEP.Unix",
+    )
 
 
 def test_the_digest_is_every_column_but_the_clocks_and_the_identities() -> None:
@@ -1007,6 +1212,7 @@ def test_instrument_projection_prefers_promoted_values_and_fills_from_entries() 
         "PROMOTED",
         "reference facts",
     )
+    assert (update.creaunix, update.recunix) == (0, 0)
 
 
 def test_rendered_indexed_instrument_groups_resolve_the_same_way(
@@ -1493,7 +1699,7 @@ def test_numeric_flat_fixmsg_arrow_matches_the_registry_reference(
     import rekep.text.fixmsg_arrow as fixmsg_arrow
 
     lines = (
-        "8=FIX.4.4|35=D|34=1|11=C1|55=AAPL|54=Buy|38=10|40=2|44=100.5|"
+        "8=FIX.4.4|35=NewOrderSingle|34=1|11=C1|55=AAPL|54=Buy|38=10|40=2|44=100.5|"
         "60=20260825-09:30:00.123456789|9998=audit|10=000|",
         "8=FIX.4.4|35=F|34=2|41=C1|11=C2|55=AAPL|54=1|38=10|60=20260825-09:30:01|10=000|",
         "8=FIX.4.4|35=G|34=3|41=C1|11=C3|55=AAPL|54=1|38=12|44=99.5|60=20260825-09:30:02|10=000|",
@@ -1518,6 +1724,8 @@ def test_numeric_flat_fixmsg_arrow_matches_the_registry_reference(
 
     assert activated == [True]
     assert translated.equals(reference, check_metadata=True)
+    assert translated.column("msgtype").to_pylist()[0] == "D"
+    assert EventType(translated.column("eventtype")[0].as_py()) is EventType.ORDER
     assert translated.column("side").to_pylist()[0] == "1"
     assert translated.column("mic").null_count == 5
     assert translated.column("unmap")[0].as_py() == [
@@ -2022,7 +2230,7 @@ def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
     """One name, folded to store and spelled to read: the fold is the column and
     the dictionary's own spelling is what the column says it is called."""
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 118
+    assert len(names) == 119
     assert all(field.name == column_name(field.fix["name"]) for field in DECLARATIONS.values())
     assert all(field.fix.display == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
@@ -2268,6 +2476,50 @@ def test_fixml_decodes_a_named_value_inside_its_wire_envelope(
     assert parsed.column("exectype").to_pylist() == ["2"]
 
 
+def test_ul_enum_names_become_their_real_fix_wire_values(codec: FixCodec) -> None:
+    line = (
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=ExecutionReport|#ORDERID=O-1|"
+        "#CLORDID=C-1|#EXECID=E-1|#SYMBOL=AAPL|#SIDE=buy|#ORDSTATUS=canceled|"
+        "#EXECTYPE=canceled|#ORDTYPE=limit|#TIMEINFORCE=gtd|#SECURITYTYPE=future|"
+        "#PUTORCALL=put|#NOPARTYIDS=1|#NOPARTYIDS[0].PARTYID=P-1|"
+        "#NOPARTYIDS[0].PARTYIDSOURCE=proprietary custom code|"
+        "#NOPARTYIDS[0].PARTYROLE=client id"
+    )
+
+    new_order = line.replace("ExecutionReport", "NewOrderSingle").replace("O-1", "O-2")
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(Message(message=line), Message(message=new_order)), codec
+    )
+
+    assert _protocols(parsed) == ["UL", "UL"]
+    assert parsed.column("protocolversion").to_pylist() == ["4.4", "4.4"]
+    assert parsed.column("msgtype").to_pylist() == ["8", "D"]
+    assert parsed.column("eventtype").to_pylist() == [
+        int(EventType.EXECUTION),
+        int(EventType.ORDER),
+    ]
+    assert {
+        name: parsed.column(name).to_pylist()
+        for name in ("side", "ordstatus", "exectype", "ordtype", "timeinforce")
+    } == {
+        "side": ["1", "1"],
+        "ordstatus": ["4", "4"],
+        "exectype": ["4", "4"],
+        "ordtype": ["2", "2"],
+        "timeinforce": ["6", "6"],
+    }
+    assert _instrument_column(parsed, "securitytype").to_pylist() == ["FUT", "FUT"]
+    assert all(
+        OptionKind(value.as_py()) is OptionKind.PUT
+        for value in _instrument_column(parsed, "putorcall")
+    )
+    assert parsed.column("parties").to_pylist() == [
+        [{"partyid": "P-1", "partyidsource": "D", "partyrole": 3}],
+        [{"partyid": "P-1", "partyidsource": "D", "partyrole": 3}],
+    ]
+    assert parsed.column("error").to_pylist() == [None, None]
+
+
 def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: FixRegistry) -> None:
     """One classifier, so the FIX stage's reading of a row it still has the text
     for is the message stage's reading. An enrichment echo writing real bridge
@@ -2291,13 +2543,18 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert batch.column("protocolversion").to_pylist()[0] == "4.4"
     assert batch.column("entries").to_pylist()[1] is None, "operational rows stay unread"
 
-    # Without a version the registry cannot resolve the spellings, but the
-    # rescued row still keeps its arguments and its identities -- both were
-    # simply null while the row read as OTHER.
-    bare = Message(message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=D|CLORDID=PL9|SIDE=2")
+    # Without a version the body names stay raw. MsgType is already a promoted
+    # field with one known tag, so its merged enumeration still supplies the
+    # real wire value and the event classification.
+    bare = Message(
+        message="After Enrichment -> ACCOUNT=59.1|MSGTYPE=NewOrderSingle|CLORDID=PL9|SIDE=2"
+    )
     assert bare.protocol is Protocol.UL
     lone = FixMsg.from_message_batch(_raw_batch(bare), codec)
     assert _protocols(lone) == ["UL"]
+    assert lone.column("protocolversion").to_pylist() == [None]
+    assert lone.column("msgtype").to_pylist() == ["D"]
+    assert lone.column("eventtype").to_pylist() == [int(EventType.ORDER)]
     assert lone.column("entries").to_pylist() == [[]]
     assert [(entry["key"], entry["value"]) for entry in lone.column("unmap").to_pylist()[0]] == [
         ("ACCOUNT", "59.1"),

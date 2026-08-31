@@ -53,10 +53,45 @@ generic `Event` snapshot logic expires unchanged state after one day, using
 
 ## When it happened
 
-`unix` is when the transaction happened, not when somebody wrote it down.
-`rekep.market.transacted` resolves it, and one resolver is read by both layers
-— the parse stage fills the column over a whole batch in kernels, the
-translation layer reads one message at a time — so the two cannot disagree.
+```python
+from rekep import FixMsg
+from rekep.fix import unix_of
+
+row = FixMsg.from_text(
+    "8=FIX.4.4|35=D|11=C1|60=20260821-10:00:00|"
+    "42=20260821-09:59:57|52=20260821-09:59:59|10=000|",
+    recunix=unix_of("20260821-10:00:02"),
+).identify()
+
+print(row.unixsource)
+print(row.unix == unix_of("20260821-10:00:00"))
+print(row.creaunix == unix_of("20260821-09:59:57"))
+print(row.recunix == unix_of("20260821-10:00:02"))
+```
+
+```text
+TransactTime
+True
+True
+True
+```
+
+The three clocks answer different questions:
+
+| column | meaning | precedence |
+| --- | --- | --- |
+| `unix` | when this transaction happened | `REKEP.Unix`, then the FIX transaction chain below, then `recunix` |
+| `creaunix` | when this lifecycle was created upstream | `REKEP.CreaUnix`, `OrigTime`, `OrigSendingTime`, `OnBehalfOfSendingTime`, `SendingTime` |
+| `recunix` | when this capture recorded the row | local log header, then `REKEP.RecUnix` |
+
+`TransactTime` never fabricates `creaunix`. A later version of the same
+lifecycle keeps its first known nonzero creation time; it may fill an unknown
+one, but completion from another `xhash` does not copy it. Zero means the
+clock is unknown.
+
+`rekep.market.transacted` owns these rules. The parse stage applies them to
+whole Arrow batches and the translation layer applies them to one message,
+so both paths use the same precedence.
 
 ```python
 from rekep.enums import EventType
@@ -68,16 +103,22 @@ for kind, ranked in PREFERRED.items():
 ```
 
 ```text
-TrdRegTimestamps > SideTrdRegTS > TransactTime > MDEntry > OrigTime > OrigSendingTime > SendingTime
+TrdRegTimestamps > SideTrdRegTS > TransactTime > MDEntry > OrigTime > OrigSendingTime > OnBehalfOfSendingTime > SendingTime
 EXECUTION (1, 5, 2)
 ORDER     (10, 9, 2, 4, 6)
 QUOTE     (10, 9, 2, 4)
 BOOK      (9, 2, 1)
 ```
 
-Below every rung is the clock that *recorded* the line. It is not in that
-chain because it is not something the message said: it is `recunix`, on every
-row.
+Below every rung is `recunix`. The local capture clock leads a carried
+`REKEP.RecUnix`, because the receiving log is authoritative about when it
+recorded the row. `REKEP.Unix` bypasses the chain as an explicit event-time
+statement.
+
+`MDEntryTime <273>` without `MDEntryDate <272>` uses the UTC day from
+`SendingTime <52>`, or from `recunix` when the message has no sending clock.
+Each `NoMDEntries <268>` entry resolves its own pair before it becomes a
+market event.
 
 `PREFERRED` ranks `TrdRegTimestampType <770>` per event kind, because a
 regulatory group carries several instants and they are not interchangeable. An

@@ -410,6 +410,7 @@ class Event(MarketConvertible):
         self.xhash = self.xhash or self.life_hash() or previous.xhash
         self._drop_self_link()
         if self.xhash and self.xhash == previous.xhash:
+            self._keep_creation(previous)
             # The row carried no readable key of its own, so the same
             # lifecycle is the only honest place its readable key can come
             # from. Never copy it before this comparison: completion crosses
@@ -437,6 +438,7 @@ class Event(MarketConvertible):
     def _completed_from_same_lifecycle(self, previous: Event) -> Self:
         """Complete a version whose lifecycle hash already matches its predecessor."""
         self.complete_from(previous)
+        self._keep_creation(previous)
         self.derive()
         self._materialize_life_code()
         self.xhash = previous.xhash
@@ -457,12 +459,15 @@ class Event(MarketConvertible):
                 merged[name] = value
         self.altids = merged
 
+    def _keep_creation(self, previous: Event) -> None:
+        """Keep a lifecycle's known creation; a later row may fill an unknown one."""
+        if previous.creaunix:
+            self.creaunix = previous.creaunix
+
     def complete_from(self, previous: Event) -> None:
         """Fill what this version left absent, from the version before it."""
         if previous.linkedhashes:
             self.link_to(*previous.linkedhashes)
-        if not self.creaunix:
-            self.creaunix = previous.creaunix or previous.unix
         if not self.unix:
             # A message with no clock at all still belongs somewhere in time,
             # and the only honest answer is where the version before it was.

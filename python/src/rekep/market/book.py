@@ -272,8 +272,7 @@ class Book(MarketEvent):
                 completed.forget_delta()
             return completed
         if previous is not None:
-            if not self.creaunix:
-                self.creaunix = previous.creaunix or previous.unix
+            self._keep_creation(previous)
             if not self.recunix:
                 self.recunix = previous.recunix
             if self.expunix is None:

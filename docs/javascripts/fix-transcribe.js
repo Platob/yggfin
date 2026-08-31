@@ -1525,17 +1525,17 @@
     const registryLink = reference.kind === "none"
       ? ""
       : `<a href="${escape(href)}">Registry ↗</a>`;
-    return `<article class="fix-transcribe__component">
-      <header>
+    return `<details class="fix-transcribe__component" open>
+      <summary>
         <div><span>${label}</span><h4>${escape(container.name)}</h4></div>
         ${registryLink}
-      </header>
+      </summary>
       ${fields}
-      ${container.groups.map(structureGroupHtml).join("")}
-    </article>`;
+      ${container.groups.map((group) => structureGroupHtml(group)).join("")}
+    </details>`;
   }
 
-  function structureGroupHtml(group) {
+  function structureGroupHtml(group, depth = 0) {
     const declared = group.expected === null ? "index-derived" : `${group.entries.length}/${group.expected}`;
     const tag = group.tag === null ? "" : ` &lt;${escape(group.tag)}&gt;`;
     const issues = group.diagnostics.length
@@ -1547,18 +1547,18 @@
             (entry) => `<li>
               <div class="fix-transcribe__entry-head"><span>Entry ${number.format(entry.index)}</span><span>${number.format(entry.records.length)} direct fields</span></div>
               <div class="fix-transcribe__members">${entry.records.map(structureMemberHtml).join("")}</div>
-              ${entry.groups.map(structureGroupHtml).join("")}
+              ${entry.groups.map((nested) => structureGroupHtml(nested, depth + 1)).join("")}
             </li>`,
           )
           .join("")}</ol>`
       : '<p class="fix-transcribe__structure-empty">Declared empty group.</p>';
-    return `<section class="fix-transcribe__group">
-      <header>
+    return `<details class="fix-transcribe__group"${depth === 0 ? " open" : ""}>
+      <summary>
         <div><span>Repeating group</span><h5>${escape(group.name)}${tag}</h5></div>
         <div class="fix-transcribe__group-meta">${stateBadge(group.state)}<span>${escape(declared)}</span></div>
-      </header>
+      </summary>
       ${issues}${entries}
-    </section>`;
+    </details>`;
   }
 
   function structureMemberHtml(record) {
@@ -1566,7 +1566,7 @@
     const value = record.output_value ?? record.input_value;
     const tag = record.tag == null ? "namespace" : `<${record.tag}>`;
     return `<div class="fix-transcribe__member">
-      <span><strong>${escape(name)}</strong><small>${escape(tag)}</small></span>
+      <span><span class="fix-transcribe__member-name">${escape(name)}</span><small>${escape(tag)}</small></span>
       <code>${escape(displayValue(value))}</code>
     </div>`;
   }

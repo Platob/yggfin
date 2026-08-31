@@ -622,8 +622,8 @@ class InstrumentUpdate(Event):
                         yield cls.from_instrument(
                             instrument,
                             unix=reader.unix,
-                            creaunix=reader.unix,
-                            recunix=reader.recunix or reader.unix,
+                            creaunix=reader.creation_unix,
+                            recunix=reader.recorded_unix,
                         )
 
         return cls.enriched(observed())

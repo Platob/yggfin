@@ -116,7 +116,7 @@ def test_the_published_column_list_is_the_one_the_parser_lifts_by() -> None:
     not have, and nothing inside would notice.
     """
     assert dict(FLAT) == dict(rekep.fix.columns.COLUMNS)
-    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 34, 18, 85)
+    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 35, 18, 86)
     assert len(dict(FLAT)) == len(FLAT), "one tag, one column"
 
 

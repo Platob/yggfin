@@ -541,6 +541,11 @@ fields:
   nullable: true
   description: Timestamp when the business transaction represented by the message occurred.
   fix: {tag: '60', type: UTCTimestamp, name: TransactTime, display: TransactTime}
+- name: origtime
+  type: timestamp[us, tz=UTC]
+  nullable: true
+  description: Time of message origination (always expressed in UTC (Universal Time Coordinated, also known as "GMT"))
+  fix: {tag: '42', type: UTCTimestamp, name: OrigTime, display: OrigTime}
 - name: text
   type: string
   nullable: true

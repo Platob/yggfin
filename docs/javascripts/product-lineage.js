@@ -183,24 +183,28 @@
 
       stages.innerHTML = chain
         .map((step) => {
-          const carried = step.columns.filter(
+          const leaves = leafColumns(step.columns);
+          const carried = leaves.filter(
             (column) => column.fix && found.has(address(column.fix)),
           ).length;
           const current = step.key === shown ? ' aria-current="step"' : "";
           return `<li><button type="button" data-stage="${escape(step.key)}"${current}>
             <span class="product-lineage__stage-name">${escape(step.name)}</span>
-            <span class="product-lineage__stage-count">${carried} of ${step.columns.length} carried</span>
+            <span class="product-lineage__stage-count">${carried} of ${leaves.length} leaves carried</span>
           </button></li>`;
         })
         .join("");
 
       const step = products.get(shown) || product;
       const rows = step.columns.map((column) => row(column, found, catalog.enums));
-      const carried = rows.filter((one) => one.carried).length;
-      const derived = step.columns.filter((column) => !column.fix).length;
+      const leaves = leafColumns(step.columns);
+      const carried = leaves.filter(
+        (column) => column.fix && found.has(address(column.fix)),
+      ).length;
+      const derived = leaves.filter((column) => !column.fix).length;
 
       summary.innerHTML = [
-        `<div><strong>${step.columns.length}</strong><span>columns</span></div>`,
+        `<div><strong>${leaves.length}</strong><span>leaf columns</span></div>`,
         `<div><strong>${carried}</strong><span>carried by this line</span></div>`,
         `<div><strong>${derived}</strong><span>derived here</span></div>`,
         `<div><strong>${escape(decoded.protocol.code)} ${escape(decoded.version.value || "?")}</strong><span>read as</span></div>`,
@@ -212,7 +216,10 @@
 
   // One column as the page draws it: what it is, where it is read from, and
   // what this line put in it.
-  function row(column, found, enums) {
+  function row(column, found, enums, depth = 0) {
+    const children = childColumns(column);
+    if (children.length) return nestedRow(column, children, found, enums, depth);
+
     const origin = column.fix;
     const record = origin ? found.get(address(origin)) : undefined;
     const carried = Boolean(record);
@@ -235,12 +242,7 @@
       : origin
         ? `<span class="product-lineage__absent">not in this line</span>`
         : "";
-    const marks = [];
-    if (column.key === "primary") marks.push("key");
-    if (column.partition) marks.push(`partition ${column.partition}`);
-    if (column.enum) marks.push(`${column.enum}${sizeOf(enums, column.enum)}`);
-    if (column.unit) marks.push(column.unit);
-    if (column.nullable) marks.push("nullable");
+    const marks = marksOf(column, enums);
     return {
       carried,
       html: `<tr${carried ? ' data-carried=""' : ""}>
@@ -257,5 +259,70 @@
         }</td>
       </tr>`,
     };
+  }
+
+  // A struct or list remains one column in Arrow and one collapsible node on
+  // the page. Its leaves use the same four-column reading recursively, so a
+  // group inside a component never becomes a parallel flat table.
+  function nestedRow(column, children, found, enums, depth) {
+    const leaves = leafColumns(children);
+    const carried = leaves.some(
+      (leaf) => leaf.fix && found.has(address(leaf.fix)),
+    );
+    const marks = marksOf(column, enums);
+    const kind = {
+      list: "repeating list",
+      map: "key/value map",
+      struct: "struct",
+    }[column.type] || "nested";
+    const count = `${leaves.length} ${leaves.length === 1 ? "leaf" : "leaves"}`;
+    return {
+      carried,
+      html: `<tr class="product-lineage__nested-row"${carried ? ' data-carried=""' : ""}>
+        <td colspan="4">
+          <details class="product-lineage__nested">
+            <summary>
+              <span class="product-lineage__nested-name"><code>${escape(column.name)}</code>
+                <span class="product-lineage__type">${escape(column.type)} · ${kind}</span></span>
+              <span class="product-lineage__nested-count">${count}</span>
+            </summary>
+            ${column.description ? `<p class="product-lineage__nested-description">${escape(column.description)}</p>` : ""}
+            ${marks.length ? `<p class="product-lineage__marks">${marks.map((mark) => `<span>${escape(mark)}</span>`).join("")}</p>` : ""}
+            <div class="product-lineage__nested-table-wrap">
+              <table class="fix-registry__table product-lineage__table product-lineage__nested-table">
+                <thead><tr><th>Column</th><th>Reads</th><th>This line</th><th>What it is</th></tr></thead>
+                <tbody>${children.map((child) => row(child, found, enums, depth + 1).html).join("")}</tbody>
+              </table>
+            </div>
+          </details>
+        </td>
+      </tr>`,
+    };
+  }
+
+  function childColumns(column) {
+    if (Array.isArray(column.fields) && column.fields.length) return column.fields;
+    const pairs = [column.key_field, column.value_field].filter(Boolean);
+    if (pairs.length) return pairs;
+    const item = column.item;
+    if (!item) return [];
+    return Array.isArray(item.fields) && item.fields.length ? item.fields : [item];
+  }
+
+  function leafColumns(columns) {
+    return columns.flatMap((column) => {
+      const children = childColumns(column);
+      return children.length ? leafColumns(children) : [column];
+    });
+  }
+
+  function marksOf(column, enums) {
+    const marks = [];
+    if (column.key === "primary") marks.push("key");
+    if (column.partition) marks.push(`partition ${column.partition}`);
+    if (column.enum) marks.push(`${column.enum}${sizeOf(enums, column.enum)}`);
+    if (column.unit) marks.push(column.unit);
+    if (column.nullable) marks.push("nullable");
+    return marks;
   }
 })();

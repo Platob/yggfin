@@ -185,6 +185,7 @@
     bindForm(fieldForm, state.field, renderFields);
     bindPager(select("[data-component-pager]"), state.component, renderComponents);
     bindPager(select("[data-field-pager]"), state.field, renderFields);
+    componentDetail.addEventListener("toggle", hydrateComponentTree, true);
     app.addEventListener("click", (event) => {
       const message = event.target.closest("[data-message-filter]");
       if (message) {
@@ -423,6 +424,12 @@
     function renderComponentDetail(component) {
       const relatedFields = componentFields.get(normalized(component.name)) || [];
       const owners = componentBacklinks.get(normalized(component.name)) || [];
+      const tree = expandedMembers(
+        component._tree,
+        new Set([normalized(component.name)]),
+      );
+      const expanded = flattenMembers(tree);
+      const groups = expanded.filter((member) => member.kind === "group").length;
       componentDetail.innerHTML = `<header>
           <div><p class="fix-registry__eyebrow">${escape(shapeLabel(component._shape))}</p><h3>${escape(component.name)}</h3></div>
           <a class="fix-registry__detail-close" data-detail-close href="#components-title">Close</a>
@@ -430,15 +437,64 @@
         <dl>
           <dt>Versions</dt><dd>${chips(component.versions)}</dd>
           <dt>MsgType</dt><dd>${component._msgType ? `<code>${escape(component._msgType)}</code>` : "—"}</dd>
-          <dt>Members</dt><dd>${number.format(component._members.length)}</dd>
+          <dt>Members</dt><dd>${number.format(expanded.length)}</dd>
+          <dt>Groups</dt><dd>${number.format(groups)}</dd>
           ${aliasDefinition(component.aliases)}
         </dl>
-        ${owners.length ? `<h4>Referenced by components</h4><p>${owners.map((owner) => componentLink(owner.name)).join(" · ")}</p>` : ""}
-        ${relatedFields.length ? `<h4>Fields</h4><p>${relatedFields.map((field) => `${fieldLink(field)} ${tagCode(field.tag, true)}`).join(" · ")}</p>` : ""}
+        ${referenceList("Referenced by components", owners.map((owner) => componentLink(owner.name)))}
+        ${referenceList("Fields", relatedFields.map((field) => `${fieldLink(field)} ${tagCode(field.tag, true)}`))}
         <h4>Member tree</h4>
-        ${memberTree(component._tree)}
+        ${memberTree(component._tree, 0, new Set([normalized(component.name)]))}
         <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/components/${component.slug}.json`)}">View repository record →</a>`;
       componentDetail.hidden = false;
+    }
+
+    // References stay compact in the published registry and expand only for
+    // the component somebody opened. The path set stops a recursive FIX
+    // declaration at the reference that closes its cycle.
+    function expandedMembers(members, seen) {
+      return list(members).map((member) => {
+        if (member.kind === "component") {
+          const key = normalized(member.name);
+          const referenced = componentByName.get(key);
+          if (!referenced || seen.has(key)) {
+            return { ...member, recursive: seen.has(key) };
+          }
+          return {
+            ...member,
+            members: expandedMembers(
+              fixDeclaration.members(referenced.declaration),
+              new Set([...seen, key]),
+            ),
+          };
+        }
+        return {
+          ...member,
+          members: expandedMembers(member.members, seen),
+        };
+      });
+    }
+
+    function hydrateComponentTree(event) {
+      const node = event.target;
+      if (
+        !node.matches?.("details[data-component-members]") ||
+        !node.open ||
+        node.hasAttribute("data-loaded")
+      ) {
+        return;
+      }
+      const key = normalized(node.dataset.componentMembers);
+      const referenced = componentByName.get(key);
+      const target = node.querySelector(":scope > [data-tree-children]");
+      if (!referenced || !target) return;
+      const seen = new Set(JSON.parse(decodeURIComponent(node.dataset.componentSeen)));
+      node.setAttribute("data-loaded", "");
+      target.innerHTML = memberTree(
+        fixDeclaration.members(referenced.declaration),
+        Number(node.dataset.componentDepth) + 1,
+        new Set([...seen, key]),
+      );
     }
 
     function renderFieldDetail(field) {
@@ -470,8 +526,8 @@
           ${field.note ? `<dt>Note</dt><dd>${escape(field.note)}</dd>` : ""}
           ${aliasDefinition(field.aliases)}
         </dl>
-        ${componentReferences.length ? `<h4>Components</h4><p>${componentReferences.map((name) => componentLink(name)).join(" · ")}</p>` : ""}
-        ${messageReferences.length ? `<h4>Messages</h4><p>${messageReferences.map((name) => messageLink(name)).join(" · ")}</p>` : ""}
+        ${referenceList("Components", componentReferences.map(componentLink))}
+        ${referenceList("Messages", messageReferences.map(messageLink))}
         ${valueCodes.length ? valueTable(field, valueCodes) : ""}
         ${Object.keys(encoded).length ? encodingTable(encoded) : ""}
         <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/${source}`)}">View repository record →</a>`;
@@ -488,18 +544,48 @@
         .join("")}</dd>`;
     }
 
-    function memberTree(members) {
+    function referenceList(label, links) {
+      if (!links.length) return "";
+      return `<details class="fix-registry__references">
+        <summary><span>${escape(label)}</span><span>${number.format(links.length)}</span></summary>
+        <p>${links.join(" · ")}</p>
+      </details>`;
+    }
+
+    function memberTree(members, depth = 0, seen = new Set()) {
       if (!list(members).length) return '<p class="fix-registry__muted">No members.</p>';
       return `<ul class="fix-registry__tree">${members
         .map((member) => {
+          const componentKey = member.kind === "component" ? normalized(member.name) : "";
+          const referenced = componentKey ? componentByName.get(componentKey) : null;
+          const recursive = componentKey ? seen.has(componentKey) : false;
           const field = member.kind === "component" ? null : findField(member);
           const named =
             member.kind === "component" ? componentLink(member.name) : fieldLink(member);
           const description = field?.description || member.description;
-          const nested = list(member.members).length ? memberTree(member.members) : "";
-          return `<li><div class="fix-registry__member-line">${badge(member.kind)} ${named} ${tagCode(member.tag ?? field?.tag, true)} ${
+          const direct = referenced
+            ? fixDeclaration.members(referenced.declaration)
+            : list(member.members);
+          const nested = list(member.members).length || (referenced && !recursive);
+          const line = `<span class="fix-registry__member-line">${badge(member.kind)} ${named} ${tagCode(member.tag ?? field?.tag, true)} ${
             member.required ? badge("required", "required") : badge("optional", "optional")
-          }</div>${description ? `<span class="fix-registry__description fix-registry__description--member">${escape(description)}</span>` : ""}${nested}</li>`;
+          }${recursive ? badge("recursive") : ""}</span>`;
+          const prose = description
+            ? `<span class="fix-registry__description fix-registry__description--member">${escape(description)}</span>`
+            : "";
+          if (!nested) return `<li>${line}${prose}</li>`;
+          const count = `${number.format(direct.length)} direct`;
+          const opened = depth === 0 && member.kind === "group" ? " open" : "";
+          const attributes = referenced
+            ? ` data-component-members="${escape(member.name)}" data-component-depth="${depth}" data-component-seen="${encodeURIComponent(JSON.stringify([...seen]))}"`
+            : "";
+          const children = referenced
+            ? '<div data-tree-children></div>'
+            : memberTree(member.members, depth + 1, seen);
+          return `<li><details class="fix-registry__tree-node fix-registry__tree-node--${escape(member.kind)}"${attributes}${opened}>
+            <summary>${line}<span class="fix-registry__tree-count">${count}</span></summary>
+            ${prose}${children}
+          </details></li>`;
         })
         .join("")}</ul>`;
     }

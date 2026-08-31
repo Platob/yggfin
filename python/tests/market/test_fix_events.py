@@ -35,7 +35,7 @@ from rekep.market.fix import (
     market_tags,
     unix_of,
 )
-from rekep.text import FixMsg
+from rekep.text import FixMsg, Message
 
 #: One filled ExecutionReport, spelled the way a log prints one.
 FILLED = (
@@ -73,6 +73,27 @@ def test_a_fraction_is_scaled_by_its_own_width() -> None:
 def test_epoch_fix_time_is_not_mistaken_for_an_absent_clock() -> None:
     reader = FixEvents.from_text("35=D|52=19700101-00:00:00", recunix=123, fix_version="4.4")
     assert reader.unix == 0
+
+
+def test_epoch_transmission_anchors_a_split_market_clock() -> None:
+    row = events(
+        "35=D|11=C1|55=AAPL|273=10:30:00|52=19700101-00:00:00",
+        recunix=unix_of("20260821-11:00:00"),
+    )[0]
+
+    assert row.unix == unix_of("19700101-10:30:00")
+
+
+def test_an_explicit_zero_creation_is_not_replaced_by_message_evidence() -> None:
+    line = (
+        "BEGINSTRING=FIX.4.4|MSGTYPE=D|CLORDID=C1|REKEP.CREAUNIX=90|SENDINGTIME=20260821-10:00:00|"
+    )
+    translated = reader(line, creaunix=0)
+    fresh = FixMsg.from_text(line, creaunix=0)
+
+    assert translated.creation_unix == 0
+    assert next(fresh.into_market_events()).creaunix == 0
+    assert next(fresh.identify().into_market_events()).creaunix == 0
 
 
 def test_a_date_alone_and_a_time_alone_are_both_read() -> None:
@@ -125,6 +146,99 @@ def test_the_recording_clock_is_the_readers_and_stays_separate() -> None:
     assert order.recunix > order.unix, "recorded after it happened, which is the point"
 
 
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        (
+            (
+                "8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|60=20260821-10:00:00|"
+                "42=20260821-09:59:57|52=20260821-09:59:59|10=000|"
+            ),
+            (
+                unix_of("20260821-10:00:00"),
+                unix_of("20260821-09:59:57"),
+                unix_of("20260821-10:00:02"),
+            ),
+        ),
+        (
+            (
+                "BEGINSTRING=FIX.4.4|MSGTYPE=D|CLORDID=C1|SYMBOL=AAPL|SIDE=1|"
+                "REKEP.UNIX=100|REKEP.CREAUNIX=90|REKEP.RECUNIX=110|"
+            ),
+            (100, 90, unix_of("20260821-10:00:02")),
+        ),
+    ),
+    ids=("fix", "ul"),
+)
+def test_scalar_and_arrow_market_events_keep_the_three_generic_clocks(
+    line: str, expected: tuple[int | None, int | None, int | None]
+) -> None:
+    recorded = unix_of("20260821-10:00:02")
+    assert recorded is not None and all(value is not None for value in expected)
+    scalar = next(iter(reader(line, recunix=recorded)))
+    parsed = FixMsg.from_message_batch([Message(message=line, recunix=recorded)])
+    [(shape, batch)] = list(FixMsg.into_market_arrow_batches(parsed))
+    row = batch.to_pylist()[0]
+
+    assert shape is Order
+    assert (scalar.unix, scalar.creaunix, scalar.recunix) == expected
+    assert (row["unix"], row["creaunix"], row["recunix"]) == expected
+
+
+def test_fresh_fixmsg_derives_creation_before_market_conversion() -> None:
+    line = "8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|60=20260821-10:00:00|52=20260821-09:59:59|10=000|"
+
+    direct = next(FixMsg.from_text(line).into_market_events())
+    reference = next(iter(FixEvents.from_text(line)))
+
+    assert (direct.unix, direct.creaunix, direct.recunix) == (
+        reference.unix,
+        reference.creaunix,
+        reference.recunix,
+    )
+
+
+def test_a_later_fix_version_keeps_the_lifecycles_known_creation() -> None:
+    first = events(
+        "8=FIX.4.4|35=D|11=C1|55=AAPL|54=1|38=1|40=2|44=10|"
+        "60=20260821-10:00:00|52=20260821-10:00:01|10=000|"
+    )[0]
+    later = events(
+        "8=FIX.4.4|35=G|41=C1|11=C2|55=AAPL|54=1|38=2|40=2|44=11|"
+        "60=20260821-11:00:00|52=20260821-11:00:01|10=000|"
+    )[0]
+
+    completed = later.with_previous(first)
+
+    assert completed is not None
+    assert completed.xhash == first.xhash and completed.version == 1
+    assert completed.creaunix == first.creaunix == unix_of("20260821-10:00:01")
+
+
+def test_a_later_explicit_creation_fills_an_unknown_lifecycle_creation() -> None:
+    first = Order(unix=1, symbolticker="AAPL", clordid="C1", qty=1).with_previous(None)
+    later = Order(
+        unix=2,
+        creaunix=3,
+        symbolticker="AAPL",
+        clordid="C1",
+        qty=2,
+    ).with_previous(first)
+
+    assert first is not None and first.creaunix == 0
+    assert later is not None and later.creaunix == 3
+
+
+def test_creation_does_not_cross_into_another_lifecycle() -> None:
+    first = Order(unix=1, creaunix=2, symbolticker="AAPL", clordid="C1")
+    other = Order(unix=3, symbolticker="AAPL", clordid="C2")
+
+    completed = other.completed_from(first)
+
+    assert completed.xhash != first.xhash
+    assert completed.creaunix == 0
+
+
 def test_the_fix_sequence_is_not_repeated_on_market_events() -> None:
     order, fill = events(FILLED)
     assert not hasattr(order, "seq") and not hasattr(fill, "seq")
@@ -139,8 +253,11 @@ def test_without_a_transaction_time_the_message_falls_down_the_declared_order() 
     assert events(header + "42=20260821-09:00:00|122=20260821-08:00:00")[0].unix == unix_of(
         "20260821-09:00:00"
     )
-    assert events(header + "122=20260821-08:00:00|52=20260821-11:00:00")[0].unix == unix_of(
+    assert events(header + "122=20260821-08:00:00|370=20260821-07:00:00")[0].unix == unix_of(
         "20260821-08:00:00"
+    )
+    assert events(header + "370=20260821-07:00:00|52=20260821-11:00:00")[0].unix == unix_of(
+        "20260821-07:00:00"
     )
     assert events(header + "52=20260821-11:00:00")[0].unix == unix_of("20260821-11:00:00")
 
@@ -164,6 +281,7 @@ def test_the_declared_order_is_the_one_the_reader_uses() -> None:
         "MDEntry",
         "OrigTime",
         "OrigSendingTime",
+        "OnBehalfOfSendingTime",
         "SendingTime",
     )
     regulatory = [rung for rung in TRANSACTED if rung.is_column]
@@ -176,6 +294,7 @@ def test_the_declared_order_is_the_one_the_reader_uses() -> None:
         ("mdentrydate", "mdentrytime"),
         ("origtime",),
         ("origsendingtime",),
+        ("onbehalfofsendingtime",),
         ("sendingtime",),
     ]
 
@@ -541,6 +660,18 @@ def test_an_entry_after_the_first_inherits_the_date_it_was_not_resent() -> None:
     """Only the first entry carries `MDEntryDate <272>`; the rest are times of day."""
     _, ask, _ = events(REFRESH)
     assert ask.unix == unix_of("20260821-10:29:59.200")
+
+
+def test_parsed_refresh_keeps_clocks_on_their_own_entries() -> None:
+    parsed = FixMsg.from_message_batch([Message(message=REFRESH)])
+    translated = {shape: batch for shape, batch in FixMsg.into_market_arrow_batches(parsed)}
+
+    assert parsed.column("unixsource").to_pylist() == ["SendingTime"]
+    assert translated[Order].column("unix").to_pylist() == [
+        unix_of("20260821-10:29:59.100"),
+        unix_of("20260821-10:29:59.200"),
+    ]
+    assert translated[Execution].column("unix").to_pylist() == [unix_of("20260821-10:29:59.300")]
 
 
 def test_an_update_action_decides_what_the_entry_does_to_the_book() -> None:
@@ -966,7 +1097,8 @@ def test_dictionary_value_names_expand_the_pinned_market_maps() -> None:
         "QuoteRespType": 25,
     }
     assert len(tags.execution_states) == 13
-    assert len(tags.order_kinds) == 65
+    assert len(tags.order_kinds) == 66
+    assert tags.order_kinds["mit"] is MarketKind.MARKET_IF_TOUCHED
     assert len(tags.execution_kinds) == 49
     assert len(tags.exec_type_fallbacks) == 36
 
@@ -1347,12 +1479,14 @@ def test_the_parent_identities_a_bridge_renders_reach_the_order() -> None:
 
 
 def test_word_spelled_ul_values_read_like_their_wire_codes() -> None:
-    """`SIDE=buy`, `ORDSTATUS=canceled`, `EXECTYPE=cancel`, `ORDTYPE=limit`
+    """`SIDE=buy`, `ORDSTATUS=canceled`, `EXECTYPE=canceled`, `ORDTYPE=limit`
     and `TIMEINFORCE=gtd` are how real bridges render the codes; a scalar
     reader resolves each where it used to record `UNKNOWN`."""
     line = (
-        "8=FIX.4.4|35=8|37=O-1|11=C-1|17=E-1|54=buy|39=canceled|150=cancel|"
-        "40=limit|59=gtd|38=5|44=10|126=20260820-17:30:00|60=20260814-10:00:00|10=000"
+        "toBridge #BEGINSTRING=FIX.4.4|#MSGTYPE=ExecutionReport|#ORDERID=O-1|"
+        "#CLORDID=C-1|#EXECID=E-1|#SIDE=buy|#ORDSTATUS=canceled|#EXECTYPE=canceled|"
+        "#ORDTYPE=limit|#TIMEINFORCE=gtd|#ORDERQTY=5|#PRICE=10|"
+        "#EXPIRETIME=20260820-17:30:00|#TRANSACTTIME=20260814-10:00:00"
     )
     (order,) = list(FixEvents.from_text(line))
     assert order.state is State.CANCELLED

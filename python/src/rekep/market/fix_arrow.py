@@ -485,8 +485,8 @@ class _Shared:
         self.rows = rows
         self.unix = columns["unix"].cast(pyarrow.int64(), safe=False)
         self.unixpartition = columns["unixpartition"].cast(pyarrow.int32(), safe=False)
-        recunix = columns["recunix"].cast(pyarrow.int64(), safe=False)
-        self.recunix = compute.if_else(compute.equal(recunix, 0), self.unix, recunix)
+        self.creaunix = columns["creaunix"].cast(pyarrow.int64(), safe=False)
+        self.recunix = columns["recunix"].cast(pyarrow.int64(), safe=False)
         self.reason = columns["reason"].cast(pyarrow.string(), safe=False)
         self.mic = columns["mic"].cast(pyarrow.int32(), safe=False)
         self.symbolticker = _ticker_array(values, tags)
@@ -659,7 +659,7 @@ def _orders(
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
         "eventtype": eventtype,
-        "creaunix": unix,
+        "creaunix": shared.take(shared.creaunix, where),
         "recunix": shared.take(shared.recunix, where),
         "expunix": expunix,
         "hash": event_hash,
@@ -848,7 +848,7 @@ def _executions(
         "unix": unix,
         "unixpartition": shared.take(shared.unixpartition, where),
         "eventtype": eventtype,
-        "creaunix": unix,
+        "creaunix": shared.take(shared.creaunix, where),
         "recunix": shared.take(shared.recunix, where),
         "hash": event_hash,
         "vhash": vhash,

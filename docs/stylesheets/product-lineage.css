@@ -104,6 +104,10 @@
   font-weight: 400;
 }
 
+.product-lineage__table code {
+  font-weight: 400;
+}
+
 .product-lineage__type {
   display: block;
 }
@@ -150,4 +154,77 @@
 .product-lineage__wire {
   max-height: 14rem;
   overflow: auto;
+}
+
+/* Nested Arrow nodes stay nested on the page. The outer table carries one
+   row for the component; its native disclosure contains the same contract
+   table for the members, recursively, without inventing flat column names. */
+.product-lineage__nested-row > td {
+  padding: 0 !important;
+}
+
+.product-lineage__nested > summary {
+  display: flex;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.7rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.product-lineage__nested > summary::-webkit-details-marker {
+  display: none;
+}
+
+.md-typeset .product-lineage__nested > summary::before {
+  display: none;
+}
+
+.product-lineage__nested-name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.product-lineage__nested-name > code {
+  font-weight: 400;
+}
+
+.product-lineage__nested-name .product-lineage__type {
+  display: inline;
+}
+
+.product-lineage__nested-count {
+  color: var(--rekep-muted);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.product-lineage__nested-description {
+  margin: 0 0.7rem 0.55rem !important;
+  color: var(--rekep-muted);
+  font-size: 0.7rem !important;
+}
+
+.product-lineage__nested > .product-lineage__marks {
+  margin: 0 0.7rem 0.55rem !important;
+}
+
+.product-lineage__nested-table-wrap {
+  margin: 0 0.55rem 0.55rem;
+  overflow-x: auto;
+  border: 1px solid var(--rekep-border);
+  border-radius: var(--rekep-radius);
+}
+
+.md-typeset .product-lineage__nested-table {
+  border: 0;
+}
+
+.product-lineage__nested-table .product-lineage__nested-table-wrap {
+  margin-right: 0.35rem;
 }

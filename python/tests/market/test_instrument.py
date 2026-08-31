@@ -198,13 +198,13 @@ def test_declared_reference_values_determine_the_value_hash() -> None:
     assert observed_later.hash != known.hash
 
 
-def test_promoted_fallback_preserves_its_observation_clock() -> None:
+def test_promoted_fallback_does_not_fabricate_unstated_clocks() -> None:
     message = FixMsg(unix=23, instrument=Instrument(symbol="AAPL"))
     update = InstrumentUpdate.from_(message)
 
     assert update is not None
     assert update.unix == 23
-    assert (update.creaunix, update.recunix) == (23, 23)
+    assert (update.creaunix, update.recunix) == (0, 0)
     assert update.instrument.symbolticker == "AAPL"
     assert Instrument.from_(message) == update.instrument
 

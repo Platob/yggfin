@@ -60,7 +60,7 @@ from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import NIL, hash_bytes_arrow, hash_int_of
 from rekep.market.instrument import Instrument
-from rekep.text.message import SESSION_FIELDS, Message
+from rekep.text.message import SESSION_FIELDS, Message, _event_types
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _PROTOCOL_CODE = Protocol.into_arrow_type().index_type
@@ -117,6 +117,16 @@ _PROJECTED_RAW_IDENTITY = (
     "entries",
 )
 
+# Private intermediates distinguish package-owned clock statements from the
+# raw Message envelope they are parsed into. Both use the public clock names,
+# but only the former is event data carried by FIX.
+_STATED_CLOCKS = {
+    "unix": "__rekep_unix",
+    "creaunix": "__rekep_creaunix",
+    "recunix": "__rekep_recunix",
+}
+_LOCAL_RECORDED = "__local_recunix"
+
 
 @functools.cache
 def _component_groups() -> tuple[tuple[str, str, type[Any]], ...]:
@@ -171,6 +181,16 @@ class FixMsg(Message):
     # content -- the same stored row reads under another feed's dictionary
     # without changing -- so the link is private and never a column.
     __registry: FixRegistry | None = None
+
+    # Zero is both a valid explicit creation instant and the stored unknown
+    # sentinel. Scalar constructors retain which one the caller supplied so
+    # a later conversion does not replace epoch zero with SendingTime.
+    __creaunix_declared: bool = False
+
+    # `Message` inherits generic event columns for transport between stages,
+    # but its unix/creaunix are raw envelope values. A parsed FixMsg owns those
+    # clocks; a staged Message does not, while recunix remains local capture.
+    __raw_clocks: bool = False
 
     @classmethod
     @functools.cache
@@ -311,22 +331,39 @@ class FixMsg(Message):
         """Give the parsed event the identities its registry projection earns."""
         if self.hash and self.vhash and self.xhash:
             return self
+        codec = type(self).into_codec(self.registry)
         staged_values = {
             member.name: getattr(self, member.name) for member in dataclasses.fields(Message)
         }
+        # FixMsg stores typed session columns while Message deliberately keeps
+        # their wire text. Identification stages a Message again, so cross the
+        # same boundary in reverse before Arrow sees timestamps and booleans.
+        for name, _ in SESSION_FIELDS:
+            if (value := staged_values.get(name)) is not None:
+                staged_values[name] = _fix_text(value)
         staged_values["message"] = self.message or ""
         if self.entries is not None or self.unmap is not None:
-            retained = list(_stored_pairs(self._residual_entries()))
+            retained_entries: Sequence[Any] = self._residual_entries()
+            if self.protocolversion is not None and retained_entries:
+                stored = pyarrow.array([_stored_entries(retained_entries)], type=ENTRIES)
+                completed = codec.complete_entries(stored, self.protocolversion)[0].as_py()
+                retained_entries = completed or ()
+            retained = list(_stored_pairs(retained_entries))
             checksum = str(_tag_of("CheckSum"))
             staged_values["entries"] = [
                 *[pair for pair in retained if str(pair[0]) != checksum],
                 *[pair for pair in retained if str(pair[0]) == checksum],
             ]
+            # A scalar rendered message has no raw payload left to classify.
+            # Its unresolved names still need the rendered-field rule; the
+            # final row keeps the protocol already established on `self`.
+            if not self.message and any(
+                not Entry.from_stored(entry).tag for entry in retained_entries
+            ):
+                staged_values["protocol"] = Protocol.UL
         else:
             staged_values["entries"] = None
-        parsed = type(self).from_message_batch(
-            [Message(**staged_values)], type(self).into_codec(self.registry)
-        )
+        parsed = type(self).from_message_batch([Message(**staged_values)], codec)
 
         # A typed component is already a promoted reading. Retained entries
         # may fill what it omitted, but cannot replace a fact already lifted
@@ -335,6 +372,23 @@ class FixMsg(Message):
         parsed_component = Instrument.from_dict(parsed.column("instrument")[0].as_py())
         component = self.instrument.enriched_with(parsed_component) or self.instrument
         columns = {name: parsed.column(name) for name in parsed.schema.names}
+        from rekep.market.transacted import STATED_EVENT_TIME
+
+        columns[_STATED_CLOCKS["unix"]] = pyarrow.compute.if_else(
+            pyarrow.compute.equal(columns["unixsource"], STATED_EVENT_TIME),
+            columns["unix"],
+            pyarrow.nulls(1, pyarrow.int64()),
+        )
+        # The first parse already distinguished the raw envelope from FIX
+        # evidence. Re-identification only rehashes the enriched component,
+        # so it carries those resolved clock answers forward unchanged.
+        columns[_STATED_CLOCKS["creaunix"]] = (
+            pyarrow.array([self.creaunix], pyarrow.int64())
+            if self.__creaunix_declared
+            else columns["creaunix"]
+        )
+        columns[_LOCAL_RECORDED] = columns["recunix"]
+        columns["protocol"] = pyarrow.array([int(self.protocol)], _PROTOCOL_CODE)
         columns["instrument"] = Instrument.into_arrow_batch((component,)).to_struct_array()
         parsed = type(self).identified(columns, parsed.schema, 1, self.registry)
 
@@ -344,6 +398,7 @@ class FixMsg(Message):
         self.unix = value("unix")
         self.unixpartition = value("unixpartition")
         self.creaunix = value("creaunix")
+        self.recunix = value("recunix")
         self.unixsource = value("unixsource")
         self.code = value("code")
         self.altids = dict(value("altids") or ())
@@ -353,6 +408,7 @@ class FixMsg(Message):
         self.vhash = value("vhash")
         self.hash = hash_int_of(value("hash")) or NIL
         self.xhash = value("xhash")
+        self.__raw_clocks = False
         return self
 
     # Nullable, and null on `fix.market`: typed columns plus the two residual
@@ -613,6 +669,9 @@ class FixMsg(Message):
     transacttime: Annotated[datetime.datetime | None, DECLARED["TransactTime"]] = None
     """`TransactTime <60>`: when the business event happened, in UTC."""
 
+    origtime: Annotated[datetime.datetime | None, DECLARED["OrigTime"]] = None
+    """`OrigTime <42>`: when the upstream message originated, in UTC."""
+
     text: Annotated[str | None, DECLARED["Text"]] = None
     """`Text <58>`: whatever the counterparty wrote, often the reject reason."""
 
@@ -772,7 +831,10 @@ class FixMsg(Message):
                 .msg_type_event_types()
                 .get(msg_type, EventType.UNKNOWN)
             )
-        return cls(**values).link_registry(registry)
+        built = cls(**values).link_registry(registry)
+        built.__raw_clocks = not isinstance(source, cls)
+        built.__creaunix_declared = "creaunix" in declared
+        return built
 
     def into_dict(self) -> dict[str, Any]:
         """Plain values with the stored fields in Arrow's list-struct spelling."""
@@ -1428,13 +1490,20 @@ class FixMsg(Message):
         )
         components, entries = codec.into_component_columns(entries, version)
         lifted, entries = codec.into_lifted_columns(entries, version)
+        promoted = cls._wire_session_columns(columns, codec, version, lifted)
         entries, unmap = cls._partition_entries(entries, codec, version)
         found: dict[str, Any] = {
             **components,
             **lifted,
+            # The raw stage already chose among duplicate session spellings.
+            # Its canonical value leads; a rendered entry fills a null one.
+            **promoted,
             "entries": entries,
             "unmap": unmap,
         }
+        for name, private in _STATED_CLOCKS.items():
+            found[private] = lifted.get(name, pyarrow.nulls(rows, pyarrow.int64()))
+        found[_LOCAL_RECORDED] = columns.get("recunix", pyarrow.nulls(rows, pyarrow.int64()))
         # A lifted value only fills a column already read directly where it is empty:
         # `MsgType` is read off the front of the message before any of this,
         # and the wire is the authority on what it says.
@@ -1442,6 +1511,34 @@ class FixMsg(Message):
             stored = columns.get(name)
             if name not in {"entries", "unmap"} and stored is not None and stored.null_count < rows:
                 found[name] = pyarrow.compute.coalesce(cast_arrow_fix(column, stored.type), stored)
+        return found
+
+    @staticmethod
+    def _wire_session_columns(
+        columns: Mapping[str, Any],
+        codec: Any,
+        version: str | None,
+        fallback: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Promoted session fields under the registry's wire vocabulary.
+
+        These fields leave `entries` before completion translates enumerated
+        values. Both transcription paths call this seam so a rendered
+        `MsgType` classifies and persists exactly like its wire code.
+        """
+        found: dict[str, Any] = {}
+        secondary = fallback or {}
+        for name, tag in SESSION_FIELDS:
+            column = columns.get(name)
+            carried = secondary.get(name)
+            if column is not None:
+                column = codec.into_wire_values(tag, column, version)
+            if carried is not None:
+                carried = codec.into_wire_values(tag, carried, version)
+            if column is not None and carried is not None:
+                column = pyarrow.compute.coalesce(column, carried)
+            if column is not None or carried is not None:
+                found[name] = column if column is not None else carried
         return found
 
     @staticmethod
@@ -1596,16 +1693,43 @@ class FixMsg(Message):
         The FIX conversion ends here so `hash`, transaction time and lifecycle
         identifiers are derived only after the full registry projection exists.
         """
-        from rekep.market.transacted import resolve_arrow
+        from rekep.market.transacted import (
+            resolve_arrow,
+            resolve_created_arrow,
+            resolve_recorded_arrow,
+        )
 
         compute = pyarrow.compute
+        msgtypes = columns.get("msgtype")
+        eventtypes = columns.get("eventtype")
+        if msgtypes is not None and eventtypes is not None:
+            classified = _event_types(
+                msgtypes, (registry or cls.into_registry()).msg_type_event_types()
+            )
+            columns["eventtype"] = compute.if_else(
+                compute.equal(eventtypes, int(EventType.UNKNOWN)), classified, eventtypes
+            )
         columns["instrument"] = Instrument.from_fix_arrow(columns, rows, registry=registry)
         columns["code"] = cls.code_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
-        columns["unix"], columns["unixsource"] = resolve_arrow(columns, columns["recunix"], rows)
+        columns["recunix"] = resolve_recorded_arrow(
+            columns.get(_LOCAL_RECORDED, columns.get("recunix")),
+            columns.get(_STATED_CLOCKS["recunix"]),
+            rows,
+        )
+        columns["unix"], columns["unixsource"] = resolve_arrow(
+            columns,
+            columns["recunix"],
+            rows,
+            stated=columns.get(_STATED_CLOCKS["unix"]),
+        )
         columns["unixpartition"] = unix_partition_arrow(columns["unix"])
-        columns["creaunix"] = columns["unix"]
+        columns["creaunix"] = resolve_created_arrow(
+            columns,
+            rows,
+            stated=columns.get(_STATED_CLOCKS["creaunix"]),
+        )
         columns["vhash"] = cls.version_vhash_arrow(columns, rows)
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]
@@ -1797,7 +1921,14 @@ class FixMsg(Message):
         from rekep.market.fix import FixEvents
 
         carried = {
-            "recunix": self.recunix or self.unix,
+            "recunix": self.recunix,
+            # A raw Message carries generic envelope columns between stages;
+            # only a parsed row or a caller override owns creation time.
+            "creaunix": (
+                self.creaunix
+                if self.__creaunix_declared or self.hash or not self.__raw_clocks
+                else None
+            ),
             "mic": self.mic,
             "registry": getattr(self, "_FixMsg__registry", None),
             **declared,
@@ -1815,7 +1946,8 @@ class FixMsg(Message):
         """
         from rekep.market.transacted import Transacted
 
-        if self.unixsource:
+        owns_clock = self.hash or not self.__raw_clocks
+        if owns_clock and (self.unix or self.unixsource):
             built.__dict__["transacted"] = Transacted(self.unix, self.unixsource)
         return built
 

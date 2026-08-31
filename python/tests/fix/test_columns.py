@@ -26,7 +26,7 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 #: Derived from the module, then pinned, so a tag added or dropped fails here
 #: rather than quietly changing the shape of every stored log.
 EXPECTED_SESSION = 33
-EXPECTED_COMMON = 34
+EXPECTED_COMMON = 35
 EXPECTED_QUOTE = 18
 
 
@@ -95,7 +95,7 @@ def test_a_lifted_stamp_is_a_field_the_dictionary_calls_a_timestamp(
 ) -> None:
     """The physical UTC projection and registry timestamp types agree.
 
-    `STAMPS` is the four clocks FIX documents in UTC, not every lifted
+    `STAMPS` is the clocks FIX documents in UTC, not every lifted
     timestamp: a `LocalMktDate` such as `MaturityDate <541>` is an instant to
     the dictionary and a day to a reader, and it is stored without a zone.
     """

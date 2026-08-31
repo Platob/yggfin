@@ -118,6 +118,43 @@ def test_registry_docs_keep_the_cli_discoverable_and_results_bounded() -> None:
     assert ".fix-registry__tag" in styles
 
 
+def test_fix_component_docs_keep_nested_contracts_collapsible() -> None:
+    """A struct and its repeating list stay one tree all the way to the page."""
+    hooks = _hooks()
+    catalog = hooks._product_catalog()
+    fixmsg = next(product for product in catalog["products"] if product["key"] == "fixmsg")
+    instrument = next(column for column in fixmsg["columns"] if column["name"] == "instrument")
+    legs = next(column for column in instrument["fields"] if column["name"] == "legs")
+    altids = next(column for column in fixmsg["columns"] if column["name"] == "altids")
+
+    assert {column["name"] for column in instrument["fields"]} >= {
+        "symbol",
+        "securityid",
+        "legs",
+    }
+    assert {column["name"] for column in legs["item"]["fields"]} >= {
+        "symbol",
+        "securityid",
+    }
+    assert (altids["key_field"]["name"], altids["value_field"]["name"]) == ("key", "value")
+
+    lineage = (DOCS / "javascripts" / "product-lineage.js").read_text(encoding="utf-8")
+    registry = (DOCS / "javascripts" / "fix-registry.js").read_text(encoding="utf-8")
+    transcribe = (DOCS / "javascripts" / "fix-transcribe.js").read_text(encoding="utf-8")
+    styles = (DOCS / "stylesheets" / "fix-registry.css").read_text(encoding="utf-8")
+
+    assert 'class="product-lineage__nested"' in lineage
+    assert "function leafColumns(columns)" in lineage
+    assert "function expandedMembers(members, seen)" in registry
+    assert "function hydrateComponentTree(event)" in registry
+    assert "data-component-members" in registry
+    assert 'class="fix-registry__tree-node' in registry
+    assert 'class="fix-registry__references"' in registry
+    assert 'class="fix-transcribe__group"' in transcribe
+    assert "entry.groups.map((nested)" in transcribe
+    assert "font-weight: 700" not in styles
+
+
 @pytest.mark.parametrize(("page_name", "task_name"), WORKFLOW_STEPS)
 def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: str) -> None:
     page = (DOCS / "pipeline" / "tasks" / f"{page_name}.md").read_text(encoding="utf-8")

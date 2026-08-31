@@ -99,16 +99,16 @@ class Stamped:
         """A rung FIX splits across a date field and a time field.
 
         The two halves add: the date field is the day, the clock field is the
-        time on it. A clock read on its own is anchored to the epoch's day --
-        by the text reader when it is given no day, and by its column's type
-        when it has one -- so only its within-day part is the value here.
+        time on it. A clock read on its own may already be typed on the epoch's
+        day, so only its within-day part is combined with the best known day.
         """
         date, clock = self.fields
         day = read(date)
         on = read(clock, day if day is not None else recorded)  # type: ignore[call-arg]
-        if on is None or day is None:
-            return day if on is None else on
-        return day - day % A_DAY + on % A_DAY
+        if on is None:
+            return day
+        base = day if day is not None else recorded
+        return on if base is None else base - base % A_DAY + on % A_DAY
 
     def _entry(
         self,
@@ -165,7 +165,13 @@ class Stamped:
 
     # -- whole columns --------------------------------------------------------
 
-    def arrow(self, columns: Mapping[str, Any], eventtypes: Any, rows: int) -> tuple[Any, Any]:
+    def arrow(
+        self,
+        columns: Mapping[str, Any],
+        eventtypes: Any,
+        rows: int,
+        anchor: Any | None = None,
+    ) -> tuple[Any, Any]:
         """`(instant, kind)` per row for this rung, over a batch of parsed rows.
 
         `kind` is None for a rung that reads fields, which have no type to
@@ -173,9 +179,9 @@ class Stamped:
         """
         if self.is_column:
             return self._arrow_entry(columns.get(self.column), eventtypes, rows)
-        return self._arrow_fields(columns, rows), None
+        return self._arrow_fields(columns, rows, anchor), None
 
-    def _arrow_fields(self, columns: Mapping[str, Any], rows: int) -> Any:
+    def _arrow_fields(self, columns: Mapping[str, Any], rows: int, anchor: Any | None) -> Any:
         """One field rung over a whole batch, as epoch nanoseconds."""
         read = [columns.get(name) for name in self.fields]
         if any(column is None for column in read):
@@ -189,9 +195,20 @@ class Stamped:
         # belonged on.
         date, clock = (self._arrow_nanos(column, rows) for column in read)
         compute = pyarrow.compute
-        within = compute.subtract(clock, compute.multiply(compute.divide(clock, A_DAY), A_DAY))
-        floor = compute.subtract(date, compute.multiply(compute.divide(date, A_DAY), A_DAY))
-        return compute.coalesce(compute.add(compute.subtract(date, floor), within), clock, date)
+        within = compute.subtract(clock, self._arrow_day_floor(clock))
+        base = date if anchor is None else compute.coalesce(date, anchor)
+        return compute.coalesce(compute.add(self._arrow_day_floor(base), within), clock, date)
+
+    @staticmethod
+    def _arrow_day_floor(column: Any) -> Any:
+        """Start of each UTC day under Arrow's truncating integer division."""
+        compute = pyarrow.compute
+        adjusted = compute.if_else(
+            compute.less(column, 0),
+            compute.subtract(column, pyarrow.scalar(A_DAY - 1, pyarrow.int64())),
+            column,
+        )
+        return compute.multiply(compute.divide(adjusted, A_DAY), A_DAY)
 
     def _arrow_entry(self, column: Any, eventtypes: Any, rows: int) -> tuple[Any, Any]:
         """The preferred entry of one regulatory group, per row, in kernels.
@@ -300,7 +317,9 @@ A_DAY = SECONDS_A_DAY * NANOS
 #:    transmission.
 #: 6. `OrigSendingTime <122>` -- on a `PossDupFlag <43>` resend, when the
 #:    message *first* went out. Still transmission, but the original one.
-#: 7. `SendingTime <52>` -- transmission, and the last FIX clock there is.
+#: 7. `OnBehalfOfSendingTime <370>` -- the upstream sender's transmission
+#:    where a hub relayed the message. It precedes the hub's own clock.
+#: 8. `SendingTime <52>` -- current transmission, and the last FIX clock there is.
 #:
 #: Below all of them is the recording clock the log header stamped, which is
 #: not in this table because it is not something the message said: it is
@@ -322,8 +341,22 @@ TRANSACTED: tuple[Stamped, ...] = (
     Stamped(name="MDEntry", fields=("mdentrydate", "mdentrytime")),
     Stamped(name="OrigTime", fields=("origtime",)),
     Stamped(name="OrigSendingTime", fields=("origsendingtime",)),
+    Stamped(name="OnBehalfOfSendingTime", fields=("onbehalfofsendingtime",)),
     Stamped(name="SendingTime", fields=("sendingtime",)),
 )
+
+#: FIX fields that say when a lifecycle was made upstream, best first. These
+#: are deliberately separate from `TRANSACTED`: transmission is useful
+#: creation evidence but it does not replace a business transaction's time.
+CREATED: tuple[Stamped, ...] = tuple(
+    rung
+    for rung in TRANSACTED
+    if rung.name in {"OrigTime", "OrigSendingTime", "OnBehalfOfSendingTime", "SendingTime"}
+)
+
+#: Source recorded when the package-owned event-time field states `unix`
+#: directly rather than leaving it to the standard FIX clock chain.
+STATED_EVENT_TIME = "REKEP.Unix"
 
 #: What `resolve` records when no clock the message carries answered, and the
 #: log's own header time is all there is.
@@ -407,6 +440,8 @@ def resolve(
     *,
     eventtype: EventType | int | None = None,
     recorded: int | None = None,
+    stated: int | None = None,
+    anchor: int | None = None,
     member: Callable[[Any, str], Any] | None = None,
 ) -> Transacted:
     """The most coherent transaction time, and the rung that answered.
@@ -418,9 +453,12 @@ def resolve(
     one has a parsed message and the other has typed columns -- while the
     chain they walk is the same one.
     """
+    if stated is not None:
+        return Transacted(stated, STATED_EVENT_TIME)
     reader = member or Stamped.member
     for rung in TRANSACTED:
-        found = rung.transacted(read, entries, eventtype, recorded, reader)
+        day = anchor if anchor is not None else recorded
+        found = rung.transacted(read, entries, eventtype, day, reader)
         if found is not None:
             return found
     if recorded:
@@ -428,10 +466,74 @@ def resolve(
     return Transacted()
 
 
+def resolve_created(read: Callable[[str], Any], *, stated: int | None = None) -> int:
+    """Lifecycle creation from an explicit value or FIX origination evidence."""
+    if stated is not None:
+        return stated
+    for rung in CREATED:
+        found = read(rung.fields[0])
+        if found is not None:
+            return found
+    return 0
+
+
+def resolve_recorded(local: int | None, stated: int | None = None) -> int:
+    """Recording time, preferring the capture's own clock to a carried value."""
+    return local or stated or 0
+
+
 # -- whole columns ------------------------------------------------------------
 
 
-def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple[Any, Any]:
+def _residual_mdentry_columns(columns: Mapping[str, Any], rows: int) -> dict[str, Any]:
+    """Top-level MDEntry clocks projected without consuming their residual entries.
+
+    A `NoMDEntries` row is deliberately left alone: its clocks belong to each
+    entry, not to the enclosing message. The scalar market reader segments that
+    group and remains the authority for those per-entry instants.
+    """
+    entries = columns.get("entries")
+    if entries is None or not rows:
+        return {}
+    if isinstance(entries, pyarrow.ChunkedArray):
+        entries = entries.combine_chunks()
+    if entries.null_count == rows:
+        return {}
+    compute = pyarrow.compute
+    items = compute.list_flatten(entries)
+    if not len(items):
+        return {}
+    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
+    keys = compute.struct_field(items, "key")
+    values = compute.struct_field(items, "value")
+    comp = compute.struct_field(items, "comp")
+    grouped = compute.fill_null(compute.equal(keys, "NoMDEntries"), False)
+    grouped_rows = compute.filter(parents, grouped)
+    outside_counted = (
+        compute.invert(compute.is_in(parents, value_set=grouped_rows))
+        if len(grouped_rows)
+        else pyarrow.repeat(True, len(parents))
+    )
+    outside = compute.and_(outside_counted, compute.is_null(comp))
+    row_ids = sequence(rows)
+    projected: dict[str, Any] = {}
+    for column, key in (("mdentrydate", "MDEntryDate"), ("mdentrytime", "MDEntryTime")):
+        wanted = compute.and_(outside, compute.fill_null(compute.equal(keys, key), False))
+        matched_parents = compute.filter(parents, wanted)
+        projected[column] = compute.take(
+            compute.filter(values, wanted),
+            compute.index_in(row_ids, value_set=matched_parents),
+        )
+    return projected
+
+
+def resolve_arrow(
+    columns: Mapping[str, Any],
+    recorded: Any,
+    rows: int,
+    *,
+    stated: Any | None = None,
+) -> tuple[Any, Any]:
     """`(unix, unixsource)` for a whole batch of parsed rows.
 
     The columnar execution of `resolve`, over the columns a parsed row already
@@ -442,13 +544,26 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
     second table.
     """
     compute = pyarrow.compute
-    found = pyarrow.nulls(rows, pyarrow.int64())
-    source = pyarrow.nulls(rows, pyarrow.string())
+    residual = _residual_mdentry_columns(columns, rows)
+    if residual:
+        columns = {**columns, **residual}
+    sending = Stamped._arrow_nanos(columns.get("sendingtime"), rows)
+    anchor = compute.coalesce(sending, recorded.cast(pyarrow.int64(), safe=False))
+    found = (
+        pyarrow.nulls(rows, pyarrow.int64())
+        if stated is None
+        else stated.cast(pyarrow.int64(), safe=False)
+    )
+    source = compute.if_else(
+        compute.is_valid(found),
+        pyarrow.scalar(STATED_EVENT_TIME),
+        pyarrow.scalar(None, pyarrow.string()),
+    )
     eventtypes = columns.get("eventtype")
     for rung in TRANSACTED:
         if compute.all(compute.is_valid(found), min_count=0).as_py() and rows:
             break
-        reading, kinds = rung.arrow(columns, eventtypes, rows)
+        reading, kinds = rung.arrow(columns, eventtypes, rows, anchor)
         if reading is None:
             continue
         fill = compute.and_(compute.is_null(found), compute.is_valid(reading))
@@ -470,3 +585,38 @@ def resolve_arrow(columns: Mapping[str, Any], recorded: Any, rows: int) -> tuple
         compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64())),
         compute.fill_null(source, pyarrow.scalar(NO_CLOCK)),
     )
+
+
+def resolve_created_arrow(
+    columns: Mapping[str, Any], rows: int, *, stated: Any | None = None
+) -> Any:
+    """`resolve_created` over typed columns, preserving an explicit epoch zero."""
+    compute = pyarrow.compute
+    found = (
+        pyarrow.nulls(rows, pyarrow.int64())
+        if stated is None
+        else stated.cast(pyarrow.int64(), safe=False)
+    )
+    for rung in CREATED:
+        reading, _ = rung.arrow(columns, None, rows)
+        if reading is not None:
+            found = compute.coalesce(found, reading)
+    return compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64()))
+
+
+def resolve_recorded_arrow(local: Any, stated: Any | None, rows: int) -> Any:
+    """`resolve_recorded` over columns; zero is the envelope's absent sentinel."""
+    compute = pyarrow.compute
+    carried = (
+        pyarrow.nulls(rows, pyarrow.int64())
+        if stated is None
+        else stated.cast(pyarrow.int64(), safe=False)
+    )
+    recorded = (
+        pyarrow.nulls(rows, pyarrow.int64())
+        if local is None
+        else local.cast(pyarrow.int64(), safe=False)
+    )
+    local_present = compute.and_(compute.is_valid(recorded), compute.not_equal(recorded, 0))
+    found = compute.if_else(local_present, recorded, carried)
+    return compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64()))

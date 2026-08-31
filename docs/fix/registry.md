@@ -3,6 +3,9 @@
 Search the repository's FIX components and fields. The catalog is rebuilt from
 `data/fix/` with every deployment.
 
+Open a component to follow referenced components and repeating groups
+recursively; long reference lists stay collapsed.
+
 A query answers by identity first -- a tag, a MsgType, a name, part of one --
 and reaches the record's prose only when nothing named it. `54` is one field,
 not the ten whose descriptions mention 54:

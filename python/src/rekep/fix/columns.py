@@ -95,6 +95,7 @@ _COMMON_FIELDS: tuple[str, ...] = (
     "LastPx",
     "LastQty",
     "TransactTime",
+    "OrigTime",
     "Text",
 )
 
@@ -186,6 +187,7 @@ _STAMP_FIELDS: tuple[str, ...] = (
     "OrigSendingTime",
     "OnBehalfOfSendingTime",
     "TransactTime",
+    "OrigTime",
     "ValidUntilTime",
 )
 

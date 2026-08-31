@@ -27,7 +27,13 @@ from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
 from rekep.market.orders import Execution, Order, _quantity_transition
-from rekep.market.transacted import TRANSACTED, Transacted, resolve
+from rekep.market.transacted import (
+    TRANSACTED,
+    Transacted,
+    resolve,
+    resolve_created,
+    resolve_recorded,
+)
 from rekep.text.fixmsg import FixMsg
 
 TMarketEvent = TypeVar("TMarketEvent", bound=MarketEvent)
@@ -42,6 +48,7 @@ CARRIED_FIELDS: tuple[str, ...] = (
     "TargetCompID",
     "SendingTime",
     "OrigSendingTime",
+    "OnBehalfOfSendingTime",
     "OrigTime",
     "PossDupFlag",
     "TransactTime",
@@ -389,6 +396,18 @@ class MarketTags:
                     found[value] = handler
         return types.MappingProxyType(found)
 
+    def message_kind(self, value: Any) -> str:
+        """One rendered MsgType in the wire spelling the dispatch tables use."""
+        raw = str(value or "")
+        for source in dict.fromkeys((self.registry, FixRegistry.from_builtin())):
+            entry = source.field(35)
+            if entry is None:
+                continue
+            encoded = entry.fix.encode(raw)
+            if encoded != raw:
+                return encoded
+        return raw
+
     @functools.cached_property
     def names_by_tag(self) -> Mapping[str, str]:
         """Back from the selected wire tag to the standard name that earned it."""
@@ -554,6 +573,9 @@ class FixEvents(Convertible):
     recunix: int = 0
     """When the line was recorded, which is the reader's clock and not the venue's."""
 
+    creaunix: int | None = None
+    """Creation time already resolved by a parsed row; otherwise read from FIX."""
+
     registry: FixRegistry | None = None
     """Optional dictionary overriding standard tags for this feed."""
 
@@ -696,7 +718,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _message_kind(self) -> str:
         """Declared MsgType, or the narrow field-based fallback."""
-        return self.get("MsgType") or self._inferred()
+        return self.dictionary.message_kind(self.get("MsgType") or self._inferred())
 
     def __iter__(self) -> Iterator[MarketEvent]:
         """Every market event the message carries, in the order it carries them."""
@@ -865,6 +887,7 @@ class FixEvents(Convertible):
             venue=self.venue,
             mic=self.mic,
             recunix=self.recunix,
+            creaunix=self.creaunix,
             registry=self.registry,
             fix_version=self.version,
         )
@@ -1088,8 +1111,8 @@ class FixEvents(Convertible):
             registry=self.registry,
             version=self.version,
             unix=self.unix,
-            creaunix=self.unix,
-            recunix=self.recunix or self.unix,
+            creaunix=self.creation_unix,
+            recunix=self.recorded_unix,
             **self._shared(),
             **overrides,
         )
@@ -1210,14 +1233,37 @@ class FixEvents(Convertible):
         answer, and two copies of it would be two answers that agreed until
         they did not.
         """
-        recorded = unix_value(self.get("SendingTime")) or self.recunix or None
+        sending = unix_value(self.get("SendingTime"))
         return resolve(
             self._clock,
             self._stamps,
             eventtype=self._event_type,
-            recorded=recorded,
+            recorded=self.recorded_unix or None,
+            stated=self._rekep_clock("Unix"),
+            anchor=sending if sending is not None else self.recorded_unix or None,
             member=self._stamp_member,
         )
+
+    @functools.cached_property
+    def creation_unix(self) -> int:
+        """Upstream lifecycle creation, apart from event and recording clocks."""
+        stated = self.creaunix if self.creaunix is not None else self._rekep_clock("CreaUnix")
+        return resolve_created(self._clock, stated=stated)
+
+    @functools.cached_property
+    def recorded_unix(self) -> int:
+        """Capture time, with a carried recording clock only where it is absent."""
+        return resolve_recorded(self.recunix, self._rekep_clock("RecUnix"))
+
+    def _rekep_clock(self, name: str) -> int | None:
+        """One package-owned epoch-nanosecond field, or None when malformed."""
+        found = self.get(f"REKEP.{name}")
+        if found is None:
+            return None
+        try:
+            return int(str(found).strip())
+        except (TypeError, ValueError):
+            return None
 
     def _clock(self, name: str, day: int | None = None) -> int | None:
         """One FIX clock this message carries, in epoch nanoseconds."""

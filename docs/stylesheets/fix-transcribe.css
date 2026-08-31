@@ -37,7 +37,7 @@
   background: var(--rekep-elevated);
   color: var(--registry-muted);
   font-size: 0.56rem;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1;
   white-space: nowrap;
@@ -75,7 +75,7 @@
   margin-bottom: 0.35rem;
   color: var(--registry-muted);
   font-size: 0.61rem;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
@@ -127,7 +127,7 @@
 .fix-transcribe__controls label > span {
   color: var(--registry-muted);
   font-size: 0.54rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
@@ -160,7 +160,7 @@
   margin-right: 0.15rem;
   color: var(--registry-muted);
   font-size: 0.54rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
@@ -182,7 +182,7 @@
   background: var(--registry-panel);
   color: var(--md-default-fg-color);
   font-size: 0.62rem;
-  font-weight: 650;
+  font-weight: 500;
   transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
@@ -272,12 +272,34 @@
 }
 
 .fix-transcribe__structure > header,
-.fix-transcribe__component > header,
-.fix-transcribe__group > header {
+.fix-transcribe__component > summary,
+.fix-transcribe__group > summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
+}
+
+.fix-transcribe__component > summary,
+.fix-transcribe__group > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.fix-transcribe__component > summary::-webkit-details-marker,
+.fix-transcribe__group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.md-typeset .fix-transcribe__component > summary::before,
+.md-typeset .fix-transcribe__group > summary::before {
+  display: none;
+}
+
+.fix-transcribe__component > summary > div:first-of-type,
+.fix-transcribe__group > summary > div:first-of-type {
+  min-width: 0;
+  flex: 1;
 }
 
 .fix-transcribe__structure h3,
@@ -337,26 +359,27 @@
   background: var(--rekep-panel);
 }
 
-.fix-transcribe__component > header {
+.fix-transcribe__component > summary {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--registry-border);
 }
 
-.fix-transcribe__component > header span,
-.fix-transcribe__group > header span:first-child {
+.fix-transcribe__component > summary > div:first-of-type > span,
+.fix-transcribe__group > summary > div:first-of-type > span {
   display: block;
   color: var(--registry-muted);
   font-size: 0.5rem;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
 .fix-transcribe__component h4 {
   color: var(--md-default-fg-color);
   font-size: 0.78rem;
+  font-weight: 500;
 }
 
-.fix-transcribe__component > header a {
+.fix-transcribe__component > summary a {
   color: var(--registry-muted);
   font-size: 0.54rem;
 }
@@ -365,7 +388,7 @@
   color: var(--md-default-fg-color);
 }
 
-.fix-transcribe__component > header a:hover,
+.fix-transcribe__component > summary a:hover,
 .fix-transcribe a.fix-registry__name:hover {
   color: var(--registry-orange);
 }
@@ -377,7 +400,7 @@
   border-radius: var(--rekep-radius-sm);
 }
 
-.fix-transcribe__group > header {
+.fix-transcribe__group > summary {
   padding: 0.5rem 0.55rem;
   background: var(--rekep-elevated);
 }
@@ -386,6 +409,7 @@
   color: var(--md-default-fg-color);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.66rem;
+  font-weight: 500;
 }
 
 .fix-transcribe__group-meta {
@@ -423,12 +447,12 @@
   gap: 0.6rem;
   color: var(--registry-muted);
   font-size: 0.53rem;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .fix-transcribe__entry-head span:last-child {
   color: var(--registry-muted);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .fix-transcribe__members,
@@ -457,10 +481,11 @@
   gap: 0.35rem;
 }
 
-.fix-transcribe__member strong {
+.fix-transcribe__member-name {
   overflow: hidden;
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.58rem;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -539,7 +564,7 @@
 .fix-transcribe__rules summary {
   color: var(--md-default-fg-color);
   font-size: 0.64rem;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .fix-transcribe__rules p {
@@ -593,11 +618,11 @@
   .fix-transcribe__samples > span,
   .fix-transcribe__samples button,
   .fix-transcribe__note,
-  .fix-transcribe__component > header span,
-  .fix-transcribe__component > header a,
+  .fix-transcribe__component > summary span,
+  .fix-transcribe__component > summary a,
   .fix-transcribe__group-meta,
   .fix-transcribe__entry-head,
-  .fix-transcribe__member strong,
+  .fix-transcribe__member-name,
   .fix-transcribe__member small,
   .fix-transcribe__member code,
   .fix-transcribe__state {

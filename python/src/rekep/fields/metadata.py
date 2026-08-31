@@ -44,6 +44,12 @@ IDENTITY = "identity"
 #: What a sort key means when a declaration only says there is one.
 ASCENDING = "asc"
 
+# The first parenthesized all-caps word is the standard's abbreviation:
+# `Good Till Date (GTD)` is regularly rendered as `GTD` by key/value bridges.
+# Later parentheses are context -- `... (SVP) ... counterparty (CCP)` names
+# SVP, not CCP -- and numbers such as `(231)` are tag references.
+_FIX_VALUE_ABBREVIATION = re.compile(r"\(([A-Z][A-Z0-9]{1,7})\)")
+
 
 #: A version list that holds for every version, which is what a field outside
 #: the standard has.
@@ -173,8 +179,18 @@ class FixFieldValue(Convertible):
         object.__setattr__(self, "aliases", _aliases(self.aliases))
 
     def spellings(self) -> tuple[str, ...]:
-        """Every spelling that names this value, the raw value included."""
-        return tuple(one for one in (self.meaning, *self.aliases, self.value) if one)
+        """Every spelling that names this value, the raw value included.
+
+        Uppercase abbreviations in the standard's meaning are names too:
+        `Good Till Date (GTD)` is the source for both spellings.
+        """
+        matched = _FIX_VALUE_ABBREVIATION.search(self.meaning)
+        abbreviation = () if matched is None else (matched.group(1),)
+        return tuple(
+            dict.fromkeys(
+                one for one in (self.meaning, *abbreviation, *self.aliases, self.value) if one
+            )
+        )
 
     def into_dict(self) -> dict[str, Any]:
         """The value as it is stored, carrying aliases only when it has any."""

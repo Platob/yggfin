@@ -63,6 +63,7 @@ FIXMSG_FIELDS: tuple[str, ...] = (
     "PossResend",
     "SendingTime",
     "OrigSendingTime",
+    "OrigTime",
     "OnBehalfOfSendingTime",
     "ApplVerID",
     "CstmApplVerID",
@@ -166,7 +167,6 @@ FIXMSG_FIELDS: tuple[str, ...] = (
 #: holds this list to it. Kept here rather than imported because `fix` is
 #: underneath `market` and must not depend on it.
 MARKET_FIELDS: tuple[str, ...] = (
-    "OrigTime",
     "TradeDate",
     "ExpireTime",
     "ExpireDate",

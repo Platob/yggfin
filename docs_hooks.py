@@ -193,16 +193,19 @@ def _lift_session_header(document: dict[str, Any], key: str) -> None:
             member["fix"] = {"tag": tag, "name": member["name"]}
 
 
-def _column(member: dict[str, Any], enums: dict[str, Any]) -> dict[str, Any]:
-    """One column as a lineage row: its type, its origin, and its role.
+def _column(
+    member: dict[str, Any], enums: dict[str, Any], default_name: str = "item"
+) -> dict[str, Any]:
+    """One column as a lineage node: its type, its origin, and its role.
 
     `fix` is the whole of the origin a widget can show honestly -- the tag and
     the name a value is read from -- so the registry's version and message-type
     lists are dropped here. They belong to the field, and the registry pages
-    already hold them.
+    already hold them. Struct fields, list items and map pairs stay nested
+    because their path is part of the persisted contract.
     """
     column: dict[str, Any] = {
-        "name": member["name"],
+        "name": member.get("name") or default_name,
         "type": member["type"],
         "description": member.get("description") or "",
     }
@@ -226,6 +229,14 @@ def _column(member: dict[str, Any], enums: dict[str, Any]) -> dict[str, Any]:
     unit = (member.get("metadata") or {}).get("unit")
     if unit:
         column["unit"] = unit
+    if member.get("fields"):
+        column["fields"] = [_column(child, enums) for child in member["fields"]]
+    if member.get("item"):
+        column["item"] = _column(member["item"], enums, "item")
+    if member.get("key"):
+        column["key_field"] = _column(member["key"], enums, "key")
+    if member.get("value"):
+        column["value_field"] = _column(member["value"], enums, "value")
     return column
 
 
