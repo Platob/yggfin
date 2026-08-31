@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingProvisionCashSettlValueDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingProvisionCashSettlValueDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42182"
+  },
+  "item": {
+   "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42183"
+     }
+    }
+   ]
+  }
+ }
+}

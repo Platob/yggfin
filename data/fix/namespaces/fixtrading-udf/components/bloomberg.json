@@ -1,0 +1,2361 @@
+{
+ "name": "Bloomberg",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "Bloomberg",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Bloomberg",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AdjustedEndCash",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6379"
+    }
+   },
+   {
+    "name": "AffirmativeDetermination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9898"
+    }
+   },
+   {
+    "name": "AllInPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5526"
+    }
+   },
+   {
+    "name": "AllinPriceFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5989"
+    }
+   },
+   {
+    "name": "AllocAccountSubID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5534"
+    }
+   },
+   {
+    "name": "AllocAccountSubID2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5535"
+    }
+   },
+   {
+    "name": "AllocAccountSubID3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5536"
+    }
+   },
+   {
+    "name": "AllocAgreementDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6505"
+    }
+   },
+   {
+    "name": "AllocAgreementDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6504"
+    }
+   },
+   {
+    "name": "AllocationBlockOriginalFace",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9878"
+    }
+   },
+   {
+    "name": "AllocationDetailInstiturionId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9868"
+    }
+   },
+   {
+    "name": "AllocationDetailOriginalFace",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9974"
+    }
+   },
+   {
+    "name": "AllocationDetailPrincipal",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9907"
+    }
+   },
+   {
+    "name": "AllocationIndicator2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5527"
+    }
+   },
+   {
+    "name": "AllocCalcAgentLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6506"
+    }
+   },
+   {
+    "name": "AllocCurrentFace",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5538"
+    }
+   },
+   {
+    "name": "AllocCurrentFaceNew",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5547"
+    }
+   },
+   {
+    "name": "AllocGrossTradeAmt1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5539"
+    }
+   },
+   {
+    "name": "AllocGrossTradeAmt2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5542"
+    }
+   },
+   {
+    "name": "AllocGrossTradeAmtNew",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5546"
+    }
+   },
+   {
+    "name": "AllocMatrixAgreementType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6507"
+    }
+   },
+   {
+    "name": "AllocMcaAnnexDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6508"
+    }
+   },
+   {
+    "name": "AllocReceiverId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9798"
+    }
+   },
+   {
+    "name": "AllocReceiverIdtype",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9712"
+    }
+   },
+   {
+    "name": "AllocReceiverRole",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9628"
+    }
+   },
+   {
+    "name": "AllocRecieverRole",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9692"
+    }
+   },
+   {
+    "name": "AllocTarget",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9905"
+    }
+   },
+   {
+    "name": "AllowLimits",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5922"
+    }
+   },
+   {
+    "name": "Application",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9906"
+    }
+   },
+   {
+    "name": "AskDelta",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5089"
+    }
+   },
+   {
+    "name": "AskPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9139"
+    }
+   },
+   {
+    "name": "AssumedCoupon",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5518"
+    }
+   },
+   {
+    "name": "AutoexFirmStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9106"
+    }
+   },
+   {
+    "name": "BangCounterParty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9914"
+    }
+   },
+   {
+    "name": "BangFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9913"
+    }
+   },
+   {
+    "name": "BangGroups",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9909"
+    }
+   },
+   {
+    "name": "BangMinFill",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9912"
+    }
+   },
+   {
+    "name": "BangMMID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9910"
+    }
+   },
+   {
+    "name": "BangMMIDQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9911"
+    }
+   },
+   {
+    "name": "BangQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9889"
+    }
+   },
+   {
+    "name": "BangSDP",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9915"
+    }
+   },
+   {
+    "name": "BangStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9786"
+    }
+   },
+   {
+    "name": "BarrierDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9132"
+    }
+   },
+   {
+    "name": "BarrierEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9134"
+    }
+   },
+   {
+    "name": "BarrierLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9131"
+    }
+   },
+   {
+    "name": "BarrierLevel2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9137"
+    }
+   },
+   {
+    "name": "BarrierRebate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9135"
+    }
+   },
+   {
+    "name": "BarrierRebate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9138"
+    }
+   },
+   {
+    "name": "BarrierStartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9133"
+    }
+   },
+   {
+    "name": "BarrierStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9130"
+    }
+   },
+   {
+    "name": "BBBankNum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9122"
+    }
+   },
+   {
+    "name": "BBExecSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9150"
+    }
+   },
+   {
+    "name": "BbgTradeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9877"
+    }
+   },
+   {
+    "name": "BenchmarkBidYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5521"
+    }
+   },
+   {
+    "name": "BenchmarkOfferPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5520"
+    }
+   },
+   {
+    "name": "BenchmarkOfferSpread",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5523"
+    }
+   },
+   {
+    "name": "BenchmarkOfferYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5522"
+    }
+   },
+   {
+    "name": "BidDelta",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5088"
+    }
+   },
+   {
+    "name": "BidForwardPointsDelta",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5188"
+    }
+   },
+   {
+    "name": "BidPriceForDiscountQuotes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5923"
+    }
+   },
+   {
+    "name": "BidYTM",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5927"
+    }
+   },
+   {
+    "name": "BlotOrderStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9014"
+    }
+   },
+   {
+    "name": "BlotSeq",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9902"
+    }
+   },
+   {
+    "name": "BlotTransactionNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9667"
+    }
+   },
+   {
+    "name": "BLPAllocationRefTicketNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9012"
+    }
+   },
+   {
+    "name": "BLPAllocationticketnumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9011"
+    }
+   },
+   {
+    "name": "BLPProgType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6378"
+    }
+   },
+   {
+    "name": "BLPTicketType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9654"
+    }
+   },
+   {
+    "name": "BTOrderInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9881"
+    }
+   },
+   {
+    "name": "BTReportInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9882"
+    }
+   },
+   {
+    "name": "BWitemID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5545"
+    }
+   },
+   {
+    "name": "CalcAgentLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6384"
+    }
+   },
+   {
+    "name": "CallOrPut",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9072"
+    }
+   },
+   {
+    "name": "CallPutCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9034"
+    }
+   },
+   {
+    "name": "Checkout",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9105"
+    }
+   },
+   {
+    "name": "CLExecID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9170"
+    }
+   },
+   {
+    "name": "CompetingQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9518"
+    }
+   },
+   {
+    "name": "CompetingQuoteDealer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9517"
+    }
+   },
+   {
+    "name": "CompetingQuoteFwdPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9521"
+    }
+   },
+   {
+    "name": "CompetingQuoteLeg2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9520"
+    }
+   },
+   {
+    "name": "CompetingQuoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9523"
+    }
+   },
+   {
+    "name": "CounterDepositAccrual",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9117"
+    }
+   },
+   {
+    "name": "CounterDepositRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9118"
+    }
+   },
+   {
+    "name": "CounterDepositUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9116"
+    }
+   },
+   {
+    "name": "CounterpartyAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5515"
+    }
+   },
+   {
+    "name": "Coupon3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9890"
+    }
+   },
+   {
+    "name": "Currency1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9073"
+    }
+   },
+   {
+    "name": "Currency2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9074"
+    }
+   },
+   {
+    "name": "CurrentFace",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5537"
+    }
+   },
+   {
+    "name": "CurveDateRate1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5540"
+    }
+   },
+   {
+    "name": "CurveDateRate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5541"
+    }
+   },
+   {
+    "name": "DateFrom",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9883"
+    }
+   },
+   {
+    "name": "DateTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9884"
+    }
+   },
+   {
+    "name": "Dealer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5178"
+    }
+   },
+   {
+    "name": "DealerResponseTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9650"
+    }
+   },
+   {
+    "name": "DealNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9885"
+    }
+   },
+   {
+    "name": "DeliveryType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9127"
+    }
+   },
+   {
+    "name": "DeltaHedgeSpotDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9112"
+    }
+   },
+   {
+    "name": "DeltaLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9075"
+    }
+   },
+   {
+    "name": "DeltaLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9161"
+    }
+   },
+   {
+    "name": "DeltaNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9083"
+    }
+   },
+   {
+    "name": "DeltaNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9141"
+    }
+   },
+   {
+    "name": "DepoActionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6812"
+    }
+   },
+   {
+    "name": "DepoDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6813"
+    }
+   },
+   {
+    "name": "DepositAccrual",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9114"
+    }
+   },
+   {
+    "name": "DepositRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9115"
+    }
+   },
+   {
+    "name": "DepositUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9113"
+    }
+   },
+   {
+    "name": "DiscountRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9893"
+    }
+   },
+   {
+    "name": "DiscretionDelta",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9886"
+    }
+   },
+   {
+    "name": "DiscretionMinFill",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9888"
+    }
+   },
+   {
+    "name": "DiscretionQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9887"
+    }
+   },
+   {
+    "name": "ExchangeReserve",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9899"
+    }
+   },
+   {
+    "name": "ExclusiveFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5920"
+    }
+   },
+   {
+    "name": "ExecDeltaHedge",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9015"
+    }
+   },
+   {
+    "name": "ExerciseEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9189"
+    }
+   },
+   {
+    "name": "ExerciseStartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9188"
+    }
+   },
+   {
+    "name": "ExpiryTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9124"
+    }
+   },
+   {
+    "name": "ExpiryTimeCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9125"
+    }
+   },
+   {
+    "name": "ExternalMarkUp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5921"
+    }
+   },
+   {
+    "name": "ExTransactionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5176"
+    }
+   },
+   {
+    "name": "FillOrKillAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5669"
+    }
+   },
+   {
+    "name": "FireQuantity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9815"
+    }
+   },
+   {
+    "name": "FirmAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5543"
+    }
+   },
+   {
+    "name": "FirmNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9999"
+    }
+   },
+   {
+    "name": "FixedIncomeFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9894"
+    }
+   },
+   {
+    "name": "FixedIncomeSubFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9895"
+    }
+   },
+   {
+    "name": "FixingDate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9121"
+    }
+   },
+   {
+    "name": "FOKPosition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5671"
+    }
+   },
+   {
+    "name": "ForwardRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9099"
+    }
+   },
+   {
+    "name": "ForwardRateLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9160"
+    }
+   },
+   {
+    "name": "FxMarketType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9102"
+    }
+   },
+   {
+    "name": "FXOptionStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9019"
+    }
+   },
+   {
+    "name": "FXSplitTradeFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9101"
+    }
+   },
+   {
+    "name": "GammaLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9076"
+    }
+   },
+   {
+    "name": "GammaLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9149"
+    }
+   },
+   {
+    "name": "GammaNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9085"
+    }
+   },
+   {
+    "name": "GammaNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9142"
+    }
+   },
+   {
+    "name": "GeneralLedgerAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5933"
+    }
+   },
+   {
+    "name": "Haircut",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5525"
+    }
+   },
+   {
+    "name": "HedgeTradeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9016"
+    }
+   },
+   {
+    "name": "HighTenorQuoteId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9220"
+    }
+   },
+   {
+    "name": "IndexRatio",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5925"
+    }
+   },
+   {
+    "name": "InvPositionDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5530"
+    }
+   },
+   {
+    "name": "InvPositionQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5531"
+    }
+   },
+   {
+    "name": "LastMktBloomberg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7777"
+    }
+   },
+   {
+    "name": "LegAccrued",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9661"
+    }
+   },
+   {
+    "name": "LegAskPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9148"
+    }
+   },
+   {
+    "name": "LegBlotSeqNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9663"
+    }
+   },
+   {
+    "name": "LegExchangeRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9657"
+    }
+   },
+   {
+    "name": "LegFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9658"
+    }
+   },
+   {
+    "name": "LegFuturesCBroker",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9665"
+    }
+   },
+   {
+    "name": "LegFuturesDBroker",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9666"
+    }
+   },
+   {
+    "name": "LegIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9879"
+    }
+   },
+   {
+    "name": "LegLastForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5191"
+    }
+   },
+   {
+    "name": "LegLastSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5190"
+    }
+   },
+   {
+    "name": "LegMarketType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5193"
+    }
+   },
+   {
+    "name": "LegNotionalAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9018"
+    }
+   },
+   {
+    "name": "LegNotionalCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9017"
+    }
+   },
+   {
+    "name": "LegPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9656"
+    }
+   },
+   {
+    "name": "LegPrincipal",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9660"
+    }
+   },
+   {
+    "name": "LegSplitTradeFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5192"
+    }
+   },
+   {
+    "name": "LegSubFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9659"
+    }
+   },
+   {
+    "name": "LegTransactionSeqNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9664"
+    }
+   },
+   {
+    "name": "LegTSTicketNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9662"
+    }
+   },
+   {
+    "name": "LegYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9655"
+    }
+   },
+   {
+    "name": "MasterAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5517"
+    }
+   },
+   {
+    "name": "MatDatEndYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5668"
+    }
+   },
+   {
+    "name": "MatDatStartYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5667"
+    }
+   },
+   {
+    "name": "MatrixAgreementType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6385"
+    }
+   },
+   {
+    "name": "Maturity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5052"
+    }
+   },
+   {
+    "name": "MaturitySize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5666"
+    }
+   },
+   {
+    "name": "NetGrossInd2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6817"
+    }
+   },
+   {
+    "name": "NoBlots",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9901"
+    }
+   },
+   {
+    "name": "NoCompetingQuotes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9516"
+    }
+   },
+   {
+    "name": "NoInvPositions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5529"
+    }
+   },
+   {
+    "name": "NoNotes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9610"
+    }
+   },
+   {
+    "name": "NoReRoutedOrders",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9525"
+    }
+   },
+   {
+    "name": "NoteId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9612"
+    }
+   },
+   {
+    "name": "NoteText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9613"
+    }
+   },
+   {
+    "name": "NoteType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9611"
+    }
+   },
+   {
+    "name": "NoTickets",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9103"
+    }
+   },
+   {
+    "name": "NoTransactionCosts",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9471"
+    }
+   },
+   {
+    "name": "NoUnderlyingReinvCoupon",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6223"
+    }
+   },
+   {
+    "name": "NumberofAllocsReceivers",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9848"
+    }
+   },
+   {
+    "name": "OfferForwardPointsDelta",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5189"
+    }
+   },
+   {
+    "name": "OfferPriceForDiscountQuotes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5924"
+    }
+   },
+   {
+    "name": "OfferYTC",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5926"
+    }
+   },
+   {
+    "name": "OfferYTM",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5928"
+    }
+   },
+   {
+    "name": "OptionProductType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9136"
+    }
+   },
+   {
+    "name": "OptionStrategy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9126"
+    }
+   },
+   {
+    "name": "OriginalDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5524"
+    }
+   },
+   {
+    "name": "PegDifference2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9880"
+    }
+   },
+   {
+    "name": "PositionAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5670"
+    }
+   },
+   {
+    "name": "PrepaymentSpeed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5519"
+    }
+   },
+   {
+    "name": "PriceType3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9904"
+    }
+   },
+   {
+    "name": "PricingNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9896"
+    }
+   },
+   {
+    "name": "PrimarySecurityIdentifier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9108"
+    }
+   },
+   {
+    "name": "Principal2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9903"
+    }
+   },
+   {
+    "name": "QuoteMOPLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9652"
+    }
+   },
+   {
+    "name": "QuoteQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9908"
+    }
+   },
+   {
+    "name": "QuoteType1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5082"
+    }
+   },
+   {
+    "name": "RateEffectiveDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5532"
+    }
+   },
+   {
+    "name": "RepeatingTicketNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9104"
+    }
+   },
+   {
+    "name": "ReRoutedBrokerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9282"
+    }
+   },
+   {
+    "name": "ReRoutedOrderId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9526"
+    }
+   },
+   {
+    "name": "ReRoutedOrderQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9291"
+    }
+   },
+   {
+    "name": "ReRoutedPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9401"
+    }
+   },
+   {
+    "name": "ReRoutedSettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9281"
+    }
+   },
+   {
+    "name": "Reserved75",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5676"
+    }
+   },
+   {
+    "name": "Reserved79",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6814"
+    }
+   },
+   {
+    "name": "Reserved80",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6815"
+    }
+   },
+   {
+    "name": "Reserved81",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6816"
+    }
+   },
+   {
+    "name": "Reserved82",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7066"
+    }
+   },
+   {
+    "name": "Reserved83",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7067"
+    }
+   },
+   {
+    "name": "Reserved84",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7068"
+    }
+   },
+   {
+    "name": "Reserved85",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7069"
+    }
+   },
+   {
+    "name": "RhoLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9079"
+    }
+   },
+   {
+    "name": "RhoLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9162"
+    }
+   },
+   {
+    "name": "RhoNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9088"
+    }
+   },
+   {
+    "name": "RhoNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9163"
+    }
+   },
+   {
+    "name": "Routetosession",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7779"
+    }
+   },
+   {
+    "name": "SalesBook",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5528"
+    }
+   },
+   {
+    "name": "SecondaryIndividualAllocID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5672"
+    }
+   },
+   {
+    "name": "SecurityExchangeBloomberg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7778"
+    }
+   },
+   {
+    "name": "Series",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9891"
+    }
+   },
+   {
+    "name": "SeriesNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9897"
+    }
+   },
+   {
+    "name": "SettlCurrAccruedInterestAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5673"
+    }
+   },
+   {
+    "name": "SettlCurrency2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9120"
+    }
+   },
+   {
+    "name": "SettlCurrNetMoney",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5674"
+    }
+   },
+   {
+    "name": "SettlFixingDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9119"
+    }
+   },
+   {
+    "name": "Source",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5177"
+    }
+   },
+   {
+    "name": "SpotAskRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9194"
+    }
+   },
+   {
+    "name": "SpotHedgeLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9080"
+    }
+   },
+   {
+    "name": "SpotHedgeLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9154"
+    }
+   },
+   {
+    "name": "SpotHedgeNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9089"
+    }
+   },
+   {
+    "name": "SpotHedgeNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9145"
+    }
+   },
+   {
+    "name": "SpotNotional",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9123"
+    }
+   },
+   {
+    "name": "SpotQuoteId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9222"
+    }
+   },
+   {
+    "name": "StageOrderIsInquiry",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9575"
+    }
+   },
+   {
+    "name": "StagingTargetPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9574"
+    }
+   },
+   {
+    "name": "StoryField",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5930"
+    }
+   },
+   {
+    "name": "SubjectOrNot",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9653"
+    }
+   },
+   {
+    "name": "SubjectTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9651"
+    }
+   },
+   {
+    "name": "SwapTradeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9876"
+    }
+   },
+   {
+    "name": "TargetPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9576"
+    }
+   },
+   {
+    "name": "TaxRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5675"
+    }
+   },
+   {
+    "name": "ThetaLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9078"
+    }
+   },
+   {
+    "name": "ThetaLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9153"
+    }
+   },
+   {
+    "name": "ThetaNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9087"
+    }
+   },
+   {
+    "name": "ThetaNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9144"
+    }
+   },
+   {
+    "name": "TickMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9816"
+    }
+   },
+   {
+    "name": "TouchType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9187"
+    }
+   },
+   {
+    "name": "TradeCorrectType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5533"
+    }
+   },
+   {
+    "name": "TradingStrategy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9107"
+    }
+   },
+   {
+    "name": "TradingSystemReferenceTicketNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9010"
+    }
+   },
+   {
+    "name": "TradingSystemTicketNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9009"
+    }
+   },
+   {
+    "name": "TransactionCostAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9476"
+    }
+   },
+   {
+    "name": "TransactionCostCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9473"
+    }
+   },
+   {
+    "name": "TransactionCostCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9477"
+    }
+   },
+   {
+    "name": "TransactionCostFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9475"
+    }
+   },
+   {
+    "name": "TransactionCostRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9474"
+    }
+   },
+   {
+    "name": "TransactionCostTypes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9472"
+    }
+   },
+   {
+    "name": "UnderlyingEndAcrdIntAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6294"
+    }
+   },
+   {
+    "name": "UnderlyingReinvCouponAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6226"
+    }
+   },
+   {
+    "name": "UnderlyingReinvCouponDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6224"
+    }
+   },
+   {
+    "name": "UnderlyingReinvCouponRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6225"
+    }
+   },
+   {
+    "name": "UnderlyingStartAcrdIntAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6293"
+    }
+   },
+   {
+    "name": "UUID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9998"
+    }
+   },
+   {
+    "name": "VannaLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9082"
+    }
+   },
+   {
+    "name": "VannaLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9158"
+    }
+   },
+   {
+    "name": "VannaNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9097"
+    }
+   },
+   {
+    "name": "VegaLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9077"
+    }
+   },
+   {
+    "name": "VegaLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9151"
+    }
+   },
+   {
+    "name": "VegaNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9086"
+    }
+   },
+   {
+    "name": "VegaNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9143"
+    }
+   },
+   {
+    "name": "VolatilityLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9098"
+    }
+   },
+   {
+    "name": "VolatilityLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9159"
+    }
+   },
+   {
+    "name": "VommaLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9081"
+    }
+   },
+   {
+    "name": "VommaLegAsk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9157"
+    }
+   },
+   {
+    "name": "VommaNet",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9096"
+    }
+   },
+   {
+    "name": "VommaNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9146"
+    }
+   },
+   {
+    "name": "VonnaNetAskValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9147"
+    }
+   },
+   {
+    "name": "VWAPExceed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9814"
+    }
+   },
+   {
+    "name": "VWAPMatching",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9813"
+    }
+   },
+   {
+    "name": "VWAPOrder",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9810"
+    }
+   },
+   {
+    "name": "VWAPStart",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9811"
+    }
+   },
+   {
+    "name": "VWAPStop",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9812"
+    }
+   },
+   {
+    "name": "VWAPType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9799"
+    }
+   },
+   {
+    "name": "WireTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9668"
+    }
+   },
+   {
+    "name": "WorkStation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9900"
+    }
+   },
+   {
+    "name": "Yield2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9892"
+    }
+   },
+   {
+    "name": "YieldFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5929"
+    }
+   }
+  ]
+ }
+}

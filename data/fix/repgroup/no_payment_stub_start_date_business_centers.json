@@ -1,0 +1,29 @@
+{
+ "name": "NoPaymentStubStartDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentStubStartDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42705"
+  },
+  "item": {
+   "name": "PaymentStubStartDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStubStartDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42706"
+     }
+    }
+   ]
+  }
+ }
+}

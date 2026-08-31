@@ -1,0 +1,29 @@
+{
+ "name": "NoLegProvisionOptionRelevantUnderlyingDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegProvisionOptionRelevantUnderlyingDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40938"
+  },
+  "item": {
+   "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionOptionRelevantUnderlyingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40510"
+     }
+    }
+   ]
+  }
+ }
+}

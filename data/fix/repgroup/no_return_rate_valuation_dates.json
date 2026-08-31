@@ -1,0 +1,37 @@
+{
+ "name": "NoReturnRateValuationDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoReturnRateValuationDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42772"
+  },
+  "item": {
+   "name": "ReturnRateValuationDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ReturnRateValuationDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42773"
+     }
+    },
+    {
+     "name": "ReturnRateValuationDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42774"
+     }
+    }
+   ]
+  }
+ }
+}

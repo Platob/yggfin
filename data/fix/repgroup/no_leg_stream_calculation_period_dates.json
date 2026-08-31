@@ -1,0 +1,37 @@
+{
+ "name": "NoLegStreamCalculationPeriodDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegStreamCalculationPeriodDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41638"
+  },
+  "item": {
+   "name": "LegStreamCalculationPeriodDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamCalculationPeriodDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41639"
+     }
+    },
+    {
+     "name": "LegStreamCalculationPeriodDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41640"
+     }
+    }
+   ]
+  }
+ }
+}

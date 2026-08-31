@@ -1,0 +1,30 @@
+{
+ "name": "NoNotAffectedMarketSegments",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoNotAffectedMarketSegments",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1793"
+  },
+  "item": {
+   "name": "NotAffectedMarketSegment",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "NotAffectedMarketSegmentID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1794"
+     }
+    }
+   ]
+  }
+ }
+}

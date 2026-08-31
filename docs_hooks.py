@@ -50,23 +50,91 @@ def _write(target: Path, payload: Any) -> None:
 def _registry_catalog(root: Path) -> dict[str, Any]:
     """The browser catalog from the registry used by this checkout."""
     registry = FixRegistry(cache_dir=root / "data" / "fix")
+    namespaces = registry.namespaces()
+    fields_by_namespace = {
+        namespace: tuple(registry.field_records(namespace).values()) for namespace in namespaces
+    }
+    components_by_namespace = {
+        namespace: tuple(registry.component_records(namespace).values()) for namespace in namespaces
+    }
+    groups_by_namespace = {
+        namespace: tuple(registry.repeating_group_records(namespace).values())
+        for namespace in namespaces
+    }
+    fields = [
+        _field_view(entry, namespace)
+        for namespace in namespaces
+        for entry in sorted(
+            fields_by_namespace[namespace],
+            key=lambda one: (
+                one.fix.tag is None,
+                one.fix.tag or 0,
+                one.fix.canonical,
+            ),
+        )
+    ]
+    components = [
+        (entry, namespace)
+        for namespace in namespaces
+        for entry in sorted(components_by_namespace[namespace], key=lambda one: one.name)
+    ]
+    groups = [
+        (entry, namespace)
+        for namespace in namespaces
+        for entry in sorted(groups_by_namespace[namespace], key=lambda one: one.name)
+    ]
+    namespace_order = {namespace: index for index, namespace in enumerate(namespaces)}
+    sources = sorted(
+        (dict(source) for source in registry.source_manifest()),
+        key=lambda source: (
+            namespace_order.get(str(source.get("namespace", "standard")), len(namespace_order)),
+            str(source.get("source_id", "")),
+        ),
+    )
     return {
         "versions": list(registry.versions),
+        "namespaces": list(namespaces),
+        "sources": sources,
+        "coverage": {
+            "components": len(components),
+            "groups": len(groups),
+            "fields": len(fields),
+            "enumerations": sum(bool(field.get("values")) for field in fields),
+            "versions": len(registry.versions),
+            "namespaces": len(namespaces),
+            "sources": len(sources),
+            "by_namespace": [
+                {
+                    "namespace": namespace,
+                    "fields": len(fields_by_namespace[namespace]),
+                    "components": len(components_by_namespace[namespace]),
+                    "groups": len(groups_by_namespace[namespace]),
+                    "enumerations": sum(
+                        bool(entry.fix.enumerated) for entry in fields_by_namespace[namespace]
+                    ),
+                }
+                for namespace in namespaces
+            ],
+        },
         "components": [
-            {**entry.into_dict(), "slug": entry.slug}
-            for entry in sorted(registry.component_records().values(), key=lambda one: one.name)
+            {
+                **entry.into_dict(),
+                "slug": entry.slug,
+                "namespace": namespace,
+                "record_kind": "component",
+            }
+            for entry, namespace in components
         ],
-        "fields": [
-            _field_view(entry)
-            for entry in sorted(
-                registry.field_records().values(),
-                key=lambda one: (
-                    one.fix.tag is None,
-                    one.fix.tag or 0,
-                    one.fix.canonical,
-                ),
-            )
+        "groups": [
+            {
+                **entry.into_dict(),
+                "slug": entry.slug,
+                "namespace": namespace,
+                "record_kind": "group",
+            }
+            for entry, namespace in groups
         ],
+        "fields": fields,
     }
 
 
@@ -110,7 +178,7 @@ def _enum_catalog() -> dict[str, Any]:
     return {"enums": found}
 
 
-def _field_view(entry: Field) -> dict[str, Any]:
+def _field_view(entry: Field, namespace: str = "standard") -> dict[str, Any]:
     """One field record as the page reads it: flat, with nothing left packed.
 
     A stored record is a `Field` document -- the Arrow reading at the top, the
@@ -121,11 +189,12 @@ def _field_view(entry: Field) -> dict[str, Any]:
     lives in the build that serves the page, not in the store.
     """
     fix = entry.fix
-    view: dict[str, Any] = {"name": fix.canonical}
+    view: dict[str, Any] = {"name": fix.canonical, "namespace": namespace}
     if fix.tag is not None:
         view["tag"] = fix.tag
     for key, value in (
-        ("type", fix.type),
+        ("type", str(entry.dtype) if entry.dtype is not None else "unknown"),
+        ("fix_type", fix.type),
         ("description", entry.description),
         ("column", fix.column),
         ("note", fix.note),
@@ -136,6 +205,7 @@ def _field_view(entry: Field) -> dict[str, Any]:
         ("components", list(fix.components)),
         ("event_types", {code: kind.name for code, kind in fix.event_types.items()}),
         ("states", {code: state.name for code, state in fix.states.items()}),
+        ("sources", list(fix.sources)),
     ):
         if value:
             view[key] = value

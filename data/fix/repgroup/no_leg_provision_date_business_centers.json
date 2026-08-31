@@ -1,0 +1,33 @@
+{
+ "name": "NoLegProvisionDateBusinessCenters",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegProvisionDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40939"
+  },
+  "item": {
+   "name": "LegProvisionDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40452"
+     }
+    }
+   ]
+  }
+ }
+}

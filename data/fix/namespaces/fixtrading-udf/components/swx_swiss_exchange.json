@@ -1,0 +1,329 @@
+{
+ "name": "SWXSwissExchange",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "SWXSwissExchange",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SWXSwissExchange",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "BookCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6570"
+    }
+   },
+   {
+    "name": "BusinessTransactionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6556"
+    }
+   },
+   {
+    "name": "CalcInclSettlCurrAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6559"
+    }
+   },
+   {
+    "name": "ClientDomicile",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6522"
+    }
+   },
+   {
+    "name": "ConfirmReasonCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6557"
+    }
+   },
+   {
+    "name": "CounterpartyClientDomicile",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6534"
+    }
+   },
+   {
+    "name": "CounterpartyClientReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6535"
+    }
+   },
+   {
+    "name": "CounterpartyOrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6536"
+    }
+   },
+   {
+    "name": "CounterpartyReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6521"
+    }
+   },
+   {
+    "name": "CounterpartyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6523"
+    }
+   },
+   {
+    "name": "InclSettlementAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6531"
+    }
+   },
+   {
+    "name": "InclSettlementCurrencyCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6532"
+    }
+   },
+   {
+    "name": "InterestPaymentCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6560"
+    }
+   },
+   {
+    "name": "IsCancelled",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6564"
+    }
+   },
+   {
+    "name": "MDExecDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6571"
+    }
+   },
+   {
+    "name": "MDExecTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6572"
+    }
+   },
+   {
+    "name": "NewsEventDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6517"
+    }
+   },
+   {
+    "name": "NewsID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6515"
+    }
+   },
+   {
+    "name": "NewsType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6518"
+    }
+   },
+   {
+    "name": "NewsValidUntil",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6516"
+    }
+   },
+   {
+    "name": "NumberOfQuotes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6566"
+    }
+   },
+   {
+    "name": "NumberOfTrades",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6573"
+    }
+   },
+   {
+    "name": "OrigTrdMatchID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6555"
+    }
+   },
+   {
+    "name": "ParticipantRoleIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6558"
+    }
+   },
+   {
+    "name": "PublicTradeTypeCodeList",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6533"
+    }
+   },
+   {
+    "name": "QuoteReqRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6519"
+    }
+   },
+   {
+    "name": "QuoteReqTransType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6530"
+    }
+   },
+   {
+    "name": "RandomisedInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6568"
+    }
+   },
+   {
+    "name": "ReferencePriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6567"
+    }
+   },
+   {
+    "name": "SegrClearingAccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6525"
+    }
+   },
+   {
+    "name": "SegrSettleAccountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6526"
+    }
+   },
+   {
+    "name": "SettlCurrAmtValid",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6561"
+    }
+   },
+   {
+    "name": "SettlementChainControlCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6562"
+    }
+   },
+   {
+    "name": "SettlementInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6527"
+    }
+   },
+   {
+    "name": "SettlementStatusCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6563"
+    }
+   },
+   {
+    "name": "SourceExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6565"
+    }
+   },
+   {
+    "name": "TransactionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6524"
+    }
+   },
+   {
+    "name": "TransitionStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6569"
+    }
+   }
+  ]
+ }
+}

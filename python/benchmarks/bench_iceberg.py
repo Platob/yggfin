@@ -124,7 +124,7 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
     warehouse = root / "warehouse"
     warehouse.mkdir(parents=True, exist_ok=True)
     return IcebergCatalog(
-        name="bench",
+        catalog_name="bench",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(root / 'catalog.db').as_posix()}",
@@ -534,7 +534,7 @@ def sweep_fs(rows: int, days: int) -> None:
             "warehouse": warehouse.as_uri(),
             **({} if cached else {"rekep.io.cache-bytes": "0"}),
         }
-        catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
+        catalog = IcebergCatalog(catalog_name=f"fs{name}", properties=properties)
         return catalog.dataset(
             "bench.logs", field=Message.into_field(), table_properties=OPTIMISED
         ).create_with()

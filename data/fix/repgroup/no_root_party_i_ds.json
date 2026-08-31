@@ -1,0 +1,90 @@
+{
+ "name": "NoRootPartyIDs",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoRootPartyIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1116"
+  },
+  "item": {
+   "name": "RootPartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RootPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1117"
+     }
+    },
+    {
+     "name": "RootPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1118"
+     }
+    },
+    {
+     "name": "RootPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1119"
+     }
+    },
+    {
+     "name": "RootPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2388"
+     }
+    },
+    {
+     "name": "NoRootPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1120"
+     },
+     "item": {
+      "name": "RootPartySubID",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "RootPartySubID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1121"
+        }
+       },
+       {
+        "name": "RootPartySubIDType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1122"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

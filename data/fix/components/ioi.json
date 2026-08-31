@@ -8,7 +8,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "IOI",
@@ -17,12 +18,24 @@
   "fix": {
    "component": "IOI",
    "msgtype": "6",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "ApplicationSequenceControl",
     "type": "struct",
@@ -72,13 +85,80 @@
     "fields": []
    },
    {
-    "name": "Parties",
-    "type": "struct",
+    "name": "NoPartyIDs",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "Parties"
+     "tag": "453"
     },
-    "fields": []
+    "item": {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
+      },
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
+       "item": {
+        "name": "PartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "PartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "523"
+          }
+         },
+         {
+          "name": "PartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "803"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
    },
    {
     "name": "FinancingDetails",
@@ -90,22 +170,121 @@
     "fields": []
    },
    {
-    "name": "UndInstrmtGrp",
-    "type": "struct",
+    "name": "NoUnderlyings",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UndInstrmtGrp"
+     "tag": "711"
     },
-    "fields": []
+    "item": {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      }
+     ]
+    }
    },
    {
-    "name": "RelatedInstrumentGrp",
-    "type": "struct",
+    "name": "NoRelatedInstruments",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "RelatedInstrumentGrp"
+     "tag": "1647"
     },
-    "fields": []
+    "item": {
+     "name": "RelatedInstrument",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedInstrumentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1648"
+       }
+      },
+      {
+       "name": "RelatedSymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1649"
+       }
+      },
+      {
+       "name": "RelatedSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1650"
+       }
+      },
+      {
+       "name": "RelatedSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1651"
+       }
+      },
+      {
+       "name": "RelatedSecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1652"
+       }
+      },
+      {
+       "name": "RelatedMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1653"
+       }
+      },
+      {
+       "name": "RelatedToSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2413"
+       }
+      },
+      {
+       "name": "RelatedToSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2414"
+       }
+      },
+      {
+       "name": "RelatedToStreamXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2415"
+       }
+      },
+      {
+       "name": "RelatedToDividendPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2417"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "Side",
@@ -155,22 +334,95 @@
     }
    },
    {
-    "name": "Stipulations",
-    "type": "struct",
+    "name": "NoStipulations",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "Stipulations"
+     "tag": "232"
     },
-    "fields": []
+    "item": {
+     "name": "Stipulation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StipulationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "233"
+       }
+      },
+      {
+       "name": "StipulationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "234"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "InstrmtLegIOIGrp",
-    "type": "struct",
+    "name": "NoLegs",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "InstrmtLegIOIGrp"
+     "tag": "555"
     },
-    "fields": []
+    "item": {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegIOIQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "682"
+       }
+      },
+      {
+       "name": "NoLegStipulations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "683"
+       },
+       "item": {
+        "name": "LegStipulation",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegStipulationType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "688"
+          }
+         },
+         {
+          "name": "LegStipulationValue",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "689"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
    },
    {
     "name": "PriceType",
@@ -181,13 +433,26 @@
     }
    },
    {
-    "name": "PriceQualifierGrp",
-    "type": "struct",
+    "name": "NoPriceQualifiers",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PriceQualifierGrp"
+     "tag": "2709"
     },
-    "fields": []
+    "item": {
+     "name": "PriceQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2710"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "Price",
@@ -222,13 +487,26 @@
     }
    },
    {
-    "name": "IOIQualGrp",
-    "type": "struct",
+    "name": "NoIOIQualifiers",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "IOIQualGrp"
+     "tag": "199"
     },
-    "fields": []
+    "item": {
+     "name": "IOIQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IOIQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "104"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "Text",
@@ -271,13 +549,34 @@
     }
    },
    {
-    "name": "RoutingGrp",
-    "type": "struct",
+    "name": "NoRoutingIDs",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "RoutingGrp"
+     "tag": "215"
     },
-    "fields": []
+    "item": {
+     "name": "RoutingID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RoutingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "216"
+       }
+      },
+      {
+       "name": "RoutingID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "217"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "SpreadOrBenchmarkCurveData",
@@ -289,13 +588,50 @@
     "fields": []
    },
    {
-    "name": "RelativeValueGrp",
-    "type": "struct",
+    "name": "NoRelativeValues",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "RelativeValueGrp"
+     "tag": "2529"
     },
-    "fields": []
+    "item": {
+     "name": "RelativeValue",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelativeValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2530"
+       }
+      },
+      {
+       "name": "RelativeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2531"
+       }
+      },
+      {
+       "name": "RelativeValueSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2532"
+       }
+      },
+      {
+       "name": "RelativeValueTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3004"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "YieldData",
@@ -303,6 +639,14 @@
     "nullable": true,
     "fix": {
      "component": "YieldData"
+    },
+    "fields": []
+   },
+   {
+    "name": "StandardTrailer",
+    "type": "struct",
+    "fix": {
+     "component": "StandardTrailer"
     },
     "fields": []
    }

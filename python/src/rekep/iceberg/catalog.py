@@ -23,7 +23,7 @@ PYARROW_FILE_IO = "rekep.arrow_file_io.ArrowFileIO"
 class IcebergCatalog(Convertible):
     """One pyiceberg catalog, with the verbs a stack needs."""
 
-    name: str = "default"
+    catalog_name: str = "default"
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -56,7 +56,7 @@ class IcebergCatalog(Convertible):
             from rekep.arrow_file_io import inferred_properties
 
             properties = self._tracked_file_io_properties(inferred_properties(self.properties))
-            loaded = load_catalog(self.name, **properties)
+            loaded = load_catalog(self.catalog_name, **properties)
             self.__dict__["catalog"] = loaded
             return loaded
 
@@ -198,10 +198,11 @@ class IcebergCatalog(Convertible):
             if loaded is not None:
                 loaded.properties.update(self._tracked_file_io_properties(configured))
 
-    def dataset(self, name: str, **kwargs: Any) -> Any:
+    def dataset(self, name: str, *, namespace: str | None = None, **kwargs: Any) -> Any:
         """A dataset on this catalog: the way to read and write a table here.
 
-        `name` becomes the supplied field's outer name. Without a field, the
+        A dotted `name` supplies its namespace. Passing `namespace` keeps the
+        table name and schema name visibly separate. Without a field, the
         existing table is loaded once and its declaration is read back.
 
         Handed *this* catalog rather than left to build its own, the way
@@ -212,6 +213,8 @@ class IcebergCatalog(Convertible):
         from rekep.arrow_file_io import STORAGE_PROPERTIES
         from rekep.iceberg.dataset import IcebergDataset
 
+        namespace, name = _coordinates(name, namespace)
+        identifier = f"{namespace}.{name}"
         storage = kwargs.get("table_properties") or {}
         self._configure_locations(
             [
@@ -226,7 +229,7 @@ class IcebergCatalog(Convertible):
         field = kwargs.pop("field", None)
         table = None
         if field is None:
-            table = self.load_table(name)
+            table = self.load_table(identifier)
             field = StructField.from_iceberg_schema(
                 table.schema(),
                 name,
@@ -235,7 +238,14 @@ class IcebergCatalog(Convertible):
             )
         else:
             field = Field.from_(field).with_name(name)
-        built = IcebergDataset(field=field, catalog=self.name, properties=self.properties, **kwargs)
+        built = IcebergDataset(
+            name=name,
+            namespace=namespace,
+            field=field,
+            catalog_name=self.catalog_name,
+            catalog_properties=self.properties,
+            **kwargs,
+        )
         built.__dict__["store"] = self
         built.__dict__["_owns_store"] = False
         if table is not None:
@@ -281,4 +291,17 @@ class IcebergNamespace(Convertible):
 
     def dataset(self, name: str, **kwargs: Any) -> Any:
         """A dataset for a table in this namespace, named without the prefix."""
-        return self.catalog.dataset(f"{self.name}.{name}", **kwargs)
+        return self.catalog.dataset(name, namespace=self.name, **kwargs)
+
+
+def _coordinates(name: str, namespace: str | None) -> tuple[str, str]:
+    """A table's explicit namespace and unqualified name."""
+    if namespace is None:
+        namespace, separator, name = name.rpartition(".")
+        if not separator:
+            raise ValueError("an Iceberg table name needs an explicit namespace")
+    elif "." in name:
+        raise ValueError("pass either a dotted name or namespace=, not both")
+    if not name or not namespace or any(not part for part in namespace.split(".")):
+        raise ValueError("an Iceberg table needs a non-empty name and namespace")
+    return namespace, name

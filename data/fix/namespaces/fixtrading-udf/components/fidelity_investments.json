@@ -1,0 +1,41 @@
+{
+ "name": "FidelityInvestments",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "FidelityInvestments",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FidelityInvestments",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "Desk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5698"
+    }
+   },
+   {
+    "name": "RestrictedBrokers",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5699"
+    }
+   }
+  ]
+ }
+}

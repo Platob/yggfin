@@ -1,0 +1,1247 @@
+{
+ "name": "NoUnderlyingStreams",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingStreams",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40540"
+  },
+  "item": {
+   "name": "UnderlyingStream",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40541"
+     }
+    },
+    {
+     "name": "UnderlyingStreamXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42016"
+     }
+    },
+    {
+     "name": "UnderlyingStreamDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40542"
+     }
+    },
+    {
+     "name": "UnderlyingStreamVersion",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43083"
+     }
+    },
+    {
+     "name": "UnderlyingStreamVersionEffectiveDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43084"
+     }
+    },
+    {
+     "name": "UnderlyingStreamPaySide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40543"
+     }
+    },
+    {
+     "name": "UnderlyingStreamReceiveSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40544"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalXIDRef",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42018"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40545"
+     }
+    },
+    {
+     "name": "UnderlyingStreamCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40546"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalDeterminationMethod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43085"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalAdjustments",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43086"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalFrequencyPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42019"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalFrequencyUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42020"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalCommodityFrequency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42021"
+     }
+    },
+    {
+     "name": "UnderlyingStreamNotionalUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42022"
+     }
+    },
+    {
+     "name": "UnderlyingStreamTotalNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42023"
+     }
+    },
+    {
+     "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42024"
+     }
+    },
+    {
+     "name": "UnderlyingStreamCommodity",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingStreamCommodity"
+     },
+     "fields": []
+    },
+    {
+     "name": "UnderlyingStreamEffectiveDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingStreamEffectiveDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "UnderlyingStreamTerminationDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingStreamTerminationDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "UnderlyingStreamCalculationPeriodDates",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingStreamCalculationPeriodDates"
+     },
+     "fields": []
+    },
+    {
+     "name": "UnderlyingPaymentStream",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingPaymentStream"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoUnderlyingPaymentSchedules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40664"
+     },
+     "item": {
+      "name": "UnderlyingPaymentSchedule",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingPaymentScheduleType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40665"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleXID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41881"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleXIDRef",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41882"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStubType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40666"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStartDateUnadjusted",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40667"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleEndDateUnadjusted",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40668"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentSchedulePaySide",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40669"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleReceiveSide",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40670"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleNotional",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40671"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40672"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40673"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateMultiplier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40674"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateSpread",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40675"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41883"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateUnitOfMeasure",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41884"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateConversionFactor",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41885"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateSpreadType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41886"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateSpreadPositionType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40676"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleRateTreatment",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40677"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixedAmount",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40678"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixedCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40679"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41887"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41888"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleSettlPeriodPriceUnitOfMeasure",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41889"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepUnitOfMeasure",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41890"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepFrequencyPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40680"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepFrequencyUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40681"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepOffsetValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40682"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40683"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepOffsetRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40684"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleStepRelativeTo",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40685"
+        }
+       },
+       {
+        "name": "NoUnderlyingPaymentScheduleRateSources",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "40704"
+        },
+        "item": {
+         "name": "UnderlyingPaymentScheduleRateSource",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPaymentScheduleRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40705"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40706"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40707"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateUnadjusted",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40686"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleWeight",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40687"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateRelativeTo",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40688"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateBusinessDayCnvtn",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40689"
+        }
+       },
+       {
+        "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "40966"
+        },
+        "item": {
+         "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40690"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateOffsetPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40691"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateOffsetUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40692"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateOffsetDayType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40693"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDayDistribution",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41891"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDayCount",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41892"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingDateAdjusted",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40694"
+        }
+       },
+       {
+        "name": "NoUnderlyingPaymentScheduleFixingDays",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41878"
+        },
+        "item": {
+         "name": "UnderlyingPaymentScheduleFixingDay",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41879"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDayNumber",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41880"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingLagPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41893"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingLagUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41894"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41895"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41896"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingTime",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40695"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleFixingTimeBusinessCenter",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40696"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleInterimExchangePaymentDateRelativeTo",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40697"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleInterimExchangeDatesBizDayConvention",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40698"
+        }
+       },
+       {
+        "name": "NoUnderlyingPaymentScheduleInterimExchangeDateBusinessCenters",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "40967"
+        },
+        "item": {
+         "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40699"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40700"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40701"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetDayType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40702"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentScheduleInterimExchangeDateAdjusted",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40703"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoUnderlyingPaymentStubs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40708"
+     },
+     "item": {
+      "name": "UnderlyingPaymentStub",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingPaymentStubType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40709"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubLength",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40710"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubStartDate",
+        "type": "struct",
+        "nullable": true,
+        "fix": {
+         "component": "UnderlyingPaymentStubStartDate"
+        },
+        "fields": []
+       },
+       {
+        "name": "UnderlyingPaymentStubEndDate",
+        "type": "struct",
+        "nullable": true,
+        "fix": {
+         "component": "UnderlyingPaymentStubEndDate"
+        },
+        "fields": []
+       },
+       {
+        "name": "UnderlyingPaymentStubRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40711"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubFixedAmount",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40712"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubFixedCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40713"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40714"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40715"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexCurvePeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40716"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexCurveUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40717"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexRateMultiplier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40718"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexRateSpread",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40719"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexRateSpreadPositionType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40720"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexRateTreatment",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40721"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexCapRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40722"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexCapRateBuySide",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40723"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexCapRateSellSide",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40724"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexFloorRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40725"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexFloorRateBuySide",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40726"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndexFloorRateSellSide",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40727"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40728"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2Source",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40729"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2CurvePeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40730"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2CurveUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40731"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2RateMultiplier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40732"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2RateSpread",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40733"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2RateSpreadPositionType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40734"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2RateTreatment",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40735"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2CapRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40736"
+        }
+       },
+       {
+        "name": "UnderlyingPaymentStubIndex2FloorRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40737"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryStream",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingDeliveryStream"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoUnderlyingDeliverySchedules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41756"
+     },
+     "item": {
+      "name": "UnderlyingDeliverySchedule",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingDeliveryScheduleType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41757"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleXID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41758"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleNotional",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41759"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleNotionalUnitOfMeasure",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41760"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleNotionalCommodityFrequency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41761"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleNegativeTolerance",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41762"
+        }
+       },
+       {
+        "name": "UnderlyingDeliverySchedulePositiveTolerance",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41763"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleToleranceUnitOfMeasure",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41764"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleToleranceType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41765"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleSettlCountry",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41766"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleSettlTimeZone",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41767"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleSettlFlowType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41768"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleSettlHolidaysProcessingInstruction",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41769"
+        }
+       },
+       {
+        "name": "NoUnderlyingDeliveryScheduleSettlDays",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41770"
+        },
+        "item": {
+         "name": "UnderlyingDeliveryScheduleSettlDay",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingDeliveryScheduleSettlDay",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41771"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlTotalHours",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41772"
+           }
+          },
+          {
+           "name": "NoUnderlyingDeliveryScheduleSettlTimes",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41773"
+           },
+           "item": {
+            "name": "UnderlyingDeliveryScheduleSettlTime",
+            "type": "struct",
+            "fields": [
+             {
+              "name": "UnderlyingDeliveryScheduleSettlStart",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "41774"
+              }
+             },
+             {
+              "name": "UnderlyingDeliveryScheduleSettlEnd",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "41775"
+              }
+             },
+             {
+              "name": "UnderlyingDeliveryScheduleSettlTimeType",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "41776"
+              }
+             }
+            ]
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingStreamText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40547"
+     }
+    },
+    {
+     "name": "EncodedUnderlyingStreamTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40988"
+     }
+    },
+    {
+     "name": "EncodedUnderlyingStreamText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40989"
+     }
+    }
+   ]
+  }
+ }
+}

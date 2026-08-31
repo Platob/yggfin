@@ -1,0 +1,49 @@
+{
+ "name": "NoLegDeliveryScheduleSettlTimes",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegDeliveryScheduleSettlTimes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41425"
+  },
+  "item": {
+   "name": "LegDeliveryScheduleSettlTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegDeliveryScheduleSettlStart",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41426"
+     }
+    },
+    {
+     "name": "LegDeliveryScheduleSettlEnd",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41427"
+     }
+    },
+    {
+     "name": "LegDeliveryScheduleSettlTimeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41428"
+     }
+    }
+   ]
+  }
+ }
+}

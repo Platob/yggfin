@@ -571,10 +571,23 @@ def test_an_implementation_behind_an_optional_dependency_is_imported_by_the_docu
     pytest.importorskip("pyiceberg")
     from rekep.iceberg import IcebergDataset
 
-    field = Quote.into_field("a.b")
-    built = Dataset.from_dict({"kind": "iceberg", "field": field.into_dict(), "catalog": "c"})
+    field = Quote.into_field()
+    built = Dataset.from_dict(
+        {
+            "kind": "iceberg",
+            "name": "b",
+            "namespace": "a",
+            "field": field.into_dict(),
+            "catalog_name": "c",
+        }
+    )
     assert isinstance(built, IcebergDataset)
-    assert (built.name, built.namespace, built.field) == ("a.b", "a", field)
+    assert (built.name, built.namespace, built.field, built.catalog_name) == (
+        "b",
+        "a",
+        field.with_name("b"),
+        "c",
+    )
 
 
 def test_a_document_with_no_kind_says_what_it_could_have_said() -> None:

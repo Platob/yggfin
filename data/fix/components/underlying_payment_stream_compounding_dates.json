@@ -1,7 +1,8 @@
 {
  "name": "UnderlyingPaymentStreamCompoundingDates",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "UnderlyingPaymentStreamCompoundingDates",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "UnderlyingPaymentStreamCompoundingDates",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -85,6 +90,7 @@
     "SecurityListRequest",
     "SecurityListUpdateReport",
     "SecurityMassStatus",
+    "SecurityRiskMetricsReport",
     "SecurityStatus",
     "SecurityStatusRequest",
     "TradeCaptureReport",
@@ -104,22 +110,56 @@
     }
    },
    {
-    "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoUnderlyingPaymentStreamCompoundingDatesBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UnderlyingPaymentStreamCompoundingDatesBusinessCenterGrp"
+     "tag": "42915"
     },
-    "fields": []
+    "item": {
+     "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42916"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "UnderlyingPaymentStreamCompoundingDateGrp",
-    "type": "struct",
+    "name": "NoUnderlyingPaymentStreamCompoundingDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UnderlyingPaymentStreamCompoundingDateGrp"
+     "tag": "42901"
     },
-    "fields": []
+    "item": {
+     "name": "UnderlyingPaymentStreamCompoundingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamCompoundingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42902"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamCompoundingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42903"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "UnderlyingPaymentStreamCompoundingDatesRelativeTo",

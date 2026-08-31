@@ -4,7 +4,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "SettlInstructionsData",
@@ -12,10 +13,14 @@
   "nullable": true,
   "fix": {
    "component": "SettlInstructionsData",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AllocationInstruction",
     "AllocationInstructionAlert",
@@ -24,7 +29,9 @@
     "CollateralInquiry",
     "CollateralReport",
     "Confirmation",
-    "SettlementInstructions"
+    "SettlementInstructions",
+    "SettlementStatusReport",
+    "SettlementStatusRequest"
    ]
   },
   "fields": [
@@ -61,13 +68,110 @@
     }
    },
    {
-    "name": "DlvyInstGrp",
-    "type": "struct",
+    "name": "NoDlvyInst",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "DlvyInstGrp"
+     "tag": "85"
     },
-    "fields": []
+    "item": {
+     "name": "DlvyInst",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlInstSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "165"
+       }
+      },
+      {
+       "name": "DlvyInstType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "787"
+       }
+      },
+      {
+       "name": "NoSettlPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "781"
+       },
+       "item": {
+        "name": "SettlPartyID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "SettlPartyID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "782"
+          }
+         },
+         {
+          "name": "SettlPartyIDSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "783"
+          }
+         },
+         {
+          "name": "SettlPartyRole",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "784"
+          }
+         },
+         {
+          "name": "SettlPartyRoleQualifier",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2389"
+          }
+         },
+         {
+          "name": "NoSettlPartySubIDs",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "801"
+          },
+          "item": {
+           "name": "SettlPartySubID",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "SettlPartySubID",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "785"
+             }
+            },
+            {
+             "name": "SettlPartySubIDType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "786"
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
    }
   ]
  }

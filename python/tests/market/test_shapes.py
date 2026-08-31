@@ -94,8 +94,9 @@ def test_every_event_is_keyed_by_time_and_content(shape: type) -> None:
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)
-def test_every_event_is_laid_out_by_its_time_anchored_identity(shape: type) -> None:
-    assert shape.into_field().sort_keys() == {"hash": "asc"}
+def test_every_event_leaves_physical_sorting_to_the_writer(shape: type) -> None:
+    """Sorting is an explicit dataset cost, not work every event write inherits."""
+    assert shape.into_field().sort_keys() == {}
 
 
 @pytest.mark.parametrize("shape", EVENTS, ids=lambda cls: cls.__name__)

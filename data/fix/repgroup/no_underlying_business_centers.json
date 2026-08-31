@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40962"
+  },
+  "item": {
+   "name": "UnderlyingBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40963"
+     }
+    }
+   ]
+  }
+ }
+}

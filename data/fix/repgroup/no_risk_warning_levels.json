@@ -1,0 +1,53 @@
+{
+ "name": "NoRiskWarningLevels",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoRiskWarningLevels",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1559"
+  },
+  "item": {
+   "name": "RiskWarningLevel",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RiskWarningLevelAction",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1769"
+     }
+    },
+    {
+     "name": "RiskWarningLevelPercent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1560"
+     }
+    },
+    {
+     "name": "RiskWarningLevelAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1768"
+     }
+    },
+    {
+     "name": "RiskWarningLevelName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1561"
+     }
+    }
+   ]
+  }
+ }
+}

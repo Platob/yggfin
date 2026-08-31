@@ -1,0 +1,37 @@
+{
+ "name": "NoInstrumentScopeSecurityAltID",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoInstrumentScopeSecurityAltID",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1540"
+  },
+  "item": {
+   "name": "InstrumentScopeSecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentScopeSecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1541"
+     }
+    },
+    {
+     "name": "InstrumentScopeSecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1542"
+     }
+    }
+   ]
+  }
+ }
+}

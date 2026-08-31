@@ -1,0 +1,702 @@
+{
+ "name": "NoUnderlyingComplexEvents",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingComplexEvents",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2045"
+  },
+  "item": {
+   "name": "UnderlyingComplexEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2046"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutPaySide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2261"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutReceiveSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2262"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutUnderlier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2263"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2047"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutPercentage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2264"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2265"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2266"
+     }
+    },
+    {
+     "name": "UnderlyingComplexOptPayoutCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2947"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2048"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPricePercentage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2267"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPriceBoundaryMethod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2049"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPriceBoundaryPrecision",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2050"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPriceTimeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2051"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCondition",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2052"
+     }
+    },
+    {
+     "name": "NoUnderlyingComplexEventDates",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2053"
+     },
+     "item": {
+      "name": "UnderlyingComplexEventDate",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingComplexEventStartDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2054"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventEndDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2055"
+        }
+       },
+       {
+        "name": "NoUnderlyingComplexEventTimes",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "2056"
+        },
+        "item": {
+         "name": "UnderlyingComplexEventTime",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventStartTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2057"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventEndTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2058"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCurrencyOne",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2268"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCurrencyOneCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2948"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCurrencyTwo",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2269"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCurrencyTwoCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2949"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventQuoteBasis",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2270"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventFixedFXRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2271"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventSpotRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2419"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventForwardPoints",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2420"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventDeterminationMethod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2272"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCalculationAgent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2273"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventStrikePrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2274"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventStrikeFactor",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2275"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventStrikeNumberOfOptions",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2276"
+     }
+    },
+    {
+     "name": "NoUnderlyingComplexEventRateSources",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41732"
+     },
+     "item": {
+      "name": "UnderlyingComplexEventRateSource",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingComplexEventRateSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41733"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventRateSourceType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41734"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventReferencePage",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41735"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventReferencePageHeading",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41736"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventRelativeDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingComplexEventRelativeDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoUnderlyingComplexEventPeriods",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41729"
+     },
+     "item": {
+      "name": "UnderlyingComplexEventPeriod",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingComplexEventPeriodType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41730"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventBusinessCenter",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41731"
+        }
+       },
+       {
+        "name": "NoUnderlyingComplexEventSchedules",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41750"
+        },
+        "item": {
+         "name": "UnderlyingComplexEventSchedule",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventScheduleStartDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41751"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventScheduleEndDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41752"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41753"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventScheduleFrequencyUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41754"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventScheduleRollConvention",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41755"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "NoUnderlyingComplexEventPeriodDateTimes",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41726"
+        },
+        "item": {
+         "name": "UnderlyingComplexEventPeriodDateTime",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventPeriodDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41727"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventPeriodTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41728"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "NoUnderlyingComplexEventAveragingObservations",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41713"
+        },
+        "item": {
+         "name": "UnderlyingComplexEventAveragingObservation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventAveragingObservationNumber",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41714"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventAveragingWeight",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41715"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCreditEventsXIDRef",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2277"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCreditEventNotifyingParty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2278"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCreditEventBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2279"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCreditEventStandardSources",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2280"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventCreditEventMinimumSources",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2281"
+     }
+    },
+    {
+     "name": "NoUnderlyingComplexEventCreditEventSources",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41748"
+     },
+     "item": {
+      "name": "UnderlyingComplexEventCreditEventSource",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingComplexEventCreditEventSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41749"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoUnderlyingComplexEventCreditEvents",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41716"
+     },
+     "item": {
+      "name": "UnderlyingComplexEventCreditEvent",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingComplexEventCreditEventType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41717"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventCreditEventValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41718"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventCreditEventCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41719"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventCreditEventPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41720"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventCreditEventUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41721"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventCreditEventDayType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41722"
+        }
+       },
+       {
+        "name": "UnderlyingComplexEventCreditEventRateSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41723"
+        }
+       },
+       {
+        "name": "NoUnderlyingComplexEventCreditEventQualifiers",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41724"
+        },
+        "item": {
+         "name": "UnderlyingComplexEventCreditEventQualifier",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventCreditEventQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41725"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventFuturesPriceValuation",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2611"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventOptionsPriceValuation",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2612"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPVFinalPriceElectionFallback",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2613"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2282"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventXIDRef",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2283"
+     }
+    }
+   ]
+  }
+ }
+}

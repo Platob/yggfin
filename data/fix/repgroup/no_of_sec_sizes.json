@@ -1,0 +1,42 @@
+{
+ "name": "NoOfSecSizes",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoOfSecSizes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1177"
+  },
+  "item": {
+   "name": "OfSecSize",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MDSecSizeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1178"
+     }
+    },
+    {
+     "name": "MDSecSize",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1179"
+     }
+    }
+   ]
+  }
+ }
+}

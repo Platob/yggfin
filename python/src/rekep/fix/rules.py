@@ -132,12 +132,13 @@ CODEC_ANCHORS: Mapping[str, str] = MappingProxyType(
     }
 )
 
-#: A bare XML document, an XmlApi transport line, or a direction prefix whose
-#: next token is XML. Requiring XML immediately after the direction delimiter
-#: keeps an XML value inside FIX `Text <58>` under the FIX rule that owns its
-#: envelope.
+#: A bare XML document, a complete event after a transport prefix, an XmlApi
+#: line, or a direction prefix whose next token is XML. Complete events may
+#: follow any transport text; numbered envelope rules run first, so XML inside
+#: FIX `Text <58>` stays with the envelope that owns it.
 XML_PAYLOAD_PATTERN = joined_pattern(
     r"(?is)^[ \t]*(?:<\?xml\b[^>]*>\s*)?<[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
+    r"(?is)<event(?:\s|>).*?</event>[ \t\r\n]*$",
     r"(?is)^[^<\r\n]*\bXmlApi\b[^<\r\n]*<"
     r"(?:\?xml\b[^>]*>\s*<)?[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s|/?>)",
     r"(?is)^[ \t]*(?:Receiv(?:ing|ed)|Send(?:ing)?|Sent)[ \t]*:[ \t]*<"
@@ -238,11 +239,11 @@ MISC = Rule(
 #: An empty pattern makes this the final fall-through rule.
 OTHER = Rule(protocol=Protocol.OTHER, pattern="", codec="none")
 
-#: First match wins. The three shapes are mutually exclusive, so their order
-#: among themselves decides nothing; they lead the pattern rules because a FIX
-#: frame whose `Text <58>` says "heartbeat" is a message and not an
-#: operational line.
-DEFAULT_RULES: tuple[Rule, ...] = (XML, FIX, FIXML, UL, MISC, OTHER)
+#: First match wins. Numbered envelopes lead XML so a complete event inside
+#: `Text <58>` remains one FIX field. XML then leads the named shape because
+#: its attributes also resemble assignments. Every structured rule leads the
+#: operational patterns, so a message saying "heartbeat" remains a message.
+DEFAULT_RULES: tuple[Rule, ...] = (FIX, FIXML, XML, UL, MISC, OTHER)
 
 
 def _default_rules() -> list[Rule]:

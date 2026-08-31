@@ -1,0 +1,155 @@
+{
+ "name": "NoComplexEventPeriods",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoComplexEventPeriods",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41010"
+  },
+  "item": {
+   "name": "ComplexEventPeriod",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ComplexEventPeriodType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41011"
+     }
+    },
+    {
+     "name": "ComplexEventBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41012"
+     }
+    },
+    {
+     "name": "NoComplexEventSchedules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41031"
+     },
+     "item": {
+      "name": "ComplexEventSchedule",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ComplexEventScheduleStartDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41032"
+        }
+       },
+       {
+        "name": "ComplexEventScheduleEndDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41033"
+        }
+       },
+       {
+        "name": "ComplexEventScheduleFrequencyPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41034"
+        }
+       },
+       {
+        "name": "ComplexEventScheduleFrequencyUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41035"
+        }
+       },
+       {
+        "name": "ComplexEventScheduleRollConvention",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41036"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoComplexEventPeriodDateTimes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41007"
+     },
+     "item": {
+      "name": "ComplexEventPeriodDateTime",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ComplexEventPeriodDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41008"
+        }
+       },
+       {
+        "name": "ComplexEventPeriodTime",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41009"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoComplexEventAveragingObservations",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40994"
+     },
+     "item": {
+      "name": "ComplexEventAveragingObservation",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ComplexEventAveragingObservationNumber",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40995"
+        }
+       },
+       {
+        "name": "ComplexEventAveragingWeight",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40996"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

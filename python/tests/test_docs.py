@@ -12,6 +12,7 @@ from __future__ import annotations
 import ast
 import builtins
 import importlib
+import json
 import re
 import subprocess
 import sys
@@ -20,6 +21,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+import yaml
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
 
@@ -31,6 +33,8 @@ WORKFLOW_STEPS = (
     ("flatten-orders", "flatten_orders"),
     ("flatten-executions", "flatten_executions"),
 )
+
+TASK_NAMES = (*[task for _, task in WORKFLOW_STEPS], "optimize_iceberg")
 
 #: A fenced block and the language it claims, for the `python` ones.
 _FENCE = re.compile(r"^```(\w+)\n(.*?)^```", re.MULTILINE | re.DOTALL)
@@ -107,6 +111,9 @@ def test_registry_docs_keep_the_cli_discoverable_and_results_bounded() -> None:
     config = (DOCS.parent / "mkdocs.yml").read_text(encoding="utf-8")
 
     assert "Registry CLI: fix/shell.md" in config
+    assert "Repeating groups: fix/repeating-groups.md" in config
+    assert "Encode values: fix/encode.md" in config
+    assert "Decode values: fix/decode.md" in config
     assert "rekep fix registry show" in page
     assert "rekep fix shell --store" in page
     assert "const PAGE_SIZE = 20" in script
@@ -115,7 +122,133 @@ def test_registry_docs_keep_the_cli_discoverable_and_results_bounded() -> None:
     assert "member.tag ?? field?.tag" in script
     assert "fix-registry__description--row" in script
     assert "fix-registry__description--member" in script
+    assert 'badge(field.type || "—", "type")' in script
+    assert "data-summary-groups" in browser
     assert ".fix-registry__tag" in styles
+
+
+def test_registry_docs_publish_arrow_types_and_derived_groups() -> None:
+    catalog = _hooks()._registry_catalog(DOCS.parent)
+    side = next(field for field in catalog["fields"] if field.get("tag") == 54)
+    parties = next(group for group in catalog["groups"] if group["name"] == "NoPartyIDs")
+
+    assert side["type"] == "string" and side["fix_type"] == "char"
+    assert catalog["namespaces"][0] == "standard"
+    assert catalog["coverage"]["fields"] == len(catalog["fields"])
+    assert catalog["coverage"]["groups"] == len(catalog["groups"])
+    assert len(catalog["groups"]) == 525
+    assert parties["record_kind"] == "group"
+    assert parties["namespace"] == "standard"
+    assert parties["declaration"]["type"] == "list"
+    udf = [
+        component
+        for component in catalog["components"]
+        if component["namespace"] == "fixtrading-udf"
+    ]
+    assert len(udf) == 126
+
+
+def test_registry_catalog_keeps_duplicate_tags_namespace_addressable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A tag shared by FIX and a UDF remains two definitions in the artifact."""
+    hooks = _hooks()
+    registry = hooks.FixRegistry(cache_dir=DOCS.parent / "data" / "fix")
+    side = next(field for field in registry.field_records().values() if field.fix.tag == 54)
+    component = next(iter(registry.component_records().values()))
+    group = next(iter(registry.repeating_group_records().values()))
+
+    class Registry:
+        versions = ("FIX.Latest_EP309",)
+
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def namespaces(self) -> tuple[str, ...]:
+            return ("standard", "fixtrading-udf")
+
+        def field_records(self, namespace: str = "standard") -> dict[str, object]:
+            return {f"{namespace}-Side": side}
+
+        def component_records(self, namespace: str = "standard") -> dict[str, object]:
+            return {f"{namespace}-component": component}
+
+        def repeating_group_records(self, namespace: str = "standard") -> dict[str, object]:
+            return {f"{namespace}-group": group}
+
+        def source_manifest(self) -> tuple[dict[str, str], ...]:
+            return (
+                {
+                    "source_id": "fix-udf",
+                    "namespace": "fixtrading-udf",
+                    "url": "https://example.test/udf.xml",
+                    "version": "1",
+                    "format": "orchestra",
+                    "checksum": "bb",
+                    "license_url": "https://example.test/terms",
+                },
+                {
+                    "source_id": "fix-latest",
+                    "namespace": "standard",
+                    "url": "https://example.test/latest.xml",
+                    "version": "EP309",
+                    "format": "orchestra",
+                    "checksum": "aa",
+                    "license_url": "https://example.test/license",
+                },
+            )
+
+    monkeypatch.setattr(hooks, "FixRegistry", Registry)
+    catalog = hooks._registry_catalog(DOCS.parent)
+
+    assert [(field["namespace"], field["tag"]) for field in catalog["fields"]] == [
+        ("standard", 54),
+        ("fixtrading-udf", 54),
+    ]
+    assert [source["source_id"] for source in catalog["sources"]] == [
+        "fix-latest",
+        "fix-udf",
+    ]
+    assert catalog["coverage"]["by_namespace"] == [
+        {
+            "namespace": "standard",
+            "fields": 1,
+            "components": 1,
+            "groups": 1,
+            "enumerations": 1,
+        },
+        {
+            "namespace": "fixtrading-udf",
+            "fields": 1,
+            "components": 1,
+            "groups": 1,
+            "enumerations": 1,
+        },
+    ]
+    assert [component["namespace"] for component in catalog["components"]] == [
+        "standard",
+        "fixtrading-udf",
+    ]
+    assert [group["namespace"] for group in catalog["groups"]] == [
+        "standard",
+        "fixtrading-udf",
+    ]
+
+
+def test_registry_browser_routes_duplicate_tags_by_namespace() -> None:
+    browser = (DOCS / "fix" / "registry.md").read_text(encoding="utf-8")
+    script = (DOCS / "javascripts" / "fix-registry.js").read_text(encoding="utf-8")
+    styles = (DOCS / "stylesheets" / "fix-registry.css").read_text(encoding="utf-8")
+
+    assert 'select name="namespace"' in browser
+    assert "data-source-coverage" in browser and "data-namespace-coverage" in browser
+    assert "fieldByIdentity" in script
+    assert "fieldHref(field)" in script
+    assert "!fieldByTag.has" in script, "the first, standard definition stays preferred"
+    assert 'parameters.get("namespace")' in script
+    assert "data-component-members" in script, "namespace routing keeps lazy nested trees"
+    assert ".fix-registry__namespace" in styles
+    assert "font-weight: 700" not in styles
 
 
 def test_fix_component_docs_keep_nested_contracts_collapsible() -> None:
@@ -167,6 +300,26 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: s
     assert f"tasks/{task_name}/{task_name}.yml" in page
     assert f"--output {task_name}.executed.ipynb" in page
     assert f"tasks/{task_name}/{task_name}.yml" in workflow
+
+
+def test_every_task_injects_one_catalog_document() -> None:
+    """Notebook parameters keep catalog identity and properties atomic."""
+    for task_name in TASK_NAMES:
+        directory = DOCS.parent / "tasks" / task_name
+        document = yaml.safe_load((directory / f"{task_name}.yml").read_text(encoding="utf-8"))
+        parameters = document["parameters"]
+        assert "catalog_properties" not in parameters
+        assert set(parameters["catalog"]) == {"catalog_name", "properties"}
+
+        notebook = json.loads((directory / f"{task_name}.ipynb").read_text(encoding="utf-8"))
+        source = "".join(
+            line
+            for cell in notebook["cells"]
+            if cell["cell_type"] == "code"
+            for line in cell["source"]
+        )
+        assert "IcebergCatalog.from_dict(catalog)" in source
+        assert "catalog_properties" not in source
 
 
 def test_deploying_the_tables_is_documented_where_a_deployment_is_read() -> None:

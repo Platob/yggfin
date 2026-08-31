@@ -1,0 +1,209 @@
+{
+ "name": "BolsadeMercadoriasFuturos",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "BolsadeMercadoriasFuturos",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BolsadeMercadoriasFuturos",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "ApplicationLogonRspCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6930"
+    }
+   },
+   {
+    "name": "Asset",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6937"
+    }
+   },
+   {
+    "name": "CounterPartyIpAddress",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6928"
+    }
+   },
+   {
+    "name": "CounterPartyOSIdentifier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6929"
+    }
+   },
+   {
+    "name": "DaysBeforePwdExpiration",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6931"
+    }
+   },
+   {
+    "name": "DelayResponsibility",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6909"
+    }
+   },
+   {
+    "name": "EquivalentInstrument",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6947"
+    }
+   },
+   {
+    "name": "ImbalanceQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6943"
+    }
+   },
+   {
+    "name": "IndexPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6919"
+    }
+   },
+   {
+    "name": "Language",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6936"
+    }
+   },
+   {
+    "name": "MaxBidQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6941"
+    }
+   },
+   {
+    "name": "MaxOfferQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6942"
+    }
+   },
+   {
+    "name": "NewsSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6940"
+    }
+   },
+   {
+    "name": "NoContractLimitsConfig",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6951"
+    }
+   },
+   {
+    "name": "NoEquivalentIxmLimitsConfig",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6948"
+    }
+   },
+   {
+    "name": "NoFirms",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6944"
+    }
+   },
+   {
+    "name": "NoInstrumentLimitsConfig",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6946"
+    }
+   },
+   {
+    "name": "NoReferentialPrices",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6932"
+    }
+   },
+   {
+    "name": "PriceBandType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6939"
+    }
+   },
+   {
+    "name": "ReferentialPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6933"
+    }
+   },
+   {
+    "name": "ReferentialPxType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6934"
+    }
+   },
+   {
+    "name": "SecurityUpdatesSince",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6935"
+    }
+   },
+   {
+    "name": "SecurityValidityTimestamp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6938"
+    }
+   }
+  ]
+ }
+}

@@ -19,6 +19,7 @@ import time
 import urllib.error
 import urllib.request
 import zipfile
+from collections.abc import Mapping
 from pathlib import Path
 
 import pyarrow
@@ -40,6 +41,7 @@ from rekep.fix import (
     RegistrySource,
 )
 from rekep.fix import registry as registry_source
+from rekep.fix.entries import record_copy
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, is_group, members_of
 from rekep.fix.registry import (
@@ -49,7 +51,7 @@ from rekep.fix.registry import (
     _source_conflicts,
     _wait_for,
 )
-from rekep.fix.store import Collision
+from rekep.fix.store import SOURCES_FILE, VERSIONS_FILE, Collision, DirectoryDocuments
 
 from .conftest import FIXTURES, fixture_page
 
@@ -69,10 +71,10 @@ EXPECTED_SPEC_ONLY = 8
 EXPECTED_FIELDS = EXPECTED_LISTED + EXPECTED_SPEC_ONLY
 
 #: What a store of those eleven fields holds: one tag shard, two components,
-#: one message and the version index.
+#: one message, two repeating groups, and the version index.
 #: Derived from the fixture, then pinned, so a layout that stopped sharding
 #: fails here.
-EXPECTED_DOCUMENTS = 5
+EXPECTED_DOCUMENTS = 7
 
 #: Where the fixture's `Side <54>` lands: tags 0 to 999.
 SIDE_SHARD = "fields/000000.json"
@@ -199,13 +201,27 @@ def _resume_page(url: str) -> str:
 
 @pytest.fixture
 def registry(tmp_path: Path) -> FixtureRegistry:
-    return FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry = _fixture_registry(tmp_path / "fix")
+    versions = registry._scrape_versions()
+    registry._store_versions(versions)
+    return registry
+
+
+def _fixture_registry(
+    cache: str | Path,
+    filesystem: pyarrow.fs.FileSystem | None = None,
+) -> FixtureRegistry:
+    """The fixture sources explicitly scraped into one test store."""
+    registry = FixtureRegistry(cache_dir=cache, filesystem=filesystem)
+    registry._rebuild_sources("4.4")
+    return registry
 
 
 @pytest.fixture
 def captured(tmp_path: Path) -> dict[int, Field]:
     """Every field of the captured version, by tag."""
     registry = CaptureRegistry(cache_dir=tmp_path / "capture")
+    registry._store_fields("4.0", registry._scrape_version("4.0"))
     return {int(member.fix["tag"]): member for member in registry.fields("4.0")}
 
 
@@ -243,6 +259,7 @@ def test_nanoconda_names_every_value_once_and_casefolds_the_lookup(tmp_path: Pat
         sources=(NanocondaSource(),),
         cache_dir=tmp_path / "nanoconda",
     )
+    registry._rebuild_sources("4.2")
     assert [member.name for member in registry.fields("4.2")] == ["ExecType"]
     exec_type = registry.field("ExecType", "4.2")
     assert exec_type.fix.type == "char"
@@ -357,7 +374,7 @@ def test_a_full_rebuild_fetches_each_shared_source_page_once(tmp_path: Path) -> 
         cache_dir=tmp_path / "shared",
     )
 
-    registry.rebuild()
+    registry._rebuild_sources()
 
     assert registry.fetched == [
         f"{registry.sources[0].url}/versions",
@@ -393,7 +410,7 @@ def test_a_source_spaces_each_field_page_by_its_own_interval(
         sources=(Spaced("spaced", "https://spaced.example", field_pause_seconds=0.25),),
     )
 
-    registry.rebuild()
+    registry._rebuild_sources()
 
     assert paused == [0.25, 0.25]
 
@@ -453,7 +470,7 @@ def test_sources_merge_in_priority_order_and_attribute_conflicts(tmp_path: Path)
             ),
         ),
     )
-    report = registry.rebuild("4.2")
+    report = registry._rebuild_sources("4.2")
     exec_type = registry.field(150)
 
     assert exec_type.name == "ExecType"
@@ -550,7 +567,7 @@ def test_every_source_contributes_parts_the_others_do_not_carry(tmp_path: Path) 
         ),
     )
 
-    registry.rebuild("4.2")
+    registry._rebuild_sources("4.2")
 
     assert asked == ["primary", "fallback", "shared"]
     stored = registry.field(150)
@@ -615,7 +632,7 @@ def test_source_fields_are_fetched_once_in_priority_order(tmp_path: Path) -> Non
         ),
     )
 
-    registry.rebuild("4.2")
+    registry._rebuild_sources("4.2")
 
     assert asked == ["primary", "fallback", "shared"]
     assert [value.value for value in registry.field(150).fix.enumerated] == ["2", "1"]
@@ -632,8 +649,8 @@ def test_scrape_replaces_a_dump_folder_from_scratch(tmp_path: Path) -> None:
         def _scrape_version(self, version: str) -> list[Field]:
             return [fix_field("Side", 54, "char", version=version, values={"1": "Buy"})]
 
-        def rebuild(self, *versions: str) -> ConflictReport:
-            super().rebuild(*versions)
+        def _rebuild_sources(self, *versions: str) -> ConflictReport:
+            super()._rebuild_sources(*versions)
             report = ConflictReport(
                 collisions=(
                     Collision(
@@ -715,7 +732,7 @@ def test_rebuild_replaces_source_records_and_keeps_local_declarations(tmp_path: 
     registry.add_field(namespaced_field("LOCAL.CODE", "String", column="localcode"))
     assert registry.versions == ("4.2",)
 
-    registry.rebuild("4.4")
+    registry._rebuild_sources("4.4")
 
     assert registry.versions == ("4.4",)
     assert registry.field(1) is None
@@ -733,7 +750,7 @@ def test_rebuild_requires_the_configured_quickfix_document(tmp_path: Path) -> No
             return [fix_field("Side", 54, "char", version=version)]
 
     with pytest.raises(ValueError, match="QuickFIX source has no document"):
-        MissingSpec(cache_dir=tmp_path / "fix").rebuild("4.4")
+        MissingSpec(cache_dir=tmp_path / "fix")._rebuild_sources("4.4")
 
 
 def test_scrape_requires_a_local_dump_folder() -> None:
@@ -927,6 +944,7 @@ def test_the_capture_reads_only_fields_with_captured_pages(tmp_path: Path) -> No
     linked = {int(tag) for tag in re.findall(r'href="tagNum_(\d+)\.html"', page)}
     assert len(linked) == 139
     registry = CaptureRegistry(cache_dir=tmp_path / "capture")
+    registry._store_fields("4.0", registry._scrape_version("4.0"))
     assert {int(member.fix["tag"]) for member in registry.fields("4.0")} == {1, 35, 54}
 
 
@@ -999,7 +1017,7 @@ def test_a_throttled_field_page_fails_the_version(tmp_path: Path) -> None:
     """
     registry = ThrottledRegistry(cache_dir=tmp_path / "fix", backoff=0.0, retries=0)
     with pytest.raises(urllib.error.HTTPError, match="429"):
-        registry.fields("4.4")
+        registry._rebuild_sources("4.4")
     cached = Path(registry.cache_dir)
     assert not list((cached / "fields").glob("*.json"))
     assert not list((cached / "components").glob("*.json")), "nothing half-scraped is kept"
@@ -1036,7 +1054,7 @@ def test_a_forbidden_field_page_fails_the_version(tmp_path: Path) -> None:
             return super()._fetch(url)
 
     with pytest.raises(urllib.error.HTTPError, match="403"):
-        ForbiddenRegistry(cache_dir=tmp_path / "fix").fields("4.4")
+        ForbiddenRegistry(cache_dir=tmp_path / "fix")._rebuild_sources("4.4")
 
 
 # -- a directory or a zip -----------------------------------------------------
@@ -1079,8 +1097,11 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
     assert {name.split("/")[0] for name in members} == {
         "fields",
         "components",
+        "namespaces",
+        "repgroup",
+        "sources.json",
         "versions.json",
-    }, "one file per identity, in two folders beside the version index"
+    }, "standard and namespaced identities beside version and source indexes"
     unpacked = FixRegistry(cache_dir=folder)
     zipped = FixRegistry(cache_dir=archive)
     assert unpacked.fields_available("4.4") and zipped.fields_available("4.4")
@@ -1100,10 +1121,11 @@ def test_a_file_url_reads_the_original_archive_without_materializing() -> None:
 def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
     filesystem = pyarrow.fs._MockFileSystem()
     folder = PUBLISHED / "fix"
-    for name in ("registry", "registry/fields", "registry/components"):
+    for name in ("registry", "registry/fields", "registry/components", "registry/repgroup"):
         filesystem.create_dir(name)
     for source in folder.rglob("*.json"):
         name = source.relative_to(folder).as_posix()
+        filesystem.create_dir(f"registry/{name}".rsplit("/", 1)[0], recursive=True)
         with filesystem.open_output_stream(f"registry/{name}") as stream:
             stream.write(source.read_bytes())
 
@@ -1115,8 +1137,7 @@ def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
 
 def test_a_scrape_is_cached_in_an_arrow_filesystem_directory() -> None:
     filesystem = pyarrow.fs._MockFileSystem()
-    registry = FixtureRegistry(cache_dir="registry", filesystem=filesystem)
-    registry.fields("4.4")
+    registry = _fixture_registry("registry", filesystem)
 
     assert registry.field("Side", "4.4").fix["tag"] == "54"
 
@@ -1193,7 +1214,7 @@ def test_a_zip_made_of_the_folder_reads_the_same(dumped: Path, tmp_path: Path) -
 
 def test_a_scrape_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None:
     """A zip is a store, not only a way to publish one: it is written to."""
-    archived = FixtureRegistry(cache_dir=tmp_path / "fix.zip")
+    archived = _fixture_registry(tmp_path / "fix.zip")
     assert len(archived.fields("4.4")) == EXPECTED_FIELDS
     with zipfile.ZipFile(tmp_path / "fix.zip") as opened:
         names = opened.namelist()
@@ -1233,15 +1254,12 @@ def test_a_member_written_into_a_prefixed_zip_joins_its_neighbours(
     assert [member.name for member in reopened.fields("9.9")] == ["Marvellous"]
 
 
-def test_a_torn_archive_is_a_cold_cache_and_not_a_dead_registry(tmp_path: Path) -> None:
-    """The same reading a torn file gets: scrape over it rather than refuse."""
+def test_a_torn_archive_is_never_refreshed_by_a_read(tmp_path: Path) -> None:
     torn = tmp_path / "fix.zip"
     torn.write_bytes(b"PK\x03\x04 and then nothing that follows a zip's rules")
     registry = FixtureRegistry(cache_dir=torn)
-    assert registry.versions
-    assert len(registry.fields("4.4")) == EXPECTED_FIELDS, "scraped over the wreck"
-    with zipfile.ZipFile(torn) as opened:
-        assert SIDE_SHARD in opened.namelist(), "and left a readable archive behind"
+    assert registry.versions == ()
+    assert registry.fields("4.4") == []
 
 
 def test_an_archive_that_holds_nothing_yet_is_not_an_error(tmp_path: Path) -> None:
@@ -1274,28 +1292,23 @@ def test_the_cache_survives_offline(registry: FixtureRegistry) -> None:
     assert offline.component("parties", "4.4").name == "Parties"
 
 
-def test_offline_with_only_field_caches_still_knows_its_versions(
-    registry: FixtureRegistry,
-) -> None:
-    registry.fields("4.4")  # versions.json deliberately never written
-    offline = OfflineRegistry(cache_dir=registry.cache_dir)
+def test_offline_with_only_field_caches_still_knows_its_versions(tmp_path: Path) -> None:
+    source = FixtureRegistry(cache_dir=tmp_path / "fix")
+    source._store_fields("4.4", source._scrape_version("4.4"))
+    offline = OfflineRegistry(cache_dir=source.cache_dir)
     assert offline.versions == ("4.4",)
     assert offline.field("Side").fix["version"] == "4.4"
 
 
-def test_a_torn_cache_file_is_scraped_over(registry: FixtureRegistry) -> None:
-    """A torn write costs one shard, and the store says so rather than answering short.
-
-    Which is what makes it survivable: a version that still answers, a few
-    fields short, is a silence nothing downstream can tell from the truth. So
-    it says so and writes the store again.
-    """
+def test_a_torn_cache_file_requires_explicit_scrape(registry: FixtureRegistry) -> None:
     registry.fields("4.4")
     (Path(registry.cache_dir) / SIDE_SHARD).write_text("{ torn")
     fresh = FixtureRegistry(cache_dir=registry.cache_dir)
-    with pytest.warns(RuntimeWarning, match=r"cannot read \['fields/000000.json'\]"):
-        assert len(fresh.fields("4.4")) == EXPECTED_FIELDS
-    assert FixtureRegistry(cache_dir=registry.cache_dir).field("Side", "4.4").name == "Side"
+    with (
+        pytest.warns(RuntimeWarning, match="cannot read"),
+        pytest.raises(OSError, match="FixRegistry.scrape"),
+    ):
+        fresh.fields("4.4")
 
 
 def test_a_torn_cache_file_offline_is_reported_and_not_hidden(
@@ -1305,15 +1318,17 @@ def test_a_torn_cache_file_offline_is_reported_and_not_hidden(
     registry.fields("4.4")
     (Path(registry.cache_dir) / SIDE_SHARD).write_text("{ torn")
     offline = OfflineRegistry(cache_dir=registry.cache_dir)
-    with pytest.warns(RuntimeWarning, match="cannot read"), pytest.raises(OSError, match="offline"):
+    with (
+        pytest.warns(RuntimeWarning, match="cannot read"),
+        pytest.raises(OSError, match="FixRegistry.scrape"),
+    ):
         offline.fields("4.4")
 
 
-def test_refresh_scrapes_again(registry: FixtureRegistry) -> None:
-    registry.fields("4.4")
+def test_fields_never_refresh_the_source(registry: FixtureRegistry) -> None:
     fetched = len(registry.fetched)
-    registry.fields("4.4", refresh=True)
-    assert len(registry.fetched) > fetched
+    assert registry.fields("4.4")
+    assert len(registry.fetched) == fetched
 
 
 def test_load_reports_field_counts(registry: FixtureRegistry) -> None:
@@ -1393,12 +1408,12 @@ def test_versioned_tags_and_search_include_recorded_aliases(
     assert [field.name for field in registry.search("Trade_Side", fuzzy=False)] == ["Side"]
 
 
-def test_tags_for_an_explicit_version_raises_when_it_cannot_load(
+def test_tags_for_an_explicit_unstored_version_never_fetches(
     registry: FixtureRegistry,
 ) -> None:
-    """An empty mapping would silently un-resolve every key downstream."""
-    with pytest.raises(OSError, match="404"):
-        registry.tags("FIXT1.1")
+    fetched = len(registry.fetched)
+    assert registry.tags("FIXT1.1") == {}
+    assert len(registry.fetched) == fetched
 
 
 def test_a_version_that_would_be_a_path_is_refused(registry: FixtureRegistry) -> None:
@@ -1408,14 +1423,13 @@ def test_a_version_that_would_be_a_path_is_refused(registry: FixtureRegistry) ->
             registry.fields(hostile)
 
 
-def test_duplicate_case_spellings_in_the_cache_are_one_version(
-    registry: FixtureRegistry,
-) -> None:
-    registry.fields("4.4")
-    stored = registry.fields("4.4")
-    registry._store_fields("FIXT1.1", stored)
-    registry._store_fields("fixt1.1", stored)
-    offline = OfflineRegistry(cache_dir=registry.cache_dir)
+def test_duplicate_case_spellings_in_the_cache_are_one_version(tmp_path: Path) -> None:
+    source = FixtureRegistry(cache_dir=tmp_path / "fix")
+    stored = source._scrape_version("4.4")
+    source._store_fields("4.4", stored)
+    source._store_fields("FIXT1.1", stored)
+    source._store_fields("fixt1.1", stored)
+    offline = OfflineRegistry(cache_dir=source.cache_dir)
     assert [version.lower() for version in offline.versions] == ["4.4", "fixt1.1"]
 
 
@@ -1438,7 +1452,7 @@ def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:
     registry = FixRegistry.from_builtin()
     assert registry is FixRegistry.from_builtin()
     assert registry.offline
-    assert registry.versions[:2] == ("5.0.SP2", "5.0.SP1")
+    assert registry.versions[:2] == ("FIX.Latest", "5.0.SP2")
     assert registry.versions[-1] == "FIXT1.1"
 
 
@@ -1504,7 +1518,40 @@ def test_the_builtin_registry_classifies_msg_types_before_transcription() -> Non
         EventType.QUOTE
     }
     assert classified["d"] is EventType.INSTRUMENT
-    assert classified["0"] is EventType.MISC, "known operational FIX traffic"
+    categories = {
+        EventType.SESSION: {"0", "1", "2", "3", "4", "5", "A"},
+        EventType.INDICATION: {"6", "7", "C"},
+        EventType.ALLOCATION: {"J", "P", "AS", "AT", "BM", "DU", "DV"},
+        EventType.SETTLEMENT: {"T", "AV", "BQ"},
+        EventType.CONFIRMATION: {"AK", "AU", "BH"},
+        EventType.NEWS: {"B"},
+        EventType.POSITION: {"AL", "AM", "AN", "AO", "AP", "BL", "DL", "DM", "DN"},
+        EventType.COLLATERAL: {"AX", "AY", "AZ", "BA", "BB", "BG", "DQ"},
+        EventType.PARTY: {
+            "CF",
+            "CG",
+            "CK",
+            "CL",
+            "CM",
+            "CR",
+            "CS",
+            "CT",
+            "CU",
+            "CV",
+            "CX",
+            "CY",
+            "CZ",
+            "DA",
+            "DB",
+            "DE",
+            "DF",
+            "DG",
+            "DH",
+            "DI",
+        },
+    }
+    for category, msgtypes in categories.items():
+        assert {key for key in msgtypes if classified[key] is category} == msgtypes
     assert "U1" not in classified, "a registry-unknown private type stays UNKNOWN"
 
     metadata = json.loads(registry.scalar("MsgType").fix["event_types"])
@@ -1523,11 +1570,11 @@ def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> 
     # One reading, from the newest application version. Older versions called
     # tag 8 `char`; that is the same stored string contract, not a conflict.
     assert begin.fix["type"] == "String"
-    assert begin.fix["version"] == "5.0.SP2"
+    assert begin.fix["version"] == "FIX.Latest"
 
     side = registry.scalar("Side")
     assert side.fix.value_of("1").meaning == "Buy"
-    assert side.fix.value_of("H").aliases == ("SELL_UNDISCLOSED",)
+    assert side.fix.value_of("H").aliases == ("SellUndisclosed", "SELL_UNDISCLOSED")
     assert "Quote" in json.loads(side.fix["msgtypes"])
 
 
@@ -1617,7 +1664,7 @@ def test_a_scrape_takes_the_symbol_from_the_spec_and_the_prose_from_the_site(
     a merge that wrote the first where the second goes would replace prose with
     shouting -- which is the whole reason they are two keys.
     """
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry = _fixture_registry(tmp_path / "fix")
     side = next(field for field in registry.fields("4.4") if field.fix["tag"] == "54")
     assert side.fix.value_of("1").meaning == "Buy"
     assert side.fix.value_of("1").aliases == ("BUY",)
@@ -1626,7 +1673,7 @@ def test_a_scrape_takes_the_symbol_from_the_spec_and_the_prose_from_the_site(
 
 def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
     """The by-tag page lists four; the spec names one of them and one more."""
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry = _fixture_registry(tmp_path / "fix")
     by_tag = {field.fix["tag"]: field for field in registry.fields("4.4")}
     assert "828" not in {"43", "54", "103", "205"}, "the fixture's extra tag"
     assert by_tag["828"].name == "TrdType"
@@ -1635,7 +1682,7 @@ def test_a_field_only_the_spec_knows_is_still_a_field(tmp_path: Path) -> None:
 
 
 def test_a_field_without_source_symbols_gains_no_enumeration(tmp_path: Path) -> None:
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
+    registry = _fixture_registry(tmp_path / "fix")
     listed = {field.fix["tag"]: field for field in registry.fields("4.4")}
     assert not listed["103"].fix.enumerated
 
@@ -1650,7 +1697,7 @@ def test_a_refused_spec_fails_the_version(tmp_path: Path) -> None:
             return super()._fetch(url)
 
     with pytest.raises(urllib.error.HTTPError, match="503"):
-        NoSpec(cache_dir=tmp_path / "fix").fields("4.4")
+        NoSpec(cache_dir=tmp_path / "fix")._rebuild_sources("4.4")
 
 
 # -- reusable components ----------------------------------------------------
@@ -1658,8 +1705,7 @@ def test_a_refused_spec_fails_the_version(tmp_path: Path) -> None:
 
 def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> None:
     """The reusable blocks, and only those: a message is not read through."""
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
-    registry.fields("4.4")
+    registry = _fixture_registry(tmp_path / "fix")
     components = registry.components("4.4")
     assert [component.name for component in components] == ["Parties", "PtysSubGrp"]
     assert registry.component("PARTIES", "4.4") == components[0]
@@ -1671,8 +1717,7 @@ def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> No
 
 def test_a_message_is_declared_and_found_by_its_msgtype(tmp_path: Path) -> None:
     """One record, one folder, two ways in: the name, and the wire code."""
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
-    registry.fields("4.4")
+    registry = _fixture_registry(tmp_path / "fix")
     report = registry.merged_component("AE")
     assert report.name == "TradeCaptureReport" and report.msg_type == "AE"
     assert registry.merged_component("tradecapturereport") is report
@@ -1718,8 +1763,7 @@ def test_a_declared_empty_component_list_is_available(tmp_path: Path) -> None:
 
 def test_the_session_layer_travels_with_the_dictionary(tmp_path: Path) -> None:
     """The one fact a stored dictionary could not otherwise answer."""
-    registry = FixtureRegistry(cache_dir=tmp_path / "fix")
-    registry.fields("4.4")
+    _fixture_registry(tmp_path / "fix")
     stored = OfflineRegistry(cache_dir=tmp_path / "fix")
     assert [name for name, _ in stored.session("4.4")] == [
         "BeginString",
@@ -1742,3 +1786,657 @@ def test_a_version_without_a_session_layer_is_empty(
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry._store_fields("4.4", [fix_field("Side", 54, "char")])
     assert registry.session("4.4") == ()
+
+
+def _definition(
+    name: str,
+    tag: int,
+    datatype: str,
+    source: str,
+    *,
+    aliases: tuple[str, ...] = (),
+) -> Field:
+    """One attributed extension definition for namespace tests."""
+    field = fix_field(name, tag, datatype)
+    field.fix.versions = ("FIX.Latest",)
+    field.fix.source = source
+    field.fix.sources = (source,)
+    field.fix.named_aliases = aliases
+    return field
+
+
+def _source(source_id: str, namespace: str, priority: int) -> dict[str, object]:
+    """One complete-file provenance manifest entry."""
+    digest = source_id.encode().hex().ljust(64, "0")[:64]
+    return {
+        "source_id": source_id,
+        "namespace": namespace,
+        "url": f"https://example.test/{source_id}.xml",
+        "version": "FIX.Latest",
+        "format": "orchestra",
+        "checksum": f"sha256:{digest}",
+        "license_url": "https://example.test/terms",
+        "priority": priority,
+    }
+
+
+def test_definitions_keep_standard_udf_and_venue_tags_separate(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix", namespace_priority=("clear-street",))
+    registry.add_definition(_definition("MaxShow", 210, "Qty", "fix-latest"), "standard")
+    registry.add_definition(
+        _definition("MaxShow1", 9001, "Qty", "fixtrading-udf", aliases=("MaxShow",)),
+        "fixtrading-udf",
+    )
+    registry.add_definition(
+        _definition("VenueMaximumShow", 9001, "String", "clear-street"), "clear-street"
+    )
+
+    assert registry.field(210).fix.canonical == "MaxShow"
+    assert registry.field(9001).fix.canonical == "MaxShow1"
+    assert registry.lookup(9001)[0].fix.canonical == "MaxShow1"
+    assert registry.definition(9001, "clear-street").fix.canonical == "VenueMaximumShow"
+    assert [field.fix.get("namespace") for field in registry.definitions(9001)] == [
+        "fixtrading-udf",
+        "clear-street",
+    ]
+    assert [field.fix.tag for field in registry.definitions("MaxShow")] == [210, 9001]
+    assert (tmp_path / "fix/namespaces/fixtrading-udf/fields/000009.json").is_file()
+    assert (tmp_path / "fix/namespaces/clear-street/fields/000009.json").is_file()
+
+
+def test_configured_vendor_priority_survives_reopen(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    second = {**_source("second", "venue-second", 10), "lookup_order": 1}
+    first = {**_source("first", "venue-first", 10), "lookup_order": 0}
+    registry.store_source_manifest((second, first))
+    registry.add_definition(_definition("SecondCode", 9005, "String", "second"), "venue-second")
+    registry.add_definition(_definition("FirstCode", 9005, "String", "first"), "venue-first")
+
+    reopened = FixRegistry(cache_dir=tmp_path / "fix")
+
+    assert reopened.namespaces() == ("standard", "venue-first", "venue-second")
+    assert reopened.field(9005).fix.canonical == "FirstCode"
+    assert [field.fix.canonical for field in reopened.definitions(9005)] == [
+        "FirstCode",
+        "SecondCode",
+    ]
+
+
+def test_same_namespace_type_conflicts_fall_back_to_string(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest(
+        (
+            _source("official", "fixtrading-udf", 0),
+            _source("enrichment", "fixtrading-udf", 10),
+        )
+    )
+    registry.add_definition(
+        _definition("UDFSupportIndicator", 9003, "Int", "official"), "fixtrading-udf"
+    )
+    merged = registry.add_definition(
+        _definition("UDFSupportIndicator", 9003, "String", "enrichment"),
+        "fixtrading-udf",
+    )
+
+    assert merged.dtype == pyarrow.string()
+    assert merged.fix.type == "String"
+    assert json.loads(merged.fix["disputed_types"]) == ["Int", "String"]
+    assert registry.conflicts.counts()["type"] == 1
+    assert FixRegistry(cache_dir=tmp_path / "fix").field(9003).dtype == pyarrow.string()
+
+
+def test_adapter_status_attributes_conflicts_created_during_reconciliation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+    from rekep.fix.orchestra import SourceField, SourceProvenance, SourceRegistry
+
+    class Adapter:
+        def __init__(self, registry: SourceRegistry, priority: int) -> None:
+            self.registry = registry
+            self.priority = priority
+
+        def load(self, *_args, **_kwargs) -> SourceRegistry:
+            return self.registry
+
+    def source(source_id: str, datatype: str, dtype: pyarrow.DataType) -> SourceRegistry:
+        provenance = SourceProvenance.for_bytes(
+            source_id.encode(),
+            source_id=source_id,
+            namespace="fixtrading-udf",
+            version="1.0",
+            protocol_version="FIX.Latest",
+        )
+        field = SourceField(
+            tag=9003,
+            name="UDFSupportIndicator",
+            original_datatype=datatype,
+            datatype=datatype,
+            arrow_type=dtype,
+            provenance=provenance,
+        )
+        return SourceRegistry(provenance, "UDF", "1.0", fields=(field,))
+
+    monkeypatch.setattr(
+        adapters,
+        "ADAPTERS_BY_ID",
+        {
+            "official": Adapter(source("official", "Int", pyarrow.int64()), 0),
+            "vendor": Adapter(source("vendor", "String", pyarrow.string()), 100),
+        },
+    )
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+
+    registry._ingest_adapters(("official", "vendor"), tmp_path / "sources", offline=True)
+
+    assert [status["conflicts"] for status in registry.source_status] == [0, 1]
+    assert registry.conflicts.counts()["type"] == 1
+
+
+def test_official_orchestra_precedes_legacy_enrichment_in_standard(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest((_source("fix-latest", "standard", 0),))
+    legacy = _definition("OldMaximumShow", 210, "Qty", "nanoconda")
+    registry.add_field(legacy)
+
+    merged = registry.add_definition(_definition("MaxShow", 210, "Qty", "fix-latest"), "standard")
+
+    assert merged.fix.canonical == "MaxShow"
+    assert merged.fix.source == "fix-latest"
+    assert "OldMaximumShow" in merged.fix.spellings()
+
+
+def test_latest_merge_preserves_the_legacy_fut_sett_date_alias(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest((_source("fix-latest", "standard", 0),))
+    legacy = _definition("SettlDate", 64, "LocalMktDate", "nanoconda")
+    legacy.fix.named_aliases = (Alias("FutSettDate", source="4.3"),)
+    registry.add_field(legacy)
+
+    merged = registry.add_definition(
+        _definition("SettlDate", 64, "LocalMktDate", "fix-latest"), "standard"
+    )
+
+    assert merged.fix.source == "fix-latest"
+    assert "FutSettDate" in merged.fix.spellings()
+
+
+def test_new_canonical_name_shadows_only_the_legacy_alias(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest((_source("fix-latest", "standard", 0),))
+    legacy = _definition("BidTradeType", 418, "Int", "nanoconda")
+    legacy.fix.named_aliases = (
+        Alias("TradeType", source="FIX.4.4"),
+        Alias("BidType", source="onixs"),
+    )
+    registry.add_field(legacy)
+
+    changes = registry.add_definitions(
+        (_definition("TradeType", 828, "Int", "fix-latest"),), "standard"
+    )
+
+    assert changes == {"additions": 1, "updates": 1}
+    assert registry.definition("TradeType", "standard").fix.tag == 828
+    assert registry.definition(418, "standard").fix.named_aliases == (
+        Alias("BidType", source="onixs"),
+    )
+    conflict = registry.conflicts.collapses[-1]
+    assert conflict.part == "aliases"
+    assert conflict.name == "TradeType"
+    assert conflict.dropped[0].reading == "TradeType"
+    assert conflict.dropped[0].source == "FIX.4.4"
+
+
+def test_same_name_different_tags_follow_source_priority_in_either_order(
+    tmp_path: Path,
+) -> None:
+    sources = (
+        _source("official", "fixtrading-udf", 0),
+        _source("vendor", "fixtrading-udf", 100),
+    )
+
+    def built(path: Path, order: tuple[str, ...]) -> Field:
+        registry = FixRegistry(cache_dir=path)
+        registry.store_source_manifest(sources)
+        definitions = {
+            "official": _definition("Collision", 10_001, "String", "official"),
+            "vendor": _definition("Collision", 9_001, "String", "vendor"),
+        }
+        for source in order:
+            registry.add_definition(definitions[source], "fixtrading-udf")
+        assert registry.definition(9_001, "fixtrading-udf") is None
+        winner = registry.definition(10_001, "fixtrading-udf")
+        assert winner is not None
+        assert json.loads(winner.fix["disputed_keys"]) == [
+            {"key": "10001", "source": "official"},
+            {"key": "9001", "source": "vendor"},
+        ]
+        assert registry.conflicts.collapses[-1].keptsource == "official"
+        assert registry.conflicts.collapses[-1].dropped[0].source == "vendor"
+        return winner
+
+    low_first = built(tmp_path / "low-first", ("vendor", "official"))
+    high_first = built(tmp_path / "high-first", ("official", "vendor"))
+
+    assert low_first == high_first
+
+
+def test_same_value_conflicts_keep_authoritative_meaning_and_all_aliases(
+    tmp_path: Path,
+) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest(
+        (
+            _source("official", "fixtrading-udf", 0),
+            _source("vendor", "fixtrading-udf", 100),
+        )
+    )
+    official = _definition("UDFSupportIndicator", 9003, "Int", "official")
+    official.description = "Official description."
+    official.fix.enumerated = (FixFieldValue("1", "Supports UDFs", ("Supports",)),)
+    vendor = _definition("UDFSupportIndicator", 9003, "Int", "vendor")
+    vendor.description = "Vendor description."
+    vendor.fix.enumerated = (FixFieldValue("1", "Enabled", ("Yes",)),)
+    registry.add_definition(vendor, "fixtrading-udf")
+
+    merged = registry.add_definition(official, "fixtrading-udf")
+
+    assert merged.description == "Official description."
+    assert merged.fix.enumerated == (FixFieldValue("1", "Supports UDFs", ("Supports", "Yes")),)
+    conflicts = registry.conflicts.collapses
+    assert [(conflict.part, conflict.keptsource) for conflict in conflicts] == [
+        ("values", "official"),
+        ("note", "official"),
+    ]
+    assert conflicts[0].dropped[0].key == "1"
+    assert conflicts[0].dropped[0].source == "vendor"
+
+
+def test_latest_merge_preserves_local_field_overlays_and_utc_refinement(
+    tmp_path: Path,
+) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest((_source("fix-latest", "standard", 0),))
+    msgtype = _definition("MsgType", 35, "String", "nanoconda")
+    msgtype.fix.event_types = {"D": EventType.ORDER}
+    msgtype.fix.states = {"D": State.OPEN}
+    msgtype.fix.msgtypes = ("D",)
+    msgtype.fix.components = ("StandardHeader",)
+    msgtype.fix.column = "bodytype"
+    registry.add_field(msgtype)
+    origtime = _definition("OrigTime", 42, "UTCTimestamp", "nanoconda")
+    origtime.dtype = pyarrow.timestamp("us", tz="UTC")
+    registry.add_field(origtime)
+
+    merged_msgtype = registry.add_definition(
+        _definition("MsgType", 35, "String", "fix-latest"), "standard"
+    )
+    merged_origtime = registry.add_definition(
+        _definition("OrigTime", 42, "UTCTimestamp", "fix-latest"), "standard"
+    )
+
+    assert merged_msgtype.fix.event_types == {"D": EventType.ORDER}
+    assert merged_msgtype.fix.states == {"D": State.OPEN}
+    assert merged_msgtype.fix.msgtypes == ("D",)
+    assert merged_msgtype.fix.components == ("StandardHeader",)
+    assert merged_msgtype.fix.column == "bodytype"
+    assert merged_origtime.dtype == pyarrow.timestamp("us", tz="UTC")
+
+
+def test_authoritative_enum_merge_is_stable_on_replay(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.store_source_manifest((_source("fix-latest", "standard", 0),))
+    legacy = _definition("Side", 54, "Char", "nanoconda")
+    legacy.fix.enumerated = (
+        FixFieldValue("2", aliases=("Sell",)),
+        FixFieldValue("1", aliases=("Buy",)),
+        FixFieldValue("Z", aliases=("Legacy",)),
+    )
+    official = _definition("Side", 54, "Char", "fix-latest")
+    official.fix.enumerated = (
+        FixFieldValue("1", aliases=("Buy",)),
+        FixFieldValue("2", aliases=("Sell",)),
+    )
+    registry.add_field(legacy)
+
+    first = registry.add_definitions((official,), "standard")
+    record = registry.definition(54, "standard")
+    second = registry.add_definitions((official,), "standard")
+
+    assert first == {"additions": 0, "updates": 1}
+    assert second == {"additions": 0, "updates": 0}
+    assert registry.definition(54, "standard") == record
+    assert [value.value for value in record.fix.enumerated] == ["1", "2", "Z"]
+
+
+def test_source_manifest_and_namespaced_archives_are_deterministic(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_versions(())
+    registry.store_source_manifest((_source("udf", "fixtrading-udf", 0),))
+    registry.add_definition(_definition("CrossSeqNum", 9002, "SeqNum", "udf"), "fixtrading-udf")
+
+    first = tmp_path / "first.zip"
+    second = tmp_path / "second.zip"
+    registry.into_zip(first)
+    registry.into_zip(second)
+
+    assert first.read_bytes() == second.read_bytes()
+    extracted = FixRegistry._registry_archive_documents(first.read_bytes())
+    assert "namespaces/fixtrading-udf/fields/000009.json" in extracted
+    assert "sources.json" in extracted
+    reopened = FixRegistry(cache_dir=first)
+    assert reopened.field(9002).fix.canonical == "CrossSeqNum"
+    assert reopened.source_manifest()[0]["source_id"] == "udf"
+
+
+def test_cached_orchestra_refresh_populates_fields_components_and_groups(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+
+    fixture_source = dataclasses.replace(adapters.FIX_LATEST, checksum="")
+    monkeypatch.setattr(adapters, "ADAPTERS_BY_ID", {"fix-latest": fixture_source})
+
+    cache = tmp_path / "sources"
+    cache.mkdir()
+    (cache / fixture_source.cache_name).write_bytes((FIXTURES / "orchestra.xml").read_bytes())
+
+    registry = FixRegistry.scrape(
+        tmp_path / "fix",
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+
+    assert len(registry.field_records()) == 12
+    assert len(registry.component_records()) == 2
+    assert len(registry.repeating_group_records()) == 1
+    assert registry.component_records()["Instrument"].msgtypes == ("NewOrderSingle",)
+    manifest = registry.source_manifest()[0]
+    assert manifest["source_id"] == "fix-latest"
+    assert manifest["projection"] == "rekep-fix-registry-v6"
+    assert str(manifest["definitions_checksum"]).startswith("sha256:")
+    assert registry.source_status[0]["additions"] == 12
+    assert registry.field(9001) is not None
+    assert registry.versions[0] == "FIX.Latest"
+    index = registry._documents.read(VERSIONS_FILE)
+    assert index is not None
+    assert index["versions"] == ["FIX.Latest"]
+    assert index["stored"] == ["FIX.Latest"]
+    assert index["declared"] == ["FIX.Latest"]
+    first = {
+        path.relative_to(tmp_path / "fix").as_posix(): path.read_bytes()
+        for path in (tmp_path / "fix").rglob("*.json")
+    }
+
+    def no_revalidation(*_args, **_kwargs):
+        raise AssertionError("an unchanged complete-source replay does not republish the store")
+
+    monkeypatch.setattr(FixRegistry, "_validate_registry_store", no_revalidation)
+
+    replayed = FixRegistry.scrape(
+        tmp_path / "fix",
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+    assert replayed.source_status[0]["additions"] == 0
+    assert replayed.source_status[0]["updates"] == 0
+    second = {
+        path.relative_to(tmp_path / "fix").as_posix(): path.read_bytes()
+        for path in (tmp_path / "fix").rglob("*.json")
+    }
+    assert second == first
+
+
+def test_cached_replay_repairs_standard_version_indexes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+
+    fixture_source = dataclasses.replace(adapters.FIX_LATEST, checksum="")
+    monkeypatch.setattr(adapters, "ADAPTERS_BY_ID", {"fix-latest": fixture_source})
+    cache = tmp_path / "sources"
+    cache.mkdir()
+    (cache / fixture_source.cache_name).write_bytes((FIXTURES / "orchestra.xml").read_bytes())
+    target = tmp_path / "fix"
+    registry = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+    index = registry._documents.read(VERSIONS_FILE)
+    assert index is not None
+    index.pop("stored")
+    index.pop("declared")
+    registry._documents.write(VERSIONS_FILE, index)
+
+    repaired = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+
+    assert repaired.source_status[0]["additions"] == 0
+    assert repaired.source_status[0]["updates"] == 0
+    index = repaired._documents.read(VERSIONS_FILE)
+    assert index is not None
+    assert index["versions"] == ["FIX.Latest"]
+    assert index["stored"] == ["FIX.Latest"]
+    assert index["declared"] == ["FIX.Latest"]
+
+
+def test_cached_refresh_upgrades_a_manifest_without_projection_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+
+    fixture_source = dataclasses.replace(adapters.FIX_LATEST, checksum="")
+    monkeypatch.setattr(adapters, "ADAPTERS_BY_ID", {"fix-latest": fixture_source})
+    cache = tmp_path / "sources"
+    cache.mkdir()
+    (cache / fixture_source.cache_name).write_bytes((FIXTURES / "orchestra.xml").read_bytes())
+    target = tmp_path / "fix"
+    registry = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+    document = registry._documents.read(SOURCES_FILE)
+    assert document is not None
+    for source in document["sources"]:
+        source.pop("projection")
+        source.pop("definitions_checksum")
+    registry._documents.write(SOURCES_FILE, document)
+
+    upgraded = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+
+    assert upgraded.source_status[0]["additions"] == 0
+    assert upgraded.source_status[0]["updates"] == 0
+    assert upgraded.source_manifest()[0]["projection"] == "rekep-fix-registry-v6"
+    assert str(upgraded.source_manifest()[0]["definitions_checksum"]).startswith("sha256:")
+
+
+def test_projection_upgrade_repairs_and_preserves_component_carriage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+
+    fixture_source = dataclasses.replace(adapters.FIX_LATEST, checksum="")
+    monkeypatch.setattr(adapters, "ADAPTERS_BY_ID", {"fix-latest": fixture_source})
+    cache = tmp_path / "sources"
+    cache.mkdir()
+    (cache / fixture_source.cache_name).write_bytes((FIXTURES / "orchestra.xml").read_bytes())
+    target = tmp_path / "fix"
+    registry = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+
+    held = registry.component_records()["Instrument"]
+    declared = record_copy(held.declaration)
+    declared.fix.pop("msgtypes", None)
+    registry._layout._store_component(dataclasses.replace(held, declaration=declared))
+    manifest = registry._documents.read(SOURCES_FILE)
+    assert manifest is not None
+    manifest["sources"][0]["projection"] = "rekep-fix-registry-v4"
+    registry._documents.write(SOURCES_FILE, manifest)
+
+    upgraded = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+
+    repaired = upgraded.component_records()["Instrument"]
+    assert repaired.msgtypes == ("NewOrderSingle",)
+
+    declared = record_copy(repaired.declaration)
+    declared.fix.msgtypes = ["LegacyOrder"]
+    upgraded._layout._store_component(dataclasses.replace(repaired, declaration=declared))
+    manifest = upgraded._documents.read(SOURCES_FILE)
+    assert manifest is not None
+    manifest["sources"][0]["projection"] = "rekep-fix-registry-v4"
+    upgraded._documents.write(SOURCES_FILE, manifest)
+
+    preserved = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+    assert preserved.component_records()["Instrument"].msgtypes == (
+        "LegacyOrder",
+        "NewOrderSingle",
+    )
+
+
+def test_cached_refresh_reconciles_when_source_priority_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+
+    fixture_source = dataclasses.replace(adapters.FIX_LATEST, checksum="", priority=10)
+    monkeypatch.setattr(adapters, "ADAPTERS_BY_ID", {"fix-latest": fixture_source})
+    cache = tmp_path / "sources"
+    cache.mkdir()
+    (cache / fixture_source.cache_name).write_bytes((FIXTURES / "orchestra.xml").read_bytes())
+    target = tmp_path / "fix"
+    FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+    monkeypatch.setattr(
+        adapters,
+        "ADAPTERS_BY_ID",
+        {"fix-latest": dataclasses.replace(fixture_source, priority=0)},
+    )
+    reconciled: list[str] = []
+    add_definitions = FixRegistry.add_definitions
+
+    def tracked(self: FixRegistry, entries: tuple[Field, ...], namespace: str) -> Mapping[str, int]:
+        reconciled.append(namespace)
+        return add_definitions(self, entries, namespace)
+
+    monkeypatch.setattr(FixRegistry, "add_definitions", tracked)
+
+    refreshed = FixRegistry.scrape(
+        target,
+        source_ids=("fix-latest",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+
+    assert reconciled == ["standard"]
+    assert refreshed.source_manifest()[0]["priority"] == 0
+
+
+def test_bulk_namespace_ingestion_writes_once_per_tag_shard(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    written: list[str] = []
+    write = registry._documents.write
+
+    def counted(name: str, document: dict[str, object]) -> None:
+        written.append(name)
+        write(name, document)
+
+    monkeypatch.setattr(registry._documents, "write", counted)
+    definitions = tuple(
+        _definition(f"RegisteredUDF{tag}", tag, "String", "fixtrading-udf")
+        for tag in range(5_000, 7_500)
+    )
+
+    changes = registry.add_definitions(definitions, "fixtrading-udf")
+
+    assert changes == {"additions": 2_500, "updates": 0}
+    assert written == [
+        "namespaces/fixtrading-udf/fields/000005.json",
+        "namespaces/fixtrading-udf/fields/000006.json",
+        "namespaces/fixtrading-udf/fields/000007.json",
+    ]
+
+
+def test_partial_offline_refresh_copies_the_store_without_parsing_every_document(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix import adapters
+
+    target = tmp_path / "fix"
+    standard = FixRegistry(cache_dir=target)
+    standard._store_versions(("4.4",))
+    standard._store_fields("4.4", [fix_field("Side", 54, "char", version="4.4")])
+    fixture_source = dataclasses.replace(
+        adapters.FIX_LATEST,
+        source_id="fixtrading-udf",
+        namespace="fixtrading-udf",
+        checksum="",
+    )
+    monkeypatch.setattr(adapters, "ADAPTERS_BY_ID", {"fixtrading-udf": fixture_source})
+    cache = tmp_path / "sources"
+    cache.mkdir()
+    (cache / fixture_source.cache_name).write_bytes((FIXTURES / "orchestra.xml").read_bytes())
+
+    def no_bulk_parse(*_args, **_kwargs):
+        raise AssertionError("partial refresh must copy unchanged documents as bytes")
+
+    monkeypatch.setattr(DirectoryDocuments, "read_many", no_bulk_parse)
+    refreshed = FixRegistry.scrape(
+        target,
+        source_ids=("fixtrading-udf",),
+        offline=True,
+        rebuild_standard=False,
+        source_cache=cache,
+    )
+    monkeypatch.undo()
+
+    assert refreshed.versions == ("4.4",)
+    assert refreshed.field(54).fix.canonical == "Side"
+    assert len(refreshed.field_records("fixtrading-udf")) == 12
+    assert len(refreshed.component_records("fixtrading-udf")) == 2
+    assert len(refreshed.repeating_group_records("fixtrading-udf")) == 1

@@ -1,0 +1,29 @@
+{
+ "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40946"
+  },
+  "item": {
+   "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40819"
+     }
+    }
+   ]
+  }
+ }
+}

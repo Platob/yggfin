@@ -1,7 +1,8 @@
 {
  "name": "LegStreamCalculationPeriodDates",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "LegStreamCalculationPeriodDates",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "LegStreamCalculationPeriodDates",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -106,22 +111,56 @@
     }
    },
    {
-    "name": "LegStreamCalculationPeriodBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoLegStreamCalculationPeriodBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegStreamCalculationPeriodBusinessCenterGrp"
+     "tag": "40940"
     },
-    "fields": []
+    "item": {
+     "name": "LegStreamCalculationPeriodBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamCalculationPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40266"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "LegStreamCalculationPeriodDateGrp",
-    "type": "struct",
+    "name": "NoLegStreamCalculationPeriodDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegStreamCalculationPeriodDateGrp"
+     "tag": "41638"
     },
-    "fields": []
+    "item": {
+     "name": "LegStreamCalculationPeriodDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamCalculationPeriodDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41639"
+       }
+      },
+      {
+       "name": "LegStreamCalculationPeriodDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41640"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegStreamFirstPeriodStartDateUnadjusted",
@@ -140,13 +179,26 @@
     }
    },
    {
-    "name": "LegStreamFirstPeriodStartDateBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoLegStreamFirstPeriodStartDateBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegStreamFirstPeriodStartDateBusinessCenterGrp"
+     "tag": "40941"
     },
-    "fields": []
+    "item": {
+     "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40269"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegStreamFirstPeriodStartDateAdjusted",

@@ -1,0 +1,77 @@
+{
+ "name": "NoMsgTypes",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest",
+  "FIXT1.1"
+ ],
+ "declaration": {
+  "name": "NoMsgTypes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "384"
+  },
+  "item": {
+   "name": "MsgType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RefMsgType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "372"
+     }
+    },
+    {
+     "name": "MsgDirection",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "385"
+     }
+    },
+    {
+     "name": "RefApplVerID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1130"
+     }
+    },
+    {
+     "name": "RefApplExtID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1406"
+     }
+    },
+    {
+     "name": "RefCstmApplVerID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1131"
+     }
+    },
+    {
+     "name": "DefaultVerIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1410"
+     }
+    }
+   ]
+  }
+ }
+}

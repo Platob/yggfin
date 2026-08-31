@@ -1,0 +1,37 @@
+{
+ "name": "NoEntitlementTypes",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoEntitlementTypes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2345"
+  },
+  "item": {
+   "name": "EntitlementType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "EntitlementType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1775"
+     }
+    },
+    {
+     "name": "EntitlementSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2402"
+     }
+    }
+   ]
+  }
+ }
+}

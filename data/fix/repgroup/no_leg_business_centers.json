@@ -1,0 +1,29 @@
+{
+ "name": "NoLegBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40923"
+  },
+  "item": {
+   "name": "LegBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40924"
+     }
+    }
+   ]
+  }
+ }
+}

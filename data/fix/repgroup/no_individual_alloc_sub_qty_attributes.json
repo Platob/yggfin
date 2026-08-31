@@ -1,0 +1,40 @@
+{
+ "name": "NoIndividualAllocSubQtyAttributes",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoIndividualAllocSubQtyAttributes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "3099"
+  },
+  "item": {
+   "name": "IndividualAllocSubQtyAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "IndividualAllocSubQtyType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3100"
+     }
+    },
+    {
+     "name": "IndividualAllocSubQtyValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3101"
+     }
+    }
+   ]
+  }
+ }
+}

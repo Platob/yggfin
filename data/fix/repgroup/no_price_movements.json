@@ -1,0 +1,85 @@
+{
+ "name": "NoPriceMovements",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPriceMovements",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1919"
+  },
+  "item": {
+   "name": "PriceMovement",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "NoPriceMovementValues",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1920"
+     },
+     "item": {
+      "name": "PriceMovementValue",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "PriceMovementValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1921"
+        }
+       },
+       {
+        "name": "PriceMovementPoint",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1922"
+        }
+       },
+       {
+        "name": "PriceMovementType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1923"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoClearingAccountTypes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1918"
+     },
+     "item": {
+      "name": "ClearingAccountType",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ClearingAccountType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1816"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

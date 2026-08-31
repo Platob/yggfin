@@ -1,0 +1,137 @@
+{
+ "name": "Mantara",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "Mantara",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Mantara",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "CashTolerance",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7992"
+    }
+   },
+   {
+    "name": "LeadingLeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7989"
+    }
+   },
+   {
+    "name": "LegCash",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7988"
+    }
+   },
+   {
+    "name": "LegLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7986"
+    }
+   },
+   {
+    "name": "LegRatio2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7987"
+    }
+   },
+   {
+    "name": "LongLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7993"
+    }
+   },
+   {
+    "name": "Mantara1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7995"
+    }
+   },
+   {
+    "name": "Mantara2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7996"
+    }
+   },
+   {
+    "name": "Mantara3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7997"
+    }
+   },
+   {
+    "name": "Mantara4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7998"
+    }
+   },
+   {
+    "name": "Mantara5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7999"
+    }
+   },
+   {
+    "name": "PriceIntercept2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7991"
+    }
+   },
+   {
+    "name": "PriceMultiplier2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7990"
+    }
+   },
+   {
+    "name": "ShortLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7994"
+    }
+   }
+  ]
+ }
+}

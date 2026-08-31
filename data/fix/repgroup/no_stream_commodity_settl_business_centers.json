@@ -1,0 +1,29 @@
+{
+ "name": "NoStreamCommoditySettlBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoStreamCommoditySettlBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41249"
+  },
+  "item": {
+   "name": "StreamCommoditySettlBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StreamCommoditySettlBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41250"
+     }
+    }
+   ]
+  }
+ }
+}

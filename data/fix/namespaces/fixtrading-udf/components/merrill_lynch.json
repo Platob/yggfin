@@ -1,0 +1,1081 @@
+{
+ "name": "MerrillLynch",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "MerrillLynch",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MerrillLynch",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "Annonymous",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6437"
+    }
+   },
+   {
+    "name": "AvgPxInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5057"
+    }
+   },
+   {
+    "name": "BidPriceImpAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6310"
+    }
+   },
+   {
+    "name": "CashRoundingIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6420"
+    }
+   },
+   {
+    "name": "CleanUp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6493"
+    }
+   },
+   {
+    "name": "ClientCharID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5056"
+    }
+   },
+   {
+    "name": "ClientIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6475"
+    }
+   },
+   {
+    "name": "ClientMarketInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5054"
+    }
+   },
+   {
+    "name": "CloseAuctionRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6416"
+    }
+   },
+   {
+    "name": "Coupon1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5059"
+    }
+   },
+   {
+    "name": "CriteriaCheckFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6425"
+    }
+   },
+   {
+    "name": "CrossCategory1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6447"
+    }
+   },
+   {
+    "name": "CrossDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6443"
+    }
+   },
+   {
+    "name": "CrossDestExclusion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6444"
+    }
+   },
+   {
+    "name": "CrossExclusionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6438"
+    }
+   },
+   {
+    "name": "CrossID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6548"
+    }
+   },
+   {
+    "name": "CrossPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6441"
+    }
+   },
+   {
+    "name": "CrossResidualRatio",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6446"
+    }
+   },
+   {
+    "name": "CrossType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6549"
+    }
+   },
+   {
+    "name": "DealLinkReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5049"
+    }
+   },
+   {
+    "name": "DistributionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6467"
+    }
+   },
+   {
+    "name": "DynamicDriverType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6477"
+    }
+   },
+   {
+    "name": "EffectiveTime2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6168"
+    }
+   },
+   {
+    "name": "EvalueInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6430"
+    }
+   },
+   {
+    "name": "ExcludeDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6433"
+    }
+   },
+   {
+    "name": "ExcludePostDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6474"
+    }
+   },
+   {
+    "name": "ExternalCustomerName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6810"
+    }
+   },
+   {
+    "name": "ExternalExchangeRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6809"
+    }
+   },
+   {
+    "name": "IndicativeOrderType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6490"
+    }
+   },
+   {
+    "name": "InstructNoInstruct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5051"
+    }
+   },
+   {
+    "name": "LastQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6808"
+    }
+   },
+   {
+    "name": "MaxCrossQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6440"
+    }
+   },
+   {
+    "name": "MaxPostDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6427"
+    }
+   },
+   {
+    "name": "MinCrossQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6439"
+    }
+   },
+   {
+    "name": "MLBenchmarkPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6400"
+    }
+   },
+   {
+    "name": "MLBlockThreshold",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6414"
+    }
+   },
+   {
+    "name": "MLContraId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6811"
+    }
+   },
+   {
+    "name": "MLET10",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6458"
+    }
+   },
+   {
+    "name": "MLET11",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6459"
+    }
+   },
+   {
+    "name": "MLET12",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6460"
+    }
+   },
+   {
+    "name": "MLET4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6452"
+    }
+   },
+   {
+    "name": "MLET5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6453"
+    }
+   },
+   {
+    "name": "MLET6",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6454"
+    }
+   },
+   {
+    "name": "MLET7",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6455"
+    }
+   },
+   {
+    "name": "MLET8",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6456"
+    }
+   },
+   {
+    "name": "MLET9",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6457"
+    }
+   },
+   {
+    "name": "MLETReserved1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6960"
+    }
+   },
+   {
+    "name": "MLETReserved2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6961"
+    }
+   },
+   {
+    "name": "MLETReserved3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6962"
+    }
+   },
+   {
+    "name": "MLETReserved4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6963"
+    }
+   },
+   {
+    "name": "MLETReserved5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6964"
+    }
+   },
+   {
+    "name": "MLETReserved6",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6965"
+    }
+   },
+   {
+    "name": "MLETReserved7",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6966"
+    }
+   },
+   {
+    "name": "MLETReserved8",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6967"
+    }
+   },
+   {
+    "name": "MLETReserved9",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6968"
+    }
+   },
+   {
+    "name": "MLETReserved10",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6971"
+    }
+   },
+   {
+    "name": "MLETReserved11",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6972"
+    }
+   },
+   {
+    "name": "MLETReserved12",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6973"
+    }
+   },
+   {
+    "name": "MLETReserved13",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6974"
+    }
+   },
+   {
+    "name": "MLETReserved14",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6975"
+    }
+   },
+   {
+    "name": "MLETReserved15",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6976"
+    }
+   },
+   {
+    "name": "MLETReserved16",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6977"
+    }
+   },
+   {
+    "name": "MLETReserved17",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6978"
+    }
+   },
+   {
+    "name": "MLETReserved18",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6979"
+    }
+   },
+   {
+    "name": "MLExecService",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6401"
+    }
+   },
+   {
+    "name": "MLExecutionInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6412"
+    }
+   },
+   {
+    "name": "MLGuarant",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6402"
+    }
+   },
+   {
+    "name": "MLMaxParticipate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6403"
+    }
+   },
+   {
+    "name": "MLMinParticipant",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6469"
+    }
+   },
+   {
+    "name": "MLOrderCompletionInstr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6407"
+    }
+   },
+   {
+    "name": "MLPegOption",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6413"
+    }
+   },
+   {
+    "name": "MLPlanning",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6406"
+    }
+   },
+   {
+    "name": "MLPrimaryFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6405"
+    }
+   },
+   {
+    "name": "MLRiskFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6408"
+    }
+   },
+   {
+    "name": "MLSpecialOrderType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6409"
+    }
+   },
+   {
+    "name": "MLSpeedPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6410"
+    }
+   },
+   {
+    "name": "MLSpeedTargetPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6411"
+    }
+   },
+   {
+    "name": "MLSUser",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6432"
+    }
+   },
+   {
+    "name": "MLTargetParticipate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6404"
+    }
+   },
+   {
+    "name": "MLTransactionFundType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6419"
+    }
+   },
+   {
+    "name": "MLUPDATEUSER",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6431"
+    }
+   },
+   {
+    "name": "MOC1Percent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6418"
+    }
+   },
+   {
+    "name": "MOO2Percent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6417"
+    }
+   },
+   {
+    "name": "NoOfExecutionDays",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6421"
+    }
+   },
+   {
+    "name": "OfferPriceImpAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6311"
+    }
+   },
+   {
+    "name": "OpenAuctionRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6415"
+    }
+   },
+   {
+    "name": "OrderBenchmarkPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6442"
+    }
+   },
+   {
+    "name": "Pair1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6461"
+    }
+   },
+   {
+    "name": "Pair2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6462"
+    }
+   },
+   {
+    "name": "pair3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6463"
+    }
+   },
+   {
+    "name": "Pair4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6464"
+    }
+   },
+   {
+    "name": "Pair5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6465"
+    }
+   },
+   {
+    "name": "PairExecutionMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6451"
+    }
+   },
+   {
+    "name": "PairFormulaOffset",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6485"
+    }
+   },
+   {
+    "name": "PairsRebalanceThreshold",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6495"
+    }
+   },
+   {
+    "name": "PairsSuspendStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6494"
+    }
+   },
+   {
+    "name": "PariLegCoefficient",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6484"
+    }
+   },
+   {
+    "name": "PassiveQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6476"
+    }
+   },
+   {
+    "name": "PegDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6428"
+    }
+   },
+   {
+    "name": "PostResidual",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6445"
+    }
+   },
+   {
+    "name": "PrefDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6448"
+    }
+   },
+   {
+    "name": "PrefPostDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6473"
+    }
+   },
+   {
+    "name": "PrimaryBookingID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6422"
+    }
+   },
+   {
+    "name": "RegulationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6449"
+    }
+   },
+   {
+    "name": "RelativeIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6435"
+    }
+   },
+   {
+    "name": "RelativeLimitDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6486"
+    }
+   },
+   {
+    "name": "RelativeLimitInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6468"
+    }
+   },
+   {
+    "name": "RelativeLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6466"
+    }
+   },
+   {
+    "name": "RelativeSecureID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6434"
+    }
+   },
+   {
+    "name": "RelatviePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6436"
+    }
+   },
+   {
+    "name": "ReportFlowFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6472"
+    }
+   },
+   {
+    "name": "SCANDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6482"
+    }
+   },
+   {
+    "name": "SCANIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6483"
+    }
+   },
+   {
+    "name": "ScanLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6487"
+    }
+   },
+   {
+    "name": "SecondaryBookingID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6423"
+    }
+   },
+   {
+    "name": "ShowingFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6470"
+    }
+   },
+   {
+    "name": "SoftLimitFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6488"
+    }
+   },
+   {
+    "name": "SpeedRelIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6479"
+    }
+   },
+   {
+    "name": "SpeedRelPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6480"
+    }
+   },
+   {
+    "name": "SpeedRelSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6478"
+    }
+   },
+   {
+    "name": "SpeedRelTargetPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6481"
+    }
+   },
+   {
+    "name": "SpeedRiskFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6424"
+    }
+   },
+   {
+    "name": "StampConsid",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5058"
+    }
+   },
+   {
+    "name": "StartingPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6471"
+    }
+   },
+   {
+    "name": "Stepsize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6429"
+    }
+   },
+   {
+    "name": "StreamingQuoteTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6398"
+    }
+   },
+   {
+    "name": "TradeType2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5053"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6336"
+    }
+   },
+   {
+    "name": "TransReport",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5055"
+    }
+   },
+   {
+    "name": "TransStampStat",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5050"
+    }
+   },
+   {
+    "name": "TriggerIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6489"
+    }
+   },
+   {
+    "name": "UnderlyingSecurity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6426"
+    }
+   }
+  ]
+ }
+}

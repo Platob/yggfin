@@ -1,0 +1,44 @@
+{
+ "name": "NoTargetPartySubIDs",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoTargetPartySubIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2433"
+  },
+  "item": {
+   "name": "TargetPartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TargetPartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2434"
+     }
+    },
+    {
+     "name": "TargetPartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2435"
+     }
+    }
+   ]
+  }
+ }
+}

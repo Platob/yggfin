@@ -1,0 +1,157 @@
+{
+ "name": "NoRegistDtls",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoRegistDtls",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "473"
+  },
+  "item": {
+   "name": "RegistDtl",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RegistDtls",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "509"
+     }
+    },
+    {
+     "name": "RegistEmail",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "511"
+     }
+    },
+    {
+     "name": "MailingDtls",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "474"
+     }
+    },
+    {
+     "name": "MailingInst",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "482"
+     }
+    },
+    {
+     "name": "NoNestedPartyIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "539"
+     },
+     "item": {
+      "name": "NestedPartyID",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "NestedPartyID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "524"
+        }
+       },
+       {
+        "name": "NestedPartyIDSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "525"
+        }
+       },
+       {
+        "name": "NestedPartyRole",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "538"
+        }
+       },
+       {
+        "name": "NestedPartyRoleQualifier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2384"
+        }
+       },
+       {
+        "name": "NoNestedPartySubIDs",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "804"
+        },
+        "item": {
+         "name": "NestedPartySubID",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NestedPartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "545"
+           }
+          },
+          {
+           "name": "NestedPartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "805"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "OwnerType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "522"
+     }
+    },
+    {
+     "name": "DateOfBirth",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "486"
+     }
+    },
+    {
+     "name": "InvestorCountryOfResidence",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "475"
+     }
+    }
+   ]
+  }
+ }
+}

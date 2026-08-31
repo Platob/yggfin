@@ -1,0 +1,249 @@
+{
+ "name": "B2BITS",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "B2BITS",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "B2BITS",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AccruedInterestAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5384"
+    }
+   },
+   {
+    "name": "AuctionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5509"
+    }
+   },
+   {
+    "name": "BaseSwapPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5556"
+    }
+   },
+   {
+    "name": "BuyBackDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5559"
+    }
+   },
+   {
+    "name": "BuyBackPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5558"
+    }
+   },
+   {
+    "name": "ChgFromWAPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5510"
+    }
+   },
+   {
+    "name": "ChgOpenInterest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5511"
+    }
+   },
+   {
+    "name": "EncodedShortSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5383"
+    }
+   },
+   {
+    "name": "EncodedShortSecurityDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5382"
+    }
+   },
+   {
+    "name": "FaceValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5508"
+    }
+   },
+   {
+    "name": "FirstEligibleTradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5512"
+    }
+   },
+   {
+    "name": "InstrumentPricePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5514"
+    }
+   },
+   {
+    "name": "LastEligibleTradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5513"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5919"
+    }
+   },
+   {
+    "name": "MarketCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5385"
+    }
+   },
+   {
+    "name": "MaxOrdersVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5389"
+    }
+   },
+   {
+    "name": "MinPriceIncrement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5386"
+    }
+   },
+   {
+    "name": "MktShareLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5387"
+    }
+   },
+   {
+    "name": "MktShareThreshold",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5388"
+    }
+   },
+   {
+    "name": "PriceMvmLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5470"
+    }
+   },
+   {
+    "name": "PriceMvmLimitT1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5472"
+    }
+   },
+   {
+    "name": "ProductStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6959"
+    }
+   },
+   {
+    "name": "ProductType1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6958"
+    }
+   },
+   {
+    "name": "Repo2Px",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5677"
+    }
+   },
+   {
+    "name": "SettlPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6957"
+    }
+   },
+   {
+    "name": "ShortSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5381"
+    }
+   },
+   {
+    "name": "StateSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5217"
+    }
+   },
+   {
+    "name": "TotalBustedQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5684"
+    }
+   }
+  ]
+ }
+}

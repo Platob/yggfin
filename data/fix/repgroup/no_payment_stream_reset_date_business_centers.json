@@ -1,0 +1,29 @@
+{
+ "name": "NoPaymentStreamResetDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentStreamResetDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40948"
+  },
+  "item": {
+   "name": "PaymentStreamResetDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamResetDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40763"
+     }
+    }
+   ]
+  }
+ }
+}

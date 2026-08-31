@@ -1,0 +1,132 @@
+{
+ "name": "NoLegs",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "555"
+  },
+  "item": {
+   "name": "Leg",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentLeg",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "InstrumentLeg"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegFinancingDetails",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegFinancingDetails"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoLegRateSources",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "3116"
+     },
+     "item": {
+      "name": "LegRateSource",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegRateSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3117"
+        }
+       },
+       {
+        "name": "LegRateSourceType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3118"
+        }
+       },
+       {
+        "name": "LegReferencePage",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3119"
+        }
+       },
+       {
+        "name": "LegRateSourceReferencePageHeading",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3120"
+        }
+       },
+       {
+        "name": "LegRateSourceSymbol",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3121"
+        }
+       },
+       {
+        "name": "LegFXBenchmark",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3122"
+        }
+       },
+       {
+        "name": "LegFXBenchmarkDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3123"
+        }
+       },
+       {
+        "name": "LegFXBenchmarkTime",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3124"
+        }
+       },
+       {
+        "name": "LegFXBenchmarkBusinessCenter",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "3125"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,7 +1,8 @@
 {
  "name": "LegDeliveryStream",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "LegDeliveryStream",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "LegDeliveryStream",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -90,13 +95,26 @@
     }
    },
    {
-    "name": "LegDeliveryStreamCommoditySourceGrp",
-    "type": "struct",
+    "name": "NoLegDeliveryStreamCommoditySources",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegDeliveryStreamCommoditySourceGrp"
+     "tag": "41460"
     },
-    "fields": []
+    "item": {
+     "name": "LegDeliveryStreamCommoditySource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryStreamCommoditySource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41461"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegDeliveryStreamPipeline",
@@ -195,13 +213,42 @@
     }
    },
    {
-    "name": "LegDeliveryStreamCycleGrp",
-    "type": "struct",
+    "name": "NoLegDeliveryStreamCycles",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegDeliveryStreamCycleGrp"
+     "tag": "41456"
     },
-    "fields": []
+    "item": {
+     "name": "LegDeliveryStreamCycle",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41457"
+       }
+      },
+      {
+       "name": "EncodedLegDeliveryStreamCycleDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41458"
+       }
+      },
+      {
+       "name": "EncodedLegDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41459"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegDeliveryStreamTitleTransferLocation",

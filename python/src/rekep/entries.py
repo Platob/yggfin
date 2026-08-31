@@ -240,6 +240,19 @@ class Entry(Convertible, Mapping[str, Any]):
         return payload_arrow(messages)
 
     @classmethod
+    def normalized_arrow(
+        cls,
+        stored: Any,
+        plugins: Any = None,
+        plugin_keys: Mapping[str, Mapping[str, str]] | None = None,
+        null_values: Any = (),
+    ) -> Any:
+        """Apply source-plugin key names and remove values declared absent."""
+        from rekep.text.entries import normalized_arrow
+
+        return normalized_arrow(stored, plugins, plugin_keys, null_values)
+
+    @classmethod
     def pop_arrow(
         cls,
         stored: Any,

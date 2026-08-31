@@ -1,0 +1,351 @@
+{
+ "9001": {
+  "name": "TradeType",
+  "type": "string",
+  "nullable": true,
+  "description": "A-Allocation",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9001",
+   "type": "string",
+   "values": [
+    {
+     "value": "A",
+     "meaning": "Allocation"
+    },
+    {
+     "value": "W",
+     "meaning": "Away"
+    },
+    {
+     "value": "B",
+     "meaning": "Bilateral"
+    },
+    {
+     "value": "E",
+     "meaning": "Exchange"
+    },
+    {
+     "value": "T",
+     "meaning": "Transfer"
+    }
+   ],
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9002": {
+  "name": "RegisteredRep",
+  "type": "string",
+  "nullable": true,
+  "description": "Registered rep on this trade",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9002",
+   "type": "string",
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9003": {
+  "name": "BranchOffice",
+  "type": "string",
+  "nullable": true,
+  "description": "Branch office for this trade",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9003",
+   "type": "string",
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9004": {
+  "name": "ContraSideQualifier",
+  "type": "int32",
+  "nullable": true,
+  "description": "5-Sell Short 6-Sell Exempt",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "int",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9004",
+   "type": "int",
+   "values": [
+    {
+     "value": "5",
+     "meaning": "Sell Short 6-Sell Exempt"
+    },
+    {
+     "value": "6",
+     "meaning": "Sell Exempt"
+    }
+   ],
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9005": {
+  "name": "OmitSECFee",
+  "type": "string",
+  "nullable": true,
+  "description": "True if SEC fees should not be applied",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9005",
+   "type": "string",
+   "values": [
+    {
+     "value": "F",
+     "meaning": ""
+    },
+    {
+     "value": "T",
+     "meaning": ""
+    }
+   ],
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9006": {
+  "name": "OmitTAFFee",
+  "type": "string",
+  "nullable": true,
+  "description": "True if TAF fees should not be applied",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9006",
+   "type": "string",
+   "values": [
+    {
+     "value": "F",
+     "meaning": ""
+    },
+    {
+     "value": "T",
+     "meaning": ""
+    }
+   ],
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9007": {
+  "name": "LocateID",
+  "type": "string",
+  "nullable": true,
+  "description": "Locate ID obtained for a short sale; Required for Sell Short",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9007",
+   "type": "string",
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9008": {
+  "name": "LocateSource",
+  "type": "string",
+  "nullable": true,
+  "description": "Firm supplying the locate (usually MPID); Required for Sell Short",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9008",
+   "type": "string",
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9009": {
+  "name": "CancelTradeID",
+  "type": "string",
+  "nullable": true,
+  "description": "Original trade ID to cancel; Required for all Cancel trades",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9009",
+   "type": "string",
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9010": {
+  "name": "NSCCClearing",
+  "type": "string",
+  "nullable": true,
+  "description": "agu contra corr corr_fees qsr",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9010",
+   "type": "string",
+   "values": [
+    {
+     "value": "agu",
+     "meaning": ""
+    },
+    {
+     "value": "contra",
+     "meaning": ""
+    },
+    {
+     "value": "corr",
+     "meaning": ""
+    },
+    {
+     "value": "corr_fees",
+     "meaning": ""
+    },
+    {
+     "value": "qsr",
+     "meaning": ""
+    }
+   ],
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ },
+ "9011": {
+  "name": "Response",
+  "type": "string",
+  "nullable": true,
+  "description": "ACK or NACK with reason",
+  "fix": {
+   "namespace": "clear-street",
+   "source": "clear-street",
+   "source-version": "FIX.4.2",
+   "source-url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "source-format": "markdown",
+   "source-checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "original-type": "string",
+   "source-license": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "protocol-version": "4.2",
+   "tag": "9011",
+   "type": "string",
+   "versions": [
+    "4.2"
+   ],
+   "sources": [
+    "clear-street"
+   ]
+  }
+ }
+}

@@ -1,0 +1,29 @@
+{
+ "name": "NoStreamTerminationDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoStreamTerminationDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40961"
+  },
+  "item": {
+   "name": "StreamTerminationDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StreamTerminationDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40067"
+     }
+    }
+   ]
+  }
+ }
+}

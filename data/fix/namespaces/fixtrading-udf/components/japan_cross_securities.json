@@ -1,0 +1,65 @@
+{
+ "name": "JapanCrossSecurities",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "JapanCrossSecurities",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "JapanCrossSecurities",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "BalanceGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5550"
+    }
+   },
+   {
+    "name": "BuyLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5551"
+    }
+   },
+   {
+    "name": "MinimumValueType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5553"
+    }
+   },
+   {
+    "name": "RolloverFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5554"
+    }
+   },
+   {
+    "name": "SellLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5552"
+    }
+   }
+  ]
+ }
+}

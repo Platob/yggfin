@@ -1,0 +1,1189 @@
+{
+ "name": "NoSides",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoSides",
+  "type": "list",
+  "fix": {
+   "tag": "552"
+  },
+  "item": {
+   "name": "Side",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Side",
+     "type": "string",
+     "fix": {
+      "tag": "54"
+     }
+    },
+    {
+     "name": "ShortMarkingExemptIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2102"
+     }
+    },
+    {
+     "name": "OrigClOrdID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41"
+     }
+    },
+    {
+     "name": "ClOrdID",
+     "type": "string",
+     "fix": {
+      "tag": "11"
+     }
+    },
+    {
+     "name": "SecondaryClOrdID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "526"
+     }
+    },
+    {
+     "name": "ClOrdLinkID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "583"
+     }
+    },
+    {
+     "name": "OrigOrdModTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "586"
+     }
+    },
+    {
+     "name": "NoPartyIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "453"
+     },
+     "item": {
+      "name": "PartyID",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "PartyID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "448"
+        }
+       },
+       {
+        "name": "PartyIDSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "447"
+        }
+       },
+       {
+        "name": "PartyRole",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "452"
+        }
+       },
+       {
+        "name": "PartyRoleQualifier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2376"
+        }
+       },
+       {
+        "name": "NoPartySubIDs",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "802"
+        },
+        "item": {
+         "name": "PartySubID",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoCrossLegs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1829"
+     },
+     "item": {
+      "name": "CrossLeg",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegRefID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "654"
+        }
+       },
+       {
+        "name": "LegOrderQty",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "685"
+        }
+       },
+       {
+        "name": "LegSwapType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "690"
+        }
+       },
+       {
+        "name": "NoLegStipulations",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "683"
+        },
+        "item": {
+         "name": "LegStipulation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegStipulationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "688"
+           }
+          },
+          {
+           "name": "LegStipulationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "689"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "LegAllocID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1366"
+        }
+       },
+       {
+        "name": "NoLegAllocs",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "670"
+        },
+        "item": {
+         "name": "LegAlloc",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegAllocAccount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "671"
+           }
+          },
+          {
+           "name": "LegIndividualAllocID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "672"
+           }
+          },
+          {
+           "name": "NoNested2PartyIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "756"
+           },
+           "item": {
+            "name": "Nested2PartyID",
+            "type": "struct",
+            "fields": [
+             {
+              "name": "Nested2PartyID",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "757"
+              }
+             },
+             {
+              "name": "Nested2PartyIDSource",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "758"
+              }
+             },
+             {
+              "name": "Nested2PartyRole",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "759"
+              }
+             },
+             {
+              "name": "Nested2PartyRoleQualifier",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "2381"
+              }
+             },
+             {
+              "name": "NoNested2PartySubIDs",
+              "type": "list",
+              "nullable": true,
+              "fix": {
+               "tag": "806"
+              },
+              "item": {
+               "name": "Nested2PartySubID",
+               "type": "struct",
+               "fields": [
+                {
+                 "name": "Nested2PartySubID",
+                 "type": "string",
+                 "nullable": true,
+                 "fix": {
+                  "tag": "760"
+                 }
+                },
+                {
+                 "name": "Nested2PartySubIDType",
+                 "type": "string",
+                 "nullable": true,
+                 "fix": {
+                  "tag": "807"
+                 }
+                }
+               ]
+              }
+             }
+            ]
+           }
+          },
+          {
+           "name": "LegAllocQty",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "673"
+           }
+          },
+          {
+           "name": "LegAllocAcctIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "674"
+           }
+          },
+          {
+           "name": "LegAllocSettlCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1367"
+           }
+          },
+          {
+           "name": "LegAllocSettlCurrencyCodeSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2928"
+           }
+          },
+          {
+           "name": "LegCustodialLotID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1756"
+           }
+          },
+          {
+           "name": "LegVersusPurchaseDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1757"
+           }
+          },
+          {
+           "name": "LegVersusPurchasePrice",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1758"
+           }
+          },
+          {
+           "name": "LegCurrentCostBasis",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1759"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "LegClearingAccountType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1817"
+        }
+       },
+       {
+        "name": "LegPositionEffect",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "564"
+        }
+       },
+       {
+        "name": "LegCoveredOrUncovered",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "565"
+        }
+       },
+       {
+        "name": "NoNested3PartyIDs",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "948"
+        },
+        "item": {
+         "name": "Nested3PartyID",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "Nested3PartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "949"
+           }
+          },
+          {
+           "name": "Nested3PartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "950"
+           }
+          },
+          {
+           "name": "Nested3PartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "951"
+           }
+          },
+          {
+           "name": "Nested3PartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2382"
+           }
+          },
+          {
+           "name": "NoNested3PartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "952"
+           },
+           "item": {
+            "name": "Nested3PartySubID",
+            "type": "struct",
+            "fields": [
+             {
+              "name": "Nested3PartySubID",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "953"
+              }
+             },
+             {
+              "name": "Nested3PartySubIDType",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "954"
+              }
+             }
+            ]
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "LegSettlType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "587"
+        }
+       },
+       {
+        "name": "LegSettlDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "588"
+        }
+       },
+       {
+        "name": "LegSettlCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "675"
+        }
+       },
+       {
+        "name": "LegSettlCurrencyCodeSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2900"
+        }
+       },
+       {
+        "name": "LegVolatility",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1379"
+        }
+       },
+       {
+        "name": "LegDividendYield",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1381"
+        }
+       },
+       {
+        "name": "LegCurrencyRatio",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1383"
+        }
+       },
+       {
+        "name": "LegExecInst",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1384"
+        }
+       },
+       {
+        "name": "LegShortSaleExemptionReason",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1689"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "SideShortSaleExemptionReason",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1690"
+     }
+    },
+    {
+     "name": "TradeOriginationDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "229"
+     }
+    },
+    {
+     "name": "TradeDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "75"
+     }
+    },
+    {
+     "name": "Account",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1"
+     }
+    },
+    {
+     "name": "AcctIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "660"
+     }
+    },
+    {
+     "name": "AccountType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "581"
+     }
+    },
+    {
+     "name": "DayBookingInst",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "589"
+     }
+    },
+    {
+     "name": "BookingUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "590"
+     }
+    },
+    {
+     "name": "PreallocMethod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "591"
+     }
+    },
+    {
+     "name": "AllocID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "70"
+     }
+    },
+    {
+     "name": "NoAllocs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "78"
+     },
+     "item": {
+      "name": "Alloc",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "AllocAccount",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "79"
+        }
+       },
+       {
+        "name": "AllocAcctIDSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "661"
+        }
+       },
+       {
+        "name": "AllocSettlCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "736"
+        }
+       },
+       {
+        "name": "AllocSettlCurrencyCodeSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2927"
+        }
+       },
+       {
+        "name": "IndividualAllocID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "467"
+        }
+       },
+       {
+        "name": "AllocLegRefID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2727"
+        }
+       },
+       {
+        "name": "NoNestedPartyIDs",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "539"
+        },
+        "item": {
+         "name": "NestedPartyID",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NestedPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "524"
+           }
+          },
+          {
+           "name": "NestedPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "525"
+           }
+          },
+          {
+           "name": "NestedPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "538"
+           }
+          },
+          {
+           "name": "NestedPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2384"
+           }
+          },
+          {
+           "name": "NoNestedPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "804"
+           },
+           "item": {
+            "name": "NestedPartySubID",
+            "type": "struct",
+            "fields": [
+             {
+              "name": "NestedPartySubID",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "545"
+              }
+             },
+             {
+              "name": "NestedPartySubIDType",
+              "type": "string",
+              "nullable": true,
+              "fix": {
+               "tag": "805"
+              }
+             }
+            ]
+           }
+          }
+         ]
+        }
+       },
+       {
+        "name": "AllocHandlInst",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "209"
+        }
+       },
+       {
+        "name": "AllocQty",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "80"
+        }
+       },
+       {
+        "name": "CustodialLotID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1752"
+        }
+       },
+       {
+        "name": "VersusPurchaseDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1753"
+        }
+       },
+       {
+        "name": "VersusPurchasePrice",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1754"
+        }
+       },
+       {
+        "name": "CurrentCostBasis",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1755"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "QtyType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "854"
+     }
+    },
+    {
+     "name": "OrderQtyData",
+     "type": "struct",
+     "fix": {
+      "component": "OrderQtyData"
+     },
+     "fields": []
+    },
+    {
+     "name": "CommissionData",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "CommissionData"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoCommissions",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2639"
+     },
+     "item": {
+      "name": "Commission",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "CommissionAmount",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2640"
+        }
+       },
+       {
+        "name": "CommissionAmountType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2641"
+        }
+       },
+       {
+        "name": "CommissionAmountSubType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2725"
+        }
+       },
+       {
+        "name": "CommissionBasis",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2642"
+        }
+       },
+       {
+        "name": "CommissionCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2643"
+        }
+       },
+       {
+        "name": "CommissionCurrencyCodeSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2923"
+        }
+       },
+       {
+        "name": "CommissionUnitOfMeasure",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2644"
+        }
+       },
+       {
+        "name": "CommissionUnitOfMeasureCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2645"
+        }
+       },
+       {
+        "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2924"
+        }
+       },
+       {
+        "name": "CommissionRate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2646"
+        }
+       },
+       {
+        "name": "CommissionSharedIndicator",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2647"
+        }
+       },
+       {
+        "name": "CommissionAmountShared",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2648"
+        }
+       },
+       {
+        "name": "CommissionLegRefID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2649"
+        }
+       },
+       {
+        "name": "CommissionDesc",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2650"
+        }
+       },
+       {
+        "name": "EncodedCommissionDescLen",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2651"
+        }
+       },
+       {
+        "name": "EncodedCommissionDesc",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2652"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "OrderCapacity",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "528"
+     }
+    },
+    {
+     "name": "OrderRestrictions",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "529"
+     }
+    },
+    {
+     "name": "OrderOrigination",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1724"
+     }
+    },
+    {
+     "name": "OriginatingDeptID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1725"
+     }
+    },
+    {
+     "name": "ReceivingDeptID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1726"
+     }
+    },
+    {
+     "name": "RoutingArrangementIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2883"
+     }
+    },
+    {
+     "name": "PreTradeAnonymity",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1091"
+     }
+    },
+    {
+     "name": "CustOrderCapacity",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "582"
+     }
+    },
+    {
+     "name": "ForexReq",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "121"
+     }
+    },
+    {
+     "name": "SettlCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "120"
+     }
+    },
+    {
+     "name": "SettlCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2899"
+     }
+    },
+    {
+     "name": "BookingType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "775"
+     }
+    },
+    {
+     "name": "Text",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "58"
+     }
+    },
+    {
+     "name": "EncodedTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "354"
+     }
+    },
+    {
+     "name": "EncodedText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "355"
+     }
+    },
+    {
+     "name": "ClearingAccountType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1816"
+     }
+    },
+    {
+     "name": "PositionEffect",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "77"
+     }
+    },
+    {
+     "name": "CoveredOrUncovered",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "203"
+     }
+    },
+    {
+     "name": "CashMargin",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "544"
+     }
+    },
+    {
+     "name": "ClearingFeeIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "635"
+     }
+    },
+    {
+     "name": "SolicitedFlag",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "377"
+     }
+    },
+    {
+     "name": "SideComplianceID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "659"
+     }
+    },
+    {
+     "name": "SideTimeInForce",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "962"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1374,7 +1374,15 @@ def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCod
             component.name not in package_components for component in registry.components(version)
         )
     ]
-    assert declared == ["5.0.SP2", "5.0.SP1", "5.0", "4.4", "4.3", "FIXT1.1"]
+    assert declared == [
+        "FIX.Latest",
+        "5.0.SP2",
+        "5.0.SP1",
+        "5.0",
+        "4.4",
+        "4.3",
+        "FIXT1.1",
+    ]
     assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
 
 

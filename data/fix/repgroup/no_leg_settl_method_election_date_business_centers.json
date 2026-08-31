@@ -1,0 +1,29 @@
+{
+ "name": "NoLegSettlMethodElectionDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegSettlMethodElectionDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42581"
+  },
+  "item": {
+   "name": "LegSettlMethodElectionDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegSettlMethodElectionDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42582"
+     }
+    }
+   ]
+  }
+ }
+}

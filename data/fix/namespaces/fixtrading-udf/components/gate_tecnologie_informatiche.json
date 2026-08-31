@@ -1,0 +1,161 @@
+{
+ "name": "GATETecnologieInformatiche",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "GATETecnologieInformatiche",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "GATETecnologieInformatiche",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "CustomerType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5250"
+    }
+   },
+   {
+    "name": "NoSides",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6552"
+    }
+   },
+   {
+    "name": "OrdTypeExt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5253"
+    }
+   },
+   {
+    "name": "OrigOrderID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5254"
+    }
+   },
+   {
+    "name": "QtyParam",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5252"
+    }
+   },
+   {
+    "name": "Reserved28",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5393"
+    }
+   },
+   {
+    "name": "Reserved29",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5394"
+    }
+   },
+   {
+    "name": "Reserved30",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5395"
+    }
+   },
+   {
+    "name": "Reserved31",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5396"
+    }
+   },
+   {
+    "name": "Reserved32",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5397"
+    }
+   },
+   {
+    "name": "Reserved33",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5398"
+    }
+   },
+   {
+    "name": "Reserved34",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5399"
+    }
+   },
+   {
+    "name": "SenderGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5392"
+    }
+   },
+   {
+    "name": "SettlAccType1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5391"
+    }
+   },
+   {
+    "name": "SettlVenue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5390"
+    }
+   },
+   {
+    "name": "StopPxCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5255"
+    }
+   },
+   {
+    "name": "TimeInForce",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5251"
+    }
+   }
+  ]
+ }
+}

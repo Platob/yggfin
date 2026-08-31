@@ -21,6 +21,7 @@ enum name and the complete stored-value lookup under `enum:*` metadata.
 | Enum | Contract |
 | --- | --- |
 | [Direction](direction.md) | Transport movement stated before a payload. |
+| [Plugin](plugin.md) | Optional short code assigned to a recording plugin. |
 | [Protocol](protocol.md) | Grammar the payload's keys are written in. |
 
 ## Event codes

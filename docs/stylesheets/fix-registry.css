@@ -29,7 +29,7 @@
 
 .fix-registry__summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
   border: 1px solid var(--registry-border);
   border-radius: var(--rekep-radius);
   overflow: hidden;
@@ -80,6 +80,38 @@
 
 .fix-registry__summary span {
   margin-top: 0.35rem;
+}
+
+.fix-registry__namespace-coverage {
+  display: flex;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  color: var(--registry-muted);
+  font-size: 0.62rem;
+}
+
+.fix-registry__namespace-coverage > span {
+  white-space: nowrap;
+}
+
+.fix-registry__sources {
+  margin-top: 0.45rem;
+  color: var(--registry-muted);
+  font-size: 0.62rem;
+}
+
+.fix-registry__sources > summary {
+  font-weight: 400;
+}
+
+.fix-registry__sources ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1rem;
+}
+
+.fix-registry__sources li {
+  margin: 0.22rem 0;
 }
 
 .fix-registry__jump {
@@ -161,12 +193,12 @@
 .fix-registry__eyebrow {
   margin: 0;
   color: var(--registry-orange);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .fix-registry__filters {
   display: grid;
-  grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(7rem, 1fr)) auto;
+  grid-template-columns: minmax(12rem, 2fr) repeat(4, minmax(7rem, 1fr)) auto;
   align-items: end;
   gap: 0.6rem;
   margin: 0.8rem 0;
@@ -243,7 +275,7 @@
   background: var(--rekep-elevated);
   color: var(--md-default-fg-color);
   font-size: 0.58rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
@@ -322,6 +354,33 @@
 
 .fix-registry__badge {
   color: var(--registry-muted);
+}
+
+.fix-registry__namespace {
+  display: inline-block;
+  padding: 0.04rem 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--registry-muted) 28%, transparent);
+  border-radius: var(--rekep-radius-sm);
+  color: var(--registry-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.52rem;
+  font-weight: 400;
+  line-height: 1.3;
+  vertical-align: 0.06rem;
+  white-space: nowrap;
+}
+
+.fix-registry__badge--type {
+  border-color: color-mix(in srgb, var(--registry-orange) 32%, var(--registry-border));
+  color: var(--md-default-fg-color);
+}
+
+.fix-registry__protocol-type {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--registry-muted);
+  font-size: 0.56rem;
+  font-weight: 400;
 }
 
 .fix-registry__badge--required {
@@ -553,11 +612,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .fix-registry__summary > div:nth-child(2) {
+  .fix-registry__summary > div:nth-child(even) {
     border-right: 0;
   }
 
-  .fix-registry__summary > div:nth-child(-n + 2) {
+  .fix-registry__summary > div:nth-child(-n + 6) {
     border-bottom: 1px solid var(--registry-border);
   }
 

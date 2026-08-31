@@ -1,0 +1,41 @@
+{
+ "name": "NoUnderlyingPhysicalSettlDeliverableObligations",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingPhysicalSettlDeliverableObligations",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42065"
+  },
+  "item": {
+   "name": "UnderlyingPhysicalSettlDeliverableObligation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPhysicalSettlDeliverableObligationType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42066"
+     }
+    },
+    {
+     "name": "UnderlyingPhysicalSettlDeliverableObligationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42067"
+     }
+    }
+   ]
+  }
+ }
+}

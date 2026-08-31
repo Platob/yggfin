@@ -6,21 +6,26 @@ filesystem normalization, commit grouping, and maintenance policy.
 
 ```python
 from rekep import FixMsg
-from rekep.iceberg import IcebergDataset
+from rekep.iceberg import IcebergCatalog
 
-logs = IcebergDataset(
-    field=FixMsg.into_field("fix.market"),
-    catalog="local",
+catalog = IcebergCatalog(
+    catalog_name="local",
     properties={
         "type": "sql",
         "uri": "sqlite:///catalog.db",
         "warehouse": "file://warehouse",
     },
+)
+logs = catalog.dataset(
+    "market",
+    namespace="fix",
+    field=FixMsg.into_field(),
     branch="root",
 )
 ```
 
-The field name is the full table identifier; `logs.namespace` is `"fix"`.
+The catalog is shared. The dataset keeps `name="market"` and
+`namespace="fix"` as explicit table coordinates.
 
 ## Read
 
@@ -110,6 +115,15 @@ uploaded path even if one removal fails. A failure whose catalog
 acknowledgement is ambiguous leaves the files for orphan maintenance rather
 than risk deleting committed data.
 
+Blind appends and complete-partition replacements retry transient catalog and
+object-store failures four times by default. Each retry refreshes the branch,
+checks the stable operation id, and uses exponential full jitter. A planned
+keyed rewrite still settles a lost acknowledgement by operation id, but returns
+a concurrent conflict so its caller can replay against current files and keys.
+An acknowledgement lost after a successful commit is therefore not written a
+second time. `commit_retries`, `retry_backoff`, and `retry_max_backoff` tune
+that policy per dataset.
+
 The source must keep each partition contiguous, and a recurrence after another
 partition is rejected. Writes are incremental: complete groups committed
 before a later source or ordering error remain committed.
@@ -130,19 +144,37 @@ configuration does not depend on an organization's default-branch spelling.
 A producer that does not provide Iceberg ids is numbered at creation, while a
 contract that already carries ids keeps them.
 
+## Delete
+
+```python
+from pyiceberg.expressions import EqualTo
+
+removed = logs.delete_where("msgtype = '0'", commit_file_count=16)
+removed += logs.delete(EqualTo("msgtype", "1"))
+
+# No filter removes every row. A missing table is a zero-row no-op.
+removed += logs.delete(branch="root")
+```
+
+Strings use PyIceberg's SQL predicate grammar; PyIceberg BooleanExpression
+objects pass through unchanged. Planning prunes partitions and files first.
+Each commit rewrites at most `commit_file_count` candidate files, and a partial
+file is filtered one RecordBatch at a time. The return value is the number of
+rows removed, so a replay that finds no match reports zero without committing.
+
 ### Arrow widths on read
 
 A read hands back `string` and `binary`, not `large_string` and `large_binary`:
 
 ```python
 from rekep import FixMsg
-from rekep.iceberg import IcebergDataset
+from rekep.iceberg import IcebergCatalog
 
-logs = IcebergDataset(
-    field=FixMsg.into_field("fix.market"),
-    catalog="local",
+catalog = IcebergCatalog(
+    catalog_name="local",
     properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file://warehouse"},
 )
+logs = catalog.dataset("fix.market", field=FixMsg.into_field())
 print(logs.read_arrow_reader().schema.field("msgtype").type)
 ```
 
@@ -214,33 +246,8 @@ endpoint, bucket, and path are parsed once by `Url`; explicit catalog
 properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
 same Arrow S3 filesystem as `s3://`.
 
-`ArrowPath` keeps that parsed URL and filesystem together:
-
-```python
-from rekep import ArrowPath
-
-capture = ArrowPath("data/capture/app.log").resolve(".")
-print(capture.name, capture.parent, capture.exists())
-with capture.open("rb") as source:
-    head = source.read(64)
-
-for entry in capture.parent.ls():
-    print(entry)
-
-optional = capture.parent / "optional.log"
-assert optional.read_bytes() is None
-assert not optional.delete()
-
-# Required inputs keep a missing-path error explicit.
-required = optional.read_bytes(strict=True)
-```
-
-Joining with `/`, globbing, byte reads and writes, and input/output streams all
-reuse the same filesystem. Listings and default byte reads/deletes treat a
-missing path as empty; `strict=True` is for required data. A write tries the
-target first and creates its parent only when that backend requires one. A
-bound `ArrowFileIO` holds this one path instead of parallel URL, filesystem,
-and opened-file state.
+[`ArrowPath` and `ArrowFileIO`](arrow-files.md) own path operations, missing
+path behavior, staging, and the immutable-content cache.
 
 Maintenance lists through the table's own FileIO rather than resolving the
 location again, because a location this package canonicalized has had its
@@ -324,18 +331,19 @@ Beyond what a location spells, these PyIceberg catalog properties reach Arrow
 through this FileIO. A production Glue catalog:
 
 ```yaml
-catalog: rekep-production
-catalog_properties:
-  type: glue
-  warehouse: s3://example-bucket/rekep/warehouse
-  glue.region: eu-west-1
-  s3.region: eu-west-1
-  s3.connect-timeout: "10.0"      # seconds
-  s3.request-timeout: "60.0"      # seconds
-  s3.role-arn: arn:aws:iam::123456789012:role/rekep-writer
-  s3.role-session-name: rekep
-# A custom KMS key belongs in the bucket default. Do not add
-# `s3.sse.type: kms` or `s3.sse.key` here: Arrow cannot send their headers.
+catalog:
+  catalog_name: rekep-production
+  properties:
+    type: glue
+    warehouse: s3://example-bucket/rekep/warehouse
+    glue.region: eu-west-1
+    s3.region: eu-west-1
+    s3.connect-timeout: "10.0"      # seconds
+    s3.request-timeout: "60.0"      # seconds
+    s3.role-arn: arn:aws:iam::123456789012:role/rekep-writer
+    s3.role-session-name: rekep
+    # A custom KMS key belongs in the bucket default. Per-request
+    # `s3.sse.type: kms` and `s3.sse.key` are refused by ArrowFileIO.
 ```
 
 Verify what any of them become:
@@ -430,7 +438,7 @@ aws s3api put-bucket-encryption --bucket rekep-warehouse \
 ```
 
 `KMSMasterKeyID` is the custom-key setting. Do not translate it into
-`s3.sse.type: kms` plus `s3.sse.key` in `catalog_properties`: those Iceberg
+`s3.sse.type: kms` plus `s3.sse.key` in `catalog.properties`: those Iceberg
 names ask for per-request headers that this FileIO cannot send.
 
 Per-*request* encryption is not available. `pyarrow.fs.S3FileSystem` has no
@@ -449,76 +457,8 @@ Where per-request encryption is a requirement, `rekep.io.delegate-file-io`
 names a FileIO to use in place of this one; it is wrapped for output ownership
 and everything else on this page still applies.
 
-### Immutable content cache
-
-`ArrowFileIO` serves the files Iceberg promises never to rewrite -- `.avro`
-manifests and manifest lists, and a `metadata.json` whose name carries a UUID --
-out of memory, so a plan that reads the same manifest twice pays one GET. A
-Hadoop-style `v3.metadata.json` is never cached: two racing writers can both
-produce that name with different bytes.
-
-```yaml
-catalog_properties:
-  rekep.io.cache-bytes: "0"        # opt this process out
-```
-
-The budget is process-wide, not per catalog, because the files are shared too:
-setting `rekep.io.cache-bytes` on one catalog resizes the cache for every
-catalog in the process. It defaults to 64 MiB, and one file larger than an
-eighth of the budget is never stored. Entries are keyed by the store serving
-them -- scheme, endpoint, access key, region, bucket and key -- so two stores
-carrying one path are never confused, and deleting a file evicts it under that
-same key.
-
-Partition staging uses that same instance to copy local Parquet files to the
-final path produced by Iceberg's location provider. Local warehouses and
-`s3`/`s3a` warehouses therefore share one bounded copy path and the catalog's
-endpoint, region, and credential configuration.
-
-`ArrowFileIO.spill(local=None, temporary=False)` returns a local `ArrowFileIO`;
-an already-local bound input returns itself. Persistent spills
-use a deterministic name, are pulled again when the remote byte size changes,
-and never serve stale bytes after the remote disappears. Temporary spills are
-uniquely owned and deleted on `close`, after their open stream is closed.
-
-`TextFile` holds that owner directly, and uses it only where a caller opts in
-with `spill=True`: a compressed remote log is then copied as raw compressed
-bytes in 4 MiB chunks, decoded incrementally by Arrow, and purged when the
-reader finishes, so its disk use is the compressed object size. `spill=False`,
-the default, leaves Arrow decoding the object-store stream directly and writes
-nothing. Either way memory stays bounded by the copy/read chunk and one parsed
-record batch; the expanded capture is never materialized as a file or Arrow
-table.
-
-A log is written by appending, which an object store cannot do: `append_arrow_*`
-works on a local path and is refused on S3 and GCS, which have only a
-whole-object put. `overwrite_arrow_*` is refused everywhere -- a log is a
-sequence of lines with no key to replace one by. Write locally and upload, or
-write to a dataset that owns its own files.
-
-Exhausting the reader closes that owner. A partial consumer closes the
-surrounding `TextFile` context to release the decoder and temporary spill.
-
-```bash
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_SESSION_TOKEN=...
-export AWS_REGION=eu-west-1
-```
-
-At the first `rekep` import, these standard AWS values are copied into empty
-or absent `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_SESSION_TOKEN`, and
-`S3_REGION` variables. `AWS_DEFAULT_REGION` is the region fallback.
-`AWS_ENDPOINT_URL_S3` and then `AWS_ENDPOINT_URL` similarly fill
-`S3_ENDPOINT_URL`.
-
-The resulting `S3_*` values become Iceberg defaults and configure direct Arrow
-access. An explicit `S3_*` value wins. The AWS-to-S3 copy runs once, so later
-changes to `AWS_*` do not overwrite the process's `S3_*` values.
-
-An explicit catalog property wins over a value in a location URL, which wins
-over the environment. Arrow still uses the standard AWS profile and
-workload-role credential chain when no environment credentials were captured.
+Cache, spill, direct file operations, and environment precedence are documented
+once in [Arrow paths and FileIO](arrow-files.md).
 
 ## Maintenance
 

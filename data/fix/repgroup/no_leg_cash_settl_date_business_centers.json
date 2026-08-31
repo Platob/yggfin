@@ -1,0 +1,29 @@
+{
+ "name": "NoLegCashSettlDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegCashSettlDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42306"
+  },
+  "item": {
+   "name": "LegCashSettlDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegCashSettlDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42307"
+     }
+    }
+   ]
+  }
+ }
+}

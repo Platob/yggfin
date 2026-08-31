@@ -1,7 +1,8 @@
 {
  "name": "PaymentStreamNonDeliverableSettlTerms",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "PaymentStreamNonDeliverableSettlTerms",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "PaymentStreamNonDeliverableSettlTerms",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AdjustedPositionReport",
     "Advertisement",
@@ -47,6 +52,7 @@
     "MarginRequirementInquiry",
     "MarginRequirementInquiryAck",
     "MarginRequirementReport",
+    "MarketDataAck",
     "MarketDataIncrementalRefresh",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh",
@@ -98,9 +104,12 @@
     "SecurityListRequest",
     "SecurityListUpdateReport",
     "SecurityMassStatus",
+    "SecurityRiskMetricsReport",
     "SecurityStatus",
     "SecurityStatusRequest",
     "SettlementObligationReport",
+    "SettlementStatusReport",
+    "SettlementStatusRequest",
     "StreamAssignmentReport",
     "StreamAssignmentRequest",
     "TradeAggregationReport",
@@ -131,13 +140,26 @@
     }
    },
    {
-    "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PaymentStreamNonDeliverableFixingDatesBusinessCenterGrp"
+     "tag": "40946"
     },
-    "fields": []
+    "item": {
+     "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40819"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "PaymentStreamNonDeliverableFixingDatesRelativeTo",
@@ -181,22 +203,81 @@
     "fields": []
    },
    {
-    "name": "PaymentStreamNonDeliverableFixingDateGrp",
-    "type": "struct",
+    "name": "NoNonDeliverableFixingDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PaymentStreamNonDeliverableFixingDateGrp"
+     "tag": "40825"
     },
-    "fields": []
+    "item": {
+     "name": "NonDeliverableFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NonDeliverableFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40826"
+       }
+      },
+      {
+       "name": "NonDeliverableFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40827"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "SettlRateDisruptionFallbackGrp",
-    "type": "struct",
+    "name": "NoSettlRateFallbacks",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "SettlRateDisruptionFallbackGrp"
+     "tag": "40085"
     },
-    "fields": []
+    "item": {
+     "name": "SettlRateFallback",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlRatePostponementMaximumDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40086"
+       }
+      },
+      {
+       "name": "SettlRateFallbackRateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlRateFallbackRateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "SettlRatePostponementSurvey",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40088"
+       }
+      },
+      {
+       "name": "SettlRatePostponementCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40089"
+       }
+      }
+     ]
+    }
    }
   ]
  }

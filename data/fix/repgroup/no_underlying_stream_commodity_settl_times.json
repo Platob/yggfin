@@ -1,0 +1,45 @@
+{
+ "name": "NoUnderlyingStreamCommoditySettlTimes",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingStreamCommoditySettlTimes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41999"
+  },
+  "item": {
+   "name": "UnderlyingStreamCommoditySettlTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamCommoditySettlStart",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42000"
+     }
+    },
+    {
+     "name": "UnderlyingStreamCommoditySettlEnd",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42001"
+     }
+    },
+    {
+     "name": "UnderlyingStreamCommoditySettlTimeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41936"
+     }
+    }
+   ]
+  }
+ }
+}

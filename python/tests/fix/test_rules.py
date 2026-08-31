@@ -81,9 +81,9 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
     """Structured rules lead, so payload prose cannot replace its envelope."""
     assert len(DEFAULT_RULES) == EXPECTED_RULES
     assert [rule.protocol.code for rule in DEFAULT.rules] == [
-        "XML",
         "FIX",
         "FIXML",
+        "XML",
         "UL",
         "MISC",
         "OTHER",
@@ -91,7 +91,7 @@ def test_the_default_set_is_the_built_ins_in_order() -> None:
     assert len({rule.protocol for rule in DEFAULT_RULES}) == EXPECTED_PROTOCOLS
     assert {rule.protocol for rule in DEFAULT_RULES} == set(Protocol) - {Protocol.UNKNOWN}
     assert OTHER.protocol is Protocol.OTHER
-    assert [rule.codec for rule in DEFAULT.rules] == ["xml", *SHAPES, "none", "none"]
+    assert [rule.codec for rule in DEFAULT.rules] == ["fix", "fixml", "xml", "ul", "none", "none"]
 
 
 @pytest.mark.parametrize(("message", "expected"), LINES.items(), ids=lambda v: str(v)[:28])
@@ -489,7 +489,7 @@ def test_a_rule_set_round_trips_as_a_document(tmp_path: Path) -> None:
 def test_a_written_rule_spells_its_protocol_rather_than_packing_it() -> None:
     """The document is hand-edited, and a packed code is nineteen digits of
     nothing to whoever opens the file."""
-    assert DEFAULT.rules[0].into_dict()["protocol"] == "XML"
+    assert DEFAULT.rules[0].into_dict()["protocol"] == "FIX"
     assert b"protocol: XML\n" in DEFAULT.into_yaml()
     assert b"protocol: FIX\n" in DEFAULT.into_yaml()
     assert Rules.from_dict({"rules": [{"protocol": "VENUE"}]}).rules[0].protocol.code == "VENUE"

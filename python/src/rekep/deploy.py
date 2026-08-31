@@ -25,14 +25,6 @@ from rekep.iceberg import IcebergCatalog
 from rekep.market import Book, Execution, InstrumentUpdate, Order
 from rekep.text import FixMsg, Message
 
-#: Event files follow their byte-ordered identity; its leading clock preserves
-#: event order while keeping one declared sort key in every storage engine.
-EVENT_SORT: tuple[str, ...] = ("hash",)
-
-#: Parsed FIX tables use the same physical order. A time-ordered consumer asks
-#: for `(unix, msgseqnum, hash)` explicitly and the bounded reader supplies it.
-FIX_SORT: tuple[str, ...] = EVENT_SORT
-
 
 @dataclasses.dataclass(frozen=True)
 class Deployed:
@@ -46,9 +38,8 @@ class Deployed:
     #: cannot disagree.
     shape: type
 
-    #: Columns the table records a sort order on. None leaves the shape's own
-    #: `sort_key()` declarations, which is what a reference table wants.
-    sort_by: tuple[str, ...] | None = EVENT_SORT
+    #: Physical order is opt-in; pipeline reads request their logical order.
+    sort_by: tuple[str, ...] | None = None
 
     def into_field(self) -> StructField:
         """The shape this table carries, named as the table."""
@@ -60,10 +51,10 @@ class Deployed:
 #: there arrives here rather than being spelled twice.
 TABLES: tuple[Deployed, ...] = (
     Deployed("logs.messages", Message),
-    Deployed(f"fix.{MARKET_CATEGORY}", FixMsg, FIX_SORT),
-    Deployed(f"fix.{MISC_CATEGORY}", FixMsg, FIX_SORT),
-    Deployed(f"fix.{UNKNOWN_CATEGORY}", FixMsg, FIX_SORT),
-    Deployed("market.instruments", InstrumentUpdate, None),
+    Deployed(f"fix.{MARKET_CATEGORY}", FixMsg),
+    Deployed(f"fix.{MISC_CATEGORY}", FixMsg),
+    Deployed(f"fix.{UNKNOWN_CATEGORY}", FixMsg),
+    Deployed("market.instruments", InstrumentUpdate),
     Deployed("market.books", Book),
     Deployed("market.orders", Order),
     Deployed("market.executions", Execution),
@@ -71,9 +62,8 @@ TABLES: tuple[Deployed, ...] = (
 
 
 def deploy(
-    catalog: str = "default",
+    catalog: IcebergCatalog,
     *,
-    properties: dict[str, str] | None = None,
     table_properties: dict[str, str] | None = None,
     branch: str | None = None,
     tables: Sequence[str] | None = None,
@@ -96,14 +86,10 @@ def deploy(
             f"the pipeline writes no such table: {', '.join(unknown)}; "
             f"it writes {', '.join(declared)}"
         )
-    store = IcebergCatalog(name=catalog, properties=dict(properties or {}))
-    try:
-        return {
-            name: _deployed(store, declared[name], table_properties, branch, dry_run)
-            for name in wanted
-        }
-    finally:
-        store.close()
+    return {
+        name: _deployed(catalog, declared[name], table_properties, branch, dry_run)
+        for name in wanted
+    }
 
 
 def _deployed(
@@ -130,8 +116,6 @@ def _deployed(
 
 
 __all__ = [
-    "EVENT_SORT",
-    "FIX_SORT",
     "TABLES",
     "Deployed",
     "deploy",

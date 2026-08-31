@@ -439,7 +439,7 @@ class InstrumentUpdate(Event):
     unix: Annotated[int, Field(metadata=UNIX)] = 0
     """When the reference facts were observed, in nanoseconds since the epoch."""
 
-    hash: Annotated[int, Field(dtype=HASH), Field.sort_key()] = NIL
+    hash: Annotated[int, Field(dtype=HASH)] = NIL
     """Time-anchored composition of `unix` and `vhash`."""
 
     # A current-reference table replaces one lifecycle at a time. The nested

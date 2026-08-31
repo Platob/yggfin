@@ -11,7 +11,6 @@ from typing import Any
 import scrapbook as sb
 from airflow.providers.papermill.operators.papermill import PapermillOperator
 from airflow.sdk import Param, dag, task
-
 from rekep.tasks import Task
 
 ROOT = Path(os.environ.get("REKEP_ROOT", Path(__file__).resolve().parents[2])).resolve()
@@ -23,7 +22,8 @@ def rooted_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
     rooted = dict(parameters)
     if "project_root" in rooted:
         rooted["project_root"] = str(ROOT)
-    properties = dict(rooted.get("catalog_properties", {}))
+    catalog = dict(rooted.get("catalog", {}))
+    properties = dict(catalog.get("properties", {}))
     uri = properties.get("uri", "")
     sqlite = "sqlite:///"
     if uri.startswith(sqlite):
@@ -37,7 +37,8 @@ def rooted_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
         if not path.is_absolute():
             properties["warehouse"] = f"{local}{(ROOT / path).as_posix()}"
     if properties:
-        rooted["catalog_properties"] = properties
+        catalog["properties"] = properties
+        rooted["catalog"] = catalog
     return rooted
 
 
@@ -103,7 +104,9 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
     tags=["rekep", "arrow", "iceberg", "market", "notebook"],
 )
 def market_pipeline() -> None:
-    messages = notebook_task("parse_messages", "tasks/parse_messages/parse_messages.yml")
+    messages = notebook_task(
+        "parse_messages", "tasks/parse_messages/parse_messages.yml"
+    )
     parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
     instrument_updates = notebook_task(
         "parse_instruments", "tasks/parse_instruments/parse_instruments.yml"

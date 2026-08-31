@@ -1,7 +1,8 @@
 {
  "name": "LegFinancingDetails",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "LegFinancingDetails",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "LegFinancingDetails",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -156,31 +161,94 @@
     }
    },
    {
-    "name": "LegFinancingContractualDefinitionsGrp",
-    "type": "struct",
+    "name": "NoLegContractualDefinitions",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegFinancingContractualDefinitionsGrp"
+     "tag": "42198"
     },
-    "fields": []
+    "item": {
+     "name": "LegContractualDefinition",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42199"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "LegFinancingTermSupplementGrp",
-    "type": "struct",
+    "name": "NoLegFinancingTermSupplements",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegFinancingTermSupplementGrp"
+     "tag": "42200"
     },
-    "fields": []
+    "item": {
+     "name": "LegFinancingTermSupplement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegFinancingTermSupplementDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42201"
+       }
+      },
+      {
+       "name": "LegFinancingTermSupplementDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42202"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "LegFinancingContractualMatrixGrp",
-    "type": "struct",
+    "name": "NoLegContractualMatrices",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegFinancingContractualMatrixGrp"
+     "tag": "42203"
     },
-    "fields": []
+    "item": {
+     "name": "LegContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42204"
+       }
+      },
+      {
+       "name": "LegContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42205"
+       }
+      },
+      {
+       "name": "LegContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42206"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegCreditSupportAgreementDesc",

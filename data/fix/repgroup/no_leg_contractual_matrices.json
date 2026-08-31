@@ -1,0 +1,45 @@
+{
+ "name": "NoLegContractualMatrices",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegContractualMatrices",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42203"
+  },
+  "item": {
+   "name": "LegContractualMatrix",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegContractualMatrixSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42204"
+     }
+    },
+    {
+     "name": "LegContractualMatrixDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42205"
+     }
+    },
+    {
+     "name": "LegContractualMatrixTerm",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42206"
+     }
+    }
+   ]
+  }
+ }
+}

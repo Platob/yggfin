@@ -1,0 +1,155 @@
+{
+ "name": "NoLegComplexEventPeriods",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegComplexEventPeriods",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41379"
+  },
+  "item": {
+   "name": "LegComplexEventPeriod",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegComplexEventPeriodType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41380"
+     }
+    },
+    {
+     "name": "LegComplexEventBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41381"
+     }
+    },
+    {
+     "name": "NoLegComplexEventSchedules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41400"
+     },
+     "item": {
+      "name": "LegComplexEventSchedule",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegComplexEventScheduleStartDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41401"
+        }
+       },
+       {
+        "name": "LegComplexEventScheduleEndDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41402"
+        }
+       },
+       {
+        "name": "LegComplexEventScheduleFrequencyPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41403"
+        }
+       },
+       {
+        "name": "LegComplexEventScheduleFrequencyUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41404"
+        }
+       },
+       {
+        "name": "LegComplexEventScheduleRollConvention",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41405"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoLegComplexEventPeriodDateTimes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41376"
+     },
+     "item": {
+      "name": "LegComplexEventPeriodDateTime",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegComplexEventPeriodDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41377"
+        }
+       },
+       {
+        "name": "LegComplexEventPeriodTime",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41378"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoLegComplexEventAveragingObservations",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41363"
+     },
+     "item": {
+      "name": "LegComplexEventAveragingObservation",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegComplexEventAveragingObservationNumber",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41364"
+        }
+       },
+       {
+        "name": "LegComplexEventAveragingWeight",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41365"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

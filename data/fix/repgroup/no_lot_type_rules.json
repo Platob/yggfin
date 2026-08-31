@@ -1,0 +1,38 @@
+{
+ "name": "NoLotTypeRules",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLotTypeRules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1234"
+  },
+  "item": {
+   "name": "LotTypeRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LotType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1093"
+     }
+    },
+    {
+     "name": "MinLotSize",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1231"
+     }
+    }
+   ]
+  }
+ }
+}

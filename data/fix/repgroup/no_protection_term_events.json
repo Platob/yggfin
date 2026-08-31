@@ -1,0 +1,103 @@
+{
+ "name": "NoProtectionTermEvents",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoProtectionTermEvents",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40191"
+  },
+  "item": {
+   "name": "ProtectionTermEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProtectionTermEventType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40192"
+     }
+    },
+    {
+     "name": "ProtectionTermEventValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40193"
+     }
+    },
+    {
+     "name": "ProtectionTermEventCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40194"
+     }
+    },
+    {
+     "name": "ProtectionTermEventPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40195"
+     }
+    },
+    {
+     "name": "ProtectionTermEventUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40196"
+     }
+    },
+    {
+     "name": "ProtectionTermEventDayType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40197"
+     }
+    },
+    {
+     "name": "ProtectionTermEventRateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40198"
+     }
+    },
+    {
+     "name": "NoProtectionTermEventQualifiers",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40199"
+     },
+     "item": {
+      "name": "ProtectionTermEventQualifier",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ProtectionTermEventQualifier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40200"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

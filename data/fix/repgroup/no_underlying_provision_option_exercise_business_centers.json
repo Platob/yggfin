@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingProvisionOptionExerciseBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingProvisionOptionExerciseBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42184"
+  },
+  "item": {
+   "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42185"
+     }
+    }
+   ]
+  }
+ }
+}

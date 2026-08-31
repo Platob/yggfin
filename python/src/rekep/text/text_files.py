@@ -120,6 +120,12 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: Syntax-only protocol classifier shared by every file in the stream.
     protocol_rules: Any | None = None
 
+    #: Raw key replacements selected by each row's source plugin.
+    plugin_keys: Mapping[str, Mapping[str, str]] = dataclass_field(default_factory=dict)
+
+    #: Case-insensitive payload values omitted before fields are promoted.
+    null_values: Sequence[str] = ()
+
     #: Materialize each remote compressed file locally while it is decoded.
     spill: bool = False
 
@@ -132,6 +138,10 @@ class TextFiles(Dataset, io.BufferedIOBase):
     def __post_init__(self) -> None:
         """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
         self.header_pattern = compiled_header(self.header_pattern)
+        self.plugin_keys = {
+            str(plugin): dict(replacements) for plugin, replacements in self.plugin_keys.items()
+        }
+        self.null_values = tuple(str(value) for value in self.null_values)
         self.roots = tuple(self.roots)
         if self.filesystem is not None or not self.roots:
             return
@@ -373,6 +383,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 timezone=self.timezone,
                 msg_type_event_types=self.msg_type_event_types,
                 protocol_rules=self.protocol_rules,
+                plugin_keys=self.plugin_keys,
+                null_values=self.null_values,
                 spill=self.spill,
                 static_values=self.static_values,
             )

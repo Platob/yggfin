@@ -16,9 +16,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import best_of, parser  # noqa: E402
 
 from rekep.fix import FixRegistry  # noqa: E402
+from rekep.fix.adapters import ADAPTERS, SourceAdapter  # noqa: E402
+from rekep.fix.publish import publish_builtin, publish_full  # noqa: E402
 
 #: The published dictionary this sweeps over: the repository's own archive.
 ARCHIVE = pathlib.Path(__file__).resolve().parents[2] / "data" / "fix.zip"
+
+#: Complete upstream artifacts kept by `registry scrape`, beside the reviewable store.
+SOURCE_CACHE = ARCHIVE.parent / ".fix-sources"
 
 #: The questions, as the calls a caller makes. `fields` is what a bulk load
 #: asks; the rest are what a job asks.
@@ -75,6 +80,15 @@ def sweep_questions(folder: pathlib.Path, repeat: int) -> None:
         )
 
 
+def sweep_construction(folder: pathlib.Path, repeat: int) -> None:
+    """Price the lazy handle separately from any JSON materialization."""
+    loose = best_of(lambda: FixRegistry(cache_dir=folder, retries=0), repeat)
+    archived = best_of(lambda: FixRegistry(cache_dir=ARCHIVE, retries=0), repeat)
+    print(f"\nconstruction, best of {repeat} (ms)")
+    print(f"{'directory':>32} {loose * 1000:>12.3f}")
+    print(f"{'zip':>32} {archived * 1000:>12.3f}")
+
+
 def sweep_size(folder: pathlib.Path, repeat: int, levels: tuple[int | None, ...]) -> None:
     """What the archive saves, and what each deflate level is worth.
 
@@ -103,6 +117,48 @@ def sweep_size(folder: pathlib.Path, repeat: int, levels: tuple[int | None, ...]
             )
 
 
+def sweep_sources(adapters: tuple[SourceAdapter, ...], repeat: int) -> None:
+    """Parse, project, and construct every available complete source artifact."""
+    print(f"\ncomplete sources, best of {repeat} (ms)")
+    print(f"{'':>32} {'fields':>10} {'parse':>12} {'project':>12} {'structure':>12}")
+    for adapter in adapters:
+        try:
+            document = adapter.fetch(SOURCE_CACHE, offline=True)
+        except FileNotFoundError:
+            continue
+        parsed = adapter.parse(document)
+        parse = best_of(lambda source=adapter, item=document: source.parse(item), repeat)
+        project = best_of(
+            lambda registry=parsed: tuple(field.into_field() for field in registry.fields),
+            repeat,
+        )
+        structure = (
+            best_of(lambda registry=parsed: registry.declarations(), repeat)
+            if parsed.messages or parsed.components
+            else 0
+        )
+        print(
+            f"{adapter.source_id:>32} {len(parsed.fields):>10,} {parse * 1000:>12.1f} "
+            f"{project * 1000:>12.1f} {structure * 1000:>12.1f}"
+        )
+
+
+def sweep_publication(folder: pathlib.Path, repeat: int) -> None:
+    """Build the two artifacts callers actually publish."""
+    with tempfile.TemporaryDirectory() as scratch:
+        root = pathlib.Path(scratch)
+        full = root / "fix.zip"
+        builtin = root / "registry.zip"
+        full_seconds = best_of(lambda: publish_full(folder, full), repeat)
+        builtin_seconds = best_of(lambda: publish_builtin(full, builtin), repeat)
+        print(f"\npublication, best of {repeat} (ms)")
+        print(f"{'full registry':>32} {full_seconds * 1000:>12.1f} {full.stat().st_size:>12,} B")
+        print(
+            f"{'wheel projection':>32} {builtin_seconds * 1000:>12.1f} "
+            f"{builtin.stat().st_size:>12,} B"
+        )
+
+
 def _zip(documents: dict[str, bytes], target: pathlib.Path, level: int | None) -> None:
     """The same members at one deflate level; level 0 stores rather than deflates."""
     kind = zipfile.ZIP_STORED if level == 0 else zipfile.ZIP_DEFLATED
@@ -124,7 +180,10 @@ def main() -> None:
         print(f"{ARCHIVE.name}: {len(versions)} versions, {fields:,} fields")
         check(folder)
         print("every answer matches between the two stores")
+        sweep_construction(folder, repeat)
         sweep_questions(folder, repeat)
+        sweep_sources(ADAPTERS, repeat)
+        sweep_publication(folder, repeat)
         # Quick prices the shipped level against no compression at all, which
         # is the comparison that settles whether to publish an archive; the
         # level sweep beside it rewrites the whole store once per level.

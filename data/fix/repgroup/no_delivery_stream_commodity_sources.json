@@ -1,0 +1,29 @@
+{
+ "name": "NoDeliveryStreamCommoditySources",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDeliveryStreamCommoditySources",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41085"
+  },
+  "item": {
+   "name": "DeliveryStreamCommoditySource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DeliveryStreamCommoditySource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41086"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -232,16 +232,16 @@ def physical_type(member: Field) -> pyarrow.DataType | None:
 #: Which FIX field it is, what the dictionary calls it, and what type the
 #: protocol gives it. Deliberately not everything the registry knows: the
 #: versions a field was seen in, the messages that carry it, the sources that
-#: answered, the aliases a name goes by and the enumeration it declares are
+#: answered, and the enumeration it declares are
 #: the *registry's* bookkeeping. Copied onto every column of every table they
 #: made a published contract a second, worse copy of the dictionary -- and
 #: made recording one newly observed spelling a change to a published schema.
 #:
-#: Measured on `FixMsg`: 307 KB of `fix:` metadata on its Arrow schema before
-#: this, 11 KB after, for the same columns -- and that schema is carried by
-#: every batch the pipeline moves, not only by the document on disk.
+#: Aliases are the exception: their declared order is the fallback order for
+#: rendered bridge keys, so a column needs them when a registry is unavailable.
 _COLUMN_METADATA: tuple[str, ...] = (
     "description",
+    "fix:aliases",
     "fix:tag",
     "fix:name",
     "fix:type",
@@ -427,7 +427,14 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
     """
     merged = registry.merged_fields()
     columns = namespace_columns(registry)
-    whole = {spelling: name for name, _ in columns.items() for spelling in _named(merged[name])}
+    # Canonical names claim their folds before aliases. Within the alias tier,
+    # registry declaration order is priority and the first claimant wins.
+    whole: dict[str, str] = {}
+    for name in columns:
+        whole.setdefault(column_name(merged[name].fix.canonical), name)
+    for name in columns:
+        for spelling in _named(merged[name])[1:]:
+            whole.setdefault(spelling, name)
     tails: dict[str, set[str]] = {}
     for spelling, name in whole.items():
         tail = spelling.rsplit(".", 1)[-1]

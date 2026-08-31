@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingDividendPeriodBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingDividendPeriodBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42882"
+  },
+  "item": {
+   "name": "UnderlyingDividendPeriodBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingDividendPeriodBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42883"
+     }
+    }
+   ]
+  }
+ }
+}

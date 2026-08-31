@@ -1,0 +1,29 @@
+{
+ "name": "NoComplexEventDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoComplexEventDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41018"
+  },
+  "item": {
+   "name": "ComplexEventDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ComplexEventDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41019"
+     }
+    }
+   ]
+  }
+ }
+}

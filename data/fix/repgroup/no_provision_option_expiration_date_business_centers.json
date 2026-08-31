@@ -1,0 +1,29 @@
+{
+ "name": "NoProvisionOptionExpirationDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoProvisionOptionExpirationDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40955"
+  },
+  "item": {
+   "name": "ProvisionOptionExpirationDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionOptionExpirationDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40147"
+     }
+    }
+   ]
+  }
+ }
+}

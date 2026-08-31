@@ -1,7 +1,8 @@
 {
  "name": "PartyRiskLimitsUpdateReport",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "PartyRiskLimitsUpdateReport",
@@ -10,12 +11,24 @@
   "fix": {
    "component": "PartyRiskLimitsUpdateReport",
    "msgtype": "CR",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "ApplicationSequenceControl",
     "type": "struct",
@@ -65,22 +78,621 @@
     }
    },
    {
-    "name": "RequestingPartyGrp",
-    "type": "struct",
+    "name": "NoRequestingPartyIDs",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "RequestingPartyGrp"
+     "tag": "1657"
     },
-    "fields": []
+    "item": {
+     "name": "RequestingPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RequestingPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1658"
+       }
+      },
+      {
+       "name": "RequestingPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1659"
+       }
+      },
+      {
+       "name": "RequestingPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1660"
+       }
+      },
+      {
+       "name": "RequestingPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2338"
+       }
+      },
+      {
+       "name": "NoRequestingPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1661"
+       },
+       "item": {
+        "name": "RequestingPartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "RequestingPartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1662"
+          }
+         },
+         {
+          "name": "RequestingPartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1663"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "PartyRiskLimitsUpdateGrp",
-    "type": "struct",
+    "name": "NoPartyRiskLimits",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PartyRiskLimitsUpdateGrp"
+     "tag": "1677"
     },
-    "fields": []
+    "item": {
+     "name": "PartyRiskLimit",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
+      },
+      {
+       "name": "NoPartyDetails",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1671"
+       },
+       "item": {
+        "name": "PartyDetail",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "PartyDetailID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1691"
+          }
+         },
+         {
+          "name": "PartyDetailIDSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1692"
+          }
+         },
+         {
+          "name": "PartyDetailRole",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1693"
+          }
+         },
+         {
+          "name": "PartyDetailRoleQualifier",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1674"
+          }
+         },
+         {
+          "name": "NoPartyDetailSubIDs",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "1694"
+          },
+          "item": {
+           "name": "PartyDetailSubID",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "PartyDetailSubID",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1695"
+             }
+            },
+            {
+             "name": "PartyDetailSubIDType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1696"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "name": "NoPartyDetailAltID",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "1516"
+          },
+          "item": {
+           "name": "PartyDetailAltID",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "PartyDetailAltID",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1517"
+             }
+            },
+            {
+             "name": "PartyDetailAltIDSource",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1518"
+             }
+            },
+            {
+             "name": "NoPartyDetailAltSubIDs",
+             "type": "list",
+             "nullable": true,
+             "fix": {
+              "tag": "1519"
+             },
+             "item": {
+              "name": "PartyDetailAltSubID",
+              "type": "struct",
+              "fields": [
+               {
+                "name": "PartyDetailAltSubID",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1520"
+                }
+               },
+               {
+                "name": "PartyDetailAltSubIDType",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1521"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "name": "NoRelatedPartyDetailID",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "1562"
+          },
+          "item": {
+           "name": "RelatedPartyDetailID",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "RelatedPartyDetailID",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1563"
+             }
+            },
+            {
+             "name": "RelatedPartyDetailIDSource",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1564"
+             }
+            },
+            {
+             "name": "RelatedPartyDetailRole",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1565"
+             }
+            },
+            {
+             "name": "RelatedPartyDetailRoleQualifier",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1675"
+             }
+            },
+            {
+             "name": "NoRelatedPartyDetailSubIDs",
+             "type": "list",
+             "nullable": true,
+             "fix": {
+              "tag": "1566"
+             },
+             "item": {
+              "name": "RelatedPartyDetailSubID",
+              "type": "struct",
+              "fields": [
+               {
+                "name": "RelatedPartyDetailSubID",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1567"
+                }
+               },
+               {
+                "name": "RelatedPartyDetailSubIDType",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1568"
+                }
+               }
+              ]
+             }
+            },
+            {
+             "name": "NoRelatedPartyDetailAltID",
+             "type": "list",
+             "nullable": true,
+             "fix": {
+              "tag": "1569"
+             },
+             "item": {
+              "name": "RelatedPartyDetailAltID",
+              "type": "struct",
+              "fields": [
+               {
+                "name": "RelatedPartyDetailAltID",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1570"
+                }
+               },
+               {
+                "name": "RelatedPartyDetailAltIDSource",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1571"
+                }
+               },
+               {
+                "name": "NoRelatedPartyDetailAltSubIDs",
+                "type": "list",
+                "nullable": true,
+                "fix": {
+                 "tag": "1572"
+                },
+                "item": {
+                 "name": "RelatedPartyDetailAltSubID",
+                 "type": "struct",
+                 "fields": [
+                  {
+                   "name": "RelatedPartyDetailAltSubID",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "1573"
+                   }
+                  },
+                  {
+                   "name": "RelatedPartyDetailAltSubIDType",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "1574"
+                   }
+                  }
+                 ]
+                }
+               }
+              ]
+             }
+            },
+            {
+             "name": "NoPartyRelationships",
+             "type": "list",
+             "nullable": true,
+             "fix": {
+              "tag": "1514"
+             },
+             "item": {
+              "name": "PartyRelationship",
+              "type": "struct",
+              "fields": [
+               {
+                "name": "PartyRelationship",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1515"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "name": "PartyDetailStatus",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1672"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "NoRiskLimits",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1669"
+       },
+       "item": {
+        "name": "RiskLimit",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "NoRiskLimitTypes",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "1529"
+          },
+          "item": {
+           "name": "RiskLimitType",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "RiskLimitType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1530"
+             }
+            },
+            {
+             "name": "RiskLimitAmount",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1531"
+             }
+            },
+            {
+             "name": "RiskLimitAction",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1767"
+             }
+            },
+            {
+             "name": "RiskLimitUtilizationAmount",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1766"
+             }
+            },
+            {
+             "name": "RiskLimitUtilizationPercent",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1765"
+             }
+            },
+            {
+             "name": "RiskLimitCurrency",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1532"
+             }
+            },
+            {
+             "name": "RiskLimitCurrencyCodeSource",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "2939"
+             }
+            },
+            {
+             "name": "RiskLimitPlatform",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1533"
+             }
+            },
+            {
+             "name": "RiskLimitVelocityPeriod",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "2336"
+             }
+            },
+            {
+             "name": "RiskLimitVelocityUnit",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "2337"
+             }
+            },
+            {
+             "name": "NoRiskWarningLevels",
+             "type": "list",
+             "nullable": true,
+             "fix": {
+              "tag": "1559"
+             },
+             "item": {
+              "name": "RiskWarningLevel",
+              "type": "struct",
+              "fields": [
+               {
+                "name": "RiskWarningLevelAction",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1769"
+                }
+               },
+               {
+                "name": "RiskWarningLevelPercent",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1560"
+                }
+               },
+               {
+                "name": "RiskWarningLevelAmount",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1768"
+                }
+               },
+               {
+                "name": "RiskWarningLevelName",
+                "type": "string",
+                "nullable": true,
+                "fix": {
+                 "tag": "1561"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "name": "NoRiskInstrumentScopes",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "1534"
+          },
+          "item": {
+           "name": "RiskInstrumentScope",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "InstrumentScopeOperator",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1535"
+             }
+            },
+            {
+             "name": "InstrumentScope",
+             "type": "struct",
+             "nullable": true,
+             "fix": {
+              "component": "InstrumentScope"
+             },
+             "fields": []
+            },
+            {
+             "name": "RiskInstrumentMultiplier",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "1558"
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "RiskLimitID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1670"
+       }
+      },
+      {
+       "name": "RiskLimitCheckModelType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2339"
+       }
+      },
+      {
+       "name": "PartyRiskLimitStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2355"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "TransactTime",
@@ -113,6 +725,14 @@
     "fix": {
      "tag": "355"
     }
+   },
+   {
+    "name": "StandardTrailer",
+    "type": "struct",
+    "fix": {
+     "component": "StandardTrailer"
+    },
+    "fields": []
    }
   ]
  }

@@ -2,7 +2,8 @@
  "name": "SecurityXML",
  "versions": [
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "SecurityXML",
@@ -10,10 +11,14 @@
   "nullable": true,
   "fix": {
    "component": "SecurityXML",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AdjustedPositionReport",
     "Advertisement",
@@ -48,6 +53,7 @@
     "MarginRequirementInquiry",
     "MarginRequirementInquiryAck",
     "MarginRequirementReport",
+    "MarketDataAck",
     "MarketDataIncrementalRefresh",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh",
@@ -99,9 +105,12 @@
     "SecurityListRequest",
     "SecurityListUpdateReport",
     "SecurityMassStatus",
+    "SecurityRiskMetricsReport",
     "SecurityStatus",
     "SecurityStatusRequest",
     "SettlementObligationReport",
+    "SettlementStatusReport",
+    "SettlementStatusRequest",
     "StreamAssignmentReport",
     "StreamAssignmentRequest",
     "TradeAggregationReport",

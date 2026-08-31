@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingPaymentStreamCompoundingDatesBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingPaymentStreamCompoundingDatesBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42915"
+  },
+  "item": {
+   "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42916"
+     }
+    }
+   ]
+  }
+ }
+}

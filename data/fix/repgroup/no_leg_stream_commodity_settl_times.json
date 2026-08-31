@@ -1,0 +1,45 @@
+{
+ "name": "NoLegStreamCommoditySettlTimes",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegStreamCommoditySettlTimes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41683"
+  },
+  "item": {
+   "name": "LegStreamCommoditySettlTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamCommoditySettlStart",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41684"
+     }
+    },
+    {
+     "name": "LegStreamCommoditySettlEnd",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41685"
+     }
+    },
+    {
+     "name": "LegStreamCommoditySettlTimeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41935"
+     }
+    }
+   ]
+  }
+ }
+}

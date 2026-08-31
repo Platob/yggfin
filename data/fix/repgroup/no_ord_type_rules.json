@@ -1,0 +1,30 @@
+{
+ "name": "NoOrdTypeRules",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoOrdTypeRules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1237"
+  },
+  "item": {
+   "name": "OrdTypeRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "OrdType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40"
+     }
+    }
+   ]
+  }
+ }
+}

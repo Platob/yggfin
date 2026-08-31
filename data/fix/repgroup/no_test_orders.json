@@ -1,0 +1,92 @@
+{
+ "name": "NoTestOrders",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoTestOrders",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "3082"
+  },
+  "item": {
+   "name": "TestOrder",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TestOrderID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3083"
+     }
+    },
+    {
+     "name": "TestOrderSymbol",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3084"
+     }
+    },
+    {
+     "name": "TestOrderSecurityID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3085"
+     }
+    },
+    {
+     "name": "TestOrderSecurityIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3086"
+     }
+    },
+    {
+     "name": "TestOrderPrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3087"
+     }
+    },
+    {
+     "name": "TestOrderPriceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3088"
+     }
+    },
+    {
+     "name": "TestOrderQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3089"
+     }
+    },
+    {
+     "name": "TestOrderOffsetPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3090"
+     }
+    },
+    {
+     "name": "TestOrderOffsetUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3091"
+     }
+    }
+   ]
+  }
+ }
+}

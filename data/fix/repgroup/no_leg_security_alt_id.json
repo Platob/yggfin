@@ -1,0 +1,49 @@
+{
+ "name": "NoLegSecurityAltID",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegSecurityAltID",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "604"
+  },
+  "item": {
+   "name": "LegSecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegSecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "605"
+     }
+    },
+    {
+     "name": "LegSecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "606"
+     }
+    },
+    {
+     "name": "LegSymbolPositionNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2958"
+     }
+    }
+   ]
+  }
+ }
+}

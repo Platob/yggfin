@@ -1,0 +1,44 @@
+{
+ "name": "NoTestScenarioParameters",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoTestScenarioParameters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "3130"
+  },
+  "item": {
+   "name": "TestScenarioParameter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TestScenarioParameterName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3131"
+     }
+    },
+    {
+     "name": "TestScenarioParameterType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3132"
+     }
+    },
+    {
+     "name": "TestScenarioParameterValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3133"
+     }
+    }
+   ]
+  }
+ }
+}

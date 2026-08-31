@@ -1,0 +1,44 @@
+{
+ "name": "NoNested4PartySubIDs",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoNested4PartySubIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1413"
+  },
+  "item": {
+   "name": "Nested4PartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Nested4PartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1412"
+     }
+    },
+    {
+     "name": "Nested4PartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1411"
+     }
+    }
+   ]
+  }
+ }
+}

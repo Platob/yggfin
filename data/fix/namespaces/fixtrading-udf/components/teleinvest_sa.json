@@ -1,0 +1,57 @@
+{
+ "name": "TeleinvestSA",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "TeleinvestSA",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TeleinvestSA",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "EstimatedAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6176"
+    }
+   },
+   {
+    "name": "TiCustom2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6177"
+    }
+   },
+   {
+    "name": "TiCustom3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6178"
+    }
+   },
+   {
+    "name": "TiCustom4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6179"
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "name": "NoAltMDSource",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoAltMDSource",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "816"
+  },
+  "item": {
+   "name": "AltMDSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AltMDSourceID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "817"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,191 @@
+{
+ "name": "NoSideCollateralAmounts",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoSideCollateralAmounts",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2691"
+  },
+  "item": {
+   "name": "SideCollateralAmount",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SideCurrentCollateralAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2702"
+     }
+    },
+    {
+     "name": "SideCollateralCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2695"
+     }
+    },
+    {
+     "name": "SideCollateralCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2930"
+     }
+    },
+    {
+     "name": "SideCollateralAmountType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2694"
+     }
+    },
+    {
+     "name": "SideCollateralFXRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2696"
+     }
+    },
+    {
+     "name": "SideCollateralFXRateCalc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2697"
+     }
+    },
+    {
+     "name": "SideCollateralType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2701"
+     }
+    },
+    {
+     "name": "SideCollateralAmountMarketSegmentID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2693"
+     }
+    },
+    {
+     "name": "SideCollateralAmountMarketID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2692"
+     }
+    },
+    {
+     "name": "SideHaircutIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2703"
+     }
+    },
+    {
+     "name": "SideCollateralPortfolioID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2700"
+     }
+    },
+    {
+     "name": "SideCollateralPercentOverage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2699"
+     }
+    },
+    {
+     "name": "SideCollateralMarketPrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2698"
+     }
+    },
+    {
+     "name": "SideCollateralReinvestmentRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2862"
+     }
+    },
+    {
+     "name": "NoSideCollateralReinvestments",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2864"
+     },
+     "item": {
+      "name": "SideCollateralReinvestment",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "SideCollateralReinvestmentType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2867"
+        }
+       },
+       {
+        "name": "SideCollateralReinvestmentAmount",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2865"
+        }
+       },
+       {
+        "name": "SideCollateralReinvestmentCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2866"
+        }
+       },
+       {
+        "name": "SideCollateralReinvestmentCurrencyCodeSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2932"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "SideUnderlyingRefID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2863"
+     }
+    }
+   ]
+  }
+ }
+}

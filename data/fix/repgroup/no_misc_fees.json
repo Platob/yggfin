@@ -1,0 +1,146 @@
+{
+ "name": "NoMiscFees",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoMiscFees",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "136"
+  },
+  "item": {
+   "name": "MiscFee",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MiscFeeAmt",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "137"
+     }
+    },
+    {
+     "name": "MiscFeeCurr",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "138"
+     }
+    },
+    {
+     "name": "MiscFeeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "139"
+     }
+    },
+    {
+     "name": "MiscFeeQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2712"
+     }
+    },
+    {
+     "name": "NoMiscFeeSubTypes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2633"
+     },
+     "item": {
+      "name": "MiscFeeSubType",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "MiscFeeSubType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2634"
+        }
+       },
+       {
+        "name": "MiscFeeSubTypeAmt",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2635"
+        }
+       },
+       {
+        "name": "MiscFeeSubTypeDesc",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2636"
+        }
+       },
+       {
+        "name": "EncodedMiscFeeSubTypeDescLen",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2637"
+        }
+       },
+       {
+        "name": "EncodedMiscFeeSubTypeDesc",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "2638"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "MiscFeeBasis",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "891"
+     }
+    },
+    {
+     "name": "MiscFeeRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2216"
+     }
+    },
+    {
+     "name": "MiscFeeAmountDue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2217"
+     }
+    },
+    {
+     "name": "MiscFeeDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2713"
+     }
+    }
+   ]
+  }
+ }
+}

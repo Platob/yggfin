@@ -1,0 +1,53 @@
+{
+ "name": "NoReturnRatePrices",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoReturnRatePrices",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42765"
+  },
+  "item": {
+   "name": "ReturnRatePrice",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ReturnRatePriceBasis",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42766"
+     }
+    },
+    {
+     "name": "ReturnRatePrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42767"
+     }
+    },
+    {
+     "name": "ReturnRatePriceCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42768"
+     }
+    },
+    {
+     "name": "ReturnRatePriceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42769"
+     }
+    }
+   ]
+  }
+ }
+}

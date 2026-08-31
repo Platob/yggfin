@@ -1,0 +1,41 @@
+{
+ "name": "NoTransactionAttributes",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoTransactionAttributes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2871"
+  },
+  "item": {
+   "name": "TransactionAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TransactionAttributeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2872"
+     }
+    },
+    {
+     "name": "TransactionAttributeValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2873"
+     }
+    }
+   ]
+  }
+ }
+}

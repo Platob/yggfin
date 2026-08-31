@@ -105,14 +105,23 @@ class EventType(Ascii64):
 
     UNKNOWN = 0
     MISC = "MISC", 10
+    SESSION = "SESSION", 20
     INTENT = "INTENT", 100
     ORDER = "ORDER", 110
     QUOTE = "QUOTE", 120
+    INDICATION = "INDICATE", 130
+    ALLOCATION = "ALLOCATE", 140
+    SETTLEMENT = "SETTLE", 150
     FACT = "FACT", 200
     EXECUTION = "EXECUTED", 210
     INSTRUMENT = "INSTRMT", 220
+    CONFIRMATION = "CONFIRM", 230
+    NEWS = "NEWS", 240
     STATE = "STATE", 300
     BOOK = "BOOK", 320
+    POSITION = "POSITION", 330
+    COLLATERAL = "COLLATRL", 340
+    PARTY = "PARTY", 350
 
     @property
     def is_snapshot(self) -> bool:
@@ -268,6 +277,12 @@ class OptionKind(Ascii64):
     UNKNOWN = 0
     PUT = "PUT", 100
     CALL = "CALL", 200
+
+
+class Plugin(Ascii64):
+    """Bounded source-plugin code for deployments that assign short names."""
+
+    UNKNOWN = 0
 
 
 class Protocol(Ascii64):

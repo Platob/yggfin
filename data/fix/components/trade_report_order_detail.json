@@ -1,7 +1,8 @@
 {
  "name": "TradeReportOrderDetail",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "TradeReportOrderDetail",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "TradeReportOrderDetail",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "TradeCaptureReport",
     "TradeCaptureReportAck",
@@ -85,13 +90,66 @@
     }
    },
    {
-    "name": "RelatedOrderGrp",
-    "type": "struct",
+    "name": "NoOrders",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "RelatedOrderGrp"
+     "tag": "73"
     },
-    "fields": []
+    "item": {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2887"
+       }
+      },
+      {
+       "name": "RelatedOrderIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2888"
+       }
+      },
+      {
+       "name": "RelatedOrderTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2836"
+       }
+      },
+      {
+       "name": "RelatedOrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2889"
+       }
+      },
+      {
+       "name": "OrderRelationship",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2890"
+       }
+      },
+      {
+       "name": "OrderOriginationFirmID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2835"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "PreTradeAnonymity",
@@ -183,13 +241,50 @@
     }
    },
    {
-    "name": "MatchingInstructions",
-    "type": "struct",
+    "name": "NoMatchInst",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "MatchingInstructions"
+     "tag": "1624"
     },
-    "fields": []
+    "item": {
+     "name": "MatchInst",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1625"
+       }
+      },
+      {
+       "name": "MatchInstMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1673"
+       }
+      },
+      {
+       "name": "MatchAttribTagID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1626"
+       }
+      },
+      {
+       "name": "MatchAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1627"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "SelfMatchPreventionID",
@@ -273,13 +368,34 @@
     }
    },
    {
-    "name": "OrderAttributeGrp",
-    "type": "struct",
+    "name": "NoOrderAttributes",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "OrderAttributeGrp"
+     "tag": "2593"
     },
-    "fields": []
+    "item": {
+     "name": "OrderAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2594"
+       }
+      },
+      {
+       "name": "OrderAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2595"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "ExDestinationType",

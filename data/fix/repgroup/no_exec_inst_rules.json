@@ -1,0 +1,30 @@
+{
+ "name": "NoExecInstRules",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoExecInstRules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1232"
+  },
+  "item": {
+   "name": "ExecInstRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ExecInstValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1308"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,40 @@
+{
+ "name": "NoInstrAttrib",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoInstrAttrib",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "870"
+  },
+  "item": {
+   "name": "InstrAttrib",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrAttribType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "871"
+     }
+    },
+    {
+     "name": "InstrAttribValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "872"
+     }
+    }
+   ]
+  }
+ }
+}

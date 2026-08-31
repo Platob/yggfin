@@ -12,7 +12,7 @@ from rekep.fields.metadata import values_of
 from rekep.fix.entries import Alias, record_kind
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import FixRegistry
-from rekep.fix.store import ConflictReport
+from rekep.fix.store import Collapse, ConflictReport, Dropped
 
 #: The contracts this repository publishes, which the CLI has to be able to
 #: read -- the same directory `tests/test_schemas.py` pins.
@@ -646,6 +646,56 @@ def test_registry_reads_are_json_and_accept_a_numeric_tag(
     assert [entry["name"] for entry in json.loads(capsys.readouterr().out)] == ["FakeRole"]
 
 
+def test_registry_find_and_definitions_accept_namespaces(
+    store: Path, capsys: pytest.CaptureFixture
+) -> None:
+    registry = reopened(store)
+    udf = fix_field("MaxShow1", 9001, "Qty")
+    udf.fix.versions = ("1.0",)
+    udf.fix.source = "fixtrading-udf"
+    udf.fix.sources = ("fixtrading-udf",)
+    registry.add_definition(udf, "fixtrading-udf")
+    venue = fix_field("VenueMaximumShow", 9001, "String")
+    venue.fix.versions = ("1.0",)
+    venue.fix.source = "clear-street"
+    venue.fix.sources = ("clear-street",)
+    registry.add_definition(venue, "clear-street")
+
+    assert (
+        run(
+            "fix",
+            "registry",
+            "find",
+            "--store",
+            str(store),
+            "9001",
+            "--namespace",
+            "clear-street",
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)[0]["name"] == "VenueMaximumShow"
+    assert (
+        run(
+            "fix",
+            "registry",
+            "find",
+            "--store",
+            str(store),
+            "venue maximum",
+            "--namespace",
+            "clear-street",
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)[0]["name"] == "VenueMaximumShow"
+    assert run("fix", "registry", "definitions", "--store", str(store), "9001") == 0
+    assert [entry["fix"]["namespace"] for entry in json.loads(capsys.readouterr().out)] == [
+        "fixtrading-udf",
+        "clear-street",
+    ]
+
+
 def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: Path) -> None:
     declaration = tmp_path / "vendor.json"
     declared = namespaced_field("FAKE.VENUE.CODE", "String", column="fake_venue_code")
@@ -818,6 +868,8 @@ def test_scrape_forwards_source_configuration(
             str(conflicts),
             "--nanoconda-url",
             "https://dictionary.example",
+            "--quickfix-url",
+            "https://spec.example",
             "--max-workers",
             "3",
         )
@@ -827,6 +879,166 @@ def test_scrape_forwards_source_configuration(
     sources = called["sources"]
     assert sources[0].name == "nanoconda"
     assert sources[0].url == "https://dictionary.example"
+    assert sources[1].name == "quickfix"
+    assert sources[1].url == "https://spec.example"
     assert called["max_workers"] == 3
+    assert called["source_ids"] == ()
+    assert called["offline"] is False
+    assert called["refresh_sources"] is False
     assert json.loads(conflicts.read_text())["counts"]["encoded"] == 0
     assert "1 fields and 1 components" in capsys.readouterr().err
+
+
+def test_scrape_selects_one_cached_source_offline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    called: dict[str, object] = {}
+
+    class Scraped:
+        cache_dir = tmp_path / "fix"
+        conflicts = ConflictReport()
+        source_status = ()
+
+        def namespaces(self) -> tuple[str, ...]:
+            return ("standard",)
+
+        def field_records(self, _namespace: str = "standard") -> dict[str, object]:
+            return {}
+
+        def component_records(self) -> dict[str, object]:
+            return {}
+
+    def scrape(output, **configuration):
+        called.update(output=output, **configuration)
+        return Scraped()
+
+    monkeypatch.setattr(cli.FixRegistry, "scrape", staticmethod(scrape))
+    assert (
+        run(
+            "fix",
+            "registry",
+            "scrape",
+            "--output",
+            str(tmp_path / "fix"),
+            "--source",
+            "fixtrading-udf",
+            "--offline",
+        )
+        == 0
+    )
+    assert called["source_ids"] == ("fixtrading-udf",)
+    assert called["offline"] is True
+    assert called["rebuild_standard"] is False
+
+
+def test_scrape_refuses_offline_with_a_network_refresh(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run(
+            "fix",
+            "registry",
+            "scrape",
+            "--output",
+            str(tmp_path / "fix"),
+            "--offline",
+            "--refresh",
+        )
+
+    assert stopped.value.code == 2
+    error = capsys.readouterr().err
+    assert "--offline" in error and "--refresh" in error and "not allowed" in error
+
+
+def test_partial_scrape_preserves_and_deduplicates_conflict_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    conflicts = tmp_path / "conflicts.json"
+    historical = Collapse(
+        "OldName",
+        "name",
+        "5.0.SP2",
+        (Dropped("4.4", "OlderName", source="nanoconda"),),
+        tag=9001,
+        keptsource="fix-latest",
+    )
+    discovered = Collapse(
+        "VenueCode",
+        "type",
+        "string",
+        (Dropped("1.0", "Int", source="fixtrading-udf"),),
+        tag=9002,
+        keptsource="fixtrading-udf",
+    )
+    ConflictReport(collapses=(historical,)).into_json(conflicts)
+
+    class Scraped:
+        cache_dir = tmp_path / "fix"
+        conflicts = ConflictReport(collapses=(historical, discovered))
+        source_status = ()
+
+        def namespaces(self) -> tuple[str, ...]:
+            return ("standard",)
+
+        def field_records(self, _namespace: str = "standard") -> dict[str, object]:
+            return {}
+
+        def component_records(self) -> dict[str, object]:
+            return {}
+
+    monkeypatch.setattr(
+        cli.FixRegistry, "scrape", staticmethod(lambda *_args, **_kwargs: Scraped())
+    )
+    for _ in range(2):
+        assert (
+            run(
+                "fix",
+                "registry",
+                "scrape",
+                "--output",
+                str(tmp_path / "fix"),
+                "--source",
+                "fixtrading-udf",
+                "--offline",
+                "--conflicts",
+                str(conflicts),
+            )
+            == 0
+        )
+
+    report = ConflictReport.from_json(conflicts)
+    assert report.collapses == (historical, discovered)
+
+
+def test_scrape_defaults_to_fetchable_complete_file_adapters(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.fix.adapters import ADAPTERS_BY_ID
+
+    called: dict[str, object] = {}
+
+    class Scraped:
+        cache_dir = tmp_path / "fix"
+        conflicts = ConflictReport()
+        source_status = ()
+
+        def namespaces(self) -> tuple[str, ...]:
+            return ("standard",)
+
+        def field_records(self, _namespace: str = "standard") -> dict[str, object]:
+            return {}
+
+        def component_records(self) -> dict[str, object]:
+            return {}
+
+    def scrape(output, **configuration):
+        called.update(output=output, **configuration)
+        return Scraped()
+
+    monkeypatch.setattr(cli.FixRegistry, "scrape", staticmethod(scrape))
+    assert run("fix", "registry", "scrape", "--output", str(tmp_path / "fix")) == 0
+    assert called["source_ids"] == tuple(
+        source_id for source_id, adapter in ADAPTERS_BY_ID.items() if adapter.default
+    )
+    assert "sources" not in called
+    assert called["rebuild_standard"] is False

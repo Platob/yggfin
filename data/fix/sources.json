@@ -1,0 +1,56 @@
+{
+ "sources": [
+  {
+   "checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "definitions_checksum": "sha256:74be6ccd7051a8b0f411d2abf1764ab14fe45fff3648ac9ac5cdad8f283cf035",
+   "format": "orchestra",
+   "license_url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "lookup_order": 0,
+   "namespace": "standard",
+   "priority": -100,
+   "projection": "rekep-fix-registry-v6",
+   "source_id": "fix-latest",
+   "url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "version": "FIX.Latest_EP309"
+  },
+  {
+   "checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "definitions_checksum": "sha256:ca277aa72ae6b1aba651a2da6fe894c92a354f3f8ecea3f2b5854c0b252560f3",
+   "format": "orchestra",
+   "license_url": "https://orchestrahub.org/community/fix-udf",
+   "lookup_order": 2,
+   "namespace": "fixtrading-udf",
+   "priority": 100,
+   "projection": "rekep-fix-registry-v6",
+   "source_id": "fixtrading-udf",
+   "url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "version": "1.0"
+  },
+  {
+   "checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+   "definitions_checksum": "sha256:7f7ebd6a21051d996d15b44eea131c13859b0274595ad7f52eb1cc525b66deac",
+   "format": "quickfix",
+   "license_url": "https://github.com/quickfix/quickfix/blob/master/LICENSE",
+   "lookup_order": 1,
+   "namespace": "standard",
+   "priority": 200,
+   "projection": "rekep-fix-registry-v6",
+   "source_id": "quickfix",
+   "url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+   "version": "FIX.5.0SP2_EP280"
+  },
+  {
+   "checksum": "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+   "definitions_checksum": "sha256:73676949466842dcc63e0c52a53853b6f1239a4c9f304f979538c8d595077a1e",
+   "format": "markdown",
+   "license_url": "https://github.com/clear-street/FIX-docs/blob/main/LICENSE",
+   "lookup_order": 3,
+   "namespace": "clear-street",
+   "priority": 1000,
+   "projection": "rekep-fix-registry-v6",
+   "source_id": "clear-street",
+   "url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
+   "version": "FIX.4.2"
+  }
+ ]
+}

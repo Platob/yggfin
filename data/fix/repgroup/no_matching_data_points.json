@@ -1,0 +1,56 @@
+{
+ "name": "NoMatchingDataPoints",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoMatchingDataPoints",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2781"
+  },
+  "item": {
+   "name": "MatchingDataPoint",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MatchingDataPointIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2782"
+     }
+    },
+    {
+     "name": "MatchingDataPointValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2783"
+     }
+    },
+    {
+     "name": "MatchingDataPointType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2784"
+     }
+    },
+    {
+     "name": "MatchingDataPointName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2785"
+     }
+    }
+   ]
+  }
+ }
+}

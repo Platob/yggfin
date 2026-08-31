@@ -1,0 +1,37 @@
+{
+ "name": "NoUnderlyingNonDeliverableFixingDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingNonDeliverableFixingDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40656"
+  },
+  "item": {
+   "name": "UnderlyingNonDeliverableFixingDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingNonDeliverableFixingDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40657"
+     }
+    },
+    {
+     "name": "UnderlyingNonDeliverableFixingDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40658"
+     }
+    }
+   ]
+  }
+ }
+}

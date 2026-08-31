@@ -1,0 +1,37 @@
+{
+ "name": "NoUnderlyingReturnRateValuationDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingReturnRateValuationDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "43071"
+  },
+  "item": {
+   "name": "UnderlyingReturnRateValuationDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingReturnRateValuationDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43072"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43073"
+     }
+    }
+   ]
+  }
+ }
+}

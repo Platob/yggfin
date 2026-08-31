@@ -1,0 +1,49 @@
+{
+ "name": "NoAffectedOrders",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoAffectedOrders",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "534"
+  },
+  "item": {
+   "name": "AffectedOrder",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AffectedOrigClOrdID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1824"
+     }
+    },
+    {
+     "name": "AffectedOrderID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "535"
+     }
+    },
+    {
+     "name": "AffectedSecondaryOrderID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "536"
+     }
+    }
+   ]
+  }
+ }
+}

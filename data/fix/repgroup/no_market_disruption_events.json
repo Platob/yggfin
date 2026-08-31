@@ -1,0 +1,37 @@
+{
+ "name": "NoMarketDisruptionEvents",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoMarketDisruptionEvents",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41092"
+  },
+  "item": {
+   "name": "MarketDisruptionEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MarketDisruptionEvent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41093"
+     }
+    },
+    {
+     "name": "MarketDisruptionValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40991"
+     }
+    }
+   ]
+  }
+ }
+}

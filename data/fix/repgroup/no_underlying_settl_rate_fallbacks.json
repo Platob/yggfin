@@ -1,0 +1,54 @@
+{
+ "name": "NoUnderlyingSettlRateFallbacks",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingSettlRateFallbacks",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40659"
+  },
+  "item": {
+   "name": "UnderlyingSettlRateFallback",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingSettlRatePostponementMaximumDays",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40660"
+     }
+    },
+    {
+     "name": "UnderlyingSettlRateFallbackRateSource",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingSettlRateFallbackRateSource"
+     },
+     "fields": []
+    },
+    {
+     "name": "UnderlyingSettlRatePostponementSurvey",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40662"
+     }
+    },
+    {
+     "name": "UnderlyingSettlRatePostponementCalculationAgent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40663"
+     }
+    }
+   ]
+  }
+ }
+}

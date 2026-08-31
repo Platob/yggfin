@@ -1,0 +1,71 @@
+{
+ "name": "NoPartyDetailAltID",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPartyDetailAltID",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1516"
+  },
+  "item": {
+   "name": "PartyDetailAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PartyDetailAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1517"
+     }
+    },
+    {
+     "name": "PartyDetailAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1518"
+     }
+    },
+    {
+     "name": "NoPartyDetailAltSubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1519"
+     },
+     "item": {
+      "name": "PartyDetailAltSubID",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "PartyDetailAltSubID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1520"
+        }
+       },
+       {
+        "name": "PartyDetailAltSubIDType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "1521"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

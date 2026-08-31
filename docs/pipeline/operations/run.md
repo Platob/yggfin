@@ -62,7 +62,7 @@ uv run --project python --group runner rekep task run \
 The YAML selects the catalog, branch, tables and commit sizes. Repeatable
 `--parameter NAME=VALUE` options override one run. The same six commands run
 unchanged against S3 — only the `source`, `fix_dictionary` and
-`catalog_properties` values in the YAML move; see
+`catalog.properties` values in the YAML move; see
 [AWS S3](deploy.md#aws-s3). Each command writes the
 run's records to `stderr` as they happen and the task's result to `stdout`;
 [Logs](logs.md) has the record a stage opens and closes with, and the keys
@@ -125,8 +125,8 @@ the fill and remaining quantity without inventing a missing order price.
 ![Schema lineage from logs to instruments, books, orders, and executions](../../assets/schema-lineage-light.svg#only-light)
 
 Event products are keyed `(unix, hash)` except `InstrumentUpdate`, whose
-current row is keyed by its sixteen-byte `xhash`. All six contracts are
-sorted by `hash` and partitioned on `unixpartition` alone.
+current row is keyed by its sixteen-byte `xhash`. `unixpartition` is the
+event-table partition; the pipeline does not add an automatic write sort.
 
 `schemas/rekep/` is the portable source. Arrow owns types and metadata between
 stages, Iceberg owns table ids and snapshots, and the

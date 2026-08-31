@@ -1,0 +1,73 @@
+{
+ "name": "OMX",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "OMX",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "OMX",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AskMarketSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5293"
+    }
+   },
+   {
+    "name": "BidMarketSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5292"
+    }
+   },
+   {
+    "name": "NoOfMarketMakers",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5294"
+    }
+   },
+   {
+    "name": "SendingTimeJavaEpoch",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5297"
+    }
+   },
+   {
+    "name": "SeriesNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5296"
+    }
+   },
+   {
+    "name": "UnderlyingNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5295"
+    }
+   }
+  ]
+ }
+}

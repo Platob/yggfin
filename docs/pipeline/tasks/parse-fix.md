@@ -80,4 +80,5 @@ aligned with `parse_messages.yml`.
 Market event codes route to `fix.market`. Known non-market traffic routes to
 `fix.misc`; an unknown event on an unknown protocol routes to `fix.unknown`.
 The source scan uses recording time, while output `unix` uses the best FIX
-clock and each output table sorts by `hash`.
+clock. A consumer requests event order when it needs it; this task does not
+add a physical write sort.

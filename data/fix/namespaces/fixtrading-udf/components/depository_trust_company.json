@@ -1,0 +1,209 @@
+{
+ "name": "DepositoryTrustCompany",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "DepositoryTrustCompany",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DepositoryTrustCompany",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AffirmationIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7109"
+    }
+   },
+   {
+    "name": "AgentIDNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7002"
+    }
+   },
+   {
+    "name": "AgentInternalAcct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7003"
+    }
+   },
+   {
+    "name": "AllocationAcct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7101"
+    }
+   },
+   {
+    "name": "CancAftAck",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7105"
+    }
+   },
+   {
+    "name": "ConfirmCancCorr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7104"
+    }
+   },
+   {
+    "name": "ConfirmType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7103"
+    }
+   },
+   {
+    "name": "CxlAfterMatching",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7008"
+    }
+   },
+   {
+    "name": "DisaffirmInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7106"
+    }
+   },
+   {
+    "name": "DTCCMatchedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7102"
+    }
+   },
+   {
+    "name": "ExecClearingBkrAcct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7013"
+    }
+   },
+   {
+    "name": "ExecClearingBkrID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7012"
+    }
+   },
+   {
+    "name": "MatchedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7009"
+    }
+   },
+   {
+    "name": "MatchingVariance",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7107"
+    }
+   },
+   {
+    "name": "RecipientRole",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7014"
+    }
+   },
+   {
+    "name": "SettlLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7001"
+    }
+   },
+   {
+    "name": "StepInClearingAcct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7011"
+    }
+   },
+   {
+    "name": "StepInClearingBkrID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7010"
+    }
+   },
+   {
+    "name": "StepOutReasonCode1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7004"
+    }
+   },
+   {
+    "name": "StepOutReasonCode2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7005"
+    }
+   },
+   {
+    "name": "StepOutReasonCode3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7006"
+    }
+   },
+   {
+    "name": "StepOutText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7007"
+    }
+   },
+   {
+    "name": "VarianceDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7108"
+    }
+   }
+  ]
+ }
+}

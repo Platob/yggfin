@@ -22,6 +22,7 @@ from rekep.enums import (
     EventType,
     MarketKind,
     OptionKind,
+    Plugin,
     Protocol,
     SecurityIDSource,
     Side,
@@ -54,6 +55,7 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         EventType,
         MarketKind,
         OptionKind,
+        Plugin,
         Protocol,
         SecurityIDSource,
         Side,
@@ -160,6 +162,7 @@ def test_every_ascii_set_is_open_and_stored_bytes_stay_exact() -> None:
         (AssetKind, "OWN"),
         (MarketKind, "OWN"),
         (OptionKind, "OWN"),
+        (Plugin, "OWN"),
         (Protocol, "OWN"),
         (Direction, "OWN"),
         (MIC, "ZZZZ"),
@@ -722,11 +725,14 @@ def test_event_type_stores_a_readable_mnemonic_with_ranked_bands() -> None:
     assert EventType.MISC.band is EventType.UNKNOWN
     market = EventType.ranked_at_least(EventType.INTENT)
     assert set(market) == {
-        int(member) for member in EventType if member not in (EventType.UNKNOWN, EventType.MISC)
+        int(member)
+        for member in EventType
+        if member not in (EventType.UNKNOWN, EventType.MISC, EventType.SESSION)
     }
     assert set(EventType.ranked_below(EventType.INTENT)) == {
         int(EventType.UNKNOWN),
         int(EventType.MISC),
+        int(EventType.SESSION),
     }
 
 
@@ -746,6 +752,10 @@ def test_the_event_types_partition_the_shapes_by_what_they_assert() -> None:
     assert EventType.EXECUTION.band == EventType.FACT
     assert EventType.INSTRUMENT.band == EventType.FACT
     assert EventType.BOOK.band == EventType.STATE
+    assert EventType.ALLOCATION.band == EventType.INTENT
+    assert EventType.CONFIRMATION.band == EventType.FACT
+    assert EventType.POSITION.band == EventType.STATE
+    assert EventType.COLLATERAL.band == EventType.STATE
 
 
 def test_the_removed_book_side_code_is_not_reused() -> None:

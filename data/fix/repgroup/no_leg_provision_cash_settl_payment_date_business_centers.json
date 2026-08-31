@@ -1,0 +1,29 @@
+{
+ "name": "NoLegProvisionCashSettlPaymentDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegProvisionCashSettlPaymentDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40934"
+  },
+  "item": {
+   "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40517"
+     }
+    }
+   ]
+  }
+ }
+}

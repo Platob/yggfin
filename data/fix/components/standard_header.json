@@ -1,0 +1,470 @@
+{
+ "name": "StandardHeader",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "StandardHeader",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "StandardHeader",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
+   "sources": [
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "msgtypes": [
+    "AccountSummaryReport",
+    "AdjustedPositionReport",
+    "Advertisement",
+    "AlgoCertificateReport",
+    "AlgoCertificateReportAck",
+    "AlgoCertificateRequest",
+    "AlgoCertificateRequestAck",
+    "AllocationInstruction",
+    "AllocationInstructionAck",
+    "AllocationInstructionAlert",
+    "AllocationInstructionAlertRequest",
+    "AllocationInstructionAlertRequestAck",
+    "AllocationReport",
+    "AllocationReportAck",
+    "ApplicationMessageReport",
+    "ApplicationMessageRequest",
+    "ApplicationMessageRequestAck",
+    "AssignmentReport",
+    "BidRequest",
+    "BidResponse",
+    "BusinessMessageReject",
+    "CollateralAssignment",
+    "CollateralInquiry",
+    "CollateralInquiryAck",
+    "CollateralReport",
+    "CollateralReportAck",
+    "CollateralRequest",
+    "CollateralResponse",
+    "Confirmation",
+    "ConfirmationAck",
+    "ConfirmationRequest",
+    "ContraryIntentionReport",
+    "CrossOrderCancelReplaceRequest",
+    "CrossOrderCancelRequest",
+    "CrossRequest",
+    "CrossRequestAck",
+    "DerivativeSecurityList",
+    "DerivativeSecurityListRequest",
+    "DerivativeSecurityListUpdateReport",
+    "DontKnowTrade",
+    "Email",
+    "ExecutionAck",
+    "ExecutionReport",
+    "Heartbeat",
+    "IOI",
+    "ListCancelRequest",
+    "ListExecute",
+    "ListStatus",
+    "ListStatusRequest",
+    "ListStrikePrice",
+    "Logon",
+    "Logout",
+    "MarginRequirementInquiry",
+    "MarginRequirementInquiryAck",
+    "MarginRequirementReport",
+    "MarketDataAck",
+    "MarketDataIncrementalRefresh",
+    "MarketDataReport",
+    "MarketDataRequest",
+    "MarketDataRequestReject",
+    "MarketDataSnapshotFullRefresh",
+    "MarketDataStatisticsReport",
+    "MarketDataStatisticsRequest",
+    "MarketDefinition",
+    "MarketDefinitionRequest",
+    "MarketDefinitionUpdateReport",
+    "MassOrder",
+    "MassOrderAck",
+    "MassQuote",
+    "MassQuoteAck",
+    "MultilegOrderCancelReplace",
+    "NetworkCounterpartySystemStatusRequest",
+    "NetworkCounterpartySystemStatusResponse",
+    "NewOrderCross",
+    "NewOrderList",
+    "NewOrderMultileg",
+    "NewOrderSingle",
+    "News",
+    "OrderCancelReject",
+    "OrderCancelReplaceRequest",
+    "OrderCancelRequest",
+    "OrderMassActionReport",
+    "OrderMassActionRequest",
+    "OrderMassCancelReport",
+    "OrderMassCancelRequest",
+    "OrderMassStatusRequest",
+    "OrderStatusRequest",
+    "PartyActionReport",
+    "PartyActionRequest",
+    "PartyDetailsDefinitionRequest",
+    "PartyDetailsDefinitionRequestAck",
+    "PartyDetailsListReport",
+    "PartyDetailsListRequest",
+    "PartyDetailsListUpdateReport",
+    "PartyEntitlementsDefinitionRequest",
+    "PartyEntitlementsDefinitionRequestAck",
+    "PartyEntitlementsReport",
+    "PartyEntitlementsRequest",
+    "PartyEntitlementsUpdateReport",
+    "PartyRiskLimitCheckRequest",
+    "PartyRiskLimitCheckRequestAck",
+    "PartyRiskLimitsDefinitionRequest",
+    "PartyRiskLimitsDefinitionRequestAck",
+    "PartyRiskLimitsReport",
+    "PartyRiskLimitsReportAck",
+    "PartyRiskLimitsRequest",
+    "PartyRiskLimitsUpdateReport",
+    "PayManagementReport",
+    "PayManagementReportAck",
+    "PayManagementRequest",
+    "PayManagementRequestAck",
+    "PositionMaintenanceReport",
+    "PositionMaintenanceRequest",
+    "PositionReport",
+    "PositionTransferInstruction",
+    "PositionTransferInstructionAck",
+    "PositionTransferReport",
+    "Quote",
+    "QuoteAck",
+    "QuoteCancel",
+    "QuoteRequest",
+    "QuoteRequestReject",
+    "QuoteResponse",
+    "QuoteStatusReport",
+    "QuoteStatusRequest",
+    "RFQRequest",
+    "RegistrationInstructions",
+    "RegistrationInstructionsResponse",
+    "Reject",
+    "RequestForPositions",
+    "RequestForPositionsAck",
+    "ResendRequest",
+    "SecurityDefinition",
+    "SecurityDefinitionRequest",
+    "SecurityDefinitionUpdateReport",
+    "SecurityList",
+    "SecurityListRequest",
+    "SecurityListUpdateReport",
+    "SecurityMassStatus",
+    "SecurityMassStatusRequest",
+    "SecurityRiskMetricsReport",
+    "SecurityStatus",
+    "SecurityStatusAck",
+    "SecurityStatusRequest",
+    "SecurityTypeRequest",
+    "SecurityTypes",
+    "SequenceReset",
+    "SettlementInstructionRequest",
+    "SettlementInstructions",
+    "SettlementObligationReport",
+    "SettlementStatusReport",
+    "SettlementStatusReportAck",
+    "SettlementStatusRequest",
+    "SettlementStatusRequestAck",
+    "StreamAssignmentReport",
+    "StreamAssignmentReportACK",
+    "StreamAssignmentRequest",
+    "TestActionReport",
+    "TestActionRequest",
+    "TestActionRequestAck",
+    "TestRequest",
+    "TestSuiteDefinitionRequest",
+    "TestSuiteDefinitionRequestAck",
+    "TradeAggregationReport",
+    "TradeAggregationRequest",
+    "TradeCaptureReport",
+    "TradeCaptureReportAck",
+    "TradeCaptureReportRequest",
+    "TradeCaptureReportRequestAck",
+    "TradeMatchReport",
+    "TradeMatchReportAck",
+    "TradingSessionList",
+    "TradingSessionListRequest",
+    "TradingSessionListUpdateReport",
+    "TradingSessionStatus",
+    "TradingSessionStatusAck",
+    "TradingSessionStatusRequest",
+    "UserNotification",
+    "UserRequest",
+    "UserResponse",
+    "XMLnonFIX"
+   ]
+  },
+  "fields": [
+   {
+    "name": "BeginString",
+    "type": "string",
+    "fix": {
+     "tag": "8"
+    }
+   },
+   {
+    "name": "BodyLength",
+    "type": "string",
+    "fix": {
+     "tag": "9"
+    }
+   },
+   {
+    "name": "MsgType",
+    "type": "string",
+    "fix": {
+     "tag": "35"
+    }
+   },
+   {
+    "name": "ApplVerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1128"
+    }
+   },
+   {
+    "name": "ApplExtID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1156"
+    }
+   },
+   {
+    "name": "CstmApplVerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1129"
+    }
+   },
+   {
+    "name": "SenderCompID",
+    "type": "string",
+    "fix": {
+     "tag": "49"
+    }
+   },
+   {
+    "name": "TargetCompID",
+    "type": "string",
+    "fix": {
+     "tag": "56"
+    }
+   },
+   {
+    "name": "OnBehalfOfCompID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "115"
+    }
+   },
+   {
+    "name": "DeliverToCompID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "128"
+    }
+   },
+   {
+    "name": "SecureDataLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "90"
+    }
+   },
+   {
+    "name": "SecureData",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "91"
+    }
+   },
+   {
+    "name": "MsgSeqNum",
+    "type": "string",
+    "fix": {
+     "tag": "34"
+    }
+   },
+   {
+    "name": "SenderSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "50"
+    }
+   },
+   {
+    "name": "SenderLocationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "142"
+    }
+   },
+   {
+    "name": "TargetSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "57"
+    }
+   },
+   {
+    "name": "TargetLocationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "143"
+    }
+   },
+   {
+    "name": "OnBehalfOfSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "116"
+    }
+   },
+   {
+    "name": "OnBehalfOfLocationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "144"
+    }
+   },
+   {
+    "name": "DeliverToSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "129"
+    }
+   },
+   {
+    "name": "DeliverToLocationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "145"
+    }
+   },
+   {
+    "name": "PossDupFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43"
+    }
+   },
+   {
+    "name": "PossResend",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "97"
+    }
+   },
+   {
+    "name": "SendingTime",
+    "type": "string",
+    "fix": {
+     "tag": "52"
+    }
+   },
+   {
+    "name": "OrigSendingTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "122"
+    }
+   },
+   {
+    "name": "XmlDataLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "212"
+    }
+   },
+   {
+    "name": "XmlData",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "213"
+    }
+   },
+   {
+    "name": "MessageEncoding",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "347"
+    }
+   },
+   {
+    "name": "LastMsgSeqNumProcessed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "369"
+    }
+   },
+   {
+    "name": "NoHops",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "627"
+    },
+    "item": {
+     "name": "Hop",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "HopCompID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "628"
+       }
+      },
+      {
+       "name": "HopSendingTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "629"
+       }
+      },
+      {
+       "name": "HopRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "630"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+}

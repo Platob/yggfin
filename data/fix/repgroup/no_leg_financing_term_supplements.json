@@ -1,0 +1,37 @@
+{
+ "name": "NoLegFinancingTermSupplements",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegFinancingTermSupplements",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42200"
+  },
+  "item": {
+   "name": "LegFinancingTermSupplement",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegFinancingTermSupplementDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42201"
+     }
+    },
+    {
+     "name": "LegFinancingTermSupplementDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42202"
+     }
+    }
+   ]
+  }
+ }
+}

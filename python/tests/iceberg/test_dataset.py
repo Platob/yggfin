@@ -6,7 +6,7 @@ import math
 import os
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -76,10 +76,8 @@ def local(location: str) -> Path:
 
 @pytest.fixture
 def dataset(tmp_path: Path) -> IcebergDataset:
-    return IcebergDataset(
-        field=Quote.into_field("trading.quotes"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+    return IcebergCatalog(catalog_name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.quotes", field=Quote.into_field()
     )
 
 
@@ -99,10 +97,8 @@ def quotes(count: int, message: str = "XPAR") -> pyarrow.Table:
 @pytest.fixture
 def logs(tmp_path: Path) -> IcebergDataset:
     """The parser's own shape, which is the widest thing this package stores."""
-    return IcebergDataset(
-        field=FixMsg.into_field("trading.logs"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+    return IcebergCatalog(catalog_name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.logs", field=FixMsg.into_field()
     )
 
 
@@ -210,9 +206,11 @@ def test_the_columns_a_reader_filters_on_are_declared_and_bounded(
 
 def test_a_declared_property_wins_over_the_metrics_default(tmp_path: Path) -> None:
     dataset = IcebergDataset(
-        field=Quote.into_field("trading.quiet"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="quiet",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         table_properties={"write.metadata.metrics.column.symbol": "none"},
     )
     dataset.get_or_create_table()
@@ -228,15 +226,16 @@ def test_creating_is_idempotent(dataset: IcebergDataset) -> None:
 
 
 def test_the_declared_shape_wins(dataset: IcebergDataset) -> None:
-    assert dataset.into_struct_field() is Quote.into_field("trading.quotes")
-    assert dataset.name == "trading.quotes"
+    assert dataset.into_struct_field() == Quote.into_field("quotes")
+    assert dataset.name == "quotes"
+    assert dataset.identifier == "trading.quotes"
     assert dataset.namespace == "trading"
 
 
 def test_the_tables_own_shape_is_read_back(dataset: IcebergDataset, tmp_path: Path) -> None:
     dataset.append_arrow_table(quotes(1))
-    found = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
-        dataset.name
+    found = IcebergCatalog(catalog_name="test", properties=catalog_properties(tmp_path)).dataset(
+        dataset.identifier
     )
     shape = found.into_struct_field()
     assert shape.name == dataset.name
@@ -262,9 +261,11 @@ def test_a_table_that_was_never_written_reads_as_no_rows(dataset: IcebergDataset
 
 def test_an_absent_table_reads_under_the_schema_it_was_asked_for(tmp_path: Path) -> None:
     bare = IcebergDataset(
-        field=Quote.into_field("trading.absent"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="absent",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     reader = bare.read_arrow_reader(Quote.into_field(), columns=["symbol", "size"])
     assert reader.schema.names == ["symbol", "size"]
@@ -396,7 +397,7 @@ def partitioned_timed(day: datetime.date, *values: int) -> pyarrow.Table:
 def test_an_ordered_read_merges_overlapping_commits_before_applying_its_limit(
     tmp_path: Path,
 ) -> None:
-    catalog = IcebergCatalog(name="ordered", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="ordered", properties=catalog_properties(tmp_path))
     ordered = catalog.dataset("trading.timed", field=Timed.into_field())
     commits = [(1, 4, 7), (2, 5, 8), (0, 3, 6, 9)]
     for values in commits:
@@ -417,7 +418,7 @@ def test_an_ordered_read_merges_overlapping_commits_before_applying_its_limit(
 
 
 def test_an_ordered_read_accepts_equal_adjacent_sort_values(tmp_path: Path) -> None:
-    catalog = IcebergCatalog(name="repeated", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="repeated", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.repeated_timed", field=RepeatedTimed.into_field())
     dataset.append_arrow_table(repeated_timed(7, 7), commit_row_size=1_000_000)
 
@@ -431,7 +432,7 @@ def test_closing_a_partial_ordered_limit_releases_the_scan(
 ) -> None:
     from rekep.iceberg import dataset as module
 
-    catalog = IcebergCatalog(name="partial", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="partial", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.partial_timed", field=Timed.into_field())
     dataset.append_arrow_table(timed(0, 1, 2, 3), commit_row_size=1_000_000)
     original = module._task_batches
@@ -456,7 +457,9 @@ def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     from rekep import ArrowPath
     from rekep.iceberg import dataset as module
 
-    catalog = IcebergCatalog(name="partition-order", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(
+        catalog_name="partition-order", properties=catalog_properties(tmp_path)
+    )
     ordered = catalog.dataset("trading.partitioned_timed", field=PartitionedTimed.into_field())
     first = datetime.date(2026, 8, 14)
     second = first + datetime.timedelta(days=1)
@@ -539,7 +542,7 @@ class NullableSequence(Convertible):
 
 
 def test_an_ordered_read_preserves_sequence_across_equal_time_commits(tmp_path: Path) -> None:
-    catalog = IcebergCatalog(name="sequenced", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="sequenced", properties=catalog_properties(tmp_path))
     ordered = catalog.dataset("trading.sequenced", field=Sequenced.into_field())
     commits = [
         [(10, 2, "cancel"), (11, 1, "next")],
@@ -575,7 +578,9 @@ def test_an_ordered_read_preserves_sequence_across_equal_time_commits(tmp_path: 
 def test_an_ordered_read_sorts_a_different_physical_layout_explicitly(
     tmp_path: Path,
 ) -> None:
-    catalog = IcebergCatalog(name="nullable-sequence", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(
+        catalog_name="nullable-sequence", properties=catalog_properties(tmp_path)
+    )
     ordered = catalog.dataset(
         "trading.nullable_sequence",
         field=NullableSequence.into_field(),
@@ -611,7 +616,7 @@ def test_an_external_order_uses_bounded_merge_fan_in(
     """Each sort pass retains one batch from only its configured run fan-in."""
     from rekep.iceberg import dataset as module
 
-    catalog = IcebergCatalog(name="bounded-sort", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="bounded-sort", properties=catalog_properties(tmp_path))
     ordered = catalog.dataset(
         "trading.bounded_sort",
         field=NullableSequence.into_field(),
@@ -777,25 +782,16 @@ def _iceberg_artifacts(dataset: IcebergDataset) -> set[Path]:
     }
 
 
-def test_partitioned_insert_paths_stage_locally_without_reopening_targets(
+def test_partitioned_insert_paths_use_pyicebergs_direct_writer(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     with monkeypatch.context() as observed:
         staged, uploaded, reopened = _observed_staging(dataset, observed)
         assert dataset.append_arrow_table(quotes(2)) == 2
-        after_plain_append = len(staged)
-        assert uploaded and reopened == []
-        uploaded.clear()
         assert dataset.append_arrow_table(quotes(3), merge_by=True) == 1
-        after_insert_merge = len(staged)
-        assert uploaded and reopened == []
-        uploaded.clear()
         dataset.overwrite_arrow_table(keyed("N", 2), merge_by=True)
-        after_new_key_merge = len(staged)
-        assert uploaded and reopened == []
 
-    assert 0 < after_plain_append < after_insert_merge < after_new_key_merge
-    assert not any(path.exists() for path in staged)
+    assert staged == [] and uploaded == set() and reopened == []
     assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {
         "S0",
         "S1",
@@ -805,7 +801,7 @@ def test_partitioned_insert_paths_stage_locally_without_reopening_targets(
     }
 
 
-def test_partitioned_merge_stages_both_updates_and_inserts(
+def test_partitioned_merge_stages_one_bounded_replacement(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     dataset.append_arrow_table(quotes(2))
@@ -819,20 +815,20 @@ def test_partitioned_merge_stages_both_updates_and_inserts(
             properties={"rekep.test": "staged-merge"},
         )
 
-    assert len(staged) == len(uploaded) == 2, "updates and inserts are separate local stages"
+    assert len(staged) == len(uploaded) == 1, "one stage carries updates and inserts"
     assert reopened == []
     assert not any(path.exists() for path in staged)
     assert stored_sizes(dataset) == {"S0": 0, "S1": 1, "S2": 2}
     assert set(dataset.read_arrow_table().column("venue").to_pylist()) == {"XETR"}
 
 
-def test_a_failed_partitioned_append_removes_its_uploaded_stage(
+def test_a_failed_partitioned_append_removes_direct_writer_outputs(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from pyiceberg.table.update.snapshot import _FastAppendFiles
 
-    io = dataset.get_or_create_table().io
-    staged, uploaded, _ = _observed_staging(dataset, monkeypatch)
+    dataset.get_or_create_table()
+    before = _iceberg_artifacts(dataset)
 
     def refused(*args: Any, **kwargs: Any) -> None:
         raise RuntimeError("snapshot refused")
@@ -841,38 +837,41 @@ def test_a_failed_partitioned_append_removes_its_uploaded_stage(
     with pytest.raises(RuntimeError, match="snapshot refused"):
         dataset.append_arrow_table(quotes(2))
 
-    assert staged and not any(path.exists() for path in staged)
-    assert uploaded and all(not io.new_input(path).exists() for path in uploaded)
+    assert _iceberg_artifacts(dataset) == before
     assert dataset.iceberg_table.history() == []
 
 
-def test_a_lost_upload_acknowledgement_retries_target_cleanup(
+def test_a_retryable_direct_writer_failure_cleans_every_attempt(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    io = dataset.get_or_create_table().io
-    copy = io.copy_from_local
-    targets: set[str] = set()
+    from pyiceberg.table.update.snapshot import _FastAppendFiles
 
-    def copied_then_lost(local_path: str, target: str) -> None:
-        copy(local_path, target)
-        targets.add(target)
-        raise OSError("upload acknowledgement lost")
+    dataset.get_or_create_table()
+    before = _iceberg_artifacts(dataset)
+    attempts = 0
 
-    monkeypatch.setattr(io, "copy_from_local", copied_then_lost)
-    with pytest.raises(OSError, match="acknowledgement lost"):
+    def refused(*_args: Any, **_kwargs: Any) -> None:
+        nonlocal attempts
+        attempts += 1
+        raise OSError("direct writer stopped")
+
+    monkeypatch.setattr(dataset, "retry_backoff", 0.0)
+    monkeypatch.setattr(_FastAppendFiles, "append_data_file", refused)
+    with pytest.raises(OSError, match="direct writer stopped"):
         dataset.append_arrow_table(quotes(2))
 
-    assert targets and all(not io.new_input(path).exists() for path in targets)
+    assert attempts == dataset.commit_retries + 1
+    assert _iceberg_artifacts(dataset) == before
     assert dataset.iceberg_table.history() == []
 
 
-def test_a_refused_catalog_commit_removes_unreferenced_stages(
+def test_a_refused_catalog_commit_removes_unreferenced_outputs(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from pyiceberg.table import Transaction
 
-    io = dataset.get_or_create_table().io
-    staged, uploaded, _ = _observed_staging(dataset, monkeypatch)
+    dataset.get_or_create_table()
+    before = _iceberg_artifacts(dataset)
 
     def refused(_transaction: Transaction) -> None:
         raise RuntimeError("catalog refused")
@@ -881,8 +880,7 @@ def test_a_refused_catalog_commit_removes_unreferenced_stages(
     with pytest.raises(RuntimeError, match="catalog refused"):
         dataset.append_arrow_table(quotes(2))
 
-    assert staged and not any(path.exists() for path in staged)
-    assert uploaded and all(not io.new_input(path).exists() for path in uploaded)
+    assert _iceberg_artifacts(dataset) == before
     assert dataset.iceberg_table.history() == []
 
 
@@ -891,8 +889,7 @@ def test_a_lost_commit_acknowledgement_keeps_files_the_snapshot_references(
 ) -> None:
     from pyiceberg.table import Transaction
 
-    io = dataset.get_or_create_table().io
-    staged, uploaded, _ = _observed_staging(dataset, monkeypatch)
+    dataset.get_or_create_table()
     original = Transaction.commit_transaction
 
     def acknowledged(transaction: Transaction) -> None:
@@ -903,9 +900,65 @@ def test_a_lost_commit_acknowledgement_keeps_files_the_snapshot_references(
     with pytest.raises(RuntimeError, match="acknowledgement lost"):
         dataset.append_arrow_table(quotes(2))
 
-    assert staged and not any(path.exists() for path in staged)
-    assert uploaded and all(io.new_input(path).exists() for path in uploaded)
-    assert dataset.refresh().read_arrow_table().num_rows == 2
+    dataset.refresh()
+    io = dataset.iceberg_table.io
+    assert all(
+        io.new_input(path).exists() for path in dataset.data_files()["file_path"].to_pylist()
+    )
+    assert dataset.read_arrow_table().num_rows == 2
+
+
+def test_a_transient_commit_failure_retries_once(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.exceptions import CommitFailedException
+
+    append = dataset._append_chunk_once
+    attempts = 0
+
+    def transient(
+        table: object,
+        chunk: pyarrow.Table,
+        reference: str,
+        properties: dict[str, str],
+    ) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise CommitFailedException("concurrent commit")
+        append(table, chunk, reference, properties)
+
+    monkeypatch.setattr(dataset, "retry_backoff", 0.0)
+    monkeypatch.setattr(dataset, "_append_chunk_once", transient)
+
+    assert dataset.append_arrow_table(quotes(2)) == 2
+    assert attempts == 2
+    assert len(dataset.iceberg_table.snapshots()) == 1
+    assert dataset.read_arrow_table().num_rows == 2
+
+
+def test_a_lost_transient_commit_acknowledgement_is_not_replayed(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.exceptions import CommitStateUnknownException
+    from pyiceberg.table import Transaction
+
+    commit = Transaction.commit_transaction
+    attempts = 0
+
+    def committed(transaction: Transaction) -> None:
+        nonlocal attempts
+        attempts += 1
+        commit(transaction)
+        raise CommitStateUnknownException("commit acknowledgement lost")
+
+    monkeypatch.setattr(dataset, "retry_backoff", 0.0)
+    monkeypatch.setattr(Transaction, "commit_transaction", committed)
+
+    assert dataset.append_arrow_table(quotes(2)) == 2
+    assert attempts == 1, "the operation id found the commit before replaying it"
+    assert len(dataset.iceberg_table.snapshots()) == 1
+    assert dataset.read_arrow_table().num_rows == 2
 
 
 def test_an_interrupt_after_commit_keeps_partitioned_files_live(
@@ -977,7 +1030,7 @@ def test_a_refused_unpartitioned_merge_removes_rewrites_and_avro(
         symbol: Annotated[str, Field.primary_key()]
         size: int
 
-    catalog = IcebergCatalog(name="flat-refusal", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="flat-refusal", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.flat_refusal", field=FlatQuote.into_field())
     schema = FlatQuote.into_field().into_arrow_schema()
     dataset.append_arrow_table(
@@ -1004,7 +1057,7 @@ def test_a_refused_unpartitioned_merge_removes_rewrites_and_avro(
 def test_a_metadata_write_followed_by_catalog_refusal_leaves_no_artifact(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    catalog = dataset.iceberg_catalog
+    catalog = dataset.catalog
     dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
     before = _iceberg_artifacts(dataset)
     write = catalog._write_metadata
@@ -1028,7 +1081,7 @@ def test_a_custom_file_io_metadata_refusal_leaves_no_artifact(
         **catalog_properties(tmp_path),
         "py-io-impl": f"{__name__}.CustomArrowFileIO",
     }
-    catalog = IcebergCatalog(name="custom-refusal", properties=properties)
+    catalog = IcebergCatalog(catalog_name="custom-refusal", properties=properties)
     dataset = catalog.dataset("t.custom_refusal", field=Quote.into_field())
     dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
     before = _iceberg_artifacts(dataset)
@@ -1075,11 +1128,11 @@ def test_a_snapshot_construction_failure_removes_direct_writer_outputs(
         symbol: Annotated[str, Field.primary_key()]
         size: int
 
-    catalog = IcebergCatalog(name="flat-build", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="flat-build", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.flat_build", field=FlatQuote.into_field())
     schema = FlatQuote.into_field().into_arrow_schema()
     dataset.append_arrow_table(
-        pyarrow.Table.from_pydict({"symbol": ["S0", "S1"], "size": [0, 1]}, schema=schema),
+        pyarrow.Table.from_pydict({"symbol": ["S0"], "size": [0]}, schema=schema),
         commit_row_size=1_000_000,
     )
     before = _iceberg_artifacts(dataset)
@@ -1089,9 +1142,8 @@ def test_a_snapshot_construction_failure_removes_direct_writer_outputs(
 
     monkeypatch.setattr(_FastAppendFiles, "append_data_file", refused)
     with pytest.raises(RuntimeError, match="construction refused"):
-        dataset.overwrite_arrow_table(
-            pyarrow.Table.from_pydict({"symbol": ["S0"], "size": [2]}, schema=schema),
-            merge_by=True,
+        dataset.append_arrow_table(
+            pyarrow.Table.from_pydict({"symbol": ["S2"], "size": [2]}, schema=schema),
             commit_row_size=1_000_000,
         )
 
@@ -1340,9 +1392,11 @@ def test_a_falsy_merge_by_is_still_refused_without_partitions(tmp_path: Path) ->
         symbol: Annotated[str, Field.primary_key()]
 
     flat = IcebergDataset(
-        field=Flat.into_field("trading.flat_overwrite"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="flat_overwrite",
+        namespace="trading",
+        field=Flat.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     source = pyarrow.Table.from_pydict(
         {"symbol": ["A"]}, schema=Flat.into_field().into_arrow_schema()
@@ -1359,9 +1413,11 @@ def test_a_nan_identity_partition_is_refused_before_pyiceberg(tmp_path: Path) ->
         partition: Annotated[float, Field.partition_key()]
 
     values = IcebergDataset(
-        field=FloatPartition.into_field("trading.float_partitions"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="float_partitions",
+        namespace="trading",
+        field=FloatPartition.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     source = pyarrow.Table.from_pydict(
         {"symbol": ["A"], "partition": [float("nan")]},
@@ -1422,9 +1478,11 @@ def test_a_transformed_partition_scopes_identity_without_joining_on_its_source(
         value: int
 
     daily = IcebergDataset(
-        field=Daily.into_field("trading.daily_key"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="daily_key",
+        namespace="trading",
+        field=Daily.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = Daily.into_field().into_arrow_schema()
     first = datetime.datetime(2026, 8, 14, 1)
@@ -1476,9 +1534,11 @@ def test_a_bucketed_merge_reads_and_deletes_only_its_transformed_partition(
         value: int
 
     bucketed = IcebergDataset(
-        field=Bucketed.into_field("trading.bucketed_key"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="bucketed_key",
+        namespace="trading",
+        field=Bucketed.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = Bucketed.into_field().into_arrow_schema()
     candidates = [f"code-{index:05d}" for index in range(10_000)]
@@ -1558,9 +1618,11 @@ def test_a_partition_derived_from_the_primary_key_merges_exactly(
         venue: str
 
     ticks = IcebergDataset(
-        field=Tick.into_field("trading.dynamic_ticks"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="dynamic_ticks",
+        namespace="trading",
+        field=Tick.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = Tick.into_field().into_arrow_schema()
     ticks.append_arrow_table(
@@ -1613,9 +1675,11 @@ def test_dynamic_overwrite_requires_source_partition_columns(tmp_path: Path) -> 
         venue: Annotated[str | None, Field.partition_key()] = None
 
     partitioned = IcebergDataset(
-        field=OptionalPartition.into_field("trading.optional_partition"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="optional_partition",
+        namespace="trading",
+        field=OptionalPartition.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     partitioned.create_with()
     source = pyarrow.RecordBatchReader.from_batches(
@@ -1634,9 +1698,11 @@ def test_a_null_partition_is_replaced_without_touching_the_others(tmp_path: Path
         venue: Annotated[str | None, Field.partition_key()] = None
 
     partitioned = IcebergDataset(
-        field=OptionalPartition.into_field("trading.null_partition"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="null_partition",
+        namespace="trading",
+        field=OptionalPartition.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = OptionalPartition.into_field().into_arrow_schema()
     partitioned.append_arrow_table(
@@ -1668,9 +1734,11 @@ def test_a_day_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path) -> N
         at: Annotated[datetime.datetime, Field.partition_key("day")]
 
     daily = IcebergDataset(
-        field=Daily.into_field("trading.daily_partition_overwrite"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="daily_partition_overwrite",
+        namespace="trading",
+        field=Daily.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = Daily.into_field().into_arrow_schema()
     first = datetime.datetime(2026, 8, 14, 1)
@@ -1715,9 +1783,11 @@ def test_partition_replacement_prunes_manifests_before_reading_entries(
     from rekep.iceberg import dataset as module
 
     partitioned = IcebergDataset(
-        field=Quote.into_field("trading.manifest_pruning"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="manifest_pruning",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         optimize_commits=False,
     )
     partitioned.append_arrow_table(quotes(1))
@@ -1751,9 +1821,11 @@ def test_a_bucket_partition_is_staged_without_inverting_its_hash(tmp_path: Path)
         size: int
 
     bucketed = IcebergDataset(
-        field=Bucketed.into_field("trading.bucket_partition_overwrite"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="bucket_partition_overwrite",
+        namespace="trading",
+        field=Bucketed.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = Bucketed.into_field().into_arrow_schema()
     bucketed.append_arrow_table(
@@ -1790,9 +1862,11 @@ def test_a_truncated_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path
         size: int
 
     truncated = IcebergDataset(
-        field=Truncated.into_field("trading.truncate_partition_overwrite"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="truncate_partition_overwrite",
+        namespace="trading",
+        field=Truncated.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = Truncated.into_field().into_arrow_schema()
     truncated.append_arrow_table(
@@ -1840,9 +1914,11 @@ def test_a_dynamic_partition_merge_refuses_a_null_key(tmp_path: Path) -> None:
         symbol: str | None = None
 
     target = IcebergDataset(
-        field=MaybeKeyed.into_field("trading.maybe_keyed"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="maybe_keyed",
+        namespace="trading",
+        field=MaybeKeyed.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     source = pyarrow.Table.from_pydict(
         {"symbol": [None], "day": [datetime.date(2026, 8, 14)]},
@@ -1865,9 +1941,11 @@ def test_merging_on_a_key_nothing_declares_is_refused_before_writing(tmp_path: P
         symbol: str
 
     keyless = IcebergDataset(
-        field=Loose.into_field("trading.loose"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="loose",
+        namespace="trading",
+        field=Loose.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     with pytest.raises(ValueError, match="no member declares one"):
         keyless.merge_columns(True)
@@ -1886,26 +1964,38 @@ def test_partition_sources_scope_default_and_explicit_merge_keys(
 def test_a_dataset_round_trips_through_yaml(dataset: IcebergDataset) -> None:
     """Its configuration -- the declared shape included -- is a file."""
     document = dataset.into_dict()
-    assert "name" not in document
-    assert document["field"]["name"] == "trading.quotes"
+    assert document["name"] == "quotes"
+    assert document["namespace"] == "trading"
+    assert document["field"]["name"] == "quotes"
+    assert document["catalog_name"] == dataset.catalog_name
+    assert document["catalog_properties"] == dataset.catalog_properties
     rebuilt = IcebergDataset.from_yaml(dataset.into_yaml())
-    assert (rebuilt.name, rebuilt.catalog, rebuilt.properties) == (
+    assert (
+        rebuilt.name,
+        rebuilt.namespace,
+        rebuilt.catalog_name,
+        rebuilt.catalog_properties,
+    ) == (
         dataset.name,
-        dataset.catalog,
-        dataset.properties,
+        dataset.namespace,
+        dataset.catalog_name,
+        dataset.catalog_properties,
     )
+    assert rebuilt.identifier == dataset.identifier
     assert isinstance(rebuilt.field, StructField)
     assert rebuilt.field == dataset.field
-    assert rebuilt.namespace == "trading"
+    assert "store" not in rebuilt.__dict__, "reading configuration stays lazy"
 
 
 def test_relative_snapshot_expiry_round_trips_as_the_iceberg_property(
     tmp_path: Path,
 ) -> None:
     retained = IcebergDataset(
-        field=Quote.into_field("trading.retained_document"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="retained_document",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         snapshot_expiry=datetime.timedelta(days=7),
     )
 
@@ -1921,9 +2011,11 @@ def test_snapshot_expiry_rounds_up_to_icebergs_millisecond_precision(
     tmp_path: Path,
 ) -> None:
     retained = IcebergDataset(
-        field=Quote.into_field("trading.precise_retention"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="precise_retention",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         snapshot_expiry=datetime.timedelta(microseconds=500),
     )
 
@@ -2015,7 +2107,7 @@ def test_monotonic_inserts_plan_only_at_the_equal_boundary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A strict new range is known fresh; equality still checks the stored key."""
-    catalog = IcebergCatalog(name="monotonic", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="monotonic", properties=catalog_properties(tmp_path))
     target = catalog.dataset("trading.timed", field=Timed.into_field())
     table = target.get_or_create_table()
     scans = 0
@@ -2057,9 +2149,11 @@ def test_the_monotonic_insert_frontier_is_scoped_by_transformed_partition(
         code: Annotated[str, Field.partition_key("bucket[2]")]
 
     target = IcebergDataset(
-        field=Bucketed.into_field("trading.bucketed_frontier"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="bucketed_frontier",
+        namespace="trading",
+        field=Bucketed.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         sort_by=["ident"],
     )
     schema = Bucketed.into_field().into_arrow_schema()
@@ -2090,7 +2184,9 @@ def test_the_monotonic_insert_frontier_is_scoped_by_transformed_partition(
 def test_descending_monotonic_inserts_advance_the_lower_frontier(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    catalog = IcebergCatalog(name="descending-frontier", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(
+        catalog_name="descending-frontier", properties=catalog_properties(tmp_path)
+    )
     target = catalog.dataset("trading.descending_timed", field=DescendingTimed.into_field())
     table = target.get_or_create_table()
     scans = 0
@@ -2122,7 +2218,7 @@ def test_descending_monotonic_inserts_advance_the_lower_frontier(
 
 def test_a_direct_table_write_invalidates_the_insert_upper_bound(tmp_path: Path) -> None:
     """A same-handle write outside the wrapper must not make a later key look new."""
-    catalog = IcebergCatalog(name="mixed", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="mixed", properties=catalog_properties(tmp_path))
     target = catalog.dataset("trading.timed", field=Timed.into_field())
     target.append_arrow_table(timed(0, 1), merge_by=True, commit_row_size=1_000_000)
     target.iceberg_table.append(timed(100))
@@ -2139,7 +2235,7 @@ def test_a_stale_monotonic_writer_cannot_bypass_an_external_commit(tmp_path: Pat
     """Iceberg rejects the stale append before a cached bound could duplicate a key."""
     from pyiceberg.exceptions import CommitFailedException
 
-    catalog = IcebergCatalog(name="concurrent", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="concurrent", properties=catalog_properties(tmp_path))
     writer = catalog.dataset("trading.timed", field=Timed.into_field())
     writer.append_arrow_table(timed(0), merge_by=True, commit_row_size=1_000_000)
     other = catalog.dataset("trading.timed", field=Timed.into_field())
@@ -2184,9 +2280,11 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
 
 def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path) -> None:
     target = IcebergDataset(
-        field=Message.into_field("trading.messages"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="messages",
+        namespace="trading",
+        field=Message.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     row = Message(
         unix=1,
@@ -2201,8 +2299,8 @@ def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path)
 
     target.append_arrow_table(Message.into_arrow_reader([row]).read_all())
 
-    reopened = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
-        target.name
+    reopened = IcebergCatalog(catalog_name="test", properties=catalog_properties(tmp_path)).dataset(
+        target.identifier
     )
     shape = reopened.into_struct_field().field("entries")
     stored = reopened.read_arrow_table(Message.into_field()).column("entries").to_pylist()
@@ -2237,7 +2335,9 @@ def test_the_stored_fields_keep_their_required_members(
 ) -> None:
     """A stored field always says which field it is, through Iceberg too."""
     logs.append_arrow_table(log_table(FIX_LINE))
-    found = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(logs.name)
+    found = IcebergCatalog(catalog_name="test", properties=catalog_properties(tmp_path)).dataset(
+        logs.identifier
+    )
     shape = found.into_struct_field().field("entries")
     assert shape.nullable and not shape.item.nullable
     required = {member.name for member in shape.item.fields if not member.nullable}
@@ -2296,14 +2396,17 @@ def test_create_with_builds_the_table_before_any_write(dataset: IcebergDataset) 
 
 def test_create_with_takes_a_shape_it_was_not_declared_with(tmp_path: Path) -> None:
     bare = IcebergDataset(
-        field=Field.from_(pyarrow.schema([]), "trading.bare"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="bare",
+        namespace="trading",
+        field=Field.from_(pyarrow.schema([]), "bare"),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     schema = pyarrow.schema([pyarrow.field("symbol", pyarrow.string(), nullable=False)])
     bare.create_with(schema)
     assert bare.into_struct_field().names == ["symbol"]
-    assert bare.name == "trading.bare"
+    assert bare.name == "bare"
+    assert bare.identifier == "trading.bare"
 
 
 def test_creating_twice_leaves_the_table_alone(dataset: IcebergDataset) -> None:
@@ -2487,6 +2590,100 @@ def test_rows_are_deleted_by_filter(dataset: IcebergDataset) -> None:
     assert dataset.refresh().read_arrow_table().num_rows == 3
 
 
+@pytest.mark.parametrize(
+    "row_filter",
+    ["size = 2", EqualTo("size", 2)],
+    ids=["sql", "expression"],
+)
+def test_delete_where_accepts_sql_and_boolean_expressions(
+    dataset: IcebergDataset, row_filter: object
+) -> None:
+    dataset.append_arrow_table(quotes(5))
+
+    assert dataset.delete_where(row_filter) == 1
+    assert dataset.refresh().read_arrow_table().column("size").to_pylist() == [0, 1, 3, 4]
+
+
+def test_a_partial_file_delete_never_collects_its_scan(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyiceberg.io.pyarrow import ArrowScan
+
+    from rekep.iceberg import dataset as dataset_module
+
+    dataset.append_arrow_table(quotes(5))
+    task_batches = dataset_module._task_batches
+
+    class StreamOnly:
+        def __init__(self, batches: Iterator[pyarrow.RecordBatch]) -> None:
+            self.batches = batches
+
+        def __iter__(self) -> Iterator[pyarrow.RecordBatch]:
+            return iter(self.batches)
+
+        def read_all(self) -> None:
+            pytest.fail("a partial-file delete must not collect its batches")
+
+    def streamed(*args: object, **kwargs: object) -> StreamOnly:
+        return StreamOnly(task_batches(*args, **kwargs))
+
+    with monkeypatch.context() as guarded:
+        guarded.setattr(
+            ArrowScan,
+            "to_table",
+            lambda *_args, **_kwargs: pytest.fail(
+                "a partial-file delete must not materialize its scan"
+            ),
+        )
+        guarded.setattr(dataset_module, "_task_batches", streamed)
+        assert dataset.delete_where(EqualTo("size", 2)) == 1
+
+    assert dataset.refresh().read_arrow_table().column("size").to_pylist() == [0, 1, 3, 4]
+
+
+def test_delete_commits_one_file_at_a_time_across_partitions(
+    dataset: IcebergDataset,
+) -> None:
+    first = datetime.date(2026, 8, 14)
+    second = first + datetime.timedelta(days=1)
+    schema = Quote.into_field().into_arrow_schema()
+    for write in range(2):
+        dataset.append_arrow_table(
+            pyarrow.Table.from_pydict(
+                {
+                    "symbol": [f"S{write}-{index}" for index in range(4)],
+                    "day": [first, first, second, second],
+                    "size": [0, 1, 0, 1],
+                    "venue": ["XPAR"] * 4,
+                },
+                schema=schema,
+            )
+        )
+
+    assert dataset.data_files().num_rows == 4, "two writes made one file per partition"
+    before = len(dataset.iceberg_table.snapshots())
+
+    assert dataset.delete_where("size = 1", commit_file_count=1) == 4
+    assert len(dataset.iceberg_table.snapshots()) - before == 4, (
+        "each candidate file is one bounded commit"
+    )
+    assert dataset.data_files().num_rows == 4, "each partial file was replaced in place"
+    assert dataset.read_arrow_table().column("size").to_pylist() == [0, 0, 0, 0]
+
+
+def test_delete_is_a_no_op_for_a_missing_table_or_no_matches(
+    dataset: IcebergDataset,
+) -> None:
+    assert dataset.delete_where(EqualTo("size", 2)) == 0
+    assert not dataset.exists, "a delete does not create its missing target"
+
+    dataset.append_arrow_table(quotes(3))
+    before = len(dataset.iceberg_table.snapshots())
+    assert dataset.delete("size > 100") == 0
+    assert len(dataset.iceberg_table.snapshots()) == before
+    assert dataset.read_arrow_table().num_rows == 3
+
+
 # -- maintenance ------------------------------------------------------------
 
 
@@ -2536,7 +2733,7 @@ def test_an_unpartitioned_table_compacts(tmp_path: Path) -> None:
         size: int
         """Quantity."""
 
-    catalog = IcebergCatalog(name="flat", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="flat", properties=catalog_properties(tmp_path))
     flat = catalog.dataset("trading.flat", field=Flat.into_field())
     schema = Flat.into_field().into_arrow_schema()
     for index in range(4):
@@ -2573,7 +2770,7 @@ def test_a_transformed_partition_settles(tmp_path: Path) -> None:
         at: Annotated[datetime.datetime, Field.partition_key("day")]
         """When it happened."""
 
-    catalog = IcebergCatalog(name="daily", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="daily", properties=catalog_properties(tmp_path))
     daily = catalog.dataset("trading.daily", field=Event.into_field())
     schema = Event.into_field().into_arrow_schema()
     base = datetime.datetime(2026, 8, 14)
@@ -2624,7 +2821,7 @@ def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: st
         size: int
         """Quantity."""
 
-    catalog = IcebergCatalog(name="lit", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="lit", properties=catalog_properties(tmp_path))
     parted = catalog.dataset("trading.parts", field=Part.into_field())
     schema = Part.into_field().into_arrow_schema()
 
@@ -2715,7 +2912,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
             ]
         )
     )
-    catalog = IcebergCatalog(name="nested", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="nested", properties=catalog_properties(tmp_path))
     quotes_ = catalog.dataset("trading.nested", field=Narrow.into_field())
     narrow_schema = Narrow.into_field().into_arrow_schema()
     quotes_.append_arrow(
@@ -2793,18 +2990,22 @@ def test_snapshot_expiry_accepts_an_absolute_string_on_a_direct_merge(
 def test_snapshot_expiry_falls_back_to_the_configured_table_age(tmp_path: Path) -> None:
     properties = catalog_properties(tmp_path)
     existing = IcebergDataset(
-        field=Quote.into_field("trading.expiring"),
-        catalog="test",
-        properties=properties,
+        name="expiring",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=properties,
     )
     existing.append_arrow_table(quotes(1))
     existing.append_arrow_table(keyed("A", 1))
     assert len(existing.iceberg_table.snapshots()) == 2
 
     retained = IcebergDataset(
-        field=Quote.into_field("trading.expiring"),
-        catalog="test",
-        properties=properties,
+        name="expiring",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=properties,
         table_properties={"history.expire.max-snapshot-age-ms": "0"},
     )
 
@@ -2932,9 +3133,11 @@ def test_optimize_does_the_whole_routine(dataset: IcebergDataset) -> None:
 
 def test_optimize_retrofits_missing_metadata_maintenance_properties(tmp_path: Path) -> None:
     external = IcebergDataset(
-        field=Quote.into_field("trading.external"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="external",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         optimize_commits=False,
     )
     external.append_arrow_table(quotes(2))
@@ -2948,9 +3151,11 @@ def test_optimize_retrofits_missing_metadata_maintenance_properties(tmp_path: Pa
 
 def test_optimize_keeps_explicit_metadata_retention(tmp_path: Path) -> None:
     external = IcebergDataset(
-        field=Quote.into_field("trading.retained"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="retained",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         optimize_commits=False,
         table_properties={
             "write.metadata.previous-versions-max": "80",
@@ -2996,13 +3201,15 @@ def test_a_schema_that_carries_ids_keeps_them(dataset: IcebergDataset) -> None:
 def test_a_plain_arrow_schema_is_numbered_for_the_user(tmp_path: Path) -> None:
     schema = pyarrow.schema([pyarrow.field("a", pyarrow.int64(), nullable=False)])
     plain = IcebergDataset(
-        field=Field.from_(schema, "trading.plain"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="plain",
+        namespace="trading",
+        field=Field.from_(schema, "plain"),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     plain.create_with()
     assert [f.field_id for f in plain.iceberg_table.schema().fields] == [1]
-    assert plain.field.name == "trading.plain"
+    assert plain.field.name == "plain"
 
 
 # -- commits ----------------------------------------------------------------
@@ -3051,9 +3258,11 @@ def _streaming_dataset(
     """The same SQL catalog with local or S3 table bytes."""
     properties = catalog_properties(tmp_path, backend)
     target = IcebergDataset(
-        field=Quote.into_field("trading.streamed"),
-        catalog=f"streamed-{backend}",
-        properties=properties,
+        name="streamed",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name=f"streamed-{backend}",
+        catalog_properties=properties,
     )
     if backend == "local":
         target.get_or_create_table()
@@ -3082,6 +3291,28 @@ def _streaming_dataset(
 
 
 @pytest.mark.parametrize("backend", ["local", "s3"])
+def test_partial_delete_streams_on_local_and_remote_storage(
+    backend: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pyiceberg.io.pyarrow import ArrowScan
+
+    dataset, _ = _streaming_dataset(backend, tmp_path, monkeypatch)
+    dataset.append_arrow_table(quotes(4), commit_row_size=2)
+    before = len(dataset.iceberg_table.snapshots())
+    monkeypatch.setattr(
+        ArrowScan,
+        "to_table",
+        lambda *_args, **_kwargs: pytest.fail("delete must stream remote files too"),
+    )
+
+    assert dataset.delete_where(EqualTo("size", 1), commit_file_count=1) == 1
+    assert len(dataset.iceberg_table.snapshots()) == before + 1
+    assert dataset.read_arrow_table().column("size").to_pylist() == [0, 2, 3]
+
+
+@pytest.mark.parametrize("backend", ["local", "s3"])
 @pytest.mark.parametrize("mode", ["append", "upsert"])
 def test_stream_writes_commit_before_consuming_the_next_chunk(
     backend: str,
@@ -3098,10 +3329,11 @@ def test_stream_writes_commit_before_consuming_the_next_chunk(
     if mode == "append":
         original = dataset._append_chunk
 
-        def append_chunk(table: Any, chunk: pyarrow.Table, *args: Any, **kwargs: Any) -> None:
+        def append_chunk(table: Any, chunk: pyarrow.Table, *args: Any, **kwargs: Any) -> Any:
             assert chunk.num_rows <= source.rows
-            original(table, chunk, *args, **kwargs)
+            result = original(table, chunk, *args, **kwargs)
             source.completed += 1
+            return result
 
         monkeypatch.setattr(dataset, "_append_chunk", append_chunk)
         assert dataset.append_arrow_reader(source, merge_by=False, commit_row_size=2) == 6
@@ -3119,9 +3351,7 @@ def test_stream_writes_commit_before_consuming_the_next_chunk(
 
     assert source.max_uncommitted == 2
     assert source.completed == 3
-    # Each changed upsert chunk records its delete and append snapshots in one transaction.
-    expected_snapshots = 6 if mode == "upsert" else 3
-    assert len(dataset.iceberg_table.history()) == before + expected_snapshots
+    assert len(dataset.iceberg_table.history()) == before + 3, "one snapshot per bounded chunk"
     assert all(
         path.startswith(data_prefix)
         for path in dataset.data_files().column("file_path").to_pylist()
@@ -3138,9 +3368,11 @@ def test_a_created_table_carries_the_commit_properties(dataset: IcebergDataset) 
 
 def test_iceberg_defaults_can_be_kept(tmp_path: Path) -> None:
     bare = IcebergDataset(
-        field=Quote.into_field("trading.bare"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="bare",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         optimize_commits=False,
     )
     bare.create_with()
@@ -3149,9 +3381,11 @@ def test_iceberg_defaults_can_be_kept(tmp_path: Path) -> None:
 
 def test_declared_table_properties_win_over_the_defaults(tmp_path: Path) -> None:
     tuned = IcebergDataset(
-        field=Quote.into_field("trading.tuned"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="tuned",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         table_properties={"write.target-file-size-bytes": "1024"},
     )
     tuned.create_with()
@@ -3647,7 +3881,7 @@ def test_a_limited_read_over_a_null_partition_returns_its_rows(tmp_path: Path) -
         size: int
         """Quantity."""
 
-    catalog = IcebergCatalog(name="nullpart", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="nullpart", properties=catalog_properties(tmp_path))
     trades = catalog.dataset("trading.trades", field=Trade.into_field())
     schema = Trade.into_field().into_arrow_schema()
     trades.append_arrow(
@@ -4186,7 +4420,7 @@ def test_a_key_range_covers_a_column_it_cannot_band(dataset: IcebergDataset) -> 
 def test_a_backfill_plans_the_files_it_lands_in(tmp_path: Path) -> None:
     """The whole point: a replay of two distant bands of keys used to plan 26
     files of 30 to find the two that held them."""
-    catalog = IcebergCatalog(name="bands", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="bands", properties=catalog_properties(tmp_path))
     ticks = catalog.dataset("trading.ticks", field=Tick.into_field())
     schema = Tick.into_field().into_arrow_schema()
     commits = [
@@ -4289,7 +4523,7 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
     warehouse.mkdir()
     posix = os.name != "nt"
     catalog = IcebergCatalog(
-        name="single",
+        catalog_name="single",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
@@ -4311,7 +4545,7 @@ def test_a_sweep_follows_a_relocated_data_path(tmp_path: Path) -> None:
     """`write.data.path` moves the data; assuming `<location>/data` swept nothing."""
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
-    catalog = IcebergCatalog(name="relocated", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="relocated", properties=catalog_properties(tmp_path))
     quotes_ = catalog.dataset(
         "trading.quotes",
         field=Quote.into_field(),
@@ -4345,7 +4579,7 @@ def test_a_sweep_survives_a_data_path_that_contains_the_metadata(tmp_path: Path)
     reported ten orphans, all ten of them the current pointer, the manifest
     lists and the manifests: `cleanup` deleted the table.
     """
-    catalog = IcebergCatalog(name="flatpath", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="flatpath", properties=catalog_properties(tmp_path))
     location = (tmp_path / "warehouse" / "trading" / "quotes").as_uri()
     quotes_ = catalog.dataset(
         "trading.quotes",
@@ -4486,16 +4720,16 @@ def test_a_sweep_does_not_delete_another_writers_files(tmp_path: Path) -> None:
     gone and the table unreadable.
     """
     properties = catalog_properties(tmp_path)
-    catalog = IcebergCatalog(name="shared", properties=properties)
+    catalog = IcebergCatalog(catalog_name="shared", properties=properties)
     catalog.dataset("trading.quotes", field=Quote.into_field()).append_arrow(
         quotes(2), commit_row_size=1_000_000
     )
-    sweeper = IcebergCatalog(name="shared", properties=properties).dataset(
+    sweeper = IcebergCatalog(catalog_name="shared", properties=properties).dataset(
         "trading.quotes", field=Quote.into_field()
     )
     sweeper.get_or_create_table()  # loads the table, and caches it
 
-    other = IcebergCatalog(name="shared", properties=properties).dataset(
+    other = IcebergCatalog(catalog_name="shared", properties=properties).dataset(
         "trading.quotes", field=Quote.into_field()
     )
     for index in range(3):
@@ -4573,9 +4807,11 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
     answers = []
     for index, sort_by in enumerate((None, ["size"])):
         target = IcebergDataset(
-            field=Quote.into_field().with_name(f"trading.sorted{index}"),
-            catalog="test",
-            properties=catalog_properties(tmp_path),
+            name=f"sorted{index}",
+            namespace="trading",
+            field=Quote.into_field(),
+            catalog_name="test",
+            catalog_properties=catalog_properties(tmp_path),
             sort_by=sort_by,
         )
         target.append_arrow(quotes(50).sort_by([("size", "descending")]), commit_row_size=1_000_000)
@@ -4654,7 +4890,7 @@ def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> N
     distant hours become one range covering every hour between them and the
     filter reads every hour between them -- while the partition column they are
     a function of names exactly the two."""
-    catalog = IcebergCatalog(name="beats", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="beats", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.beats", field=Beat.into_field())
     for hour in range(12):
         dataset.insert_arrow_table(beats(hour), True)
@@ -4673,7 +4909,7 @@ def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> N
 def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) -> None:
     """Pruning is only ever allowed to be a superset: the same merge, declared
     and not, has to update the same rows."""
-    catalog = IcebergCatalog(name="same", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="same", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.beats", field=Beat.into_field())
     for hour in range(6):
         dataset.insert_arrow_table(beats(hour), True)
@@ -4705,7 +4941,7 @@ def _undeclared() -> StructField:
 
 def test_a_table_read_back_declares_no_derivation(tmp_path: Path) -> None:
     """Iceberg records a partition spec, not why a column holds what it does."""
-    catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="read", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.beats", field=Beat.into_field())
     dataset.insert_arrow_table(beats(0), True)
     reread = catalog.dataset("trading.beats")
@@ -4777,7 +5013,7 @@ def floating_ticked(values: Sequence[float | None], start: int) -> pyarrow.Table
 
 
 def test_the_columns_sorted_by_are_the_ones_declared(tmp_path: Path) -> None:
-    catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="sorted", properties=catalog_properties(tmp_path))
     assert catalog.dataset("t.a", field=Ticked.into_field()).sort_columns() == ["at", "seq"]
     assert catalog.dataset("t.b", field=Ticked.into_field(), sort_by=["seq"]).sort_columns() == [
         "seq"
@@ -4795,7 +5031,7 @@ def test_the_columns_sorted_by_are_the_ones_declared(tmp_path: Path) -> None:
 def test_a_reopened_table_keeps_exact_sort_priority_and_null_policy(tmp_path: Path) -> None:
     from pyiceberg.table.sorting import NullOrder, SortDirection
 
-    catalog = IcebergCatalog(name="sort-roundtrip", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="sort-roundtrip", properties=catalog_properties(tmp_path))
     declared = catalog.dataset(
         "t.reordered",
         field=Ticked.into_field(),
@@ -4819,7 +5055,7 @@ def test_a_reopened_table_keeps_exact_sort_priority_and_null_policy(tmp_path: Pa
 def test_partition_staging_honours_descending_sort_and_nulls_last(tmp_path: Path) -> None:
     from pyiceberg.table.sorting import NullOrder, SortDirection
 
-    catalog = IcebergCatalog(name="descending", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="descending", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset(
         "t.descending",
         field=DescendingTick.into_field(),
@@ -4837,7 +5073,9 @@ def test_partition_staging_honours_descending_sort_and_nulls_last(tmp_path: Path
 
 
 def test_a_descending_ordered_read_merges_commits_and_applies_its_limit(tmp_path: Path) -> None:
-    catalog = IcebergCatalog(name="descending-read", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(
+        catalog_name="descending-read", properties=catalog_properties(tmp_path)
+    )
     dataset = catalog.dataset(
         "t.descending_read",
         field=DescendingTick.into_field(),
@@ -4854,7 +5092,7 @@ def test_a_descending_ordered_read_merges_commits_and_applies_its_limit(tmp_path
 def test_ordered_read_does_not_concatenate_file_local_special_tails(
     tmp_path: Path, special: float | None
 ) -> None:
-    catalog = IcebergCatalog(name="special-read", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="special-read", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.special_read", field=FloatingTick.into_field())
     dataset.append_arrow_table(floating_ticked([1.0, special], 0), commit_row_size=1_000_000)
     dataset.append_arrow_table(floating_ticked([2.0, special], 2), commit_row_size=1_000_000)
@@ -4869,7 +5107,7 @@ def test_ordered_read_does_not_concatenate_file_local_special_tails(
 
 
 def test_a_snapshot_order_does_not_inherit_a_newer_table_direction(tmp_path: Path) -> None:
-    catalog = IcebergCatalog(name="sort-evolution", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="sort-evolution", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.sort_evolution", field=Ticked.into_field())
     dataset.append_arrow_table(ticked([(1, 0), (2, 0), (3, 0)]), commit_row_size=1_000_000)
     snapshot_id = dataset.iceberg_table.current_snapshot().snapshot_id
@@ -4893,7 +5131,7 @@ def test_an_interrupt_after_commit_keeps_unpartitioned_files_live(
 ) -> None:
     from pyiceberg.table import Transaction
 
-    catalog = IcebergCatalog(name="flat-interrupt", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="flat-interrupt", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.flat_interrupt", field=Ticked.into_field())
     original = Transaction.commit_transaction
 
@@ -4911,7 +5149,7 @@ def test_an_interrupt_after_commit_keeps_unpartitioned_files_live(
 def test_a_chunk_already_in_order_is_not_sorted_again(tmp_path: Path) -> None:
     """The common case on a capture, and the question is 20x cheaper than the
     answer -- so it is asked."""
-    catalog = IcebergCatalog(name="sorted", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="sorted", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.a", field=Ticked.into_field())
     tidy = ticked([(1, 0), (1, 1), (2, 0), (3, 0)])
     assert dataset.sorted(tidy) is tidy, "handed straight back, not copied"
@@ -4981,7 +5219,7 @@ def test_an_unknown_sort_direction_is_refused() -> None:
 def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
     """The whole point: a sort order Iceberg records and the writer ignores is
     a wish. A filter can only skip a *row group*, so this is what it buys."""
-    catalog = IcebergCatalog(name="layout", properties=catalog_properties(tmp_path))
+    catalog = IcebergCatalog(catalog_name="layout", properties=catalog_properties(tmp_path))
     rows = 40_000
     shuffled = pyarrow.Table.from_pydict(
         {

@@ -1,0 +1,45 @@
+{
+ "name": "NoUnderlyingStreamAssetAttributes",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingStreamAssetAttributes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41800"
+  },
+  "item": {
+   "name": "UnderlyingStreamAssetAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamAssetAttributeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41801"
+     }
+    },
+    {
+     "name": "UnderlyingStreamAssetAttributeValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41802"
+     }
+    },
+    {
+     "name": "UnderlyingStreamAssetAttributeLimit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41803"
+     }
+    }
+   ]
+  }
+ }
+}

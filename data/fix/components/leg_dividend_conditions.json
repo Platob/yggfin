@@ -1,7 +1,8 @@
 {
  "name": "LegDividendConditions",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "LegDividendConditions",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "LegDividendConditions",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -114,13 +119,192 @@
     }
    },
    {
-    "name": "LegDividendPeriodGrp",
-    "type": "struct",
+    "name": "NoLegDividendPeriods",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegDividendPeriodGrp"
+     "tag": "42366"
     },
-    "fields": []
+    "item": {
+     "name": "LegDividendPeriod",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDividendPeriodSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42367"
+       }
+      },
+      {
+       "name": "LegDividendPeriodStartDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42368"
+       }
+      },
+      {
+       "name": "LegDividendPeriodEndDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42369"
+       }
+      },
+      {
+       "name": "LegDividendPeriodUnderlierRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42370"
+       }
+      },
+      {
+       "name": "LegDividendPeriodStrikePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42371"
+       }
+      },
+      {
+       "name": "LegDividendPeriodBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42372"
+       }
+      },
+      {
+       "name": "NoLegDividendPeriodBusinessCenters",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42386"
+       },
+       "item": {
+        "name": "LegDividendPeriodBusinessCenter",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegDividendPeriodBusinessCenter",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42387"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "LegDividendPeriodValuationDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42373"
+       }
+      },
+      {
+       "name": "LegDividendPeriodValuationDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42374"
+       }
+      },
+      {
+       "name": "LegDividendPeriodValuationDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42375"
+       }
+      },
+      {
+       "name": "LegDividendPeriodValuationDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42376"
+       }
+      },
+      {
+       "name": "LegDividendPeriodValuationDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42377"
+       }
+      },
+      {
+       "name": "LegDividendPeriodValuationDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42378"
+       }
+      },
+      {
+       "name": "LegDividendPeriodPaymentDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42379"
+       }
+      },
+      {
+       "name": "LegDividendPeriodPaymentDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42380"
+       }
+      },
+      {
+       "name": "LegDividendPeriodPaymentDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42381"
+       }
+      },
+      {
+       "name": "LegDividendPeriodPaymentDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42382"
+       }
+      },
+      {
+       "name": "LegDividendPeriodPaymentDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42383"
+       }
+      },
+      {
+       "name": "LegDividendPeriodPaymentDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42384"
+       }
+      },
+      {
+       "name": "LegDividendPeriodXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42385"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegExtraordinaryDividendPartySide",

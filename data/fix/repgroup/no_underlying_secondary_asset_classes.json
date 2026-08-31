@@ -1,0 +1,57 @@
+{
+ "name": "NoUnderlyingSecondaryAssetClasses",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingSecondaryAssetClasses",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2080"
+  },
+  "item": {
+   "name": "UnderlyingSecondaryAssetClass",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingSecondaryAssetClass",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2081"
+     }
+    },
+    {
+     "name": "UnderlyingSecondaryAssetSubClass",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2082"
+     }
+    },
+    {
+     "name": "UnderlyingSecondaryAssetType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2083"
+     }
+    },
+    {
+     "name": "UnderlyingSecondaryAssetSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2745"
+     }
+    }
+   ]
+  }
+ }
+}

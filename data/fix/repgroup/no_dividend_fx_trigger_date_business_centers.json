@@ -1,0 +1,29 @@
+{
+ "name": "NoDividendFXTriggerDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDividendFXTriggerDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42272"
+  },
+  "item": {
+   "name": "DividendFXTriggerDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DividendFXTriggerDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42273"
+     }
+    }
+   ]
+  }
+ }
+}

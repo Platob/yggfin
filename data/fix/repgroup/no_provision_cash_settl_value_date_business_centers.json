@@ -1,0 +1,29 @@
+{
+ "name": "NoProvisionCashSettlValueDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoProvisionCashSettlValueDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40953"
+  },
+  "item": {
+   "name": "ProvisionCashSettlValueDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionCashSettlValueDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40117"
+     }
+    }
+   ]
+  }
+ }
+}

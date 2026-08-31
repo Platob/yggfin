@@ -60,22 +60,26 @@ NOT_SEPARATOR = r"[^\x01\x03\x04|;^ \t\r\n\f\x0b]"
 #: separator or the line does.
 _NOT_A_TAG = r"(?:^|[^A-Za-z0-9_.\-])"
 
-#: Every tag whose value the standard types `data`: a value that may hold the
-#: delimiter itself, and whose length is the field immediately in front of it.
+#: Every tag whose value the standard types `data`, plus the two XML payloads
+#: older dictionaries typed `data`: a value that may hold the delimiter itself,
+#: and whose length is the field immediately in front of it.
 #: That adjacency is the pairing -- the dictionary states each field's type and
 #: never which length belongs to which value -- so a scan needs only this set:
 #: the token before a data field is its length.
 #:
-#: Read off the shipped registry, and pinned against it by
-#: `tests/fix/test_message.py`, so a field the dictionary types `data` and this
-#: set does not is a failure rather than a truncated value.
+#: Read off the shipped registry and pinned against it by
+#: `tests/fix/test_message.py`. `XmlData <213>` and `DerivativeSecurityXML
+#: <1283>` remain here because both retain explicit length fields; treating a
+#: newer `String` spelling as proof that their payload cannot contain SOH would
+#: break older sessions.
 DATA_TAGS = frozenset(
     {
         "89", "91", "96", "213", "349", "351", "353", "355", "357", "359", "361", "363",
         "365", "446", "619", "622", "1278", "1281", "1283", "1360", "1398", "1402", "1404",
         "1469", "1527", "1579", "1621", "1665", "1697", "1734", "2073", "2075", "2112",
         "2180", "2288", "2352", "2371", "2482", "2493", "2521", "2638", "2652", "2666",
-        "2716", "2719", "2722", "2798", "2801", "2808", "2814", "40005", "40009", "40979",
+        "2716", "2719", "2722", "2798", "2801", "2808", "2814", "2972", "3109", "40005",
+        "40009", "40979",
         "40981", "40983", "40985", "40987", "40989", "41084", "41102", "41108", "41257",
         "41321", "41325", "41459", "41477", "41483", "41654", "41711", "41807", "41812",
         "41874", "41970", "42026", "42172", "42452", "42653", "42948",

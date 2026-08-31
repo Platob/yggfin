@@ -1,0 +1,38 @@
+{
+ "name": "NoRelatedMarketSegments",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoRelatedMarketSegments",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2545"
+  },
+  "item": {
+   "name": "RelatedMarketSegment",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RelatedMarketSegmentID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2546"
+     }
+    },
+    {
+     "name": "MarketSegmentRelationship",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2547"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,7 +1,8 @@
 {
  "name": "AccountSummaryReport",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "AccountSummaryReport",
@@ -10,12 +11,24 @@
   "fix": {
    "component": "AccountSummaryReport",
    "msgtype": "CQ",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "ApplicationSequenceControl",
     "type": "struct",
@@ -88,55 +101,578 @@
     }
    },
    {
-    "name": "SettlementAmountGrp",
+    "name": "NoSettlementAmounts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1700"
+    },
+    "item": {
+     "name": "SettlementAmount",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlementAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1701"
+       }
+      },
+      {
+       "name": "SettlementAmountCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1702"
+       }
+      },
+      {
+       "name": "SettlementAmountCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2903"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoMarginAmt",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1643"
+    },
+    "item": {
+     "name": "MarginAmt",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MarginAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1645"
+       }
+      },
+      {
+       "name": "MarginAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1644"
+       }
+      },
+      {
+       "name": "MarginAmtCcy",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1646"
+       }
+      },
+      {
+       "name": "MarginAmtFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2088"
+       }
+      },
+      {
+       "name": "MarginAmtFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2089"
+       }
+      },
+      {
+       "name": "MarginAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1714"
+       }
+      },
+      {
+       "name": "MarginAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1715"
+       }
+      },
+      {
+       "name": "MarginDirection",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2851"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoPartyIDs",
+    "type": "list",
+    "fix": {
+     "tag": "453"
+    },
+    "item": {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
+      },
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
+       "item": {
+        "name": "PartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "PartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "523"
+          }
+         },
+         {
+          "name": "PartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "803"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoCollateralAmounts",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1703"
+    },
+    "item": {
+     "name": "CollateralAmount",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CurrentCollateralAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1704"
+       }
+      },
+      {
+       "name": "CollateralCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1705"
+       }
+      },
+      {
+       "name": "CollateralCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2929"
+       }
+      },
+      {
+       "name": "CollateralAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2632"
+       }
+      },
+      {
+       "name": "CollateralFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2090"
+       }
+      },
+      {
+       "name": "CollateralFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2091"
+       }
+      },
+      {
+       "name": "CollateralType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1706"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2092"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2093"
+       }
+      },
+      {
+       "name": "HaircutIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1902"
+       }
+      },
+      {
+       "name": "CollateralPortfolioID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2350"
+       }
+      },
+      {
+       "name": "CollateralPercentOverage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2690"
+       }
+      },
+      {
+       "name": "CollateralMarketPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2689"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2840"
+       }
+      },
+      {
+       "name": "NoCollateralReinvestments",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2845"
+       },
+       "item": {
+        "name": "CollateralReinvestment",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "CollateralReinvestmentType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2844"
+          }
+         },
+         {
+          "name": "CollateralReinvestmentAmount",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2842"
+          }
+         },
+         {
+          "name": "CollateralReinvestmentCurrency",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2843"
+          }
+         },
+         {
+          "name": "CollateralReinvestmentCurrencyCodeSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2931"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "UnderlyingRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2841"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoPayCollects",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1707"
+    },
+    "item": {
+     "name": "PayCollect",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PayCollectType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1708"
+       }
+      },
+      {
+       "name": "PayCollectCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1709"
+       }
+      },
+      {
+       "name": "PayCollectCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2955"
+       }
+      },
+      {
+       "name": "PayCollectFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2094"
+       }
+      },
+      {
+       "name": "PayCollectFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2095"
+       }
+      },
+      {
+       "name": "PayAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1710"
+       }
+      },
+      {
+       "name": "CollectAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1711"
+       }
+      },
+      {
+       "name": "PayCollectMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1712"
+       }
+      },
+      {
+       "name": "PayCollectMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1713"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoPosAmt",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "753"
+    },
+    "item": {
+     "name": "PosAmt",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PosAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "707"
+       }
+      },
+      {
+       "name": "PosAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "708"
+       }
+      },
+      {
+       "name": "PosAmtStreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2096"
+       }
+      },
+      {
+       "name": "PositionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1055"
+       }
+      },
+      {
+       "name": "PositionCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2937"
+       }
+      },
+      {
+       "name": "PositionFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2097"
+       }
+      },
+      {
+       "name": "PositionFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2098"
+       }
+      },
+      {
+       "name": "PosAmtReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1585"
+       }
+      },
+      {
+       "name": "PosAmtMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2099"
+       }
+      },
+      {
+       "name": "PosAmtMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2100"
+       }
+      },
+      {
+       "name": "PosAmtPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2876"
+       }
+      },
+      {
+       "name": "PosAmtPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2877"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "StandardTrailer",
     "type": "struct",
     "nullable": true,
     "fix": {
-     "component": "SettlementAmountGrp"
-    },
-    "fields": []
-   },
-   {
-    "name": "MarginAmount",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "MarginAmount"
-    },
-    "fields": []
-   },
-   {
-    "name": "Parties",
-    "type": "struct",
-    "fix": {
-     "component": "Parties"
-    },
-    "fields": []
-   },
-   {
-    "name": "CollateralAmountGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "CollateralAmountGrp"
-    },
-    "fields": []
-   },
-   {
-    "name": "PayCollectGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "PayCollectGrp"
-    },
-    "fields": []
-   },
-   {
-    "name": "PositionAmountData",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "PositionAmountData"
+     "component": "StandardTrailer"
     },
     "fields": []
    }

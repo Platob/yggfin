@@ -1,0 +1,87 @@
+{
+ "name": "NoUnderlyingProvisionPartyIDs",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingProvisionPartyIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42173"
+  },
+  "item": {
+   "name": "UnderlyingProvisionPartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProvisionPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42174"
+     }
+    },
+    {
+     "name": "UnderlyingProvisionPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42175"
+     }
+    },
+    {
+     "name": "UnderlyingProvisionPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42176"
+     }
+    },
+    {
+     "name": "UnderlyingProvisionPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40918"
+     }
+    },
+    {
+     "name": "NoUnderlyingProvisionPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "42177"
+     },
+     "item": {
+      "name": "UnderlyingProvisionPartySubID",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingProvisionPartySubID",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "42178"
+        }
+       },
+       {
+        "name": "UnderlyingProvisionPartySubIDType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "42179"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

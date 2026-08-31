@@ -1,0 +1,185 @@
+{
+ "name": "KoreaStockExchange",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "KoreaStockExchange",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "KoreaStockExchange",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AccountType1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5417"
+    }
+   },
+   {
+    "name": "BasketID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5419"
+    }
+   },
+   {
+    "name": "CashOrCredit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5400"
+    }
+   },
+   {
+    "name": "ClassiOfForInv",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5404"
+    }
+   },
+   {
+    "name": "ContractTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5418"
+    }
+   },
+   {
+    "name": "ExecPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5405"
+    }
+   },
+   {
+    "name": "ForeignerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5403"
+    }
+   },
+   {
+    "name": "FurthestSeriesPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5415"
+    }
+   },
+   {
+    "name": "InvestorCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5406"
+    }
+   },
+   {
+    "name": "LocalOrForeign",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5402"
+    }
+   },
+   {
+    "name": "NearestSeriesPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5414"
+    }
+   },
+   {
+    "name": "NonMemberID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5407"
+    }
+   },
+   {
+    "name": "OrderDate1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5416"
+    }
+   },
+   {
+    "name": "OrderRoutingMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5410"
+    }
+   },
+   {
+    "name": "PriceIndi",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5411"
+    }
+   },
+   {
+    "name": "ProgramTrade1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5408"
+    }
+   },
+   {
+    "name": "ReceiptTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5413"
+    }
+   },
+   {
+    "name": "ShortSaleType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5409"
+    }
+   },
+   {
+    "name": "TradePurpose",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5412"
+    }
+   },
+   {
+    "name": "TradeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5401"
+    }
+   }
+  ]
+ }
+}

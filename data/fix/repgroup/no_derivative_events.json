@@ -1,0 +1,62 @@
+{
+ "name": "NoDerivativeEvents",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDerivativeEvents",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1286"
+  },
+  "item": {
+   "name": "DerivativeEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DerivativeEventType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1287"
+     }
+    },
+    {
+     "name": "DerivativeEventDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1288"
+     }
+    },
+    {
+     "name": "DerivativeEventTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1289"
+     }
+    },
+    {
+     "name": "DerivativeEventPx",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1290"
+     }
+    },
+    {
+     "name": "DerivativeEventText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1291"
+     }
+    }
+   ]
+  }
+ }
+}

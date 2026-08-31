@@ -1,0 +1,103 @@
+{
+ "name": "NoUnderlyingProtectionTermEvents",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingProtectionTermEvents",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42077"
+  },
+  "item": {
+   "name": "UnderlyingProtectionTermEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProtectionTermEventType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42078"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermEventValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42079"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermEventCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42080"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermEventPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42081"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermEventUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42082"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermEventDayType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42083"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermEventRateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42084"
+     }
+    },
+    {
+     "name": "NoUnderlyingProtectionTermEventQualifiers",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "42085"
+     },
+     "item": {
+      "name": "UnderlyingProtectionTermEventQualifier",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingProtectionTermEventQualifier",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "42086"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

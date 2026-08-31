@@ -1,0 +1,38 @@
+{
+ "name": "NoDerivativeSecurityAltID",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDerivativeSecurityAltID",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1218"
+  },
+  "item": {
+   "name": "DerivativeSecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DerivativeSecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1219"
+     }
+    },
+    {
+     "name": "DerivativeSecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1220"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -9,8 +9,8 @@ from xml.etree import ElementTree
 import pyarrow
 import pyarrow.compute
 
-from rekep.entries import ENTRIES, Entry
-from rekep.fields import column_names
+from rekep.entries import ENTRIES, TAG, Entry
+from rekep.fields import column_name, column_names
 from rekep.fields.arrays import (
     build_list,
     dense_counts,
@@ -58,6 +58,7 @@ _UNMARKED_BODY = rf"(?s)(?:^|[^A-Za-z0-9_.\-\]#])(?P<body>{_BARE_KEY}{_WS}*=.*)$
 _TOKEN = rf"(?s)^{_WS}*(?P<key>{_KEY}){_WS}*=(?P<value>.*?){_WS}*$"
 _DEFAULT_SEPARATOR = "\x01"
 _XML_START = re.compile(rb"<(?:\?xml\b|[A-Za-z_:])", re.IGNORECASE)
+_EVENT_XML_START = re.compile(rb"<event(?:\s|>)", re.IGNORECASE)
 _XML_ERROR_LENGTH = 2_048
 
 
@@ -117,6 +118,142 @@ def payload_arrow(messages):
     )
 
 
+def normalized_arrow(
+    stored: Any,
+    plugins: Any = None,
+    plugin_keys: Any = None,
+    null_values: Any = (),
+) -> Any:
+    """Normalize plugin-owned keys and absent values without leaving Arrow."""
+    if isinstance(stored, pyarrow.ChunkedArray):
+        offsets = 0
+        chunks = []
+        for chunk in stored.chunks:
+            plugin_chunk = None if plugins is None else plugins.slice(offsets, len(chunk))
+            chunks.append(normalized_arrow(chunk, plugin_chunk, plugin_keys, null_values))
+            offsets += len(chunk)
+        return pyarrow.chunked_array(chunks, type=ENTRIES)
+
+    if plugins is not None and len(plugins) != len(stored):
+        raise ValueError("plugins and entries must have the same number of rows")
+
+    replacements = _plugin_keys(plugin_keys)
+    if replacements and plugins is not None and len(stored):
+        compute = pyarrow.compute
+        plugin_codes = compute.utf8_lower(
+            compute.utf8_trim_whitespace(plugins.cast(pyarrow.string(), safe=False))
+        )
+        positions = sequence(len(stored))
+        for plugin, mapping in replacements.items():
+            selected = compute.fill_null(compute.equal(plugin_codes, plugin), False)
+            if not compute.any(selected, min_count=0).as_py():
+                continue
+            selected_at = compute.filter(positions, selected)
+            other_at = compute.filter(positions, compute.invert(selected))
+            stored = scattered(
+                [
+                    _renamed_keys(compute.take(stored, selected_at), mapping),
+                    compute.take(stored, other_at),
+                ],
+                [selected_at, other_at],
+            )
+
+    if isinstance(null_values, str):
+        raise TypeError("null_values must be a sequence of strings, not one string")
+    absent = frozenset(str(value).strip().lower() for value in null_values or ())
+    if not absent or not len(stored):
+        return stored
+    compute = pyarrow.compute
+    entries = compute.list_flatten(stored)
+    if not len(entries):
+        return stored
+    parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
+    values = compute.struct_field(entries, "value")
+    missing = compute.is_in(
+        compute.utf8_lower(compute.utf8_trim_whitespace(values)),
+        value_set=pyarrow.array(sorted(absent), pyarrow.string()),
+    )
+    keep = compute.and_(compute.is_valid(values), compute.invert(compute.fill_null(missing, False)))
+    if compute.all(keep, min_count=0).as_py():
+        return stored
+    kept_parents = compute.filter(parents, keep)
+    return build_list(
+        ENTRIES,
+        dense_counts(kept_parents, len(stored)),
+        compute.filter(entries, keep),
+        null_mask(stored),
+    )
+
+
+def _plugin_keys(declared: Any) -> dict[str, dict[str, str]]:
+    """Validate plugin key maps and fold only their matching identities."""
+    found: dict[str, dict[str, str]] = {}
+    for plugin, replacements in (declared or {}).items():
+        code = str(plugin).strip().lower()
+        if not code:
+            raise ValueError("plugin_keys needs a non-empty plugin name")
+        if not isinstance(replacements, dict):
+            try:
+                replacements = dict(replacements)
+            except (TypeError, ValueError):
+                raise TypeError(
+                    f"plugin_keys[{plugin!r}] must map source keys to target keys"
+                ) from None
+        normalized: dict[str, str] = {}
+        for source, target in replacements.items():
+            folded = column_name(str(source))
+            target = str(target).strip()
+            if not folded or not target:
+                raise ValueError(f"plugin_keys[{plugin!r}] needs non-empty source and target keys")
+            previous = normalized.get(folded)
+            if previous is not None and previous != target:
+                raise ValueError(f"plugin_keys[{plugin!r}] gives folded key {folded!r} two targets")
+            normalized[folded] = target
+        previous = found.get(code)
+        if previous is not None and previous != normalized:
+            raise ValueError(f"plugin_keys gives plugin {plugin!r} two key maps")
+        found[code] = normalized
+    return found
+
+
+def _renamed_keys(stored: pyarrow.Array, replacements: dict[str, str]) -> pyarrow.Array:
+    """Replace matching terminal keys while preserving rows and wire order."""
+    if not replacements or not len(stored):
+        return stored
+    compute = pyarrow.compute
+    lengths = compute.fill_null(compute.list_value_length(stored), 0).cast(pyarrow.int64())
+    entries = compute.list_flatten(stored)
+    if not len(entries):
+        return stored
+    keys = compute.struct_field(entries, "key")
+    sources = pyarrow.array(list(replacements), pyarrow.string())
+    targets = pyarrow.array(list(replacements.values()), pyarrow.string())
+    indices = compute.index_in(column_names(keys), value_set=sources)
+    matched = compute.is_valid(indices)
+    if not compute.any(matched, min_count=0).as_py():
+        return stored
+    renamed = compute.if_else(matched, compute.take(targets, indices), keys)
+    target_tags = pyarrow.array(
+        [Entry(key=target).tag for target in replacements.values()],
+        TAG,
+    )
+    tags = compute.if_else(
+        matched,
+        compute.take(target_tags, indices),
+        compute.struct_field(entries, "tag"),
+    )
+    rebuilt = pyarrow.StructArray.from_arrays(
+        [
+            tags,
+            renamed,
+            compute.struct_field(entries, "value"),
+            compute.struct_field(entries, "comp"),
+        ],
+        fields=list(ENTRIES.value_type),
+    )
+    return build_list(ENTRIES, lengths, rebuilt, null_mask(stored))
+
+
 def xml_payload_arrow(bodies: Any, selected: Any = None) -> tuple[pyarrow.Array, pyarrow.Array]:
     """Parse selected XML bodies into ordered entries and row-local errors.
 
@@ -141,10 +278,7 @@ def xml_payload_arrow(bodies: Any, selected: Any = None) -> tuple[pyarrow.Array,
             continue
         try:
             raw = body.encode("utf-8") if isinstance(body, str) else bytes(body or b"")
-            found = _XML_START.search(raw)
-            if found is None:
-                raise ValueError("no XML document start")
-            root = ElementTree.fromstring(raw[found.start() :].strip())
+            root = _xml_root(raw)
             parsed.append([entry.into_dict() for entry in _xml_entries(root)])
             errors.append(None)
         except (ElementTree.ParseError, UnicodeError, TypeError, ValueError) as error:
@@ -152,6 +286,30 @@ def xml_payload_arrow(bodies: Any, selected: Any = None) -> tuple[pyarrow.Array,
             detail = " ".join(str(error).split()) or "no detail"
             errors.append(f"XML parse failed: {type(error).__name__}: {detail}"[:_XML_ERROR_LENGTH])
     return pyarrow.array(parsed, type=ENTRIES), pyarrow.array(errors, pyarrow.string())
+
+
+def _xml_root(raw: bytes) -> ElementTree.Element:
+    """The first complete XML reading, then a transport-wrapped event fallback.
+
+    A valid document keeps its outer root. If XML-looking transport prose made
+    that reading fail, each later event envelope gets one bounded parse attempt.
+    """
+    leading = raw.lstrip()
+    offset = len(raw) - len(leading)
+    primary = _XML_START.search(raw, offset)
+    events = tuple(_EVENT_XML_START.finditer(raw))
+    candidates = (primary, *events) if leading.startswith(b"<") else (*events, primary)
+    starts = tuple(dict.fromkeys(found.start() for found in candidates if found is not None))
+    if not starts:
+        raise ValueError("no XML document start")
+    failure: ElementTree.ParseError | None = None
+    for start in starts:
+        try:
+            return ElementTree.fromstring(raw[start:].strip())
+        except ElementTree.ParseError as error:
+            failure = error
+    assert failure is not None
+    raise failure
 
 
 def _xml_entries(root: ElementTree.Element) -> list[Entry]:

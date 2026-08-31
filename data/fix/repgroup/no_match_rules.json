@@ -1,0 +1,54 @@
+{
+ "name": "NoMatchRules",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoMatchRules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1235"
+  },
+  "item": {
+   "name": "MatchRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MatchAlgorithm",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1142"
+     }
+    },
+    {
+     "name": "MatchType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "574"
+     }
+    },
+    {
+     "name": "MatchRuleProductComplex",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2569"
+     }
+    },
+    {
+     "name": "CustomerPriority",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2570"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "name": "NoLegStreamAssetAttributes",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegStreamAssetAttributes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41452"
+  },
+  "item": {
+   "name": "LegStreamAssetAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamAssetAttributeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41453"
+     }
+    },
+    {
+     "name": "LegStreamAssetAttributeValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41454"
+     }
+    },
+    {
+     "name": "LegStreamAssetAttributeLimit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41455"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -70,11 +70,12 @@ stage reads MsgType metadata and the second performs full transcription.
 The active catalog configuration in every task YAML is deliberately local:
 
 ```yaml
-catalog: rekep
-catalog_properties:
-  type: sql
-  uri: sqlite:///data/catalog.db
-  warehouse: file://data/warehouse
+catalog:
+  catalog_name: rekep
+  properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
 ```
 
 The DAG resolves those relative paths beneath `REKEP_ROOT`. This is useful for
@@ -86,15 +87,15 @@ including `tasks/optimize_iceberg/optimize_iceberg.yml`.
 The shipped Glue/S3 example is:
 
 ```yaml
-catalog: rekep-production
-catalog_properties:
-  type: glue
-  warehouse: s3://example-bucket/rekep/warehouse
-  glue.region: eu-west-1
-  s3.region: eu-west-1
-  # glue.id: "123456789012"  # Optional cross-account catalog ID.
-  # A custom KMS key belongs in the bucket default; `s3.sse.type: kms` and
-  # `s3.sse.key` are refused because Arrow cannot send their request headers.
+catalog:
+  catalog_name: rekep-production
+  properties:
+    type: glue
+    warehouse: s3://example-bucket/rekep/warehouse
+    glue.region: eu-west-1
+    s3.region: eu-west-1
+    # glue.id: "123456789012"  # Optional cross-account catalog ID.
+    # KMS is a bucket default; per-request s3.sse.* is unsupported.
 ```
 
 Install `pyiceberg[glue]` for this catalog and provide AWS credentials through

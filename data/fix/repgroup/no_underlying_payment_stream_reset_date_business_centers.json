@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingPaymentStreamResetDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingPaymentStreamResetDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40970"
+  },
+  "item": {
+   "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40594"
+     }
+    }
+   ]
+  }
+ }
+}

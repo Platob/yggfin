@@ -1,0 +1,73 @@
+{
+ "name": "ABNAMRO",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "ABNAMRO",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ABNAMRO",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "ABNCust",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6175"
+    }
+   },
+   {
+    "name": "ABNCust1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6173"
+    }
+   },
+   {
+    "name": "ABNCust2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6174"
+    }
+   },
+   {
+    "name": "FracToTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6170"
+    }
+   },
+   {
+    "name": "MaxCostFromStrike",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6172"
+    }
+   },
+   {
+    "name": "StrategyStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6171"
+    }
+   }
+  ]
+ }
+}

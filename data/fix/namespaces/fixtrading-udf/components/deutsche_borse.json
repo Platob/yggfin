@@ -1,0 +1,105 @@
+{
+ "name": "DeutscheBorse",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "DeutscheBorse",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DeutscheBorse",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "BinID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5949"
+    }
+   },
+   {
+    "name": "CompletionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6228"
+    }
+   },
+   {
+    "name": "InitialDisplayQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5944"
+    }
+   },
+   {
+    "name": "MDSecondaryCustomerSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6208"
+    }
+   },
+   {
+    "name": "NoPartitionIDs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5964"
+    }
+   },
+   {
+    "name": "PartitionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5948"
+    }
+   },
+   {
+    "name": "PartitionStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5969"
+    }
+   },
+   {
+    "name": "PendingReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5946"
+    }
+   },
+   {
+    "name": "RequestCountIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6229"
+    }
+   },
+   {
+    "name": "RequestTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5979"
+    }
+   }
+  ]
+ }
+}

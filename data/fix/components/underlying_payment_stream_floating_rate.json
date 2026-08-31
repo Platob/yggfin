@@ -1,7 +1,8 @@
 {
  "name": "UnderlyingPaymentStreamFloatingRate",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "UnderlyingPaymentStreamFloatingRate",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "UnderlyingPaymentStreamFloatingRate",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -85,6 +90,7 @@
     "SecurityListRequest",
     "SecurityListUpdateReport",
     "SecurityMassStatus",
+    "SecurityRiskMetricsReport",
     "SecurityStatus",
     "SecurityStatusRequest",
     "TradeCaptureReport",
@@ -520,31 +526,86 @@
     }
    },
    {
-    "name": "UnderlyingPaymentStreamPricingBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoUnderlyingPaymentStreamPricingBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UnderlyingPaymentStreamPricingBusinessCenterGrp"
+     "tag": "41909"
     },
-    "fields": []
+    "item": {
+     "name": "UnderlyingPaymentStreamPricingBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPricingBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41910"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "UnderlyingPaymentStreamPricingDayGrp",
-    "type": "struct",
+    "name": "NoUnderlyingPaymentStreamPricingDays",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UnderlyingPaymentStreamPricingDayGrp"
+     "tag": "41944"
     },
-    "fields": []
+    "item": {
+     "name": "UnderlyingPaymentStreamPricingDay",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPricingDayOfWeek",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41945"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamPricingDayNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41946"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "UnderlyingPaymentStreamPricingDateGrp",
-    "type": "struct",
+    "name": "NoUnderlyingPaymentStreamPricingDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UnderlyingPaymentStreamPricingDateGrp"
+     "tag": "41941"
     },
-    "fields": []
+    "item": {
+     "name": "UnderlyingPaymentStreamPricingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPricingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41942"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamPricingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41943"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "UnderlyingPaymentStreamInflationLagPeriod",
@@ -653,13 +714,574 @@
     }
    },
    {
-    "name": "UnderlyingReturnRateGrp",
-    "type": "struct",
+    "name": "NoUnderlyingReturnRates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "UnderlyingReturnRateGrp"
+     "tag": "43034"
     },
-    "fields": []
+    "item": {
+     "name": "UnderlyingReturnRate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRatePriceSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43035"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43036"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43037"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43038"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateTotalCommissionPerTrade",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43039"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43040"
+       }
+      },
+      {
+       "name": "NoUnderlyingReturnRatePrices",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "43064"
+       },
+       "item": {
+        "name": "UnderlyingReturnRatePrice",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "UnderlyingReturnRatePriceBasis",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43065"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRatePrice",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43066"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRatePriceCurrency",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43067"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRatePriceType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43068"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "NoUnderlyingReturnRateFXConversions",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "43030"
+       },
+       "item": {
+        "name": "UnderlyingReturnRateFXConversion",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "UnderlyingReturnRateFXCurrencySymbol",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43031"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateFXRate",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43032"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateFXRateCalc",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43033"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43041"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteMeasureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43042"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43043"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43044"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43045"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteCurrencyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43046"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43047"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43048"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43049"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteExpirationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43050"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43051"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuoteExchange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43052"
+       }
+      },
+      {
+       "name": "NoUnderlyingReturnRateInformationSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "43060"
+       },
+       "item": {
+        "name": "UnderlyingReturnRateInformationSource",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "UnderlyingReturnRateInformationSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43061"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateReferencePage",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43062"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateReferencePageHeading",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43063"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateQuotePricingModel",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43053"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateCashFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43054"
+       }
+      },
+      {
+       "name": "NoUnderlyingReturnRateDates",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "43008"
+       },
+       "item": {
+        "name": "UnderlyingReturnRateDate",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "UnderlyingReturnRateDateMode",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43009"
+          }
+         },
+         {
+          "name": "NoUnderlyingReturnRateValuationDates",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "43071"
+          },
+          "item": {
+           "name": "UnderlyingReturnRateValuationDate",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "UnderlyingReturnRateValuationDate",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "43072"
+             }
+            },
+            {
+             "name": "UnderlyingReturnRateValuationDateType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "43073"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationDateRelativeTo",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43010"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationDateOffsetPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43011"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationDateOffsetUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43012"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationDateOffsetDayType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43013"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationStartDateUnadjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43014"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationStartDateRelativeTo",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43015"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationStartDateOffsetPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43016"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationStartDateOffsetUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43017"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationStartDateOffsetDayType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43018"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationStartDateAdjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43019"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationEndDateUnadjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43020"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationEndDateRelativeTo",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43021"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationEndDateOffsetPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43022"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationEndDateOffsetUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43023"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationEndDateOffsetDayType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43024"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationEndDateAdjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43025"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationFrequencyPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43026"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationFrequencyUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43027"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationFrequencyRollConvention",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43028"
+          }
+         },
+         {
+          "name": "UnderlyingReturnRateValuationDateBusinessDayConvention",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "43029"
+          }
+         },
+         {
+          "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "43069"
+          },
+          "item": {
+           "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "43070"
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43055"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43056"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43057"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateValuationPriceOption",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43058"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRateFinalPriceFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43059"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "UnderlyingPaymentStreamLinkInitialLevel",

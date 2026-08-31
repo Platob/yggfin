@@ -98,6 +98,7 @@ so every code is its own band.
 | [MarketKind](market-kind.md) | `Ascii64` | `int64` | open |
 | [OptionKind](option-kind.md) | `Ascii64` | `int64` | open |
 | [Protocol](protocol.md) | `Ascii64` | `int64` | open |
+| [Plugin](plugin.md) | `Ascii64` | `int64` | open |
 | [Direction](direction.md) | `Ascii32` | `int32` | open |
 | [MIC](mic.md) | `Ascii32` | `int32` | open |
 | [Currency](currency.md) | `Ascii32` | `int32` | open |

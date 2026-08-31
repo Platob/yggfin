@@ -1,0 +1,44 @@
+{
+ "name": "NoAlgoSystemModules",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoAlgoSystemModules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "3025"
+  },
+  "item": {
+   "name": "AlgoSystemModule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AlgoSystemModuleName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3026"
+     }
+    },
+    {
+     "name": "AlgoSystemModuleVersion",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3027"
+     }
+    },
+    {
+     "name": "AlgoSystemModuleLastUpdateTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3080"
+     }
+    }
+   ]
+  }
+ }
+}

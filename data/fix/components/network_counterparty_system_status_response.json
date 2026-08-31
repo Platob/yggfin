@@ -4,7 +4,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "NetworkCounterpartySystemStatusResponse",
@@ -13,12 +14,24 @@
   "fix": {
    "component": "NetworkCounterpartySystemStatusResponse",
    "msgtype": "BD",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "NetworkStatusResponseType",
     "type": "string",
@@ -50,10 +63,69 @@
     }
    },
    {
-    "name": "CompIDStatGrp",
+    "name": "NoCompIDs",
+    "type": "list",
+    "fix": {
+     "tag": "936"
+    },
+    "item": {
+     "name": "CompID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefCompID",
+       "type": "string",
+       "fix": {
+        "tag": "930"
+       }
+      },
+      {
+       "name": "RefSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "931"
+       }
+      },
+      {
+       "name": "LocationID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "283"
+       }
+      },
+      {
+       "name": "DeskID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "284"
+       }
+      },
+      {
+       "name": "StatusValue",
+       "type": "string",
+       "fix": {
+        "tag": "928"
+       }
+      },
+      {
+       "name": "StatusText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "929"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "StandardTrailer",
     "type": "struct",
     "fix": {
-     "component": "CompIDStatGrp"
+     "component": "StandardTrailer"
     },
     "fields": []
    }

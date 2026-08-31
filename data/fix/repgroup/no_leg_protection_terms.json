@@ -1,0 +1,233 @@
+{
+ "name": "NoLegProtectionTerms",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegProtectionTerms",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41616"
+  },
+  "item": {
+   "name": "LegProtectionTerm",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProtectionTermNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41618"
+     }
+    },
+    {
+     "name": "LegProtectionTermCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41619"
+     }
+    },
+    {
+     "name": "LegProtectionTermSellerNotifies",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41620"
+     }
+    },
+    {
+     "name": "LegProtectionTermBuyerNotifies",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41621"
+     }
+    },
+    {
+     "name": "LegProtectionTermEventBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41622"
+     }
+    },
+    {
+     "name": "LegProtectionTermStandardSources",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41623"
+     }
+    },
+    {
+     "name": "LegProtectionTermEventMinimumSources",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41624"
+     }
+    },
+    {
+     "name": "NoLegProtectionTermEventNewsSources",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41614"
+     },
+     "item": {
+      "name": "LegProtectionTermEventNewsSource",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegProtectionTermEventNewsSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41615"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoLegProtectionTermEvents",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41625"
+     },
+     "item": {
+      "name": "LegProtectionTermEvent",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegProtectionTermEventType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41626"
+        }
+       },
+       {
+        "name": "LegProtectionTermEventValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41627"
+        }
+       },
+       {
+        "name": "LegProtectionTermEventCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41628"
+        }
+       },
+       {
+        "name": "LegProtectionTermEventPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41629"
+        }
+       },
+       {
+        "name": "LegProtectionTermEventUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41630"
+        }
+       },
+       {
+        "name": "LegProtectionTermEventDayType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41631"
+        }
+       },
+       {
+        "name": "LegProtectionTermEventRateSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41632"
+        }
+       },
+       {
+        "name": "NoLegProtectionTermEventQualifiers",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41633"
+        },
+        "item": {
+         "name": "LegProtectionTermEventQualifier",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegProtectionTermEventQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41634"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoLegProtectionTermObligations",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41635"
+     },
+     "item": {
+      "name": "LegProtectionTermObligation",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "LegProtectionTermObligationType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41636"
+        }
+       },
+       {
+        "name": "LegProtectionTermObligationValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41637"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "LegProtectionTermXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41617"
+     }
+    }
+   ]
+  }
+ }
+}

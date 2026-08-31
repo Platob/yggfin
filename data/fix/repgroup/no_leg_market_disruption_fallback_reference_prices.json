@@ -1,0 +1,93 @@
+{
+ "name": "NoLegMarketDisruptionFallbackReferencePrices",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegMarketDisruptionFallbackReferencePrices",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41471"
+  },
+  "item": {
+   "name": "LegMarketDisruptionFallbackReferencePrice",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegMarketDisruptionFallbackUnderlierType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41472"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackUnderlierSecurityID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41473"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackUnderlierSecurityIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41474"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackUnderlierSecurityDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41475"
+     }
+    },
+    {
+     "name": "EncodedLegMarketDisruptionFallbackUnderlierSecurityDescLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41476"
+     }
+    },
+    {
+     "name": "EncodedLegMarketDisruptionFallbackUnderlierSecurityDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41477"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackOpenUnits",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41478"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackBasketCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41479"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackBasketDivisor",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41480"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -18,7 +18,7 @@ fields:
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
   fix: {name: EventType}
-  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
+  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","6000293695718379008":"SESSION","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5282234494403826757":"INDICATION","4705219614009807941":"ALLOCATION","6000294799574630400":"SETTLEMENT","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","4850181387486121216":"CONFIRMATION","5640010122345316352":"NEWS","6004496033382400000":"STATE","4778124913204527104":"BOOK","5786935620606185294":"POSITION","4850179214098584140":"COLLATERAL","5782993918744330240":"PARTY"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ALLOCATION":"ALLOCATE","COLLATERAL":"COLLATRL","CONFIRMATION":"CONFIRM","EXECUTION":"EXECUTED","INDICATION":"INDICATE","INSTRUMENT":"INSTRMT","SETTLEMENT":"SETTLE"}'}
 - name: plugin
   type: string
   description: Source plugin that recorded the row; empty when the envelope did not name one.
@@ -48,7 +48,7 @@ fields:
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
-  iceberg: {primary_key: 'true', sort_key: asc}
+  iceberg: {primary_key: 'true'}
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
@@ -106,7 +106,7 @@ fields:
 - name: lastmkt
   type: int32
   nullable: true
-  description: 'Market of execution for last fill, or an indication of the market where an order was routed Valid values: See "Appendix 6-C"'
+  description: Market of execution for last fill, or an indication of the market where an order was routed
   fix: {tag: '30', type: Exchange, name: LastMkt}
   enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
@@ -147,13 +147,13 @@ fields:
 - name: currency
   type: int32
   nullable: true
-  description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
+  description: Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent.
   fix: {tag: '15', type: Currency, name: Currency}
   enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
 - name: lastqty
   type: double
   nullable: true
-  description: Quantity (e.g. shares) bought/sold on this (last) fill. (Prior to FIX 4.2 this field was of type int)
+  description: Quantity (e.g. shares) bought/sold on this (last) fill.
   fix: {tag: '32', type: Qty, name: LastQty}
 - name: prevqty
   type: double
@@ -184,12 +184,12 @@ fields:
 - name: execid
   type: string
   nullable: true
-  description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)). Uniqueness must be guaranteed within a single trading day or the life of a multi-day order. Firms which accept multi-day orders should consider embedding a date within the ExecID field to assure uniqueness across days. (Prior to FIX 4.1 this field was of type int).
+  description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)).
   fix: {tag: '17', type: String, name: ExecID}
 - name: execrefid
   type: string
   nullable: true
-  description: Reference identifier used with Trade, Trade Cancel and Trade Correct execution types. (Prior to FIX 4.1 this field was of type int)
+  description: Reference identifier used with Trade, Trade Cancel and Trade Correct execution types.
   fix: {tag: '19', type: String, name: ExecRefID}
 - name: tradeid
   type: string
@@ -204,7 +204,7 @@ fields:
 - name: clordid
   type: string
   nullable: true
-  description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID (49) or OnBehalfOfCompID (5) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID field.
+  description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
   fix: {tag: '11', type: String, name: ClOrdID}
 - name: origclordid
   type: string
@@ -214,12 +214,12 @@ fields:
 - name: cumqty
   type: double
   nullable: true
-  description: Total quantity (e.g. number of shares) filled. (Prior to FIX 4.2 this field was of type int)
+  description: Total quantity (e.g. number of shares) filled.
   fix: {tag: '14', type: Qty, name: CumQty}
 - name: leavesqty
   type: double
   nullable: true
-  description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14). (Prior to FIX 4.2 this field was of type int)
+  description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14).
   fix: {tag: '151', type: Qty, name: LeavesQty}
 - name: vwap
   type: double
@@ -233,13 +233,13 @@ fields:
 - name: settldate
   type: timestamp[us]
   nullable: true
-  description: Specific date of trade settlement (SettlementDate) in YYYYMMDD format. If present, this field overrides SettlType (63). This field is required if the value of SettlType (63) is 6 (Future) or 8 (Sellers Option). This field must be omitted if the value of SettlType (63) is 7 (When and If Issued) (expressed in local time at place of settlement)
-  fix: {tag: '64', type: LocalMktDate, name: SettlDate}
+  description: Specific date of trade settlement (SettlementDate) in YYYYMMDD format.
+  fix: {tag: '64', type: LocalMktDate, aliases: '[{"name":"FutSettDate","source":"4.0","occurrences":0}]', name: SettlDate}
 - name: settltype
   type: string
   nullable: true
-  description: Indicates order settlement period. If present, SettlDate (64) overrides this field. If both SettlType (63) and SettDate (64) are omitted, the default for SettlType (63) is 0 (Regular) Regular is defined as the default settlement period for the particular security on the exchange of execution. In Fixed Income the contents of this field may influence the instrument definition if the SecurityID (48) is ambiguous. In the US an active Treasury offering may be re-opened, and for a time one CUSIP will apply to both the current and "when-issued" securities. Supplying a value of "7" clarifies the instrument description; any other value or the absence of this field should cause the respondent to default to the active issue. Additionally the following patterns may be uses as well as enum values Dx = FX tenor expression for "days", e.g. "D5", where "x" is any integer > 0 Mx = FX tenor expression for "months", e.g. "M3", where "x" is any integer > 0 Wx = FX tenor expression for "weeks", e.g. "W13", where "x" is any integer > 0 Yx = FX tenor expression for "years", e.g. "Y1", where "x" is any integer > 0 Noted that for FX the tenors expressed using Dx, Mx, Wx, and Yx values do not denote business days, but calendar days.
-  fix: {tag: '63', type: String, name: SettlType}
+  description: Indicates order settlement period. If present, SettlDate (64) overrides this field. If both SettlType (63) and SettDate (64) are omitted, the default for SettlType (63) is 0 (Regular)
+  fix: {tag: '63', type: String, aliases: '[{"name":"SettlmntTyp","source":"4.0","occurrences":0}]', name: SettlType}
 - name: settlcurrency
   type: int32
   nullable: true
@@ -249,5 +249,5 @@ fields:
 - name: settlcurrfxratecalc
   type: string
   nullable: true
-  description: Specifies whether or not SettlCurrFxRate (55) should be multiplied or divided.
+  description: Specifies whether or not SettlCurrFxRate (155) should be multiplied or divided.
   fix: {tag: '156', type: char, name: SettlCurrFxRateCalc}

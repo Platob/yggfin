@@ -287,6 +287,86 @@ def test_plugin_codes_do_not_define_message_types() -> None:
     ]
 
 
+def test_plugin_key_names_and_null_values_are_applied_before_promotion() -> None:
+    found = Message.parse_arrow(
+        pyarrow.array(
+            [
+                "TYPE=D|CLIENT=A-1|EMPTY= NONE |BLANK=|",
+                "TYPE=D|CLIENT=A-2|EMPTY=kept|",
+            ]
+        ),
+        {"D": EventType.ORDER},
+        plugins=pyarrow.array(["Bridge", "Other"]),
+        plugin_keys={"bridge": {"TYPE": "MsgType", "CLIENT": "ClOrdID"}},
+        null_values=["none", ""],
+    )
+
+    assert found["msgtype"].to_pylist() == ["D", None]
+    assert found["eventtype"].to_pylist() == [int(EventType.ORDER), int(EventType.MISC)]
+    assert [(entry["key"], entry["value"]) for entry in found["entries"][0].as_py()] == [
+        ("ClOrdID", "A-1")
+    ]
+    assert [(entry["key"], entry["value"]) for entry in found["entries"][1].as_py()] == [
+        ("TYPE", "D"),
+        ("CLIENT", "A-2"),
+        ("EMPTY", "kept"),
+    ]
+
+
+def test_null_values_do_not_define_the_retained_protocol_shape() -> None:
+    found = Message.parse_arrow(
+        pyarrow.array(["8=FIX.4.4|35=D|11=A-1|VENDOR=NONE|10=000|"]),
+        null_values=["none"],
+    )
+
+    assert _protocols(found) == ["FIX"]
+    assert [(entry["key"], entry["value"]) for entry in found["entries"][0].as_py()] == [
+        ("11", "A-1"),
+        ("10", "000"),
+    ]
+
+
+def test_entry_normalization_rejects_ambiguous_configuration() -> None:
+    body = pyarrow.array(["TYPE=D|CLIENT=A-1|"])
+    with pytest.raises(TypeError, match="null_values must be a sequence"):
+        Message.parse_arrow(body, null_values="none")
+    with pytest.raises(ValueError, match="same number of rows"):
+        Message.parse_arrow(body, plugins=pyarrow.array([], pyarrow.string()))
+    with pytest.raises(ValueError, match="two key maps"):
+        Message.parse_arrow(
+            body,
+            plugins=pyarrow.array(["bridge"]),
+            plugin_keys={"Bridge": {"TYPE": "MsgType"}, "bridge": {"TYPE": "EventType"}},
+        )
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "Gateway <debug> payload -> ",
+        "<debug>transport</debug> -> ",
+    ],
+)
+def test_complete_event_xml_after_an_unknown_transport_prefix_is_xml(prefix: str) -> None:
+    body = prefix + '<event id="one"><action type="update"/></event>'
+    found = Message.parse_arrow(pyarrow.array([body]))
+
+    assert _protocols(found) == ["XML"]
+    assert [
+        (entry["comp"], entry["key"], entry["value"]) for entry in found["entries"][0].as_py()
+    ] == [
+        ("event[0]", "id", "one"),
+        ("event[0].action[0]", "type", "update"),
+    ]
+
+
+def test_complete_event_xml_inside_fix_text_stays_with_its_envelope() -> None:
+    body = "8=FIX.4.4|35=0|58=<event id='one'></event>|10=000|"
+    found = Message.parse_arrow(pyarrow.array([body]))
+
+    assert _protocols(found) == ["FIX"]
+
+
 def test_custom_protocol_classifier_reads_every_retained_row() -> None:
     heartbeat = "toBridge #MSGTYPE=0|#Text=" + "A=1|" * 1000
     market = "8=FIX.4.4|35=D|11=one|"

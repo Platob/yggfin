@@ -1,0 +1,197 @@
+{
+ "name": "NoDeliverySchedules",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDeliverySchedules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41037"
+  },
+  "item": {
+   "name": "DeliverySchedule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DeliveryScheduleType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41038"
+     }
+    },
+    {
+     "name": "DeliveryScheduleXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41039"
+     }
+    },
+    {
+     "name": "DeliveryScheduleNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41040"
+     }
+    },
+    {
+     "name": "DeliveryScheduleNotionalUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41041"
+     }
+    },
+    {
+     "name": "DeliveryScheduleNotionalCommodityFrequency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41042"
+     }
+    },
+    {
+     "name": "DeliveryScheduleNegativeTolerance",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41043"
+     }
+    },
+    {
+     "name": "DeliverySchedulePositiveTolerance",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41044"
+     }
+    },
+    {
+     "name": "DeliveryScheduleToleranceUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41045"
+     }
+    },
+    {
+     "name": "DeliveryScheduleToleranceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41046"
+     }
+    },
+    {
+     "name": "DeliveryScheduleSettlCountry",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41047"
+     }
+    },
+    {
+     "name": "DeliveryScheduleSettlTimeZone",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41048"
+     }
+    },
+    {
+     "name": "DeliveryScheduleSettlFlowType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41049"
+     }
+    },
+    {
+     "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41050"
+     }
+    },
+    {
+     "name": "NoDeliveryScheduleSettlDays",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41051"
+     },
+     "item": {
+      "name": "DeliveryScheduleSettlDay",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "DeliveryScheduleSettlDay",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41052"
+        }
+       },
+       {
+        "name": "DeliveryScheduleSettlTotalHours",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41053"
+        }
+       },
+       {
+        "name": "NoDeliveryScheduleSettlTimes",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41054"
+        },
+        "item": {
+         "name": "DeliveryScheduleSettlTime",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "DeliveryScheduleSettlStart",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41055"
+           }
+          },
+          {
+           "name": "DeliveryScheduleSettlEnd",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41056"
+           }
+          },
+          {
+           "name": "DeliveryScheduleSettlTimeType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41057"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

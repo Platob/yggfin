@@ -1,0 +1,49 @@
+{
+ "name": "NoDeliveryScheduleSettlTimes",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDeliveryScheduleSettlTimes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41054"
+  },
+  "item": {
+   "name": "DeliveryScheduleSettlTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DeliveryScheduleSettlStart",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41055"
+     }
+    },
+    {
+     "name": "DeliveryScheduleSettlEnd",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41056"
+     }
+    },
+    {
+     "name": "DeliveryScheduleSettlTimeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41057"
+     }
+    }
+   ]
+  }
+ }
+}

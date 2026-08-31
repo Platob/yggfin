@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingPaymentStreamInitialFixingDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingPaymentStreamInitialFixingDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40971"
+  },
+  "item": {
+   "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40600"
+     }
+    }
+   ]
+  }
+ }
+}

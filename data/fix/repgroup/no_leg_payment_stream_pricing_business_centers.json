@@ -1,0 +1,29 @@
+{
+ "name": "NoLegPaymentStreamPricingBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegPaymentStreamPricingBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41561"
+  },
+  "item": {
+   "name": "LegPaymentStreamPricingBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamPricingBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41562"
+     }
+    }
+   ]
+  }
+ }
+}

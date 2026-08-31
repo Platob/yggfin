@@ -1,0 +1,37 @@
+{
+ "name": "NoPaymentStreamCompoundingDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentStreamCompoundingDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42606"
+  },
+  "item": {
+   "name": "PaymentStreamCompoundingDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamCompoundingDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42607"
+     }
+    },
+    {
+     "name": "PaymentStreamCompoundingDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42608"
+     }
+    }
+   ]
+  }
+ }
+}

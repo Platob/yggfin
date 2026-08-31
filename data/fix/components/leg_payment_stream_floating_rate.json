@@ -1,7 +1,8 @@
 {
  "name": "LegPaymentStreamFloatingRate",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "LegPaymentStreamFloatingRate",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "LegPaymentStreamFloatingRate",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "Advertisement",
     "AllocationInstruction",
@@ -506,31 +511,86 @@
     }
    },
    {
-    "name": "LegPaymentStreamPricingBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoLegPaymentStreamPricingBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegPaymentStreamPricingBusinessCenterGrp"
+     "tag": "41561"
     },
-    "fields": []
+    "item": {
+     "name": "LegPaymentStreamPricingBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPricingBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41562"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "LegPaymentStreamPricingDayGrp",
-    "type": "struct",
+    "name": "NoLegPaymentStreamPricingDays",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegPaymentStreamPricingDayGrp"
+     "tag": "41596"
     },
-    "fields": []
+    "item": {
+     "name": "LegPaymentStreamPricingDay",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPricingDayOfWeek",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41597"
+       }
+      },
+      {
+       "name": "LegPaymentStreamPricingDayNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41598"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "LegPaymentStreamPricingDateGrp",
-    "type": "struct",
+    "name": "NoLegPaymentStreamPricingDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegPaymentStreamPricingDateGrp"
+     "tag": "41593"
     },
-    "fields": []
+    "item": {
+     "name": "LegPaymentStreamPricingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPricingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41594"
+       }
+      },
+      {
+       "name": "LegPaymentStreamPricingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41595"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegPaymentStreamInflationLagPeriod",
@@ -639,13 +699,574 @@
     }
    },
    {
-    "name": "LegReturnRateGrp",
-    "type": "struct",
+    "name": "NoLegReturnRates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "LegReturnRateGrp"
+     "tag": "42534"
     },
-    "fields": []
+    "item": {
+     "name": "LegReturnRate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegReturnRatePriceSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42535"
+       }
+      },
+      {
+       "name": "LegReturnRateCommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42536"
+       }
+      },
+      {
+       "name": "LegReturnRateCommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42537"
+       }
+      },
+      {
+       "name": "LegReturnRateCommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42538"
+       }
+      },
+      {
+       "name": "LegReturnRateTotalCommissionPerTrade",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42539"
+       }
+      },
+      {
+       "name": "LegReturnRateDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42540"
+       }
+      },
+      {
+       "name": "NoLegReturnRatePrices",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42564"
+       },
+       "item": {
+        "name": "LegReturnRatePrice",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegReturnRatePriceBasis",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42565"
+          }
+         },
+         {
+          "name": "LegReturnRatePrice",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42566"
+          }
+         },
+         {
+          "name": "LegReturnRatePriceCurrency",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42567"
+          }
+         },
+         {
+          "name": "LegReturnRatePriceType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42568"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "NoLegReturnRateFXConversions",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42530"
+       },
+       "item": {
+        "name": "LegReturnRateFXConversion",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegReturnRateFXCurrencySymbol",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42531"
+          }
+         },
+         {
+          "name": "LegReturnRateFXRate",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42532"
+          }
+         },
+         {
+          "name": "LegReturnRateFXRateCalc",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42533"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "LegReturnRateAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42541"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteMeasureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42542"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42543"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42544"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42545"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteCurrencyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42546"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42547"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42548"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42549"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteExpirationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42550"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42551"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteExchange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42552"
+       }
+      },
+      {
+       "name": "NoLegReturnRateInformationSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42560"
+       },
+       "item": {
+        "name": "LegReturnRateInformationSource",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegReturnRateInformationSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42561"
+          }
+         },
+         {
+          "name": "LegReturnRateReferencePage",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42562"
+          }
+         },
+         {
+          "name": "LegReturnRateReferencePageHeading",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42563"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "LegReturnRateQuotePricingModel",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42553"
+       }
+      },
+      {
+       "name": "LegReturnRateCashFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42554"
+       }
+      },
+      {
+       "name": "NoLegReturnRateDates",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42508"
+       },
+       "item": {
+        "name": "LegReturnRateDate",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegReturnRateDateMode",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42509"
+          }
+         },
+         {
+          "name": "NoLegReturnRateValuationDates",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "42571"
+          },
+          "item": {
+           "name": "LegReturnRateValuationDate",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegReturnRateValuationDate",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "42572"
+             }
+            },
+            {
+             "name": "LegReturnRateValuationDateType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "42573"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "name": "LegReturnRateValuationDateRelativeTo",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42510"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationDateOffsetPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42511"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationDateOffsetUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42512"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationDateOffsetDayType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42513"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationStartDateUnadjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42514"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationStartDateRelativeTo",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42515"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationStartDateOffsetPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42516"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationStartDateOffsetUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42517"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationStartDateOffsetDayType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42518"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationStartDateAdjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42519"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationEndDateUnadjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42520"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationEndDateRelativeTo",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42521"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationEndDateOffsetPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42522"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationEndDateOffsetUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42523"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationEndDateOffsetDayType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42524"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationEndDateAdjusted",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42525"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationFrequencyPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42526"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationFrequencyUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42527"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationFrequencyRollConvention",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42528"
+          }
+         },
+         {
+          "name": "LegReturnRateValuationDateBusinessDayConvention",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42529"
+          }
+         },
+         {
+          "name": "NoLegReturnRateValuationDateBusinessCenters",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "42569"
+          },
+          "item": {
+           "name": "LegReturnRateValuationDateBusinessCenter",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegReturnRateValuationDateBusinessCenter",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "42570"
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "LegReturnRateValuationTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42555"
+       }
+      },
+      {
+       "name": "LegReturnRateValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42556"
+       }
+      },
+      {
+       "name": "LegReturnRateValuationTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42557"
+       }
+      },
+      {
+       "name": "LegReturnRateValuationPriceOption",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42558"
+       }
+      },
+      {
+       "name": "LegReturnRateFinalPriceFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42559"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "LegPaymentStreamLinkInitialLevel",

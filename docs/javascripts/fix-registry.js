@@ -56,6 +56,12 @@
     return `<code class="fix-registry__tag" title="FIX tag ${escape(value)}">${label}</code>`;
   };
   const href = (kind, value) => `#${kind}=${encodeURIComponent(value)}`;
+  const definitionKey = (namespace, value) =>
+    `${normalized(namespace || "standard")}::${normalized(value)}`;
+  const fieldHref = (field) =>
+    `#field=${encodeURIComponent(field.tag ?? field.name)}&namespace=${encodeURIComponent(field.namespace || "standard")}`;
+  const namespaceLabel = (value) =>
+    `<span class="fix-registry__namespace">${escape(value || "standard")}</span>`;
 
   // What a query matched, best first, exactly as `FixRegistry.search` ranks it:
   // an identity -- a tag, a MsgType, a name, part of one -- and only then the
@@ -105,21 +111,53 @@
     });
 
   function start(catalog) {
-    const components = list(catalog.components);
+    const declaredComponents = list(catalog.components);
+    const groups = list(catalog.groups);
+    // A component name owns a reference if a malformed source ever gives a
+    // group the same name, so components follow groups in the lookup map.
+    const components = [...groups, ...declaredComponents];
     const fields = list(catalog.fields);
     const versions = list(catalog.versions);
+    const sources = list(catalog.sources);
+    const coverage = object(catalog.coverage);
+    const namespaces = list(catalog.namespaces).length
+      ? list(catalog.namespaces)
+      : [...new Set(fields.map((field) => field.namespace || "standard"))];
+    fields.forEach((field) => {
+      field.namespace ||= "standard";
+    });
     const componentByName = new Map(
       components.map((component) => [normalized(component.name), component]),
     );
-    const fieldByName = new Map(fields.map((field) => [normalized(field.name), field]));
-    const fieldByTag = new Map(
-      fields.filter((field) => field.tag !== undefined).map((field) => [String(field.tag), field]),
+    const namespaceRank = new Map(namespaces.map((namespace, index) => [namespace, index]));
+    const fieldByIdentity = new Map();
+    const fieldByName = new Map();
+    const fieldByTag = new Map();
+    const preferredFields = [...fields].sort(
+      (left, right) =>
+        (namespaceRank.get(left.namespace) ?? namespaces.length) -
+        (namespaceRank.get(right.namespace) ?? namespaces.length),
     );
+    fields.forEach((field) => {
+      fieldByIdentity.set(definitionKey(field.namespace, field.name), field);
+      if (field.tag !== undefined) {
+        fieldByIdentity.set(definitionKey(field.namespace, field.tag), field);
+      }
+    });
+    preferredFields.forEach((field) => {
+      const name = normalized(field.name);
+      if (!fieldByName.has(name)) fieldByName.set(name, field);
+      if (field.tag !== undefined && !fieldByTag.has(String(field.tag))) {
+        fieldByTag.set(String(field.tag), field);
+      }
+    });
     const componentBacklinks = new Map();
     const componentFields = new Map();
 
     components.forEach((component) => {
       component._tree = fixDeclaration.members(component.declaration);
+      component._arrowType = fixDeclaration.arrowType(component.declaration);
+      component._folder = component.record_kind === "group" ? "repgroup" : "components";
       component._msgType = fixDeclaration.msgType(component.declaration);
       component._members = flattenMembers(component._tree);
       component._shape = componentShape(component);
@@ -150,7 +188,7 @@
 
     const state = {
       component: { query: "", version: "", kind: "", page: 0 },
-      field: { query: "", version: "", type: "", kind: "", page: 0 },
+      field: { query: "", namespace: "", version: "", type: "", kind: "", page: 0 },
     };
     const componentForm = select("[data-component-filters]");
     const fieldForm = select("[data-field-filters]");
@@ -168,18 +206,27 @@
     });
 
     fillSelect(componentForm.elements.version, versions);
+    fillSelect(fieldForm.elements.namespace, namespaces);
     fillSelect(fieldForm.elements.version, versions);
     fillSelect(
       fieldForm.elements.type,
       [...datatypes].sort((left, right) => left[1].localeCompare(right[1])),
     );
 
-    select("[data-summary-components]").textContent = number.format(components.length);
-    select("[data-summary-fields]").textContent = number.format(fields.length);
-    select("[data-summary-enums]").textContent = number.format(
-      fields.filter((field) => list(field.values).length > 0).length,
+    select("[data-summary-components]").textContent = number.format(
+      coverage.components ?? declaredComponents.length,
     );
-    select("[data-summary-versions]").textContent = number.format(versions.length);
+    select("[data-summary-groups]").textContent = number.format(coverage.groups ?? groups.length);
+    select("[data-summary-fields]").textContent = number.format(coverage.fields ?? fields.length);
+    select("[data-summary-enums]").textContent = number.format(
+      coverage.enumerations ?? fields.filter((field) => list(field.values).length > 0).length,
+    );
+    select("[data-summary-namespaces]").textContent = number.format(
+      coverage.namespaces ?? namespaces.length,
+    );
+    select("[data-summary-sources]").textContent = number.format(coverage.sources ?? sources.length);
+    select("[data-summary-versions]").textContent = number.format(coverage.versions ?? versions.length);
+    renderCoverage();
 
     bindForm(componentForm, state.component, renderComponents);
     bindForm(fieldForm, state.field, renderFields);
@@ -192,6 +239,7 @@
         event.preventDefault();
         Object.assign(state.field, {
           query: message.dataset.messageFilter,
+          namespace: "",
           version: "",
           type: "",
           kind: "",
@@ -224,6 +272,45 @@
       });
     }
 
+    function renderCoverage() {
+      const namespaceTarget = select("[data-namespace-coverage]");
+      const sourceTarget = select("[data-source-coverage]");
+      const byNamespace = list(coverage.by_namespace);
+      if (namespaceTarget) {
+        namespaceTarget.innerHTML = (byNamespace.length
+          ? byNamespace
+          : namespaces.map((namespace) => ({
+              namespace,
+              fields: fields.filter((field) => field.namespace === namespace).length,
+            })))
+          .map(
+            (entry) =>
+              `<span>${namespaceLabel(entry.namespace)} ${number.format(entry.fields || 0)} fields</span>`,
+          )
+          .join("");
+      }
+      if (!sourceTarget) return;
+      sourceTarget.innerHTML = sources.length
+        ? sources
+            .map((source) => {
+              const label = source.source_id || source.id || "source";
+              const location = source.url
+                ? `<a href="${escape(source.url)}">${escape(label)}</a>`
+                : escape(label);
+              const version = source.version ? ` · ${escape(source.version)}` : "";
+              const format = source.format ? ` · ${escape(source.format)}` : "";
+              const checksum = source.checksum
+                ? ` · <code title="${escape(source.checksum)}">${escape(String(source.checksum).slice(0, 12))}</code>`
+                : "";
+              const terms = source.license_url || source.terms_url;
+              return `<li>${namespaceLabel(source.namespace)} ${location}${version}${format}${checksum}${
+                terms ? ` · <a href="${escape(terms)}">terms</a>` : ""
+              }</li>`;
+            })
+            .join("")
+        : '<li class="fix-registry__muted">No refreshed source manifest is stored.</li>';
+    }
+
     function readState() {
       const query = new URLSearchParams(window.location.search);
       Object.assign(state.component, {
@@ -234,6 +321,7 @@
       });
       Object.assign(state.field, {
         query: query.get("fq") || "",
+        namespace: query.get("fn") || "",
         version: query.get("fv") || "",
         type: normalized(query.get("ft") || ""),
         kind: query.get("fk") || "",
@@ -298,6 +386,7 @@
         ck: state.component.kind,
         cp: state.component.page || "",
         fq: state.field.query,
+        fn: state.field.namespace,
         fv: state.field.version,
         ft: state.field.type,
         fk: state.field.kind,
@@ -326,6 +415,7 @@
         .map(
           (component) => `<tr>
             <td><a class="fix-registry__name" href="${href("component", component.name)}">${escape(component.name)}</a></td>
+            <td>${badge(component._arrowType, "type")}</td>
             <td>${badge(shapeLabel(component._shape))}</td>
             <td>${component._msgType ? `<code>${escape(component._msgType)}</code>` : '<span class="fix-registry__muted">—</span>'}</td>
             <td>${chips(component.versions)}</td>
@@ -333,7 +423,7 @@
           </tr>`,
         )
         .join("");
-      if (!filtered.length) componentRows.innerHTML = emptyRow(5);
+      if (!filtered.length) componentRows.innerHTML = emptyRow(6);
       updateCount(select("[data-component-count]"), filtered.length, components.length, found.by);
       updatePager(select("[data-component-pager]"), state.component.page, filtered.length);
     }
@@ -342,6 +432,7 @@
       const found = ranked(fields, state.field.query);
       const filtered = found.rows.filter(
         (field) =>
+          (!state.field.namespace || field.namespace === state.field.namespace) &&
           (!state.field.version || list(field.versions).includes(state.field.version)) &&
           (!state.field.type || normalized(field.type) === state.field.type) &&
           (!state.field.kind || field._usages.includes(state.field.kind)),
@@ -352,10 +443,10 @@
           (field) => `<tr>
             <td>${field.tag === undefined ? '<span class="fix-registry__muted">—</span>' : tagCode(field.tag)}</td>
             <td><div class="fix-registry__identity">
-              <a class="fix-registry__name" href="${href("field", field.tag ?? field.name)}">${escape(field.name)}</a>
+              <span><a class="fix-registry__name" href="${fieldHref(field)}">${escape(field.name)}</a> ${namespaceLabel(field.namespace)}</span>
               ${field.description ? `<span class="fix-registry__description fix-registry__description--row">${escape(field.description)}</span>` : ""}
             </div></td>
-            <td><code>${escape(field.type || "—")}</code></td>
+            <td>${badge(field.type || "—", "type")}${field.fix_type ? `<span class="fix-registry__protocol-type">FIX ${escape(field.fix_type)}</span>` : ""}</td>
             <td>${field._usages.map((usage) => badge(usage)).join("")}</td>
             <td>${chips(field.versions)}</td>
             <td>${number.format(list(field.components).length + list(field.used_in).length)}</td>
@@ -415,9 +506,13 @@
     }
 
     function fieldLink(member) {
-      const found = findField(member);
+      const found = member.namespace
+        ? fieldByIdentity.get(
+            definitionKey(member.namespace, member.tag === undefined ? member.name : member.tag),
+          )
+        : findField(member);
       return found
-        ? `<a class="fix-registry__name" href="${href("field", found.tag ?? found.name)}">${escape(found.name)}</a>`
+        ? `<a class="fix-registry__name" href="${fieldHref(found)}">${escape(found.name)}</a>`
         : `<code>${escape(member.name)}</code>`;
     }
 
@@ -436,6 +531,7 @@
         </header>
         <dl>
           <dt>Versions</dt><dd>${chips(component.versions)}</dd>
+          <dt>Arrow type</dt><dd>${badge(component._arrowType, "type")}</dd>
           <dt>MsgType</dt><dd>${component._msgType ? `<code>${escape(component._msgType)}</code>` : "—"}</dd>
           <dt>Members</dt><dd>${number.format(expanded.length)}</dd>
           <dt>Groups</dt><dd>${number.format(groups)}</dd>
@@ -445,7 +541,7 @@
         ${referenceList("Fields", relatedFields.map((field) => `${fieldLink(field)} ${tagCode(field.tag, true)}`))}
         <h4>Member tree</h4>
         ${memberTree(component._tree, 0, new Set([normalized(component.name)]))}
-        <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/components/${component.slug}.json`)}">View repository record →</a>`;
+        <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/${component._folder}/${component.slug}.json`)}">View repository record →</a>`;
       componentDetail.hidden = false;
     }
 
@@ -510,20 +606,23 @@
       // `tag // 1000`, and the shard no tag reaches for a field FIX never
       // numbered -- the same arithmetic the store writes by.
       const shard = field.tag === undefined ? 999999 : Math.floor(Number(field.tag) / 1000);
-      const source = `fields/${String(shard).padStart(6, "0")}.json`;
+      const source = `${field.namespace === "standard" ? "" : `namespaces/${field.namespace}/`}fields/${String(shard).padStart(6, "0")}.json`;
       const componentReferences = list(field.components);
       const messageReferences = list(field.used_in);
       fieldDetail.innerHTML = `<header>
-          <div><p class="fix-registry__eyebrow">${field.tag === undefined ? "Namespace" : `Tag ${escape(field.tag)}`}</p><h3>${escape(field.name)}</h3></div>
+          <div><p class="fix-registry__eyebrow">${field.tag === undefined ? "Unnumbered" : `Tag ${escape(field.tag)}`} · ${escape(field.namespace)}</p><h3>${escape(field.name)}</h3></div>
           <a class="fix-registry__detail-close" data-detail-close href="#fields-title">Close</a>
         </header>
         ${field.description ? `<p class="fix-registry__description fix-registry__description--detail">${escape(field.description)}</p>` : ""}
         <dl>
           ${field.tag === undefined ? "" : `<dt>Tag</dt><dd>${tagCode(field.tag)}</dd>`}
-          <dt>Datatype</dt><dd><code>${escape(field.type || "—")}</code></dd>
+          <dt>Namespace</dt><dd>${namespaceLabel(field.namespace)}</dd>
+          <dt>Arrow type</dt><dd>${badge(field.type || "—", "type")}</dd>
+          ${field.fix_type ? `<dt>FIX type</dt><dd><span class="fix-registry__protocol-type">${escape(field.fix_type)}</span></dd>` : ""}
           <dt>Versions</dt><dd>${chips(field.versions)}</dd>
           ${field.column ? `<dt>Column</dt><dd><code>${escape(field.column)}</code></dd>` : ""}
           ${field.note ? `<dt>Note</dt><dd>${escape(field.note)}</dd>` : ""}
+          ${list(field.sources).length ? `<dt>Sources</dt><dd>${chips(field.sources)}</dd>` : ""}
           ${aliasDefinition(field.aliases)}
         </dl>
         ${referenceList("Components", componentReferences.map(componentLink))}
@@ -567,7 +666,7 @@
             ? fixDeclaration.members(referenced.declaration)
             : list(member.members);
           const nested = list(member.members).length || (referenced && !recursive);
-          const line = `<span class="fix-registry__member-line">${badge(member.kind)} ${named} ${tagCode(member.tag ?? field?.tag, true)} ${
+          const line = `<span class="fix-registry__member-line">${badge(member.type, "type")} ${named} ${tagCode(member.tag ?? field?.tag, true)} ${
             member.required ? badge("required", "required") : badge("optional", "optional")
           }${recursive ? badge("recursive") : ""}</span>`;
           const prose = description
@@ -618,6 +717,7 @@
       const parameters = new URLSearchParams(window.location.hash.slice(1));
       const componentName = parameters.get("component");
       const fieldKey = parameters.get("field");
+      const fieldNamespace = parameters.get("namespace");
       componentDetail.hidden = true;
       fieldDetail.hidden = true;
       status.hidden = true;
@@ -637,7 +737,9 @@
           routeError("component", componentName, scroll);
         }
       } else if (fieldKey) {
-        const found = fieldByTag.get(fieldKey) || fieldByName.get(normalized(fieldKey));
+        const found = fieldNamespace
+          ? fieldByIdentity.get(definitionKey(fieldNamespace, fieldKey))
+          : fieldByTag.get(fieldKey) || fieldByName.get(normalized(fieldKey));
         if (found) {
           renderFieldDetail(found);
           if (scroll) {
@@ -648,7 +750,7 @@
             });
           }
         } else {
-          routeError("field", fieldKey, scroll);
+          routeError("field", fieldNamespace ? `${fieldNamespace}:${fieldKey}` : fieldKey, scroll);
         }
       }
     }
@@ -689,6 +791,7 @@
   }
 
   function componentShape(component) {
+    if (component.record_kind === "group") return "repeating";
     if (component._msgType) return "message";
     const kinds = new Set(component._members.map((member) => member.kind));
     if (kinds.has("group")) return "repeating";

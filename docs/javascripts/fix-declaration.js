@@ -20,6 +20,16 @@
   // dictionary in place turns three thousand members into a hundred thousand.
   const isReference = (member) => member.type === "struct" && !list(member.fields).length;
 
+  // Short generic Arrow labels keep a deep tree scannable. The member name
+  // and nesting already expose the full shape; expanding a whole struct type
+  // beside every node would repeat the tree inside its own label.
+  const arrowType = (declared) => {
+    const field = object(declared);
+    if (field.type === "list") return `list<${arrowType(field.item)}>`;
+    if (field.type === "map") return "map";
+    return field.type || "unknown";
+  };
+
   // One block's members in wire order, groups nested under the group they
   // repeat inside.
   function members(declared) {
@@ -28,6 +38,7 @@
       const tag = object(member.fix).tag;
       return {
         kind: group ? "group" : isReference(member) ? "component" : "field",
+        type: arrowType(member),
         name: member.name,
         tag: tag === undefined ? undefined : Number(tag),
         // `nullable` is the stored spelling of optional, and a declaration
@@ -41,5 +52,5 @@
   // The message type a declaration defines, or nothing for a plain component.
   const msgType = (declared) => object(object(declared).fix).msgtype || "";
 
-  window.fixDeclaration = { members, msgType };
+  window.fixDeclaration = { arrowType, members, msgType };
 })();

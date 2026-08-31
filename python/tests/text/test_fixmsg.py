@@ -2764,7 +2764,7 @@ def test_an_xmldata_document_still_lands_in_its_own_column(
     line = f"8=FIX.4.4|35=8|212={len(document)}|213={document}|10=000"
     parsed = FixMsg.from_message_batch(_raw_batch(Message(body=line)), codec)
 
-    assert parsed.column("xmldata").to_pylist() == [document.encode()]
+    assert parsed.column("xmldata").to_pylist() == [document]
     assert parsed.column("clordid").to_pylist() == [None]
 
 

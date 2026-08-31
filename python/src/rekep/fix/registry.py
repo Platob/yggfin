@@ -9,6 +9,7 @@ import hashlib
 import html
 import importlib.resources
 import io
+import json
 import os
 import pathlib
 import re
@@ -20,18 +21,19 @@ import urllib.error
 import urllib.request
 import warnings
 import zipfile
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from functools import cached_property, lru_cache
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Any, Self, cast
 
+import pyarrow
 import pyarrow.fs
 
 from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
-from rekep.fields import Field, column_name, newest_rank
-from rekep.fields.metadata import encoded_key, values_of
+from rekep.fields import Field, StructField, column_name, newest_rank
+from rekep.fields.metadata import canonical_versions, encoded_key, values_of
 from rekep.filesystems import local_path, read_bytes, resolve, spill_path
 from rekep.fix.entries import (
     ANY_VERSION,
@@ -57,7 +59,6 @@ from rekep.fix.quickfix import (
     first_declared_name,
     is_group,
     is_reference,
-    members_of,
     parse_declarations,
     parse_session,
     parse_session_components,
@@ -73,8 +74,11 @@ from rekep.fix.store import (
     DOCUMENT_SUFFIX,
     FIELDS,
     NAME,
+    NAMESPACES,
     NOTE,
+    REPGROUP,
     SESSIONS,
+    SOURCES_FILE,
     STORED,
     TYPE,
     VALUES,
@@ -87,11 +91,13 @@ from rekep.fix.store import (
     Dropped,
     ShardedLayout,
     collapse,
+    component_document,
     component_from_document,
     document_of,
     documents_of,
     field_document,
     field_from_document,
+    repeating_groups_of,
     slug_collisions,
     write_archive,
 )
@@ -113,10 +119,22 @@ CACHE_DIRECTORY = pathlib.Path.home() / ".config" / "fix"
 #: Optional full-registry archive and bearer token used to fill a cold default store.
 REGISTRY_URL_ENVIRONMENT = "REKEP_FIX_REGISTRY_URL"
 REGISTRY_TOKEN_ENVIRONMENT = "REKEP_FIX_REGISTRY_TOKEN"
+GITHUB_REPOSITORY_ARCHIVE = "https://github.com/Platob/yggfin/archive/refs/heads/main.zip"
 
-#: A registry is currently under 3 MiB expanded; this bounds corrupt or hostile archives.
+#: Lookup priority is a protocol contract. Standard definitions always win;
+#: registered UDFs fill the numeric space FIX reserved for them; configured
+#: venue dictionaries are consulted only after both.
+STANDARD_NAMESPACE = "standard"
+UDF_NAMESPACE = "fixtrading-udf"
+
+# Bump when parsed records project or reconcile differently without source
+# bytes changing. The parsed-output checksum catches parser and mapping changes;
+# this marker makes registry-only changes invalidate an otherwise warm refresh.
+_ADAPTER_PROJECTION = "rekep-fix-registry-v6"
+
+#: Registry data is small; these bounds reject corrupt or hostile archives.
 _REGISTRY_ARCHIVE_MAX_BYTES = 64 * 1024 * 1024
-_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES = 16 * 1024 * 1024
+_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES = 128 * 1024 * 1024
 _REGISTRY_ARCHIVE_MAX_DOCUMENTS = 10_000
 _REGISTRY_ARCHIVE_READ_BYTE_SIZE = 64 * 1024
 
@@ -127,12 +145,6 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
         return None
 
-
-#: What one bootstrap costs, said before it starts. The dictionary is a page
-#: per field per version and the site throttles a long walk, so the number is
-#: an order of magnitude and the duration a warning, not a promise.
-BOOTSTRAP_PAGES = 14_000
-BOOTSTRAP_DURATION = "several hours"
 
 #: Versions in a per-version directory name: `4.4`, `5.0.SP2`, `FIXT1.1`.
 _VERSION_LINK = re.compile(r"/fix-dictionary/([^/\"'#]+)/index\.html")
@@ -265,7 +277,7 @@ def _forget_builtin_views() -> None:
     columns = sys.modules.get("rekep.fix.columns")
     if columns is not None and hasattr(columns, "_REGISTRY"):
         # Read by `_schemes`, which the loop above only emptied.
-        columns._REGISTRY = _BUILTIN
+        cast(Any, columns)._REGISTRY = _BUILTIN
 
 
 def remote_cache() -> pathlib.Path:
@@ -290,7 +302,8 @@ def builtin_projection() -> str:
     parses common traffic and misses the long tail -- and nothing here ever
     presents it as the whole dictionary.
     """
-    return os.fspath(importlib.resources.files(__package__).joinpath("registry.zip"))
+    resource = importlib.resources.files(__package__).joinpath("registry.zip")
+    return os.fspath(cast(os.PathLike[str], resource))
 
 
 _TAGS = re.compile(r"<[^>]+>")
@@ -563,6 +576,11 @@ class FixRegistry(Convertible):
     #: sources fill its gaps.
     sources: tuple[RegistrySource, ...] = DEFAULT_SOURCES
 
+    #: Venue namespaces after the two protocol-owned tiers. A copied store
+    #: still discovers every namespace, but configuration decides which venue
+    #: wins an otherwise unscoped lookup.
+    namespace_priority: tuple[str, ...] = ()
+
     #: Where scrapes persist: a directory of JSON, or a `.zip` of the same
     #: files. The extension is what says which -- like every other inference
     #: here -- so one path names either, and a dictionary that travels as one
@@ -575,7 +593,7 @@ class FixRegistry(Convertible):
     #: Optional filesystem for `cache_dir`, whose value is then a path on it.
     filesystem: pyarrow.fs.FileSystem | None = None
 
-    #: Full registry archive tried before scraping when the default store is empty.
+    #: Repository archive used to fill an empty default store.
     registry_url: str | None = None
 
     #: Optional bearer token for `registry_url`; consumed and never serialised.
@@ -595,17 +613,6 @@ class FixRegistry(Convertible):
     #: really down is reported as down rather than waited on.
     retries: int = 6
     backoff: float = 2.0
-
-    #: How long a local store may go without being checked against upstream,
-    #: in seconds. `0` -- the default -- never refetches: the local copy is
-    #: what this registry serves, which is the whole of what "offline-first"
-    #: means and what every pipeline reading a packaged dictionary wants.
-    #:
-    #: Above zero, a store older than this is regenerated from the sources before
-    #: it is served, once per registry. A refetch that fails is reported and
-    #: the local copy is served anyway: a dictionary that is a day stale still
-    #: parses every message, and one that raises parses none.
-    cache_ttl: float = 0.0
 
     #: Where a bootstrap's start and finish lines are surfaced. `stderr` by
     #: default, so a person waiting on the fetch sees it; the CLI and the
@@ -635,10 +642,25 @@ class FixRegistry(Convertible):
             raise ValueError("FIX registry source names must be non-empty and distinct")
         if self.max_workers < 1 or any(source.workers < 1 for source in self.sources):
             raise ValueError("FIX registry source worker counts must be positive")
+        if self.timeout <= 0 or self.retries < 0 or self.backoff < 0:
+            raise ValueError("FIX registry timeout must be positive and retries non-negative")
         if any(source.field_pause_seconds < 0 for source in self.sources):
             raise ValueError("FIX registry source field pauses cannot be negative")
+        self.namespace_priority = tuple(
+            dict.fromkeys(str(namespace).strip().lower() for namespace in self.namespace_priority)
+        )
+        reserved = {STANDARD_NAMESPACE, UDF_NAMESPACE} & set(self.namespace_priority)
+        if reserved:
+            raise ValueError(
+                f"configured FIX venue namespaces cannot repeat protocol tiers {sorted(reserved)}"
+            )
+        if any(
+            not re.fullmatch(r"[a-z0-9][a-z0-9.-]*", namespace)
+            for namespace in self.namespace_priority
+        ):
+            raise ValueError("configured FIX venue namespaces must be lowercase path-safe names")
         if self.registry_url is None:
-            self.registry_url = os.environ.get(REGISTRY_URL_ENVIRONMENT)
+            self.registry_url = os.environ.get(REGISTRY_URL_ENVIRONMENT, GITHUB_REPOSITORY_ARCHIVE)
         self.__dict__["_registry_token"] = (
             registry_token
             if registry_token is not None
@@ -656,8 +678,6 @@ class FixRegistry(Convertible):
         named = self.cache_dir is not None
         if self.cache_dir is None:
             self.cache_dir = CACHE_DIRECTORY
-        if self.cache_ttl < 0:
-            raise ValueError(f"a FIX registry cache TTL cannot be negative: {self.cache_ttl}")
         # Asked once, of the location it was pointed at, before anything here
         # can write to it. Asked again later it would answer differently the
         # moment a scrape wrote its first document, and stop the scrape it is
@@ -681,9 +701,8 @@ class FixRegistry(Convertible):
         it may fill itself, and says what that will cost before it starts;
         once it holds documents it answers from them like any other.
 
-        A fetch verb -- `scrape`, `rebuild`, `fields(refresh=True)`, a
-        `cache_ttl` that came due -- opens the door explicitly. Nothing else
-        does, so no read can turn into a fourteen-thousand-page scrape.
+        `scrape` is the one operation which opens source dictionaries. Nothing
+        else does, so no read can turn into a fourteen-thousand-page scrape.
         """
         return self.__dict__.get("_found_a_store", False)
 
@@ -708,21 +727,16 @@ class FixRegistry(Convertible):
         return self.__dict__.get("_revision", 0)
 
     @classmethod
-    def from_builtin(cls, cache_ttl: float = 0.0) -> Self:
+    def from_builtin(cls) -> Self:
         """The default dictionary every unconfigured lookup resolves through.
 
         The packaged standard projection and rekep vocabulary, unless
-        `set_builtin` installed another. `cache_ttl` above zero builds a fresh
-        registry that checks its age against the configured sources before
-        serving -- which reaches the network, so it is never the installed
-        default. Zero, the default, is the one held below.
+        `set_builtin` installed another.
         """
         held = _BUILTIN
-        if cache_ttl:
-            return cls._checked_builtin(cache_ttl)
         if held is not None and isinstance(held, cls):
             return held
-        return cls.set_builtin(cls._checked_builtin(0.0))
+        return cls.set_builtin(cls._checked_builtin())
 
     @classmethod
     def set_builtin(cls, registry: Self | None = None) -> Self:
@@ -746,7 +760,7 @@ class FixRegistry(Convertible):
         from rekep.fix.rekep import rekep_is_registered
 
         global _BUILTIN
-        installed = cls._checked_builtin(0.0) if registry is None else registry
+        installed = cls._checked_builtin() if registry is None else registry
         if not rekep_is_registered(installed):
             raise RuntimeError("the FIX registry lacks rekep's declared vocabulary")
         held = _BUILTIN
@@ -756,11 +770,11 @@ class FixRegistry(Convertible):
         return installed
 
     @classmethod
-    def _checked_builtin(cls, cache_ttl: float) -> Self:
+    def _checked_builtin(cls) -> Self:
         """The packaged projection, refusing one that lost rekep's vocabulary."""
         from rekep.fix.rekep import rekep_is_registered
 
-        registry = cls(cache_dir=builtin_projection(), cache_ttl=cache_ttl)
+        registry = cls(cache_dir=builtin_projection())
         if not rekep_is_registered(registry):
             raise RuntimeError("the packaged FIX registry lacks rekep's declared vocabulary")
         return registry
@@ -772,6 +786,11 @@ class FixRegistry(Convertible):
         **configuration: Any,
     ) -> Self:
         """Scrape a fresh registry, resuming pages, then replace one local directory."""
+        source_ids = tuple(str(source) for source in configuration.pop("source_ids", ()))
+        offline = bool(configuration.pop("offline", False))
+        rebuild_standard = bool(configuration.pop("rebuild_standard", True))
+        refresh_sources = bool(configuration.pop("refresh_sources", False))
+        source_cache_value = configuration.pop("source_cache", None)
         reserved = {"cache_dir", "filesystem"} & configuration.keys()
         if reserved:
             raise TypeError(f"scrape configures {sorted(reserved)} through dump_folder")
@@ -785,29 +804,54 @@ class FixRegistry(Convertible):
         page_cache = target.with_name(f".{target.name}-source-pages")
         if page_cache.exists() and (not page_cache.is_dir() or page_cache.is_symlink()):
             raise ValueError(f"the FIX registry source page cache is not a directory: {page_cache}")
-        local_fields, local_components, local_overlays = cls._local_declarations(target)
+        source_cache = pathlib.Path(
+            source_cache_value or target.with_name(f".{target.name}-sources")
+        )
+        if source_cache.exists() and (not source_cache.is_dir() or source_cache.is_symlink()):
+            raise ValueError(f"the FIX registry source cache is not a directory: {source_cache}")
+        local_fields, local_components, local_overlays = (
+            cls._local_declarations(target) if rebuild_standard and not offline else ((), (), ())
+        )
 
         report = ConflictReport()
+        unchanged = False
         with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
             root = pathlib.Path(scratch)
             staged = root / target.name
+            if (offline or not rebuild_standard) and target.exists():
+                shutil.copytree(target, staged, copy_function=_stage_registry_file)
             source = cls(cache_dir=staged, **configuration)
             source._source_page_cache = page_cache
-            report = source.rebuild()
-            source._restore_local_declarations(local_fields, local_components, local_overlays)
-            cls._validate_registry_store(source._documents)
-
-            previous = root / "previous"
-            if target.exists():
-                target.replace(previous)
-            try:
-                staged.replace(target)
-            except BaseException:
-                if previous.exists() and not target.exists():
-                    previous.replace(target)
-                raise
+            if rebuild_standard and not offline:
+                report = source._rebuild_sources()
+                source._restore_local_declarations(local_fields, local_components, local_overlays)
+            else:
+                report = ConflictReport()
+                source.__dict__["_conflicts"] = report
+            if source_ids:
+                source._ingest_adapters(
+                    source_ids, source_cache, offline=offline, refresh=refresh_sources
+                )
+                report = source.conflicts
+                unchanged = (
+                    target.exists()
+                    and not rebuild_standard
+                    and not source.__dict__.get("_refresh_changed", True)
+                )
+            if not unchanged:
+                cls._validate_registry_store(source._documents)
+                previous = root / "previous"
+                if target.exists():
+                    target.replace(previous)
+                try:
+                    staged.replace(target)
+                except BaseException:
+                    if previous.exists() and not target.exists():
+                        previous.replace(target)
+                    raise
         installed = cls(cache_dir=target, **configuration)
         installed.__dict__["_conflicts"] = report
+        installed.__dict__["_source_status"] = source.__dict__.get("_source_status", ())
         if page_cache.exists():
             shutil.rmtree(page_cache)
         return installed
@@ -816,7 +860,7 @@ class FixRegistry(Convertible):
     def _local_declarations(
         cls, target: pathlib.Path
     ) -> tuple[tuple[Field, ...], tuple[ComponentRecord, ...], tuple[Field, ...]]:
-        """Local declarations and field configuration a refresh carries forward."""
+        """Local declarations and field configuration a scrape carries forward."""
         if not target.exists():
             return (), (), ()
         try:
@@ -883,11 +927,11 @@ class FixRegistry(Convertible):
     # -- bootstrapping the default store --------------------------------------
 
     def bootstrap(self) -> bool:
-        """Fill the default store, once, saying so before and after; True when it did.
+        """Fill the default store from the GitHub archive; True when it did.
 
-        A cold online store tries the configured full archive, then the source
-        dictionaries. A failed source or a cold offline store serves the
-        packaged projection and says that it is reduced.
+        A failed archive serves the packaged projection. Scraping upstream
+        dictionaries is an explicit `scrape` operation and never a side effect
+        of constructing or reading a registry.
 
         Only the *default* store is bootstrapped. A `cache_dir` somebody named
         is that store, cold or not -- it is about to be written, or it is a
@@ -896,51 +940,31 @@ class FixRegistry(Convertible):
         Both channels carry it: `warnings.warn` is the record, and `announce`
         is the foreground line a person waiting on the fetch reads.
         """
-        if os.fspath(self.cache_dir) != os.fspath(CACHE_DIRECTORY):
+        cache_dir = cast(str | os.PathLike[str], self.cache_dir)
+        if os.fspath(cache_dir) != os.fspath(CACHE_DIRECTORY):
             return False
         if self._documents.names():
             return False
-        if not self.offline and self.registry_url:
-            source = Url.from_string(self.registry_url)
-            self._say(
-                f"no FIX registry at {self.cache_dir}; downloading the full dictionary "
-                f"from {source.masked}"
-            )
-            started = time.monotonic()
-            try:
-                counted = self._install_registry_archive()
-            except (OSError, ValueError, zipfile.BadZipFile, pyarrow.ArrowException) as error:
-                self._say(
-                    f"the FIX registry archive at {source.masked} could not be installed "
-                    f"({error}); falling back to the source dictionaries"
-                )
-            else:
-                self._say(
-                    f"the FIX registry is installed at {self.cache_dir}: {counted} documents, "
-                    f"in {time.monotonic() - started:.0f}s"
-                )
-                return True
         if self.offline:
             self._reduced("it serves a stored dictionary")
             return False
+        if not self.registry_url:  # pragma: no cover - __post_init__ supplies GitHub
+            self._reduced("no repository archive is configured")
+            return False
+        source = Url.from_string(self.registry_url)
         self._say(
-            f"no FIX registry at {self.cache_dir}; fetching the dictionary from "
-            f"{', '.join(source.url for source in self.sources)} -- about {BOOTSTRAP_PAGES} "
-            f"pages across every FIX version, {BOOTSTRAP_DURATION}. It installs to "
-            f"{self.cache_dir} and is never fetched again. To skip it, point "
-            "cache_dir at a store you already have."
+            f"no FIX registry at {self.cache_dir}; downloading the main repository "
+            f"archive from {source.masked}"
         )
         started = time.monotonic()
         try:
-            report = self.rebuild()
-        except (OSError, ValueError) as error:
-            self._reduced(f"the configured sources could not be read ({error})")
+            counted = self._install_registry_archive()
+        except (OSError, ValueError, zipfile.BadZipFile, pyarrow.ArrowException) as error:
+            self._reduced(f"the repository archive could not be installed ({error})")
             return False
-        counted = len(self._layout.field_records)
         self._say(
-            f"the FIX registry is installed at {self.cache_dir}: {counted} fields, "
-            f"{len(self._layout.component_records)} components, "
-            f"{sum(report.counts().values())} collapses, in {time.monotonic() - started:.0f}s"
+            f"the FIX registry is installed at {self.cache_dir}: {counted} documents, "
+            f"in {time.monotonic() - started:.0f}s"
         )
         return True
 
@@ -986,7 +1010,10 @@ class FixRegistry(Convertible):
     def _bounded_registry_archive(stream: Any) -> bytes:
         """Read at most the configured compressed archive size."""
         length = getattr(stream, "headers", {}).get("Content-Length")
-        if str(length or "").isdigit() and int(length) > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES:
+        if (
+            str(length or "").isdigit()
+            and int(str(length)) > _REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES
+        ):
             raise ValueError(
                 "the FIX registry archive exceeds "
                 f"{_REGISTRY_ARCHIVE_MAX_COMPRESSED_BYTES} compressed bytes"
@@ -1018,7 +1045,7 @@ class FixRegistry(Convertible):
         """Stage a complete default store beside its final path, then rename it."""
         if self.filesystem is not None:
             raise ValueError("a downloaded FIX registry requires the local default store")
-        target = pathlib.Path(os.fspath(self.cache_dir))
+        target = pathlib.Path(os.fspath(cast(str | os.PathLike[str], self.cache_dir)))
         target.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as scratch:
             staged = pathlib.Path(scratch) / target.name
@@ -1062,7 +1089,6 @@ class FixRegistry(Convertible):
         versions = index.get("versions")
         if (
             not isinstance(versions, list)
-            or not versions
             or any(type(version) is not str or not version.strip() for version in versions)
             or len(set(versions)) != len(versions)
         ):
@@ -1096,17 +1122,39 @@ class FixRegistry(Convertible):
                     raise ValueError(f"the FIX {version} session has an invalid field")
                 seen.add(member[0])
 
-        fields: dict[int | str, Field] = {}
-        components: dict[str, ComponentRecord] = {}
-        component_tags: set[int] = set()
-        component_refs: set[str] = set()
+        fields: dict[tuple[str, int | str], Field] = {}
+        components: dict[str, dict[str, ComponentRecord]] = {}
+        repeating_groups: dict[str, dict[str, ComponentRecord]] = {}
+        component_tags: dict[str, set[int]] = {}
+        component_refs: dict[str, set[str]] = {}
         for name in names:
             if name == VERSIONS_FILE:
                 continue
             document = place.read(name)
             if not isinstance(document, Mapping) or not document:
                 raise ValueError(f"FIX registry document {name!r} is empty or unreadable")
-            if name.startswith(f"{FIELDS}/"):
+            if name == SOURCES_FILE:
+                sources = document.get("sources")
+                required = {
+                    "source_id",
+                    "namespace",
+                    "url",
+                    "version",
+                    "format",
+                    "checksum",
+                    "license_url",
+                }
+                if not isinstance(sources, list) or any(
+                    not isinstance(source, Mapping) or not required.issubset(source)
+                    for source in sources
+                ):
+                    raise ValueError("the FIX registry source manifest is invalid")
+                continue
+            namespaced = re.fullmatch(
+                rf"{NAMESPACES}/([^/]+)/{FIELDS}/\d{{6}}{re.escape(DOCUMENT_SUFFIX)}", name
+            )
+            if name.startswith(f"{FIELDS}/") or namespaced:
+                namespace = namespaced.group(1) if namespaced else ""
                 for stored, record in document.items():
                     if not isinstance(record, Mapping):
                         raise ValueError(f"FIX field {stored!r} in {name!r} is not an object")
@@ -1119,7 +1167,9 @@ class FixRegistry(Convertible):
                         raise ValueError(
                             f"FIX field {stored!r} in {name!r} is invalid: {error}"
                         ) from error
-                    if not set(entry.fix.versions).issubset(known_versions | {ANY_VERSION}):
+                    if not namespace and not set(entry.fix.versions).issubset(
+                        known_versions | {ANY_VERSION}
+                    ):
                         raise ValueError(
                             f"FIX field {stored!r} in {name!r} names a version this store "
                             "does not declare"
@@ -1128,13 +1178,29 @@ class FixRegistry(Convertible):
                     expected_key = (
                         str(declared_tag) if declared_tag is not None else entry.fix.canonical
                     )
-                    if str(stored) != expected_key or field_document(entry.fix.key) != name:
+                    if (
+                        str(stored) != expected_key
+                        or field_document(entry.fix.key, namespace) != name
+                    ):
                         raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
-                    if entry.fix.key in fields:
+                    identity = (namespace, entry.fix.key)
+                    if identity in fields:
                         raise ValueError(f"FIX field {stored!r} is stored more than once")
-                    fields[entry.fix.key] = entry
+                    fields[identity] = entry
                 continue
-            if not name.startswith(f"{COMPONENTS}/"):
+            scoped_component = re.fullmatch(
+                rf"{NAMESPACES}/([^/]+)/({COMPONENTS}|{REPGROUP})/[^/]+"
+                rf"{re.escape(DOCUMENT_SUFFIX)}",
+                name,
+            )
+            namespace = scoped_component.group(1) if scoped_component else ""
+            component_file = name.startswith(f"{COMPONENTS}/") or bool(
+                scoped_component and scoped_component.group(2) == COMPONENTS
+            )
+            group_file = name.startswith(f"{REPGROUP}/") or bool(
+                scoped_component and scoped_component.group(2) == REPGROUP
+            )
+            if not component_file and not group_file:
                 raise ValueError(f"unexpected FIX registry document {name!r}")
             unknown = sorted(set(document) - {"name", "versions", "declaration", "aliases"})
             component_versions = document.get("versions")
@@ -1143,58 +1209,92 @@ class FixRegistry(Convertible):
                 or type(document.get("name")) is not str
                 or not isinstance(component_versions, list)
                 or any(type(version) is not str for version in component_versions)
-                or not set(component_versions).issubset(known_versions | {ANY_VERSION})
+                or (
+                    not namespace
+                    and not set(component_versions).issubset(known_versions | {ANY_VERSION})
+                )
                 or not isinstance(document.get("declaration"), Mapping)
                 or not isinstance(document.get("aliases", []), list)
             ):
-                raise ValueError(f"FIX component in {name!r} has invalid metadata")
+                kind = "repeating group" if group_file else "component"
+                raise ValueError(f"FIX {kind} in {name!r} has invalid metadata")
             try:
                 entry = component_from_document(document)
             except (AttributeError, KeyError, TypeError, ValueError) as error:
-                raise ValueError(f"FIX component in {name!r} is invalid: {error}") from error
+                kind = "repeating group" if group_file else "component"
+                raise ValueError(f"FIX {kind} in {name!r} is invalid: {error}") from error
             # The declaration validates by being read: a document Field cannot
             # parse is not one. What is left is the cross-check the shape alone
             # cannot make -- that every tag and every reference it names is
             # something this store actually holds.
-            for member, _ in walk(entry.declaration):
+            if is_group(entry.declaration) != group_file:
+                expected_kind = "a list" if group_file else "a struct"
+                raise ValueError(f"FIX declaration in {name!r} must be {expected_kind}")
+            declared = entry_of(entry.declaration) if group_file else entry.declaration
+            members = list(walk(declared))
+            if group_file:
+                members.insert(0, (entry.declaration, ()))
+            for member, _ in members:
                 if is_reference(member):
-                    component_refs.add(fold(member.name))
+                    component_refs.setdefault(namespace, set()).add(fold(member.name))
                     continue
                 tag = member.fix.tag
                 if tag is None or tag <= 0:
                     raise ValueError(
                         f"FIX component in {name!r} declares {member.name!r} with no tag"
                     )
-                component_tags.add(tag)
-            expected = f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}"
-            if name != expected or entry.slug in components:
-                raise ValueError(f"FIX component {entry.name!r} is stored under the wrong name")
-            components[entry.slug] = entry
+                component_tags.setdefault(namespace, set()).add(tag)
+            records_by_namespace = repeating_groups if group_file else components
+            records = records_by_namespace.setdefault(namespace, {})
+            expected = component_document(entry.slug, namespace, group=group_file)
+            if name != expected or entry.slug in records:
+                kind = "repeating group" if group_file else "component"
+                raise ValueError(f"FIX {kind} {entry.name!r} is stored under the wrong name")
+            records[entry.slug] = entry
         if not fields:
             raise ValueError("the FIX registry has no fields")
+        standard_fields = {
+            key: entry for (namespace, key), entry in fields.items() if not namespace
+        }
+        if standard_fields and not versions:
+            raise ValueError("the FIX registry version index needs a standard version")
         field_names = {
-            fold(spelling) for entry in fields.values() for spelling in entry.fix.spellings()
+            fold(spelling)
+            for entry in standard_fields.values()
+            for spelling in entry.fix.spellings()
         }
         for version, members in sessions.items():
             missing = [name for name, _required in members if fold(name) not in field_names]
             if missing:
                 raise ValueError(f"the FIX {version} session names unknown fields {missing}")
-        missing_tags = sorted(component_tags - {entry.fix.tag for entry in fields.values()})
-        if missing_tags:
-            raise ValueError(f"FIX components name unknown field tags {missing_tags[:5]}")
-        missing_components = sorted(
-            component_refs - {entry.folded for entry in components.values()}
-        )
-        if missing_components:
-            raise ValueError(f"FIX components name unknown components {missing_components[:5]}")
-        problems = _problems((fields, components))
+        for namespace, records in components.items():
+            scoped_fields = {
+                entry.fix.tag
+                for (field_namespace, _), entry in fields.items()
+                if field_namespace in {"", namespace}
+            }
+            missing_tags = sorted(component_tags.get(namespace, set()) - scoped_fields)
+            if missing_tags:
+                raise ValueError(f"FIX components name unknown field tags {missing_tags[:5]}")
+            available_components = {
+                entry.folded
+                for candidate in (components.get("", {}), records)
+                for entry in candidate.values()
+            }
+            missing_components = sorted(component_refs.get(namespace, set()) - available_components)
+            if missing_components:
+                raise ValueError(f"FIX components name unknown components {missing_components[:5]}")
+            if repeating_groups.get(namespace, {}) != repeating_groups_of(records):
+                raise ValueError("the FIX repeating-group index does not match the component trees")
+        standard_components = components.get("", {})
+        problems = _problems((standard_fields, standard_components))
         if problems:
             raise ValueError(f"the FIX registry is inconsistent: {problems[0]}")
         return len(names)
 
     @staticmethod
     def _registry_archive_documents(payload: bytes) -> dict[str, dict[str, Any]]:
-        """Read only root registry documents from a bounded ZIP archive."""
+        """Read registry documents from a registry or GitHub repository archive."""
         documents: dict[str, dict[str, Any]] = {}
         expanded = 0
         try:
@@ -1206,22 +1306,52 @@ class FixRegistry(Convertible):
                 members = [member for member in archive.infolist() if not member.is_dir()]
             except (OSError, EOFError, RuntimeError, zipfile.BadZipFile) as error:
                 raise ValueError(f"the FIX registry archive cannot be decoded: {error}") from error
-            if len(members) > _REGISTRY_ARCHIVE_MAX_DOCUMENTS:
-                raise ValueError("the FIX registry archive has too many documents")
             for member in members:
-                name = member.filename
-                path = pathlib.PurePosixPath(name)
-                parts = path.parts
-                nested = len(parts) == 2 and parts[0] in (FIELDS, COMPONENTS)
+                path = pathlib.PurePosixPath(member.filename)
                 if (
-                    not parts
-                    or path.is_absolute()
-                    or "\\" in name
-                    or any(part in ("", ".", "..") for part in parts)
-                    or not (name == VERSIONS_FILE or nested)
-                    or path.suffix != DOCUMENT_SUFFIX
+                    path.is_absolute()
+                    or "\\" in member.filename
+                    or any(part in ("", ".", "..") for part in path.parts)
                 ):
-                    raise ValueError(f"unsafe FIX registry archive member {name!r}")
+                    raise ValueError(f"unsafe FIX registry archive member {member.filename!r}")
+            roots = []
+            for member in members:
+                path = pathlib.PurePosixPath(member.filename)
+                if path.name != VERSIONS_FILE:
+                    continue
+                if len(path.parts) == 1:
+                    roots.append(())
+                elif len(path.parts) >= 3 and path.parts[-3:-1] == ("data", "fix"):
+                    roots.append(path.parts[:-1])
+            roots = list(dict.fromkeys(roots))
+            if len(roots) != 1:
+                raise ValueError("the FIX registry archive has no unique registry root")
+            root = roots[0]
+            selected: list[tuple[zipfile.ZipInfo, str]] = []
+            for member in members:
+                parts = pathlib.PurePosixPath(member.filename).parts
+                if tuple(parts[: len(root)]) != root:
+                    continue
+                relative = parts[len(root) :]
+                nested = len(relative) == 2 and relative[0] in (
+                    FIELDS,
+                    COMPONENTS,
+                    REPGROUP,
+                )
+                namespaced = (
+                    len(relative) == 4
+                    and relative[0] == NAMESPACES
+                    and relative[2] in (FIELDS, COMPONENTS, REPGROUP)
+                )
+                if not (relative in ((VERSIONS_FILE,), (SOURCES_FILE,)) or nested or namespaced):
+                    continue
+                name = pathlib.PurePosixPath(*relative).as_posix()
+                if pathlib.PurePosixPath(name).suffix != DOCUMENT_SUFFIX:
+                    continue
+                selected.append((member, name))
+            if len(selected) > _REGISTRY_ARCHIVE_MAX_DOCUMENTS:
+                raise ValueError("the FIX registry archive has too many documents")
+            for member, name in selected:
                 if name in documents:
                     raise ValueError(f"duplicate FIX registry archive member {name!r}")
                 if member.flag_bits & 1:
@@ -1248,10 +1378,8 @@ class FixRegistry(Convertible):
                 documents[name] = document
         index = documents.get(VERSIONS_FILE)
         versions = index.get("versions") if index is not None else None
-        if (
-            not isinstance(versions, list)
-            or not versions
-            or not any(name.startswith(f"{FIELDS}/") for name in documents)
+        if not isinstance(versions, list) or not any(
+            name.startswith(f"{FIELDS}/") or name.startswith(f"{NAMESPACES}/") for name in documents
         ):
             raise ValueError("the FIX registry archive has no version index or fields")
         return documents
@@ -1279,7 +1407,7 @@ class FixRegistry(Convertible):
         else:
             announce(line)
 
-    def rebuild(self, *versions: str) -> ConflictReport:
+    def _rebuild_sources(self, *versions: str) -> ConflictReport:
         """Scrape whole versions and write the store, collapsed, in one pass.
 
         Where `fields` folds one version into what is held, this is the bulk
@@ -1299,9 +1427,11 @@ class FixRegistry(Convertible):
         local_components: Sequence[ComponentRecord],
         local_overlays: Sequence[Field],
     ) -> ConflictReport:
-        """`rebuild`'s body, inside the window that lets it reach a source."""
+        """The scrape body, inside the window that lets it reach a source."""
         try:
-            order = tuple(self._spelling(version) for version in versions) or self.versions
+            order = (
+                tuple(self._spelling(version) for version in versions) or self._scrape_versions()
+            )
             declarations: dict[str, list[Field]] = {}
             sessions: dict[str, Sequence[tuple[str, bool]]] = {}
             components: dict[str, Sequence[Field]] = {}
@@ -1329,8 +1459,284 @@ class FixRegistry(Convertible):
 
     @property
     def conflicts(self) -> ConflictReport:
-        """What the last `rebuild` collapsed; empty for a store it did not build."""
+        """What the last `scrape` collapsed; empty for a store it did not build."""
         return self.__dict__.get("_conflicts") or ConflictReport()
+
+    def _ingest_adapters(
+        self,
+        source_ids: Sequence[str],
+        cache: pathlib.Path,
+        *,
+        offline: bool,
+        refresh: bool = False,
+    ) -> None:
+        """Load complete cached sources and store their field definitions."""
+        from rekep.fix.adapters import ADAPTERS_BY_ID
+
+        unknown = [source_id for source_id in source_ids if source_id not in ADAPTERS_BY_ID]
+        if unknown:
+            raise KeyError(f"unknown FIX registry sources {unknown!r}")
+        cache.mkdir(parents=True, exist_ok=True)
+        parsed = [
+            ADAPTERS_BY_ID[source_id].load(
+                cache,
+                offline=offline,
+                refresh=refresh,
+                timeout=self.timeout,
+                retries=self.retries,
+                backoff=self.backoff,
+            )
+            for source_id in source_ids
+        ]
+        previous_versions = self._layout.versions()
+        standard_versions = tuple(
+            dict.fromkeys(
+                registry.declaration_version
+                for registry in parsed
+                if registry.source.namespace == STANDARD_NAMESPACE and registry.declaration_version
+            )
+        )
+        versions = tuple(
+            sorted(
+                {
+                    *self._layout.versions(),
+                    *standard_versions,
+                },
+                key=newest_rank,
+                reverse=True,
+            )
+        )
+        index_changed = versions != previous_versions or any(
+            not self._layout.stored(version) or not self._layout.declared(version)
+            for version in standard_versions
+        )
+        if parsed:
+            self._layout.store_versions(versions)
+            for version in standard_versions:
+                self._layout.store_stored(version)
+                self._layout.store_declared(version)
+            self._forget()
+        priorities = {
+            source_id: int(ADAPTERS_BY_ID[source_id].priority) for source_id in source_ids
+        }
+        lookup_order = {source_id: order for order, source_id in enumerate(source_ids)}
+        self.__dict__["_refresh_priorities"] = priorities
+        manifest = {
+            str(source.get("source_id")): dict(source) for source in self._layout.source_manifest()
+        }
+        statuses: list[dict[str, Any]] = []
+        standard_registries: list[Any] = []
+        namespaced_registries: dict[str, list[Any]] = {}
+        changed = index_changed
+        try:
+            for registry in parsed:
+                conflict_count = len(self.conflicts.collapses) + len(self.conflicts.collisions)
+                provenance = {
+                    **registry.source.into_dict(),
+                    "priority": ADAPTERS_BY_ID[registry.source.source_id].priority,
+                    "lookup_order": lookup_order[registry.source.source_id],
+                    "projection": _ADAPTER_PROJECTION,
+                    "definitions_checksum": _source_definitions_checksum(registry),
+                }
+                source_id = str(provenance["source_id"])
+                previous = manifest.get(source_id)
+                replayed = (
+                    not refresh
+                    and previous is not None
+                    and all(
+                        previous.get(key) == provenance.get(key)
+                        for key in (
+                            "namespace",
+                            "version",
+                            "checksum",
+                            "priority",
+                            "projection",
+                            "definitions_checksum",
+                        )
+                    )
+                )
+                source_conflicts = () if replayed else registry.conflicts
+                if source_conflicts:
+                    report = self.conflicts
+                    attributed: list[Collapse] = []
+                    for conflict in source_conflicts:
+                        tag = int(conflict.key) if conflict.key.isdigit() else None
+                        field = registry.field(tag) if tag is not None else None
+                        attributed.append(
+                            Collapse(
+                                name=field.name if field is not None else conflict.key,
+                                tag=tag,
+                                part=TYPE if conflict.part == "datatype" else conflict.part,
+                                kept=conflict.resolution,
+                                keptsource=source_id,
+                                dropped=tuple(
+                                    Dropped(
+                                        version=registry.source.version,
+                                        reading=reading,
+                                        source=source_id,
+                                    )
+                                    for reading in conflict.readings
+                                    if reading != conflict.resolution
+                                ),
+                            )
+                        )
+                    self.__dict__["_conflicts"] = dataclasses.replace(
+                        report, collapses=(*report.collapses, *attributed)
+                    )
+                if replayed:
+                    changes = MappingProxyType({"additions": 0, "updates": 0})
+                else:
+                    definitions = tuple(
+                        field.into_field() if hasattr(field, "into_field") else field
+                        for field in registry.fields
+                    )
+                    changes = self.add_definitions(definitions, registry.source.namespace)
+                changed = changed or bool(changes["additions"] or changes["updates"])
+                if registry.source.namespace == STANDARD_NAMESPACE and not replayed:
+                    standard_registries.append(registry)
+                elif registry.source.namespace != STANDARD_NAMESPACE and not replayed:
+                    namespaced_registries.setdefault(registry.source.namespace, []).append(registry)
+                manifest[source_id] = provenance
+                statuses.append(
+                    {
+                        "source_id": source_id,
+                        "namespace": registry.source.namespace,
+                        "fields": len(registry.fields),
+                        "additions": changes["additions"],
+                        "updates": changes["updates"],
+                        "fallbacks": len(registry.fallbacks),
+                        "conflicts": len(self.conflicts.collapses)
+                        + len(self.conflicts.collisions)
+                        - conflict_count,
+                        "messages": len(registry.messages),
+                        "components": len(registry.components),
+                        "groups": len(registry.groups),
+                    }
+                )
+            changed = self._ingest_standard_components(standard_registries) or changed
+            for namespace, registries in sorted(namespaced_registries.items()):
+                changed = self._ingest_namespaced_components(namespace, registries) or changed
+            final_manifest = tuple(manifest.values())
+            current_manifest = {
+                source["source_id"]: source for source in self._layout.source_manifest()
+            }
+            changed = (
+                changed
+                or {source["source_id"]: source for source in final_manifest} != current_manifest
+            )
+            self.store_source_manifest(final_manifest)
+        finally:
+            self.__dict__.pop("_refresh_priorities", None)
+        self.__dict__["_source_status"] = tuple(statuses)
+        self.__dict__["_refresh_changed"] = changed
+
+    def _ingest_standard_components(self, registries: Sequence[Any]) -> bool:
+        """Reconcile all standard blocks, then rebuild derived groups once."""
+        # Repeating groups stay derived from the component/message trees. A
+        # second top-level copy would be a list under `components/`, where the
+        # store contract admits structs only.
+        if not registries:
+            return False
+        records = dict(self._entries[1])
+        preserved_carriage = {slug: entry.msgtypes for slug, entry in records.items()}
+        changed: set[str] = set()
+        ordered = sorted(
+            registries,
+            key=lambda registry: (
+                self._source_priority(registry.source.source_id),
+                registry.source.source_id,
+            ),
+        )
+        for registry in ordered:
+            source = registry.source.source_id
+            version = registry.declaration_version
+            for declaration in registry.declarations().values():
+                declared = record_copy(declaration)
+                declared.fix.source = source
+                declared.fix.sources = (source,)
+                declared.fix["source-version"] = registry.source.version
+                declared.fix["source-url"] = registry.source.url
+                declared.fix["source-checksum"] = registry.source.checksum
+                fresh = ComponentRecord.from_components((declared,), (version,))
+                held = records.get(fresh.slug)
+                if held is None:
+                    merged = fresh
+                else:
+                    held_source = held.declaration.fix.source
+                    fresh_priority = self._source_priority(source)
+                    held_priority = self._source_priority(held_source)
+                    if fresh_priority > held_priority or (
+                        fresh_priority == held_priority and source != held_source
+                    ):
+                        # Lower-priority dictionaries are structural fallbacks:
+                        # once an authoritative block exists they do not widen
+                        # its versions or manufacture membership conflicts.
+                        continue
+                    merged = dataclasses.replace(
+                        fresh,
+                        versions=canonical_versions((*held.versions, version)),
+                        aliases=held.aliases,
+                    )
+                records[fresh.slug] = merged
+                if held is None or merged != held:
+                    changed.add(fresh.slug)
+        for slug in sorted(changed):
+            self._layout._store_component(records[slug])
+        carriage_changed = self._layout._store_carriage(preserved_carriage)
+        groups_changed = self._layout._sync_repeating_groups()
+        if changed or carriage_changed or groups_changed:
+            self._forget()
+        return bool(changed) or carriage_changed or groups_changed
+
+    def _ingest_namespaced_components(self, namespace: str, registries: Sequence[Any]) -> bool:
+        """Reconcile extension blocks without flattening them into standard."""
+        records = dict(self._layout.namespace_component_records(namespace))
+        changed = False
+        ordered = sorted(
+            registries,
+            key=lambda registry: (
+                self._source_priority(registry.source.source_id),
+                registry.source.source_id,
+            ),
+        )
+        for registry in ordered:
+            source = registry.source.source_id
+            version = registry.declaration_version
+            for declaration in registry.declarations().values():
+                declared = record_copy(declaration)
+                declared.fix.source = source
+                declared.fix.sources = (source,)
+                declared.fix["namespace"] = namespace
+                declared.fix["source-version"] = registry.source.version
+                declared.fix["source-url"] = registry.source.url
+                declared.fix["source-checksum"] = registry.source.checksum
+                fresh = ComponentRecord.from_components((declared,), (version,))
+                held = records.get(fresh.slug)
+                if held is not None:
+                    held_source = held.declaration.fix.source
+                    fresh_priority = self._source_priority(source)
+                    held_priority = self._source_priority(held_source)
+                    if fresh_priority > held_priority or (
+                        fresh_priority == held_priority and source != held_source
+                    ):
+                        continue
+                    fresh = dataclasses.replace(
+                        fresh,
+                        versions=canonical_versions((*held.versions, version)),
+                        aliases=held.aliases,
+                    )
+                if held is None or fresh != held:
+                    records[fresh.slug] = fresh
+                    changed = True
+        if changed:
+            self._layout.store_namespace_components(namespace, records)
+            self._forget()
+        return changed
+
+    @property
+    def source_status(self) -> tuple[Mapping[str, Any], ...]:
+        """Per-source results from the last in-process refresh."""
+        return tuple(MappingProxyType(status) for status in self.__dict__.get("_source_status", ()))
 
     def _write(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
         """Replace this store with `documents`, in one pass over the place."""
@@ -1342,23 +1748,7 @@ class FixRegistry(Convertible):
     @cached_property
     def versions(self) -> tuple[str, ...]:
         """Every FIX version the dictionary carries, newest first."""
-        self.refresh_if_stale()
-        stored = self._stored_versions()
-        if stored:
-            return stored
-        if self._serves_stored:
-            return self._known_versions()
-        try:
-            versions = self._scrape_versions()
-        except (OSError, ValueError):
-            # Offline before the index was ever stored: the versions that
-            # *were* scraped are the ones this registry can honestly serve.
-            known = self._known_versions()
-            if known:
-                return known
-            raise
-        self._store_versions(versions)
-        return versions
+        return self._stored_versions() or self._known_versions()
 
     def _scrape_versions(self) -> tuple[str, ...]:
         """The union of the configured sources' versions, newest first."""
@@ -1408,36 +1798,15 @@ class FixRegistry(Convertible):
 
     # -- fields --------------------------------------------------------------
 
-    def fields(self, version: str, *, refresh: bool = False) -> list[Field]:
-        """Every field of one FIX version, from the cache or from one scrape."""
+    def fields(self, version: str) -> list[Field]:
+        """Every stored field of one FIX version, in tag order."""
         version = self._spelling(version)
-        if not refresh and not self._torn():
-            self.refresh_if_stale()
-            stored = self._stored_fields(version)
-            if stored is not None:
-                return stored
-        if refresh:
-            self.__dict__.pop("_source_pages", None)
-        self.__dict__.pop("_source_conflicts", None)
-        with self._fetching() if refresh else contextlib.nullcontext():
-            return self._scraped_fields(version)
-
-    def _scraped_fields(self, version: str) -> list[Field]:
-        """`fields`'s scrape half, once the store had no answer."""
-        try:
-            document = self._spec_document(version)
-            fields = self._scrape_version(version)
-            self._store_fields(
-                version,
-                fields,
-                parse_session(document),
-                self._component_declarations(document),
+        if self._torn():
+            raise OSError(
+                f"the FIX registry at {self.cache_dir} is torn; refresh it with "
+                "FixRegistry.scrape()"
             )
-            self._indexes.pop(version, None)
-            return fields
-        finally:
-            self.__dict__.pop("_source_pages", None)
-            self.__dict__.pop("_source_conflicts", None)
+        return self._stored_fields(version) or []
 
     def fields_available(self, version: str | None = None) -> bool:
         """Whether at least one selected version's fields can be read now."""
@@ -1445,17 +1814,7 @@ class FixRegistry(Convertible):
             candidates = self._versions(version)
         except (KeyError, OSError, ValueError):
             return False
-        for candidate in candidates:
-            if self._stored_fields(candidate) is not None:
-                return True
-            if self._serves_stored:
-                continue
-            try:
-                self.fields(candidate)
-            except (OSError, ValueError):
-                continue
-            return True
-        return False
+        return any(self._stored_fields(candidate) is not None for candidate in candidates)
 
     def _spelling(self, version: str) -> str:
         """The canonical spelling of `version`, and a refusal of non-names."""
@@ -1471,16 +1830,9 @@ class FixRegistry(Convertible):
                 return candidate
         return wanted
 
-    def load(self, *versions: str, refresh: bool = False) -> dict[str, int]:
-        """Scrape (or verify) whole versions into the cache: `{version: fields}`.
-
-        The bulk form of `fields`, for priming a cache that then travels to
-        machines without network access. No versions named means all of them.
-        """
-        return {
-            version: len(self.fields(version, refresh=refresh))
-            for version in (versions or self.versions)
-        }
+    def load(self, *versions: str) -> dict[str, int]:
+        """Stored field counts by version; all stored versions when omitted."""
+        return {version: len(self.fields(version)) for version in (versions or self.versions)}
 
     def session(self, version: str) -> tuple[tuple[str, bool], ...]:
         """`((name, required), ...)`: the standard header, then the trailer.
@@ -1491,18 +1843,10 @@ class FixRegistry(Convertible):
         """
         return self._stored_session(self._spelling(version))
 
-    def components(self, version: str, *, refresh: bool = False) -> list[Field]:
+    def components(self, version: str) -> list[Field]:
         """Every reusable component of one FIX version, in spec order."""
         version = self._spelling(version)
-        stored = self._stored_components(version)
-        if stored is not None and not refresh:
-            return stored
-        if self._serves_stored:
-            return stored or []
-        if self._stored_fields(version) is None:
-            self.fields(version, refresh=refresh)
-        refreshed = self._stored_components(version)
-        return refreshed if refreshed is not None else (stored or [])
+        return self._stored_components(version) or []
 
     def group_count_tags(self, version: str | None = None) -> frozenset[int]:
         """Tags that open declared repeating groups in one or every FIX version."""
@@ -1519,18 +1863,11 @@ class FixRegistry(Convertible):
             cache[spelling] = found
             return found
 
-        counts: set[int] = set()
-
-        def visit(declared: Any) -> None:
-            for member in members_of(declared):
-                if is_group(member):
-                    if member.fix.tag:
-                        counts.add(int(member.fix.tag))
-                    visit(entry_of(member))
-
-        for component in self.components(spelling):
-            visit(component)
-        found = frozenset(counts)
+        found = frozenset(
+            int(group.fix.tag)
+            for group in self.repeating_groups(spelling)
+            if group.fix.tag is not None
+        )
         cache[spelling] = found
         return found
 
@@ -1558,13 +1895,13 @@ class FixRegistry(Convertible):
             found: list[str] = []
             for group in groups:
                 declared = declared_group(declared_in, group, by_name)
-                named = (
-                    None if declared is None else first_declared_name(entry_of(declared), by_name)
-                )
+                if declared is None:
+                    break
+                declared_in = entry_of(declared)
+                named = first_declared_name(declared_in, by_name)
                 if not named:
                     break
                 found.append(named)
-                declared_in = entry_of(declared)
             else:
                 return tuple(found)
         return None
@@ -1597,7 +1934,13 @@ class FixRegistry(Convertible):
 
     # -- lookup --------------------------------------------------------------
 
-    def lookup(self, key: int | str, version: str | None = None) -> list[Field]:
+    def lookup(
+        self,
+        key: int | str,
+        version: str | None = None,
+        *,
+        namespace: str | None = None,
+    ) -> list[Field]:
         """One field as each version that declares it has it, newest version first.
 
         `key` is a tag (`54`, `"54"`) or any name the record answers to
@@ -1608,17 +1951,47 @@ class FixRegistry(Convertible):
         A tag reads the one shard that can hold it. A name needs the name
         index, which is every shard -- a name has no arithmetic behind it.
         """
-        order = self._versions(version)
-        entry = self._record(key)
+        entry = self._record(key, namespace=namespace)
+        if (namespace and namespace != STANDARD_NAMESPACE) or (
+            entry is not None and entry.fix.get("namespace")
+        ):
+            order = (version,) if version is not None else entry.fix.versions if entry else ()
+        else:
+            order = self._versions(version)
         return records_for(entry, order) if entry is not None else []
 
-    def _record(self, key: int | str) -> Field | None:
-        """One field record: by tag out of its shard alone, by name out of the index."""
+    def _record(self, key: int | str, *, namespace: str | None = None) -> Field | None:
+        """One field record under an exact namespace or protocol priority."""
+        if namespace is not None:
+            normalized = str(namespace).strip().lower()
+            if normalized == STANDARD_NAMESPACE:
+                return (
+                    self._layout.record(int(key))
+                    if _is_tag(key)
+                    else self._resolutions.get(fold(str(key)))
+                )
+            return self._layout.namespace_record(normalized, key)
         if _is_tag(key):
-            return self._layout.record(int(key))
-        return self.resolve(str(key))
+            standard = self._layout.record(int(key))
+        else:
+            standard = self._resolutions.get(fold(str(key)))
+        if standard is not None:
+            return standard
+        for candidate in self._namespace_order:
+            if candidate == STANDARD_NAMESPACE:
+                continue
+            found = self._layout.namespace_record(candidate, key)
+            if found is not None:
+                return found
+        return None
 
-    def field(self, key: int | str, version: str | None = None) -> Field | None:
+    def field(
+        self,
+        key: int | str,
+        version: str | None = None,
+        *,
+        namespace: str | None = None,
+    ) -> Field | None:
         """One field by tag or by any name it answers to; None when nothing is.
 
         The whole **record** when no version is named: the newest reading, the
@@ -1627,13 +2000,72 @@ class FixRegistry(Convertible):
         reading of it when a version is named, which is the same declaration
         under that version alone.
         """
-        record = self._record(key)
+        record = self._record(key, namespace=namespace)
         if record is None:
             return None
         if version is None:
-            return merged_record(record, self.versions)
-        found = records_for(record, self._versions(version))
+            built = merged_record(record, self.versions)
+            if namespace is not None:
+                built.fix["namespace"] = str(namespace).strip().lower()
+            return built
+        extension = bool(record.fix.get("namespace")) or bool(
+            namespace and namespace != STANDARD_NAMESPACE
+        )
+        order = (version,) if extension else self._versions(version)
+        found = records_for(record, order)
         return found[0] if found else None
+
+    def definitions(self, key: int | str) -> tuple[Field, ...]:
+        """Every definition of one tag or name, in unscoped lookup order."""
+        found: list[Field] = []
+        for namespace in self._namespace_order:
+            record = self._record(key, namespace=namespace)
+            if record is None:
+                continue
+            definition = merged_record(record, self.versions)
+            definition.fix["namespace"] = namespace
+            found.append(definition)
+        return tuple(found)
+
+    def definition(self, key: int | str, namespace: str) -> Field | None:
+        """One definition under exactly one namespace."""
+        return self.field(key, namespace=namespace)
+
+    def namespaces(self) -> tuple[str, ...]:
+        """Standard and stored extension namespaces in lookup order."""
+        return self._namespace_order
+
+    @cached_property
+    def _namespace_order(self) -> tuple[str, ...]:
+        stored = self._layout.namespaces()
+        configured = tuple(
+            namespace for namespace in self.namespace_priority if namespace in stored
+        )
+        manifest_order: dict[str, int] = {}
+        for position, source in enumerate(self._layout.source_manifest()):
+            namespace = str(source.get("namespace") or STANDARD_NAMESPACE)
+            order = int(source.get("lookup_order", position))
+            manifest_order[namespace] = min(order, manifest_order.get(namespace, order))
+        remaining = tuple(
+            sorted(
+                (
+                    namespace
+                    for namespace in stored
+                    if namespace not in {UDF_NAMESPACE, *configured}
+                ),
+                key=lambda namespace: (manifest_order.get(namespace, 2**31 - 1), namespace),
+            )
+        )
+        return tuple(
+            dict.fromkeys(
+                (
+                    STANDARD_NAMESPACE,
+                    *((UDF_NAMESPACE,) if UDF_NAMESPACE in stored else ()),
+                    *configured,
+                    *remaining,
+                )
+            )
+        )
 
     def msg_type_event_types(self) -> Mapping[str, EventType]:
         """Known MsgTypes to their configured market kind or MISC."""
@@ -1686,7 +2118,7 @@ class FixRegistry(Convertible):
             raise KeyError(f"no FIX field {key!r} in {version}")
         # Protocol identity is the registry's. Other declarations can add
         # metadata, but cannot silently retag or retype a standard field.
-        declared = {**(metadata or {}), **source.metadata, "fix:name": source.name}
+        declared = {**(metadata or {}), **(source.metadata or {}), "fix:name": source.name}
         return Field(
             name=name or source.name,
             dtype=source.dtype if dtype is _DEFAULT else dtype,
@@ -1722,11 +2154,16 @@ class FixRegistry(Convertible):
         *,
         limit: int = 10,
         fuzzy: bool = True,
+        namespace: str | None = None,
     ) -> list[Field]:
         """Distinct field identities matching `text`, best first."""
         wanted = str(text).strip().lower()
         if not wanted or limit <= 0:
             return []
+        if namespace is not None and namespace != STANDARD_NAMESPACE:
+            return _search_records(
+                self.field_records(namespace).values(), wanted, limit=limit, fuzzy=fuzzy
+            )
         ranked: list[tuple[int, int, int, Field]] = []
         for order, candidate in enumerate(self._versions(version)):
             for member in self._members(candidate):
@@ -1767,6 +2204,14 @@ class FixRegistry(Convertible):
             found.append(member)
             if len(found) == limit:
                 break
+        if not found and namespace is None:
+            extensions = (
+                entry
+                for candidate in self._namespace_order
+                if candidate != STANDARD_NAMESPACE
+                for entry in self.field_records(candidate).values()
+            )
+            found.extend(_search_records(extensions, wanted, limit=limit, fuzzy=fuzzy))
         return found
 
     # -- one identity, every version -----------------------------------------
@@ -1777,9 +2222,24 @@ class FixRegistry(Convertible):
     # comparing a capture's key names against the standard needs, and what
     # nine per-version documents could not be asked.
 
-    def field_records(self) -> Mapping[str, Field]:
-        """Every field identity this registry holds, keyed by canonical name."""
-        return MappingProxyType({entry.fix.canonical: entry for entry in self._entries[0].values()})
+    def field_records(self, namespace: str = STANDARD_NAMESPACE) -> Mapping[str, Field]:
+        """Every field identity in one namespace, keyed by canonical name."""
+        normalized = str(namespace).strip().lower()
+        records = (
+            self._entries[0]
+            if normalized == STANDARD_NAMESPACE
+            else self._layout.namespace_field_records(normalized)
+        )
+        return MappingProxyType({entry.fix.canonical: entry for entry in records.values()})
+
+    def source_manifest(self) -> tuple[Mapping[str, Any], ...]:
+        """Deterministic complete-source provenance carried by this store."""
+        return tuple(MappingProxyType(source) for source in self._layout.source_manifest())
+
+    def store_source_manifest(self, sources: Sequence[Mapping[str, Any]]) -> None:
+        """Replace the store's complete-source provenance."""
+        self._layout.store_source_manifest(sources)
+        self._forget()
 
     def tag_numbers(self) -> frozenset[int]:
         """Every numeric identity present in any locally stored version."""
@@ -1791,23 +2251,64 @@ class FixRegistry(Convertible):
     def source_coverage(self) -> Mapping[str, Mapping[str, int]]:
         """Field counts each source led and answered for."""
         counted: dict[str, dict[str, int]] = {}
-        for entry in self.field_records().values():
-            primary = entry.fix.source
-            sources = entry.fix.sources or ((primary,) if primary else ())
-            for source in sources:
-                counted.setdefault(source, {"primary": 0, "fields": 0})["fields"] += 1
-            if primary:
-                counted.setdefault(primary, {"primary": 0, "fields": 0})["primary"] += 1
+        for namespace in self._namespace_order:
+            for entry in self.field_records(namespace).values():
+                primary = entry.fix.source
+                sources = entry.fix.sources or ((primary,) if primary else ())
+                for source in sources:
+                    counted.setdefault(source, {"primary": 0, "fields": 0})["fields"] += 1
+                if primary:
+                    coverage = counted.setdefault(primary, {"primary": 0, "fields": 0})
+                    coverage["primary"] += 1
+                    if entry.fix.get("type-fallback"):
+                        coverage["fallbacks"] = coverage.get("fallbacks", 0) + 1
         return {source: counted[source] for source in sorted(counted)}
 
-    def component_records(self) -> Mapping[str, ComponentRecord]:
-        """Every component identity this registry holds, keyed by canonical name.
+    def component_records(
+        self, namespace: str = STANDARD_NAMESPACE
+    ) -> Mapping[str, ComponentRecord]:
+        """Every component identity in one namespace, keyed by canonical name.
 
         Messages are among them: a message is a component that arrives on the
         wire under a code, so `record.msg_type` is what tells the two apart
         and `message_records()` is the index keyed by that code.
         """
-        return MappingProxyType({entry.name: entry for entry in self._entries[1].values()})
+        normalized = str(namespace).strip().lower()
+        records = (
+            self._entries[1]
+            if normalized == STANDARD_NAMESPACE
+            else self._layout.namespace_component_records(normalized)
+        )
+        return MappingProxyType({entry.name: entry for entry in records.values()})
+
+    def repeating_group_records(
+        self, namespace: str = STANDARD_NAMESPACE
+    ) -> Mapping[str, ComponentRecord]:
+        """Every derived group in one namespace, keyed by canonical name."""
+        normalized = str(namespace).strip().lower()
+        records = (
+            self._layout.repeating_group_records
+            if normalized == STANDARD_NAMESPACE
+            else self._layout.namespace_repeating_group_records(normalized)
+        )
+        return MappingProxyType({entry.name: entry for entry in records.values()})
+
+    def repeating_groups(self, version: str | None = None) -> list[Field]:
+        """Stored repeating-group declarations, optionally for one version."""
+        spelling = None if version is None else self._spelling(version)
+        return [
+            entry.declaration
+            for _, entry in sorted(self._layout.repeating_group_records.items())
+            if spelling is None or entry.declares(spelling)
+        ]
+
+    def repeating_group(self, name: str) -> ComponentRecord:
+        """One repeating group matched by canonical name or alias."""
+        wanted = fold(name)
+        for entry in self._layout.repeating_group_records.values():
+            if wanted in {fold(spelled) for spelled in entry.spellings()}:
+                return entry
+        raise KeyError(f"no FIX repeating group {name!r}")
 
     def message_records(self) -> Mapping[str, ComponentRecord]:
         """Every message this registry holds, keyed by the MsgType it arrives under.
@@ -1878,7 +2379,9 @@ class FixRegistry(Convertible):
         refreshed would not be one.
         """
         projected = self.component_field(name, version)
-        return None if projected is None else projected.into_dataclass(projected.fix.component)
+        if projected is None:
+            return None
+        return cast(StructField, projected).into_dataclass(projected.fix.component)
 
     def _component_fields_by_name(self, version: str) -> dict[str, Field]:
         """`{folded FIX member name: field}` for one version projection."""
@@ -1888,7 +2391,7 @@ class FixRegistry(Convertible):
             if member.dtype is not None
         }
 
-    def resolve(self, name: str) -> Field | None:
+    def resolve(self, name: str, *, namespace: str | None = None) -> Field | None:
         """The identity a rendered name means, or None when nothing here is it.
 
         Deterministic, in the two tiers `TIERS` names, and they are the whole rule:
@@ -1905,7 +2408,7 @@ class FixRegistry(Convertible):
         defect in the store, not something to resolve at read time:
         `alias_conflicts` finds it and `check` fails the build on it.
         """
-        return self._resolutions.get(fold(name))
+        return self._record(str(name), namespace=namespace)
 
     def alias_conflicts(self) -> dict[str, list[str]]:
         """`{name: the identities claiming it}` for every name two fields claim.
@@ -2006,12 +2509,285 @@ class FixRegistry(Convertible):
         enough to resolve a rendered key is good enough to name the entry it
         resolves to.
         """
-        entry = self.resolve(name)
+        entry = self.resolve(name, namespace=STANDARD_NAMESPACE)
         if entry is None:
             return False
         removed = self._layout.remove_field(entry.fix.key)
         self._forget()
         return removed
+
+    def add_definition(self, entry: Field, namespace: str) -> Field:
+        """Store or reconcile one extension definition in its namespace.
+
+        Multiple authorities may publish the same venue dictionary. Their
+        disagreement is data to report, not a reason to lose the remaining
+        refresh; disputed datatypes deliberately become Arrow strings.
+        """
+        self.add_definitions((entry,), namespace)
+        found = self.definition(entry.fix.key, namespace) or self.definition(
+            entry.fix.canonical, namespace
+        )
+        if found is None:  # pragma: no cover - the bulk writer just stored it
+            raise RuntimeError(f"FIX definition {entry.fix.key!r} was not stored")
+        return found
+
+    def add_definitions(self, entries: Sequence[Field], namespace: str) -> Mapping[str, int]:
+        """Reconcile a source in memory, then write each affected shard once."""
+        normalized = str(namespace).strip().lower()
+        standard = normalized == STANDARD_NAMESPACE
+        records = dict(
+            self._layout.field_records
+            if standard
+            else self._layout.namespace_field_records(normalized)
+        )
+        stored_keys = set(records)
+        names = {entry.fix.folded: entry for entry in records.values()}
+        additions = 0
+        updates = 0
+        changed: set[int | str] = set()
+        for entry in entries:
+            fresh = record_copy(entry)
+            if fresh.fix.version and not fresh.fix.versions:
+                fresh.fix.versions = (fresh.fix.version,)
+                fresh.fix.pop("version", None)
+            if fresh.fix.source and not fresh.fix.sources:
+                fresh.fix.sources = (fresh.fix.source,)
+            if standard:
+                fresh.fix.pop("namespace", None)
+            else:
+                fresh.fix["namespace"] = normalized
+            refuse_record(fresh)
+            held = records.get(fresh.fix.key)
+            same_name = names.get(fresh.fix.folded)
+            if held is None and same_name is not None and same_name.fix.key != fresh.fix.key:
+                fresh_wins = self._source_priority(fresh.fix.source) < self._source_priority(
+                    same_name.fix.source
+                )
+                winner, dropped = (fresh, same_name) if fresh_wins else (same_name, fresh)
+                self._record_namespace_conflict(
+                    winner,
+                    dropped,
+                    NAME,
+                    dropped_reading=f"{dropped.fix.canonical} <{dropped.fix.key}>",
+                )
+                merged = _with_disputed_key(winner, dropped)
+                held = same_name
+                if fresh_wins:
+                    records.pop(same_name.fix.key)
+                    changed.add(same_name.fix.key)
+            else:
+                merged = fresh if held is None else self._merge_definition(held, fresh)
+            if standard:
+                merged.fix.pop("namespace", None)
+            records[merged.fix.key] = merged
+            names[merged.fix.folded] = merged
+            additions += held is None
+            modified = held is None or merged != held
+            updates += held is not None and modified
+            if modified:
+                changed.add(merged.fix.key)
+        records, shadowed = self._without_shadowed_aliases(records)
+        for key in shadowed:
+            if key not in changed and key in stored_keys:
+                updates += 1
+            changed.add(key)
+        if standard:
+            self._validated(fields=records)
+        if changed:
+            self._layout.store_field_records(
+                records, "" if standard else normalized, changed=changed
+            )
+            self._forget()
+        return MappingProxyType({"additions": additions, "updates": updates})
+
+    def _without_shadowed_aliases(
+        self, records: Mapping[int | str, Field]
+    ) -> tuple[dict[int | str, Field], set[int | str]]:
+        """Drop aliases which a canonical identity in the namespace now owns."""
+        canonical = {entry.fix.folded: entry for entry in records.values()}
+        built = dict(records)
+        changed: set[int | str] = set()
+        for key, entry in records.items():
+            kept: list[Alias] = []
+            for alias in entry.fix.named_aliases:
+                owner = canonical.get(alias.folded)
+                if owner is None or owner.fix.key == entry.fix.key:
+                    kept.append(alias)
+                    continue
+                attributed = record_copy(entry)
+                attributed.fix.source = alias.source or entry.fix.source
+                self._record_namespace_conflict(
+                    owner,
+                    attributed,
+                    ALIASES,
+                    dropped_reading=alias.name,
+                )
+            if len(kept) == len(entry.fix.named_aliases):
+                continue
+            cleaned = record_copy(entry)
+            cleaned.fix.named_aliases = tuple(kept)
+            built[key] = cleaned
+            changed.add(key)
+        return built, changed
+
+    def update_definition(self, entry: Field, namespace: str) -> Field:
+        """Replace one exact extension definition."""
+        normalized = str(namespace).strip().lower()
+        if normalized == STANDARD_NAMESPACE:
+            return self.update_field(entry)
+        fresh = record_copy(entry)
+        fresh.fix["namespace"] = normalized
+        if self._layout.namespace_record(normalized, fresh.fix.key) is None:
+            raise KeyError(f"no FIX definition {fresh.fix.key!r} in namespace {normalized!r}")
+        self._layout.store_namespace_field(normalized, refuse_record(fresh))
+        self._forget()
+        return merged_record(fresh)
+
+    def remove_definition(self, key: int | str, namespace: str) -> bool:
+        """Delete one exact extension definition."""
+        normalized = str(namespace).strip().lower()
+        if normalized == STANDARD_NAMESPACE:
+            found = self._record(key, namespace=STANDARD_NAMESPACE)
+            return False if found is None else self.remove_field(found.fix.canonical)
+        found = self._layout.namespace_record(normalized, key)
+        if found is None:
+            return False
+        removed = self._layout.remove_namespace_field(normalized, found.fix.key)
+        self._forget()
+        return removed
+
+    def _merge_definition(self, held: Field, fresh: Field) -> Field:
+        """Two same-namespace readings under source priority."""
+        held_priority = self._source_priority(held.fix.source)
+        fresh_priority = self._source_priority(fresh.fix.source)
+        winner, dropped = (fresh, held) if fresh_priority < held_priority else (held, fresh)
+        built = record_copy(winner)
+        built.fix.versions = canonical_versions((*held.fix.versions, *fresh.fix.versions))
+        built.fix.sources = tuple(dict.fromkeys((*winner.fix.sources, *dropped.fix.sources)))
+        built.fix.source = winner.fix.source or dropped.fix.source
+        aliases = list(winner.fix.named_aliases)
+        aliased = {alias.folded for alias in aliases}
+        for alias in dropped.fix.named_aliases:
+            if alias.folded != winner.fix.folded and alias.folded not in aliased:
+                aliases.append(alias)
+                aliased.add(alias.folded)
+        values = {value.value: value for value in winner.fix.enumerated}
+        for value in dropped.fix.enumerated:
+            kept = values.get(value.value)
+            if kept is None:
+                values[value.value] = value
+                continue
+            value_aliases = tuple(dict.fromkeys((*kept.aliases, *value.aliases)))
+            if kept.meaning and value.meaning and kept.meaning != value.meaning:
+                self._record_namespace_conflict(
+                    winner,
+                    dropped,
+                    VALUES,
+                    dropped_key=value.value,
+                    dropped_reading=value.meaning,
+                )
+            values[value.value] = dataclasses.replace(
+                kept,
+                meaning=kept.meaning or value.meaning,
+                aliases=value_aliases,
+            )
+        built.fix.enumerated = tuple(values.values())
+        if fold(winner.fix.canonical) != fold(dropped.fix.canonical):
+            displaced = Alias(name=dropped.fix.canonical, source=dropped.fix.source)
+            if displaced.folded not in aliased:
+                aliases.append(displaced)
+                aliased.add(displaced.folded)
+            if winner is fresh or displaced.folded not in {
+                fold(spelling) for spelling in held.fix.spellings()
+            }:
+                self._record_namespace_conflict(winner, dropped, NAME)
+        built.fix.named_aliases = tuple(aliases)
+        built.fix.event_types = {**dropped.fix.event_types, **winner.fix.event_types}
+        built.fix.states = {**dropped.fix.states, **winner.fix.states}
+        built.fix.msgtypes = tuple(dict.fromkeys((*winner.fix.msgtypes, *dropped.fix.msgtypes)))
+        built.fix.components = tuple(
+            dict.fromkeys((*winner.fix.components, *dropped.fix.components))
+        )
+        built.fix.column = winner.fix.column or dropped.fix.column
+        built_dtype = built.dtype
+        dropped_dtype = dropped.dtype
+        if (
+            isinstance(built_dtype, pyarrow.TimestampType)
+            and isinstance(dropped_dtype, pyarrow.TimestampType)
+            and built_dtype.unit == dropped_dtype.unit
+            and built_dtype.tz is None
+            and dropped_dtype.tz == "UTC"
+        ):
+            built.dtype = dropped_dtype
+        if not winner.description and dropped.description:
+            built.description = dropped.description
+        elif (
+            winner.description and dropped.description and winner.description != dropped.description
+        ):
+            self._record_namespace_conflict(
+                winner,
+                dropped,
+                NOTE,
+                dropped_reading=dropped.description,
+            )
+        held_types = _definition_types(held)
+        fresh_types = _definition_types(fresh)
+        readings = tuple(dict.fromkeys((*held_types, *fresh_types)))
+        identities = {datatype_identity(reading) for reading in readings if reading}
+        if len(identities) > 1:
+            built.dtype = pyarrow.string()
+            built.fix.type = "String"
+            built.fix["disputed_types"] = json.dumps(readings, separators=(",", ":"))
+            held_identities = {datatype_identity(reading) for reading in held_types if reading}
+            fresh_identities = {datatype_identity(reading) for reading in fresh_types if reading}
+            if not fresh_identities.issubset(held_identities):
+                self._record_namespace_conflict(winner, dropped, TYPE, kept_reading="string")
+        return built
+
+    def _source_priority(self, source: str) -> int:
+        """Manifest priority, then configured legacy-source order."""
+        active = self.__dict__.get("_refresh_priorities", {})
+        if source in active:
+            return int(active[source])
+        for order, declared in enumerate(self._layout.source_manifest()):
+            if str(declared.get("source_id") or "") == source:
+                return int(declared.get("priority", order))
+        for order, declared in enumerate(self.sources):
+            if declared.name == source:
+                return 10_000 + order
+        return 20_000 + len(self.sources) + len(self._layout.source_manifest())
+
+    def _record_namespace_conflict(
+        self,
+        winner: Field,
+        dropped: Field,
+        part: str,
+        *,
+        kept_reading: str | None = None,
+        dropped_key: str = "",
+        dropped_reading: str | None = None,
+    ) -> None:
+        """Add one attributed namespace conflict to the refresh report."""
+        report = self.conflicts
+        conflict = Collapse(
+            name=winner.fix.canonical,
+            tag=winner.fix.tag,
+            part=part,
+            kept=kept_reading or winner.fix.newest,
+            keptsource=winner.fix.source,
+            dropped=(
+                Dropped(
+                    version=dropped.fix.newest,
+                    source=dropped.fix.source,
+                    key=dropped_key,
+                    reading=dropped_reading
+                    or (dropped.fix.type if part == TYPE else dropped.fix.canonical),
+                ),
+            ),
+        )
+        self.__dict__["_conflicts"] = dataclasses.replace(
+            report, collapses=(*report.collapses, conflict)
+        )
 
     def add_component(self, entry: ComponentRecord) -> ComponentRecord:
         """Store one new component identity; `KeyError` when it is already here."""
@@ -2042,7 +2818,7 @@ class FixRegistry(Convertible):
         against a capture becomes a data change here, never a branch in a
         resolver.
         """
-        entry = self.resolve(name)
+        entry = self.resolve(name, namespace=STANDARD_NAMESPACE)
         if entry is None:
             raise KeyError(f"no FIX field {name!r} in this registry")
         added = tuple(alias if isinstance(alias, Alias) else Alias(name=alias) for alias in aliases)
@@ -2088,7 +2864,7 @@ class FixRegistry(Convertible):
             one = alias if isinstance(alias, Alias) else Alias(name=alias)
             if one.folded not in {a.folded for a in added}:
                 added = (*added, one)
-        held = self.resolve(name)
+        held = self.resolve(name, namespace=STANDARD_NAMESPACE)
         claimed = next(
             (
                 one
@@ -2198,51 +2974,6 @@ class FixRegistry(Convertible):
             if self.scalar(key) != other.scalar(key):
                 differences.append(f"the merged declaration of tag {key} differs")
         return differences
-
-    # -- keeping the store fresh ----------------------------------------------
-
-    def refresh_if_stale(self) -> bool:
-        """Regenerate the store from upstream when it is older than `cache_ttl`.
-
-        True when a refetch ran and the store was written. False when the TTL
-        is off, when the store is young enough, or when the refetch failed --
-        the last of which is reported and then served stale, because a
-        dictionary a day old parses every message and one that raises parses
-        none.
-        """
-        if not self.cache_ttl or self.__dict__.get("_refreshed"):
-            return False
-        self.__dict__["_refreshed"] = True
-        age = self._store_age()
-        if age is not None and age <= self.cache_ttl:
-            return False
-        try:
-            refreshed = self._refresh()
-        except (OSError, ValueError) as error:
-            aged = "of unknown age" if age is None else f"{age:.0f}s old"
-            warnings.warn(
-                f"the FIX registry at {self.cache_dir} is {aged} and could not be "
-                f"refreshed ({error}); serving the local copy",
-                RuntimeWarning,
-                stacklevel=3,
-            )
-            return False
-        return refreshed
-
-    def _store_age(self) -> float | None:
-        """How many seconds since this store was last written; None when never."""
-        stamps = [
-            stamp for name in self._documents.names() if (stamp := self._documents.stamp(name))
-        ]
-        return time.time() - max(stamps) if stamps else None
-
-    def _refresh(self) -> bool:
-        """Read every source for every stored version and write what it says."""
-        spellings = self._stored_spellings()
-        if not spellings:
-            raise ValueError("this FIX registry store holds no version to refresh")
-        self.rebuild(*spellings)
-        return True
 
     @cached_property
     def _indexes(self) -> dict[str, list[Field] | None]:
@@ -2436,22 +3167,19 @@ class FixRegistry(Convertible):
     def _torn(self) -> bool:
         """Whether this store holds documents it cannot read, said out loud.
 
-        A torn write used to cost a whole version, which read as a cold cache
-        and was scraped over. One identity per file makes it cost one field --
-        and a version that still answers, one field short, is exactly the
-        silence this store exists to avoid. So it is written again, and an
-        offline registry that cannot says so.
+        One identity per file makes a torn write cost one shard. It is still
+        reported rather than served short, and only explicit `scrape` may
+        replace it.
         """
         torn = getattr(self._layout, "torn", ())
         if not torn:
             return False
         warnings.warn(
-            f"the FIX registry at {self.cache_dir} cannot read {list(torn[:5])}"
-            + ("" if self.offline else "; scraping over them"),
+            f"the FIX registry at {self.cache_dir} cannot read {list(torn[:5])}",
             RuntimeWarning,
             stacklevel=3,
         )
-        return not self.offline
+        return True
 
     def _forget(self) -> None:
         """Drop everything derived from the store, after the store changed."""
@@ -2466,6 +3194,7 @@ class FixRegistry(Convertible):
         self.__dict__.pop("_msg_type_event_types", None)
         self.__dict__.pop("_state_values", None)
         self.__dict__.pop("_group_count_tags", None)
+        self.__dict__.pop("_namespace_order", None)
         self.__dict__.pop("versions", None)
         self.__dict__["_revision"] = self.revision + 1
 
@@ -2479,13 +3208,13 @@ class FixRegistry(Convertible):
         not exist yet has to say what it will be before anything is written
         to it, and `data/fix.zip` says it.
         """
-        location = Url.from_string(os.fspath(self.cache_dir))
+        location = Url.from_string(os.fspath(cast(str | os.PathLike[str], self.cache_dir)))
         return pathlib.PurePosixPath(location.path).suffix.lower() == ".zip"
 
     @cached_property
     def _cache_source(self) -> tuple[pyarrow.fs.FileSystem, str] | None:
         """The configured cache before an archive is localized."""
-        location = os.fspath(self.cache_dir)
+        location = os.fspath(cast(str | os.PathLike[str], self.cache_dir))
         if self.filesystem is not None:
             return self.filesystem, location
         if Url.from_string(location).scheme in HTTP:
@@ -2505,7 +3234,7 @@ class FixRegistry(Convertible):
         fetching it again.
         """
         source = self._cache_source
-        location = os.fspath(self.cache_dir)
+        location = os.fspath(cast(str | os.PathLike[str], self.cache_dir))
         if source is None:
             if not self.archived:
                 raise ValueError("an HTTP FIX registry cache must be an archive")
@@ -2529,7 +3258,9 @@ class FixRegistry(Convertible):
         """
         cache = remote_cache()
         cache.mkdir(parents=True, exist_ok=True)
-        identity = Url.from_string(os.fspath(self.cache_dir)).into_string()
+        identity = Url.from_string(
+            os.fspath(cast(str | os.PathLike[str], self.cache_dir))
+        ).into_string()
         found = spill_path(path, filesystem, cache, identity=identity, temporary=False)
         if found is not None:
             return found
@@ -2547,7 +3278,8 @@ class FixRegistry(Convertible):
         """Copy a modified localized archive back to its Arrow filesystem."""
         source = self._cache_source
         if source is None:
-            if Url.from_string(os.fspath(self.cache_dir)).scheme in HTTP:
+            cache_dir = cast(str | os.PathLike[str], self.cache_dir)
+            if Url.from_string(os.fspath(cache_dir)).scheme in HTTP:
                 raise OSError("an HTTP FIX registry archive is read-only")
             return
         filesystem, path = source
@@ -2599,7 +3331,8 @@ class FixRegistry(Convertible):
         overlap = set(extra).intersection(self.versions)
         if overlap:
             raise ValueError(f"projected FIX versions already exist: {sorted(overlap)}")
-        if _resource_identity(target) == _resource_identity(self.cache_dir, self.filesystem):
+        cache_dir = cast(str | os.PathLike[str], self.cache_dir)
+        if _resource_identity(target) == _resource_identity(cache_dir, self.filesystem):
             raise ValueError("a registry projection cannot replace its source")
 
         held = self._entries[0]
@@ -2617,7 +3350,7 @@ class FixRegistry(Convertible):
                 if (
                     int(member.fix.get("tag") or 0) == int(key)
                     if _is_tag(key)
-                    else fold(member.name) == fold(key)
+                    else fold(member.name) == fold(str(key))
                 )
             ]
             if not found:
@@ -2739,7 +3472,7 @@ class FixRegistry(Convertible):
         if self._serves_stored:
             raise OSError(
                 f"{url} was not fetched: {self.cache_dir} is the dictionary this "
-                "registry serves. Pass refresh=True, or call rebuild() or scrape()."
+                "registry serves. Call FixRegistry.scrape() to refresh from sources."
             )
         request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
         pause = self.backoff
@@ -2774,6 +3507,49 @@ def _resource_identity(
     if filesystem is not None:
         return f"{id(filesystem)}:{location}"
     return Url.from_string(location).into_string()
+
+
+def _stage_registry_file(source: str, target: str) -> str:
+    """Hard-link an immutable store document, copying where links are unavailable."""
+    # A write creates a sibling and replaces this path, so a hard link never
+    # mutates the published document it shares and makes a 1,600-file replay
+    # metadata-only on local filesystems.
+    try:
+        os.link(source, target)
+    except OSError:
+        shutil.copy2(source, target)
+    return target
+
+
+def _source_definitions_checksum(registry: Any) -> str:
+    """Digest the normalized parser output which feeds registry projection."""
+    digest = hashlib.sha256()
+    digest.update(
+        repr(
+            (
+                registry.repository_name,
+                registry.repository_version,
+                registry.declaration_version,
+            )
+        ).encode()
+    )
+    digest.update(b"\0")
+    for family in (
+        "metadata",
+        "datatypes",
+        "code_sets",
+        "fields",
+        "messages",
+        "components",
+        "groups",
+        "conflicts",
+    ):
+        digest.update(family.encode())
+        digest.update(b"\0")
+        for definition in getattr(registry, family, ()):
+            digest.update(repr(definition).encode())
+            digest.update(b"\0")
+    return f"sha256:{digest.hexdigest()}"
 
 
 # -- the wire ----------------------------------------------------------------
@@ -2842,6 +3618,51 @@ def _local_aliases(entry: Field) -> tuple[Alias, ...]:
         for alias in entry.fix.named_aliases
         if not alias.source or alias.source.casefold() not in source_owned
     )
+
+
+def _definition_types(entry: Field) -> tuple[str, ...]:
+    """Authoritative type readings retained by one reconciled definition."""
+    encoded = entry.fix.get("disputed_types")
+    if encoded:
+        try:
+            readings = json.loads(encoded)
+        except (TypeError, ValueError):
+            readings = ()
+        if isinstance(readings, list) and all(isinstance(reading, str) for reading in readings):
+            return tuple(dict.fromkeys(readings))
+    return (entry.fix.type,) if entry.fix.type else ()
+
+
+def _with_disputed_key(winner: Field, dropped: Field) -> Field:
+    """The winning same-name identity with every disputed key attributed."""
+    built = record_copy(winner)
+    built.fix.sources = tuple(dict.fromkeys((*winner.fix.sources, *dropped.fix.sources)))
+    readings: list[dict[str, str]] = []
+    encoded = winner.fix.get("disputed_keys")
+    if encoded:
+        try:
+            stored = json.loads(encoded)
+        except (TypeError, ValueError):
+            stored = ()
+        if isinstance(stored, list):
+            readings.extend(reading for reading in stored if isinstance(reading, dict))
+    readings.extend(
+        (
+            {"key": str(winner.fix.key), "source": winner.fix.source},
+            {"key": str(dropped.fix.key), "source": dropped.fix.source},
+        )
+    )
+    unique = {
+        (str(reading.get("key", "")), str(reading.get("source", ""))): {
+            "key": str(reading.get("key", "")),
+            "source": str(reading.get("source", "")),
+        }
+        for reading in readings
+    }
+    built.fix["disputed_keys"] = json.dumps(
+        [unique[key] for key in sorted(unique)], separators=(",", ":"), sort_keys=True
+    )
+    return built
 
 
 def _into_nanoconda_version(version: str) -> str:
@@ -3220,6 +4041,39 @@ def _rank(member: Field, wanted: str) -> int | None:
     if all(part in described for part in parts):
         return _BY_DESCRIPTION
     return None
+
+
+def _search_records(
+    records: Iterable[Field],
+    wanted: str,
+    *,
+    limit: int,
+    fuzzy: bool,
+) -> list[Field]:
+    """Rank one namespace's cross-version records without a version scan."""
+    members = tuple(records)
+    ranked = [
+        (rank, int(member.fix.tag or _NO_TAG), member)
+        for member in members
+        if (rank := _rank(member, wanted)) is not None
+    ]
+    if not ranked and fuzzy and not _is_tag(wanted):
+        ceiling = max(2, len(wanted) // 3)
+        for member in members:
+            distance = min(
+                (
+                    found
+                    for spelling in member.fix.spellings()
+                    if (found := _levenshtein(fold(wanted), fold(spelling), ceiling)) is not None
+                ),
+                default=None,
+            )
+            if distance is not None:
+                ranked.append((100 + distance, int(member.fix.tag or _NO_TAG), member))
+    ranked.sort(key=lambda item: item[:2])
+    if ranked and ranked[0][0] < _BY_DESCRIPTION:
+        ranked = [item for item in ranked if item[0] < _BY_DESCRIPTION]
+    return [member for _, _, member in ranked[:limit]]
 
 
 def _levenshtein(one: str, other: str, ceiling: int) -> int | None:

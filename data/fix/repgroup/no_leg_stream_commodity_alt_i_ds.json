@@ -1,0 +1,37 @@
+{
+ "name": "NoLegStreamCommodityAltIDs",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegStreamCommodityAltIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41674"
+  },
+  "item": {
+   "name": "LegStreamCommodityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamCommodityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41675"
+     }
+    },
+    {
+     "name": "LegStreamCommodityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41676"
+     }
+    }
+   ]
+  }
+ }
+}

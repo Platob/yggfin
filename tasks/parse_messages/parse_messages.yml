@@ -5,7 +5,7 @@ parameters:
   # Raw input may be an S3 prefix. Calendar tokens select only the closed
   # start/end window: s3://example-bucket/capture/{year}/{month}/{day}
   # `s3a://` and `s3n://` name the same object with the same settings. This
-  # location is resolved on its own, not through `catalog_properties`, so an
+  # location is resolved on its own, not through the table catalog, so an
   # endpoint or region for it comes from the URL or from `S3_*` in the
   # environment -- see docs/storage/iceberg.md#what-an-s3-netloc-names.
   source: data/capture
@@ -35,6 +35,11 @@ parameters:
   exclude_msgtypes: []
   # Exact plugin codes excluded after parsing and before persistence.
   technical_plugins: [jolokia]
+  # Plugin-owned keys become canonical before MsgType and session fields lift.
+  # plugin_keys: {XmlApi: {clientid: ClOrdID, type: MsgType}}
+  plugin_keys: {}
+  # Matching is case-insensitive; absent pairs never reach logs.messages.
+  null_values: ["", "null", "<null>", "n/a", "none"]
   start: null
   end: null
   # Optional recording-time batch window in nanoseconds.
@@ -42,29 +47,24 @@ parameters:
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
-  # catalog: rekep-production
-  # catalog_properties:
-  #   type: glue
-  #   warehouse: s3://example-bucket/rekep/warehouse
-  #   glue.region: eu-west-1   # where the catalog lives
-  #   s3.region: eu-west-1     # where the warehouse bucket lives
-  #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
-  # A custom KMS key belongs in the bucket default. `s3.sse.type: kms` and
-  # `s3.sse.key` are refused because Arrow cannot send their request headers.
-  catalog: rekep
-  catalog_properties:
-    type: sql
-    uri: sqlite:///data/catalog.db
-    warehouse: file://data/warehouse
+  # catalog:
+  #   catalog_name: rekep-production
+  #   properties:
+  #     type: glue
+  #     warehouse: s3://example-bucket/rekep/warehouse
+  #     glue.region: eu-west-1   # Catalog region.
+  #     s3.region: eu-west-1     # Warehouse region.
+  #     glue.id: "123456789012"  # Optional cross-account catalog ID.
+  #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
+  catalog:
+    catalog_name: rekep
+    properties:
+      type: sql
+      uri: sqlite:///data/catalog.db
+      warehouse: file://data/warehouse
   table_properties:
     history.expire.max-snapshot-age-ms: "604800000"
-    # A commit writes a new `*.metadata.json` and keeps every earlier one, so a
-    # pipeline committing every `commit_row_size` rows grows that directory
-    # without bound: measured over 40 appends, 41 files with these absent and
-    # 21 with them. `optimize` already retrofits both -- these are the same two
-    # values -- but only from the pass that runs them, and only onto a table it
-    # has reached. Declared here, a table has them from the commit that creates
-    # it, and `optimize` finds them present and spends no commit setting them.
+    # Bound metadata from the first commit; maintenance applies the same values.
     write.metadata.previous-versions-max: "20"
     write.metadata.delete-after-commit.enabled: "true"
   # root, main, and master name the same Iceberg root branch.

@@ -1,0 +1,33 @@
+{
+ "name": "NoLegComplexEventCreditEventQualifiers",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegComplexEventCreditEventQualifiers",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41374"
+  },
+  "item": {
+   "name": "LegComplexEventCreditEventQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegComplexEventCreditEventQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41375"
+     }
+    }
+   ]
+  }
+ }
+}

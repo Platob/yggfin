@@ -1,0 +1,33 @@
+{
+ "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40966"
+  },
+  "item": {
+   "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40690"
+     }
+    }
+   ]
+  }
+ }
+}

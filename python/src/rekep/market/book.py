@@ -70,7 +70,7 @@ class Book(MarketEvent):
         """Event kind fixed by this shape."""
         return EventType.BOOK
 
-    hash: Annotated[int, Field.primary_key(dtype=HASH), Field.sort_key()] = NIL
+    hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
     """Time-anchored composition of `unix` and the live book's `vhash`."""
 
     # Re-declared to carry **no** FIX tag, which is the honest thing to say:

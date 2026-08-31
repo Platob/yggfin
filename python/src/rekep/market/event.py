@@ -164,6 +164,9 @@ class Event(MarketConvertible):
     eventtype: Annotated[EventType, Field.column("EventType")] = EventType.UNKNOWN
     """Which kind of event this is -- the one column a union of the tables needs."""
 
+    # Recorded plugin identifiers in real captures exceed eight bytes, so the
+    # raw provenance stays exact rather than being forced into `Plugin`'s
+    # optional bounded deployment vocabulary.
     plugin: Annotated[str, Field.column("Plugin")] = ""
     """Source plugin that recorded the row; empty when the envelope did not name one."""
 
@@ -184,9 +187,9 @@ class Event(MarketConvertible):
     snapunix: Annotated[int | None, Field(metadata=UNIX), Field.column("SnapUnix")] = None
     """`unix` of the event this is a snapshot of; null when it is not one."""
 
-    # The high half is `unix` in whole microseconds, so this one physical order
-    # keeps time locality and orders equal clocks by their value identity.
-    hash: Annotated[int, Field.primary_key(dtype=HASH), Field.sort_key()] = NIL
+    # The high half is `unix` in whole microseconds; equal clocks are still
+    # distinguished by the value identity in the low half.
+    hash: Annotated[int, Field.primary_key(dtype=HASH)] = NIL
     """Time-anchored composition of `unix` and `vhash`."""
 
     vhash: Annotated[int, Field(dtype=pyarrow.int64()), Field.column("ValueHash")] = NIL

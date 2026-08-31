@@ -4,7 +4,7 @@
 published dictionary. These are about the store around them -- which document a
 tag lands in and how few are read to answer for it, what a change to one record
 is allowed to do, what a name resolves to, what a cold registry does about
-being cold, and what a TTL does and does not refetch.
+being cold, and which explicit operation may read source dictionaries.
 
 Every identity is synthetic. The one real name any of this uses is a FIX
 version, which is a schema fact and not data.
@@ -14,10 +14,8 @@ from __future__ import annotations
 
 import io
 import json
-import os
 import re
 import socket
-import time
 import urllib.request
 import zipfile
 from collections.abc import Mapping, Sequence
@@ -177,6 +175,7 @@ def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
     assert sorted(path.name for path in folder.iterdir()) == [
         "components",
         "fields",
+        "repgroup",
         "versions.json",
     ]
     # Tags 90001 and 90002 share the 90000--90999 shard.
@@ -798,7 +797,7 @@ def test_a_clean_rebuild_persists_the_cached_state_enum_mapping(tmp_path: Path) 
             ]
 
     registry = Building(cache_dir=tmp_path / "fix")
-    registry.rebuild("9.1")
+    registry._rebuild_sources("9.1")
     mapping = State.fix_mapping()
 
     assert mapping is State.fix_mapping()
@@ -914,25 +913,11 @@ def test_the_published_dictionary_answers_what_a_copy_of_it_answers(tmp_path: Pa
 # -- bootstrapping the default store -----------------------------------------
 
 
-class Scraping(FixRegistry):
-    """A registry whose whole scrape is one synthetic version, and is counted."""
-
-    def _fetch(self, url: str) -> str:
-        self.__dict__.setdefault("fetched", []).append(url)
-        raise OSError(f"no page at {url}")
-
-    def rebuild(self, *versions: str) -> ConflictReport:
-        self.__dict__.setdefault("fetched", []).append("rebuild")
-        self._store_versions(("9.1",))
-        self._store_fields("9.1", [_field("FakeRole", 90001, "9.1", "int")])
-        return ConflictReport()
-
-
 class Refused(FixRegistry):
-    """A registry whose bootstrap cannot reach the site at all."""
+    """A registry whose bootstrap cannot read the repository archive."""
 
-    def rebuild(self, *versions: str) -> ConflictReport:
-        raise OSError("the dictionary host is down")
+    def _registry_archive_payload(self) -> bytes:
+        raise OSError("the repository host is down")
 
 
 @pytest.fixture
@@ -945,22 +930,26 @@ def default_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def test_a_cold_default_store_is_fetched_once_and_says_so_both_times(
     default_store: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Announced before, announced after, and the next process finds a store."""
+    payload = _registry_archive(_registry_documents())
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: _Response(payload),
+    )
     said: list[str] = []
     with pytest.warns(RuntimeWarning, match="no FIX registry at"):
-        first = Scraping(announce=said.append)
-    assert first.__dict__["fetched"] == ["rebuild"] and first.installed
+        first = FixRegistry(announce=said.append)
+    assert first.installed
     assert len(said) == 2, "one line before the fetch and one after it"
-    assert "fetching the dictionary from" in said[0]
-    assert "point cache_dir at a store you already have" in said[0], (
-        "and how to avoid paying for it"
-    )
+    assert "downloading the main repository archive" in said[0]
     assert "is installed at" in said[1]
     assert (default_store / "fields" / "000090.json").exists(), "the sharded layout, cold"
 
-    second = Scraping(announce=said.append)
-    assert "fetched" not in second.__dict__ and not second.installed, "one scrape, ever"
+    second = FixRegistry(announce=said.append)
+    assert not second.installed, "the repository archive is installed once"
     assert len(said) == 2, "and a store that is there is served silently"
     assert second.field(90001, "9.1").name == "FakeRole"
 
@@ -972,13 +961,13 @@ def test_a_cold_default_store_installs_the_configured_full_archive(
     said: list[str] = []
     monkeypatch.setenv("REKEP_FIX_REGISTRY_URL", str(PUBLISHED))
 
-    with pytest.warns(RuntimeWarning, match="downloading the full dictionary"):
+    with pytest.warns(RuntimeWarning, match="downloading the main repository archive"):
         registry = FixRegistry(announce=said.append)
 
     assert registry.installed
     assert len(list(default_store.rglob("*.json"))) > 700
     assert registry.field("Side", "4.4").fix["tag"] == "54"
-    assert "downloading the full dictionary" in said[0]
+    assert "downloading the main repository archive" in said[0]
     assert "is installed" in said[-1]
 
 
@@ -995,7 +984,7 @@ def test_an_https_registry_receives_the_private_bearer_token(
             return _Response(payload)
 
     monkeypatch.setattr(urllib.request, "build_opener", lambda *_handlers: Opener())
-    with pytest.warns(RuntimeWarning, match="downloading the full dictionary"):
+    with pytest.warns(RuntimeWarning, match="downloading the main repository archive"):
         registry = FixRegistry(
             registry_url="https://artifactory.example/fix-registry.zip",
             registry_token="secret",
@@ -1042,17 +1031,17 @@ def test_registry_archive_download_stops_at_the_compressed_limit(
     )
     said: list[str] = []
 
-    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
-        registry = Scraping(
+    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
+        registry = FixRegistry(
             registry_url="https://artifactory.example/fix-registry.zip",
             announce=said.append,
         )
 
-    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert not registry.installed
     assert any("exceeds 8 compressed bytes" in line for line in said)
 
 
-def test_a_failed_registry_archive_stream_falls_back_to_the_existing_scrape(
+def test_a_failed_registry_archive_stream_serves_the_projection(
     default_store: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1067,17 +1056,17 @@ def test_a_failed_registry_archive_stream_falls_back_to_the_existing_scrape(
     )
     said: list[str] = []
 
-    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
-        registry = Scraping(
+    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
+        registry = FixRegistry(
             registry_url="https://artifactory.example/fix-registry.zip",
             announce=said.append,
         )
 
-    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert not registry.installed
     assert any("archive download failed: connection ended" in line for line in said)
 
 
-def test_a_refused_registry_archive_falls_back_to_the_existing_scrape(
+def test_a_refused_registry_archive_serves_the_projection(
     default_store: Path,
     tmp_path: Path,
 ) -> None:
@@ -1085,15 +1074,15 @@ def test_a_refused_registry_archive_falls_back_to_the_existing_scrape(
     broken.write_bytes(b"not a zip")
     said: list[str] = []
 
-    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
-        registry = Scraping(registry_url=str(broken), announce=said.append)
+    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
+        registry = FixRegistry(registry_url=str(broken), announce=said.append)
 
-    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
-    assert registry.field(90001, "9.1").name == "FakeRole"
-    assert any("falling back" in line for line in said)
+    assert not registry.installed
+    assert registry.field("Side").fix.tag == 54
+    assert any("could not be installed" in line for line in said)
 
 
-def test_an_undecodable_registry_member_falls_back_to_the_existing_scrape(
+def test_an_undecodable_registry_member_serves_the_projection(
     default_store: Path,
     tmp_path: Path,
 ) -> None:
@@ -1103,10 +1092,10 @@ def test_an_undecodable_registry_member_falls_back_to_the_existing_scrape(
         opened.writestr("fields/000000.json", "{}")
     said: list[str] = []
 
-    with pytest.warns(RuntimeWarning, match="falling back to the source dictionaries"):
-        registry = Scraping(registry_url=str(archive), announce=said.append)
+    with pytest.warns(RuntimeWarning, match="a reduced one is served"):
+        registry = FixRegistry(registry_url=str(archive), announce=said.append)
 
-    assert registry.installed and registry.__dict__["fetched"] == ["rebuild"]
+    assert not registry.installed
     assert any("cannot be decoded" in line for line in said)
 
 
@@ -1166,7 +1155,7 @@ def test_a_complete_concurrent_registry_wins_without_a_scrape(
     archive.write_bytes(_registry_archive(_registry_documents()))
     winner = _registry_documents()
 
-    class Racing(Scraping):
+    class Racing(FixRegistry):
         def _install_registry_documents(self, documents: Mapping[str, Mapping[str, Any]]) -> int:
             place = registry_module.DirectoryDocuments(
                 pyarrow.fs.LocalFileSystem(), Path(self.cache_dir).as_posix()
@@ -1175,11 +1164,10 @@ def test_a_complete_concurrent_registry_wins_without_a_scrape(
                 place.write(name, document)
             return super()._install_registry_documents(documents)
 
-    with pytest.warns(RuntimeWarning, match="downloading the full dictionary"):
+    with pytest.warns(RuntimeWarning, match="downloading the main repository archive"):
         registry = Racing(registry_url=str(archive), announce=lambda _line: None)
 
     assert registry.installed
-    assert "fetched" not in registry.__dict__
     assert registry.field(90001, "9.1").name == "FakeRole"
 
 
@@ -1295,121 +1283,18 @@ def test_the_packaged_projection_is_bootstrapped_by_being_what_it_is() -> None:
     assert builtin.offline and builtin.field("Side").fix["tag"] == "54"
 
 
-# -- keeping it fresh --------------------------------------------------------
+# -- explicit scraping ------------------------------------------------------
 
 
-class Refetching(FixRegistry):
-    """A registry whose source fetches are counted and served from a fixture."""
+def test_registry_reads_never_refresh_configured_sources(store: Offline) -> None:
+    class NoRead(FixRegistry):
+        def _read(self, _request: urllib.request.Request) -> str:
+            raise AssertionError("a registry read reached a source")
 
-    fetched: list[str]
-
-    def _read(self, request: urllib.request.Request) -> str:
-        self.__dict__.setdefault("fetched", []).append(request.full_url)
-        return _SPEC
-
-
-class Refusing(Refetching):
-    """One whose upstream is down, which must not stop it serving."""
-
-    def _read(self, request: urllib.request.Request) -> str:
-        self.__dict__.setdefault("fetched", []).append(request.full_url)
-        raise OSError("the spec host is down")
-
-
-#: A spec naming the two tags the fixture store holds, one of them enumerated.
-_SPEC = """<fix major='9' minor='1'>
- <header/><trailer/>
- <components>
-  <component name='FakeParties'>
-   <group name='NoFakeParties'><field name='FakeRole' required='N'/></group>
-  </component>
- </components>
- <fields>
-  <field number='90001' name='FakeRole' type='INT'>
-   <value enum='1' description='FAKE_ONE'/>
-  </field>
-  <field number='90002' name='FakeCode' type='STRING'/>
-  <field number='90003' name='NoFakeParties' type='NUMINGROUP'/>
- </fields>
-</fix>
-"""
-
-
-def test_a_ttl_of_zero_never_reaches_upstream(store: Offline) -> None:
-    """The default, and what every pipeline reading a packaged dictionary wants."""
-    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=0.0, sources=(QuickFixSource(),))
+    registry = NoRead(cache_dir=store.cache_dir, sources=(QuickFixSource(),))
     assert registry.fields("9.1")
-    assert registry.refresh_if_stale() is False
-    assert not registry.__dict__.get("fetched"), "no fetch was attempted at all"
-
-
-def test_a_store_younger_than_its_ttl_is_served_untouched(store: Offline) -> None:
-    registry = Refetching(cache_dir=store.cache_dir, cache_ttl=3600.0, sources=(QuickFixSource(),))
-    assert not any(one.aliases for one in registry.field(90001, "9.1").fix.enumerated)
-    assert registry.refresh_if_stale() is False
-    assert not registry.__dict__.get("fetched")
-
-
-def _aged(store: Offline, seconds: float) -> None:
-    """Backdate every document, so a TTL test does not race the clock."""
-    when = time.time() - seconds
-    for path in Path(store.cache_dir).rglob("*.json"):
-        os.utime(path, (when, when))
-
-
-def test_a_store_older_than_its_ttl_is_refetched_and_written(store: Offline) -> None:
-    _aged(store, 7200)
-    registry = Refetching(
-        cache_dir=store.cache_dir,
-        cache_ttl=3600.0,
-        retries=0,
-        sources=(QuickFixSource(),),
-    )
-    assert registry.refresh_if_stale() is True
-    assert sorted(url.rsplit("/", 1)[-1] for url in registry.fetched) == [
-        "FIX90.xml",
-        "FIX91.xml",
-    ], "every version the store holds, so none of it goes stale behind the others"
-    reopened = Offline(cache_dir=store.cache_dir)
-    assert reopened.field(90001, "9.1").fix.value_of("1").aliases == ("FAKE_ONE",)
-    assert members_of(reopened.component("FakeParties", "9.1"))[0].name == "NoFakeParties"
-
-
-def test_a_refetch_that_fails_serves_the_local_copy_and_says_so(store: Offline) -> None:
-    """A dictionary a day stale parses every message; one that raises parses none."""
-    _aged(store, 7200)
-    registry = Refusing(
-        cache_dir=store.cache_dir,
-        cache_ttl=3600.0,
-        retries=0,
-        backoff=0.0,
-        sources=(QuickFixSource(),),
-    )
-    with pytest.warns(RuntimeWarning, match="could not be refreshed"):
-        assert registry.refresh_if_stale() is False
-    assert registry.fetched, "it was attempted"
-    assert registry.field(90001, "9.1").name == "FakeRole", "and the store still answers"
-
-
-def test_a_ttl_is_checked_once_per_registry_and_not_once_per_call(store: Offline) -> None:
-    """Otherwise a batch of a hundred versions is a hundred refetches."""
-    _aged(store, 7200)
-    registry = Refetching(
-        cache_dir=store.cache_dir,
-        cache_ttl=3600.0,
-        retries=0,
-        sources=(QuickFixSource(),),
-    )
-    registry.fields("9.1")
-    fetched = len(registry.fetched)
-    registry.fields("9.0")
-    registry.fields("9.1")
-    assert len(registry.fetched) == fetched
-
-
-def test_a_negative_ttl_is_refused(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="cannot be negative"):
-        FixRegistry(cache_dir=tmp_path / "fix", cache_ttl=-1.0)
+    assert registry.components("9.1")
+    assert registry.field(90001, "9.1").name == "FakeRole"
 
 
 # -- a field FIX never numbered, end to end ----------------------------------
@@ -1499,6 +1384,49 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     )
     assert codec.into_lifted_columns(dotted, "9.1")[0]["fakevendorcode"].to_pylist() == [
         "FAKE-CODE-0002"
+    ]
+
+
+def test_namespaced_aliases_are_ordered_fallbacks(store: Offline) -> None:
+    store.add_field(
+        _record(
+            "FAKE.VENDOR.CODE",
+            named_aliases=[Alias(name="LEGACYCODE"), Alias(name="OLDER.CODE")],
+            column="fakevendorcode",
+        )
+    )
+    codec = FixCodec(registry=store)
+    declared = codec.named_fields()
+
+    assert [alias["name"] for alias in declared["fakevendorcode"].fix.aliases] == [
+        "LEGACYCODE",
+        "OLDER.CODE",
+    ]
+    pairs = codec.into_pairs(
+        pyarrow.array(
+            [
+                "toBridge #FAKE.VENDOR.CODE=canonical|#LEGACYCODE=legacy|#Y=1",
+                "toBridge #LEGACYCODE=legacy|#Y=1",
+                "toBridge #LEGACYCODE=legacy|#OLDER.CODE=older|#Y=1",
+                "toBridge #OLDER.CODE=older|#Y=1",
+            ]
+        ),
+        "FIXML",
+    )
+    entries = codec.into_entries(pairs, "9.1")
+    columns, residual = codec.into_lifted_columns(entries, "9.1")
+
+    assert columns["fakevendorcode"].to_pylist() == [
+        "canonical",
+        "legacy",
+        "legacy",
+        "older",
+    ]
+    assert [_pairs(residual, row) for row in range(4)] == [
+        [("LEGACYCODE", "legacy"), ("Y", "1")],
+        [("Y", "1")],
+        [("OLDER.CODE", "older"), ("Y", "1")],
+        [("Y", "1")],
     ]
 
 

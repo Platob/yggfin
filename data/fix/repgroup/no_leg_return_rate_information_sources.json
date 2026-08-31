@@ -1,0 +1,45 @@
+{
+ "name": "NoLegReturnRateInformationSources",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegReturnRateInformationSources",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42560"
+  },
+  "item": {
+   "name": "LegReturnRateInformationSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegReturnRateInformationSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42561"
+     }
+    },
+    {
+     "name": "LegReturnRateReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42562"
+     }
+    },
+    {
+     "name": "LegReturnRateReferencePageHeading",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42563"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "name": "NoCollInquiryQualifier",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoCollInquiryQualifier",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "938"
+  },
+  "item": {
+   "name": "CollInquiryQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "CollInquiryQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "896"
+     }
+    }
+   ]
+  }
+ }
+}

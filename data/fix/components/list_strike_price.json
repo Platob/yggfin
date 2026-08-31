@@ -6,7 +6,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "ListStrikePrice",
@@ -15,12 +16,24 @@
   "fix": {
    "component": "ListStrikePrice",
    "msgtype": "m",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "ListID",
     "type": "string",
@@ -44,10 +57,134 @@
     }
    },
    {
-    "name": "InstrmtStrkPxGrp",
+    "name": "NoStrikes",
+    "type": "list",
+    "fix": {
+     "tag": "428"
+    },
+    "item": {
+     "name": "Strike",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoUnderlyings",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "711"
+       },
+       "item": {
+        "name": "Underlying",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "UnderlyingInstrument",
+          "type": "struct",
+          "nullable": true,
+          "fix": {
+           "component": "UnderlyingInstrument"
+          },
+          "fields": []
+         }
+        ]
+       }
+      },
+      {
+       "name": "PrevClosePx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "140"
+       }
+      },
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "StandardTrailer",
     "type": "struct",
     "fix": {
-     "component": "InstrmtStrkPxGrp"
+     "component": "StandardTrailer"
     },
     "fields": []
    }

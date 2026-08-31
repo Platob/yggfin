@@ -1,0 +1,73 @@
+{
+ "name": "Gartmore",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "Gartmore",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Gartmore",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "NoStrategyParameters",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5957"
+    }
+   },
+   {
+    "name": "StrategyParameterName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5958"
+    }
+   },
+   {
+    "name": "StrategyParameterType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5959"
+    }
+   },
+   {
+    "name": "StrategyParameterValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5960"
+    }
+   },
+   {
+    "name": "TargetStrategy2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5847"
+    }
+   },
+   {
+    "name": "TargetStrategyParameters1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5848"
+    }
+   }
+  ]
+ }
+}

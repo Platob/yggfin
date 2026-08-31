@@ -1,0 +1,57 @@
+{
+ "name": "NoSideCollateralReinvestments",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoSideCollateralReinvestments",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2864"
+  },
+  "item": {
+   "name": "SideCollateralReinvestment",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SideCollateralReinvestmentType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2867"
+     }
+    },
+    {
+     "name": "SideCollateralReinvestmentAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2865"
+     }
+    },
+    {
+     "name": "SideCollateralReinvestmentCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2866"
+     }
+    },
+    {
+     "name": "SideCollateralReinvestmentCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2932"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -88,13 +88,11 @@ def test_the_partition_is_the_hour_and_only_the_hour() -> None:
         assert "[" not in partition.name, "a partition name becomes a directory name"
 
 
-def test_hash_is_the_only_physical_sort_key() -> None:
-    """Its high half is the event clock, and its low half breaks clock ties."""
+def test_market_events_declare_no_automatic_sort_order() -> None:
+    """Callers opt into sorting when its scan benefit pays for the write cost."""
     schema = Order.into_field().into_iceberg_schema()
     order = Order.into_field().into_iceberg_sort_order(schema)
-    assert [schema.find_column_name(field.source_id) for field in order.fields] == ["hash"]
-    assert all(str(field.transform) == "identity" for field in order.fields)
-    assert all(field.direction.name.lower() == "asc" for field in order.fields)
+    assert not order.fields
 
 
 @pytest.mark.parametrize("shape", (Order, Book), ids=lambda cls: cls.__name__)
@@ -103,9 +101,11 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     from rekep.iceberg import IcebergDataset
 
     dataset = IcebergDataset(
-        field=shape.into_field(f"market.{shape.__name__.lower()}"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name=shape.__name__.lower(),
+        namespace="market",
+        field=shape.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     unixpartition = UNIX // SECOND
     given = batch(shape, 3, unixpartition=[unixpartition] * 3)
@@ -122,7 +122,8 @@ def test_a_batch_written_to_a_table_comes_back_as_it_went_in(shape: type, tmp_pa
     assert read.column("hash").type == HASH, "and the identifier kept its stored width"
     written = [task.file for task in dataset.iceberg_table.scan().plan_files()]
     assert {one.partition[0] for one in written} == {unixpartition}
-    assert {one.sort_order_id for one in written} == {dataset.iceberg_table.sort_order().order_id}
+    assert not dataset.iceberg_table.sort_order().fields
+    assert {one.sort_order_id for one in written} == {None}
     assert all(f"unixpartition={unixpartition}" in one.file_path for one in written), (
         "the second-scale partition value keeps paths compact"
     )
@@ -133,9 +134,11 @@ def test_a_book_keeps_its_levels_and_its_flat_sides_through_a_write(tmp_path: Pa
     from rekep.iceberg import IcebergDataset
 
     dataset = IcebergDataset(
-        field=Book.into_field("market.books"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="books",
+        namespace="market",
+        field=Book.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     levels = [
         [{"px": 10.0, "qty": 5.0}],

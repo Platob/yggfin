@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingStreamCalculationPeriodBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingStreamCalculationPeriodBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40973"
+  },
+  "item": {
+   "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40557"
+     }
+    }
+   ]
+  }
+ }
+}

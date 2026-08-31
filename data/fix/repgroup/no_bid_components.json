@@ -1,0 +1,98 @@
+{
+ "name": "NoBidComponents",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoBidComponents",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "420"
+  },
+  "item": {
+   "name": "BidComponent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ListID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "66"
+     }
+    },
+    {
+     "name": "Side",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "54"
+     }
+    },
+    {
+     "name": "TradingSessionID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "336"
+     }
+    },
+    {
+     "name": "TradingSessionSubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "625"
+     }
+    },
+    {
+     "name": "NetGrossInd",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "430"
+     }
+    },
+    {
+     "name": "SettlType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "63"
+     }
+    },
+    {
+     "name": "SettlDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "64"
+     }
+    },
+    {
+     "name": "Account",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1"
+     }
+    },
+    {
+     "name": "AcctIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "660"
+     }
+    }
+   ]
+  }
+ }
+}

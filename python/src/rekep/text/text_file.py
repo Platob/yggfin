@@ -199,6 +199,12 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: Syntax-only protocol classifier; it never reads registry fields.
     protocol_rules: Any | None = None
 
+    #: Raw key replacements selected by the plugin named in the log header.
+    plugin_keys: Mapping[str, Mapping[str, str]] = dataclass_field(default_factory=dict)
+
+    #: Case-insensitive payload values omitted before fields are promoted.
+    null_values: Sequence[str] = ()
+
     #: Materialize remote compressed bytes locally before decoding. False
     #: leaves Arrow reading and decoding the object-store stream directly.
     spill: bool = False
@@ -221,6 +227,10 @@ class TextFile(Dataset, io.BufferedIOBase):
     def __post_init__(self, fileio: ArrowFile | None) -> None:
         """Compile the header and bind one lazy Arrow input owner."""
         self.header_pattern = compiled_header(self.header_pattern)
+        self.plugin_keys = {
+            str(plugin): dict(replacements) for plugin, replacements in self.plugin_keys.items()
+        }
+        self.null_values = tuple(str(value) for value in self.null_values)
         if fileio is None and self.filesystem is None:
             self.filesystem, self.url = resolve(self.url)
         if fileio is None:
@@ -738,6 +748,8 @@ class TextFile(Dataset, io.BufferedIOBase):
             self.msg_type_event_types,
             columns["plugin"],
             self.protocol_rules,
+            self.plugin_keys,
+            self.null_values,
         )
         parse_errors = parsed.pop("parseerror")
         columns["reason"] = _merge_reasons(columns["reason"], parse_errors)

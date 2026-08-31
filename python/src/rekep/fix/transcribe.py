@@ -875,19 +875,38 @@ class FixCodec(Convertible):
         numbered = compute.fill_null(compute.is_in(tags, value_set=_tags_of(fields)), False)
         named = pyarrow.array(list(liftable), pyarrow.string())
         matched = _declared_index(keys, _lead_of(items), named)
+        named_outputs: list[Field] = []
+        output_codes: dict[str, int] = {}
+        output_ranks: dict[str, int] = {}
+        named_codes: list[int] = []
+        named_priorities: list[int] = []
+        for field in liftable.values():
+            output = field.name
+            if output not in output_codes:
+                output_codes[output] = -(len(named_outputs) + 1)
+                named_outputs.append(field)
+            named_codes.append(output_codes[output])
+            named_priorities.append(output_ranks.get(output, 0))
+            output_ranks[output] = output_ranks.get(output, 0) + 1
         wanted = numbered
         code = tags
+        priority = pyarrow.repeat(pyarrow.scalar(0, pyarrow.int16()), len(tags))
         if len(named):
             rendered = compute.and_(compute.equal(tags, 0), compute.is_valid(matched))
             wanted = compute.or_(numbered, rendered)
             code = compute.if_else(
                 rendered,
-                compute.subtract(pyarrow.scalar(-1, TAG), matched.cast(TAG)),
+                compute.take(pyarrow.array(named_codes, TAG), matched),
                 tags,
+            )
+            priority = compute.if_else(
+                rendered,
+                compute.take(pyarrow.array(named_priorities, pyarrow.int16()), matched),
+                priority,
             )
         if not compute.any(wanted, min_count=0).as_py():
             return columns, entries
-        agreed, chosen = _liftable(parents, code, values)
+        agreed, chosen = _liftable(parents, code, values, priority)
         lift = compute.and_(wanted, agreed)
         taken = compute.and_(wanted, chosen)
         # Sorted once by which column an entry belongs to, so each column is a
@@ -920,7 +939,7 @@ class FixCodec(Convertible):
                 field = fields[one]
                 column = cast_arrow_field(raw, field, FLAT_TYPES.get(one, field.dtype))
             else:
-                field = liftable[named[-1 - one].as_py()]
+                field = named_outputs[-1 - one]
                 column = cast_arrow_fix(raw, field.dtype)
             changed = _raw_spelling_changed(raw, column)
             if compute.any(changed, min_count=0).as_py():
@@ -1412,7 +1431,12 @@ def _declared_index(keys: Any, lead: Any, declared: Any) -> Any:
     )
 
 
-def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
+def _liftable(
+    parents: Any,
+    keys: Any,
+    values: Any,
+    priorities: Any | None = None,
+) -> tuple[Any, Any]:
     """`(every entry of a liftable key, the one that becomes the column)`.
 
     A key repeated in one row still lifts where its entries **agree**: a
@@ -1420,6 +1444,10 @@ def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
     `Side` after enrichment -- on a third to a half of a real capture's lines.
     Repeats that disagree lift neither: that is a group, or an enrichment that
     rewrote something, and picking between them would be a guess.
+
+    Namespaced aliases are the exception: canonical name, then aliases in
+    registry order form an explicit priority list. Only the first spelling
+    present in a row participates; repeats of that spelling must still agree.
     """
     compute = pyarrow.compute
     if pyarrow.types.is_integer(keys.type):
@@ -1431,6 +1459,29 @@ def _liftable(parents: Any, keys: Any, values: Any) -> tuple[Any, Any]:
         composite = compute.binary_join_element_wise(
             parents.cast(pyarrow.string()), keys.cast(pyarrow.string()), "\x00"
         )
+    if priorities is not None and len(composite):
+        grouped = (
+            pyarrow.table({"identity": composite, "priority": priorities})
+            .group_by("identity", use_threads=False)
+            .aggregate([("priority", "min")])
+        )
+        minimum = compute.take(
+            grouped["priority_min"],
+            compute.index_in(composite, value_set=grouped["identity"]),
+        )
+        preferred = compute.equal(priorities, minimum)
+        if not compute.all(preferred, min_count=0).as_py():
+            positions = sequence(len(composite))
+            selected = compute.filter(positions, preferred)
+            agreed, chosen = _liftable(
+                compute.filter(parents, preferred),
+                compute.filter(keys, preferred),
+                compute.filter(values, preferred),
+            )
+            return (
+                compute.is_in(positions, value_set=compute.filter(selected, agreed)),
+                compute.is_in(positions, value_set=compute.filter(selected, chosen)),
+            )
     distinct = compute.unique(composite)
     if len(distinct) == len(composite):
         whole = pyarrow.repeat(True, len(composite))

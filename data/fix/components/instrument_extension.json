@@ -4,7 +4,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "InstrumentExtension",
@@ -12,10 +13,14 @@
   "nullable": true,
   "fix": {
    "component": "InstrumentExtension",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AdjustedPositionReport",
     "Advertisement",
@@ -26,13 +31,16 @@
     "DerivativeSecurityList",
     "DerivativeSecurityListUpdateReport",
     "Email",
+    "ExecutionReport",
     "IOI",
     "MarketDataIncrementalRefresh",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh",
     "MarketDataStatisticsReport",
     "MarketDataStatisticsRequest",
+    "NewOrderSingle",
     "News",
+    "OrderCancelReplaceRequest",
     "SecurityDefinition",
     "SecurityDefinitionRequest",
     "SecurityDefinitionUpdateReport",
@@ -66,13 +74,34 @@
     }
    },
    {
-    "name": "AttrbGrp",
-    "type": "struct",
+    "name": "NoInstrAttrib",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "AttrbGrp"
+     "tag": "870"
     },
-    "fields": []
+    "item": {
+     "name": "InstrAttrib",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrAttribType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "871"
+       }
+      },
+      {
+       "name": "InstrAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "872"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "CommodityFinalPriceType",
@@ -83,13 +112,26 @@
     }
    },
    {
-    "name": "IndexRollMonthGrp",
-    "type": "struct",
+    "name": "NoIndexRollMonths",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "IndexRollMonthGrp"
+     "tag": "2734"
     },
-    "fields": []
+    "item": {
+     "name": "IndexRollMonth",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IndexRollMonth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2733"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "NextIndexRollDate",
@@ -109,13 +151,34 @@
     "fields": []
    },
    {
-    "name": "ReferenceDataDateGrp",
-    "type": "struct",
+    "name": "NoReferenceDataDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "ReferenceDataDateGrp"
+     "tag": "2746"
     },
-    "fields": []
+    "item": {
+     "name": "ReferenceDataDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReferenceDataDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2747"
+       }
+      },
+      {
+       "name": "ReferenceDataDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2748"
+       }
+      }
+     ]
+    }
    }
   ]
  }

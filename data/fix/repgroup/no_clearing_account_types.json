@@ -1,0 +1,33 @@
+{
+ "name": "NoClearingAccountTypes",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoClearingAccountTypes",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1918"
+  },
+  "item": {
+   "name": "ClearingAccountType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ClearingAccountType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1816"
+     }
+    }
+   ]
+  }
+ }
+}

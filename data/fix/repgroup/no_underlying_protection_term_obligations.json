@@ -1,0 +1,41 @@
+{
+ "name": "NoUnderlyingProtectionTermObligations",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingProtectionTermObligations",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42087"
+  },
+  "item": {
+   "name": "UnderlyingProtectionTermObligation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProtectionTermObligationType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42088"
+     }
+    },
+    {
+     "name": "UnderlyingProtectionTermObligationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42089"
+     }
+    }
+   ]
+  }
+ }
+}

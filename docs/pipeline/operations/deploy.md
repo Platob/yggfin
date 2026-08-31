@@ -93,11 +93,12 @@ mkdir -p data/warehouse
 ```
 
 ```yaml
-catalog: rekep
-catalog_properties:
-  type: sql
-  uri: sqlite:///data/catalog.db
-  warehouse: file://data/warehouse
+catalog:
+  catalog_name: rekep
+  properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: file://data/warehouse
 ```
 
 Namespaces and tables are created on first commit; nothing else to bootstrap.
@@ -130,8 +131,8 @@ market.executions -> created
 reports every table `present` and changes nothing — including properties,
 which [Iceberg maintenance](airflow.md#run-iceberg-maintenance) owns retrofitting.
 
-The layout it creates is `rekep.deploy.TABLES`: the table, the shape it holds
-and the columns it is laid out by, in the order a run fills them.
+`rekep.deploy.TABLES` lists each table and its Arrow shape in the order a run
+fills them.
 
 ```python
 from rekep.deploy import TABLES
@@ -187,13 +188,14 @@ under `tasks/`:
 # tasks/parse_messages/parse_messages.yml
 source: s3://rekep-capture/2026-08-30
 fix_dictionary: s3://rekep-warehouse/fix/fix.zip
-catalog: rekep-production
-catalog_properties:
-  type: glue
-  warehouse: s3://rekep-warehouse/rekep
-  glue.region: eu-west-1   # where the catalog lives
-  s3.region: eu-west-1     # where the warehouse bucket lives
-  # Do not add `s3.sse.type` or `s3.sse.key`; the bucket rule above owns KMS.
+catalog:
+  catalog_name: rekep-production
+  properties:
+    type: glue
+    warehouse: s3://rekep-warehouse/rekep
+    glue.region: eu-west-1   # Catalog region.
+    s3.region: eu-west-1     # Warehouse region.
+    # The bucket rule above owns KMS; per-request s3.sse.* is unsupported.
 ```
 
 A registry on a bucket is fetched **once** and kept under
@@ -202,7 +204,7 @@ is read by seeking, and seeking over an object store reads it whole every
 lookup. A dictionary given as a *directory* is served in place.
 
 The capture `source` is resolved on its own rather than through
-`catalog_properties`, so an endpoint or region for that bucket comes from the
+`catalog.properties`, so an endpoint or region for that bucket comes from the
 URL or from the environment:
 
 ```bash
@@ -262,15 +264,16 @@ mc mb local/rekep-warehouse
 ```
 
 ```yaml
-catalog: rekep
-catalog_properties:
-  type: sql
-  uri: sqlite:///data/catalog.db
-  warehouse: s3://rekep-warehouse/rekep
-  s3.endpoint: http://minio:9000
-  s3.region: us-east-1
-  s3.access-key-id: ${MINIO_ROOT_USER}
-  s3.secret-access-key: ${MINIO_ROOT_PASSWORD}
+catalog:
+  catalog_name: rekep
+  properties:
+    type: sql
+    uri: sqlite:///data/catalog.db
+    warehouse: s3://rekep-warehouse/rekep
+    s3.endpoint: http://minio:9000
+    s3.region: us-east-1
+    s3.access-key-id: ${MINIO_ROOT_USER}
+    s3.secret-access-key: ${MINIO_ROOT_PASSWORD}
 ```
 
 An overridden endpoint is addressed path-style, which is what MinIO and Ceph

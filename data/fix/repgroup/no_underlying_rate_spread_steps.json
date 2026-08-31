@@ -1,0 +1,37 @@
+{
+ "name": "NoUnderlyingRateSpreadSteps",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingRateSpreadSteps",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "43005"
+  },
+  "item": {
+   "name": "UnderlyingRateSpreadStep",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingRateSpreadStepDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43006"
+     }
+    },
+    {
+     "name": "UnderlyingRateSpreadStepValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43007"
+     }
+    }
+   ]
+  }
+ }
+}

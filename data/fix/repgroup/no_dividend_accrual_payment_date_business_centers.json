@@ -1,0 +1,29 @@
+{
+ "name": "NoDividendAccrualPaymentDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDividendAccrualPaymentDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42236"
+  },
+  "item": {
+   "name": "DividendAccrualPaymentDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DividendAccrualPaymentDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42237"
+     }
+    }
+   ]
+  }
+ }
+}

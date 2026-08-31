@@ -1,0 +1,233 @@
+{
+ "name": "NoProtectionTerms",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoProtectionTerms",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40181"
+  },
+  "item": {
+   "name": "ProtectionTerm",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProtectionTermNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40182"
+     }
+    },
+    {
+     "name": "ProtectionTermCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40183"
+     }
+    },
+    {
+     "name": "ProtectionTermSellerNotifies",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40184"
+     }
+    },
+    {
+     "name": "ProtectionTermBuyerNotifies",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40185"
+     }
+    },
+    {
+     "name": "ProtectionTermEventBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40186"
+     }
+    },
+    {
+     "name": "ProtectionTermStandardSources",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40187"
+     }
+    },
+    {
+     "name": "ProtectionTermEventMinimumSources",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40188"
+     }
+    },
+    {
+     "name": "NoProtectionTermEventNewsSources",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40951"
+     },
+     "item": {
+      "name": "ProtectionTermEventNewsSource",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ProtectionTermEventNewsSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40189"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoProtectionTermEvents",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40191"
+     },
+     "item": {
+      "name": "ProtectionTermEvent",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ProtectionTermEventType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40192"
+        }
+       },
+       {
+        "name": "ProtectionTermEventValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40193"
+        }
+       },
+       {
+        "name": "ProtectionTermEventCurrency",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40194"
+        }
+       },
+       {
+        "name": "ProtectionTermEventPeriod",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40195"
+        }
+       },
+       {
+        "name": "ProtectionTermEventUnit",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40196"
+        }
+       },
+       {
+        "name": "ProtectionTermEventDayType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40197"
+        }
+       },
+       {
+        "name": "ProtectionTermEventRateSource",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40198"
+        }
+       },
+       {
+        "name": "NoProtectionTermEventQualifiers",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "40199"
+        },
+        "item": {
+         "name": "ProtectionTermEventQualifier",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "ProtectionTermEventQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40200"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "NoProtectionTermObligations",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40201"
+     },
+     "item": {
+      "name": "ProtectionTermObligation",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "ProtectionTermObligationType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40202"
+        }
+       },
+       {
+        "name": "ProtectionTermObligationValue",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "40203"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "ProtectionTermXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40190"
+     }
+    }
+   ]
+  }
+ }
+}

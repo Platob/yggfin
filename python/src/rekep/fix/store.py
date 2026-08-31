@@ -1,4 +1,4 @@
-"""Where a FIX dictionary is kept: tag-range shards of fields, and components.
+"""Where a FIX dictionary is kept: fields, components, and repeating groups.
 
 One layout. Fields live in shards of one thousand tags under `fields/`, named
 by the shard index, so the file holding a tag is arithmetic -- no index, no
@@ -11,6 +11,10 @@ nothing has to ask what kind of record it is about to read.
 
 Components stay one document per identity under `components/`, because they are
 keyed by name and there is no arithmetic to do.
+
+Repeating groups are derived from those component trees and stored under
+`repgroup/`. Their declaration is the same list `Field` carried by the tree,
+so tools can inspect a group without first finding a component which embeds it.
 
 A store lives on a directory or inside a zip -- the extension decides -- and
 never reaches the network.
@@ -51,14 +55,21 @@ from rekep.fix.entries import (
     slug_of,
 )
 from rekep.fix.fields import datatype_identity
-from rekep.fix.quickfix import is_reference, walk
+from rekep.fix.quickfix import is_group, is_reference, walk
 from rekep.require import require
 from rekep.urls import LOCAL, Url
 
-#: What the layout calls its two folders. Named here because the reader, the
+#: What the layout calls its three folders. Named here because the reader, the
 #: writer and the tests must all spell them alike.
 FIELDS = "fields"
 COMPONENTS = "components"
+REPGROUP = "repgroup"
+NAMESPACES = "namespaces"
+
+#: Complete-source provenance is one store-level document. Keeping it beside
+#: the declarations makes a copied directory or archive self-describing while
+#: leaving the arithmetic standard shard layout unchanged.
+SOURCES_FILE = "sources.json"
 
 #: What a stored document is named, and so what a store is written in. JSON,
 #: and measured: the dictionary is nearly a thousand documents and every
@@ -119,15 +130,6 @@ class Documents(Protocol):
 
     def names(self) -> tuple[str, ...]:
         """Every document this store holds, as posix-style relative names."""
-        ...
-
-    def stamp(self, name: str) -> float:
-        """When one document was last written, in seconds since the epoch.
-
-        Zero for a document the place cannot date, which is how an age check
-        reads "I cannot tell" -- and a TTL that cannot tell refetches rather
-        than assuming the copy is fresh.
-        """
         ...
 
     def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
@@ -213,7 +215,7 @@ class DirectoryDocuments:
 
     def names(self) -> tuple[str, ...]:
         """Every document under the directory, folders included."""
-        prefix = self.directory.rstrip("/") + "/"
+        prefix = self.directory.replace("\\", "/").rstrip("/") + "/"
         found = []
         root = ArrowPath(self.directory, self.filesystem)
         for path, info in root.ls_with_info(recursive=True):
@@ -233,22 +235,12 @@ class DirectoryDocuments:
 
     def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
         """Replace every registry document, dropping identities no longer declared."""
-        kept = {document_stem(name) for name in documents}
-        stale = [name for name in self.names() if document_stem(name) not in kept]
+        kept = set(documents)
+        stale = [name for name in self.names() if name not in kept]
         for name, document in documents.items():
             self.write(name, document)
         for name in stale:
             self.remove(name)
-
-    def stamp(self, name: str) -> float:
-        """When one document was last written, off the filesystem itself."""
-        try:
-            info = self._path(name).info()
-        except (OSError, pyarrow.ArrowException):
-            return 0.0
-        if info.type != pyarrow.fs.FileType.File or info.mtime is None:
-            return 0.0
-        return info.mtime.timestamp()
 
     def _path(self, name: str) -> ArrowPath:
         return ArrowPath(posixpath.join(self.directory, name), self.filesystem)
@@ -317,20 +309,6 @@ class ArchiveDocuments:
         except (OSError, zipfile.BadZipFile):
             return {}
         return found
-
-    def stamp(self, name: str) -> float:
-        """When the archive holding this member was last written.
-
-        The archive's own time and not the member's: a zip stamps every member
-        at the start of zip time here, deliberately, so that publishing the
-        same dictionary twice is the same bytes. The file is what has an age.
-        """
-        if name not in self._members():
-            return 0.0
-        try:
-            return pathlib.Path(self.archive).stat().st_mtime
-        except OSError:
-            return 0.0
 
     def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
         """Replace the whole archive with `documents`, in one deterministic pass.
@@ -424,7 +402,7 @@ def _archive_prefix(members: Sequence[str]) -> str:
     if len(leading) != 1:
         return ""
     (folder,) = leading
-    if is_document(folder) or folder in (FIELDS, COMPONENTS):
+    if is_document(folder) or folder in (FIELDS, COMPONENTS, REPGROUP, NAMESPACES):
         return ""
     return f"{folder}/"
 
@@ -432,7 +410,7 @@ def _archive_prefix(members: Sequence[str]) -> str:
 # -- the layout ---------------------------------------------------------------
 
 
-def field_document(key: int | str) -> str:
+def field_document(key: int | str, namespace: str = "") -> str:
     """The document holding one field key: `fields/000000.json` for tags 0-999.
 
     `tag // SHARD_SPAN` zero-padded, and `NAMED_SHARD` for a field FIX never
@@ -447,7 +425,25 @@ def field_document(key: int | str) -> str:
         index = key // SHARD_SPAN
     else:
         index = NAMED_SHARD
-    return f"{FIELDS}/{index:06d}{DOCUMENT_SUFFIX}"
+    relative = f"{FIELDS}/{index:06d}{DOCUMENT_SUFFIX}"
+    return relative if not namespace else f"{NAMESPACES}/{_namespace(namespace)}/{relative}"
+
+
+def component_document(slug: str, namespace: str = "", *, group: bool = False) -> str:
+    """The component or derived-group document for one namespace."""
+    folder = REPGROUP if group else COMPONENTS
+    relative = f"{folder}/{slug}{DOCUMENT_SUFFIX}"
+    return relative if not namespace else f"{NAMESPACES}/{_namespace(namespace)}/{relative}"
+
+
+def _namespace(value: str) -> str:
+    """One filesystem-safe registry namespace."""
+    namespace = str(value).strip().lower()
+    if not namespace or namespace == "standard":
+        raise ValueError("a namespaced FIX definition needs a non-standard namespace")
+    if not all(part and part.replace("-", "").isalnum() for part in namespace.split(".")):
+        raise ValueError(f"{value!r} is not a FIX registry namespace")
+    return namespace
 
 
 @dataclasses.dataclass(eq=False)
@@ -470,7 +466,10 @@ class ShardedLayout:
 
     def store_versions(self, versions: Sequence[str]) -> None:
         """Keep the version list, so the front page is fetched once."""
-        self._store_index({**self._index(), "versions": list(versions)})
+        index = self._index()
+        declared = list(versions)
+        if index.get("versions") != declared:
+            self._store_index({**index, "versions": declared})
 
     def session(self, version: str) -> tuple[tuple[str, bool], ...]:
         """`((name, required), ...)`: the standard header, then the trailer."""
@@ -545,6 +544,18 @@ class ShardedLayout:
         """
         return self._shard(field_document(int(tag))).get(int(tag))
 
+    def namespace_record(self, namespace: str, key: int | str) -> Field | None:
+        """One definition from exactly one namespace."""
+        namespace = _namespace(namespace)
+        if isinstance(key, int) or str(key).isdigit():
+            tag = int(key)
+            return self._shard(field_document(tag, namespace)).get(tag)
+        wanted = fold(str(key))
+        for record in self.namespace_field_records(namespace).values():
+            if wanted in {fold(spelling) for spelling in record.fix.spellings()}:
+                return record
+        return None
+
     def _shard(self, name: str) -> dict[int | str, Field]:
         """One shard's records, read once and held."""
         held = self.__dict__.setdefault("_shards", {})
@@ -581,6 +592,124 @@ class ShardedLayout:
             }
         return held
 
+    def namespaces(self) -> tuple[str, ...]:
+        """Stored definition namespaces in deterministic order."""
+        prefix = f"{NAMESPACES}/"
+        found = {
+            name[len(prefix) :].split("/", 1)[0]
+            for name in self.documents.names()
+            if name.startswith(prefix) and f"/{FIELDS}/" in name
+        }
+        return tuple(sorted(found))
+
+    def namespace_field_records(self, namespace: str) -> dict[int | str, Field]:
+        """Every field definition stored under exactly one namespace."""
+        namespace = _namespace(namespace)
+        held = self.__dict__.setdefault("_namespace_fields", {})
+        if namespace in held:
+            return held[namespace]
+        prefix = f"{NAMESPACES}/{namespace}/{FIELDS}/"
+        shards = self.__dict__.setdefault("_shards", {})
+        for name in self.documents.names():
+            if name.startswith(prefix):
+                shards.setdefault(name, self._read_shard(name))
+        records = {
+            key: record
+            for name in sorted(shards)
+            if name.startswith(prefix)
+            for key, record in shards[name].items()
+        }
+        held[namespace] = records
+        return records
+
+    def namespace_component_records(self, namespace: str) -> dict[str, ComponentRecord]:
+        """Every component and message stored under one extension namespace."""
+        namespace = _namespace(namespace)
+        held = self.__dict__.setdefault("_namespace_components", {})
+        if namespace in held:
+            return held[namespace]
+        prefix = f"{NAMESPACES}/{namespace}/{COMPONENTS}/"
+        readable = (
+            self.documents.read_many(prefix)
+            if any(name.startswith(prefix) for name in self.documents.names())
+            else {}
+        )
+        records = {
+            document_stem(name[len(prefix) :]): component_from_document(document)
+            for name, document in sorted(readable.items())
+        }
+        held[namespace] = records
+        return records
+
+    def namespace_repeating_group_records(self, namespace: str) -> dict[str, ComponentRecord]:
+        """Every derived group stored under one extension namespace."""
+        namespace = _namespace(namespace)
+        held = self.__dict__.setdefault("_namespace_repeating_groups", {})
+        if namespace in held:
+            return held[namespace]
+        prefix = f"{NAMESPACES}/{namespace}/{REPGROUP}/"
+        readable = (
+            self.documents.read_many(prefix)
+            if any(name.startswith(prefix) for name in self.documents.names())
+            else {}
+        )
+        records = {
+            document_stem(name[len(prefix) :]): component_from_document(document)
+            for name, document in sorted(readable.items())
+        }
+        held[namespace] = records
+        return records
+
+    def source_manifest(self) -> tuple[dict[str, Any], ...]:
+        """Complete-source provenance carried by this store."""
+        document = self.documents.read(SOURCES_FILE) or {}
+        sources = document.get("sources", ())
+        return tuple(dict(source) for source in sources if isinstance(source, Mapping))
+
+    def store_source_manifest(self, sources: Sequence[Mapping[str, Any]]) -> None:
+        """Write deterministic complete-source provenance."""
+        required = {
+            "source_id",
+            "namespace",
+            "url",
+            "version",
+            "format",
+            "checksum",
+            "license_url",
+        }
+        normalized: list[dict[str, Any]] = []
+        for source in sources:
+            missing = required - source.keys()
+            if missing:
+                raise ValueError(f"a FIX source manifest entry lacks {sorted(missing)}")
+            entry = {str(key): source[key] for key in sorted(source)}
+            entry["namespace"] = str(entry["namespace"] or "standard").strip().lower()
+            checksum = str(entry["checksum"])
+            if (
+                not checksum.startswith("sha256:")
+                or len(checksum) != 71
+                or checksum != checksum.lower()
+            ):
+                raise ValueError("a FIX source checksum must be sha256:<64 lowercase hex digits>")
+            try:
+                int(checksum[7:], 16)
+            except ValueError as error:
+                raise ValueError(
+                    "a FIX source checksum must be sha256:<64 lowercase hex digits>"
+                ) from error
+            normalized.append(entry)
+        normalized.sort(
+            key=lambda entry: (
+                int(entry.get("priority", 0)),
+                str(entry["namespace"]),
+                str(entry["source_id"]),
+                str(entry["version"]),
+            )
+        )
+        document = {"sources": normalized}
+        if self.documents.read(SOURCES_FILE) != document:
+            self.documents.write(SOURCES_FILE, document)
+
     @property
     def component_records(self) -> dict[str, ComponentRecord]:
         """`{slug: record}` for every component identity, read once and held."""
@@ -597,11 +726,31 @@ class ShardedLayout:
             }
         return held
 
+    @property
+    def repeating_group_records(self) -> dict[str, ComponentRecord]:
+        """`{slug: record}` for every derived repeating-group identity."""
+        held = self.__dict__.get("_repeating_groups")
+        if held is None:
+            prefix = f"{REPGROUP}/"
+            readable = self.documents.read_many(prefix)
+            torn = self.__dict__.setdefault("_torn", set())
+            torn.update(name for name in self.documents.names() if name.startswith(prefix))
+            torn.difference_update(readable)
+            held = self.__dict__["_repeating_groups"] = {
+                document_stem(name[len(prefix) :]): component_from_document(document)
+                for name, document in sorted(readable.items())
+            }
+        return held
+
     def forget(self) -> None:
         """Drop the held records, so the next read sees what was just written."""
         self.__dict__.pop("_shards", None)
         self.__dict__.pop("_fields", None)
+        self.__dict__.pop("_namespace_fields", None)
         self.__dict__.pop("_components", None)
+        self.__dict__.pop("_repeating_groups", None)
+        self.__dict__.pop("_namespace_components", None)
+        self.__dict__.pop("_namespace_repeating_groups", None)
         self.__dict__.pop("_torn", None)
 
     @property
@@ -612,7 +761,13 @@ class ShardedLayout:
         far better than a whole version answering short in silence. The
         registry treats a torn store as one to write again.
         """
-        self.field_records, self.component_records  # noqa: B018 - both are read once
+        # Each store family is read once so a torn derived-group document is
+        # reported with a torn field or component rather than hidden.
+        self.field_records, self.component_records, self.repeating_group_records  # noqa: B018
+        for namespace in self.namespaces():
+            self.namespace_field_records(namespace)
+            self.namespace_component_records(namespace)
+            self.namespace_repeating_group_records(namespace)
         return tuple(sorted(self.__dict__.get("_torn", ())))
 
     # -- what a version declares ---------------------------------------------
@@ -668,7 +823,9 @@ class ShardedLayout:
         by_name = {entry.folded: entry for entry in held.values()}
         wanted = component_closure(wanted, by_name)
         return [
-            entry.into_component() for _, entry in sorted(held.items()) if entry.folded in wanted
+            component
+            for _, entry in sorted(held.items())
+            if entry.folded in wanted and (component := entry.into_component()) is not None
         ]
 
     # -- writing -------------------------------------------------------------
@@ -681,6 +838,71 @@ class ShardedLayout:
         self.documents.write(name, _shard_document(shard))
         self.__dict__.pop("_fields", None)
         return name
+
+    def store_field_records(
+        self,
+        records: Mapping[int | str, Field],
+        namespace: str = "",
+        changed: Iterable[int | str] | None = None,
+    ) -> None:
+        """Replace one namespace's fields with one write per affected shard."""
+        normalized = _namespace(namespace) if namespace else ""
+        changed_documents = (
+            None if changed is None else {field_document(key, normalized) for key in changed}
+        )
+        shards: dict[str, dict[int | str, Field]] = {}
+        for record in records.values():
+            name = field_document(record.fix.key, normalized)
+            stored = record_copy(record)
+            if normalized:
+                stored.fix["namespace"] = normalized
+            else:
+                stored.fix.pop("namespace", None)
+            shards.setdefault(name, {})[stored.fix.key] = stored
+        prefix = f"{NAMESPACES}/{normalized}/{FIELDS}/" if normalized else f"{FIELDS}/"
+        existing = (
+            {name for name in self.documents.names() if name.startswith(prefix)}
+            if changed_documents is None
+            else set()
+        )
+        for name in sorted(shards):
+            if changed_documents is not None and name not in changed_documents:
+                continue
+            self.documents.write(name, _shard_document(shards[name]))
+        if changed_documents is None:
+            for name in sorted(existing - shards.keys()):
+                self.documents.remove(name)
+        else:
+            for name in sorted(changed_documents - shards.keys()):
+                self.documents.remove(name)
+        self.forget()
+
+    def store_namespace_field(self, namespace: str, record: Field) -> str:
+        """Write one namespaced definition without touching the standard shard."""
+        namespace = _namespace(namespace)
+        name = field_document(record.fix.key, namespace)
+        shard = self._shard(name)
+        stored = record_copy(record)
+        stored.fix["namespace"] = namespace
+        shard[stored.fix.key] = stored
+        self.documents.write(name, _shard_document(shard))
+        self.__dict__.pop("_namespace_fields", None)
+        return name
+
+    def remove_namespace_field(self, namespace: str, key: int | str) -> bool:
+        """Delete one exact namespaced definition."""
+        namespace = _namespace(namespace)
+        key = int(key) if isinstance(key, int) or str(key).isdigit() else fold(str(key))
+        name = field_document(key, namespace)
+        shard = self._shard(name)
+        if key not in shard:
+            return False
+        del shard[key]
+        self.__dict__.pop("_namespace_fields", None)
+        if shard:
+            self.documents.write(name, _shard_document(shard))
+            return True
+        return self.documents.remove(name)
 
     def remove_field(self, key: int | str) -> bool:
         """Delete one field record by tag or folded name; False when absent."""
@@ -697,15 +919,70 @@ class ShardedLayout:
 
     def store_component(self, entry: ComponentRecord) -> None:
         """Write one component record, replacing what was under its slug."""
+        self._store_component(entry)
+        self._sync_repeating_groups()
+
+    def _store_component(self, entry: ComponentRecord) -> None:
+        """Write one component without rebuilding the derived group index."""
         self.documents.write(
             f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", component_record_document(entry)
         )
         self.component_records[entry.slug] = entry
 
+    def store_namespace_components(
+        self, namespace: str, records: Mapping[str, ComponentRecord]
+    ) -> None:
+        """Write changed extension blocks and derive their group index once."""
+        namespace = _namespace(namespace)
+        records = _used_in(records, {entry.folded: entry for entry in records.values()})
+        held = self.namespace_component_records(namespace)
+        for slug, entry in sorted(records.items()):
+            if held.get(slug) != entry:
+                self.documents.write(
+                    component_document(slug, namespace), component_record_document(entry)
+                )
+        cached = self.__dict__.setdefault("_namespace_components", {})
+        cached[namespace] = dict(records)
+        groups = repeating_groups_of(records)
+        held_groups = self.namespace_repeating_group_records(namespace)
+        for slug in sorted(set(held_groups) - set(groups)):
+            self.documents.remove(component_document(slug, namespace, group=True))
+        for slug, entry in sorted(groups.items()):
+            if held_groups.get(slug) != entry:
+                self.documents.write(
+                    component_document(slug, namespace, group=True),
+                    component_record_document(entry),
+                )
+        self.__dict__.setdefault("_namespace_repeating_groups", {})[namespace] = groups
+
     def remove_component(self, slug: str) -> bool:
         """Delete one component identity; False when the store did not hold it."""
+        removed = self._remove_component(slug)
+        if removed:
+            self._sync_repeating_groups()
+        return removed
+
+    def _remove_component(self, slug: str) -> bool:
+        """Delete one component without rebuilding the derived group index."""
         self.component_records.pop(slug, None)
         return self.documents.remove(f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}")
+
+    def _sync_repeating_groups(self) -> bool:
+        """Rewrite the group index from the component trees which own it."""
+        records = repeating_groups_of(self.component_records)
+        held = self.repeating_group_records
+        changed = False
+        prefix = f"{REPGROUP}/"
+        for slug in sorted(set(held) - set(records)):
+            changed = self.documents.remove(f"{prefix}{slug}{DOCUMENT_SUFFIX}") or changed
+        for slug, entry in sorted(records.items()):
+            if held.get(slug) != entry:
+                self.documents.write(
+                    f"{prefix}{slug}{DOCUMENT_SUFFIX}", component_record_document(entry)
+                )
+                changed = True
+        self.__dict__["_repeating_groups"] = records
+        return changed
 
     def store(
         self,
@@ -755,7 +1032,7 @@ class ShardedLayout:
         declared = {found.name for found in components}
         for found in components:
             slug = slug_of(found.name)
-            self.store_component(fold_component(self.component_records.get(slug), found, version))
+            self._store_component(fold_component(self.component_records.get(slug), found, version))
         for slug, entry in list(self.component_records.items()):
             if entry.name in declared or version not in entry.versions:
                 continue
@@ -763,12 +1040,13 @@ class ShardedLayout:
             # version's declaration of it is gone rather than merely unstated.
             remaining = tuple(one for one in entry.versions if one != version)
             if remaining:
-                self.store_component(dataclasses.replace(entry, versions=remaining))
+                self._store_component(dataclasses.replace(entry, versions=remaining))
             else:
-                self.remove_component(slug)
+                self._remove_component(slug)
         self._store_carriage()
+        self._sync_repeating_groups()
 
-    def _store_carriage(self) -> None:
+    def _store_carriage(self, preserved: Mapping[str, Sequence[str]] | None = None) -> bool:
         """Tell every block which messages carry it, once the trees settled.
 
         The same derivation a bulk collapse makes, run where a scrape folds
@@ -778,9 +1056,18 @@ class ShardedLayout:
         messages reach the same blocks.
         """
         held = self.component_records
-        for slug, entry in _used_in(held, {one.folded: one for one in held.values()}).items():
+        changed = False
+        derived = _used_in(held, {one.folded: one for one in held.values()})
+        for slug, entry in derived.items():
+            names = tuple(sorted({*entry.msgtypes, *(preserved or {}).get(slug, ())}))
+            if names != entry.msgtypes:
+                declared = record_copy(entry.declaration)
+                declared.fix.msgtypes = list(names)
+                entry = dataclasses.replace(entry, declaration=declared)
             if entry is not held[slug]:
-                self.store_component(entry)
+                self._store_component(entry)
+                changed = True
+        return changed
 
 
 def _record_key(stored: str) -> int | str:
@@ -1444,12 +1731,45 @@ def _aliased(
 # -- a whole store, ready to write --------------------------------------------
 
 
+def repeating_groups_of(
+    component_records: Mapping[str, ComponentRecord],
+) -> dict[str, ComponentRecord]:
+    """Repeating-group records derived from component trees, keyed by slug.
+
+    The newest declaration owns the entry shape and every declaring version
+    is retained. Component order breaks a same-version tie, so publishing the
+    same trees always writes the same record.
+    """
+    found: dict[str, ComponentRecord] = {}
+    for component_slug in sorted(component_records):
+        owner = component_records[component_slug]
+        for member, _ in walk(owner.declaration):
+            if not is_group(member):
+                continue
+            slug = slug_of(member.name)
+            held = found.get(slug)
+            if held is not None and held.name != member.name:
+                raise ValueError(
+                    f"FIX repeating groups {held.name!r} and {member.name!r} share {slug!r}"
+                )
+            versions = canonical_versions(
+                (*(held.versions if held is not None else ()), *owner.versions)
+            )
+            declaration = member
+            if held is not None and newest_rank(held.newest) >= newest_rank(owner.newest):
+                declaration = held.declaration
+            found[slug] = ComponentRecord(member.name, versions, declaration)
+    return found
+
+
 def documents_of(
     versions: Sequence[str],
     field_records: Mapping[int | str, Field],
     component_records: Mapping[str, ComponentRecord],
     sessions: Mapping[str, Sequence[tuple[str, bool]]],
     declared: Iterable[str] = (),
+    namespace_records: Mapping[str, Mapping[int | str, Field]] | None = None,
+    sources: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, dict[str, Any]]:
     """A whole store as `{document name: document}`, ready to write.
 
@@ -1480,8 +1800,28 @@ def documents_of(
         shards.setdefault(name, {})[record.fix.key] = record
     for name, shard in shards.items():
         documents[name] = _shard_document(shard)
+    for namespace, records in sorted((namespace_records or {}).items()):
+        namespaced: dict[str, dict[int | str, Field]] = {}
+        for record in records.values():
+            name = field_document(record.fix.key, namespace)
+            namespaced.setdefault(name, {})[record.fix.key] = record
+        for name, shard in namespaced.items():
+            documents[name] = _shard_document(shard)
     for slug, entry in component_records.items():
         documents[f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}"] = component_record_document(entry)
+    for slug, entry in repeating_groups_of(component_records).items():
+        documents[f"{REPGROUP}/{slug}{DOCUMENT_SUFFIX}"] = component_record_document(entry)
+    if sources:
+        ordered = sorted(
+            (dict(source) for source in sources),
+            key=lambda source: (
+                int(source.get("priority", 0)),
+                str(source.get("namespace", "standard")),
+                str(source.get("source_id", "")),
+                str(source.get("version", "")),
+            ),
+        )
+        documents[SOURCES_FILE] = {"sources": ordered}
     return documents
 
 

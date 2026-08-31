@@ -1,0 +1,44 @@
+{
+ "name": "NoPaymentSettlPartySubIDs",
+ "versions": [
+  "4.0",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentSettlPartySubIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40238"
+  },
+  "item": {
+   "name": "PaymentSettlPartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentSettlPartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40239"
+     }
+    },
+    {
+     "name": "PaymentSettlPartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40240"
+     }
+    }
+   ]
+  }
+ }
+}

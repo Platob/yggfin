@@ -1,0 +1,197 @@
+{
+ "name": "NoUnderlyingDeliverySchedules",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingDeliverySchedules",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41756"
+  },
+  "item": {
+   "name": "UnderlyingDeliverySchedule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingDeliveryScheduleType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41757"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41758"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41759"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleNotionalUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41760"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleNotionalCommodityFrequency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41761"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleNegativeTolerance",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41762"
+     }
+    },
+    {
+     "name": "UnderlyingDeliverySchedulePositiveTolerance",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41763"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleToleranceUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41764"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleToleranceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41765"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleSettlCountry",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41766"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleSettlTimeZone",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41767"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleSettlFlowType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41768"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleSettlHolidaysProcessingInstruction",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41769"
+     }
+    },
+    {
+     "name": "NoUnderlyingDeliveryScheduleSettlDays",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41770"
+     },
+     "item": {
+      "name": "UnderlyingDeliveryScheduleSettlDay",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingDeliveryScheduleSettlDay",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41771"
+        }
+       },
+       {
+        "name": "UnderlyingDeliveryScheduleSettlTotalHours",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "41772"
+        }
+       },
+       {
+        "name": "NoUnderlyingDeliveryScheduleSettlTimes",
+        "type": "list",
+        "nullable": true,
+        "fix": {
+         "tag": "41773"
+        },
+        "item": {
+         "name": "UnderlyingDeliveryScheduleSettlTime",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingDeliveryScheduleSettlStart",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41774"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlEnd",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41775"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlTimeType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41776"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

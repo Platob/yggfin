@@ -1,0 +1,593 @@
+{
+ "name": "Millennium",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "Millennium",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Millennium",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AbbreviatedPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5474"
+    }
+   },
+   {
+    "name": "AggregateConversionQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5139"
+    }
+   },
+   {
+    "name": "AllocationIndicator1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5091"
+    }
+   },
+   {
+    "name": "AltPhone1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5367"
+    }
+   },
+   {
+    "name": "AltPhone2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5368"
+    }
+   },
+   {
+    "name": "AmntBought",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5094"
+    }
+   },
+   {
+    "name": "AmntSold",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5095"
+    }
+   },
+   {
+    "name": "AsOfIndicator1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5080"
+    }
+   },
+   {
+    "name": "AsOfTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5081"
+    }
+   },
+   {
+    "name": "BoothID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5152"
+    }
+   },
+   {
+    "name": "BranchID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5370"
+    }
+   },
+   {
+    "name": "CarryIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5479"
+    }
+   },
+   {
+    "name": "ClearingMatchID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5441"
+    }
+   },
+   {
+    "name": "ClearingRefNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5934"
+    }
+   },
+   {
+    "name": "ClearingSlipID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5443"
+    }
+   },
+   {
+    "name": "ClearingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5440"
+    }
+   },
+   {
+    "name": "CMSInternalData",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5126"
+    }
+   },
+   {
+    "name": "ContactFax",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5366"
+    }
+   },
+   {
+    "name": "ContraID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5300"
+    }
+   },
+   {
+    "name": "ContraOrderOrigin",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5132"
+    }
+   },
+   {
+    "name": "ConversionTick",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5124"
+    }
+   },
+   {
+    "name": "CrossIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5478"
+    }
+   },
+   {
+    "name": "CrossQualifier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5093"
+    }
+   },
+   {
+    "name": "CrossVariant",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5092"
+    }
+   },
+   {
+    "name": "DeltaAmnt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5096"
+    }
+   },
+   {
+    "name": "DownloadRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5445"
+    }
+   },
+   {
+    "name": "DripInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5083"
+    }
+   },
+   {
+    "name": "DripQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5084"
+    }
+   },
+   {
+    "name": "ExecBy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5140"
+    }
+   },
+   {
+    "name": "ExplicitPromptDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5936"
+    }
+   },
+   {
+    "name": "FourWayAgreement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5298"
+    }
+   },
+   {
+    "name": "Internalize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7000"
+    }
+   },
+   {
+    "name": "LegReport",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5444"
+    }
+   },
+   {
+    "name": "MatchingSlipID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5442"
+    }
+   },
+   {
+    "name": "MatchRefNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5935"
+    }
+   },
+   {
+    "name": "MemberAddress",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5365"
+    }
+   },
+   {
+    "name": "MemberName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5364"
+    }
+   },
+   {
+    "name": "MemberVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5516"
+    }
+   },
+   {
+    "name": "MguIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5473"
+    }
+   },
+   {
+    "name": "MustRefresh",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5299"
+    }
+   },
+   {
+    "name": "NoBranch",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5369"
+    }
+   },
+   {
+    "name": "NoParam",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5097"
+    }
+   },
+   {
+    "name": "NoPrompts",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5257"
+    }
+   },
+   {
+    "name": "NumMsg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5448"
+    }
+   },
+   {
+    "name": "OldReferenceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5439"
+    }
+   },
+   {
+    "name": "Omnibus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5133"
+    }
+   },
+   {
+    "name": "OrderOrigin1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5213"
+    }
+   },
+   {
+    "name": "ParamType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5098"
+    }
+   },
+   {
+    "name": "ParamValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5099"
+    }
+   },
+   {
+    "name": "PendingAllocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5131"
+    }
+   },
+   {
+    "name": "Post",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5127"
+    }
+   },
+   {
+    "name": "PriceCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5937"
+    }
+   },
+   {
+    "name": "PriceImprovementSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5141"
+    }
+   },
+   {
+    "name": "PrivateReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5476"
+    }
+   },
+   {
+    "name": "PromptDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5475"
+    }
+   },
+   {
+    "name": "PublicReferece",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5477"
+    }
+   },
+   {
+    "name": "ReferenceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5438"
+    }
+   },
+   {
+    "name": "RejectCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6396"
+    }
+   },
+   {
+    "name": "ReqResponseStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5469"
+    }
+   },
+   {
+    "name": "ReqResponseTo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5449"
+    }
+   },
+   {
+    "name": "RequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5447"
+    }
+   },
+   {
+    "name": "RequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5446"
+    }
+   },
+   {
+    "name": "Reserved77",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5939"
+    }
+   },
+   {
+    "name": "Reserved78",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5940"
+    }
+   },
+   {
+    "name": "ShortCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5290"
+    }
+   },
+   {
+    "name": "SingleConversionQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5138"
+    }
+   },
+   {
+    "name": "TradeNotificationID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5125"
+    }
+   },
+   {
+    "name": "TradeOrigin1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5938"
+    }
+   },
+   {
+    "name": "TradeTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5179"
+    }
+   },
+   {
+    "name": "TrdMatchTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5507"
+    }
+   },
+   {
+    "name": "TurnAroundNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5128"
+    }
+   }
+  ]
+ }
+}

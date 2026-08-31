@@ -4,7 +4,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "FinancingDetails",
@@ -12,10 +13,14 @@
   "nullable": true,
   "fix": {
    "component": "FinancingDetails",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AdjustedPositionReport",
     "Advertisement",
@@ -154,31 +159,94 @@
     }
    },
    {
-    "name": "FinancingContractualDefinitionGrp",
-    "type": "struct",
+    "name": "NoContractualDefinitions",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "FinancingContractualDefinitionGrp"
+     "tag": "40040"
     },
-    "fields": []
+    "item": {
+     "name": "ContractualDefinition",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40041"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "FinancingTermSupplementGrp",
-    "type": "struct",
+    "name": "NoFinancingTermSupplements",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "FinancingTermSupplementGrp"
+     "tag": "40046"
     },
-    "fields": []
+    "item": {
+     "name": "FinancingTermSupplement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "FinancingTermSupplementDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40047"
+       }
+      },
+      {
+       "name": "FinancingTermSupplementDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40048"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "FinancingContractualMatrixGrp",
-    "type": "struct",
+    "name": "NoContractualMatrices",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "FinancingContractualMatrixGrp"
+     "tag": "40042"
     },
-    "fields": []
+    "item": {
+     "name": "ContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40043"
+       }
+      },
+      {
+       "name": "ContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40044"
+       }
+      },
+      {
+       "name": "ContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40045"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "CreditSupportAgreementDesc",
@@ -274,6 +342,14 @@
     "nullable": true,
     "fix": {
      "tag": "898"
+    }
+   },
+   {
+    "name": "MarginPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3114"
     }
    }
   ]

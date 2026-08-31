@@ -286,7 +286,12 @@ class ComponentRecord(Convertible):
     @property
     def members(self) -> tuple[Field, ...]:
         """The declaration's members, in wire order."""
-        return quickfix.members_of(self.declaration)
+        declared = (
+            quickfix.entry_of(self.declaration)
+            if quickfix.is_group(self.declaration)
+            else self.declaration
+        )
+        return quickfix.members_of(declared)
 
     @property
     def msg_type(self) -> str:

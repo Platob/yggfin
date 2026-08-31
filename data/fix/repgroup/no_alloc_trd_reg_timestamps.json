@@ -1,0 +1,48 @@
+{
+ "name": "NoAllocTrdRegTimestamps",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoAllocTrdRegTimestamps",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "3008"
+  },
+  "item": {
+   "name": "AllocTrdRegTimestamp",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AllocTrdRegTimestamp",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3009"
+     }
+    },
+    {
+     "name": "AllocTrdRegTimestampType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3010"
+     }
+    },
+    {
+     "name": "AllocTrdRegTimestampSrc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3011"
+     }
+    }
+   ]
+  }
+ }
+}

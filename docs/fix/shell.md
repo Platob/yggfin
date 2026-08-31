@@ -58,8 +58,9 @@ rekep fix registry remove-component --store data/fix --name VenueOrder
 ```
 
 These commands are the supported writers. Do not edit files under
-`data/fix/fields` or `data/fix/components`; `FixRegistry` validates the whole
-post-change store before replacing a shard.
+`data/fix/fields`, `data/fix/components`, or `data/fix/repgroup`;
+`FixRegistry` validates the whole post-change store before replacing a shard.
+The repeating-group folder is regenerated from component trees.
 
 ## Interactive shell
 
@@ -93,6 +94,10 @@ cd python
 uv run python -c "from rekep.fix.publish import publish_full; \
 publish_full('../data/fix', '../data/fix.zip')"
 ```
+
+`scrape` is the only command that reads the source dictionaries. A cold default
+store downloads the repository's main-branch zip; an unavailable archive uses
+the packaged projection and never starts a source scrape implicitly.
 
 See the [registry internals](index.md) for bootstrap and storage rules, or
 [browse the published registry](registry.md) without installing the package.

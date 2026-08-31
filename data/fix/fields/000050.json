@@ -3,20 +3,29 @@
   "name": "BatchID",
   "type": "string",
   "nullable": true,
+  "description": "Unique Identifier for a batch of messages.",
   "fix": {
-   "tag": "50000",
-   "type": "STRING",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "origins": {
-    "name": "quickfix",
-    "type": "quickfix"
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.5.0SP2",
+    "added_ep": "178"
    },
-   "name": "BatchID",
+   "tag": "50000",
+   "type": "String",
    "versions": [
-    "5.0.SP2"
+    "5.0.SP2",
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest",
+    "quickfix"
    ]
   }
  },
@@ -24,20 +33,29 @@
   "name": "BatchTotalMessages",
   "type": "int32",
   "nullable": true,
+  "description": "Total # of messages contained within batch.",
   "fix": {
-   "tag": "50001",
-   "type": "INT",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "origins": {
-    "name": "quickfix",
-    "type": "quickfix"
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "int",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.5.0SP2",
+    "added_ep": "178"
    },
-   "name": "BatchTotalMessages",
+   "tag": "50001",
+   "type": "int",
    "versions": [
-    "5.0.SP2"
+    "5.0.SP2",
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest",
+    "quickfix"
    ]
   }
  },
@@ -45,40 +63,47 @@
   "name": "BatchProcessMode",
   "type": "int32",
   "nullable": true,
+  "description": "Indicates the processing mode for a batch of messages.",
   "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "BatchProcessModeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.5.0SP2",
+    "added_ep": "178"
+   },
    "tag": "50002",
-   "type": "INT",
+   "type": "int",
    "values": [
     {
      "value": "0",
-     "meaning": "",
+     "meaning": "Update/incremental (default if not specified)",
      "aliases": [
+      "Update",
       "UPDATE"
      ]
     },
     {
      "value": "1",
-     "meaning": "",
+     "meaning": "Snapshot",
      "aliases": [
+      "Snapshot",
       "SNAPSHOT"
      ]
     }
    ],
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "origins": {
-    "name": "quickfix",
-    "type": "quickfix",
-    "aliases": {
-     "0": "quickfix",
-     "1": "quickfix"
-    }
-   },
-   "name": "BatchProcessMode",
    "versions": [
-    "5.0.SP2"
+    "5.0.SP2",
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest",
+    "quickfix"
    ]
   }
  }

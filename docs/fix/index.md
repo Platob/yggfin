@@ -143,6 +143,7 @@ fields/000040.json    tags 40000-40999, the 5.0.SP2 extension pack
 fields/999999.json    the fields FIX never numbered
 components/parties.json          one component
 components/new_order_single.json a message
+repgroup/no_party_i_ds.json      one repeating-group list field
 ```
 
 The document holding a tag is `tag // 1000` -- arithmetic, so there is no index,
@@ -189,40 +190,8 @@ that grows past them fails.
 
 ### Value codecs
 
-`encode` maps a value spelled as text to the wire value it names, so
-`TrdRegTimestampType=OrderSubmissionTime` resolves to `10`. Each raw value
-maps to itself, so a caller has one lookup path and not two.
-
-It is derived from every spelling a value carries -- the prose, the aliases
-and the value itself -- normalized by casefold and then by dropping every
-character outside `[a-z0-9]`, which is what makes `ORDER_SUBMISSION_TIME` and
-`Order Submission Time` one key where plain lowercasing leaves two. Cached and
-never stored: it was three hundred kilobytes of the published dictionary
-saying nothing the values did not already say. Recording an estate's own
-spelling is one more alias on the value it names.
-
-`decode` maps a wire value to the leading symbolic spelling the registry
-decided, while `meaning` returns its prose. Both fall through safely when a
-field declares no transformation. `arrow_encode` and `arrow_decode` apply the
-same maps to columns and return an identity column untouched.
-
-Two values that normalize alike emit neither key: an ambiguous encoding that
-silently picks one is worse than none, and the lookup falls through to the raw
-value. The dropped keys are counted with the conflict report.
-
-```python
-import pyarrow
-
-field = registry.resolve("Side")
-assert field.fix.encode("Buy") == "1"
-assert field.fix.decode("1") == "Buy"
-assert field.fix.meaning("1") == "Buy"
-print(field.fix.arrow_encode(pyarrow.array(["Buy", "2"])).to_pylist())
-```
-
-```text
-['1', '2']
-```
+Scalar and Arrow examples live on the dedicated [encode](encode.md) and
+[decode](decode.md) pages.
 
 ### Resolving a name
 
@@ -246,11 +215,15 @@ identities claiming one **tag**, and two claiming one canonical name are all
 defects `registry.check()` reports and every write refuses -- with the
 conflicting names in the message.
 
+For a promoted rendered column the same order is its value fallback: canonical
+name first, then aliases as stored. The first spelling present in one row wins;
+lower-priority entries remain in the residual list rather than overwriting it.
+
 An older version's spelling that another identity already claims as its
 canonical name cannot become an alias, and stays in the conflict report as the
 dropped reading it is.
 
-### Editing and refreshing
+### Editing and scraping
 
 The [registry CLI](shell.md) owns the complete command workflow. Its two
 surfaces share the same validated registry operations:
@@ -283,9 +256,8 @@ True
 ```
 
 The default store, `~/.config/fix`, is the one nobody chose, and the only one
-that fills itself. A **fetch verb** opens the door explicitly everywhere else:
-`FixRegistry.scrape()`, `rebuild()`, `fields(version, refresh=True)`, or a
-`cache_ttl` that has come due.
+that fills itself. `FixRegistry.scrape()` is the sole operation that reads the
+source dictionaries; construction and every lookup stay source-free.
 
 `cache_dir` accepts any location `Url` resolves. A directory is read where it
 is, local or remote. An archive on a filesystem this process cannot open a
@@ -312,7 +284,7 @@ from rekep.fix import FixRegistry
 FixRegistry.set_builtin(FixRegistry(cache_dir="data/fix.zip"))
 ```
 
-It refuses a registry missing rekep's own 26 identities, and it
+It refuses a registry missing rekep's own 36 identities, and it
 does **not** move the published Arrow contracts: `rekep.fix.columns` reads the
 default while its module body runs, and those declarations are what
 `schemas/rekep/*.yaml` publishes. `set_builtin(None)` restores the packaged
@@ -327,24 +299,17 @@ it by starting a fourteen-thousand-page scrape in the middle of a batch.
 | what it finds | what it does |
 | --- | --- |
 | a store at `cache_dir` | serves it, silently, and never reaches a source |
-| configured registry URL | validates and atomically expands the full archive |
-| archive unavailable | fetches the configured sources in priority order |
-| no URL, no store | fetches the configured sources in priority order |
-| no store, the fetch failed | serves the packaged projection and says the registry is reduced |
+| cold default store | validates and atomically expands the main GitHub repository archive |
+| configured registry URL | uses that archive instead of GitHub |
+| archive unavailable or invalid | serves the packaged projection and says the registry is reduced |
 
 Only the *default* store (`~/.config/fix`) is bootstrapped. A `cache_dir`
 somebody named is that store, cold or not: it is about to be written, or it is
 a projection that is complete for what it projects.
 
-Both channels carry the lines. `warnings.warn` is the record -- filterable, and
-shown once, which is why it is not the only one -- and `announce` is the
-foreground writer a person waiting on a multi-hour fetch reads; it defaults to
-`stderr`, and the CLI and the notebooks pass their own.
-
-The start line says what was not found and where it looked, what is being
-fetched from `DEFAULT_SOURCES`, roughly how many pages and how
-long, where it installs, and how to skip it. The finish line says what was
-written and how long it took.
+Both channels carry the lines. `warnings.warn` records the operation and
+`announce` writes progress to `stderr` by default. The start line names the
+archive; the finish line reports the installed document count and duration.
 
 ```bash
 export REKEP_FIX_REGISTRY_URL="https://artifactory.example/artifactory/rekep/fix-registry.zip"
@@ -359,7 +324,7 @@ registry = FixRegistry()  # installs into ~/.config/fix only when it is absent
 
 The token is optional, HTTPS-only, and never serialised. Registry URLs cannot
 carry user information or a query. The compressed download and expanded ZIP
-are bounded. Every index, field and component is validated before the staged
+are bounded. Every index, field, component and repeating group is validated before the staged
 directory is renamed, so a failed or concurrent install never becomes a cache.
 
 ```bash
@@ -393,11 +358,6 @@ The job builds both distributions and a deterministic registry from
 skipped on a rerun. The registry is uploaded second with its SHA-256 checksum.
 Consumers use its target URL as their cold-cache fallback.
 
-`FixRegistry(cache_ttl=seconds)` regenerates a store older than the TTL from
-the configured registry sources before serving it. The default, `0`, never refetches. A
-refetch that fails is reported and the local copy served anyway: a dictionary
-a day stale parses every message, and one that raises parses none.
-
 ### Merged views
 
 `merged_fields()` and `component_records()` hand over the whole unified table
@@ -409,7 +369,7 @@ Protocol-specific code should normalize values, not duplicate registry tables.
 
 ### What the wheel carries
 
-`data/fix.zip` is the whole dictionary plus rekep's 35 frozen fields and stays
+`data/fix.zip` is the whole dictionary plus rekep's 36 frozen fields and stays
 beside the repository. The wheel ships `rekep/fix/registry.zip`: the standard
 keys `rekep.fix.publish.PROJECTED` names, those same package fields, and every
 version's declarations, messages included, whole.
@@ -467,62 +427,9 @@ reaches them at all.
 
 ### One shape for a field, a group and a message
 
-A component, a message type and a repeating group are the same thing here: a
-`Field`. A block is a **struct** of its members, a repeating group is a
-**list** of the entry it repeats, and a member that defers to another block is
-a struct with no members yet and that block's name in `fix:component`.
-
-```json
-{"name": "Parties", "type": "struct", "fix": {"component": "Parties"},
- "fields": [{"name": "NoPartyIDs", "type": "list", "fix": {"tag": "453"},
-             "item": {"type": "struct", "fields": [
-               {"name": "PartyID", "type": "string", "fix": {"tag": "448"}}]}}]}
-```
-
-So a component file reads like a contract file, because it is one -- the same
-document `Field.into_dict()` writes for `schemas/rekep/*.yaml` -- and there is
-no second tree to keep in step with the first. FIX's own names are what the
-declaration says; the Arrow projection folds them when it builds columns, and
-records each one under `fix:name` so the spelling survives the fold.
-Whether a member is required is its nullability, which is the same fact under
-the name the rest of the package already uses for it.
-
-A reference is **not** expanded where it is stored. Expanding the published
-dictionary in place turns 3,229 members into 120,241 -- `Instrument` alone is
-referenced twenty-two times -- so the reference stays, and whoever reads it
-expands it. `into_field` does exactly that when it projects to Arrow, because
-that is where a referenced component's fields arrive on the wire.
-
-### A component, materialised
-
-Because the declaration already says every member's name, its Arrow type and
-whether a message must carry it, there is nothing left to write by hand:
-`component_scalar()` is `into_dataclass()` over the projection.
-
-```python
-Parties = registry.component_scalar("Parties", "4.4")
-Parties(nopartyids=[Parties.PartyID(partyid="BUY-A", partyrole=3)])
-```
-
-Group entries are classes named after the entry a group repeats -- `NoPartyIDs`
-yields `Parties.PartyID` -- they hang off the
-class that declares them so a caller can build one, and a dictionary refresh
-moves all of it. A column Python cannot spell keeps its own name: FIX tag 236
-is `Yield`, and `yield` is a statement, so the attribute is `yield_` while the
-column stays `yield` -- `into_field_columns()` is where the class says so, and
-any hand-written `@scalar` class can declare it the same way.
-
-The handful of components this package projects into **published** columns
-keep their hand-written declarations. Those are a contract, and a contract
-that changed shape whenever the dictionary was refreshed would not be one.
-
-Rebuild the projection after refreshing the dictionary:
-
-```bash
-cd python
-uv run python -c "from rekep.fix.publish import publish_builtin; \
-publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
-```
+The reviewable shapes and executable examples are split into
+[fields](fields.md), [components](components.md), and
+[repeating groups](repeating-groups.md).
 
 ## Classifying a capture's key names
 

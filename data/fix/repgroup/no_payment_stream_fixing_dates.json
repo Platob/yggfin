@@ -1,0 +1,37 @@
+{
+ "name": "NoPaymentStreamFixingDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentStreamFixingDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42660"
+  },
+  "item": {
+   "name": "PaymentStreamFixingDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamFixingDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42661"
+     }
+    },
+    {
+     "name": "PaymentStreamFixingDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42662"
+     }
+    }
+   ]
+  }
+ }
+}

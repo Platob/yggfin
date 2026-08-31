@@ -1,0 +1,41 @@
+{
+ "name": "NoInstrumentPartySubIDs",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoInstrumentPartySubIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1052"
+  },
+  "item": {
+   "name": "InstrumentPartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentPartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1053"
+     }
+    },
+    {
+     "name": "InstrumentPartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1054"
+     }
+    }
+   ]
+  }
+ }
+}

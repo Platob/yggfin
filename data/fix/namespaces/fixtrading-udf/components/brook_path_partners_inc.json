@@ -1,0 +1,201 @@
+{
+ "name": "BrookPathPartnersInc",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "BrookPathPartnersInc",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BrookPathPartnersInc",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AEPTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9875"
+    }
+   },
+   {
+    "name": "AggressorIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5460"
+    }
+   },
+   {
+    "name": "AllocInterestAtMaturity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6696"
+    }
+   },
+   {
+    "name": "CstmApplVerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5465"
+    }
+   },
+   {
+    "name": "InCompete",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6702"
+    }
+   },
+   {
+    "name": "InterestAtMaturity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6695"
+    }
+   },
+   {
+    "name": "MarketZone",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5454"
+    }
+   },
+   {
+    "name": "MDBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5466"
+    }
+   },
+   {
+    "name": "MDCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5468"
+    }
+   },
+   {
+    "name": "MDCountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5452"
+    }
+   },
+   {
+    "name": "MDDelayed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5458"
+    }
+   },
+   {
+    "name": "MDPriceLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5467"
+    }
+   },
+   {
+    "name": "MDStatScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5451"
+    }
+   },
+   {
+    "name": "MDStdDeviation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5456"
+    }
+   },
+   {
+    "name": "PriceTimestamp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5457"
+    }
+   },
+   {
+    "name": "PrimeDealIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5462"
+    }
+   },
+   {
+    "name": "SecondaryTradeID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5464"
+    }
+   },
+   {
+    "name": "SettlType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5459"
+    }
+   },
+   {
+    "name": "SmoothRateSrc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5455"
+    }
+   },
+   {
+    "name": "TicketStatus1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5461"
+    }
+   },
+   {
+    "name": "TradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5463"
+    }
+   },
+   {
+    "name": "TraderCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5453"
+    }
+   }
+  ]
+ }
+}

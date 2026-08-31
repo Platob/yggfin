@@ -27,12 +27,12 @@ from rekep.fix.store import ConflictReport
 #: looked at, and fails rather than shipping them.
 CONFLICT_BASELINE: Mapping[str, int] = MappingProxyType(
     {
-        "values": 522,
-        "aliases": 223,
+        "values": 949,
+        "aliases": 224,
         "added": 16,
-        "type": 197,
-        "name": 59,
-        "note": 18,
+        "type": 206,
+        "name": 65,
+        "note": 448,
         "members": 65,
         "encoded": 134,
     }

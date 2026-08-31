@@ -1,0 +1,29 @@
+{
+ "name": "NoLegStreamFirstPeriodStartDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegStreamFirstPeriodStartDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40941"
+  },
+  "item": {
+   "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40269"
+     }
+    }
+   ]
+  }
+ }
+}

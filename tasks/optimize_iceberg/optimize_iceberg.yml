@@ -4,20 +4,21 @@ parameters:
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
-  # catalog: rekep-production
-  # catalog_properties:
-  #   type: glue
-  #   warehouse: s3://example-bucket/rekep/warehouse
-  #   glue.region: eu-west-1   # where the catalog lives
-  #   s3.region: eu-west-1     # where the warehouse bucket lives
-  #   glue.id: "123456789012"  # Optional cross-account Glue catalog ID.
-  # A custom KMS key belongs in the bucket default. `s3.sse.type: kms` and
-  # `s3.sse.key` are refused because Arrow cannot send their request headers.
-  catalog: rekep
-  catalog_properties:
-    type: sql
-    uri: sqlite:///data/catalog.db
-    warehouse: file://data/warehouse
+  # catalog:
+  #   catalog_name: rekep-production
+  #   properties:
+  #     type: glue
+  #     warehouse: s3://example-bucket/rekep/warehouse
+  #     glue.region: eu-west-1   # Catalog region.
+  #     s3.region: eu-west-1     # Warehouse region.
+  #     glue.id: "123456789012"  # Optional cross-account catalog ID.
+  #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
+  catalog:
+    catalog_name: rekep
+    properties:
+      type: sql
+      uri: sqlite:///data/catalog.db
+      warehouse: file://data/warehouse
   # Null visits every namespace recursively.
   namespace: null
   # root, main, and master name the same Iceberg root branch.

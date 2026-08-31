@@ -1,0 +1,113 @@
+{
+ "name": "EaseTechnologiesInc",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "EaseTechnologiesInc",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "EaseTechnologiesInc",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "ETBegin",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9599"
+    }
+   },
+   {
+    "name": "ETLast",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9609"
+    }
+   },
+   {
+    "name": "FIXReferenceNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9608"
+    }
+   },
+   {
+    "name": "FIXStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9604"
+    }
+   },
+   {
+    "name": "FIXStatusOBOCompID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9606"
+    }
+   },
+   {
+    "name": "FIXStatusOBOSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9607"
+    }
+   },
+   {
+    "name": "FIXStatusSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9605"
+    }
+   },
+   {
+    "name": "IoiNatural",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9601"
+    }
+   },
+   {
+    "name": "IoiType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9602"
+    }
+   },
+   {
+    "name": "NoFixStatusses",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9603"
+    }
+   },
+   {
+    "name": "Password4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9600"
+    }
+   }
+  ]
+ }
+}

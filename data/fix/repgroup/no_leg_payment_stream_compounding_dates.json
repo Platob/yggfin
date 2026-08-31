@@ -1,0 +1,37 @@
+{
+ "name": "NoLegPaymentStreamCompoundingDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegPaymentStreamCompoundingDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42405"
+  },
+  "item": {
+   "name": "LegPaymentStreamCompoundingDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamCompoundingDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42406"
+     }
+    },
+    {
+     "name": "LegPaymentStreamCompoundingDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42407"
+     }
+    }
+   ]
+  }
+ }
+}

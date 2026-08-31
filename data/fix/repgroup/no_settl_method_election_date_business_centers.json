@@ -1,0 +1,29 @@
+{
+ "name": "NoSettlMethodElectionDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoSettlMethodElectionDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42775"
+  },
+  "item": {
+   "name": "SettlMethodElectionDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SettlMethodElectionDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42776"
+     }
+    }
+   ]
+  }
+ }
+}

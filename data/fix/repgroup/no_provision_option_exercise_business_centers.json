@@ -1,0 +1,29 @@
+{
+ "name": "NoProvisionOptionExerciseBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoProvisionOptionExerciseBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40954"
+  },
+  "item": {
+   "name": "ProvisionOptionExerciseBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionOptionExerciseBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40124"
+     }
+    }
+   ]
+  }
+ }
+}

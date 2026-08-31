@@ -1,16 +1,17 @@
 # Configuring a parse
 
 Everything a capture differs by is a document, not a code change. The message
-stage owns the log header, timezone, and protocol-neutral key/value split. The
-FIX stage owns which payloads are FIX, which key spellings its rules admit,
-what their fields mean, and what counts as absent.
+stage owns the log header, timezone, protocol-neutral key/value split, source
+key aliases and absent-value filter. The FIX stage owns which payloads are FIX,
+which key spellings its rules admit, and what their fields mean.
 
 ```mermaid
 flowchart LR
     H[header] --> T[TextFile / TextFiles]
     D[fix_dictionary<br/><i>MsgType event_types</i>] --> T
     T --> M[(logs.messages<br/>Message)]
-    N[null_values] --> C[FixCodec]
+    N[null_values] --> T
+    K[plugin_keys] --> T
     P[protocols<br/><i>Rules</i>] --> C
     P --> T
     F[fields<br/><i>FieldRules</i>] --> C
@@ -96,9 +97,11 @@ exact Arrow lookup; it does not maintain a second set of payload regexes.
   "fix": {
     "tag": "35",
     "type": "String",
-    "values": "[{\"value\":\"8\",\"meaning\":\"ExecutionReport\"},{\"value\":\"D\",\"meaning\":\"NewOrderSingle\"}]",
-    "event_types": "{\"8\":\"EXECUTION\",\"D\":\"ORDER\",\"W\":\"BOOK\"}",
-    "states": "{\"D\":\"PENDING_NEW\"}"
+    "values": [
+      {"value": "8", "meaning": "ExecutionReport"},
+      {"value": "D", "meaning": "NewOrderSingle"}
+    ],
+    "event_types": {"0": "SESSION", "8": "EXECUTION", "D": "ORDER", "W": "BOOK"}
   }
 }
 ```
@@ -109,10 +112,10 @@ ASCII mnemonic packed big-endian into an `int64` (`EXECUTION`, `ORDER`,
 edit. A name this release does not declare is refused on load rather than
 read as a degraded `UNKNOWN`.
 
-A row without a discriminator is `MISC`. A discriminator known by the
-registry but without a market mapping is also `MISC`; a private value absent
-from the registry is `UNKNOWN`. Market kinds start at `EventType.INTENT`, so
-these terminal values cannot enter `fix.market` accidentally.
+A row without a discriminator is `MISC`. Registry metadata classifies session,
+allocation, settlement, confirmation, news, position, collateral and party
+traffic as their own `EventType`; a known but unmapped value remains `MISC`,
+and a private value absent from the registry is `UNKNOWN`.
 
 The market layer owns which message shapes it implements, under the standard's
 own name for each, and asks the dictionary what this feed spells them as:
@@ -133,7 +136,7 @@ use `State` members; registry documents name them.
   "fix": {
     "tag": "150",
     "type": "char",
-    "states": "{\"0\":\"NEW\",\"1\":\"PARTIALLY_FILLED\",\"2\":\"FILLED\",\"G\":\"REPLACED\",\"H\":\"CANCELLED\"}"
+    "states": {"0": "NEW", "1": "PARTIALLY_FILLED", "2": "FILLED", "G": "REPLACED", "H": "CANCELLED"}
   }
 }
 ```
@@ -194,10 +197,13 @@ codec = FixCodec(
 writes `<null>` for "the field is not set" does not store the string.
 
 ```yaml
+plugin_keys:
+  XmlApi: {clientid: ClOrdID, type: MsgType}
 null_values: ["", "null", "<null>", "n/a", "none"]
 ```
 
-Matching is case-insensitive, so `NONE` is absent too.
+Plugin names and null values match case-insensitively. Key names use the same
+folded comparison as the FIX registry.
 
 ## Where each one is read
 
@@ -209,10 +215,11 @@ Matching is case-insensitive, so `NONE` is absent too.
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
 | `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
 | `technical_plugins` | parsed `plugin` filter before persistence | `parse_messages` |
+| `plugin_keys` | `TextFile` entry-key normalization | `parse_messages` |
+| `null_values` | `TextFile` entry filter | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
 | `protocols` | `Message.protocol`, then `FixCodec.rules` | both parse stages |
-| `null_values` | `FixCodec.null_values` | `parse_fix` |
 | `fields` | `FixCodec.fields` | `parse_fix` |
 | `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |
 

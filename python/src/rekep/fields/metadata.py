@@ -65,7 +65,7 @@ def encoded_key(text: Any) -> str:
 
 
 def version_rank(version: str) -> tuple[int, ...]:
-    """A sortable reading of `4.0`, `5.0.SP2`, `FIXT1.1`, newest last.
+    """A sortable reading of FIX versions, with `FIX.Latest` newest.
 
     The transport (`FIXT1.1`) ranks *above* every application version here, so
     that sorting a record's versions gives `versions.json`'s declared order.
@@ -73,8 +73,14 @@ def version_rank(version: str) -> tuple[int, ...]:
     layer redefines a handful of application fields, and letting it own their
     reading would give a session-layer meaning to fields it merely carries.
     """
-    transport = 1 if version.upper().startswith("FIXT") else 0
-    return (transport, *(int(part) for part in re.findall(r"\d+", version)))
+    upper = version.upper()
+    transport = 1 if upper.startswith("FIXT") else 0
+    numbers = (
+        (2**31 - 1,)
+        if upper.startswith("FIX.LATEST")
+        else tuple(int(part) for part in re.findall(r"\d+", version))
+    )
+    return (transport, *numbers)
 
 
 def newest_rank(version: str) -> tuple[int, ...]:

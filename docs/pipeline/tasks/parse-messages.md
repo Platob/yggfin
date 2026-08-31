@@ -62,15 +62,20 @@ include_msgtypes: []
 exclude_msgtypes: ["0", "1"]
 technical_plugins: [jolokia]
 
+plugin_keys:
+  XmlApi: {clientid: ClOrdID, type: MsgType}
+null_values: ["", "null", "<null>", "n/a", "none"]
+
 batch_row_size: 65536
 batch_byte_size: 67108864
 max_row_byte_size: 67108864
 duration_ns: null
 ```
 
-Empty lists keep every value. A truncated or oversized record is retained with
-its dropped-byte count in `reason`; a bound that prevents even a header from
-being read raises instead of reporting an empty capture.
+`plugin_keys` renames only rows recorded by that plugin, before fields such as
+`MsgType` lift. Null matching is case-insensitive. Empty filter lists keep
+every row. A truncated or oversized record is retained with its dropped-byte
+count in `reason`; a bound that prevents even a header from being read raises.
 
 Compressed local and remote files stream one at a time. Set `spill: true` to
 stage only the compressed bytes in a temporary local file. A live `TextFile`
@@ -78,5 +83,5 @@ reader owns its handle, so close it before opening another reader on the same
 object.
 
 `logs.messages` is retained so field rules can be replayed without reopening
-the source captures. Rebuild it only when source filtering, header parsing,
-protocol syntax rules or MsgType event metadata changes.
+the source captures. Rebuild it when source filtering, key normalization,
+header parsing, protocol rules or MsgType metadata changes.

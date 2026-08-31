@@ -1,7 +1,8 @@
 {
  "name": "StreamAssignmentRequest",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "StreamAssignmentRequest",
@@ -10,12 +11,24 @@
   "fix": {
    "component": "StreamAssignmentRequest",
    "msgtype": "CC",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "StreamAsgnReqID",
     "type": "string",
@@ -31,10 +44,146 @@
     }
    },
    {
-    "name": "StrmAsgnReqGrp",
+    "name": "NoAsgnReqs",
+    "type": "list",
+    "fix": {
+     "tag": "1499"
+    },
+    "item": {
+     "name": "AsgnReq",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NoPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "453"
+       },
+       "item": {
+        "name": "PartyID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "PartyID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "448"
+          }
+         },
+         {
+          "name": "PartyIDSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "447"
+          }
+         },
+         {
+          "name": "PartyRole",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "452"
+          }
+         },
+         {
+          "name": "PartyRoleQualifier",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2376"
+          }
+         },
+         {
+          "name": "NoPartySubIDs",
+          "type": "list",
+          "nullable": true,
+          "fix": {
+           "tag": "802"
+          },
+          "item": {
+           "name": "PartySubID",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "PartySubID",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "523"
+             }
+            },
+            {
+             "name": "PartySubIDType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "803"
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "NoRelatedSym",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "146"
+       },
+       "item": {
+        "name": "RelatedSym",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "Instrument",
+          "type": "struct",
+          "nullable": true,
+          "fix": {
+           "component": "Instrument"
+          },
+          "fields": []
+         },
+         {
+          "name": "SettlType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "63"
+          }
+         },
+         {
+          "name": "MDEntrySize",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "271"
+          }
+         },
+         {
+          "name": "MDStreamID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1500"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "StandardTrailer",
     "type": "struct",
     "fix": {
-     "component": "StrmAsgnReqGrp"
+     "component": "StandardTrailer"
     },
     "fields": []
    }

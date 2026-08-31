@@ -1,0 +1,169 @@
+{
+ "name": "IntegratedTransactionSystemsLtd",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "IntegratedTransactionSystemsLtd",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "IntegratedTransactionSystemsLtd",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AccountSell",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7200"
+    }
+   },
+   {
+    "name": "AccountType3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7201"
+    }
+   },
+   {
+    "name": "AccountTypeSell",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7202"
+    }
+   },
+   {
+    "name": "Anonymous",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7212"
+    }
+   },
+   {
+    "name": "BasketTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7204"
+    }
+   },
+   {
+    "name": "CDNExchangeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7210"
+    }
+   },
+   {
+    "name": "InternalCross",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7205"
+    }
+   },
+   {
+    "name": "ItemNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7222"
+    }
+   },
+   {
+    "name": "Jitney",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7208"
+    }
+   },
+   {
+    "name": "MGFCandidate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7207"
+    }
+   },
+   {
+    "name": "OrderIDSell",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7206"
+    }
+   },
+   {
+    "name": "PortfolioName1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7220"
+    }
+   },
+   {
+    "name": "ProgramTrade2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7203"
+    }
+   },
+   {
+    "name": "RegulationId7213",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7213"
+    }
+   },
+   {
+    "name": "RegulationIdSell",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7214"
+    }
+   },
+   {
+    "name": "SettlementTerms",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7221"
+    }
+   },
+   {
+    "name": "ShortExempt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7209"
+    }
+   },
+   {
+    "name": "UserMessageId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7211"
+    }
+   }
+  ]
+ }
+}

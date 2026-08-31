@@ -1,0 +1,46 @@
+{
+ "name": "NoApplIDs",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoApplIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1351"
+  },
+  "item": {
+   "name": "ApplID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RefApplID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1355"
+     }
+    },
+    {
+     "name": "ApplNewSeqNum",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1399"
+     }
+    },
+    {
+     "name": "RefApplLastSeqNum",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1357"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -17,7 +17,7 @@ fields:
   type: int64
   description: Which kind of event this is -- the one column a union of the tables needs.
   fix: {name: EventType}
-  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","6004496033382400000":"STATE","4778124913204527104":"BOOK"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"EXECUTION":"EXECUTED","INSTRUMENT":"INSTRMT"}'}
+  enum: {name: EventType, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","6000293695718379008":"SESSION","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5282234494403826757":"INDICATION","4705219614009807941":"ALLOCATION","6000294799574630400":"SETTLEMENT","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","4850181387486121216":"CONFIRMATION","5640010122345316352":"NEWS","6004496033382400000":"STATE","4778124913204527104":"BOOK","5786935620606185294":"POSITION","4850179214098584140":"COLLATERAL","5782993918744330240":"PARTY"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ALLOCATION":"ALLOCATE","COLLATERAL":"COLLATRL","CONFIRMATION":"CONFIRM","EXECUTION":"EXECUTED","INDICATION":"INDICATE","INSTRUMENT":"INSTRMT","SETTLEMENT":"SETTLE"}'}
 - name: plugin
   type: string
   description: Source plugin that recorded the row; empty when the envelope did not name one.
@@ -47,7 +47,6 @@ fields:
 - name: hash
   type: fixed_size_binary[16]
   description: Time-anchored composition of `unix` and `vhash`.
-  iceberg: {sort_key: asc}
 - name: vhash
   type: int64
   description: XXH3-64 of the framed value parts, with every clock excluded.
@@ -106,7 +105,7 @@ fields:
 - name: lastmkt
   type: int32
   nullable: true
-  description: 'Market of execution for last fill, or an indication of the market where an order was routed Valid values: See "Appendix 6-C"'
+  description: Market of execution for last fill, or an indication of the market where an order was routed
   fix: {tag: '30', type: Exchange, name: LastMkt}
   enum: {name: MIC, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
 - name: reason
@@ -123,7 +122,7 @@ fields:
     fix: {tag: '30020', type: String, name: SymbolTicker}
   - name: symbol
     type: string
-    description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles) Use "[N/A]" for products which do not have a symbol.
+    description: Ticker symbol. Common, "human understood" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles)
     fix: {tag: '55', type: String, name: Symbol}
   - name: kind
     type: int64
@@ -137,15 +136,15 @@ fields:
   - name: securityidsource
     type: int32
     nullable: true
-    description: Identifies class or source of the SecurityID (48) value. Required if SecurityID is specified. 100+ are reserved for private security identifications
-    fix: {tag: '22', type: String, name: SecurityIDSource}
+    description: Identifies class or source of the SecurityID(48) value.
+    fix: {tag: '22', type: String, aliases: '[{"name":"IDSource","source":"4.0","occurrences":0}]', name: SecurityIDSource}
     enum: {name: SecurityIDSource, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1129665360":"CUSIP","1397048396":"SEDOL","1364543819":"QUIK","1230195022":"ISIN","1380532992":"RIC","1128487168":"ISO_CURRENCY","1129599577":"ISO_COUNTRY","1163412296":"EXCHANGE_SYMBOL","1129595136":"CTA","1111639808":"BLOOMBERG","1464552960":"WERTPAPIER","1146442819":"DUTCH","1447119951":"VALOREN","1397310287":"SICOVAM","1111837767":"BELGIAN","1129270606":"COMMON","1129075272":"CLEARING_HOUSE","1230193729":"ISDA_FPML_SPEC","1330664001":"OPRA","1179667788":"ISDA_FPML_URL","1280262912":"LETTER_OF_CREDIT","1296782416":"MARKETPLACE","1380205891":"MARKIT_RED_ENTITY","1380208707":"MARKIT_RED_PAIR","1128682563":"CFTC_COMMODITY","1229148752":"ISDA_COMMODITY","1179207497":"FIGI","1279609088":"LEI","1398361684":"SYNTHETIC","1179206733":"FIDESSA","1229866072":"INDEX_NAME","1431193926":"UNIFORM_SYMBOL","1146374400":"DIGITAL_TOKEN"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"BELGIAN":"BELG","BLOOMBERG":"BBG","Belgian":"BELGIAN","BloombergSymbol":"BLOOMBERG","CFTC_COMMODITY":"CFTC","CFTC_COMMODITY_CODE":"CFTC_COMMODITY","CLEARING_HOUSE":"CLRH","COMMON":"COMN","CUSIP":"CUSP","ClearingHouse":"CLEARING_HOUSE","Common":"COMMON","ConsolidatedTapeAssociation":"CTA","DIGITAL_TOKEN":"DTI","DIGITAL_TOKEN_IDENTIFIER":"DIGITAL_TOKEN","DUTCH":"DUTC","Dutch":"DUTCH","EXCHANGE_SYMBOL":"EXCH","ExchangeSymbol":"EXCHANGE_SYMBOL","FIDESSA":"FIDM","FIDESSA_INSTRUMENT_MNEMONIC":"FIDESSA","FINANCIAL_INSTRUMENT_GLOBAL_IDENTIFIER":"FIGI","INDEX_NAME":"INDX","ISDAFpMLSpecification":"ISDA_FPML_SPEC","ISDAFpMLURL":"ISDA_FPML_URL","ISDA_COMMODITY":"ICRP","ISDA_COMMODITY_REFERENCE_PRICE":"ISDA_COMMODITY","ISDA_FPML_SPEC":"ISDA","ISDA_FPML_URL":"FPML","ISINNumber":"ISIN","ISOCountryCode":"ISO_COUNTRY","ISOCurrencyCode":"ISO_CURRENCY","ISO_COUNTRY":"CTRY","ISO_CURRENCY":"CCY","LEGAL_ENTITY_IDENTIFIER":"LEI","LETTER_OF_CREDIT":"LOC","LetterOfCredit":"LETTER_OF_CREDIT","MARKETPLACE":"MKTP","MARKIT_RED_ENTITY":"RDEC","MARKIT_RED_ENTITY_CLIP":"MARKIT_RED_ENTITY","MARKIT_RED_PAIR":"RDPC","MARKIT_RED_PAIR_CLIP":"MARKIT_RED_PAIR","MarketplaceAssignedIdentifier":"MARKETPLACE","OptionPriceReportingAuthority":"OPRA","RICCode":"RIC","SEDOL":"SEDL","SICOVAM":"SICO","SYNTHETIC":"SYNT","Sicovam":"SICOVAM","UNIFORM_SYMBOL":"UNIF","VALOREN":"VALO","Valoren":"VALOREN","WERTPAPIER":"WKN","Wertpapier":"WERTPAPIER"}', fix_aliases: '{"1":"CUSP","2":"SEDL","3":"QUIK","4":"ISIN","5":"RIC","6":"CCY","7":"CTRY","8":"EXCH","9":"CTA","A":"BBG","B":"WKN","C":"DUTC","D":"VALO","E":"SICO","F":"BELG","G":"COMN","H":"CLRH","I":"ISDA","J":"OPRA","K":"FPML","L":"LOC","M":"MKTP","N":"RDEC","P":"RDPC","Q":"CFTC","R":"ICRP","S":"FIGI","T":"LEI","U":"SYNT","V":"FIDM","W":"INDX","X":"UNIF","Y":"DTI"}'}
   - name: isincode
     type: string
     nullable: true
     description: ISIN carried by the rendered ISINCODE field.
     metadata: {iso: '6166'}
-    fix: {type: String, name: ISINCODE}
+    fix: {type: String, aliases: '[{"name":"AMON.ISINCODE"}]', name: ISINCODE}
   - name: securitytype
     type: string
     nullable: true
@@ -154,23 +153,23 @@ fields:
   - name: cficode
     type: string
     nullable: true
-    description: Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments. A subset of possible values applicable to FIX usage are identified in "Appendix 6-D CFICode Usage - ISO 10962 Classification of Financial Instruments (CFI code)"
+    description: Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments.
     fix: {tag: '461', type: String, name: CFICode}
   - name: securityexchange
     type: string
     nullable: true
-    description: 'Market used to help identify a security. Valid values: See "Appendix 6-C"'
+    description: Market used to help identify a security.
     fix: {tag: '207', type: Exchange, name: SecurityExchange}
   - name: currency
     type: int32
     nullable: true
-    description: 'Identifies currency used for price. Absence of this field is interpreted as the default for the security. It is recommended that systems provide the currency value whenever possible. See "Appendix 6-A: Valid Currency Codes" for information on obtaining valid values.'
+    description: Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent.
     fix: {tag: '15', type: Currency, name: Currency}
     enum: {name: Currency, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1431520256":"USD","1163219456":"EUR","1195528192":"GBP","1246779648":"JPY","1128809984":"CHF","1128350720":"CAD","1096107008":"AUD","1314538496":"NZD","1129208064":"CNY","1212892160":"HKD","1397179392":"SGD","1397050112":"SEK","1313819392":"NOK","1145785088":"DKK","1347177984":"PLN","1129990912":"CZK","1213548032":"HUF","1297632768":"MXN","1112689664":"BRL","1514230272":"ZAR","1229869568":"INR","1263687424":"KRW","1415005184":"TWD","1480676608":"XAU","1480673024":"XAG","1481659392":"XPT","1481655296":"XPD","1481921280":"XTS","1482184704":"XXX"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"$":"USD","US$":"USD","\u00a3":"GBP","\u00a5":"JPY","\u20ac":"EUR"}', pattern: '[A-Z]{3}'}
   - name: contractmultiplier
     type: double
     nullable: true
-    description: Specifies the ratio or multiply factor to convert from "nominal" units (e.g. contracts) to total units (e.g. shares) (e.g. 1.0, 100, 1000, etc). Applicable For Fixed Income, Convertible Bonds, Derivatives, etc. In general quantities for all calsses should be expressed in the basic unit of the instrument, e.g. shares for equities, norminal or par amount for bonds, currency for foreign exchange. When quantity is expressed in contracts, e.g. financing transactions and bond trade reporting, ContractMutliplier should contain the number of units in one contract and can be omitted if the multiplier is the default amount for the instrument, i.e. 1,000 par of bonds, 1,000,000 par for financing transactions.
+    description: Specifies the ratio or multiply factor to convert from "nominal" units (e.g. contracts) to total units (e.g. shares) (e.g. 1.0, 100, 1000, etc). Applicable For Fixed Income, Convertible Bonds, Derivatives, etc.
     fix: {tag: '231', type: float, name: ContractMultiplier}
   - name: minpriceincrement
     type: double
@@ -194,13 +193,13 @@ fields:
     fix: {tag: '202', type: Price, name: StrikePrice}
   - name: putorcall
     type: int64
-    description: Indicates whether an option contract is a put or call
+    description: Indicates whether an option contract is a put, call, chooser or undetermined.
     fix: {tag: '201', type: int, name: PutOrCall}
     enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}
   - name: securitydesc
     type: string
     nullable: true
-    description: Can be used to provide an optional textual description for a financial instrument.
+    description: Can be used by the venue or one of the trading parties to provide a non-normative textual description for the financial instrument.
     fix: {tag: '107', type: String, name: SecurityDesc}
   - name: legs
     type: list
@@ -215,11 +214,11 @@ fields:
         fix: {name: SymbolTicker}
       - name: symbol
         type: string
-        description: Multileg instrument's individual security's Symbol. See Symbol (55) field for description
+        description: Multileg instrument's individual security's Symbol.
         fix: {tag: '600', type: String, name: LegSymbol}
       - name: side
         type: int32
-        description: The side of this individual leg (multileg security). See Side (54) field for description and values
+        description: The side of this individual leg (multileg security).
         fix: {tag: '624', type: char, name: LegSide}
         enum: {name: Side, key_type: int32, value_type: utf8, values: '{"0":"UNKNOWN","1112889600":"BUY","1113148750":"BUY_MINUS","1112494674":"BORROW","1398096467":"SUBSCRIBE","1397050444":"SELL","1397510220":"SELL_PLUS","1397248596":"SELL_SHORT","1397245272":"SELL_SHORT_EXEMPT","1279610436":"LEND","1380271181":"REDEEM","1129467731":"CROSS","1129468744":"CROSS_SHORT","1129468741":"CROSS_SHORT_EXEMPT","1095976006":"AS_DEFINED","1330663503":"OPPOSITE","1431192659":"UNDISCLOSED"}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"ASK":"SELL","AS_DEFINED":"ASDF","BID":"BUY","BORROW":"BORR","BUY_MINUS":"BYMN","CROSS":"CROS","CROSS_SHORT":"CRSH","CROSS_SHORT_EXEMPT":"CRSE","LONG":"BUY","OFFER":"SELL","OPPOSITE":"OPPO","REDEEM":"REDM","SELL_PLUS":"SLPL","SELL_SHORT":"SHRT","SELL_SHORT_EXEMPT":"SHEX","SHORT":"SELL_SHORT","SUBSCRIBE":"SUBS","UNDISCLOSED":"UNDS"}', fix_aliases: '{"1":"BUY","2":"SELL","3":"BYMN","4":"SLPL","5":"SHRT","6":"SHEX","7":"UNDS","8":"CROS","9":"CRSH","A":"CRSE","B":"ASDF","C":"OPPO","D":"SUBS","E":"REDM","F":"LEND","G":"BORR"}'}
       - name: ratio
@@ -234,17 +233,17 @@ fields:
       - name: securityid
         type: string
         nullable: true
-        description: Multileg instrument's individual security's SecurityID. See SecurityID (48) field for description
+        description: Multileg instrument's individual security's SecurityID.
         fix: {tag: '602', type: String, name: LegSecurityID}
       - name: securityidsource
         type: string
         nullable: true
-        description: Multileg instrument's individual security's SecurityIDSource. See SecurityIDSource (22) field for description
+        description: Multileg instrument's individual security's SecurityIDSource.
         fix: {tag: '603', type: String, name: LegSecurityIDSource}
       - name: cficode
         type: string
         nullable: true
-        description: Multileg instrument's individual security's CFICode. See CFICode (461) field for description
+        description: Multileg instrument's individual security's CFICode.
         fix: {tag: '608', type: String, name: LegCFICode}
       - name: securitytype
         type: string
@@ -254,7 +253,7 @@ fields:
       - name: securityexchange
         type: string
         nullable: true
-        description: Multileg instrument's individual security's SecurityExchange. See SecurityExchange (207) field for description
+        description: Multileg instrument's individual security's SecurityExchange.
         fix: {tag: '616', type: Exchange, name: LegSecurityExchange}
       - name: currency
         type: int32
@@ -265,20 +264,20 @@ fields:
       - name: contractmultiplier
         type: double
         nullable: true
-        description: Multileg instrument's individual security's ContractMultiplier. See ContractMultiplier (23) field for description
+        description: Multileg instrument's individual security's ContractMultiplier.
         fix: {tag: '614', type: float, name: LegContractMultiplier}
       - name: maturitydate
         type: timestamp[us]
         nullable: true
-        description: Multileg instrument's individual security's MaturityDate. See MaturityDate (54) field for description
+        description: Multileg instrument's individual security's MaturityDate.
         fix: {tag: '611', type: LocalMktDate, name: LegMaturityDate}
       - name: strikeprice
         type: double
         nullable: true
-        description: Multileg instrument's individual security's StrikePrice. See StrikePrice (202) field for description
+        description: Multileg instrument's individual security's StrikePrice.
         fix: {tag: '612', type: Price, name: LegStrikePrice}
       - name: putorcall
         type: int64
-        description: Refer to definition of PutOrCall(201)
+        description: Indicates whether a leg option contract is a put, call, chooser or undetermined.
         fix: {tag: '1358', type: int, name: LegPutOrCall}
         enum: {name: OptionKind, key_type: int64, value_type: utf8, values: '{"0":"UNKNOWN","5788625255031373824":"PUT","4846238563328589824":"CALL"}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, fix_aliases: '{"0":"PUT","1":"CALL"}'}

@@ -1,0 +1,42 @@
+{
+ "name": "NoTradingServices",
+ "versions": [
+  "4.2",
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoTradingServices",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "3134"
+  },
+  "item": {
+   "name": "TradingService",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradingServiceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3135"
+     }
+    },
+    {
+     "name": "TradingServiceDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3136"
+     }
+    }
+   ]
+  }
+ }
+}

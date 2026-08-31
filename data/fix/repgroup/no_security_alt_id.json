@@ -1,0 +1,49 @@
+{
+ "name": "NoSecurityAltID",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoSecurityAltID",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "454"
+  },
+  "item": {
+   "name": "SecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "455"
+     }
+    },
+    {
+     "name": "SecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "456"
+     }
+    },
+    {
+     "name": "SymbolPositionNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2957"
+     }
+    }
+   ]
+  }
+ }
+}

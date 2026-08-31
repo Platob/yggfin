@@ -1,0 +1,30 @@
+{
+ "name": "NoUsernames",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUsernames",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "809"
+  },
+  "item": {
+   "name": "Username",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Username",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "553"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,7 +1,8 @@
 {
  "name": "DividendConditions",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "DividendConditions",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "DividendConditions",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AdjustedPositionReport",
     "Advertisement",
@@ -47,6 +52,7 @@
     "MarginRequirementInquiry",
     "MarginRequirementInquiryAck",
     "MarginRequirementReport",
+    "MarketDataAck",
     "MarketDataIncrementalRefresh",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh",
@@ -98,9 +104,12 @@
     "SecurityListRequest",
     "SecurityListUpdateReport",
     "SecurityMassStatus",
+    "SecurityRiskMetricsReport",
     "SecurityStatus",
     "SecurityStatusRequest",
     "SettlementObligationReport",
+    "SettlementStatusReport",
+    "SettlementStatusRequest",
     "StreamAssignmentReport",
     "StreamAssignmentRequest",
     "TradeAggregationReport",
@@ -147,13 +156,192 @@
     }
    },
    {
-    "name": "DividendPeriodGrp",
-    "type": "struct",
+    "name": "NoDividendPeriods",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "DividendPeriodGrp"
+     "tag": "42274"
     },
-    "fields": []
+    "item": {
+     "name": "DividendPeriod",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DividendPeriodSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42275"
+       }
+      },
+      {
+       "name": "DividendPeriodStartDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42276"
+       }
+      },
+      {
+       "name": "DividendPeriodEndDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42277"
+       }
+      },
+      {
+       "name": "DividendPeriodUnderlierRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42278"
+       }
+      },
+      {
+       "name": "DividendPeriodStrikePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42279"
+       }
+      },
+      {
+       "name": "DividendPeriodBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42280"
+       }
+      },
+      {
+       "name": "NoDividendPeriodBusinessCenters",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42294"
+       },
+       "item": {
+        "name": "DividendPeriodBusinessCenter",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "DividendPeriodBusinessCenter",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "42295"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "DividendPeriodValuationDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42281"
+       }
+      },
+      {
+       "name": "DividendPeriodValuationDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42282"
+       }
+      },
+      {
+       "name": "DividendPeriodValuationDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42283"
+       }
+      },
+      {
+       "name": "DividendPeriodValuationDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42284"
+       }
+      },
+      {
+       "name": "DividendPeriodValuationDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42285"
+       }
+      },
+      {
+       "name": "DividendPeriodValuationDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42286"
+       }
+      },
+      {
+       "name": "DividendPeriodPaymentDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42287"
+       }
+      },
+      {
+       "name": "DividendPeriodPaymentDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42288"
+       }
+      },
+      {
+       "name": "DividendPeriodPaymentDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42289"
+       }
+      },
+      {
+       "name": "DividendPeriodPaymentDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42290"
+       }
+      },
+      {
+       "name": "DividendPeriodPaymentDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42291"
+       }
+      },
+      {
+       "name": "DividendPeriodPaymentDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42292"
+       }
+      },
+      {
+       "name": "DividendPeriodXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42293"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "ExtraordinaryDividendPartySide",

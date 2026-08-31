@@ -1,0 +1,29 @@
+{
+ "name": "NoLegPricingDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegPricingDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41607"
+  },
+  "item": {
+   "name": "LegPricingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPricingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41608"
+     }
+    }
+   ]
+  }
+ }
+}

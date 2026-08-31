@@ -1,0 +1,37 @@
+{
+ "name": "NoUnderlyingProvisionOptionExerciseFixedDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingProvisionOptionExerciseFixedDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42112"
+  },
+  "item": {
+   "name": "UnderlyingProvisionOptionExerciseFixedDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProvisionOptionExerciseFixedDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42113"
+     }
+    },
+    {
+     "name": "UnderlyingProvisionOptionExerciseFixedDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42114"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -6,7 +6,8 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "TradingSessionStatus",
@@ -15,12 +16,24 @@
   "fix": {
    "component": "TradingSessionStatus",
    "msgtype": "h",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "ApplicationSequenceControl",
     "type": "struct",
@@ -29,6 +42,14 @@
      "component": "ApplicationSequenceControl"
     },
     "fields": []
+   },
+   {
+    "name": "TradingSessionStatusReportID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3112"
+    }
    },
    {
     "name": "TradSesReqID",
@@ -52,6 +73,14 @@
     "nullable": true,
     "fix": {
      "tag": "1300"
+    }
+   },
+   {
+    "name": "VenueType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1430"
     }
    },
    {
@@ -94,6 +123,44 @@
     }
    },
    {
+    "name": "TradingSessionEnvironment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3139"
+    }
+   },
+   {
+    "name": "NoTradingServices",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "3134"
+    },
+    "item": {
+     "name": "TradingService",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradingServiceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3135"
+       }
+      },
+      {
+       "name": "TradingServiceDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3136"
+       }
+      }
+     ]
+    }
+   },
+   {
     "name": "UnsolicitedIndicator",
     "type": "string",
     "nullable": true,
@@ -114,6 +181,30 @@
     "nullable": true,
     "fix": {
      "tag": "1368"
+    }
+   },
+   {
+    "name": "HaltReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "327"
+    }
+   },
+   {
+    "name": "HaltActionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3138"
+    }
+   },
+   {
+    "name": "OutageReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3137"
     }
    },
    {
@@ -197,6 +288,14 @@
     }
    },
    {
+    "name": "EffectiveTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "168"
+    }
+   },
+   {
     "name": "Text",
     "type": "string",
     "nullable": true,
@@ -221,11 +320,171 @@
     }
    },
    {
+    "name": "NoPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "453"
+    },
+    "item": {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
+      },
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
+       "item": {
+        "name": "PartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "PartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "523"
+          }
+         },
+         {
+          "name": "PartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "803"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoTargetPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1461"
+    },
+    "item": {
+     "name": "TargetPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TargetPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1462"
+       }
+      },
+      {
+       "name": "TargetPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1463"
+       }
+      },
+      {
+       "name": "TargetPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1464"
+       }
+      },
+      {
+       "name": "TargetPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1818"
+       }
+      },
+      {
+       "name": "NoTargetPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2433"
+       },
+       "item": {
+        "name": "TargetPartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "TargetPartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2434"
+          }
+         },
+         {
+          "name": "TargetPartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2435"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
     "name": "Instrument",
     "type": "struct",
     "nullable": true,
     "fix": {
      "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "StandardTrailer",
+    "type": "struct",
+    "fix": {
+     "component": "StandardTrailer"
     },
     "fields": []
    }

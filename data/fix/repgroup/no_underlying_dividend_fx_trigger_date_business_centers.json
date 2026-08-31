@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingDividendFXTriggerDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingDividendFXTriggerDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42853"
+  },
+  "item": {
+   "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42854"
+     }
+    }
+   ]
+  }
+ }
+}

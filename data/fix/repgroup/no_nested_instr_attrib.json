@@ -1,0 +1,38 @@
+{
+ "name": "NoNestedInstrAttrib",
+ "versions": [
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoNestedInstrAttrib",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "1312"
+  },
+  "item": {
+   "name": "NestedInstrAttrib",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "NestedInstrAttribType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1210"
+     }
+    },
+    {
+     "name": "NestedInstrAttribValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1211"
+     }
+    }
+   ]
+  }
+ }
+}

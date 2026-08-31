@@ -1,0 +1,153 @@
+{
+ "name": "FannieMae",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "FannieMae",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FannieMae",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "CashOpen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9179"
+    }
+   },
+   {
+    "name": "CommRateDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9174"
+    }
+   },
+   {
+    "name": "FMTradeStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9186"
+    }
+   },
+   {
+    "name": "MaturityDateEnd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9184"
+    }
+   },
+   {
+    "name": "OfferingTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9185"
+    }
+   },
+   {
+    "name": "OfferingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9181"
+    }
+   },
+   {
+    "name": "ProgramOpen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9178"
+    }
+   },
+   {
+    "name": "ProgramSettleType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9176"
+    }
+   },
+   {
+    "name": "ProgramType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9175"
+    }
+   },
+   {
+    "name": "QuoteEntryOpen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9182"
+    }
+   },
+   {
+    "name": "ReversedInquiryAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9180"
+    }
+   },
+   {
+    "name": "SettleTypeAlt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9183"
+    }
+   },
+   {
+    "name": "TradeDiscountRateDayCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9172"
+    }
+   },
+   {
+    "name": "TradeIssueDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9173"
+    }
+   },
+   {
+    "name": "TradePrincipal",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9177"
+    }
+   },
+   {
+    "name": "TradeVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9171"
+    }
+   }
+  ]
+ }
+}

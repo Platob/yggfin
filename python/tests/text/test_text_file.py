@@ -133,7 +133,10 @@ def test_xmlapi_header_classifies_receiving_xml_and_keeps_nested_entries(tmp_pat
     )
     path.write_text(f"2026-08-29 00:05:00.042_525 [135] [XmlApi] (INFO) {body}\n")
 
-    with TextFile.from_path(path) as log:
+    with TextFile.from_path(
+        path,
+        plugin_keys={"xmlapi": {"clientid": "ClOrdID"}},
+    ) as log:
         table = log.read_arrow_table()
 
     assert table.column("plugin").to_pylist() == ["XmlApi"]
@@ -141,11 +144,37 @@ def test_xmlapi_header_classifies_receiving_xml_and_keeps_nested_entries(tmp_pat
     assert Protocol.from_int(table.column("protocol")[0].as_py()) is Protocol.XML
     assert Direction.from_int(table.column("direction")[0].as_py()) is Direction.RECV
     entries = table.column("entries")[0].as_py()
+    assert (
+        "event[0].action[0].orderdelta[0]",
+        "ClOrdID",
+        "BCGF42",
+    ) in [(entry["comp"], entry["key"], entry["value"]) for entry in entries]
     assert (entries[-1]["comp"], entries[-1]["key"], entries[-1]["value"]) == (
         "event[0].action[0].orderdelta[0]",
         "quantity",
         "-400",
     )
+
+
+def test_file_applies_plugin_keys_and_null_values_before_storing_entries(tmp_path: Path) -> None:
+    path = tmp_path / "bridge.txt"
+    path.write_text(
+        "2026-08-29 00:05:00.042_525 [135] [Bridge] (INFO) TYPE=D|CLIENT=A-1|EMPTY=NONE|\n"
+    )
+
+    with TextFile.from_path(
+        path,
+        msg_type_event_types={"D": EventType.ORDER},
+        plugin_keys={"bridge": {"TYPE": "MsgType", "CLIENT": "ClOrdID"}},
+        null_values=["none"],
+    ) as log:
+        table = log.read_arrow_table()
+
+    assert table.column("msgtype").to_pylist() == ["D"]
+    assert table.column("eventtype").to_pylist() == [int(EventType.ORDER)]
+    assert [(entry["key"], entry["value"]) for entry in table.column("entries")[0].as_py()] == [
+        ("ClOrdID", "A-1")
+    ]
 
 
 @pytest.mark.parametrize(

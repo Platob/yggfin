@@ -1,0 +1,40 @@
+{
+ "name": "NoTrades",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoTrades",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "897"
+  },
+  "item": {
+   "name": "Trade",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradeReportID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "571"
+     }
+    },
+    {
+     "name": "SecondaryTradeReportID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "818"
+     }
+    }
+   ]
+  }
+ }
+}

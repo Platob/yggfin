@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fixr:repository xmlns:fixr="http://fixprotocol.io/2022/orchestra/repository"
+  xmlns:dc="http://purl.org/dc/terms/" name="FIX.Test" version="FIX.Test_EP7">
+  <fixr:metadata>
+    <dc:title>Offline Orchestra fixture</dc:title>
+    <dc:publisher>FIX Trading Community</dc:publisher>
+    <dc:rights>Fixture terms</dc:rights>
+  </fixr:metadata>
+  <fixr:datatypes>
+    <fixr:datatype name="String">
+      <fixr:mappedDatatype standard="XML" base="xs:string"/>
+    </fixr:datatype>
+    <fixr:datatype name="char" baseType="String"/>
+    <fixr:datatype name="int">
+      <fixr:mappedDatatype standard="XML" base="xs:integer"/>
+    </fixr:datatype>
+    <fixr:datatype name="NumInGroup" baseType="int"/>
+    <fixr:datatype name="SeqNum" baseType="int"/>
+    <fixr:datatype name="float">
+      <fixr:mappedDatatype standard="XML" base="xs:decimal"/>
+    </fixr:datatype>
+    <fixr:datatype name="Qty" baseType="float"/>
+    <fixr:datatype name="VendorMapped" added="FIX.Test" addedEP="3">
+      <fixr:mappedDatatype standard="XML" base="xs:long"/>
+    </fixr:datatype>
+  </fixr:datatypes>
+  <fixr:codeSets>
+    <fixr:codeSet id="54" name="SideCodeSet" type="char" added="FIX.2.7">
+      <fixr:code id="54001" value="1" name="Buy" added="FIX.2.7">
+        <fixr:annotation><fixr:documentation purpose="SYNOPSIS">Buy side</fixr:documentation></fixr:annotation>
+      </fixr:code>
+      <fixr:code id="54002" value="2" name="Sell" deprecated="FIX.Test" deprecatedEP="7"/>
+    </fixr:codeSet>
+  </fixr:codeSets>
+  <fixr:fields>
+    <fixr:field id="54" name="Side" type="SideCodeSet" added="FIX.2.7"
+      updated="FIX.Test" updatedEP="6" deprecated="FIX.Test" deprecatedEP="7"
+      replaced="FIX.Test" replacedEP="7" replacedByField="1054" issue="TEST-54">
+      <fixr:annotation><fixr:documentation purpose="SYNOPSIS">Order side.</fixr:documentation></fixr:annotation>
+    </fixr:field>
+    <fixr:field id="55" name="Symbol" type="String"/>
+    <fixr:field id="447" name="PartyIDSource" type="char"/>
+    <fixr:field id="448" name="PartyID" type="String"/>
+    <fixr:field id="452" name="PartyRole" type="int"/>
+    <fixr:field id="453" name="NoPartyIDs" type="NumInGroup"/>
+    <fixr:field id="7000" name="MappedVendorID" type="VendorMapped"/>
+    <fixr:field id="7001" name="UnknownVendorID" type="FutureIdentifier"/>
+    <fixr:field id="7002" name="DisputedValue" type="String" scenario="base"/>
+    <fixr:field id="7002" name="DisputedValueNumber" type="int" scenario="numbers"/>
+    <fixr:field id="9001" name="MaxShow1" type="Qty">
+      <fixr:annotation>
+        <fixr:documentation purpose="SYNOPSIS">Order display quantity.
+
+** ADDED TO FIX 4.1 AS TAG: 210 (MaxShow) **</fixr:documentation>
+      </fixr:annotation>
+    </fixr:field>
+    <fixr:field id="9002" name="CrossSeqNum" type="SeqNum">
+      <fixr:annotation><fixr:documentation purpose="SYNOPSIS">The field can contain alpha-numeric values.</fixr:documentation></fixr:annotation>
+    </fixr:field>
+    <fixr:field id="9003" name="UDFSupportIndicator" type="char">
+      <fixr:annotation>
+        <fixr:documentation purpose="SYNOPSIS">Valid Values
+
+1- Supports UDFs in the message
+
+2- Supports UDFs in repeating groups</fixr:documentation>
+      </fixr:annotation>
+    </fixr:field>
+  </fixr:fields>
+  <fixr:components>
+    <fixr:component id="100" name="Instrument" added="FIX.4.3">
+      <fixr:fieldRef id="55" presence="required"/>
+    </fixr:component>
+  </fixr:components>
+  <fixr:groups>
+    <fixr:group id="101" name="Parties" added="FIX.4.3">
+      <fixr:numInGroup id="453"/>
+      <fixr:fieldRef id="448" presence="required" deprecated="FIX.Test" deprecatedEP="7"/>
+      <fixr:fieldRef id="447"/>
+      <fixr:fieldRef id="452"/>
+      <fixr:componentRef id="100"/>
+    </fixr:group>
+  </fixr:groups>
+  <fixr:messages>
+    <fixr:message id="200" name="NewOrderSingle" msgType="D" added="FIX.2.7">
+      <fixr:structure>
+        <fixr:componentRef id="100" presence="required"/>
+        <fixr:fieldRef id="54" presence="required"/>
+        <fixr:groupRef id="101" presence="required"/>
+      </fixr:structure>
+    </fixr:message>
+  </fixr:messages>
+</fixr:repository>

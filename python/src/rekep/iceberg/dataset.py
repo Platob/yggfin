@@ -10,6 +10,7 @@ import json
 import logging
 import math
 import os
+import random
 import tempfile
 import time
 import uuid
@@ -114,6 +115,11 @@ SORT_MERGE_FAN_IN = 16
 #: throughput stops improving and file count starts mattering.
 DEFAULT_COMMIT_ROW_SIZE = 1_000_000
 
+#: Snapshot summary key that settles an ambiguous remote acknowledgement.
+#: The value stays stable across retries of one bounded operation, so a reload
+#: can distinguish "the commit landed" from "build and submit it again".
+OPERATION_ID = "rekep.operation-id"
+
 #: Iceberg's table property for the maximum age of an unprotected snapshot.
 #: Keeping the protocol name here lets a dataset declaration use it without
 #: importing the optional PyIceberg extra during configuration loading.
@@ -192,12 +198,17 @@ class IcebergDataset(Dataset):
         """Document kind registered with `Dataset`."""
         return "iceberg"
 
-    #: The declared shape. Its name is the table identifier.
+    #: Table coordinates stay outside the schema so catalog identity cannot
+    #: change when a field declaration is reused under another namespace.
+    name: str
+    namespace: str
+
+    #: The declared row shape, named after the unqualified table.
     field: StructField
 
-    #: Catalog name pyiceberg loads, with `properties` as its configuration.
-    catalog: str = "default"
-    properties: dict[str, str] = dataclasses.field(default_factory=dict)
+    #: Catalog loading is explicit; the live catalog stays a lazy property.
+    catalog_name: str = "default"
+    catalog_properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
     #: Branch reads and writes use unless a call names another. None, `root`,
     #: `main`, and `master` all mean the table's root state.
@@ -236,21 +247,40 @@ class IcebergDataset(Dataset):
     location: str | None = None
     table_properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
+    #: Blind retries rebuild one bounded operation against the refreshed branch;
+    #: planned keyed writes only settle an acknowledgement before returning the
+    #: conflict for a fresh plan. Full jitter keeps parallel remote writers from
+    #: colliding in cadence.
+    commit_retries: int = 4
+    retry_backoff: float = 0.25
+    retry_max_backoff: float = 8.0
+
+    #: Target files one streamed rewrite commit may replace.
+    rewrite_file_count: int = 16
+
     def __post_init__(self) -> None:
         """Normalize the declaration and public root spellings once."""
+        if not self.name or "." in self.name:
+            raise ValueError("an Iceberg dataset name must be non-empty and unqualified")
+        if not self.namespace or any(not part for part in self.namespace.split(".")):
+            raise ValueError("an Iceberg dataset namespace must be non-empty")
         field = self.field if isinstance(self.field, Field) else Field.from_(self.field)
         if not isinstance(field, StructField):
             raise TypeError("an Iceberg dataset field must be a struct")
-        if not field.name:
-            raise ValueError("an Iceberg dataset field must name its table")
-        self.field = field
+        self.field = field.with_name(self.name)
         if self.commit_row_size is None or self.commit_row_size <= 0:
             raise ValueError("commit_row_size must be positive")
+        if self.commit_retries < 0:
+            raise ValueError("commit_retries cannot be negative")
+        if self.rewrite_file_count <= 0:
+            raise ValueError("rewrite_file_count must be positive")
+        if self.retry_backoff < 0 or self.retry_max_backoff < self.retry_backoff:
+            raise ValueError("retry backoff must be non-negative and capped above its start")
         if self.branch in ROOT_BRANCHES:
             self.branch = None
         configured_expiry = self.table_properties.get(SNAPSHOT_MAX_AGE)
         if configured_expiry is None:
-            configured_expiry = self.properties.get(SNAPSHOT_MAX_AGE)
+            configured_expiry = self.catalog_properties.get(SNAPSHOT_MAX_AGE)
         if isinstance(self.snapshot_expiry, datetime.timedelta):
             duration = _checked_expiry_delta(self.snapshot_expiry)
             self.table_properties = {
@@ -264,32 +294,30 @@ class IcebergDataset(Dataset):
         elif self.snapshot_expiry is None and configured_expiry is not None:
             self.__dict__["_snapshot_expiry"] = _expiry_delta(configured_expiry)
         properties, self.location, self.table_properties = _canonicalized(
-            self.properties, self.location, self.table_properties
+            self.catalog_properties, self.location, self.table_properties
         )
         if properties is not None:
-            self.properties = properties
+            self.catalog_properties = properties
 
     @property
-    def name(self) -> str:
-        """Table identifier, owned by the field declaration."""
-        return self.field.name
-
-    @property
-    def namespace(self) -> str:
-        """The dotted namespace before the table name, when one is present."""
-        return self.name.rpartition(".")[0]
+    def identifier(self) -> str:
+        """The catalog identifier composed from namespace and table name."""
+        return f"{self.namespace}.{self.name}"
 
     # -- the table ----------------------------------------------------------
 
     @cached_property
     def store(self) -> IcebergCatalog:
-        """The catalog this table lives in."""
-        store = IcebergCatalog(name=self.catalog, properties=self.properties)
+        """The Rekep catalog wrapper that owns the shared live connection."""
+        store = IcebergCatalog(
+            catalog_name=self.catalog_name,
+            properties=self.catalog_properties,
+        )
         self.__dict__["_owns_store"] = True
         return store
 
     def close(self) -> None:
-        """Release this handle's owned catalog without loading it."""
+        """Release loaded table views without opening lazy resources."""
         self.__dict__.pop("iceberg_table", None)
         self.__dict__.pop("table_field", None)
         self.__dict__.pop("_table_sort_order_id", None)
@@ -306,19 +334,19 @@ class IcebergDataset(Dataset):
             pass
 
     @property
-    def iceberg_catalog(self) -> Any:
-        """The pyiceberg catalog, for what this package does not wrap."""
+    def catalog(self) -> Any:
+        """The live pyiceberg catalog, loaded once when first needed."""
         return self.store.catalog
 
     @cached_property
     def iceberg_table(self) -> Any:
         """The pyiceberg table this dataset is."""
-        return self.store.load_table(self.name)
+        return self.store.load_table(self.identifier)
 
     @property
     def exists(self) -> bool:
         """Whether the table is there yet."""
-        return self.store.table_exists(self.name)
+        return self.store.table_exists(self.identifier)
 
     @property
     def records(self) -> int | None:
@@ -343,25 +371,26 @@ class IcebergDataset(Dataset):
         location = kwargs.pop("location", self.location)
         creation_properties = dict(kwargs.pop("properties", {}))
         properties, location, creation_properties = _canonicalized(
-            self.properties, location, {**self.table_properties, **creation_properties}
+            self.catalog_properties,
+            location,
+            {**self.table_properties, **creation_properties},
         )
         if properties is not None:
+            self.catalog_properties = properties
             store = self.__dict__.get("store")
-            self.properties = properties
             if store is not None:
                 store.properties = properties
-                catalog = store.__dict__.get("catalog")
-                if catalog is not None:
-                    catalog.properties.update(store._tracked_file_io_properties(properties))
+                loaded = store.__dict__.get("catalog")
+                if loaded is not None:
+                    loaded.properties.update(store._tracked_file_io_properties(properties))
         if self.exists:
             return self
         field = field.with_name(self.name)
-        if self.namespace:
-            self.store.create_namespace(self.namespace)
+        self.store.create_namespace(self.namespace)
         schema = field.into_iceberg_schema()
         defaults = {**(COMMIT_PROPERTIES if self.optimize_commits else {}), **metrics_for(field)}
-        table = self.iceberg_catalog.create_table(
-            self.name,
+        table = self.catalog.create_table(
+            self.identifier,
             schema=schema,
             location=location,
             partition_spec=field.into_iceberg_partition_spec(schema),
@@ -375,7 +404,7 @@ class IcebergDataset(Dataset):
         self.__dict__["iceberg_table"] = table
         LOGGER.info(
             "%s created at %s with %d columns, partitioned by %s",
-            self.name,
+            self.identifier,
             table.location(),
             len(schema.fields),
             field.partition_keys() or "nothing",
@@ -456,9 +485,9 @@ class IcebergDataset(Dataset):
         self.refresh()
         # The declared shape *is* what writes cast onto, so evolving the table
         # without it would drop the new columns at the next write. Keep its
-        # outer name because that is also this dataset's table identifier.
+        # outer name because it is the schema's stable display name.
         self.field = target.with_name(self.name)
-        LOGGER.info("%s gained %d columns: %s", self.name, len(added), ", ".join(added))
+        LOGGER.info("%s gained %d columns: %s", self.identifier, len(added), ", ".join(added))
         return added
 
     # -- reading ------------------------------------------------------------
@@ -611,7 +640,7 @@ class IcebergDataset(Dataset):
                 wanted[stored] = name
         LOGGER.debug(
             "%s projects %d of %d declared columns; unfilled: %s",
-            self.name,
+            self.identifier,
             len(wanted),
             len(target.names),
             ", ".join(sorted(set(target.names) - set(wanted.values()))) or "none",
@@ -696,11 +725,16 @@ class IcebergDataset(Dataset):
                 if self.plan_merges or partitions:
                     self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
                 else:
-                    self.iceberg_table.upsert(
-                        chunk,
-                        join_cols=join,
-                        branch=reference,
-                        snapshot_properties=properties or {},
+                    table = self._commit_with_retry(
+                        table,
+                        reference,
+                        properties or {},
+                        lambda current, summary, chunk=chunk: current.upsert(
+                            chunk,
+                            join_cols=join,
+                            branch=reference,
+                            snapshot_properties=dict(summary),
+                        ),
                     )
         finally:
             if not delegated:
@@ -770,10 +804,10 @@ class IcebergDataset(Dataset):
             pending_rows = 0
 
             def commit(stager: _PartitionStager) -> None:
-                nonlocal pending, pending_rows
+                nonlocal pending, pending_rows, table
                 if not pending:
                     return
-                self._overwrite_partitions(table, pending, reference, snapshot, stager)
+                table = self._overwrite_partitions(table, pending, reference, snapshot, stager)
                 pending, pending_rows = [], 0
 
             with _PartitionStager(table, self.sort_fields(), rows) as stager:
@@ -794,29 +828,39 @@ class IcebergDataset(Dataset):
         reference: str,
         properties: Mapping[str, str],
         stager: _PartitionStager,
-    ) -> None:
+    ) -> Any:
         """Replace complete staged partitions without loading their Parquet bytes."""
         data_files = [
             data_file for replacement in replacements for data_file in replacement.data_files
         ]
         if not data_files:
-            return
-        with _track_outputs() as generated:
-            transaction = table.transaction()
-            try:
-                _ensure_name_mapping(transaction)
-                replaced = _partition_data_files(table, replacements, reference)
-                with transaction.update_snapshot(
-                    snapshot_properties=dict(properties), branch=reference
-                ).overwrite() as overwrite:
-                    for data_file in replaced:
-                        overwrite.delete_data_file(data_file)
-                    for data_file in data_files:
-                        overwrite.append_data_file(data_file)
-            except BaseException:
-                _discard_paths(table.io, generated)
-                raise
-            _commit_staged(table, transaction, stager, replacements, generated)
+            return table
+
+        def commit(current: Any, summary: Mapping[str, str]) -> None:
+            with _track_outputs() as generated:
+                transaction = current.transaction()
+                try:
+                    _ensure_name_mapping(transaction)
+                    replaced = _partition_data_files(current, replacements, reference)
+                    with transaction.update_snapshot(
+                        snapshot_properties=dict(summary), branch=reference
+                    ).overwrite() as overwrite:
+                        for data_file in replaced:
+                            overwrite.delete_data_file(data_file)
+                        for data_file in data_files:
+                            overwrite.append_data_file(data_file)
+                except BaseException:
+                    _discard_paths(current.io, generated)
+                    raise
+                _commit_staged(
+                    current,
+                    transaction,
+                    stager,
+                    replacements,
+                    generated,
+                )
+
+        return self._commit_with_retry(table, reference, properties, commit)
 
     def _append_chunk(
         self,
@@ -824,42 +868,49 @@ class IcebergDataset(Dataset):
         chunk: pyarrow.Table,
         reference: str,
         properties: Mapping[str, str],
-    ) -> None:
-        """Append one bounded chunk, staging supported partitions on local disk."""
+        *,
+        rebuild: bool = True,
+    ) -> Any:
+        """Append one bounded chunk through PyIceberg's partition writer.
+
+        A blind append may rebuild after another writer wins a commit. A
+        keyed caller passes `rebuild=False`: its scan belongs to the old head,
+        so replaying only the final append could duplicate a key added there.
+        Lost acknowledgements are still settled by operation id either way.
+        """
         if not chunk.num_rows:
-            return
+            return table
         chunk = self.sorted(chunk)
-        partitions = _partition_columns(table)
-        if not partitions:
-            with _track_outputs() as generated:
-                transaction = table.transaction()
-                try:
-                    transaction.append(
-                        chunk,
-                        snapshot_properties=dict(properties),
-                        branch=reference,
-                    )
-                except BaseException:
-                    _discard_paths(table.io, generated)
-                    raise
-                _commit_generated(table, transaction, generated)
-            return
-        with _PartitionStager(table, self.sort_fields(), chunk.num_rows) as stager:
-            staged = list(_staged_partition_chunk(chunk, partitions, stager))
-            with _track_outputs() as generated:
-                transaction = table.transaction()
-                try:
-                    _ensure_name_mapping(transaction)
-                    with transaction._append_snapshot_producer(  # noqa: SLF001
-                        dict(properties), branch=reference
-                    ) as append:
-                        for replacement in staged:
-                            for data_file in replacement.data_files:
-                                append.append_data_file(data_file)
-                except BaseException:
-                    _discard_paths(table.io, generated)
-                    raise
-                _commit_staged(table, transaction, stager, staged, generated)
+        return self._commit_with_retry(
+            table,
+            reference,
+            properties,
+            lambda current, summary: self._append_chunk_once(current, chunk, reference, summary),
+            rebuild=rebuild,
+        )
+
+    def _append_chunk_once(
+        self,
+        table: Any,
+        chunk: pyarrow.Table,
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> None:
+        """One append attempt through PyIceberg's parallel partition writer."""
+        with _track_outputs() as generated:
+            transaction = table.transaction()
+            try:
+                transaction.append(
+                    chunk,
+                    snapshot_properties=dict(properties),
+                    branch=reference,
+                )
+            except BaseException:
+                _discard_paths(table.io, generated)
+                raise
+            _commit_generated(table, transaction, generated)
+            for path in sorted(_settled_paths(generated)):
+                LOGGER.debug("%s output %s", self.identifier, path)
 
     def _commit_merge(
         self,
@@ -869,70 +920,45 @@ class IcebergDataset(Dataset):
         predicate: Any,
         reference: str,
         properties: Mapping[str, str],
-    ) -> None:
-        """Commit one keyed update and its inserts atomically."""
+    ) -> Any:
+        """Rewrite matching files in bounded commits, adding values in the last."""
         updates = self.sorted(updates)
         inserts = self.sorted(inserts)
-        partitions = _partition_columns(table)
-        if not partitions:
-            with _track_outputs() as generated:
-                transaction = table.transaction()
-                try:
-                    transaction.overwrite(
-                        updates,
-                        overwrite_filter=predicate,
-                        branch=reference,
-                        snapshot_properties=dict(properties),
-                    )
-                    if inserts.num_rows:
-                        transaction.append(
-                            inserts,
-                            branch=reference,
-                            snapshot_properties=dict(properties),
-                        )
-                except BaseException:
-                    _discard_paths(table.io, generated)
-                    raise
-                _commit_generated(table, transaction, generated)
-            return
-        with _PartitionStager(
-            table, self.sort_fields(), updates.num_rows + inserts.num_rows
-        ) as stager:
-            staged_updates = (
-                list(_staged_partition_chunk(updates, partitions, stager))
-                if updates.num_rows
-                else []
+        additions = pyarrow.concat_tables(
+            [part for part in (updates, inserts) if part.num_rows],
+            promote_options="none",
+        )
+        scan = table.scan(row_filter=predicate)
+        scan = self._branch_scan(table, scan, reference)
+        groups = iter(_delete_task_groups(scan.plan_files(), self.rewrite_file_count))
+        pending = next(groups, None)
+        if pending is None:
+            return self._append_chunk(
+                table,
+                additions,
+                reference,
+                properties,
+                rebuild=False,
             )
-            staged_inserts = (
-                list(_staged_partition_chunk(inserts, partitions, stager))
-                if inserts.num_rows
-                else []
+        for following in groups:
+            table = self._rewrite_delete_tasks(
+                table,
+                pending,
+                predicate,
+                reference,
+                properties,
+                True,
             )
-            staged = [*staged_updates, *staged_inserts]
-            with _track_outputs() as generated:
-                transaction = table.transaction()
-                try:
-                    _ensure_name_mapping(transaction)
-                    # PyIceberg owns the delete because a predicate can split
-                    # a data file, preserving unmatched rows one file at a time.
-                    transaction.delete(
-                        predicate,
-                        branch=reference,
-                        snapshot_properties=dict(properties),
-                    )
-                    for additions in (staged_updates, staged_inserts):
-                        if not additions:
-                            continue
-                        with transaction._append_snapshot_producer(  # noqa: SLF001
-                            dict(properties), branch=reference
-                        ) as append:
-                            for replacement in additions:
-                                for data_file in replacement.data_files:
-                                    append.append_data_file(data_file)
-                except BaseException:
-                    _discard_paths(table.io, generated)
-                    raise
-                _commit_staged(table, transaction, stager, staged, generated)
+            pending = following
+        return self._rewrite_delete_tasks(
+            table,
+            pending,
+            predicate,
+            reference,
+            properties,
+            True,
+            additions=additions,
+        )
 
     def merge_arrow_table(
         self,
@@ -1013,7 +1039,13 @@ class IcebergDataset(Dataset):
             # can match: the merge *is* an append, with nothing read and
             # nothing to compare. A stream of new keys -- the log-ingest case
             # this exists for -- lands every chunk here.
-            self._append_chunk(table, chunk, reference, properties or {})
+            table = self._append_chunk(
+                table,
+                chunk,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
             return 0, chunk.num_rows
         # The scan filter is a superset, so consume one planned file at a time.
         # Keep only compact positions into the source chunk: neither the ranged
@@ -1051,7 +1083,13 @@ class IcebergDataset(Dataset):
         if not matched_positions:
             # The range overlapped stored rows, but the exact keys did not.
             # There is nothing left to compare or anti-join: this is an append.
-            self._append_chunk(table, chunk, reference, properties or {})
+            table = self._append_chunk(
+                table,
+                chunk,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
             return 0, chunk.num_rows
 
         matched = pyarrow.concat_arrays(matched_positions)
@@ -1069,7 +1107,13 @@ class IcebergDataset(Dataset):
         if len(updates) == 0 and len(inserts) == 0:
             return 0, 0
         if len(updates) == 0:
-            self._append_chunk(table, inserts, reference, properties or {})
+            table = self._append_chunk(
+                table,
+                inserts,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
         else:
             from pyiceberg.expressions import And
 
@@ -1142,8 +1186,7 @@ class IcebergDataset(Dataset):
                 self.__dict__.pop("_insert_upper", None)
                 inserted = 0
                 for chunk in arrow_chunks(reader, rows):
-                    chunk = self.sorted(chunk)
-                    self._append_chunk(table, chunk, reference, snapshot)
+                    table = self._append_chunk(table, chunk, reference, snapshot)
                     inserted += chunk.num_rows
                 return inserted
             inserted = 0
@@ -1220,7 +1263,13 @@ class IcebergDataset(Dataset):
             # Once this object has filled an empty table, the upper bound is
             # exact. A later chunk strictly above it cannot match a stored key,
             # so planning manifests and files can only rediscover that fact.
-            self._append_chunk(table, chunk, reference, properties or {})
+            table = self._append_chunk(
+                table,
+                chunk,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
             self._remember_inserted(span, table, establish=empty)
             return chunk.num_rows
         scan = table.scan(row_filter=row_filter)
@@ -1238,7 +1287,13 @@ class IcebergDataset(Dataset):
             # That snapshot does not carry every key column -- one added since
             # the branch was cut -- so no row on it can match a key, and every
             # row of the chunk is new.
-            self._append_chunk(table, chunk, reference, properties or {})
+            table = self._append_chunk(
+                table,
+                chunk,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
             return chunk.num_rows
         scan = scan.select(*wanted)
         scan = _scoped_partition_scan(scan, table, partition)
@@ -1264,7 +1319,13 @@ class IcebergDataset(Dataset):
             positions = fresh.column(SOURCE_INDEX).combine_chunks()
             fresh = chunk.take(positions.take(pyarrow.compute.sort_indices(positions)))
         if fresh.num_rows:
-            self._append_chunk(table, fresh, reference, properties or {})
+            table = self._append_chunk(
+                table,
+                fresh,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
             self._remember_inserted(span, table, establish=empty)
         return fresh.num_rows
 
@@ -1410,7 +1471,7 @@ class IcebergDataset(Dataset):
             if depth == 0:
                 LOGGER.info(
                     "%s %s branch=%s snapshot=%s in %.0fms",
-                    self.name,
+                    self.identifier,
                     "wrote" if succeeded else "failed",
                     self._branch_name(None),
                     self._logged_snapshot(),
@@ -1428,6 +1489,48 @@ class IcebergDataset(Dataset):
         except Exception:
             return None
         return getattr(table.metadata, "current_snapshot_id", None)
+
+    def _commit_with_retry(
+        self,
+        table: Any,
+        reference: str,
+        properties: Mapping[str, str],
+        commit: Callable[[Any, Mapping[str, str]], None],
+        *,
+        rebuild: bool = True,
+    ) -> Any:
+        """Settle one bounded commit and rebuild only when its plan remains valid."""
+        operation_id = uuid.uuid4().hex
+        summary = {**properties, OPERATION_ID: operation_id}
+        for attempt in range(self.commit_retries + 1):
+            try:
+                commit(table, summary)
+                return table
+            except BaseException as error:
+                if not _retryable_commit(error) or attempt >= self.commit_retries:
+                    raise
+                self.refresh()
+                try:
+                    table = self.iceberg_table
+                    if _operation_committed(table, reference, operation_id):
+                        return table
+                except BaseException as refresh_error:
+                    if not _retryable_commit(refresh_error) or attempt >= self.commit_retries:
+                        raise
+                if not rebuild:
+                    raise
+                ceiling = min(self.retry_max_backoff, self.retry_backoff * (2**attempt))
+                delay = random.uniform(0.0, ceiling)
+                LOGGER.debug(
+                    "%s commit retry %d/%d in %.3fs after %s",
+                    self.identifier,
+                    attempt + 1,
+                    self.commit_retries,
+                    delay,
+                    type(error).__name__,
+                )
+                time.sleep(delay)
+        raise AssertionError("the commit retry loop must return or raise")
 
     def _resolved_snapshot_expiry(
         self, value: SnapshotExpiry, table: Any
@@ -1448,16 +1551,173 @@ class IcebergDataset(Dataset):
             table.maintenance.expire_snapshots().older_than(cutoff).commit()
         return len(expired)
 
-    def delete(self, row_filter: Any = None, *, branch: str | None = None) -> None:
-        """Delete the rows a filter matches, in one commit."""
+    def delete(
+        self,
+        row_filter: Any = None,
+        *,
+        branch: str | None = None,
+        case_sensitive: bool = True,
+        commit_file_count: int = 16,
+        properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> int:
+        """Delete matching rows through partition-bounded PyIceberg commits.
+
+        Strings use PyIceberg's SQL predicate grammar. A BooleanExpression is
+        carried unchanged. Candidate files stay in partition-local bounded
+        commits and partial files are filtered one RecordBatch at a time.
+        """
+        if commit_file_count <= 0:
+            raise ValueError("commit_file_count must be positive")
+        if not self.exists:
+            return 0
+        expression = _delete_expression(row_filter)
+        with self._write(snapshot_expiry):
+            return self._delete_where(
+                expression,
+                branch=branch,
+                case_sensitive=case_sensitive,
+                commit_file_count=commit_file_count,
+                properties=properties,
+            )
+
+    def delete_where(
+        self,
+        row_filter: Any,
+        *,
+        branch: str | None = None,
+        case_sensitive: bool = True,
+        commit_file_count: int = 16,
+        properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> int:
+        """Delete the rows named by one SQL or PyIceberg expression."""
+        if row_filter is None:
+            raise ValueError("delete_where needs a row filter; delete() removes every row")
+        return self.delete(
+            row_filter,
+            branch=branch,
+            case_sensitive=case_sensitive,
+            commit_file_count=commit_file_count,
+            properties=properties,
+            snapshot_expiry=snapshot_expiry,
+        )
+
+    def _delete_where(
+        self,
+        expression: Any,
+        *,
+        branch: str | None,
+        case_sensitive: bool,
+        commit_file_count: int,
+        properties: dict[str, str] | None,
+    ) -> int:
+        """One planned delete, returning the number of rows removed."""
         self.__dict__.pop("_insert_upper", None)
         table = self.iceberg_table
         reference = self._branch_name(branch)
-        self._branch_head(table, reference)
-        if row_filter is None:
-            table.delete(branch=reference)
-        else:
-            table.delete(row_filter, branch=reference)
+        if self._branch_head(table, reference) is None:
+            return 0
+        before = _branch_records(table, reference)
+        scan = table.scan(row_filter=expression)
+        scan = self._branch_scan(table, scan, reference)
+        for tasks in _delete_task_groups(scan.plan_files(), commit_file_count):
+            table = self._rewrite_delete_tasks(
+                table,
+                tasks,
+                expression,
+                reference,
+                properties or {},
+                case_sensitive,
+            )
+        after = _branch_records(table, reference)
+        return max(before - after, 0)
+
+    def _rewrite_delete_tasks(
+        self,
+        table: Any,
+        tasks: Sequence[Any],
+        expression: Any,
+        reference: str,
+        properties: Mapping[str, str],
+        case_sensitive: bool,
+        additions: pyarrow.Table | None = None,
+    ) -> Any:
+        """Rewrite a bounded group of candidate files as streamed batches."""
+        from pyiceberg.expressions import AlwaysTrue
+        from pyiceberg.expressions.visitors import ROWS_MUST_MATCH, _StrictMetricsEvaluator, bind
+        from pyiceberg.io.pyarrow import ArrowScan, _expression_to_complementary_pyarrow
+        from pyiceberg.table import FileScanTask
+
+        schema = table.schema()
+        bound = bind(schema, expression, case_sensitive)
+        preserve = _expression_to_complementary_pyarrow(bound, schema)
+        strict = _StrictMetricsEvaluator(schema, expression, case_sensitive).eval
+        scanner = ArrowScan(table.metadata, table.io, schema, AlwaysTrue(), case_sensitive)
+        file_rows = max(
+            *(int(task.file.record_count) for task in tasks),
+            additions.num_rows if additions is not None else 0,
+            1,
+        )
+        originals: list[Any] = []
+        replacements: list[_StagedPartition] = []
+        with _PartitionStager(table, self.sort_fields(), file_rows) as stager:
+            for task in tasks:
+                if strict(task.file) == ROWS_MUST_MATCH:
+                    originals.append(task.file)
+                    continue
+                partition = _task_partition(table, task)
+                stager.start(partition)
+                read_rows = kept_rows = 0
+                full_task = FileScanTask(task.file, task.delete_files, AlwaysTrue())
+                for batch in _task_batches(scanner, table.io, (full_task,)):
+                    source = pyarrow.Table.from_batches([batch])
+                    retained = source.filter(preserve)
+                    read_rows += source.num_rows
+                    kept_rows += retained.num_rows
+                    if retained.num_rows:
+                        stager.write(retained)
+                staged = stager.finish()
+                if kept_rows == read_rows:
+                    continue
+                originals.append(task.file)
+                replacements.append(staged)
+            if additions is not None and additions.num_rows:
+                replacements.extend(_stage_chunk(table, additions, stager))
+            if not originals and not replacements:
+                return table
+
+            def commit(current: Any, summary: Mapping[str, str]) -> None:
+                with _track_outputs() as generated:
+                    transaction = current.transaction()
+                    try:
+                        _ensure_name_mapping(transaction)
+                        with transaction.update_snapshot(
+                            snapshot_properties=dict(summary), branch=reference
+                        ).overwrite() as overwrite:
+                            for original in originals:
+                                overwrite.delete_data_file(original)
+                            for replacement in replacements:
+                                for data_file in replacement.data_files:
+                                    overwrite.append_data_file(data_file)
+                    except BaseException:
+                        _discard_paths(current.io, generated)
+                        raise
+                    _commit_staged(
+                        current,
+                        transaction,
+                        stager,
+                        replacements,
+                        generated,
+                    )
+
+            return self._commit_with_retry(
+                table,
+                reference,
+                properties,
+                commit,
+                rebuild=False,
+            )
 
     # -- snapshots and branches ---------------------------------------------
 
@@ -1477,7 +1737,9 @@ class IcebergDataset(Dataset):
         head = table.current_snapshot()
         current = snapshot_id or (head.snapshot_id if head else None)
         if current is None:
-            raise ValueError(f"{self.name!r} has no snapshot to branch from; write to it first")
+            raise ValueError(
+                f"{self.identifier!r} has no snapshot to branch from; write to it first"
+            )
         with table.manage_snapshots() as manage:
             manage.create_branch(snapshot_id=current, branch_name=name)
         return self.refresh()
@@ -1575,7 +1837,7 @@ class IcebergDataset(Dataset):
         }
         LOGGER.debug(
             "%s planned %d files, %d rows, %d bytes",
-            self.name,
+            self.identifier,
             planned["files"],
             planned["rows"],
             planned["bytes"],
@@ -1712,7 +1974,7 @@ class IcebergDataset(Dataset):
             self._mark_settled(reference, touched)
         LOGGER.info(
             "%s compacted %d parts into %d rows on %s",
-            self.name,
+            self.identifier,
             len(touched),
             rewritten,
             reference,
@@ -1771,7 +2033,7 @@ class IcebergDataset(Dataset):
         if not remove_orphans:
             LOGGER.info(
                 "%s expired %d snapshots, orphans left alone%s",
-                self.name,
+                self.identifier,
                 report["expired"],
                 " (dry run)" if dry_run else "",
             )
@@ -1783,7 +2045,7 @@ class IcebergDataset(Dataset):
             self._sweep(orphans)
         LOGGER.info(
             "%s expired %d snapshots and swept %d files (%d bytes)%s",
-            self.name,
+            self.identifier,
             report["expired"],
             report["deleted"],
             report["bytes"],
@@ -3205,6 +3467,101 @@ class _PartitionColumn:
     transform: Any
 
 
+def _delete_expression(row_filter: Any) -> Any:
+    """One PyIceberg BooleanExpression, including its SQL spelling."""
+    from pyiceberg.expressions import AlwaysTrue, BooleanExpression
+    from pyiceberg.expressions.parser import parse
+
+    if row_filter is None:
+        return AlwaysTrue()
+    if isinstance(row_filter, str):
+        return parse(row_filter)
+    if isinstance(row_filter, BooleanExpression):
+        return row_filter
+    raise TypeError("delete filter must be a SQL string or PyIceberg BooleanExpression")
+
+
+def _delete_task_groups(tasks: Iterable[Any], commit_file_count: int) -> Iterator[tuple[Any, ...]]:
+    """Candidate files in bounded, partition-local commit groups."""
+    pending: list[Any] = []
+    partition: tuple[Any, ...] | None = None
+    for task in tasks:
+        spec_id = getattr(task.file, "spec_id", None)
+        identity = (spec_id, *_partition_identity(task.file.partition))
+        if pending and (identity != partition or len(pending) >= commit_file_count):
+            yield tuple(pending)
+            pending.clear()
+        partition = identity
+        pending.append(task)
+    if pending:
+        yield tuple(pending)
+
+
+def _task_partition(table: Any, task: Any) -> dict[str, Any]:
+    """A planned file's partition under the current compatible spec."""
+    current = table.spec()
+    spec_id = getattr(task.file, "spec_id", None)
+    stored = table.metadata.specs().get(current.spec_id if spec_id is None else int(spec_id))
+    if stored is None or not current.compatible_with(stored):
+        raise ValueError("streamed delete cannot mix incompatible live partition specs")
+    return {field.name: task.file.partition[index] for index, field in enumerate(current.fields)}
+
+
+def _branch_records(table: Any, reference: str) -> int:
+    """Current record count for one branch, from its snapshot summary."""
+    head = table.refs().get(reference)
+    if head is None:
+        return 0
+    snapshot = table.metadata.snapshot_by_id(head.snapshot_id)
+    try:
+        return int(snapshot.summary["total-records"])
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return 0
+
+
+def _operation_committed(table: Any, reference: str, operation_id: str) -> bool:
+    """Whether a retried operation occurs in the selected branch's ancestry."""
+    head = table.refs().get(reference)
+    snapshot_id = head.snapshot_id if head is not None else None
+    while snapshot_id is not None:
+        snapshot = table.metadata.snapshot_by_id(snapshot_id)
+        if snapshot is None:
+            return False
+        if snapshot.summary.get(OPERATION_ID) == operation_id:
+            return True
+        snapshot_id = snapshot.parent_snapshot_id
+    return False
+
+
+def _retryable_commit(error: BaseException) -> bool:
+    """Whether rebuilding one bounded commit can make progress."""
+    from pyiceberg.exceptions import (
+        CommitFailedException,
+        CommitStateUnknownException,
+        ConditionalCheckFailedException,
+        ServerError,
+        ServiceUnavailableError,
+        WaitingForLockException,
+    )
+
+    if isinstance(error, FileNotFoundError | PermissionError):
+        return False
+    return isinstance(
+        error,
+        (
+            CommitFailedException,
+            CommitStateUnknownException,
+            ConditionalCheckFailedException,
+            ServerError,
+            ServiceUnavailableError,
+            WaitingForLockException,
+            TimeoutError,
+            ConnectionError,
+            OSError,
+        ),
+    )
+
+
 def _partition_columns(table: Any) -> tuple[_PartitionColumn, ...] | None:
     """The current spec's supported transformed source columns."""
     from pyiceberg.transforms import (
@@ -3810,6 +4167,21 @@ def _staged_partition_chunk(
         stager.start(partition)
         stager.write(run)
         yield stager.finish()
+
+
+def _stage_chunk(
+    table: Any,
+    chunk: pyarrow.Table,
+    stager: _PartitionStager,
+) -> Iterator[_StagedPartition]:
+    """Stage one bounded addition under the table's current partition spec."""
+    partitions = _partition_columns(table)
+    if partitions:
+        yield from _staged_partition_chunk(chunk, partitions, stager)
+        return
+    stager.start({})
+    stager.write(chunk)
+    yield stager.finish()
 
 
 def _grouped_partition_chunk(

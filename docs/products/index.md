@@ -23,8 +23,9 @@ flowchart LR
 
 Every event product is keyed `(unix, hash)` except `InstrumentUpdate`, whose
 current row is keyed by its sixteen-byte `xhash`. All lifecycle and reference
-identities are clock-free `int64` values. All six are sorted by `hash` and
-partitioned on `unixpartition` alone:
+identities are clock-free `int64` values. All six are partitioned on
+`unixpartition` alone. They declare no physical sort order; ordered readers
+request `(unix, hash)` or the protocol sequence explicitly:
 
 ```bash
 rekep fields load --target schemas/rekep/order.yaml | tail -2

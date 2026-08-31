@@ -133,6 +133,18 @@ def test_versions_are_stored_oldest_first_with_the_transport_last() -> None:
     )
 
 
+def test_fix_latest_is_the_newest_application_version_but_precedes_transport() -> None:
+    versions = ("FIXT1.1", "5.0.SP2", "FIX.Latest", "4.0")
+
+    assert canonical_versions(versions) == (
+        "4.0",
+        "5.0.SP2",
+        "FIX.Latest",
+        "FIXT1.1",
+    )
+    assert newest_of(versions) == "FIX.Latest"
+
+
 def test_the_transport_never_owns_an_application_fields_reading() -> None:
     """FIXT1.1 carries session fields; it does not redefine what they mean."""
     assert newest_of(("4.4", "FIXT1.1", "5.0")) == "5.0"

@@ -1,0 +1,29 @@
+{
+ "name": "NoDividendPeriodBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoDividendPeriodBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42294"
+  },
+  "item": {
+   "name": "DividendPeriodBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DividendPeriodBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42295"
+     }
+    }
+   ]
+  }
+ }
+}

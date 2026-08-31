@@ -1,0 +1,329 @@
+{
+ "name": "NationalQuotationBureau",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NationalQuotationBureau",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NationalQuotationBureau",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "BenchIDSource2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9528"
+    }
+   },
+   {
+    "name": "BenchSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9530"
+    }
+   },
+   {
+    "name": "BidPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9501"
+    }
+   },
+   {
+    "name": "Coupon2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9519"
+    }
+   },
+   {
+    "name": "FlatFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9503"
+    }
+   },
+   {
+    "name": "HedgeRatio2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9504"
+    }
+   },
+   {
+    "name": "ItemID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9539"
+    }
+   },
+   {
+    "name": "LockCrossFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9506"
+    }
+   },
+   {
+    "name": "MarketMakerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9538"
+    }
+   },
+   {
+    "name": "MarketMakerName1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9505"
+    }
+   },
+   {
+    "name": "MaturityDate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9546"
+    }
+   },
+   {
+    "name": "MMLocation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9537"
+    }
+   },
+   {
+    "name": "NegativeBidPxFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9507"
+    }
+   },
+   {
+    "name": "NegativeOfferPxFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9508"
+    }
+   },
+   {
+    "name": "NQBIssuerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9547"
+    }
+   },
+   {
+    "name": "NQBSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9509"
+    }
+   },
+   {
+    "name": "OfferPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9502"
+    }
+   },
+   {
+    "name": "OpenFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9548"
+    }
+   },
+   {
+    "name": "OTCBBFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9514"
+    }
+   },
+   {
+    "name": "PiggybackFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9522"
+    }
+   },
+   {
+    "name": "PurgeMessageCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9512"
+    }
+   },
+   {
+    "name": "PurgeReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9513"
+    }
+   },
+   {
+    "name": "PurgeSequenceNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9511"
+    }
+   },
+   {
+    "name": "PurgeStatusFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9510"
+    }
+   },
+   {
+    "name": "Service",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9515"
+    }
+   },
+   {
+    "name": "ShortName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9527"
+    }
+   },
+   {
+    "name": "StateOrCountry",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9541"
+    }
+   },
+   {
+    "name": "Telephone1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9542"
+    }
+   },
+   {
+    "name": "Telephone2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9545"
+    }
+   },
+   {
+    "name": "TraderID2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9536"
+    }
+   },
+   {
+    "name": "TradingSuspendFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9524"
+    }
+   },
+   {
+    "name": "UndSecurityExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9544"
+    }
+   },
+   {
+    "name": "UndStockPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9533"
+    }
+   },
+   {
+    "name": "UndSymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9531"
+    }
+   },
+   {
+    "name": "UndSymbolSfx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9532"
+    }
+   },
+   {
+    "name": "UnsolicitedFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9534"
+    }
+   },
+   {
+    "name": "UpdateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9540"
+    }
+   },
+   {
+    "name": "USFirmFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9543"
+    }
+   }
+  ]
+ }
+}

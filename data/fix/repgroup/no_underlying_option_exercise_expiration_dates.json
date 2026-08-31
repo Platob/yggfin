@@ -1,0 +1,37 @@
+{
+ "name": "NoUnderlyingOptionExerciseExpirationDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingOptionExerciseExpirationDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41856"
+  },
+  "item": {
+   "name": "UnderlyingOptionExerciseExpirationDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingOptionExerciseExpirationDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41857"
+     }
+    },
+    {
+     "name": "UnderlyingOptionExerciseExpirationDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41858"
+     }
+    }
+   ]
+  }
+ }
+}

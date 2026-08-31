@@ -1,0 +1,1145 @@
+{
+ "name": "GLTrade",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "GLTrade",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "GLTrade",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AccountNDS",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5161"
+    }
+   },
+   {
+    "name": "AllocExecID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7677"
+    }
+   },
+   {
+    "name": "AltHandlInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5043"
+    }
+   },
+   {
+    "name": "AltRule80A",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5142"
+    }
+   },
+   {
+    "name": "AvgPriceDay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7682"
+    }
+   },
+   {
+    "name": "AvgRevPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7679"
+    }
+   },
+   {
+    "name": "BookID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7700"
+    }
+   },
+   {
+    "name": "CCPOrderCompletionFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5144"
+    }
+   },
+   {
+    "name": "CCPTradeSuffixNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5143"
+    }
+   },
+   {
+    "name": "ChildID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9582"
+    }
+   },
+   {
+    "name": "ClearingAccountNDS",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5160"
+    }
+   },
+   {
+    "name": "ClearingClCodType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7058"
+    }
+   },
+   {
+    "name": "ClearingCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5159"
+    }
+   },
+   {
+    "name": "ClearingDest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7059"
+    }
+   },
+   {
+    "name": "ClearingOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7061"
+    }
+   },
+   {
+    "name": "ClientAccID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7693"
+    }
+   },
+   {
+    "name": "ClientCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7691"
+    }
+   },
+   {
+    "name": "ClientFreeField1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9596"
+    }
+   },
+   {
+    "name": "ClientFreeField2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9597"
+    }
+   },
+   {
+    "name": "ClientIdSOM",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7743"
+    }
+   },
+   {
+    "name": "ComplSettlement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7684"
+    }
+   },
+   {
+    "name": "ContraCreationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7062"
+    }
+   },
+   {
+    "name": "ContraCreationRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7063"
+    }
+   },
+   {
+    "name": "CoverInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7695"
+    }
+   },
+   {
+    "name": "CurrencyRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7683"
+    }
+   },
+   {
+    "name": "CVInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9598"
+    }
+   },
+   {
+    "name": "CXFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5154"
+    }
+   },
+   {
+    "name": "DataBaseIndex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9554"
+    }
+   },
+   {
+    "name": "DealInstBroker",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5146"
+    }
+   },
+   {
+    "name": "DSS",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9551"
+    }
+   },
+   {
+    "name": "FloorQtyDay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7676"
+    }
+   },
+   {
+    "name": "GLID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9552"
+    }
+   },
+   {
+    "name": "GLRoutingReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9595"
+    }
+   },
+   {
+    "name": "InstitutionalID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7661"
+    }
+   },
+   {
+    "name": "InstitutionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5155"
+    }
+   },
+   {
+    "name": "InternalRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9549"
+    }
+   },
+   {
+    "name": "LastCounterpartExec",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7668"
+    }
+   },
+   {
+    "name": "LimitGap",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7690"
+    }
+   },
+   {
+    "name": "LongName1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5044"
+    }
+   },
+   {
+    "name": "MandatorID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7666"
+    }
+   },
+   {
+    "name": "MarginInit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7709"
+    }
+   },
+   {
+    "name": "MatchMultipleQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5042"
+    }
+   },
+   {
+    "name": "MemberCodeCounterpart",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7665"
+    }
+   },
+   {
+    "name": "Memo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5149"
+    }
+   },
+   {
+    "name": "MidPointFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7060"
+    }
+   },
+   {
+    "name": "MIFIDBestExecutionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9584"
+    }
+   },
+   {
+    "name": "MIFIDClientCodeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7704"
+    }
+   },
+   {
+    "name": "MIFIDDestination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9587"
+    }
+   },
+   {
+    "name": "MIFIDInternalizationIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9583"
+    }
+   },
+   {
+    "name": "MIFIDInternalLimite",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7670"
+    }
+   },
+   {
+    "name": "MIFIDNegociationcode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9589"
+    }
+   },
+   {
+    "name": "MIFIDOrderType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7669"
+    }
+   },
+   {
+    "name": "MIFIDRetention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9586"
+    }
+   },
+   {
+    "name": "MIFIDSplit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9585"
+    }
+   },
+   {
+    "name": "MIFIDTradeExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7705"
+    }
+   },
+   {
+    "name": "Netting",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7698"
+    }
+   },
+   {
+    "name": "NettingGroup",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7699"
+    }
+   },
+   {
+    "name": "NettingLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5145"
+    }
+   },
+   {
+    "name": "NoDeposit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7707"
+    }
+   },
+   {
+    "name": "NoTriggers",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5166"
+    }
+   },
+   {
+    "name": "NumExec",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5147"
+    }
+   },
+   {
+    "name": "OrderId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9581"
+    }
+   },
+   {
+    "name": "OrdSubStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5048"
+    }
+   },
+   {
+    "name": "OrigClientID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7673"
+    }
+   },
+   {
+    "name": "OriginatorAcc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7706"
+    }
+   },
+   {
+    "name": "OriginatorAccFinal",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7742"
+    }
+   },
+   {
+    "name": "OTCInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7680"
+    }
+   },
+   {
+    "name": "OTCSession",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7688"
+    }
+   },
+   {
+    "name": "ParentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9580"
+    }
+   },
+   {
+    "name": "Password1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5045"
+    }
+   },
+   {
+    "name": "PercentageVar",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7687"
+    }
+   },
+   {
+    "name": "PreAllocPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7064"
+    }
+   },
+   {
+    "name": "PrevOrdPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7675"
+    }
+   },
+   {
+    "name": "PrevOrdQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7674"
+    }
+   },
+   {
+    "name": "PriceCheckingFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9591"
+    }
+   },
+   {
+    "name": "PublicOrderCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7667"
+    }
+   },
+   {
+    "name": "Quantitycontrol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9592"
+    }
+   },
+   {
+    "name": "Recycle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5175"
+    }
+   },
+   {
+    "name": "ReminderInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7685"
+    }
+   },
+   {
+    "name": "RevisedFinal",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7759"
+    }
+   },
+   {
+    "name": "SalesInstBroker",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5153"
+    }
+   },
+   {
+    "name": "SecondaryAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9550"
+    }
+   },
+   {
+    "name": "SecondaryTransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5164"
+    }
+   },
+   {
+    "name": "SettlAccType2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7663"
+    }
+   },
+   {
+    "name": "SettlementVenue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7664"
+    }
+   },
+   {
+    "name": "SettlInstBroker",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5165"
+    }
+   },
+   {
+    "name": "ShareGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7697"
+    }
+   },
+   {
+    "name": "SLEUID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5046"
+    }
+   },
+   {
+    "name": "Split",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9553"
+    }
+   },
+   {
+    "name": "StabilisationPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5163"
+    }
+   },
+   {
+    "name": "SubAccount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7694"
+    }
+   },
+   {
+    "name": "SubClCodType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7692"
+    }
+   },
+   {
+    "name": "SuspensionInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7686"
+    }
+   },
+   {
+    "name": "ThresholdExecQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7689"
+    }
+   },
+   {
+    "name": "TickSizeDenominator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5151"
+    }
+   },
+   {
+    "name": "TotalCostDay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7681"
+    }
+   },
+   {
+    "name": "TotalRevCost",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7678"
+    }
+   },
+   {
+    "name": "TraderGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7662"
+    }
+   },
+   {
+    "name": "TradeTypeIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9588"
+    }
+   },
+   {
+    "name": "TradOrdNum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5148"
+    }
+   },
+   {
+    "name": "TriggerDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5169"
+    }
+   },
+   {
+    "name": "TriggerDateTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7745"
+    }
+   },
+   {
+    "name": "TriggerDelay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5170"
+    }
+   },
+   {
+    "name": "TriggerIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5173"
+    }
+   },
+   {
+    "name": "TriggerLimitGap",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5911"
+    }
+   },
+   {
+    "name": "TriggerList",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7049"
+    }
+   },
+   {
+    "name": "TriggerMaxFloor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5168"
+    }
+   },
+   {
+    "name": "TriggerMinQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5912"
+    }
+   },
+   {
+    "name": "TriggerPrice1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5167"
+    }
+   },
+   {
+    "name": "TriggerSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5174"
+    }
+   },
+   {
+    "name": "TriggerStopGap",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5910"
+    }
+   },
+   {
+    "name": "TriggerSymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5172"
+    }
+   },
+   {
+    "name": "TriggerTradSesStat",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5171"
+    }
+   },
+   {
+    "name": "TriggerType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5162"
+    }
+   },
+   {
+    "name": "TrusteeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7696"
+    }
+   },
+   {
+    "name": "UnderlyingRisk",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7708"
+    }
+   },
+   {
+    "name": "UnreleasedDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5156"
+    }
+   },
+   {
+    "name": "UnreleasedText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5158"
+    }
+   },
+   {
+    "name": "UnreleasedTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5157"
+    }
+   },
+   {
+    "name": "UpdateReason1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5862"
+    }
+   },
+   {
+    "name": "UpdateReason2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9590"
+    }
+   },
+   {
+    "name": "UserDealer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7671"
+    }
+   },
+   {
+    "name": "UserIDCmd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5150"
+    }
+   },
+   {
+    "name": "UserSales",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7672"
+    }
+   },
+   {
+    "name": "WorkChildMinQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7744"
+    }
+   },
+   {
+    "name": "WorkDelay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7055"
+    }
+   },
+   {
+    "name": "WorkDoNotExceedReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7052"
+    }
+   },
+   {
+    "name": "WorkEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7748"
+    }
+   },
+   {
+    "name": "WorkGapPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7053"
+    }
+   },
+   {
+    "name": "WorkIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7757"
+    }
+   },
+   {
+    "name": "WorkList",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7050"
+    }
+   },
+   {
+    "name": "WorkMaxLimitPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7746"
+    }
+   },
+   {
+    "name": "WorkNbSentWaves",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7057"
+    }
+   },
+   {
+    "name": "WorkPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7747"
+    }
+   },
+   {
+    "name": "WorkPriceGapType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7054"
+    }
+   },
+   {
+    "name": "WorkReferencePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7051"
+    }
+   },
+   {
+    "name": "WorkRefVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7749"
+    }
+   },
+   {
+    "name": "WorkSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7758"
+    }
+   },
+   {
+    "name": "WorkSentQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7056"
+    }
+   },
+   {
+    "name": "WorkSymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7756"
+    }
+   }
+  ]
+ }
+}

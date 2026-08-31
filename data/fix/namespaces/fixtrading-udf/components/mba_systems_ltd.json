@@ -1,0 +1,81 @@
+{
+ "name": "MBASystemsLtd",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "MBASystemsLtd",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MBASystemsLtd",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AcpCrestRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9672"
+    }
+   },
+   {
+    "name": "AcpLegalDisclaimer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9674"
+    }
+   },
+   {
+    "name": "ContactEmailAddress",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9676"
+    }
+   },
+   {
+    "name": "ContactPhoneNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9675"
+    }
+   },
+   {
+    "name": "NetOrGrossIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9670"
+    }
+   },
+   {
+    "name": "XbCrestRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9671"
+    }
+   },
+   {
+    "name": "XbLegalDisclaimer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9673"
+    }
+   }
+  ]
+ }
+}

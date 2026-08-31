@@ -1,0 +1,7155 @@
+{
+ "3000": {
+  "name": "VolatilityTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Time at which volatility was computed.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "288"
+   },
+   "tag": "3000",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3001": {
+  "name": "BidVolatility",
+  "type": "double",
+  "nullable": true,
+  "description": "Volatility based on bid prices.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "288"
+   },
+   "tag": "3001",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3002": {
+  "name": "OfferVolatility",
+  "type": "double",
+  "nullable": true,
+  "description": "Volatility based on offer prices.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "288"
+   },
+   "tag": "3002",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3003": {
+  "name": "MidVolatility",
+  "type": "double",
+  "nullable": true,
+  "description": "Volatility based on mid prices.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "288"
+   },
+   "tag": "3003",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3004": {
+  "name": "RelativeValueTimestamp",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Timestamp at which the relative valuation metric or analytic is calculated or captured.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "288"
+   },
+   "tag": "3004",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3005": {
+  "name": "NoTradeTypes",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of trade types in repeating group.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "289"
+   },
+   "tag": "3005",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3006": {
+  "name": "TradeType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Type of trade assigned to a trade.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TrdTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "289"
+   },
+   "tag": "3006",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Regular trade",
+     "aliases": [
+      "RegularTrade"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Block trade",
+     "aliases": [
+      "BlockTrade"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Exchange for physical (EFP)",
+     "aliases": [
+      "EFP"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Transfer",
+     "aliases": [
+      "Transfer"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Late trade",
+     "aliases": [
+      "LateTrade"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "T trade",
+     "aliases": [
+      "TTrade"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "Weighted average price trade",
+     "aliases": [
+      "WeightedAveragePriceTrade"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Bunched trade",
+     "aliases": [
+      "BunchedTrade"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Late bunched trade",
+     "aliases": [
+      "LateBunchedTrade"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "Prior reference price trade",
+     "aliases": [
+      "PriorReferencePriceTrade"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "After hours trade",
+     "aliases": [
+      "AfterHoursTrade"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Exchange for risk (EFR)",
+     "aliases": [
+      "ExchangeForRisk"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Exchange for swap (EFS)",
+     "aliases": [
+      "ExchangeForSwap"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Exchange of futures for in market futures (EFM)",
+     "aliases": [
+      "ExchangeOfFuturesFor"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "Exchange of options for options (EOO)",
+     "aliases": [
+      "ExchangeOfOptionsForOptions"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "Trading at settlement",
+     "aliases": [
+      "TradingAtSettlement"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "All or none",
+     "aliases": [
+      "AllOrNone"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Futures large order execution",
+     "aliases": [
+      "FuturesLargeOrderExecution"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "Exchange of futures for external market futures (EFF)",
+     "aliases": [
+      "ExchangeOfFuturesForFutures"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "Option interim trade",
+     "aliases": [
+      "OptionInterimTrade"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "Option cabinet trade",
+     "aliases": [
+      "OptionCabinetTrade"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "Privately negotiated trade",
+     "aliases": [
+      "PrivatelyNegotiatedTrades"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "Substitution of futures for forwards",
+     "aliases": [
+      "SubstitutionOfFuturesForForwards"
+     ]
+    },
+    {
+     "value": "48",
+     "meaning": "Non-standard settlement",
+     "aliases": [
+      "NonStandardSettlement"
+     ]
+    },
+    {
+     "value": "49",
+     "meaning": "Derivative related transaction",
+     "aliases": [
+      "DerivativeRelatedTransaction"
+     ]
+    },
+    {
+     "value": "50",
+     "meaning": "Portfolio trade",
+     "aliases": [
+      "PortfolioTrade"
+     ]
+    },
+    {
+     "value": "51",
+     "meaning": "Volume weighted average trade",
+     "aliases": [
+      "VolumeWeightedAverageTrade"
+     ]
+    },
+    {
+     "value": "52",
+     "meaning": "Exchange granted trade",
+     "aliases": [
+      "ExchangeGrantedTrade"
+     ]
+    },
+    {
+     "value": "53",
+     "meaning": "Repurchase agreement",
+     "aliases": [
+      "RepurchaseAgreement"
+     ]
+    },
+    {
+     "value": "54",
+     "meaning": "OTC",
+     "aliases": [
+      "OTC"
+     ]
+    },
+    {
+     "value": "55",
+     "meaning": "Exchange basis facility (EBF)",
+     "aliases": [
+      "ExchangeBasisFacility"
+     ]
+    },
+    {
+     "value": "56",
+     "meaning": "Opening trade",
+     "aliases": [
+      "OpeningTrade"
+     ]
+    },
+    {
+     "value": "57",
+     "meaning": "Netted trade",
+     "aliases": [
+      "NettedTrade"
+     ]
+    },
+    {
+     "value": "58",
+     "meaning": "Block swap trade",
+     "aliases": [
+      "BlockSwapTrade"
+     ]
+    },
+    {
+     "value": "59",
+     "meaning": "Credit event trade",
+     "aliases": [
+      "CreditEventTrade"
+     ]
+    },
+    {
+     "value": "60",
+     "meaning": "Succession event trade",
+     "aliases": [
+      "SuccessionEventTrade"
+     ]
+    },
+    {
+     "value": "61",
+     "meaning": "Give-up Give-in trade",
+     "aliases": [
+      "GiveUpGiveInTrade"
+     ]
+    },
+    {
+     "value": "62",
+     "meaning": "Dark trade",
+     "aliases": [
+      "DarkTrade"
+     ]
+    },
+    {
+     "value": "63",
+     "meaning": "Technical trade",
+     "aliases": [
+      "TechnicalTrade"
+     ]
+    },
+    {
+     "value": "64",
+     "meaning": "Benchmark",
+     "aliases": [
+      "Benchmark"
+     ]
+    },
+    {
+     "value": "65",
+     "meaning": "Package trade",
+     "aliases": [
+      "PackageTrade"
+     ]
+    },
+    {
+     "value": "66",
+     "meaning": "Roll trade",
+     "aliases": [
+      "RollTrade"
+     ]
+    },
+    {
+     "value": "67",
+     "meaning": "Closing price trade",
+     "aliases": [
+      "ClosingPriceTrade"
+     ]
+    },
+    {
+     "value": "68",
+     "meaning": "Inter-fund transfer trade",
+     "aliases": [
+      "InterFundTransferTrade"
+     ]
+    },
+    {
+     "value": "69",
+     "meaning": "Net asset value calculated trade",
+     "aliases": [
+      "NetAssetValueCalculatedTrade"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "Error trade",
+     "aliases": [
+      "ErrorTrade"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Special cum dividend (CD)",
+     "aliases": [
+      "SpecialCumDividend"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "Special ex dividend (XD)",
+     "aliases": [
+      "SpecialExDividend"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "Special cum coupon (CC)",
+     "aliases": [
+      "SpecialCumCoupon"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "Special ex coupon (XC)",
+     "aliases": [
+      "SpecialExCoupon"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "Cash settlement (CS)",
+     "aliases": [
+      "CashSettlement"
+     ]
+    },
+    {
+     "value": "30",
+     "meaning": "Special price (SP)",
+     "aliases": [
+      "SpecialPrice"
+     ]
+    },
+    {
+     "value": "31",
+     "meaning": "Guaranteed delivery (GD)",
+     "aliases": [
+      "GuaranteedDelivery"
+     ]
+    },
+    {
+     "value": "32",
+     "meaning": "Special cum rights (CR)",
+     "aliases": [
+      "SpecialCumRights"
+     ]
+    },
+    {
+     "value": "33",
+     "meaning": "Special ex rights (XR)",
+     "aliases": [
+      "SpecialExRights"
+     ]
+    },
+    {
+     "value": "34",
+     "meaning": "Special cum capital repayments (CP)",
+     "aliases": [
+      "SpecialCumCapitalRepayments"
+     ]
+    },
+    {
+     "value": "35",
+     "meaning": "Special ex capital repayments (XP)",
+     "aliases": [
+      "SpecialExCapitalRepayments"
+     ]
+    },
+    {
+     "value": "36",
+     "meaning": "Special cum bonus (CB)",
+     "aliases": [
+      "SpecialCumBonus"
+     ]
+    },
+    {
+     "value": "37",
+     "meaning": "Special ex bonus (XB)",
+     "aliases": [
+      "SpecialExBonus"
+     ]
+    },
+    {
+     "value": "38",
+     "meaning": "Block trade",
+     "aliases": [
+      "LargeTrade"
+     ]
+    },
+    {
+     "value": "39",
+     "meaning": "Worked principal trade",
+     "aliases": [
+      "WorkedPrincipalTrade"
+     ]
+    },
+    {
+     "value": "40",
+     "meaning": "Block trades",
+     "aliases": [
+      "BlockTrades"
+     ]
+    },
+    {
+     "value": "41",
+     "meaning": "Name change",
+     "aliases": [
+      "NameChange"
+     ]
+    },
+    {
+     "value": "42",
+     "meaning": "Portfolio transfer",
+     "aliases": [
+      "PortfolioTransfer"
+     ]
+    },
+    {
+     "value": "43",
+     "meaning": "Prorogation buy",
+     "aliases": [
+      "ProrogationBuy"
+     ]
+    },
+    {
+     "value": "44",
+     "meaning": "Prorogation sell",
+     "aliases": [
+      "ProrogationSell"
+     ]
+    },
+    {
+     "value": "45",
+     "meaning": "Option exercise",
+     "aliases": [
+      "OptionExercise"
+     ]
+    },
+    {
+     "value": "46",
+     "meaning": "Delta neutral transaction",
+     "aliases": [
+      "DeltaNeutralTransaction"
+     ]
+    },
+    {
+     "value": "47",
+     "meaning": "Financing transaction",
+     "aliases": [
+      "FinancingTransaction"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3007": {
+  "name": "TradeSubType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Further qualification to the trade type defined in TradeType(3006).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TrdSubTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "289"
+   },
+   "tag": "3007",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "CMTA",
+     "aliases": [
+      "CMTA"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Internal transfer or adjustment",
+     "aliases": [
+      "InternalTransferOrAdjustment"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "External transfer or transfer of account",
+     "aliases": [
+      "ExternalTransferOrTransferOfAccount"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Reject for submitting side",
+     "aliases": [
+      "RejectForSubmittingSide"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Advisory for contra side",
+     "aliases": [
+      "AdvisoryForContraSide"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "Offset due to an allocation",
+     "aliases": [
+      "OffsetDueToAnAllocation"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "Onset due to an allocation",
+     "aliases": [
+      "OnsetDueToAnAllocation"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Differential spread",
+     "aliases": [
+      "DifferentialSpread"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Implied spread leg executed against an outright",
+     "aliases": [
+      "ImpliedSpreadLegExecutedAgainstAnOutright"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "Transaction from exercise",
+     "aliases": [
+      "TransactionFromExercise"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Transaction from assignment",
+     "aliases": [
+      "TransactionFromAssignment"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "ACATS",
+     "aliases": [
+      "ACATS"
+     ]
+    },
+    {
+     "value": "33",
+     "meaning": "Off Hours Trade",
+     "aliases": [
+      "OffHoursTrade"
+     ]
+    },
+    {
+     "value": "34",
+     "meaning": "On Hours Trade",
+     "aliases": [
+      "OnHoursTrade"
+     ]
+    },
+    {
+     "value": "35",
+     "meaning": "OTC Quote",
+     "aliases": [
+      "OTCQuote"
+     ]
+    },
+    {
+     "value": "36",
+     "meaning": "Converted SWAP",
+     "aliases": [
+      "ConvertedSWAP"
+     ]
+    },
+    {
+     "value": "40",
+     "meaning": "Wash Trade",
+     "aliases": [
+      "WashTrade"
+     ]
+    },
+    {
+     "value": "41",
+     "meaning": "Trade at Settlement (TAS)",
+     "aliases": [
+      "TradeAtSettlement"
+     ]
+    },
+    {
+     "value": "42",
+     "meaning": "Auction Trade",
+     "aliases": [
+      "AuctionTrade"
+     ]
+    },
+    {
+     "value": "43",
+     "meaning": "Trade at Marker (TAM)",
+     "aliases": [
+      "TradeAtMarker"
+     ]
+    },
+    {
+     "value": "44",
+     "meaning": "Default (Credit Event)",
+     "aliases": [
+      "CreditDefault"
+     ]
+    },
+    {
+     "value": "45",
+     "meaning": "Restructuring (credit event)",
+     "aliases": [
+      "CreditRestructuring"
+     ]
+    },
+    {
+     "value": "46",
+     "meaning": "Merger (succession event)",
+     "aliases": [
+      "Merger"
+     ]
+    },
+    {
+     "value": "47",
+     "meaning": "Spin-off (succession event)",
+     "aliases": [
+      "SpinOff"
+     ]
+    },
+    {
+     "value": "48",
+     "meaning": "Multilateral compression",
+     "aliases": [
+      "MultilateralCompression"
+     ]
+    },
+    {
+     "value": "50",
+     "meaning": "Balancing",
+     "aliases": [
+      "Balancing"
+     ]
+    },
+    {
+     "value": "51",
+     "meaning": "Basis Trade index Close (BTIC)",
+     "aliases": [
+      "BasisTradeIndexClose"
+     ]
+    },
+    {
+     "value": "52",
+     "meaning": "Trade At Cash Open (TACO)",
+     "aliases": [
+      "TradeAtCashOpen"
+     ]
+    },
+    {
+     "value": "53",
+     "meaning": "Trade submitted to venue for clearing and settlement",
+     "aliases": [
+      "TrdSubmitVenueClrSettl"
+     ]
+    },
+    {
+     "value": "54",
+     "meaning": "Bilateral compression",
+     "aliases": [
+      "BilateralCompression"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "AI (Automated input facility disabled in response to an exchange request.)",
+     "aliases": [
+      "AI"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "B (Transaction between two member firms where neither member firm is registered as a market maker in the security in question and neither is a designated fund manager. Also used by broker dealers when dealing with another broker which is not a member firm. Non-order book securities only.)",
+     "aliases": [
+      "B"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "K (Transaction using block trade facility.)",
+     "aliases": [
+      "K"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "LC (Correction submitted more than three days after publication of the original trade report.)",
+     "aliases": [
+      "LC"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "M (Transaction, other than a transaction resulting from a stock swap or stock switch, between two market makers registered in that security including IDB or a public display system trades. Non-order book securities only.)",
+     "aliases": [
+      "M"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "N (Non-protected portfolio transaction or a fully disclosed portfolio transaction)",
+     "aliases": [
+      "N"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "NM ( i) transaction where Exchange has granted permission for non-publication",
+     "aliases": [
+      "NM"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "NR (Non-risk transaction in a SEATS security other than an AIM security)",
+     "aliases": [
+      "NR"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "P (Protected portfolio transaction or a worked principal agreement to effect a portfolio transaction which includes order book securities)",
+     "aliases": [
+      "P"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "PA (Protected transaction notification)",
+     "aliases": [
+      "PA"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "PC (Contra trade for transaction which took place on a previous day and which was automatically executed on the Exchange trading system)",
+     "aliases": [
+      "PC"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "PN (Worked principal notification for a portfolio transaction which includes order book securities)",
+     "aliases": [
+      "PN"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "R ( (i) riskless principal transaction between non-members where the buying and selling transactions are executed at different prices or on different terms (requires a trade report with trade type indicator R for each transaction)",
+     "aliases": [
+      "R"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "RO (Transaction which resulted from the exercise of a traditional option or a stock-settled covered warrant)",
+     "aliases": [
+      "RO"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "RT (Risk transaction in a SEATS security, (excluding AIM security) reported by a market maker registered in that security)",
+     "aliases": [
+      "RT"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "SW (Transactions resulting from stock swap or a stock switch (one report is required for each line of stock))",
+     "aliases": [
+      "SW"
+     ]
+    },
+    {
+     "value": "30",
+     "meaning": "T (If reporting a single protected transaction)",
+     "aliases": [
+      "T"
+     ]
+    },
+    {
+     "value": "31",
+     "meaning": "WN (Worked principal notification for a single order book security)",
+     "aliases": [
+      "WN"
+     ]
+    },
+    {
+     "value": "32",
+     "meaning": "WT (Worked principal transaction (other than a portfolio transaction))",
+     "aliases": [
+      "WT"
+     ]
+    },
+    {
+     "value": "37",
+     "meaning": "Crossed Trade (X)",
+     "aliases": [
+      "CrossedTrade"
+     ]
+    },
+    {
+     "value": "38",
+     "meaning": "Interim Protected Trade (I)",
+     "aliases": [
+      "InterimProtectedTrade"
+     ]
+    },
+    {
+     "value": "39",
+     "meaning": "Large in Scale (L)",
+     "aliases": [
+      "LargeInScale"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3008": {
+  "name": "NoAllocTrdRegTimestamps",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of allocation timestamps.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "291"
+   },
+   "tag": "3008",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3009": {
+  "name": "AllocTrdRegTimestamp",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Same as TrdRegTimestamp(769). Used to provide relevant timestamp for the allocation account.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "291"
+   },
+   "tag": "3009",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3010": {
+  "name": "AllocTrdRegTimestampType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Same as TrdRegTimestampType(770). Used to indicate the timestamp type relevant for the allocation account.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TrdRegTimestampTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "291"
+   },
+   "tag": "3010",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Execution time",
+     "aliases": [
+      "ExecutionTime"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Time in",
+     "aliases": [
+      "TimeIn"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Time out",
+     "aliases": [
+      "TimeOut"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Broker receipt",
+     "aliases": [
+      "BrokerReceipt"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "Broker execution",
+     "aliases": [
+      "BrokerExecution"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "Desk receipt",
+     "aliases": [
+      "DeskReceipt"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Submission to clearing",
+     "aliases": [
+      "SubmissionToClearing"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Time priority",
+     "aliases": [
+      "TimePriority"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "Orderbook entry time",
+     "aliases": [
+      "OrderbookEntryTime"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Order submission time",
+     "aliases": [
+      "OrderSubmissionTime"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Publicly reported",
+     "aliases": [
+      "PubliclyReported"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Public report updated",
+     "aliases": [
+      "PublicReportUpdated"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Non-publicly reported",
+     "aliases": [
+      "NonPubliclyReported"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "Non-public report updated",
+     "aliases": [
+      "NonPublicReportUpdated"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "Submitted for confirmation",
+     "aliases": [
+      "SubmittedForConfirmation"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "Updated for confirmation",
+     "aliases": [
+      "UpdatedForConfirmation"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Confirmed",
+     "aliases": [
+      "Confirmed"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "Updated for clearing",
+     "aliases": [
+      "UpdatedForClearing"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "Cleared",
+     "aliases": [
+      "Cleared"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "Allocations submitted",
+     "aliases": [
+      "AllocationsSubmitted"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "Allocations updated",
+     "aliases": [
+      "AllocationsUpdated"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "Allocations completed",
+     "aliases": [
+      "AllocationsCompleted"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "Submitted to repository",
+     "aliases": [
+      "SubmittedToRepository"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "Post-trade continuation event",
+     "aliases": [
+      "PostTrdContntnEvnt"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Post-trade valuation",
+     "aliases": [
+      "PostTradeValuation"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "Previous time priority",
+     "aliases": [
+      "PreviousTimePriority"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "Identifier assigned",
+     "aliases": [
+      "IdentifierAssigned"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "Previous identifier assigned",
+     "aliases": [
+      "PreviousIdentifierAssigned"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "Order cancellation time",
+     "aliases": [
+      "OrderCancellationTime"
+     ]
+    },
+    {
+     "value": "30",
+     "meaning": "Order modification time",
+     "aliases": [
+      "OrderModificationTime"
+     ]
+    },
+    {
+     "value": "31",
+     "meaning": "Order routing time",
+     "aliases": [
+      "OrderRoutingTime"
+     ]
+    },
+    {
+     "value": "32",
+     "meaning": "Trade cancellation time",
+     "aliases": [
+      "TradeCancellationTime"
+     ]
+    },
+    {
+     "value": "33",
+     "meaning": "Trade modification time",
+     "aliases": [
+      "TradeModificationTime"
+     ]
+    },
+    {
+     "value": "34",
+     "meaning": "Reference time for BBO",
+     "aliases": [
+      "ReferenceTimeForBBO"
+     ]
+    },
+    {
+     "value": "35",
+     "meaning": "Affirmed",
+     "aliases": [
+      "Affirmed"
+     ]
+    },
+    {
+     "value": "36",
+     "meaning": "Update time",
+     "aliases": [
+      "UpdateTime"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3011": {
+  "name": "AllocTrdRegTimestampSrc",
+  "type": "string",
+  "nullable": true,
+  "description": "Same as TrdRegTimestampOrigin(771). Used to indicate the \"origin\" or source of the timestamp relevant for the allocation account.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "291"
+   },
+   "tag": "3011",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3012": {
+  "name": "AlgoCertificateID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier for a certificate issued by an algorithmic trading firm.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3012",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3013": {
+  "name": "AlgoCertificateDesc",
+  "type": "string",
+  "nullable": true,
+  "description": "Description of a certificate issued by an algorithmic trading firm.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3013",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3014": {
+  "name": "AlgoCertificateRequestID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier of the AlgoCertificateRequest(35=EH).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3014",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3015": {
+  "name": "AlgoCertificateRequestRefID",
+  "type": "string",
+  "nullable": true,
+  "description": "Reference identifier of the AlgoCertificateRequest(35=EH).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3015",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3016": {
+  "name": "AlgoCertificateRequestTransType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the message transaction type.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateRequestTransTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3016",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "New",
+     "aliases": [
+      "New"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Cancel",
+     "aliases": [
+      "Cancel"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Replace",
+     "aliases": [
+      "Replace"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3017": {
+  "name": "AlgoCertificateRequestStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Status of the AlgoCertificateRequest(35=EH) message being responded to.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateRequestStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3017",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Received, not yet processed",
+     "aliases": [
+      "Received"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Accepted",
+     "aliases": [
+      "Accepted"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Rejected",
+     "aliases": [
+      "Rejected"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3018": {
+  "name": "AlgoCertificateReportID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier of the AlgoCertificateReport(35=EJ).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3018",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3019": {
+  "name": "AlgoCertificateReportRefID",
+  "type": "string",
+  "nullable": true,
+  "description": "Reference identifier of the AlgoCertificateReport(35=EJ).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3019",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3020": {
+  "name": "AlgoCertificateReportTransType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the message transaction type.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateReportTransTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3020",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "New",
+     "aliases": [
+      "New"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Cancel",
+     "aliases": [
+      "Cancel"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Replace",
+     "aliases": [
+      "Replace"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3021": {
+  "name": "AlgoCertificateReportStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Status of the report being responded to.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateReportStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3021",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Received, not yet processed",
+     "aliases": [
+      "Received"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Accepted",
+     "aliases": [
+      "Accepted"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Rejected",
+     "aliases": [
+      "Rejected"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3022": {
+  "name": "AlgoCertificateStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the current status of the certificate as established by the certificate issuer.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292",
+    "updated": "FIX.Latest",
+    "updated_ep": "303"
+   },
+   "tag": "3022",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Draft",
+     "aliases": [
+      "Draft"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Approved",
+     "aliases": [
+      "Approved"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Submitted",
+     "aliases": [
+      "Submitted"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Registered",
+     "aliases": [
+      "Registered"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Cancelled",
+     "aliases": [
+      "Cancelled"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3023": {
+  "name": "ApprovalTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Date and time the details within the message have been approved.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3023",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3024": {
+  "name": "AlgoTestDesc",
+  "type": "string",
+  "nullable": true,
+  "description": "Description of means of testing for an algorithm.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3024",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3025": {
+  "name": "NoAlgoSystemModules",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of components making up a system for algorithmic trading.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3025",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3026": {
+  "name": "AlgoSystemModuleName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of the component of a system for algorithmic trading.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3026",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3027": {
+  "name": "AlgoSystemModuleVersion",
+  "type": "string",
+  "nullable": true,
+  "description": "Version (e.g. build or commit number) of the component of a system for algorithmic trading.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3027",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3028": {
+  "name": "NoTestScenarios",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of test scenarios for an algorithmic trading system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3028",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3029": {
+  "name": "TestScenarioID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier of a test scenario for a software system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3029",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3030": {
+  "name": "TestScenarioStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the overall result of a test scenario identified by TestScenarioID(3029).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestSuiteStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3030",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Undefined",
+     "aliases": [
+      "Undefined"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Pass",
+     "aliases": [
+      "Pass"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Fail",
+     "aliases": [
+      "Fail"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Warning",
+     "aliases": [
+      "Warning"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3031": {
+  "name": "TestScenarioStartTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Starting date and time of test scenario execution for a software system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3031",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3032": {
+  "name": "TestScenarioEndTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Ending date and time of test scenario execution for a software system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3032",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3033": {
+  "name": "MDOriginDesc",
+  "type": "string",
+  "nullable": true,
+  "description": "Description of the origin of the market data.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3033",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3034": {
+  "name": "MDOriginTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Date and time of the market data.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3034",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3035": {
+  "name": "TestStepGroupID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier for the group of test steps constituting a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292",
+    "updated": "FIX.Latest",
+    "updated_ep": "295"
+   },
+   "tag": "3035",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3036": {
+  "name": "NoTestSteps",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of test steps.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3036",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3037": {
+  "name": "TestStepID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier of a test step.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3037",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3038": {
+  "name": "TestStepDesc",
+  "type": "string",
+  "nullable": true,
+  "description": "Description of a test step.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3038",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3039": {
+  "name": "TestStepStartTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Starting time of a test step.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3039",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3040": {
+  "name": "TestStepStartOffsetPeriod",
+  "type": "int32",
+  "nullable": true,
+  "description": "Time unit multiplier for the starting time of a test step relative to the starting time of a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "int",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292",
+    "updated": "FIX.Latest",
+    "updated_ep": "295"
+   },
+   "tag": "3040",
+   "type": "int",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3041": {
+  "name": "TestStepStartOffsetUnit",
+  "type": "int32",
+  "nullable": true,
+  "description": "Time unit associated with the starting time of a test step relative to the starting time of a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "OrderDelayUnitCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292",
+    "updated": "FIX.Latest",
+    "updated_ep": "295"
+   },
+   "tag": "3041",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Seconds (default if not specified)",
+     "aliases": [
+      "Seconds"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Tenths of a second",
+     "aliases": [
+      "TenthsOfASecond"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Hundredths of a second",
+     "aliases": [
+      "HundredthsOfASecond"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "milliseconds",
+     "aliases": [
+      "Milliseconds"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "microseconds",
+     "aliases": [
+      "Microseconds"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "nanoseconds",
+     "aliases": [
+      "Nanoseconds"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "minutes",
+     "aliases": [
+      "Minutes"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "hours",
+     "aliases": [
+      "Hours"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "days",
+     "aliases": [
+      "Days"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "weeks",
+     "aliases": [
+      "Weeks"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "months",
+     "aliases": [
+      "Months"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "years",
+     "aliases": [
+      "Years"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3042": {
+  "name": "TestStepEndTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Ending time of a test step.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3042",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3043": {
+  "name": "TestStepEndOffsetPeriod",
+  "type": "int32",
+  "nullable": true,
+  "description": "Time unit multiplier for the ending time of a test step relative to the starting time of a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "int",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292",
+    "updated": "FIX.Latest",
+    "updated_ep": "295"
+   },
+   "tag": "3043",
+   "type": "int",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3044": {
+  "name": "TestStepEndOffsetUnit",
+  "type": "int32",
+  "nullable": true,
+  "description": "Time unit associated with the starting time of a test step relative to the ending time of a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "OrderDelayUnitCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292",
+    "updated": "FIX.Latest",
+    "updated_ep": "295"
+   },
+   "tag": "3044",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Seconds (default if not specified)",
+     "aliases": [
+      "Seconds"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Tenths of a second",
+     "aliases": [
+      "TenthsOfASecond"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Hundredths of a second",
+     "aliases": [
+      "HundredthsOfASecond"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "milliseconds",
+     "aliases": [
+      "Milliseconds"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "microseconds",
+     "aliases": [
+      "Microseconds"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "nanoseconds",
+     "aliases": [
+      "Nanoseconds"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "minutes",
+     "aliases": [
+      "Minutes"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "hours",
+     "aliases": [
+      "Hours"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "days",
+     "aliases": [
+      "Days"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "weeks",
+     "aliases": [
+      "Weeks"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "months",
+     "aliases": [
+      "Months"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "years",
+     "aliases": [
+      "Years"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3045": {
+  "name": "NoTestStepParameters",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of test step parameters.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3045",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3046": {
+  "name": "TestStepParameterName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of the test step parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3046",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3047": {
+  "name": "TestStepParameterType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Datatype of the test step parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "StrategyParameterTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3047",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Int",
+     "aliases": [
+      "Int"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Length",
+     "aliases": [
+      "Length"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "NumInGroup",
+     "aliases": [
+      "NumInGroup"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "SeqNum",
+     "aliases": [
+      "SeqNum"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "TagNum",
+     "aliases": [
+      "TagNum"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "float",
+     "aliases": [
+      "Float"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Qty",
+     "aliases": [
+      "Qty"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Price",
+     "aliases": [
+      "Price"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "PriceOffset",
+     "aliases": [
+      "PriceOffset"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Amt",
+     "aliases": [
+      "Amt"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Percentage",
+     "aliases": [
+      "Percentage"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Char",
+     "aliases": [
+      "Char"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Boolean",
+     "aliases": [
+      "Boolean"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "String",
+     "aliases": [
+      "String"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "MultipleCharValue",
+     "aliases": [
+      "MultipleCharValue"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "Currency",
+     "aliases": [
+      "Currency"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Exchange",
+     "aliases": [
+      "Exchange"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "MonthYear",
+     "aliases": [
+      "MonthYear"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "UTCTimestamp",
+     "aliases": [
+      "UTCTimestamp"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "UTCTimeOnly",
+     "aliases": [
+      "UTCTimeOnly"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "LocalMktDate",
+     "aliases": [
+      "LocalMktDate"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "UTCDateOnly",
+     "aliases": [
+      "UTCDateOnly"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "data",
+     "aliases": [
+      "Data"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "MultipleStringValue",
+     "aliases": [
+      "MultipleStringValue"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Country",
+     "aliases": [
+      "Country"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "Language",
+     "aliases": [
+      "Language"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "TZTimeOnly",
+     "aliases": [
+      "TZTimeOnly"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "TZTimestamp",
+     "aliases": [
+      "TZTimestamp"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "Tenor",
+     "aliases": [
+      "Tenor"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3048": {
+  "name": "TestStepParameterValue",
+  "type": "string",
+  "nullable": true,
+  "description": "Value of the test step parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3048",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3049": {
+  "name": "NoTestSystemModules",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of components making up a testing system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3049",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3050": {
+  "name": "TestSystemModuleName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of the component of a testing system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3050",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3051": {
+  "name": "TestSystemModuleVersion",
+  "type": "string",
+  "nullable": true,
+  "description": "Version (e.g. build or commit number) of the component of a testing system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3051",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3052": {
+  "name": "NoTestMeasures",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of results for a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3052",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3053": {
+  "name": "TestMeasureName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of a test measure.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3053",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3054": {
+  "name": "TestMeasureDesc",
+  "type": "string",
+  "nullable": true,
+  "description": "Description of a test measure.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3054",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3055": {
+  "name": "TestMeasureType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Datatype of the metric being used for a test.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "StrategyParameterTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3055",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Int",
+     "aliases": [
+      "Int"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Length",
+     "aliases": [
+      "Length"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "NumInGroup",
+     "aliases": [
+      "NumInGroup"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "SeqNum",
+     "aliases": [
+      "SeqNum"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "TagNum",
+     "aliases": [
+      "TagNum"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "float",
+     "aliases": [
+      "Float"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Qty",
+     "aliases": [
+      "Qty"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Price",
+     "aliases": [
+      "Price"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "PriceOffset",
+     "aliases": [
+      "PriceOffset"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Amt",
+     "aliases": [
+      "Amt"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Percentage",
+     "aliases": [
+      "Percentage"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Char",
+     "aliases": [
+      "Char"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Boolean",
+     "aliases": [
+      "Boolean"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "String",
+     "aliases": [
+      "String"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "MultipleCharValue",
+     "aliases": [
+      "MultipleCharValue"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "Currency",
+     "aliases": [
+      "Currency"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Exchange",
+     "aliases": [
+      "Exchange"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "MonthYear",
+     "aliases": [
+      "MonthYear"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "UTCTimestamp",
+     "aliases": [
+      "UTCTimestamp"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "UTCTimeOnly",
+     "aliases": [
+      "UTCTimeOnly"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "LocalMktDate",
+     "aliases": [
+      "LocalMktDate"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "UTCDateOnly",
+     "aliases": [
+      "UTCDateOnly"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "data",
+     "aliases": [
+      "Data"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "MultipleStringValue",
+     "aliases": [
+      "MultipleStringValue"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Country",
+     "aliases": [
+      "Country"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "Language",
+     "aliases": [
+      "Language"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "TZTimeOnly",
+     "aliases": [
+      "TZTimeOnly"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "TZTimestamp",
+     "aliases": [
+      "TZTimestamp"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "Tenor",
+     "aliases": [
+      "Tenor"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3056": {
+  "name": "TestMeasurePrecision",
+  "type": "int32",
+  "nullable": true,
+  "description": "Number of decimal places for TestMeasureType(3055).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "int",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3056",
+   "type": "int",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3057": {
+  "name": "TestMeasureResult",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the result of an individual test based on a measure.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestSuiteStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3057",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Undefined",
+     "aliases": [
+      "Undefined"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Pass",
+     "aliases": [
+      "Pass"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Fail",
+     "aliases": [
+      "Fail"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Warning",
+     "aliases": [
+      "Warning"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3058": {
+  "name": "TestThresholdType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies whether the value of a measure needs to be over or under a specific threshold to be successful.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestThresholdTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3058",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Under",
+     "aliases": [
+      "Under"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Over",
+     "aliases": [
+      "Over"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3059": {
+  "name": "TestWarningLevelValue",
+  "type": "double",
+  "nullable": true,
+  "description": "Value of the measure upon which a warning is issued for the test.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3059",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3060": {
+  "name": "TestFailLevelValue",
+  "type": "double",
+  "nullable": true,
+  "description": "Value of the measure upon which the test is considered to have failed.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3060",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3061": {
+  "name": "TestPeakLevelValue",
+  "type": "double",
+  "nullable": true,
+  "description": "Peak value of the measure achieved in testing.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3061",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3062": {
+  "name": "TestSuiteRequestID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier of the TestSuiteDefinitionRequest(35=EL).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3062",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3063": {
+  "name": "TestSuiteRequestRefID",
+  "type": "string",
+  "nullable": true,
+  "description": "Reference identifier of the TestSuiteDefinitionRequest(35=EL).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3063",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3064": {
+  "name": "TestSuiteRequestTransType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the message transaction type.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestSuiteRequestTransTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3064",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "New",
+     "aliases": [
+      "New"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Cancel",
+     "aliases": [
+      "Cancel"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3065": {
+  "name": "TestSuiteRequestStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Status of the TestSuiteDefinitionRequest(35=EL) message being responded to.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestSuiteRequestStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3065",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Received, not yet processed",
+     "aliases": [
+      "Received"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Accepted",
+     "aliases": [
+      "Accepted"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Rejected",
+     "aliases": [
+      "Rejected"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3066": {
+  "name": "TestActionRequestID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier of the TestActionRequest(35=EN).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3066",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3067": {
+  "name": "TestActionType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Specifies the type of action to take or that was taken for a given test suite.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestActionTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3067",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Start",
+     "aliases": [
+      "Start"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Stop",
+     "aliases": [
+      "Stop"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "State",
+     "aliases": [
+      "State"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3068": {
+  "name": "TestActionRequestStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Status of the TestActionRequest(35=EN) message being responded to.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestActionRequestStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3068",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Received, not yet processed",
+     "aliases": [
+      "Received"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Accepted",
+     "aliases": [
+      "Accepted"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Rejected",
+     "aliases": [
+      "Rejected"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3069": {
+  "name": "TestSuiteActivityState",
+  "type": "int32",
+  "nullable": true,
+  "description": "Specifies the activity state the test suite is in.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestSuiteActivityStateCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3069",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Scheduled",
+     "aliases": [
+      "Scheduled"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Running",
+     "aliases": [
+      "Running"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Completed",
+     "aliases": [
+      "Completed"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Cancelled",
+     "aliases": [
+      "Cancelled"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3070": {
+  "name": "TestSuiteStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the overall test result of a group of individual test scenarios.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestSuiteStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3070",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Undefined",
+     "aliases": [
+      "Undefined"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Pass",
+     "aliases": [
+      "Pass"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Fail",
+     "aliases": [
+      "Fail"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Warning",
+     "aliases": [
+      "Warning"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3071": {
+  "name": "TestActionReportID",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifier of the test action report.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "292"
+   },
+   "tag": "3071",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3072": {
+  "name": "RateSourceSymbol",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the currency pair/symbol that the instance of the rate source information is applicable for the fixing.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "293"
+   },
+   "tag": "3072",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3073": {
+  "name": "FXBenchmark",
+  "type": "int32",
+  "nullable": true,
+  "description": "The source of where to obtain the FX benchmark rate to use for fixing the rate.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "FXBenchmarkCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "293"
+   },
+   "tag": "3073",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Bloomberg",
+     "aliases": [
+      "Bloomberg"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Central Bank",
+     "aliases": [
+      "CentralBank"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "WMR",
+     "aliases": [
+      "WMR"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Mitsubishi-UFJ",
+     "aliases": [
+      "MitsubishiUFJ"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "London Bullion Market Association",
+     "aliases": [
+      "LondonBullionMarketAssociation"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "London Metal Exchange",
+     "aliases": [
+      "LondonMetalExchange"
+     ]
+    },
+    {
+     "value": "99",
+     "meaning": "Other",
+     "aliases": [
+      "Other"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3074": {
+  "name": "FXBenchmarkDate",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "The local date of the FX rate fixing. The time applicable on the fixing date is specified in FXBenchmarkTime(3075).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "LocalMktDate",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "293"
+   },
+   "tag": "3074",
+   "type": "LocalMktDate",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3075": {
+  "name": "FXBenchmarkTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "The local time of the FX rate fixing. The date applicable for the fixing time is specified in FXBenchmarkDate(3074).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "LocalMktTime",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "293"
+   },
+   "tag": "3075",
+   "type": "LocalMktTime",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3076": {
+  "name": "FXBenchmarkBusinessCenter",
+  "type": "string",
+  "nullable": true,
+  "description": "A business center whose calendar is used for date/time adjustment. See https://www.fpml.org/coding-scheme/business-center to download the current (ISDA/FpML) standard 4-character code values for business center identification.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "293"
+   },
+   "tag": "3076",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3077": {
+  "name": "AlgoCertificateRequestType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Specifies the type of business event related to an algo certification request.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateRequestTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3077",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Certificate information",
+     "aliases": [
+      "CertificateInformation"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Generate certificate",
+     "aliases": [
+      "GenerateCertificate"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Change certificate status",
+     "aliases": [
+      "ChangeCertificateStatus"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Forward certificate",
+     "aliases": [
+      "ForwardCertificate"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3078": {
+  "name": "AlgoCertificateReportType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Specifies the type of business event related to an algo certification report.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AlgoCertificateReportTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3078",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Certificate information",
+     "aliases": [
+      "CertificateInformation"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Certificate state changed",
+     "aliases": [
+      "CertificateStateChanged"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Certificate revoked",
+     "aliases": [
+      "CertificateRevoked"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3079": {
+  "name": "TestScenarioGroupID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier for the group of test scenarios constituting a test suite.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3079",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3080": {
+  "name": "AlgoSystemModuleLastUpdateTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Support Timestamp of last update to Algo System Module.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3080",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3081": {
+  "name": "TestSystemModuleLastUpdateTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "Support Timestamp of last update to Algo Test System Module.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "UTCTimestamp",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3081",
+   "type": "UTCTimestamp",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3082": {
+  "name": "NoTestOrders",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of orders for testing.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3082",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3083": {
+  "name": "TestOrderID",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifier of a test order.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3083",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3084": {
+  "name": "TestOrderSymbol",
+  "type": "string",
+  "nullable": true,
+  "description": "Used for the security symbol of a test order.\nSee Symbol(55) field for description.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3084",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3085": {
+  "name": "TestOrderSecurityID",
+  "type": "string",
+  "nullable": true,
+  "description": "Used for the security identifier of a test order.\nSee Security(48) field for description.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3085",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3086": {
+  "name": "TestOrderSecurityIDSource",
+  "type": "string",
+  "nullable": true,
+  "description": "Used for the source of the security identifier of a test order.\nSee SecurityIDSource(22) field for description.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3086",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3087": {
+  "name": "TestOrderPrice",
+  "type": "double",
+  "nullable": true,
+  "description": "Used for the price of a test order.\nSee Price(44) field for description.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Price",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3087",
+   "type": "Price",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3088": {
+  "name": "TestOrderPriceType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Type of price of TestOrderPrice(3087).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "PriceTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3088",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Percentage (i.e. percent of par) (often called \"dollar price\" for fixed income)",
+     "aliases": [
+      "Percentage"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Per unit (i.e. per share or contract)",
+     "aliases": [
+      "PerUnit"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Fixed amount (absolute value)",
+     "aliases": [
+      "FixedAmount"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Discount - percentage points below par",
+     "aliases": [
+      "Discount"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "Premium - percentage points over par",
+     "aliases": [
+      "Premium"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "Spread (basis points spread)",
+     "aliases": [
+      "Spread"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "TED Price",
+     "aliases": [
+      "TEDPrice"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "TED Yield",
+     "aliases": [
+      "TEDYield"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "Yield",
+     "aliases": [
+      "Yield"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Fixed cabinet trade price (primarily for listed futures and options)",
+     "aliases": [
+      "FixedCabinetTradePrice"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Variable cabinet trade price (primarily for listed futures and options)",
+     "aliases": [
+      "VariableCabinetTradePrice"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Price spread",
+     "aliases": [
+      "PriceSpread"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Product ticks in halves",
+     "aliases": [
+      "ProductTicksInHalves"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "Product ticks in fourths",
+     "aliases": [
+      "ProductTicksInFourths"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "Product ticks in eighths",
+     "aliases": [
+      "ProductTicksInEighths"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "Product ticks in sixteenths",
+     "aliases": [
+      "ProductTicksInSixteenths"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Product ticks in thirty-seconds",
+     "aliases": [
+      "ProductTicksInThirtySeconds"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "Product ticks in sixty-fourths",
+     "aliases": [
+      "ProductTicksInSixtyFourths"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "Product ticks in one-twenty-eighths",
+     "aliases": [
+      "ProductTicksInOneTwentyEighths"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "Normal rate representation (e.g. FX rate)",
+     "aliases": [
+      "NormalRateRepresentation"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "Inverse rate representation (e.g. FX rate)",
+     "aliases": [
+      "InverseRateRepresentation"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "Basis points",
+     "aliases": [
+      "BasisPoints"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "Up front points",
+     "aliases": [
+      "UpfrontPoints"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "Interest rate",
+     "aliases": [
+      "InterestRate"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Percentage of notional",
+     "aliases": [
+      "PercentageNotional"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3089": {
+  "name": "TestOrderQty",
+  "type": "double",
+  "nullable": true,
+  "description": "Used for the quantity of a test order.\nSee OrderQty(80) field for description.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Qty",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3089",
+   "type": "Qty",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3090": {
+  "name": "TestOrderOffsetPeriod",
+  "type": "int32",
+  "nullable": true,
+  "description": "Time unit multiplier for the effective time of an order relative to the starting time of a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "int",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3090",
+   "type": "int",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3091": {
+  "name": "TestOrderOffsetUnit",
+  "type": "int32",
+  "nullable": true,
+  "description": "Time unit associated with the effective time of an order relative to the starting time of a test scenario.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "OrderDelayUnitCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3091",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Seconds (default if not specified)",
+     "aliases": [
+      "Seconds"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Tenths of a second",
+     "aliases": [
+      "TenthsOfASecond"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Hundredths of a second",
+     "aliases": [
+      "HundredthsOfASecond"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "milliseconds",
+     "aliases": [
+      "Milliseconds"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "microseconds",
+     "aliases": [
+      "Microseconds"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "nanoseconds",
+     "aliases": [
+      "Nanoseconds"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "minutes",
+     "aliases": [
+      "Minutes"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "hours",
+     "aliases": [
+      "Hours"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "days",
+     "aliases": [
+      "Days"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "weeks",
+     "aliases": [
+      "Weeks"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "months",
+     "aliases": [
+      "Months"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "years",
+     "aliases": [
+      "Years"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3092": {
+  "name": "NoTestGatewayDetails",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of test gateway details.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3092",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3093": {
+  "name": "TestGatewayDetailName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of test gateway information.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3093",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3094": {
+  "name": "TestGatewayDetailType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Type of test gateway information.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TestGatewayDetailTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3094",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Market data gateway IP address",
+     "aliases": [
+      "MarketDataGatewayIPAddress"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Market data gateway port number",
+     "aliases": [
+      "MarketDataGatewayPortNumber"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Market data gateway data format",
+     "aliases": [
+      "MarketDataGatewayDataFormat"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Market data gateway format version",
+     "aliases": [
+      "MarketDataGatewayFormatVersion"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Market data gateway routing IP address",
+     "aliases": [
+      "MarketDataGatewayRoutingIPAddress"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "Order entry gateway IP address",
+     "aliases": [
+      "OrderEntryGatewayIPAddress"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "Order entry gateway port number",
+     "aliases": [
+      "OrderEntryGatewayPortNumber"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Order entry gateway data format",
+     "aliases": [
+      "OrderEntryGatewayDataFormat"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Order entry gateway format version",
+     "aliases": [
+      "OrderEntryGatewayFormatVersion"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "Order entry gateway routing IP address",
+     "aliases": [
+      "OrderEntryGatewayRoutingIPAddress"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3095": {
+  "name": "TestGatewayDetailValue",
+  "type": "string",
+  "nullable": true,
+  "description": "Value of test gateway information.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3095",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3096": {
+  "name": "TestGatewayMarketID",
+  "type": "string",
+  "nullable": true,
+  "description": "Execution venue of test system.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Exchange",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "295"
+   },
+   "tag": "3096",
+   "type": "Exchange",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3097": {
+  "name": "AlgoTrialID",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the behaviour or configuration that has been selected by the executing party for this order.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "297"
+   },
+   "tag": "3097",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3098": {
+  "name": "LastAlgoID",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the algorithm a broker has opted to use when executing an order.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "297"
+   },
+   "tag": "3098",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3099": {
+  "name": "NoIndividualAllocSubQtyAttributes",
+  "type": "int64",
+  "nullable": true,
+  "description": "Indicates number of trade attributes used to define a subgroup in an allocation group.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "298"
+   },
+   "tag": "3099",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3100": {
+  "name": "IndividualAllocSubQtyType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Type of trade attribute defining a subgroup in an allocation group.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "AllocGroupSubQtyTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "298"
+   },
+   "tag": "3100",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Trade type",
+     "aliases": [
+      "TradeType"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Trade publication indicator",
+     "aliases": [
+      "TradePublicationIndicator"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Order handling instruction",
+     "aliases": [
+      "OrderHandlingInstruction"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3101": {
+  "name": "IndividualAllocSubQtyValue",
+  "type": "string",
+  "nullable": true,
+  "description": "Value of the trade attribute defining a subgroup in an allocation group.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "298"
+   },
+   "tag": "3101",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3102": {
+  "name": "MostLiquidMarketID",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the most liquid market for a given instrument.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Exchange",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3102",
+   "type": "Exchange",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3103": {
+  "name": "MostLiquidMarketIndicator",
+  "type": "bool",
+  "nullable": true,
+  "description": "Identifies whether a given market is the most liquid for a given instrument.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Boolean",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3103",
+   "type": "Boolean",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3104": {
+  "name": "NumberOfTrades",
+  "type": "int32",
+  "nullable": true,
+  "description": "Number of trades or transactions included in an aggregated trade or transaction.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "int",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3104",
+   "type": "int",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3105": {
+  "name": "MDQualityIndicator",
+  "type": "int32",
+  "nullable": true,
+  "description": "Indicates the quality of the market data being provided.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "MDQualityIndicatorCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3105",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "No data quality issue",
+     "aliases": [
+      "NoQualityIssue"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Data quality issue",
+     "aliases": [
+      "QualityIssue"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3106": {
+  "name": "MDEntryStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Indicates the acceptance status of a market data entry.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "MDEntryStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3106",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Accepted",
+     "aliases": [
+      "Accepted"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Accepted with errors",
+     "aliases": [
+      "AcceptedWithErrors"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Rejected",
+     "aliases": [
+      "Rejected"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3107": {
+  "name": "MDEntryStatusText",
+  "type": "string",
+  "nullable": true,
+  "description": "Free form text to specify information related to the status provided with MDEntryStatus(3106).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3107",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3108": {
+  "name": "EncodedMDEntryStatusTextLen",
+  "type": "int64",
+  "nullable": true,
+  "description": "Byte length of encoded (non-ASCII characters) EncodedMDEntryStatusText(3109) field.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Length",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3108",
+   "type": "Length",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3109": {
+  "name": "EncodedMDEntryStatusText",
+  "type": "binary",
+  "nullable": true,
+  "description": "Encoded (non-ASCII characters) representation of the MDEntryStatusText(3107) field in the encoded format specified via the MessageEncoding(347) field. If used, the ASCII (English) representation should also be specified in the MDEntryStatusText(3107) field.\nData length controlled by field EncodedMDEntryStatusTextLen(3108).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "data",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3109",
+   "type": "data",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3110": {
+  "name": "MDMsgID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique message identifier for MarketDataSnapshotFullRefresh(35=W) or MarketDataIncrementalRefresh(35=X) message.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3110",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3111": {
+  "name": "SecurityStatusReportID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier for a SecurityStatus(35=f) message.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3111",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3112": {
+  "name": "TradingSessionStatusReportID",
+  "type": "string",
+  "nullable": true,
+  "description": "Unique identifier for a TradingSessionStatus(35=h) message.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3112",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3113": {
+  "name": "ReportStatus",
+  "type": "int32",
+  "nullable": true,
+  "description": "Indicates the status of a report.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "ReportStatusCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "300"
+   },
+   "tag": "3113",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Received, not yet processed",
+     "aliases": [
+      "ReceivedNotYetProcessed"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Accepted",
+     "aliases": [
+      "Accepted"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Rejected",
+     "aliases": [
+      "Rejected"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Accepted with errors",
+     "aliases": [
+      "AcceptedWithErrors"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3114": {
+  "name": "MarginPrice",
+  "type": "double",
+  "nullable": true,
+  "description": "Specifies margined price of a security.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "Price",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "301"
+   },
+   "tag": "3114",
+   "type": "Price",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3115": {
+  "name": "DividendPayoutRatio",
+  "type": "double",
+  "nullable": true,
+  "description": "Specifies the dividend payout ratio associated with an equity or a bond security.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "float",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "301"
+   },
+   "tag": "3115",
+   "type": "float",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3116": {
+  "name": "NoLegRateSources",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of LegRateSource entries in the repeating group.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3116",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3117": {
+  "name": "LegRateSource",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies the source of rate information.\nFor FX, the reference source to be used for the FX spot rate.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "RateSourceCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3117",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Bloomberg",
+     "aliases": [
+      "Bloomberg"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Reuters",
+     "aliases": [
+      "Reuters"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Telerate",
+     "aliases": [
+      "Telerate"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "ISDA Settlement Rate Option",
+     "aliases": [
+      "ISDARateOption"
+     ]
+    },
+    {
+     "value": "99",
+     "meaning": "Other",
+     "aliases": [
+      "Other"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3118": {
+  "name": "LegRateSourceType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Indicates whether the rate source specified is a primary or secondary source.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "RateSourceTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3118",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Primary",
+     "aliases": [
+      "Primary"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Secondary",
+     "aliases": [
+      "Secondary"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3119": {
+  "name": "LegReferencePage",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the reference \"page\" from the rate source.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3119",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3120": {
+  "name": "LegRateSourceReferencePageHeading",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the page heading from the rate source.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3120",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3121": {
+  "name": "LegRateSourceSymbol",
+  "type": "string",
+  "nullable": true,
+  "description": "Identifies the currency pair/symbol that the instance of the rate source information is applicable for the fixing.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3121",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3122": {
+  "name": "LegFXBenchmark",
+  "type": "int32",
+  "nullable": true,
+  "description": "The source of where to obtain the FX benchmark rate to use for fixing the rate.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "FXBenchmarkCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3122",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Bloomberg",
+     "aliases": [
+      "Bloomberg"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Central Bank",
+     "aliases": [
+      "CentralBank"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "WMR",
+     "aliases": [
+      "WMR"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Mitsubishi-UFJ",
+     "aliases": [
+      "MitsubishiUFJ"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "London Bullion Market Association",
+     "aliases": [
+      "LondonBullionMarketAssociation"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "London Metal Exchange",
+     "aliases": [
+      "LondonMetalExchange"
+     ]
+    },
+    {
+     "value": "99",
+     "meaning": "Other",
+     "aliases": [
+      "Other"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3123": {
+  "name": "LegFXBenchmarkDate",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "The local date of the FX rate fixing. The time applicable on the fixing date is specified in LegFXBenchmarkTime(3124).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "LocalMktDate",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3123",
+   "type": "LocalMktDate",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3124": {
+  "name": "LegFXBenchmarkTime",
+  "type": "timestamp[us]",
+  "nullable": true,
+  "description": "The local time of the FX rate fixing. The date applicable for the fixing time is specified in LegFXBenchmarkDate(3123).",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "LocalMktTime",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3124",
+   "type": "LocalMktTime",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3125": {
+  "name": "LegFXBenchmarkBusinessCenter",
+  "type": "string",
+  "nullable": true,
+  "description": "A business center whose calendar is used for date/time adjustment. See https://www.fpml.org/coding-scheme/business-center to download the current (ISDA/FpML) standard 4-character code values for business center identification.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "302"
+   },
+   "tag": "3125",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3126": {
+  "name": "NoTestSuiteParameters",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of test suite parameters.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3126",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3127": {
+  "name": "TestSuiteParameterName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of the test suite parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3127",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3128": {
+  "name": "TestSuiteParameterType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Datatype of the test suite parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "StrategyParameterTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3128",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Int",
+     "aliases": [
+      "Int"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Length",
+     "aliases": [
+      "Length"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "NumInGroup",
+     "aliases": [
+      "NumInGroup"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "SeqNum",
+     "aliases": [
+      "SeqNum"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "TagNum",
+     "aliases": [
+      "TagNum"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "float",
+     "aliases": [
+      "Float"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Qty",
+     "aliases": [
+      "Qty"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Price",
+     "aliases": [
+      "Price"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "PriceOffset",
+     "aliases": [
+      "PriceOffset"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Amt",
+     "aliases": [
+      "Amt"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Percentage",
+     "aliases": [
+      "Percentage"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Char",
+     "aliases": [
+      "Char"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Boolean",
+     "aliases": [
+      "Boolean"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "String",
+     "aliases": [
+      "String"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "MultipleCharValue",
+     "aliases": [
+      "MultipleCharValue"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "Currency",
+     "aliases": [
+      "Currency"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Exchange",
+     "aliases": [
+      "Exchange"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "MonthYear",
+     "aliases": [
+      "MonthYear"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "UTCTimestamp",
+     "aliases": [
+      "UTCTimestamp"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "UTCTimeOnly",
+     "aliases": [
+      "UTCTimeOnly"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "LocalMktDate",
+     "aliases": [
+      "LocalMktDate"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "UTCDateOnly",
+     "aliases": [
+      "UTCDateOnly"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "data",
+     "aliases": [
+      "Data"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "MultipleStringValue",
+     "aliases": [
+      "MultipleStringValue"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Country",
+     "aliases": [
+      "Country"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "Language",
+     "aliases": [
+      "Language"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "TZTimeOnly",
+     "aliases": [
+      "TZTimeOnly"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "TZTimestamp",
+     "aliases": [
+      "TZTimestamp"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "Tenor",
+     "aliases": [
+      "Tenor"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3129": {
+  "name": "TestSuiteParameterValue",
+  "type": "string",
+  "nullable": true,
+  "description": "Value of the test scenario parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3129",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3130": {
+  "name": "NoTestScenarioParameters",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of test scenario parameters.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3130",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3131": {
+  "name": "TestScenarioParameterName",
+  "type": "string",
+  "nullable": true,
+  "description": "Name of the test scenario parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3131",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3132": {
+  "name": "TestScenarioParameterType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Datatype of the test scenario parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "StrategyParameterTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3132",
+   "type": "int",
+   "values": [
+    {
+     "value": "1",
+     "meaning": "Int",
+     "aliases": [
+      "Int"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Length",
+     "aliases": [
+      "Length"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "NumInGroup",
+     "aliases": [
+      "NumInGroup"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "SeqNum",
+     "aliases": [
+      "SeqNum"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "TagNum",
+     "aliases": [
+      "TagNum"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "float",
+     "aliases": [
+      "Float"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Qty",
+     "aliases": [
+      "Qty"
+     ]
+    },
+    {
+     "value": "8",
+     "meaning": "Price",
+     "aliases": [
+      "Price"
+     ]
+    },
+    {
+     "value": "9",
+     "meaning": "PriceOffset",
+     "aliases": [
+      "PriceOffset"
+     ]
+    },
+    {
+     "value": "10",
+     "meaning": "Amt",
+     "aliases": [
+      "Amt"
+     ]
+    },
+    {
+     "value": "11",
+     "meaning": "Percentage",
+     "aliases": [
+      "Percentage"
+     ]
+    },
+    {
+     "value": "12",
+     "meaning": "Char",
+     "aliases": [
+      "Char"
+     ]
+    },
+    {
+     "value": "13",
+     "meaning": "Boolean",
+     "aliases": [
+      "Boolean"
+     ]
+    },
+    {
+     "value": "14",
+     "meaning": "String",
+     "aliases": [
+      "String"
+     ]
+    },
+    {
+     "value": "15",
+     "meaning": "MultipleCharValue",
+     "aliases": [
+      "MultipleCharValue"
+     ]
+    },
+    {
+     "value": "16",
+     "meaning": "Currency",
+     "aliases": [
+      "Currency"
+     ]
+    },
+    {
+     "value": "17",
+     "meaning": "Exchange",
+     "aliases": [
+      "Exchange"
+     ]
+    },
+    {
+     "value": "18",
+     "meaning": "MonthYear",
+     "aliases": [
+      "MonthYear"
+     ]
+    },
+    {
+     "value": "19",
+     "meaning": "UTCTimestamp",
+     "aliases": [
+      "UTCTimestamp"
+     ]
+    },
+    {
+     "value": "20",
+     "meaning": "UTCTimeOnly",
+     "aliases": [
+      "UTCTimeOnly"
+     ]
+    },
+    {
+     "value": "21",
+     "meaning": "LocalMktDate",
+     "aliases": [
+      "LocalMktDate"
+     ]
+    },
+    {
+     "value": "22",
+     "meaning": "UTCDateOnly",
+     "aliases": [
+      "UTCDateOnly"
+     ]
+    },
+    {
+     "value": "23",
+     "meaning": "data",
+     "aliases": [
+      "Data"
+     ]
+    },
+    {
+     "value": "24",
+     "meaning": "MultipleStringValue",
+     "aliases": [
+      "MultipleStringValue"
+     ]
+    },
+    {
+     "value": "25",
+     "meaning": "Country",
+     "aliases": [
+      "Country"
+     ]
+    },
+    {
+     "value": "26",
+     "meaning": "Language",
+     "aliases": [
+      "Language"
+     ]
+    },
+    {
+     "value": "27",
+     "meaning": "TZTimeOnly",
+     "aliases": [
+      "TZTimeOnly"
+     ]
+    },
+    {
+     "value": "28",
+     "meaning": "TZTimestamp",
+     "aliases": [
+      "TZTimestamp"
+     ]
+    },
+    {
+     "value": "29",
+     "meaning": "Tenor",
+     "aliases": [
+      "Tenor"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3133": {
+  "name": "TestScenarioParameterValue",
+  "type": "string",
+  "nullable": true,
+  "description": "Value of the test scenario parameter.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "303"
+   },
+   "tag": "3133",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3134": {
+  "name": "NoTradingServices",
+  "type": "int64",
+  "nullable": true,
+  "description": "Number of trading service entries.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "NumInGroup",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "305"
+   },
+   "tag": "3134",
+   "type": "NumInGroup",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3135": {
+  "name": "TradingServiceType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Identifies a type of service offered as part of a trading session.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "TradingServiceTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "305"
+   },
+   "tag": "3135",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Unknown",
+     "aliases": [
+      "Unknown"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Trading",
+     "aliases": [
+      "Trading"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Market data",
+     "aliases": [
+      "MarketData"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Reference data",
+     "aliases": [
+      "ReferenceData"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Post-Trade",
+     "aliases": [
+      "PostTrade"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "GUI",
+     "aliases": [
+      "GUI"
+     ]
+    },
+    {
+     "value": "6",
+     "meaning": "Trade reporting",
+     "aliases": [
+      "TradeReporting"
+     ]
+    },
+    {
+     "value": "7",
+     "meaning": "Report distribution",
+     "aliases": [
+      "ReportDistribution"
+     ]
+    },
+    {
+     "value": "99",
+     "meaning": "Other",
+     "aliases": [
+      "Other"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3136": {
+  "name": "TradingServiceDesc",
+  "type": "string",
+  "nullable": true,
+  "description": "Description of a trading service.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "305"
+   },
+   "tag": "3136",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3137": {
+  "name": "OutageReason",
+  "type": "int32",
+  "nullable": true,
+  "description": "Denotes the reason for an outage.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "OutageReasonCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "305"
+   },
+   "tag": "3137",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Unknown",
+     "aliases": [
+      "Unknown"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Power outage",
+     "aliases": [
+      "PowerOutage"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Hardware error",
+     "aliases": [
+      "HardwareError"
+     ]
+    },
+    {
+     "value": "3",
+     "meaning": "Software error",
+     "aliases": [
+      "SoftwareError"
+     ]
+    },
+    {
+     "value": "4",
+     "meaning": "Network error",
+     "aliases": [
+      "NetworkError"
+     ]
+    },
+    {
+     "value": "5",
+     "meaning": "Third-Party issue",
+     "aliases": [
+      "ThirdPartyIssue"
+     ]
+    },
+    {
+     "value": "99",
+     "meaning": "Other",
+     "aliases": [
+      "Other"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3138": {
+  "name": "HaltActionType",
+  "type": "int32",
+  "nullable": true,
+  "description": "Specifies the type of action to be taken when trading is halted.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "HaltActionTypeCodeSet",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "305"
+   },
+   "tag": "3138",
+   "type": "int",
+   "values": [
+    {
+     "value": "0",
+     "meaning": "Order/quote cancellation",
+     "aliases": [
+      "OrderQuoteCancellation"
+     ]
+    },
+    {
+     "value": "1",
+     "meaning": "Order/quote suspension",
+     "aliases": [
+      "OrderQuoteSuspension"
+     ]
+    },
+    {
+     "value": "2",
+     "meaning": "Execution halted",
+     "aliases": [
+      "ExecutionHalted"
+     ]
+    }
+   ],
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ },
+ "3139": {
+  "name": "TradingSessionEnvironment",
+  "type": "string",
+  "nullable": true,
+  "description": "Identification of a specific trading environment.",
+  "fix": {
+   "source": "fix-latest",
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-format": "orchestra",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+   "original-type": "String",
+   "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
+   "protocol-version": "FIX.Latest",
+   "pedigree": {
+    "added": "FIX.Latest",
+    "added_ep": "305"
+   },
+   "tag": "3139",
+   "type": "String",
+   "versions": [
+    "FIX.Latest"
+   ],
+   "sources": [
+    "fix-latest"
+   ]
+  }
+ }
+}

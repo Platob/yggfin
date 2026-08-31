@@ -1,0 +1,209 @@
+{
+ "name": "CapitalInstitutionalServices",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "CapitalInstitutionalServices",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CapitalInstitutionalServices",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AlgoParameter1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6315"
+    }
+   },
+   {
+    "name": "AlgoParameter2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6316"
+    }
+   },
+   {
+    "name": "AlgoParameter3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6317"
+    }
+   },
+   {
+    "name": "AlgoParameter4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6318"
+    }
+   },
+   {
+    "name": "AlgoParameter5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6319"
+    }
+   },
+   {
+    "name": "AlgoParameter6",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6320"
+    }
+   },
+   {
+    "name": "AlgoParameter7",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6335"
+    }
+   },
+   {
+    "name": "CATExecStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5181"
+    }
+   },
+   {
+    "name": "CATStrategy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5180"
+    }
+   },
+   {
+    "name": "DisplaySize3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6332"
+    }
+   },
+   {
+    "name": "EndTime4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6324"
+    }
+   },
+   {
+    "name": "ExecutionStyle3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6325"
+    }
+   },
+   {
+    "name": "ExecutionView",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6334"
+    }
+   },
+   {
+    "name": "MaxPercentVol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5182"
+    }
+   },
+   {
+    "name": "MaxPercentVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6328"
+    }
+   },
+   {
+    "name": "MinPercentVol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5183"
+    }
+   },
+   {
+    "name": "MinPercentVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6327"
+    }
+   },
+   {
+    "name": "MinReqComp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6330"
+    }
+   },
+   {
+    "name": "RiskAversion2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6333"
+    }
+   },
+   {
+    "name": "StartPercentVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6326"
+    }
+   },
+   {
+    "name": "StartTime4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6323"
+    }
+   },
+   {
+    "name": "TargetPercentVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6329"
+    }
+   },
+   {
+    "name": "WouldIfGood",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6331"
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "name": "NoPaymentStreamFormulas",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoPaymentStreamFormulas",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42683"
+  },
+  "item": {
+   "name": "PaymentStreamFormula",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamFormulaLength",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43109"
+     }
+    },
+    {
+     "name": "PaymentStreamFormula",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42684"
+     }
+    },
+    {
+     "name": "PaymentStreamFormulaDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42685"
+     }
+    }
+   ]
+  }
+ }
+}

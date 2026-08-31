@@ -28,6 +28,7 @@ from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.registry import DEFAULT_SOURCES, FixRegistry
 from rekep.fix.shell import shell
 from rekep.fix.store import (
+    ConflictReport,
     component_from_document,
     component_record_document,
     document_of,
@@ -35,6 +36,7 @@ from rekep.fix.store import (
     field_from_document,
     field_record_document,
 )
+from rekep.iceberg import IcebergCatalog
 from rekep.logs import COMMAND_LEVEL, configure
 from rekep.tasks import Task
 
@@ -221,15 +223,34 @@ def registry_coverage(arguments: argparse.Namespace) -> int:
 def find_fields(arguments: argparse.Namespace) -> int:
     """Write distinct field records matching one query."""
     registry = _registry(arguments)
+    exact = registry.field(
+        arguments.query,
+        version=arguments.version,
+        namespace=arguments.namespace,
+    )
+    if exact is not None:
+        _write_json([field_record_document(exact)])
+        return 0
     entries: list[Field] = []
     for member in registry.search(
         arguments.query,
         version=arguments.version,
         limit=arguments.limit,
+        namespace=arguments.namespace,
     ):
-        entry = registry.field(member.fix.get("tag") or member.name)
+        entry = registry.field(
+            member.fix.get("tag") or member.name,
+            namespace=arguments.namespace,
+        )
         if entry is not None:
             entries.append(entry)
+    _write_json([field_record_document(entry) for entry in entries])
+    return 0
+
+
+def field_definitions(arguments: argparse.Namespace) -> int:
+    """Write every namespace's definition of one tag or name."""
+    entries = _registry(arguments).definitions(arguments.field)
     _write_json([field_record_document(entry) for entry in entries])
     return 0
 
@@ -406,20 +427,101 @@ def scrape_registry(arguments: argparse.Namespace) -> int:
         "onixs": arguments.onixs_url,
         "quickfix": arguments.quickfix_url,
     }
-    if any(source_urls.values()):
-        configuration["sources"] = tuple(
-            dataclasses.replace(source, url=source_urls[source.name] or source.url)
-            for source in DEFAULT_SOURCES
+    configured = tuple(
+        dataclasses.replace(source, url=source_urls[source.name] or source.url)
+        for source in DEFAULT_SOURCES
+    )
+    from rekep.fix.adapters import ADAPTERS_BY_ID, SOURCE_CATALOG
+
+    asked = tuple(
+        dict.fromkeys(
+            (
+                *(arguments.source or ()),
+                *(source for source, url in source_urls.items() if url),
+            )
         )
+    )
+    overridden = {source for source, url in source_urls.items() if url}
+    unknown = [
+        source
+        for source in asked
+        if source not in SOURCE_CATALOG and source not in {entry.name for entry in configured}
+    ]
+    if unknown:
+        raise ValueError(f"unknown FIX registry sources {unknown!r}")
+    excluded = [
+        source for source in asked if source in SOURCE_CATALOG and source not in ADAPTERS_BY_ID
+    ]
+    if excluded:
+        reasons = "; ".join(f"{source}: {SOURCE_CATALOG[source].reason}" for source in excluded)
+        raise ValueError(f"FIX registry sources are documented but not automated: {reasons}")
+    adapter_ids = tuple(
+        source
+        for source in (
+            asked
+            or tuple(source_id for source_id, adapter in ADAPTERS_BY_ID.items() if adapter.default)
+        )
+        if source in ADAPTERS_BY_ID and source not in overridden
+    )
+    restricted = [
+        source_id
+        for source_id in adapter_ids
+        if not ADAPTERS_BY_ID[source_id].fetch_allowed and not arguments.offline
+    ]
+    if restricted:
+        raise ValueError(
+            f"FIX sources {restricted!r} cannot be fetched; cache their files and use --offline"
+        )
+    legacy = tuple(
+        source
+        for source in configured
+        if source.name in asked and (source.name not in ADAPTERS_BY_ID or source.name in overridden)
+    )
+    if legacy:
+        configuration["sources"] = legacy
+    configuration["source_ids"] = adapter_ids
+    configuration["offline"] = arguments.offline
+    configuration["refresh_sources"] = arguments.refresh
+    configuration["rebuild_standard"] = bool(legacy) and not arguments.offline
     configuration["announce"] = CONSOLE.note
+    previous_conflicts = None
+    if (
+        arguments.conflicts
+        and not configuration["rebuild_standard"]
+        and pathlib.Path(arguments.conflicts).is_file()
+    ):
+        previous_conflicts = ConflictReport.from_json(arguments.conflicts)
     target = arguments.output or "~/.config/fix"
     with CONSOLE.spinner(f"scraping into {target}"):
         registry = FixRegistry.scrape(arguments.output, **configuration)
+    report = registry.conflicts
+    if previous_conflicts is not None:
+        report = ConflictReport(
+            collapses=tuple(dict.fromkeys((*previous_conflicts.collapses, *report.collapses))),
+            collisions=tuple(dict.fromkeys((*previous_conflicts.collisions, *report.collisions))),
+        )
     if arguments.conflicts:
-        registry.conflicts.into_json(arguments.conflicts)
+        report.into_json(arguments.conflicts)
+    statuses = tuple(getattr(registry, "source_status", ()))
+    for status in statuses:
+        CONSOLE.note(
+            f"{status['source_id']} [{status['namespace']}]: {status['fields']} fields, "
+            f"{status['additions']} additions, {status['updates']} updates, "
+            f"{status.get('conflicts', 0)} conflicts, {status.get('fallbacks', 0)} fallbacks"
+        )
+    namespaces = registry.namespaces() if hasattr(registry, "namespaces") else ("standard",)
+    fields = sum(
+        len(registry.field_records(namespace))
+        if hasattr(registry, "namespaces")
+        else len(registry.field_records())
+        for namespace in namespaces
+    )
+    counts = report.counts()
+    fallbacks = sum(int(status.get("fallbacks", 0)) for status in statuses)
     CONSOLE.ok(
-        f"{registry.cache_dir} holds {len(registry.field_records())} fields and "
-        f"{len(registry.component_records())} components"
+        f"{registry.cache_dir} holds {fields} fields and "
+        f"{len(registry.component_records())} components; "
+        f"{sum(counts.values())} conflicts, {fallbacks} string fallbacks"
     )
     return 0
 
@@ -557,18 +659,22 @@ def deploy_tables(arguments: argparse.Namespace) -> int:
     write to -- naming it twice is how the two drift.
     """
     settings = _catalog_settings(arguments)
-    done = deploy(
-        settings["catalog"],
-        properties=settings["properties"],
-        table_properties=settings["table_properties"],
-        branch=settings["branch"],
-        tables=arguments.table or None,
-        dry_run=arguments.dry_run,
-    )
+    catalog = settings["catalog"]
+    try:
+        done = deploy(
+            catalog,
+            table_properties=settings["table_properties"],
+            branch=settings["branch"],
+            tables=arguments.table or None,
+            dry_run=arguments.dry_run,
+        )
+        document = {"catalog": catalog.into_dict(), "tables": done}
+    finally:
+        catalog.close()
     for table, outcome in done.items():
         line = f"{table} {CONSOLE.glyph('arrow')} {outcome}"
         (CONSOLE.warn if outcome == "missing" else CONSOLE.ok)(line)
-    _write_json({"catalog": settings["catalog"], "tables": done})
+    _write_json(document)
     return 0
 
 
@@ -578,13 +684,18 @@ def _catalog_settings(arguments: argparse.Namespace) -> dict[str, Any]:
     if arguments.document:
         document = pathlib.Path(arguments.document).resolve()
         parameters = dict(Task.from_yaml(str(document)).parameters)
+    configured = parameters.get("catalog") or {}
+    if not isinstance(configured, Mapping):
+        raise TypeError("task catalog must be a mapping with catalog_name and properties")
+    catalog = IcebergCatalog.from_dict(configured)
+    if arguments.catalog:
+        catalog.catalog_name = arguments.catalog
+    catalog.properties.update(_settings(arguments.property))
     settings = {
-        "catalog": arguments.catalog or parameters.get("catalog") or "default",
-        "properties": dict(parameters.get("catalog_properties") or {}),
+        "catalog": catalog,
         "table_properties": dict(parameters.get("table_properties") or {}),
         "branch": arguments.branch or parameters.get("branch"),
     }
-    settings["properties"].update(_settings(arguments.property))
     settings["table_properties"].update(_settings(arguments.table_property))
     return settings
 
@@ -796,7 +907,16 @@ def _parser() -> argparse.ArgumentParser:
     finding = verb("find", "search fields and write their records as JSON", find_fields)
     finding.add_argument("query", help="tag, name, or description to search")
     finding.add_argument("--version", default=None, help="search only one FIX version")
+    finding.add_argument(
+        "--namespace",
+        default=None,
+        help="read exactly one namespace, for instance fixtrading-udf",
+    )
     finding.add_argument("--limit", type=int, default=20, help="maximum matches to write")
+    definitions = verb(
+        "definitions", "write every namespace's definition of one field", field_definitions
+    )
+    definitions.add_argument("field", help="field name, alias, or tag")
     showing = verb("show", "write one complete field record as JSON", show_field)
     showing.add_argument("field", help="field name, alias, or tag")
     components = verb(
@@ -928,6 +1048,23 @@ def _parser() -> argparse.ArgumentParser:
     scraping.add_argument("--nanoconda-url", default=None, help="Nanoconda source URL")
     scraping.add_argument("--onixs-url", default=None, help="OnixS source URL")
     scraping.add_argument("--quickfix-url", default=None, help="QuickFIX source URL")
+    scraping.add_argument(
+        "--source",
+        action="append",
+        default=[],
+        help="one source ID to refresh; repeatable and omitted for default sources",
+    )
+    cache_mode = scraping.add_mutually_exclusive_group()
+    cache_mode.add_argument(
+        "--offline",
+        action="store_true",
+        help="rebuild only from complete files already in the source cache",
+    )
+    cache_mode.add_argument(
+        "--refresh",
+        action="store_true",
+        help="redownload selected complete sources instead of reusing the cache",
+    )
     scraping.add_argument("--timeout", type=float, default=None, help="request timeout in seconds")
     scraping.add_argument(
         "--max-workers", type=int, default=None, help="maximum concurrent source requests"

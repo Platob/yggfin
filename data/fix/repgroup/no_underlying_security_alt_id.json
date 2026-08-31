@@ -1,0 +1,49 @@
+{
+ "name": "NoUnderlyingSecurityAltID",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingSecurityAltID",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "457"
+  },
+  "item": {
+   "name": "UnderlyingSecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingSecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "458"
+     }
+    },
+    {
+     "name": "UnderlyingSecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "459"
+     }
+    },
+    {
+     "name": "UnderlyingSymbolPositionNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2959"
+     }
+    }
+   ]
+  }
+ }
+}

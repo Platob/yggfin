@@ -340,6 +340,8 @@ class Message(Event):
         msg_type_event_types: Mapping[str, EventType | int | str] | None = None,
         plugins: Any | None = None,
         protocol_rules: Any | None = None,
+        plugin_keys: Mapping[str, Mapping[str, str]] | None = None,
+        null_values: Any = (),
     ) -> dict[str, Any]:
         """Promote discriminators and parse only structured payload rows."""
         if isinstance(bodies, pyarrow.ChunkedArray):
@@ -352,6 +354,8 @@ class Message(Event):
                         msg_type_event_types,
                         plugin_chunk,
                         protocol_rules,
+                        plugin_keys,
+                        null_values,
                     )
                 )
                 offsets += len(chunk)
@@ -390,7 +394,9 @@ class Message(Event):
 
         compute = pyarrow.compute
         text = _body_text_arrow(bodies)
-        entries = Entry.payload_arrow(text)
+        entries = Entry.normalized_arrow(
+            Entry.payload_arrow(text), plugins, plugin_keys, null_values
+        )
         # The pairs this stage just split are what a protocol is decided by, so
         # they are handed over rather than parsed a second time -- and before
         # the header is lifted out of them, because a frame whose every numbered
@@ -399,6 +405,7 @@ class Message(Event):
         protocols = rules.into_arrow_protocol_array(text, plugins, entries)
         xml = compute.equal(Protocol.into_family_arrow(protocols), int(Protocol.XML))
         xml_entries, parse_errors = xml_payload_arrow(bodies, xml)
+        xml_entries = Entry.normalized_arrow(xml_entries, plugins, plugin_keys, null_values)
         entries = compute.if_else(xml, xml_entries, entries)
         session, entries = _session_columns(entries)
         msg_types = compute.coalesce(session[_MSG_TYPE], _msg_type_probe(text))

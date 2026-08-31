@@ -1,0 +1,105 @@
+{
+ "name": "DresdnerKleinwortWasserstein",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "DresdnerKleinwortWasserstein",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "DresdnerKleinwortWasserstein",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "EndOfBatch",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6149"
+    }
+   },
+   {
+    "name": "MaxBestBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5134"
+    }
+   },
+   {
+    "name": "MaxBestOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5135"
+    }
+   },
+   {
+    "name": "MaxQuotableBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5136"
+    }
+   },
+   {
+    "name": "MaxQuotableOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5137"
+    }
+   },
+   {
+    "name": "NoSettDays",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9007"
+    }
+   },
+   {
+    "name": "QBroker",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6158"
+    }
+   },
+   {
+    "name": "QSBaseBidPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6150"
+    }
+   },
+   {
+    "name": "QSBaseOfferPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6151"
+    }
+   },
+   {
+    "name": "QuoteText",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9008"
+    }
+   }
+  ]
+ }
+}

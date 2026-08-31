@@ -1,0 +1,29 @@
+{
+ "name": "NoLegPaymentStreamFixingDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegPaymentStreamFixingDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40933"
+  },
+  "item": {
+   "name": "LegPaymentStreamFixingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamFixingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40318"
+     }
+    }
+   ]
+  }
+ }
+}

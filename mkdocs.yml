@@ -82,6 +82,7 @@ nav:
       - ASCII codes: enums/ascii-codes.md
       - Messages:
           - Direction: enums/direction.md
+          - Plugin: enums/plugin.md
           - Protocol: enums/protocol.md
       - Events:
           - Event type: enums/event-type.md
@@ -102,6 +103,11 @@ nav:
           - Transcribe: fix/transcribe.md
       - FIX registry:
           - Browse registry: fix/registry.md
+          - Fields: fix/fields.md
+          - Components: fix/components.md
+          - Repeating groups: fix/repeating-groups.md
+          - Encode values: fix/encode.md
+          - Decode values: fix/decode.md
           - Registry CLI: fix/shell.md
           - Registry internals: fix/index.md
           - Parse configuration: fix/configuring.md
@@ -109,6 +115,7 @@ nav:
       - Lifecycle: market/index.md
   - Storage:
       - Iceberg: storage/iceberg.md
+      - Arrow paths and FileIO: storage/arrow-files.md
       - Benchmarks: storage/benchmarks.md
   - Pipeline:
       - Overview: pipeline/index.md

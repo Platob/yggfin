@@ -1,0 +1,89 @@
+{
+ "name": "CapMartInc",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "CapMartInc",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CapMartInc",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "CDNBasketTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5807"
+    }
+   },
+   {
+    "name": "CDNJitney",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5813"
+    }
+   },
+   {
+    "name": "CDNMarketOnClose",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5814"
+    }
+   },
+   {
+    "name": "CDNMGFCandidate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5812"
+    }
+   },
+   {
+    "name": "CDNProgramTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5811"
+    }
+   },
+   {
+    "name": "CDNRTAutoFill",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5810"
+    }
+   },
+   {
+    "name": "CDNSettlementTerm",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5808"
+    }
+   },
+   {
+    "name": "CDNShortExempt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5809"
+    }
+   }
+  ]
+ }
+}

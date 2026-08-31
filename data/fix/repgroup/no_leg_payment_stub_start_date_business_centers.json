@@ -1,0 +1,29 @@
+{
+ "name": "NoLegPaymentStubStartDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegPaymentStubStartDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42504"
+  },
+  "item": {
+   "name": "LegPaymentStubStartDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStubStartDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42505"
+     }
+    }
+   ]
+  }
+ }
+}

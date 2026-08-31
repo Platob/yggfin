@@ -1,0 +1,29 @@
+{
+ "name": "NoOptionExerciseExpirationDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoOptionExerciseExpirationDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "41140"
+  },
+  "item": {
+   "name": "OptionExerciseExpirationDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "OptionExerciseExpirationDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41141"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,7 +1,8 @@
 {
  "name": "PaymentStreamResetDates",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "PaymentStreamResetDates",
@@ -9,10 +10,14 @@
   "nullable": true,
   "fix": {
    "component": "PaymentStreamResetDates",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "AdjustedPositionReport",
     "Advertisement",
@@ -47,6 +52,7 @@
     "MarginRequirementInquiry",
     "MarginRequirementInquiryAck",
     "MarginRequirementReport",
+    "MarketDataAck",
     "MarketDataIncrementalRefresh",
     "MarketDataRequest",
     "MarketDataSnapshotFullRefresh",
@@ -98,9 +104,12 @@
     "SecurityListRequest",
     "SecurityListUpdateReport",
     "SecurityMassStatus",
+    "SecurityRiskMetricsReport",
     "SecurityStatus",
     "SecurityStatusRequest",
     "SettlementObligationReport",
+    "SettlementStatusReport",
+    "SettlementStatusRequest",
     "StreamAssignmentReport",
     "StreamAssignmentRequest",
     "TradeAggregationReport",
@@ -131,13 +140,26 @@
     }
    },
    {
-    "name": "PaymentStreamResetDateBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoPaymentStreamResetDateBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PaymentStreamResetDateBusinessCenterGrp"
+     "tag": "40948"
     },
-    "fields": []
+    "item": {
+     "name": "PaymentStreamResetDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamResetDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40763"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "PaymentStreamResetFrequencyPeriod",
@@ -180,13 +202,26 @@
     }
    },
    {
-    "name": "PaymentStreamInitialFixingDateBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoPaymentStreamInitialFixingDateBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PaymentStreamInitialFixingDateBusinessCenterGrp"
+     "tag": "40949"
     },
-    "fields": []
+    "item": {
+     "name": "PaymentStreamInitialFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamInitialFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40769"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "PaymentStreamInitialFixingDateOffsetPeriod",
@@ -237,13 +272,26 @@
     }
    },
    {
-    "name": "PaymentStreamFixingDateBusinessCenterGrp",
-    "type": "struct",
+    "name": "NoPaymentStreamFixingDateBusinessCenters",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PaymentStreamFixingDateBusinessCenterGrp"
+     "tag": "40950"
     },
-    "fields": []
+    "item": {
+     "name": "PaymentStreamFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40776"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "PaymentStreamFixingDateOffsetPeriod",
@@ -302,13 +350,34 @@
     }
    },
    {
-    "name": "PaymentStreamFixingDateGrp",
-    "type": "struct",
+    "name": "NoPaymentStreamFixingDates",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "PaymentStreamFixingDateGrp"
+     "tag": "42660"
     },
-    "fields": []
+    "item": {
+     "name": "PaymentStreamFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42661"
+       }
+      },
+      {
+       "name": "PaymentStreamFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42662"
+       }
+      }
+     ]
+    }
    }
   ]
  }

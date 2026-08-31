@@ -1,0 +1,41 @@
+{
+ "name": "NoSettlPartySubIDs",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoSettlPartySubIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "801"
+  },
+  "item": {
+   "name": "SettlPartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SettlPartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "785"
+     }
+    },
+    {
+     "name": "SettlPartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "786"
+     }
+    }
+   ]
+  }
+ }
+}

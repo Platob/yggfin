@@ -1189,7 +1189,7 @@ def test_dictionary_value_names_expand_the_pinned_market_maps() -> None:
         "OrdStatus": 34,
         "ExecType": 40,
         "MDUpdateAction": 12,
-        "QuoteStatus": 47,
+        "QuoteStatus": 51,
         "QuoteRespType": 25,
     }
     assert len(tags.execution_states) == 13

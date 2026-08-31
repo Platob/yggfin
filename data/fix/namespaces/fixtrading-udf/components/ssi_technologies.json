@@ -1,0 +1,577 @@
+{
+ "name": "SSITechnologies",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "SSITechnologies",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "SSITechnologies",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "AgreeDateTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6157"
+    }
+   },
+   {
+    "name": "AORThreshold",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5327"
+    }
+   },
+   {
+    "name": "AutoReplace2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5328"
+    }
+   },
+   {
+    "name": "BDBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5314"
+    }
+   },
+   {
+    "name": "BDBidSizeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5315"
+    }
+   },
+   {
+    "name": "BDOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5316"
+    }
+   },
+   {
+    "name": "BDOfferSizeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5317"
+    }
+   },
+   {
+    "name": "Branch",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5318"
+    }
+   },
+   {
+    "name": "CrossMktProtection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5319"
+    }
+   },
+   {
+    "name": "CustBidSizeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5320"
+    }
+   },
+   {
+    "name": "CustOfferSizeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5321"
+    }
+   },
+   {
+    "name": "DisseminatedStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5343"
+    }
+   },
+   {
+    "name": "ExpiryDuration",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6148"
+    }
+   },
+   {
+    "name": "FirmID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5322"
+    }
+   },
+   {
+    "name": "IsFastFirm",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5353"
+    }
+   },
+   {
+    "name": "IssueID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5323"
+    }
+   },
+   {
+    "name": "IssueStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5334"
+    }
+   },
+   {
+    "name": "IsVolOnePct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5324"
+    }
+   },
+   {
+    "name": "IsVolTwoPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5325"
+    }
+   },
+   {
+    "name": "LockMktProtection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5326"
+    }
+   },
+   {
+    "name": "LockOrCrossIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5307"
+    }
+   },
+   {
+    "name": "MinPxVar",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5329"
+    }
+   },
+   {
+    "name": "MktSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5359"
+    }
+   },
+   {
+    "name": "MMAutoQuoteRefreshParameter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5306"
+    }
+   },
+   {
+    "name": "MMBidSize1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5310"
+    }
+   },
+   {
+    "name": "MMBidSizeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5312"
+    }
+   },
+   {
+    "name": "MMFirstEffectiveDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5304"
+    }
+   },
+   {
+    "name": "MMLastEffectiveDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5305"
+    }
+   },
+   {
+    "name": "MMOfferSize1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5311"
+    }
+   },
+   {
+    "name": "MMOfferSizeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5313"
+    }
+   },
+   {
+    "name": "MMQuoteCloseTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5303"
+    }
+   },
+   {
+    "name": "MMQuoteOpenTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5302"
+    }
+   },
+   {
+    "name": "MPRequestID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5341"
+    }
+   },
+   {
+    "name": "NBBOStepUpMode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5340"
+    }
+   },
+   {
+    "name": "NoExchanges",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5347"
+    }
+   },
+   {
+    "name": "NonCustSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5346"
+    }
+   },
+   {
+    "name": "NoQuoteSizes",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5357"
+    }
+   },
+   {
+    "name": "NoScriptLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5361"
+    }
+   },
+   {
+    "name": "NoSteps",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5342"
+    }
+   },
+   {
+    "name": "NoTick",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5355"
+    }
+   },
+   {
+    "name": "OPRAClassCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5338"
+    }
+   },
+   {
+    "name": "OPRAStrikeCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5351"
+    }
+   },
+   {
+    "name": "OptPxDenominator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5354"
+    }
+   },
+   {
+    "name": "OrderReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5356"
+    }
+   },
+   {
+    "name": "OrigBidPx1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6145"
+    }
+   },
+   {
+    "name": "OrigBidPx2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6146"
+    }
+   },
+   {
+    "name": "OriginalSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5339"
+    }
+   },
+   {
+    "name": "OrigOfferPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6147"
+    }
+   },
+   {
+    "name": "OrigOwnerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5360"
+    }
+   },
+   {
+    "name": "OrigQuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5330"
+    }
+   },
+   {
+    "name": "OwnerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5331"
+    }
+   },
+   {
+    "name": "OwnerTraderID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6153"
+    }
+   },
+   {
+    "name": "OwnerTraderID2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6155"
+    }
+   },
+   {
+    "name": "PCXQuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5352"
+    }
+   },
+   {
+    "name": "PSMMFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5301"
+    }
+   },
+   {
+    "name": "QuoteScriptDataType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5348"
+    }
+   },
+   {
+    "name": "QuoteStatusRequestType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5349"
+    }
+   },
+   {
+    "name": "ReinitiateConfig",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5350"
+    }
+   },
+   {
+    "name": "ResponseID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5358"
+    }
+   },
+   {
+    "name": "ScriptLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5332"
+    }
+   },
+   {
+    "name": "SecDefnReqType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5345"
+    }
+   },
+   {
+    "name": "SecurityHaltType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6154"
+    }
+   },
+   {
+    "name": "SeriesID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5333"
+    }
+   },
+   {
+    "name": "StaticRefPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6152"
+    }
+   },
+   {
+    "name": "StepPosition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5344"
+    }
+   },
+   {
+    "name": "SubjectID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6156"
+    }
+   },
+   {
+    "name": "Tick",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5335"
+    }
+   },
+   {
+    "name": "UnderlyingID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5336"
+    }
+   },
+   {
+    "name": "UpperLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5337"
+    }
+   }
+  ]
+ }
+}

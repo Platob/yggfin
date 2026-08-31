@@ -34,7 +34,7 @@ def catalog(tmp_path: Path) -> IcebergCatalog:
     warehouse = tmp_path / "warehouse"
     warehouse.mkdir()
     return IcebergCatalog(
-        name="test",
+        catalog_name="test",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
@@ -110,8 +110,10 @@ def test_dataset_locations_configure_one_file_io_without_entering_stored_paths(
 
     monkeypatch.setattr(pyiceberg.catalog, "load_catalog", loaded)
     dataset = IcebergDataset(
-        field=Quote.into_field("trading.quotes"),
-        properties={"type": "in-memory", "warehouse": "file:///local/warehouse"},
+        name="quotes",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_properties={"type": "in-memory", "warehouse": "file:///local/warehouse"},
         location=f"{prefix}/tables/quotes?{query}",
         table_properties={
             "write.data.path": f"{prefix}/data?{query}",
@@ -124,10 +126,10 @@ def test_dataset_locations_configure_one_file_io_without_entering_stored_paths(
         "write.data.path": f"{scheme}://bucket/data",
         "write.metadata.path": f"{scheme}://bucket/metadata",
     }
-    assert dataset.properties["s3.endpoint"] == "http://minio:9000"
-    assert dataset.properties["s3.region"] == "eu-west-1"
-    assert dataset.properties["s3.access-key-id"] == "key"
-    assert dataset.properties["s3.secret-access-key"] == "secret"
+    assert dataset.catalog_properties["s3.endpoint"] == "http://minio:9000"
+    assert dataset.catalog_properties["s3.region"] == "eu-west-1"
+    assert dataset.catalog_properties["s3.access-key-id"] == "key"
+    assert dataset.catalog_properties["s3.secret-access-key"] == "secret"
     assert all(
         "secret" not in location and "?" not in location
         for location in (dataset.location, *dataset.table_properties.values())
@@ -150,7 +152,9 @@ def test_dataset_locations_configure_one_file_io_without_entering_stored_paths(
 def test_dataset_locations_refuse_two_explicit_s3_stores() -> None:
     with pytest.raises(ValueError, match="conflicting 's3.endpoint'"):
         IcebergDataset(
-            field=Quote.into_field("trading.quotes"),
+            name="quotes",
+            namespace="trading",
+            field=Quote.into_field(),
             location="s3://bucket/tables/quotes?endpoint_override=first%3A9000",
             table_properties={
                 "write.data.path": "s3://bucket/data?endpoint_override=second%3A9000"
@@ -199,7 +203,7 @@ def test_an_open_catalog_receives_explicit_table_location_settings_before_load(
         lambda _name, **properties: Loaded(properties),
     )
     catalog = IcebergCatalog(
-        name="already-open",
+        catalog_name="already-open",
         properties={"warehouse": "file:///local/warehouse"},
     )
     _ = catalog.catalog
@@ -253,9 +257,11 @@ def test_explicit_create_location_stages_distinct_objects_without_network(
     warehouse = tmp_path / "warehouse"
     warehouse.mkdir()
     dataset = IcebergDataset(
-        field=DailyQuote.into_field("trading.remote_quotes"),
-        catalog="remote-location",
-        properties={
+        name="remote_quotes",
+        namespace="trading",
+        field=DailyQuote.into_field(),
+        catalog_name="remote-location",
+        catalog_properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
             "warehouse": warehouse.as_uri(),
@@ -296,7 +302,9 @@ def test_explicit_create_location_stages_distinct_objects_without_network(
 
 
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
-    named = IcebergCatalog(name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"})
+    named = IcebergCatalog(
+        catalog_name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"}
+    )
     assert named.properties["py-io-impl"] == "x.Y"
 
 
@@ -306,7 +314,7 @@ def test_a_named_file_io_is_wrapped_with_output_ownership(tmp_path: Path) -> Non
     warehouse = tmp_path / "custom-warehouse"
     warehouse.mkdir()
     catalog = IcebergCatalog(
-        name="custom",
+        catalog_name="custom",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'custom.db').as_posix()}",
@@ -419,7 +427,7 @@ def test_a_dataset_only_closes_the_catalog_it_owns(monkeypatch: pytest.MonkeyPat
     shared.close()
     assert closed == 0
 
-    owned = IcebergDataset(field=Quote.into_field("trading.quotes"))
+    owned = IcebergDataset(name="quotes", namespace="trading", field=Quote.into_field())
     owned.__dict__["store"] = catalog
     owned.__dict__["_owns_store"] = True
     owned.close()
@@ -468,9 +476,28 @@ def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None
     space = catalog.create_namespace("trading")
     dataset = space.dataset("quotes", field=Quote.into_field())
     assert isinstance(dataset, IcebergDataset)
-    assert dataset.name == "trading.quotes"
+    assert dataset.name == "quotes"
+    assert dataset.identifier == "trading.quotes"
     assert dataset.namespace == "trading"
-    assert dataset.field.name == "trading.quotes"
+    assert dataset.field.name == "quotes"
+    assert dataset.store is catalog
+    assert dataset.catalog is catalog.catalog
+
+
+@pytest.mark.parametrize(
+    ("name", "namespace", "message"),
+    [
+        ("", "trading", "name must be non-empty and unqualified"),
+        ("trading.quotes", "trading", "name must be non-empty and unqualified"),
+        ("quotes", "", "namespace must be non-empty"),
+        ("quotes", "trading..eu", "namespace must be non-empty"),
+    ],
+)
+def test_a_direct_dataset_requires_explicit_coordinates(
+    name: str, namespace: str, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        IcebergDataset(name=name, namespace=namespace, field=Quote.into_field())
 
 
 # -- tables -----------------------------------------------------------------
@@ -551,14 +578,17 @@ def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
     catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
     catalog.dataset("trading.ticks", field=Quote.into_field()).create_with()
     found = {dataset.name for dataset in catalog.datasets("trading")}
-    assert found == {"trading.quotes", "trading.ticks"}
+    assert found == {"quotes", "ticks"}
     for dataset in catalog.datasets("trading"):
         assert dataset.into_struct_field().names == ["symbol", "size"]
 
 
 def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:
     rebuilt = IcebergCatalog.from_yaml(catalog.into_yaml())
-    assert (rebuilt.name, rebuilt.properties) == (catalog.name, catalog.properties)
+    assert (rebuilt.catalog_name, rebuilt.properties) == (
+        catalog.catalog_name,
+        catalog.properties,
+    )
 
 
 def test_maintenance_reaches_the_store_the_catalog_was_configured_with() -> None:

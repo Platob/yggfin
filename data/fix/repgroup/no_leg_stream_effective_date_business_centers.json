@@ -1,0 +1,29 @@
+{
+ "name": "NoLegStreamEffectiveDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegStreamEffectiveDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40942"
+  },
+  "item": {
+   "name": "LegStreamEffectiveDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamEffectiveDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40251"
+     }
+    }
+   ]
+  }
+ }
+}

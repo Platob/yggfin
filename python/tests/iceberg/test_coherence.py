@@ -95,7 +95,7 @@ def pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     """Two identical tables: one this package writes, one pyiceberg does."""
     built = []
     for name in ("ours", "theirs"):
-        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
+        catalog = IcebergCatalog(catalog_name=name, properties=catalog_properties(tmp_path, name))
         dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
         dataset.create_with()
         built.append(dataset)
@@ -125,7 +125,7 @@ def test_monotonic_insert_shortcut_agrees_with_pyiceberg_across_the_literal_limi
     """Fresh 200- and 201-row commits keep the library's rows and storage shape."""
     built = []
     for name in ("ours_ordered", "theirs_ordered"):
-        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
+        catalog = IcebergCatalog(catalog_name=name, properties=catalog_properties(tmp_path, name))
         built.append(catalog.dataset("trading.ordered", field=Ordered.into_field()).create_with())
     ours, theirs = built
     for chunk in (ordered(0, MERGE_IN_LIMIT), ordered(MERGE_IN_LIMIT, MERGE_IN_LIMIT + 1)):
@@ -268,7 +268,7 @@ def test_the_report_says_what_moved(pair) -> None:
 
 @pytest.fixture
 def stored(tmp_path: Path) -> IcebergDataset:
-    catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path, "read"))
+    catalog = IcebergCatalog(catalog_name="read", properties=catalog_properties(tmp_path, "read"))
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
     dataset.append_arrow(quotes(0, 300, days=5), commit_row_size=100)
     return dataset
@@ -339,7 +339,9 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     data is on disk and readable, and nothing raises. Compared against
     pyiceberg's own scan of the same snapshot, which is where the values are.
     """
-    catalog = IcebergCatalog(name="evolved", properties=catalog_properties(tmp_path, "evolved"))
+    catalog = IcebergCatalog(
+        catalog_name="evolved", properties=catalog_properties(tmp_path, "evolved")
+    )
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
     dataset.append_arrow(quotes(0, 3), commit_row_size=1_000_000)
     table = dataset.get_or_create_table()
@@ -385,7 +387,7 @@ def test_a_shape_the_table_does_not_have_still_reads(stored) -> None:
 def test_the_official_library_reads_what_we_wrote(stored) -> None:
     """No wrapper on the read side: pyiceberg's own scan, on its own terms."""
     ours = stored.read_arrow_table()
-    theirs = stored.iceberg_catalog.load_table("trading.quotes").scan().to_arrow()
+    theirs = stored.catalog.load_table(stored.identifier).scan().to_arrow()
     assert theirs.num_rows == ours.num_rows
     assert sorted_rows(theirs.select(ours.column_names)) == sorted_rows(ours)
 
@@ -648,7 +650,7 @@ def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
 
     from rekep.iceberg.dataset import _key_ranges
 
-    catalog = IcebergCatalog(name="wide", properties=catalog_properties(tmp_path, "wide"))
+    catalog = IcebergCatalog(catalog_name="wide", properties=catalog_properties(tmp_path, "wide"))
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
     # One commit per key range, so the files carry disjoint bounds -- which is
     # what makes a range predicate able to skip any of them at all.
@@ -706,7 +708,9 @@ def test_the_factored_delete_filter_matches_what_pyiceberg_matches(
 
     from rekep.iceberg.dataset import _match_filter
 
-    catalog = IcebergCatalog(name="factored", properties=catalog_properties(tmp_path, "factored"))
+    catalog = IcebergCatalog(
+        catalog_name="factored", properties=catalog_properties(tmp_path, "factored")
+    )
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
     schema = dataset.into_struct_field().into_iceberg_schema()
     join = ["symbol", "seq"]
@@ -872,12 +876,12 @@ def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None
     composite key one half of which repeats. Measured on 8,000 stored rows,
     5,000 of them updated: 33.4 s through the per-row filter and 0.46 s
     through the factored one."""
-    ours = IcebergCatalog(name="mine", properties=catalog_properties(tmp_path, "mine")).dataset(
-        "trading.quotes", field=Quote.into_field()
-    )
-    theirs = IcebergCatalog(name="lib", properties=catalog_properties(tmp_path, "lib")).dataset(
-        "trading.quotes", field=Quote.into_field()
-    )
+    ours = IcebergCatalog(
+        catalog_name="mine", properties=catalog_properties(tmp_path, "mine")
+    ).dataset("trading.quotes", field=Quote.into_field())
+    theirs = IcebergCatalog(
+        catalog_name="lib", properties=catalog_properties(tmp_path, "lib")
+    ).dataset("trading.quotes", field=Quote.into_field())
     stored = quotes(0, 600, days=6)
     for target in (ours, theirs):
         target.append_arrow(stored, commit_row_size=200)
@@ -921,7 +925,7 @@ def nested_rows(keys: range, size: int) -> pyarrow.Table:
 def nested_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("nested-ours", "nested-theirs"):
-        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
+        catalog = IcebergCatalog(catalog_name=name, properties=catalog_properties(tmp_path, name))
         dataset = catalog.dataset("trading.nested", field=Nested.into_field())
         dataset.create_with()
         built.append(dataset)
@@ -981,7 +985,7 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
     incoming = pyarrow.Table.from_pydict(
         {"price": [0.0 * -stored_sign, *filler], "size": [2] * keys}, schema=schema
     )
-    catalog = IcebergCatalog(name="zero", properties=catalog_properties(tmp_path, "zero"))
+    catalog = IcebergCatalog(catalog_name="zero", properties=catalog_properties(tmp_path, "zero"))
     dataset = catalog.dataset("trading.levels", field=Level.into_field())
     dataset.append_arrow(stored, commit_row_size=1_000_000)
     dataset.overwrite_arrow(incoming, merge_by=["price"], commit_row_size=1_000_000)
@@ -1007,7 +1011,7 @@ def test_signed_zero_source_keys_are_duplicates(tmp_path: Path) -> None:
         {"price": [0.0, -0.0], "size": [1, 2]}, schema=Level.into_field().into_arrow_schema()
     )
     catalog = IcebergCatalog(
-        name="zero-source", properties=catalog_properties(tmp_path, "zero-source")
+        catalog_name="zero-source", properties=catalog_properties(tmp_path, "zero-source")
     )
     dataset = catalog.dataset("trading.levels", field=Level.into_field())
 
@@ -1125,7 +1129,7 @@ def events(indexes: range, version: int) -> pyarrow.Table:
 def event_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("ours", "theirs"):
-        catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
+        catalog = IcebergCatalog(catalog_name=name, properties=catalog_properties(tmp_path, name))
         built.append(catalog.dataset("trading.events", field=Event.into_field()).create_with())
     return built[0], built[1]
 
@@ -1181,7 +1185,7 @@ def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path, keys: int) -> None:
 
     schema = Level.into_field().into_arrow_schema()
     prices = [float(index) for index in range(keys)] + [float("nan")]
-    catalog = IcebergCatalog(name="nan", properties=catalog_properties(tmp_path, "nan"))
+    catalog = IcebergCatalog(catalog_name="nan", properties=catalog_properties(tmp_path, "nan"))
     dataset = catalog.dataset("trading.levels", field=Level.into_field())
     stored = pyarrow.Table.from_pydict({"price": prices, "size": [1] * len(prices)}, schema=schema)
     dataset.append_arrow(stored, commit_row_size=1_000_000)
@@ -1258,7 +1262,9 @@ def test_a_merge_after_a_rename_compares_the_column_that_was_renamed(tmp_path: P
     read looks changed, and a merge of rows identical to the stored ones
     rewrites the whole table.
     """
-    catalog = IcebergCatalog(name="renamed", properties=catalog_properties(tmp_path, "renamed"))
+    catalog = IcebergCatalog(
+        catalog_name="renamed", properties=catalog_properties(tmp_path, "renamed")
+    )
     dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
     dataset.append_arrow(quotes(0, 4), commit_row_size=1_000_000)
     with dataset.get_or_create_table().update_schema() as update:

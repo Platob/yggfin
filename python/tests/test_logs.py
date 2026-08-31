@@ -108,9 +108,11 @@ def test_a_write_is_one_record_however_many_chunks_it_commits(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     dataset = IcebergDataset(
-        field=Quote.into_field("trading.quotes"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="quotes",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
         commit_row_size=2,
     )
 
@@ -124,11 +126,13 @@ def test_a_write_is_one_record_however_many_chunks_it_commits(
 
 @pytest.mark.integration
 def test_the_detail_under_it_is_debug(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-    """Staging a file and casting a stream are what INFO is a summary of."""
+    """Writing a file and casting a stream are what INFO is a summary of."""
     dataset = IcebergDataset(
-        field=Quote.into_field("trading.quotes"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="quotes",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
 
     with caplog.at_level(logging.INFO, logger=ROOT):
@@ -138,7 +142,7 @@ def test_the_detail_under_it_is_debug(tmp_path: Path, caplog: pytest.LogCaptureF
     caplog.clear()
     with caplog.at_level(logging.DEBUG, logger=ROOT):
         dataset.append_arrow_table(quotes(4))
-    assert "staged" in caplog.text
+    assert " output " in caplog.text and ".parquet" in caplog.text
     assert "casting a stream" in caplog.text
 
 
@@ -149,9 +153,11 @@ def test_maintenance_records_what_it_returned(
     """AGENTS.md requires maintenance to report what it changed, so the record
     and the return value are the same numbers or one of them is wrong."""
     dataset = IcebergDataset(
-        field=Quote.into_field("trading.quotes"),
-        catalog="test",
-        properties=catalog_properties(tmp_path),
+        name="quotes",
+        namespace="trading",
+        field=Quote.into_field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
     )
     dataset.append_arrow_table(quotes(4))
 

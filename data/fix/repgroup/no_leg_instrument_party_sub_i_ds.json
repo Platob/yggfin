@@ -1,0 +1,41 @@
+{
+ "name": "NoLegInstrumentPartySubIDs",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoLegInstrumentPartySubIDs",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "2258"
+  },
+  "item": {
+   "name": "LegInstrumentPartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegInstrumentPartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2259"
+     }
+    },
+    {
+     "name": "LegInstrumentPartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2260"
+     }
+    }
+   ]
+  }
+ }
+}

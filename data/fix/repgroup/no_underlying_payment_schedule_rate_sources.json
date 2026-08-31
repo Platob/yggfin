@@ -1,0 +1,49 @@
+{
+ "name": "NoUnderlyingPaymentScheduleRateSources",
+ "versions": [
+  "4.3",
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingPaymentScheduleRateSources",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40704"
+  },
+  "item": {
+   "name": "UnderlyingPaymentScheduleRateSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentScheduleRateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40705"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentScheduleRateSourceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40706"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentScheduleReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40707"
+     }
+    }
+   ]
+  }
+ }
+}

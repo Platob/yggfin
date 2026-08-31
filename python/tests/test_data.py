@@ -119,15 +119,16 @@ VERSIONS: list[str] = INDEX["versions"]
 #: zero", so a rebuild that lost half the dictionary and still produced a
 #: readable store fails here.
 #:
-#: Ten shards under one naming rule: the standard occupies eight
+#: Eleven shards under one naming rule: the standard occupies nine
 #: sparse ranges, rekep's frozen 30000 range occupies one more, and the fields
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
-EXPECTED_FIELD_DOCUMENTS = 10
-EXPECTED_FIELD_RECORDS = 6110
-EXPECTED_COMPONENT_FILES = 907
+EXPECTED_FIELD_DOCUMENTS = 11
+EXPECTED_FIELD_RECORDS = 6285
+EXPECTED_COMPONENT_FILES = 927
+EXPECTED_REPEATING_GROUP_FILES = 525
 #: Of which these are messages: a message is a component that arrives under a MsgType.
-EXPECTED_MESSAGE_FILES = 176
+EXPECTED_MESSAGE_FILES = 193
 
 REKEP_TAG_VALUES = frozenset(REKEP_TAGS.values())
 REKEP_FIELD_NAMES = {
@@ -140,7 +141,7 @@ CONFLICTS = DATA.parent / "fix-conflicts.json"
 
 #: Pinned so a moved or half-written directory fails here rather than passing
 #: every test below by iterating over nothing.
-EXPECTED_VERSIONS = 9
+EXPECTED_VERSIONS = 10
 
 
 class OfflineRegistry(FixRegistry):
@@ -159,18 +160,26 @@ def registry() -> OfflineRegistry:
     return OfflineRegistry(cache_dir=DATA)
 
 
-def test_the_archive_holds_tag_shards_and_one_file_per_component() -> None:
-    """The layout itself: shards of fields, a folder of components, an index."""
+def test_the_archive_holds_one_file_per_registry_identity() -> None:
+    """The layout itself: field shards, components, repeating groups, and an index."""
     assert len(VERSIONS) == EXPECTED_VERSIONS
     with zipfile.ZipFile(DATA) as archive:
         names = archive.namelist()
     assert len(names) == len(set(names)), "one member per name, never a shadowed one"
     folders = {name.split("/")[0] if "/" in name else name for name in names}
-    assert folders == {"fields", "components", "versions.json"}
+    assert folders == {
+        "fields",
+        "components",
+        "namespaces",
+        "repgroup",
+        "sources.json",
+        "versions.json",
+    }
     assert len(members("fields")) == EXPECTED_FIELD_DOCUMENTS
     assert len(records()) == EXPECTED_FIELD_RECORDS
     assert len(members("components")) == EXPECTED_COMPONENT_FILES
-    assert VERSIONS[0] == "5.0.SP2", "newest first"
+    assert len(members("repgroup")) == EXPECTED_REPEATING_GROUP_FILES
+    assert VERSIONS[0] == "FIX.Latest", "newest first"
     assert VERSIONS[-1] == "FIXT1.1", "and the transport last"
     assert set(INDEX["sessions"]) <= set(VERSIONS)
     assert set(INDEX["declared"]) == set(VERSIONS), "every version's spec was read"
@@ -209,7 +218,17 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
     held = records()
     settl = stored_fix(held["64"])
     assert held["64"]["name"] == "SettlDate" and settl["tag"] == "64"
-    assert settl["versions"] == ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
+    assert settl["versions"] == [
+        "4.0",
+        "4.1",
+        "4.2",
+        "4.3",
+        "4.4",
+        "5.0",
+        "5.0.SP1",
+        "5.0.SP2",
+        "FIX.Latest",
+    ]
     assert [alias["name"] for alias in settl["aliases"]] == ["FutSettDate"]
 
     tags = set()
@@ -284,6 +303,33 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     assert group["item"]["fields"][0]["name"] == "PartyID"
 
 
+def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None:
+    group = members("repgroup")["no_party_i_ds"]
+    declared = group["declaration"]
+
+    assert group["name"] == "NoPartyIDs"
+    assert declared["name"] == "NoPartyIDs"
+    assert declared["type"] == "list" and declared["fix"]["tag"] == "453"
+    assert declared["item"]["type"] == "struct"
+    assert [member["name"] for member in declared["item"]["fields"][:3]] == [
+        "PartyID",
+        "PartyIDSource",
+        "PartyRole",
+    ]
+    embedded = members("components")["parties"]["declaration"]["fields"][0]
+    assert (embedded["name"], embedded["fix"]["tag"]) == ("NoPartyIDs", "453")
+    assert embedded["item"]["fields"][-1] == {
+        "name": "PtysSubGrp",
+        "type": "struct",
+        "nullable": True,
+        "fix": {"component": "PtysSubGrp"},
+        "fields": [],
+    }, "the owning component keeps its nested reference"
+    assert declared["item"]["fields"][-1]["name"] == "NoPartySubIDs", (
+        "the group index exposes the recursively resolved list"
+    )
+
+
 def test_a_message_is_stored_as_the_component_it_is() -> None:
     """One folder, one record shape: the MsgType is the whole difference."""
     single = members("components")["new_order_single"]
@@ -291,7 +337,13 @@ def test_a_message_is_stored_as_the_component_it_is() -> None:
     declared = single["declaration"]
     assert declared["fix"]["msgtype"] == "D"
     assert "msgtypes" not in declared["fix"], "a message is not carried by a message"
-    assert [member["name"] for member in declared["fields"][:4]] == [
+    assert declared["fields"][0] == {
+        "name": "StandardHeader",
+        "type": "struct",
+        "fix": {"component": "StandardHeader"},
+        "fields": [],
+    }
+    assert [member["name"] for member in declared["fields"][1:5]] == [
         "ClOrdID",
         "OrderRequestID",
         "SecondaryClOrdID",
@@ -310,7 +362,10 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself(registry: FixRegis
     assert stamps.encode("ORDER_SUBMISSION_TIME") == "10"
     assert stamps.encode("ordersubmissiontime") == "10"
     assert stamps.encode("10") == "10"
-    assert stored_value(records()["770"], "10")["aliases"] == ["ORDER_SUBMISSION_TIME"]
+    assert stored_value(records()["770"], "10")["aliases"] == [
+        "OrderSubmissionTime",
+        "ORDER_SUBMISSION_TIME",
+    ]
 
 
 def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
@@ -319,11 +374,11 @@ def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
     A reviewable list rather than a silent drop -- and a baseline, so a
     dictionary refresh cannot quietly introduce conflicts nobody looked at.
     """
-    report = ConflictReport.from_dict(json.loads(CONFLICTS.read_text()))
+    report = ConflictReport.from_dict(json.loads(CONFLICTS.read_text(encoding="utf-8")))
     assert report.counts() == dict(CONFLICT_BASELINE)
     assert beyond_baseline(report) == []
     values = [one for one in report.collapses if one.part == "values"]
-    assert len(values) == CONFLICT_BASELINE["values"] == 522
+    assert len(values) == CONFLICT_BASELINE["values"] == 949
     assert {"AccountType", "AcctIDSource", "AllocStatus", "AllocTransType"} <= {
         one.name for one in values
     }
@@ -340,14 +395,15 @@ def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
 #: arriving typed and undocumented. A ratio over that set would say the
 #: dictionary got worse for having grown.
 EXPECTED_DESCRIBED: dict[str, int] = {
+    "FIX.Latest": 6205,
     "4.0": 142,
     "4.1": 213,
     "4.2": 408,
     "4.3": 660,
     "4.4": 956,
     "5.0": 1133,
-    "5.0.SP1": 1381,
-    "5.0.SP2": 1460,
+    "5.0.SP1": 1418,
+    "5.0.SP2": 6073,
     "FIXT1.1": 77,
 }
 
@@ -374,7 +430,7 @@ def test_the_dump_answers_a_lookup_offline(registry: FixRegistry) -> None:
     """What the directory is for: a registry that never fetches anything."""
     side = registry.field("Side")
     assert side.fix["tag"] == "54"
-    assert side.fix["version"] == "5.0.SP2", "the newest version that has it"
+    assert side.fix["version"] == "FIX.Latest", "the newest version that has it"
     assert side.description == 'Side of order (see Volume : "Glossary" for value definitions)'
     assert side.fix.value_of("1").meaning == "Buy"
     assert registry.field(35).name == "MsgType"
@@ -579,7 +635,15 @@ def test_the_builtin_projection_carries_the_component_declarations(
             component.name not in package_components for component in builtin.components(version)
         )
     }
-    assert declared == {"4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2", "FIXT1.1"}
+    assert declared == {
+        "4.3",
+        "4.4",
+        "5.0",
+        "5.0.SP1",
+        "5.0.SP2",
+        "FIX.Latest",
+        "FIXT1.1",
+    }
     assert {"4.0", "4.1", "4.2"}.isdisjoint(declared), "no standard component existed before 4.3"
 
 
@@ -671,6 +735,7 @@ def test_fields_whose_descriptions_fix_utc_store_a_zoned_timestamp() -> None:
         "OrigSendingTime": "timestamp[us, tz=UTC]",
         "OrigTime": "timestamp[us, tz=UTC]",
         "QuoteSetValidUntilTime": "timestamp[us, tz=UTC]",
+        "ResponseTime": "timestamp[us, tz=UTC]",
         "SendingTime": "timestamp[us, tz=UTC]",
         "ValidUntilTime": "timestamp[us, tz=UTC]",
     }
@@ -706,17 +771,20 @@ def test_the_published_dictionary_carries_the_symbol_beside_the_description(
     """
     side = registry.field(54, "4.4")
     assert side.fix.value_of("1").meaning == "Buy"
-    assert side.fix.value_of("1").aliases == ("Buy",)
-    assert side.fix.value_of("3").aliases == ("BuyMinus",)
+    assert side.fix.value_of("1").aliases == ("Buy", "BUY")
+    assert side.fix.value_of("3").aliases == ("BuyMinus", "BUY_MINUS")
 
 
 def test_the_published_dictionary_pins_source_coverage_and_provenance(
     registry: OfflineRegistry,
 ) -> None:
     assert registry.source_coverage() == {
-        "nanoconda": {"primary": 1452, "fields": 1487},
+        "clear-street": {"primary": 11, "fields": 11},
+        "fix-latest": {"primary": 6203, "fields": 6203},
+        "fixtrading-udf": {"primary": 4028, "fields": 4028, "fallbacks": 5},
+        "nanoconda": {"primary": 0, "fields": 1487},
         "onixs": {"primary": 43, "fields": 1495},
-        "quickfix": {"primary": 4576, "fields": 6066},
+        "quickfix": {"primary": 0, "fields": 6066},
     }
     standard = [
         entry
@@ -726,12 +794,104 @@ def test_the_published_dictionary_pins_source_coverage_and_provenance(
     assert all(entry.fix.source == entry.fix.sources[0] for entry in standard)
 
 
-def test_every_published_value_has_a_source_spelling(registry: OfflineRegistry) -> None:
-    """Every enumerated value has an authoritative symbolic name."""
-    values = [
-        value for entry in registry.field_records().values() for value in entry.fix.enumerated
+def test_the_published_dictionary_pins_complete_source_artifacts(
+    registry: OfflineRegistry,
+) -> None:
+    manifest = {source["source_id"]: dict(source) for source in registry.source_manifest()}
+    required = {"source_id", "namespace", "url", "version", "format", "checksum", "license_url"}
+
+    assert set(manifest) == {"fix-latest", "fixtrading-udf", "quickfix", "clear-street"}
+    assert all(required <= source.keys() for source in manifest.values())
+    assert {
+        source: (record["namespace"], record["version"], record["format"], record["checksum"])
+        for source, record in manifest.items()
+    } == {
+        "fix-latest": (
+            "standard",
+            "FIX.Latest_EP309",
+            "orchestra",
+            "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+        ),
+        "fixtrading-udf": (
+            "fixtrading-udf",
+            "1.0",
+            "orchestra",
+            "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+        ),
+        "quickfix": (
+            "standard",
+            "FIX.5.0SP2_EP280",
+            "quickfix",
+            "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+        ),
+        "clear-street": (
+            "clear-street",
+            "FIX.4.2",
+            "markdown",
+            "sha256:cbcff58055c619f4f93cea9ee43124bde59b0a90b5bd4059180079f53e0846d3",
+        ),
+    }
+
+
+def test_the_published_dictionary_pins_registered_udfs_and_venue_alternatives(
+    registry: OfflineRegistry,
+) -> None:
+    udf = tuple(registry.field_records("fixtrading-udf").values())
+
+    assert len(udf) == 4028
+    assert len({field.fix.tag for field in udf}) == 4028
+    assert len({field.fix.folded for field in udf}) == 4028
+    assert all(5000 <= field.fix.tag <= 9999 for field in udf)
+
+    max_show = registry.definition(9001, "fixtrading-udf")
+    cross = registry.definition(9002, "fixtrading-udf")
+    support = registry.definition(9003, "fixtrading-udf")
+    venue = registry.definition(9001, "clear-street")
+    assert max_show is not None and max_show.fix.canonical == "MaxShow"
+    assert max_show.fix["source-name"] == "MaxShow1"
+    assert (max_show.fix["replacement-tag"], max_show.fix["replacement-name"]) == (
+        "210",
+        "MaxShow",
+    )
+    assert cross is not None and cross.dtype == pyarrow.string()
+    assert cross.fix["type-fallback"] == "prose permits alphanumeric values"
+    assert support is not None
+    assert [(value.value, value.meaning) for value in support.fix.enumerated] == [
+        ("1", "Supports UDFs in the message"),
+        ("2", "Supports UDFs in repeating groups"),
     ]
-    assert all(value.aliases for value in values)
+    assert venue is not None and venue.fix.canonical == "TradeType"
+    assert [field.fix.canonical for field in registry.definitions(9001)] == [
+        "MaxShow",
+        "TradeType",
+    ]
+
+    components = registry.component_records("fixtrading-udf")
+    assert len(components) == 126
+    assert all(
+        component.declaration.fix["namespace"] == "fixtrading-udf"
+        for component in components.values()
+    )
+    assert registry.repeating_group_records("fixtrading-udf") == {}
+
+
+def test_every_published_value_keeps_its_wire_value_and_meaning(
+    registry: OfflineRegistry,
+) -> None:
+    """A source symbol is optional; the wire value and meaning are not."""
+    values = [
+        (entry, value)
+        for entry in registry.field_records().values()
+        for value in entry.fix.enumerated
+    ]
+    assert values
+    assert all(value.value and value.meaning for _entry, value in values)
+    without_symbol = [(entry, value) for entry, value in values if not value.aliases]
+    assert without_symbol, "a symbol identical to its wire value is not stored twice"
+    assert all(entry.fix.decode(value.value) == value.value for entry, value in without_symbol)
+    side = registry.field("Side")
+    assert side is not None
+    assert side.fix.decode("future-code") == "future-code", "unknown values remain raw"
 
 
 def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry) -> None:
@@ -745,15 +905,16 @@ def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry)
         for version in registry.versions
     }
     assert counted == {
+        "FIX.Latest": 2018,
         "4.0": 43,
         "4.1": 59,
-        "4.2": 117,
-        "4.3": 176,
-        "4.4": 263,
-        "5.0": 305,
-        "5.0.SP1": 341,
-        "5.0.SP2": 681,
-        "FIXT1.1": 13,
+        "4.2": 122,
+        "4.3": 195,
+        "4.4": 308,
+        "5.0": 373,
+        "5.0.SP1": 446,
+        "5.0.SP2": 1979,
+        "FIXT1.1": 16,
     }
 
 

@@ -2,7 +2,8 @@
  "name": "DerivativeInstrument",
  "versions": [
   "5.0.SP1",
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "DerivativeInstrument",
@@ -10,10 +11,14 @@
   "nullable": true,
   "fix": {
    "component": "DerivativeInstrument",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
+    "fix-latest"
    ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [
     "DerivativeSecurityList",
     "DerivativeSecurityListRequest",
@@ -54,13 +59,34 @@
     }
    },
    {
-    "name": "DerivativeSecurityAltIDGrp",
-    "type": "struct",
+    "name": "NoDerivativeSecurityAltID",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "DerivativeSecurityAltIDGrp"
+     "tag": "1218"
     },
-    "fields": []
+    "item": {
+     "name": "DerivativeSecurityAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1219"
+       }
+      },
+      {
+       "name": "DerivativeSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1220"
+       }
+      }
+     ]
+    }
    },
    {
     "name": "DerivativeProduct",
@@ -463,7 +489,7 @@
     }
    },
    {
-    "name": "DerivativeOptPayAmount",
+    "name": "DerivativeOptPayoutAmount",
     "type": "string",
     "nullable": true,
     "fix": {
@@ -568,22 +594,134 @@
     }
    },
    {
-    "name": "DerivativeEventsGrp",
-    "type": "struct",
+    "name": "NoDerivativeEvents",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "DerivativeEventsGrp"
+     "tag": "1286"
     },
-    "fields": []
+    "item": {
+     "name": "DerivativeEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1287"
+       }
+      },
+      {
+       "name": "DerivativeEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1288"
+       }
+      },
+      {
+       "name": "DerivativeEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1289"
+       }
+      },
+      {
+       "name": "DerivativeEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1290"
+       }
+      },
+      {
+       "name": "DerivativeEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1291"
+       }
+      }
+     ]
+    }
    },
    {
-    "name": "DerivativeInstrumentParties",
-    "type": "struct",
+    "name": "NoDerivativeInstrumentParties",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "DerivativeInstrumentParties"
+     "tag": "1292"
     },
-    "fields": []
+    "item": {
+     "name": "DerivativeInstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1293"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1294"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1295"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2377"
+       }
+      },
+      {
+       "name": "NoDerivativeInstrumentPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1296"
+       },
+       "item": {
+        "name": "DerivativeInstrumentPartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "DerivativeInstrumentPartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1297"
+          }
+         },
+         {
+          "name": "DerivativeInstrumentPartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "1298"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
    }
   ]
  }

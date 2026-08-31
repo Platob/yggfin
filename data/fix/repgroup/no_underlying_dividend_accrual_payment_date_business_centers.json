@@ -1,0 +1,29 @@
+{
+ "name": "NoUnderlyingDividendAccrualPaymentDateBusinessCenters",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingDividendAccrualPaymentDateBusinessCenters",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "42799"
+  },
+  "item": {
+   "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42800"
+     }
+    }
+   ]
+  }
+ }
+}

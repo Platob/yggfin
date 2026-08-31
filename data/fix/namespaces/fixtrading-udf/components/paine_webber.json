@@ -1,0 +1,81 @@
+{
+ "name": "PaineWebber",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "PaineWebber",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PaineWebber",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "ContraBroker1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9100"
+    }
+   },
+   {
+    "name": "MrkUp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7502"
+    }
+   },
+   {
+    "name": "NetTrdInd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7501"
+    }
+   },
+   {
+    "name": "PctOfVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9110"
+    }
+   },
+   {
+    "name": "SaleCrdt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7503"
+    }
+   },
+   {
+    "name": "SolicitedFlag1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9111"
+    }
+   },
+   {
+    "name": "SrcSys",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7500"
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,129 @@
+{
+ "name": "BeaconCapitalStrategies",
+ "versions": [
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "BeaconCapitalStrategies",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BeaconCapitalStrategies",
+   "version": "FIX.Latest",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
+  },
+  "fields": [
+   {
+    "name": "CreditRatingAgency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5113"
+    }
+   },
+   {
+    "name": "Filter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5121"
+    }
+   },
+   {
+    "name": "FilterID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5123"
+    }
+   },
+   {
+    "name": "FilterReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5122"
+    }
+   },
+   {
+    "name": "FilterSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5120"
+    }
+   },
+   {
+    "name": "LegCreditRatingAgency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5117"
+    }
+   },
+   {
+    "name": "NoCreditRating",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5114"
+    }
+   },
+   {
+    "name": "NoIOIs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5129"
+    }
+   },
+   {
+    "name": "NoLegCreditRating",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5118"
+    }
+   },
+   {
+    "name": "NoRFQs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5119"
+    }
+   },
+   {
+    "name": "NoUnderlyingCreditRating",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5116"
+    }
+   },
+   {
+    "name": "TotNoIOIs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5130"
+    }
+   },
+   {
+    "name": "UnderlyingCreditRatingAgency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5115"
+    }
+   }
+  ]
+ }
+}

@@ -1,7 +1,8 @@
 {
  "name": "MassOrderAck",
  "versions": [
-  "5.0.SP2"
+  "5.0.SP2",
+  "FIX.Latest"
  ],
  "declaration": {
   "name": "MassOrderAck",
@@ -10,12 +11,24 @@
   "fix": {
    "component": "MassOrderAck",
    "msgtype": "DK",
-   "source": "quickfix",
+   "version": "FIX.Latest",
+   "source": "fix-latest",
    "sources": [
-    "quickfix"
-   ]
+    "fix-latest"
+   ],
+   "source-version": "FIX.Latest_EP309",
+   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
   },
   "fields": [
+   {
+    "name": "StandardHeader",
+    "type": "struct",
+    "fix": {
+     "component": "StandardHeader"
+    },
+    "fields": []
+   },
    {
     "name": "ApplicationSequenceControl",
     "type": "struct",
@@ -105,13 +118,80 @@
     }
    },
    {
-    "name": "Parties",
-    "type": "struct",
+    "name": "NoPartyIDs",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "Parties"
+     "tag": "453"
     },
-    "fields": []
+    "item": {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
+      },
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
+       "item": {
+        "name": "PartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "PartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "523"
+          }
+         },
+         {
+          "name": "PartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "803"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
    },
    {
     "name": "TradingCapacity",
@@ -258,11 +338,170 @@
     "fields": []
    },
    {
-    "name": "OrderEntryAckGrp",
-    "type": "struct",
+    "name": "NoOrderEntries",
+    "type": "list",
     "nullable": true,
     "fix": {
-     "component": "OrderEntryAckGrp"
+     "tag": "2428"
+    },
+    "item": {
+     "name": "OrderEntry",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrdStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "39"
+       }
+      },
+      {
+       "name": "ExecType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "150"
+       }
+      },
+      {
+       "name": "ExecTypeReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2431"
+       }
+      },
+      {
+       "name": "OrderEntryAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2429"
+       }
+      },
+      {
+       "name": "OrderEntryID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2430"
+       }
+      },
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "OrdRejReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "103"
+       }
+      },
+      {
+       "name": "CumQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "14"
+       }
+      },
+      {
+       "name": "LeavesQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "151"
+       }
+      },
+      {
+       "name": "CxlQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "84"
+       }
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "TimeInForce",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "59"
+       }
+      },
+      {
+       "name": "OrderQtyData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "OrderQtyData"
+       },
+       "fields": []
+      },
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   },
+   {
+    "name": "StandardTrailer",
+    "type": "struct",
+    "fix": {
+     "component": "StandardTrailer"
     },
     "fields": []
    }

@@ -1,0 +1,40 @@
+{
+ "name": "NoFinancingTermSupplements",
+ "versions": [
+  "4.4",
+  "5.0",
+  "5.0.SP1",
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoFinancingTermSupplements",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "40046"
+  },
+  "item": {
+   "name": "FinancingTermSupplement",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "FinancingTermSupplementDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40047"
+     }
+    },
+    {
+     "name": "FinancingTermSupplementDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40048"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,241 @@
+{
+ "name": "NoUnderlyingReturnRateDates",
+ "versions": [
+  "5.0.SP2",
+  "FIX.Latest"
+ ],
+ "declaration": {
+  "name": "NoUnderlyingReturnRateDates",
+  "type": "list",
+  "nullable": true,
+  "fix": {
+   "tag": "43008"
+  },
+  "item": {
+   "name": "UnderlyingReturnRateDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingReturnRateDateMode",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43009"
+     }
+    },
+    {
+     "name": "NoUnderlyingReturnRateValuationDates",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "43071"
+     },
+     "item": {
+      "name": "UnderlyingReturnRateValuationDate",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingReturnRateValuationDate",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "43072"
+        }
+       },
+       {
+        "name": "UnderlyingReturnRateValuationDateType",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "43073"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationDateRelativeTo",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43010"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationDateOffsetPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43011"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationDateOffsetUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43012"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationDateOffsetDayType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43013"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationStartDateUnadjusted",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43014"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationStartDateRelativeTo",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43015"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationStartDateOffsetPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43016"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationStartDateOffsetUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43017"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationStartDateOffsetDayType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43018"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationStartDateAdjusted",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43019"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationEndDateUnadjusted",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43020"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationEndDateRelativeTo",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43021"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationEndDateOffsetPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43022"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationEndDateOffsetUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43023"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationEndDateOffsetDayType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43024"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationEndDateAdjusted",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43025"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationFrequencyPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43026"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationFrequencyUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43027"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationFrequencyRollConvention",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43028"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateValuationDateBusinessDayConvention",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43029"
+     }
+    },
+    {
+     "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "43069"
+     },
+     "item": {
+      "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+      "type": "struct",
+      "fields": [
+       {
+        "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+        "type": "string",
+        "nullable": true,
+        "fix": {
+         "tag": "43070"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}
