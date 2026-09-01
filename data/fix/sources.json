@@ -8,7 +8,7 @@
    "lookup_order": 0,
    "namespace": "standard",
    "priority": -100,
-   "projection": "rekep-fix-registry-v6",
+   "projection": "rekep-fix-registry-v1",
    "source_id": "fix-latest",
    "url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "version": "FIX.Latest_EP309"
@@ -21,7 +21,7 @@
    "lookup_order": 2,
    "namespace": "fixtrading-udf",
    "priority": 100,
-   "projection": "rekep-fix-registry-v6",
+   "projection": "rekep-fix-registry-v1",
    "source_id": "fixtrading-udf",
    "url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
    "version": "1.0"
@@ -34,7 +34,7 @@
    "lookup_order": 1,
    "namespace": "standard",
    "priority": 200,
-   "projection": "rekep-fix-registry-v6",
+   "projection": "rekep-fix-registry-v1",
    "source_id": "quickfix",
    "url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
    "version": "FIX.5.0SP2_EP280"
@@ -47,7 +47,7 @@
    "lookup_order": 3,
    "namespace": "clear-street",
    "priority": 1000,
-   "projection": "rekep-fix-registry-v6",
+   "projection": "rekep-fix-registry-v1",
    "source_id": "clear-street",
    "url": "https://raw.githubusercontent.com/clear-street/FIX-docs/878fe44f35290a11539a015445cd71c80dd5a7ed/source/index.html.md",
    "version": "FIX.4.2"

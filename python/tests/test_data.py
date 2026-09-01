@@ -772,6 +772,7 @@ def test_the_published_dictionary_pins_complete_source_artifacts(
 
     assert set(manifest) == {"fix-latest", "fixtrading-udf", "quickfix", "clear-street"}
     assert all(required <= source.keys() for source in manifest.values())
+    assert {source["projection"] for source in manifest.values()} == {"rekep-fix-registry-v1"}
     assert {
         source: (record["namespace"], record["version"], record["format"], record["checksum"])
         for source, record in manifest.items()
