@@ -1158,7 +1158,11 @@ class _Side:
                     for _, namespace, value in self.aliases.get(found.xhash, ())
                     if namespace != CLIENT_ORDER_CODE
                 }
-                if standing_venue and venue.isdisjoint(standing_venue):
+                if (
+                    standing_venue
+                    and venue.isdisjoint(standing_venue)
+                    and not (isinstance(event, Order) and event._continues_named_life(found))
+                ):
                     continue
             return found
         return None

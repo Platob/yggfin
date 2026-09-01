@@ -139,7 +139,9 @@ class Leg(MarketConvertible):
         """Normalize FIX leg columns as one market-leg struct."""
         columns = struct_columns(source) if isinstance(source, pyarrow.Array) else dict(source)
         rows = _row_count(columns) if rows is None else rows
-        ticker = SymbolTicker.into_arrow_array(columns, rows, registry)
+        selected_registry = registry or FixRegistry.from_builtin()
+        columns = _registry_instrument_columns(columns, selected_registry, rows, cls)
+        ticker = SymbolTicker.into_arrow_array(columns, rows, selected_registry)
         currency = _enum_arrow(columns.get("currency"), rows, Currency, "from_fix", nullable=True)
         kind = _classified_arrow(columns.get("cficode"), columns.get("securitytype"), rows)
         pair_currency = SymbolTicker.currency_arrow(ticker)
@@ -409,8 +411,10 @@ class Instrument(MarketConvertible):
             if isinstance(source, pyarrow.RecordBatch)
             else (_row_count(columns) if rows is None else rows)
         )
+        selected_registry = registry or FixRegistry.from_builtin()
+        columns = _registry_instrument_columns(columns, selected_registry, rows)
         nested = columns.get("instrument")
-        referential = _referential_columns_arrow(columns, rows, registry)
+        referential = _referential_columns_arrow(columns, rows, selected_registry)
         referential_rows = compute.is_valid(referential["instrumentkey"])
         if nested is not None:
             if isinstance(nested, pyarrow.ChunkedArray):
@@ -431,12 +435,8 @@ class Instrument(MarketConvertible):
             referential["securityexchange"],
         )
         ticker_columns = dict(columns)
-        ticker_columns["securityidsource"] = compute.if_else(
-            compute.is_valid(referential["securityid"]),
-            pyarrow.scalar("ISIN", pyarrow.string()),
-            _text(columns.get("securityidsource"), rows),
-        )
-        ticker = SymbolTicker.into_arrow_array(ticker_columns, rows, registry)
+        ticker_columns["securityidsource"] = identifiers["securityidsource"]
+        ticker = SymbolTicker.into_arrow_array(ticker_columns, rows, selected_registry)
         currency = _enum_arrow(columns.get("currency"), rows, Currency, "from_fix", nullable=True)
         currency = compute.coalesce(currency, referential["currency"])
         pair_currency = SymbolTicker.currency_arrow(ticker)
@@ -468,7 +468,7 @@ class Instrument(MarketConvertible):
             "minpriceincrement": columns.get("minpriceincrement"),
             "roundlot": columns.get("roundlot"),
             "quantitytype": compute.coalesce(
-                _quantity_type_arrow(columns.get("quantitytype"), rows, registry),
+                _quantity_type_arrow(columns.get("quantitytype"), rows, selected_registry),
                 referential["quantitytype"],
             ),
             "maturitydate": _maturity_arrow(
@@ -479,7 +479,7 @@ class Instrument(MarketConvertible):
                 columns.get("putorcall"), rows, OptionKind, "from_fix", integer_is_fix=True
             ),
             "securitydesc": _text(columns.get("securitydesc"), rows),
-            "legs": _legs_arrow(columns.get("legs"), rows, registry),
+            "legs": _legs_arrow(columns.get("legs"), rows, selected_registry),
             "tickladder": referential["tickladder"],
         }
         built = _struct_of(cls, values, rows)
@@ -912,6 +912,144 @@ def _normalized_legs(source: Any, legs: list[Leg] | None) -> list[Leg] | None:
                 changes["maturitydate"] = maturity
         normalized.append(dataclasses.replace(leg, **changes) if changes else leg)
     return normalized
+
+
+def _registry_instrument_columns(
+    columns: Mapping[Any, Any],
+    registry: FixRegistry,
+    rows: int,
+    shape: type[MarketConvertible] = Instrument,
+) -> dict[str, Any]:
+    """Resolve one instrument shape's input columns through the FIX registry."""
+    name_items, tag_items = _registry_instrument_plan(registry, registry.revision, shape)
+    name_targets = dict(name_items)
+    tag_targets = dict(tag_items)
+
+    candidates: dict[str, list[tuple[int, int, Any]]] = {}
+    for order, (key, value) in enumerate(columns.items()):
+        text = str(key)
+        numeric = text.isascii() and text.isdigit()
+        if numeric:
+            for target, rank in tag_targets.get(int(text), ()):
+                candidates.setdefault(target, []).append((rank, order, value))
+            continue
+        folded = column_name(text)
+        target, rank = name_targets.get(folded, (folded, 0))
+        if target:
+            candidates.setdefault(target, []).append((rank, order, value))
+
+    members = {member.name: member for member in shape.into_field().fields}
+    normalized: dict[str, Any] = {}
+    for target, found in candidates.items():
+        ordered = [value for _, _, value in sorted(found, key=lambda item: item[:2])]
+        normalized[target] = _coalesce_instrument_columns(ordered, rows, members.get(target))
+    return normalized
+
+
+def _coalesce_instrument_columns(
+    values: list[Any], rows: int, field: Field | None
+) -> pyarrow.Array:
+    """First non-null alias or tag value per row, in registry priority."""
+    arrays = [_instrument_source_array(value, rows) for value in values]
+    if len(arrays) == 1:
+        return arrays[0]
+    if field is not None and field.enum.encoding == "ascii-big-endian":
+        # Stored enums are packed integers while a registry alias or numeric
+        # tag still carries FIX text. Render both as their text before choosing
+        # rows so a packed ISIN code cannot be mistaken for the wire value `4`.
+        arrays = [_instrument_enum_text(array, field.enum.byte_width) for array in arrays]
+    else:
+        concrete = [array.type for array in arrays if not pyarrow.types.is_null(array.type)]
+        if concrete and any(not dtype.equals(concrete[0]) for dtype in concrete[1:]):
+            dtype = field.dtype if field is not None else pyarrow.string()
+            arrays = [
+                pyarrow.nulls(rows, dtype)
+                if pyarrow.types.is_null(array.type)
+                else cast_arrow_fix(array, dtype)
+                for array in arrays
+            ]
+        elif concrete:
+            arrays = [
+                pyarrow.nulls(rows, concrete[0]) if pyarrow.types.is_null(array.type) else array
+                for array in arrays
+            ]
+    return compute.coalesce(*arrays)
+
+
+def _instrument_source_array(value: Any, rows: int) -> pyarrow.Array:
+    """One registry candidate broadcast to the source batch length."""
+    if isinstance(value, pyarrow.ChunkedArray):
+        value = value.combine_chunks()
+    if isinstance(value, pyarrow.Array):
+        if len(value) != rows:
+            raise ValueError(f"instrument column has {len(value)} rows; expected {rows}")
+        return value
+    if isinstance(value, list | tuple):
+        if len(value) != rows:
+            raise ValueError(f"instrument column has {len(value)} rows; expected {rows}")
+        return pyarrow.array(value)
+    if value is None or isinstance(value, pyarrow.Scalar) and not value.is_valid:
+        return pyarrow.nulls(rows)
+    scalar = value if isinstance(value, pyarrow.Scalar) else pyarrow.scalar(value)
+    return pyarrow.repeat(scalar, rows)
+
+
+def _instrument_enum_text(values: pyarrow.Array, byte_width: int | None) -> pyarrow.Array:
+    """FIX text for either raw spellings or packed ASCII enum storage."""
+    if pyarrow.types.is_null(values.type):
+        return pyarrow.nulls(len(values), pyarrow.string())
+    if not pyarrow.types.is_integer(values.type) or not byte_width:
+        return _text(values, len(values))
+    distinct = compute.unique(values)
+
+    def unpack(value: int | None) -> str | None:
+        if value is None:
+            return None
+        try:
+            raw = int(value).to_bytes(byte_width, "big", signed=False)
+            code = raw.rstrip(b"\x00")
+            if not code or any(byte < 0x20 or byte > 0x7E for byte in code):
+                return str(value)
+            return code.decode("ascii")
+        except (OverflowError, ValueError):
+            return str(value)
+
+    rendered = pyarrow.array([unpack(value) for value in distinct.to_pylist()], pyarrow.string())
+    return compute.take(rendered, compute.index_in(values, value_set=distinct))
+
+
+@functools.lru_cache(maxsize=64)
+def _registry_instrument_plan(
+    registry: FixRegistry,
+    revision: int,
+    shape: type[MarketConvertible],
+) -> tuple[
+    tuple[tuple[str, tuple[str, int]], ...],
+    tuple[tuple[int, tuple[tuple[str, int], ...]], ...],
+]:
+    """Registry resolution plan for one component declaration and revision."""
+    del revision
+    records: list[tuple[str, Any]] = []
+    tag_targets: dict[int, list[tuple[str, int]]] = {}
+    for member in shape.into_field().fields:
+        record = registry.resolve(member.fix.canonical)
+        if record is None:
+            continue
+        records.append((member.name, record))
+    maturity_name = "LegMaturityMonthYear" if shape is Leg else "MaturityMonthYear"
+    maturity = registry.resolve(maturity_name)
+    if maturity is not None:
+        records.append(("maturitymonthyear", maturity))
+
+    name_targets = {record.fix.folded: (target, 0) for target, record in records}
+    for target, record in records:
+        for rank, spelling in enumerate(record.fix.spellings()[1:], start=100):
+            name_targets.setdefault(column_name(spelling), (target, rank))
+        for rank, tag in enumerate(record.fix.tag_priority, start=10):
+            tag_targets.setdefault(tag, []).append((target, rank))
+    return tuple(name_targets.items()), tuple(
+        (tag, tuple(tag_targets[tag])) for tag in sorted(tag_targets)
+    )
 
 
 def _referential_columns_arrow(

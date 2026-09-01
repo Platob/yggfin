@@ -45,6 +45,7 @@ from rekep.fix.transcribe import (
     NO_SOURCE,
     PROTOCOL_DEFAULT_SOURCE,
     TagIndex,
+    _typed_component_supplement,
     _version_from_evidence,
     _version_key,
 )
@@ -367,6 +368,14 @@ def test_no_version_lifts_only_package_owned_fields(codec: FixCodec) -> None:
     assert _entries_column(entries) == [(55, "55", "TTF"), (0, "ISINCODE", "XX0000084733")]
     assert columns["isincode"].to_pylist() == [None]
     assert columns["unix"].to_pylist() == [100]
+
+
+def test_versionless_promoted_values_use_the_merged_registry(codec: FixCodec) -> None:
+    values = pyarrow.array(["NewOrderSingle", "D", "future", None])
+
+    encoded = codec.into_wire_values("MsgType", values, None)
+
+    assert encoded.to_pylist() == ["D", "D", "future", None]
 
 
 def test_wire_tags_resolve_without_any_dictionary_at_all(codec: FixCodec) -> None:
@@ -1339,8 +1348,192 @@ def test_multicharacter_entry_separator_reaches_a_populated_component(
         ("NOPARTYIDS[0].PARTYIDSOURCE", "proprietary/customcode"),
         ("NOPARTYIDS[0].PARTYROLE", "clientid"),
     ]
-    assert parties.to_pylist() == [[{"partyid": "99106.003", "partyidsource": "D", "partyrole": 3}]]
+    assert parties.to_pylist() == [
+        [
+            {
+                "partyid": "99106.003",
+                "partyidsource": "D",
+                "partyrole": 3,
+                "partyrolequalifier": None,
+            }
+        ]
+    ]
     assert residual.to_pylist() == [[]]
+
+
+def _completed_ul(codec: FixCodec, message: str) -> tuple[str, pyarrow.Array]:
+    """One synthetic UL payload through versioning, group split and completion."""
+    pairs = codec.into_pairs(pyarrow.array([message]), Protocol.UL)
+    version = codec.versions_of_pairs(pairs, Protocol.UL)[0].as_py()
+    entries = codec.into_entries(pairs, version)
+    entries, errors = codec.split_group_entries(entries, version)
+    assert errors.to_pylist() == [None]
+    return version, codec.complete_entries(entries, version)
+
+
+def test_ul_44_accepts_a_later_standard_party_member(packaged: FixCodec) -> None:
+    """A backported EP field is typed while the recorded read version remains 4.4."""
+    message = (
+        "#NOPARTYIDS=1|"
+        "#NOPARTYIDS[0]=PARTYID=SYSTEM-1"
+        "PARTYIDSOURCE=shortcodeid"
+        "PARTYROLE=executingsystem"
+        "PARTYROLEQUALIFIER=exchangeordersubmitter|"
+    )
+
+    version, entries = _completed_ul(packaged, message)
+    columns, residual = packaged.into_component_columns(entries, version)
+
+    assert version == "4.4"
+    assert columns["parties"].to_pylist() == [
+        [
+            {
+                "partyid": "SYSTEM-1",
+                "partyidsource": "P",
+                "partyrole": 16,
+                "partyrolequalifier": 30,
+            }
+        ]
+    ]
+    assert residual.to_pylist() == [[]]
+
+
+@pytest.mark.parametrize("qualifier", ["buyside", "sellside"])
+def test_source_specific_party_values_remain_lossless(
+    packaged: FixCodec,
+    qualifier: str,
+) -> None:
+    """No numeric FIX meaning is invented for venue-only role spellings."""
+    message = (
+        "#NOPARTYIDS=1|"
+        "#NOPARTYIDS[0]=PARTYID=SYSTEM-1"
+        "PARTYIDSOURCE=proprietary/customcode"
+        "PARTYROLE=orderoriginatorsystem"
+        f"PARTYROLEQUALIFIER={qualifier}|"
+    )
+
+    version, entries = _completed_ul(packaged, message)
+    columns, residual = packaged.into_component_columns(entries, version)
+
+    assert columns["parties"].to_pylist()[0][0] == {
+        "partyid": "SYSTEM-1",
+        "partyidsource": "D",
+        "partyrole": None,
+        "partyrolequalifier": None,
+    }
+    assert [(entry["tag"], entry["value"]) for entry in residual.to_pylist()[0]] == [
+        (452, "orderoriginatorsystem"),
+        (2376, qualifier),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("source", "role", "qualifier", "expected_source", "expected_role", "expected_qualifier"),
+    [
+        ("shortcodeid", "executingsystem", "exchangeordersubmitter", "P", 16, 30),
+        ("proprietary/customcode", "orderoriginatorsystem", "buyside", "D", None, None),
+    ],
+)
+def test_scalar_and_batch_share_the_indexed_group_authority(
+    packaged: FixCodec,
+    source: str,
+    role: str,
+    qualifier: str,
+    expected_source: str,
+    expected_role: int | None,
+    expected_qualifier: int | None,
+) -> None:
+    message = (
+        "#NOPARTYIDS=1|#NOPARTYIDS[0]=PARTYID=SYNTH"
+        f"PARTYIDSOURCE={source}PARTYROLE={role}PARTYROLEQUALIFIER={qualifier}|"
+    )
+
+    scalar = rekep.FixMsg.from_text(message, registry=packaged.registry)
+    parsed = rekep.FixMsg.from_message_batch([rekep.Message.from_text(message)], packaged)
+    stored = rekep.FixMsg.from_dict(parsed.to_pylist()[0])
+
+    assert scalar.parties == stored.parties
+    assert scalar.error == stored.error
+    assert scalar.indexed_group("NoPartyIDs"), "the scalar view keeps source-spelled members"
+    party = scalar.parties[0]
+    assert (
+        party.partyid,
+        party.partyidsource,
+        party.partyrole,
+        party.partyrolequalifier,
+    ) == ("SYNTH", expected_source, expected_role, expected_qualifier)
+
+
+def test_backported_tag_is_known_in_scalar_and_batch_paths(packaged: FixCodec) -> None:
+    message = "#PARTYROLEQUALIFIER=exchangeordersubmitter|#SIDE=buy|"
+
+    scalar = rekep.FixMsg.from_text(message)
+    stored = rekep.FixMsg.from_message_batch([rekep.Message.from_text(message)], packaged)
+    batch = rekep.FixMsg.from_dict(stored.to_pylist()[0])
+
+    assert scalar.protocol.version == batch.protocol.version == "4.4"
+    assert scalar.unmap is None and batch.unmap is None
+    assert scalar.get(2376).value == batch.get(2376).value == 30
+    assert scalar.get(2376).raw == "exchangeordersubmitter", "scalar audit keeps source text"
+    assert batch.get(2376).raw == "30", "batch completion stores canonical FIX text"
+
+
+def test_component_backport_does_not_cross_an_absent_older_group(packaged: FixCodec) -> None:
+    assert packaged.index_of("4.2").resolve_key("PartyRoleQualifier")[:2] == (None, False)
+
+
+@pytest.mark.parametrize(
+    ("name", "datatype"),
+    [("PartyRoleQualifier", "String"), ("LegacyQualifier", "int")],
+)
+def test_older_tag_or_type_conflict_refuses_a_component_supplement(
+    name: str,
+    datatype: str,
+) -> None:
+    candidate = fix_field("PartyRoleQualifier", 2376, "int")
+    exact = fix_field(name, 2376, datatype)
+
+    assert _typed_component_supplement(candidate, candidate, {2376: exact}) is None
+
+
+def test_control_separated_proprietary_party_values_remain_auditable(
+    packaged: FixCodec,
+) -> None:
+    """Unregistered meanings stay raw instead of acquiring a guessed FIX code."""
+    separator = "\x04\x03"
+    value = separator.join(
+        (
+            "PARTYID=SYNTH-PARTY-01",
+            "PARTYIDSOURCE=proprietary/customcode",
+            "PARTYROLE=orderoriginatorsystem",
+            "PARTYROLEQUALIFIER=buyside",
+            "",
+        )
+    )
+    entries = _entries_array([[(0, "NOPARTYIDS[0]", value)]])
+
+    pairs, parties, residual = _parties_from_entries(packaged, entries, "FIXML")
+
+    assert _pairs(pairs) == [
+        ("NOPARTYIDS[0].PARTYID", "SYNTH-PARTY-01"),
+        ("NOPARTYIDS[0].PARTYIDSOURCE", "proprietary/customcode"),
+        ("NOPARTYIDS[0].PARTYROLE", "orderoriginatorsystem"),
+        ("NOPARTYIDS[0].PARTYROLEQUALIFIER", "buyside"),
+    ]
+    assert parties.to_pylist() == [
+        [
+            {
+                "partyid": "SYNTH-PARTY-01",
+                "partyidsource": "D",
+                "partyrole": None,
+                "partyrolequalifier": None,
+            }
+        ]
+    ]
+    assert [(entry["key"], entry["value"]) for entry in residual.to_pylist()[0]] == [
+        ("PartyRole", "orderoriginatorsystem"),
+        ("PartyRoleQualifier", "buyside"),
+    ]
 
 
 def test_vector_glued_split_records_the_longest_declared_boundary(codec: FixCodec) -> None:
@@ -1407,6 +1600,7 @@ def test_rule_configuration_extends_entry_separator_detection(packaged: FixCodec
         "partyid": "99106.003",
         "partyidsource": "D",
         "partyrole": 3,
+        "partyrolequalifier": None,
     }
     assert residual.to_pylist() == [[]]
 
@@ -1450,8 +1644,18 @@ def test_the_packaged_registry_extracts_parties_from_a_wire_message(
     assert [party["partyrole"] for party in parties] == [1, 11]
     assert [party["partyidsource"] for party in parties] == ["D", "D"]
     assert parties == [
-        {"partyid": "PARTY-TEST-A", "partyidsource": "D", "partyrole": 1},
-        {"partyid": "PARTY-TEST-B", "partyidsource": "D", "partyrole": 11},
+        {
+            "partyid": "PARTY-TEST-A",
+            "partyidsource": "D",
+            "partyrole": 1,
+            "partyrolequalifier": None,
+        },
+        {
+            "partyid": "PARTY-TEST-B",
+            "partyidsource": "D",
+            "partyrole": 11,
+            "partyrolequalifier": None,
+        },
     ], "the group is read through the component tree, not guessed"
 
 

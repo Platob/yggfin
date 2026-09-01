@@ -123,7 +123,7 @@ def test_oms_market_rows_keep_the_order_lifecycle_and_require_trade_evidence() -
     assert orders.column("code").to_pylist() == ["ORD-A19X", "ORD-A19X"]
     assert orders.column("xhash")[0].as_py() == orders.column("xhash")[1].as_py()
     assert orders.column("hash")[0].as_py() != orders.column("hash")[1].as_py()
-    assert orders.column("symbolticker").to_pylist() == ["XLON:0:GB00SYNTH001"] * 2
+    assert orders.column("symbolticker").to_pylist() == ["XLON:ISINNumber:GB00SYNTH001"] * 2
     assert orders.column("vwap").to_pylist() == [None, None]
 
     assert executions.column("state").to_pylist() == [int(State.FILLED)]

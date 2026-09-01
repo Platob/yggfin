@@ -23,6 +23,7 @@ NEXT_MIDNIGHT = MIDNIGHT + 86_400_000_000_000
         "2026-08-14 09:30:00.123456",
         "2026-08-14T09:30:00.123456Z",
         "2026-08-14T11:30:00.123456+02:00",
+        "20260814093000123456",
         b"2026-08-14T09:30:00.123456",
     ],
 )
@@ -45,6 +46,15 @@ def test_upper_makes_a_whole_day_the_exclusive_end_of_it(spelled: object) -> Non
 def test_upper_leaves_an_instant_alone() -> None:
     """It says which day the bound ends, not that every bound moves a day."""
     assert unix_of("2026-08-14T09:30:00.123456", upper=True) == STAMP
+
+
+def test_compact_fraction_uses_its_own_scale_and_microsecond_width() -> None:
+    assert datetime_of("20260828135029258000") == datetime.datetime(
+        2026, 8, 28, 13, 50, 29, 258000, tzinfo=UTC
+    )
+    assert datetime_of("20260828135029258123456") == datetime.datetime(
+        2026, 8, 28, 13, 50, 29, 258123, tzinfo=UTC
+    )
 
 
 def test_a_naive_instant_is_read_as_utc_and_an_aware_one_is_converted() -> None:

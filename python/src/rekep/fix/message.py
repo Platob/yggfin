@@ -293,12 +293,15 @@ _MEMBER = re.compile(rf"^{_WS}*(?P<member>\d+|{_NAME}){_WS}*=(?P<value>.*)$", re
 _PAIR_TOKEN = rf"^{_WS}*\d+{_WS}*="
 _PAIR_TOKEN_NAMED = rf"^{_WS}*#?(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
-#: `_TOKEN` and `_MEMBER` for RE2, which has no DOTALL flag argument.
-_TOKEN_VECTOR = (
+#: A named token split at its first equals, then its key parsed by RE2. Keys
+#: repeat far more than values, so the parser runs the richer pattern once per
+#: distinct key and takes the result back over the token column.
+_NAMED_PAIR_VECTOR = r"(?s)^(?P<head>[^=]*)=(?P<rest>.*)$"
+_NAMED_KEY_VECTOR = (
     rf"(?s)^{_WS}*#?(?P<key>\d+|{_NAME})"
     rf"(?:\[(?:(?P<index>\d+)|(?P<select>{_SELECTOR}))\])?"
     rf"(?:\.(?P<member>[A-Za-z0-9_.\-]+))?"
-    rf"{_WS}*=(?P<rest>.*)$"
+    rf"{_WS}*$"
 )
 _MEMBER_VECTOR = rf"(?s)^{_WS}*(?P<member>\d+|{_NAME}){_WS}*=(?P<value>.*)$"
 
@@ -587,15 +590,22 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
         # the header, or the tags that say what it is are cut off with the
         # log's prefix. The scalar parser applies the same guard, so the two
         # agree by construction.
-        bridged = compute.struct_field(compute.extract_regex(values, MARKED_VECTOR), "msg")
-        values = compute.if_else(
-            compute.and_(compute.invert(wire), compute.is_valid(bridged)), bridged, values
+        # A valid marked key at byte zero has no prefix to cut. Bridge batches
+        # normally have that shape, so they skip the greedy whole-line search.
+        rooted = compute.fill_null(
+            compute.match_substring_regex(values, rf"^{_MARKED_TOKEN}"), False
         )
+        needs_cut = compute.and_(compute.invert(wire), compute.invert(rooted))
+        if compute.any(needs_cut, min_count=0).as_py():
+            bridged = compute.struct_field(compute.extract_regex(values, MARKED_VECTOR), "msg")
+            values = compute.if_else(
+                compute.and_(needs_cut, compute.is_valid(bridged)), bridged, values
+            )
     return values, wire
 
 
 #: One token's marker and key, for counting what a capture spells rather than
-#: parsing it. The same token rule `_TOKEN_VECTOR` reads, with the `#` kept:
+#: parsing it. The same key rule `_NAMED_KEY_VECTOR` reads, with the `#` kept:
 #: only a parse may shed it, and what a bridge writes `#Foo` and what it
 #: writes `Foo` are two different things to count.
 _MARKED_KEY_VECTOR = (
@@ -705,11 +715,7 @@ def parse_arrow_array(
     flat = tokens.values
     parsed = None
     if named:
-        # The extracted key is also the validity test. Running
-        # `_PAIR_TOKEN_NAMED` first repeated the same RE2 walk immediately in
-        # `_named_pairs`; bridge captures are the expensive parser case.
-        parsed = compute.extract_regex(flat, _TOKEN_VECTOR)
-        matched = compute.fill_null(compute.is_valid(compute.struct_field(parsed, "key")), False)
+        parsed, matched = _named_tokens(flat)
     else:
         matched = (
             compute.not_equal(flat, "")
@@ -785,9 +791,7 @@ def parse_entries_array(
     )
     raw_values = compute.fill_null(compute.struct_field(items, "value"), "")
     if named:
-        rendered = compute.binary_join_element_wise(raw_keys, "=", raw_values, "")
-        parsed = compute.extract_regex(rendered, _TOKEN_VECTOR)
-        matched = compute.fill_null(compute.is_valid(compute.struct_field(parsed, "key")), False)
+        parsed, matched = _named_parts(raw_keys, raw_values)
         keys, values, expansion = _named_pairs(compute.filter(parsed, matched), entry_separator)
     else:
         matched = compute.fill_null(
@@ -874,6 +878,54 @@ def _canonical_wire_pattern(separator: str) -> str | None:
     return rf"^\d+={value}(?:{escaped}\d+={value})*{escaped}?$"
 
 
+def _named_tokens(tokens: Any) -> tuple[Any, Any]:
+    """Named token parts and the mask of keys admitted by the grammar."""
+    compute = pyarrow.compute
+    pairs = compute.extract_regex(tokens, _NAMED_PAIR_VECTOR)
+    return _named_parts(
+        compute.struct_field(pairs, "head"),
+        compute.struct_field(pairs, "rest"),
+    )
+
+
+def _named_parts(keys: Any, values: Any) -> tuple[Any, Any]:
+    """Canonical named-token captures with each distinct key parsed once."""
+    compute = pyarrow.compute
+    empty = pyarrow.scalar("")
+    encoded = compute.dictionary_encode(keys)
+    distinct = compute.extract_regex(encoded.dictionary, _NAMED_KEY_VECTOR)
+    key = compute.struct_field(distinct, "key")
+    index = compute.fill_null(compute.struct_field(distinct, "index"), "")
+    select = compute.fill_null(compute.struct_field(distinct, "select"), "")
+    member = compute.fill_null(compute.struct_field(distinct, "member"), "")
+    key = compute.if_else(
+        compute.not_equal(select, empty),
+        compute.binary_join_element_wise(key, select, "."),
+        key,
+    )
+    indexed = compute.not_equal(index, empty)
+    bracket = compute.if_else(
+        indexed,
+        compute.binary_join_element_wise("[", index, "]", ""),
+        empty,
+    )
+    lead = compute.binary_join_element_wise(key, bracket, "")
+    dotted = compute.if_else(
+        compute.not_equal(member, empty),
+        compute.binary_join_element_wise(".", member, ""),
+        empty,
+    )
+    tags = compute.binary_join_element_wise(lead, dotted, "")
+    indices = encoded.indices
+    fields = [compute.take(field, indices) for field in (tags, lead, indexed, member)]
+    parsed = pyarrow.StructArray.from_arrays(
+        [*fields, values],
+        names=("tag", "lead", "indexed", "member", "rest"),
+    )
+    matched = compute.fill_null(compute.is_valid(fields[0]), False)
+    return parsed, matched
+
+
 def _named_pairs(token: Any, entry_separator: str | None = None) -> tuple[Any, Any, Any]:
     """Canonical `(keys, values, expansion)` for named-mode tokens, in kernels."""
     compute = pyarrow.compute
@@ -881,20 +933,11 @@ def _named_pairs(token: Any, entry_separator: str | None = None) -> tuple[Any, A
     # An optional group that did not take part comes back as the *empty
     # string*, not null -- RE2's convention through `extract_regex` -- and no
     # real index or member can be empty, so emptiness is the test throughout.
-    key = compute.struct_field(token, "key")
-    index = compute.fill_null(compute.struct_field(token, "index"), "")
-    select = compute.fill_null(compute.struct_field(token, "select"), "")
+    tags = compute.struct_field(token, "tag")
+    lead = compute.struct_field(token, "lead")
+    indexed = compute.struct_field(token, "indexed")
     member = compute.fill_null(compute.struct_field(token, "member"), "")
     value = compute.fill_null(compute.struct_field(token, "rest"), "")
-    # `INSTRUMENT[EXCHANGE]` selects a member by name where `[0]` selects an
-    # entry by position, so it joins the key as the dotted path it is another
-    # spelling of -- before anything below reads the key.
-    key = compute.if_else(
-        compute.not_equal(select, empty),
-        compute.binary_join_element_wise(key, select, "."),
-        key,
-    )
-    indexed = compute.not_equal(index, empty)
     # Only an indexed token with no canonical `.member` can hide an inner
     # `member=`, so the second regex runs over that subset alone and its
     # results are scattered back by a take -- a null slot takes to null,
@@ -921,16 +964,11 @@ def _named_pairs(token: Any, entry_separator: str | None = None) -> tuple[Any, A
         grouped = compute.not_equal(inner_member, empty)
         member = compute.if_else(grouped, inner_member, member)
         value = compute.if_else(grouped, compute.fill_null(inner_value, ""), value)
-    bracket = compute.if_else(indexed, compute.binary_join_element_wise("[", index, "]", ""), empty)
-    # The entry's own key -- `NoPartyIDs[0]` -- kept separately because the
-    # members behind an entry separator all hang off it.
-    lead = compute.binary_join_element_wise(key, bracket, "")
-    dotted = compute.if_else(
-        compute.not_equal(member, empty),
-        compute.binary_join_element_wise(".", member, ""),
-        empty,
-    )
-    tags = compute.binary_join_element_wise(lead, dotted, "")
+        tags = compute.if_else(
+            grouped,
+            compute.binary_join_element_wise(lead, member, "."),
+            tags,
+        )
     if entry_separator and compute.any(indexed, min_count=0).as_py():
         expanded = _entry_pairs(tags, lead, value, indexed, entry_separator)
         if expanded is not None:

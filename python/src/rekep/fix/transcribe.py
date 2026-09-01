@@ -808,6 +808,8 @@ class FixCodec(Convertible):
         if tag is None or not declared.fix.encoded:
             return values
         source = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
+        if not len(source) or source.null_count == len(source):
+            return values
         if not (pyarrow.types.is_string(source.type) or pyarrow.types.is_large_string(source.type)):
             return values
         return self._encoded(
@@ -819,7 +821,11 @@ class FixCodec(Convertible):
     def _canonical_names(self, version: str | None) -> tuple[Any, Any]:
         """`(tag, the registry's spelling of it)` for one version, built once."""
         if version not in self._canonicals:
-            self._canonicals[version] = _canonical_names(self.registry, version)
+            self._canonicals[version] = _canonical_names(
+                self.registry,
+                version,
+                self._supplemental_fields(version),
+            )
         return self._canonicals[version]
 
     def _encodings(self, version: str | None) -> tuple[Any, Any]:
@@ -831,7 +837,11 @@ class FixCodec(Convertible):
         already fixes which enumeration owns the value.
         """
         if version not in self._encoded_values:
-            spelled, resolved = _encodings(self.registry, version)
+            spelled, resolved = _encodings(
+                self.registry,
+                version,
+                self._supplemental_fields(version),
+            )
             declared = self._declared_encodings(version)
             if declared:
                 spelled = pyarrow.concat_arrays(
@@ -1371,19 +1381,93 @@ class FixCodec(Convertible):
         return self._components[key]
 
     def _component_declarations(self, version: str | None) -> list[Field]:
-        """One version's component declarations, or none for a version with none.
-
-        None is an answer and not a gap: 4.0 through 4.2 declare no component
-        at all, and a regenerated dictionary always carries the declarations of
-        the versions that do -- so a version with none extracts none rather
-        than falling back on tags the extractor guessed.
-        """
+        """One version's trees plus safe typed-member tag aliases."""
         if version is None:
             return []
         try:
-            return list(self.registry.components(version))
+            declared = list(self.registry.components(version))
         except (KeyError, OSError, ValueError):
             return []
+        for column, fields in self._component_supplements_for(version).items():
+            if not fields:
+                continue
+            extractor = self.into_components()[column]
+            declared.append(
+                Field(
+                    name=extractor.component,
+                    dtype=pyarrow.struct([field.into_arrow_field() for field in fields]),
+                    nullable=True,
+                    metadata={"fix:component": extractor.component},
+                )
+            )
+        return declared
+
+    def _supplemental_fields(self, version: str | None) -> tuple[Field, ...]:
+        """Typed component fields safely backported into one registry version."""
+        if version is None:
+            return ()
+        return tuple(
+            field
+            for fields in self._component_supplements_for(version).values()
+            for field in fields
+        )
+
+    def _component_supplements_for(self, version: str) -> Mapping[str, tuple[Field, ...]]:
+        """Missing typed members whose group and physical type this version already knows.
+
+        A bridge can backport an Extension Pack member without changing its
+        BeginString. The selected version must already declare the containing
+        group, and an occupied tag or a different physical type refuses the
+        supplement, so an older definition always remains authoritative.
+        """
+        if version not in self._component_supplements:
+            try:
+                exact = self.registry.fields(version)
+            except (KeyError, OSError, ValueError):
+                exact = []
+            occupied: dict[int, Field] = {}
+            for field in exact:
+                for tag in field.fix.tag_priority:
+                    occupied.setdefault(tag, field)
+
+            found: dict[str, tuple[Field, ...]] = {}
+            for column, extractor in self.into_components().items():
+                try:
+                    group = self.registry.component_group_field(
+                        extractor.component, extractor.group, version
+                    )
+                except (KeyError, OSError, ValueError):
+                    group = None
+                if group is None:
+                    continue
+                declared = {
+                    column_name(member.fix.canonical) for member in members_of(entry_of(group))
+                }
+                projected = {
+                    member.name: member for member in extractor.into_row().into_field().fields
+                }
+                added: list[Field] = []
+                for name, fix_name in extractor.into_projection():
+                    if column_name(fix_name) not in declared:
+                        continue
+                    try:
+                        selected = self.registry.field(fix_name, version)
+                        candidate = self.registry.field(fix_name)
+                    except (KeyError, OSError, ValueError):
+                        continue
+                    if selected is not None or candidate is None:
+                        continue
+                    supplement = _typed_component_supplement(
+                        candidate,
+                        projected[name],
+                        occupied,
+                    )
+                    if supplement is not None:
+                        added.append(supplement)
+                if added:
+                    found[column] = tuple(added)
+            self._component_supplements[version] = MappingProxyType(found)
+        return self._component_supplements[version]
 
     # -- held state ---------------------------------------------------------
 
@@ -1395,7 +1479,19 @@ class FixCodec(Convertible):
     def _components(self) -> dict[tuple[str, str | None], ComponentGroup]:
         return {}
 
+    @cached_property
+    def _component_supplements(self) -> dict[str, Mapping[str, tuple[Field, ...]]]:
+        return {}
+
     _named: Mapping[str, Field] | None = None
+
+    @cached_property
+    def _named_names(self) -> pyarrow.Array:
+        """Folded rendered fields the registry declares without numeric tags."""
+        return pyarrow.array(
+            sorted({column_name(spelling) for spelling in self.named_fields()}),
+            pyarrow.string(),
+        )
 
     @cached_property
     def _flat_fields(self) -> dict[str | None, dict[int, Field]]:
@@ -1470,14 +1566,28 @@ class FixCodec(Convertible):
             None if self.ul_default_version is None else self.version_named(self.ul_default_version)
         )
 
+    def default_version(self, protocol: Protocol | str | int) -> str | None:
+        """Declared application version for a protocol carrying no evidence."""
+        parsed = Protocol.from_str(protocol)
+        return self._ul_default if parsed is Protocol.UL or parsed.family is Protocol.UL else None
+
     def _tags(self, version: str | None) -> dict[str, int]:
-        """`{name: tag}` for one explicit version; empty when unknown."""
+        """`{name: tag}` for one version plus safe typed component supplements."""
         if version is None:
             return {}
         try:
-            return self.registry.tags(version)
+            found = dict(self.registry.tags(version))
         except (KeyError, OSError, ValueError):
             return {}
+        for field in self._supplemental_fields(version):
+            canonical = field.fix.tag
+            if canonical is None:
+                continue
+            for spelling in field.fix.spellings():
+                found.setdefault(column_name(spelling), canonical)
+            for tag in field.fix.tag_priority:
+                found.setdefault(str(tag), tag)
+        return found
 
     def _containers(self, version: str | None) -> tuple[str, ...]:
         """Every component this version declares, which a dotted key may name."""
@@ -1524,6 +1634,9 @@ def infer_version_from_pairs(
     evidence: dict[str, str] = {}
     for key, value in pairs:
         text = key if type(key) is str else str(key)
+        outer = text if text.isdigit() else column_name(text)
+        if outer in _CHECKSUM_KEYS:
+            break
         # A key already spelled in digits *is* its own tail, which is every
         # key of a wire message: the tail pattern only earns its call on a
         # rendered, dotted or indexed one.
@@ -1532,8 +1645,6 @@ def infer_version_from_pairs(
         else:
             member = _MEMBER_NAME_SCALAR.search(text)
             name = column_name(member["name"] if member is not None else text)
-        if name in _CHECKSUM_KEYS:
-            break
         selected = _VERSION_EVIDENCE.get(name)
         if selected is None or value is None:
             continue
@@ -2007,50 +2118,102 @@ def _tags_of(fields: Mapping[int, Field]) -> pyarrow.Array:
     return pyarrow.array(sorted(fields), TAG)
 
 
-def _canonical_names(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
-    """`(tag, canonical spelling)` for every field one version numbers.
+def _typed_component_supplement(
+    candidate: Field,
+    projected: Field,
+    occupied: Mapping[int, Field],
+) -> Field | None:
+    """A merged member safe to read under an older typed component contract."""
+    canonical = candidate.fix.tag
+    if canonical is None or candidate.dtype != projected.dtype:
+        return None
+    identity = column_name(candidate.fix.canonical)
+    alternates: list[int] = []
+    for tag in candidate.fix.tag_priority:
+        exact = occupied.get(tag)
+        conflict = exact is not None and (
+            column_name(exact.fix.canonical) != identity or exact.dtype != candidate.dtype
+        )
+        if conflict:
+            if tag == canonical:
+                return None
+            continue
+        if tag != canonical:
+            alternates.append(tag)
+    built = Field(
+        name=candidate.name,
+        dtype=candidate.dtype,
+        nullable=candidate.nullable,
+        metadata=dict(candidate.metadata),
+    )
+    built.fix.tags = alternates
+    return built
+
+
+def _canonical_names(
+    registry: FixRegistry,
+    version: str | None,
+    supplements: Sequence[Field] = (),
+) -> tuple[Any, Any]:
+    """`(tag, canonical spelling)` for a version and scoped typed supplements.
 
     What `parse_fix` canonicalizes a key to: a bridge writes `PARTYID` and the
     registry spells it `PartyID`, and a stored column read by a person should
-    say what the standard says.
+    say what the standard says. A typed component can admit a later member
+    only after its containing group and physical type have been checked.
     """
     tags: list[int] = []
     names: list[str] = []
+    seen: set[int] = set()
     if version is not None:
         try:
-            members = registry.fields(version)
+            members = (*registry.fields(version), *supplements)
         except (KeyError, OSError, ValueError):
             members = []
         for member in members:
             tag = member.fix.get("tag")
-            if tag:
-                tags.append(int(tag))
+            if tag and int(tag) not in seen:
+                numeric = int(tag)
+                seen.add(numeric)
+                tags.append(numeric)
                 names.append(member.name)
     return pyarrow.array(tags, TAG), pyarrow.array(names, pyarrow.string())
 
 
-def _encodings(registry: FixRegistry, version: str | None) -> tuple[Any, Any]:
-    """`(tag and folded spelling, the value it names)` for one reading.
+def _encodings(
+    registry: FixRegistry,
+    version: str | None,
+    supplements: Sequence[Field] = (),
+) -> tuple[Any, Any]:
+    """`(tag and folded spelling, value)` for a version and typed supplements.
 
     The dictionary's own `encoded`, as the value set one kernel probes:
     `side=Buy` and `side=BUY` both reach `1`, and a spelling two values share
-    reaches neither -- which is the record's rule, applied here rather than
-    reimplemented. None reads the merged record for a promoted field whose
-    tag is already known even when the message did not state a version.
+    reaches neither. Scoped component supplements follow, while a collision
+    retains the meaning declared by BeginString.
     """
     spelled: list[str] = []
     resolved: list[str] = []
+    seen: set[str] = set()
     try:
-        entries = registry.field_records()
+        entries = (
+            tuple(registry.field_records().values())
+            if version is None
+            else (*registry.fields(version), *supplements)
+        )
     except (KeyError, OSError, ValueError):
-        entries = {}
-    for entry in entries.values():
+        entries = ()
+    for entry in entries:
         fix = entry.fix
         tag, encoded = fix.tag, fix.encoded
-        if tag is None or not encoded or (version is not None and not fix.declares(version)):
+        if tag is None or not encoded:
             continue
         for spelling, value in encoded.items():
-            spelled.append(f"{tag}\x00{spelling}")
+            composite = f"{tag}\x00{spelling}"
+            if composite in seen:
+                continue
+            seen.add(composite)
+            spelled.append(composite)
             resolved.append(value)
     return pyarrow.array(spelled, pyarrow.string()), pyarrow.array(resolved, pyarrow.string())
 

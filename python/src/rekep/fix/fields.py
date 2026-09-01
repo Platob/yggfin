@@ -375,8 +375,10 @@ def cast_arrow_bool(array: Any) -> Any:
 #: and the two are contracted to agree like every other pattern in this package.
 STAMP_PATTERN = (
     r"^[ \t]*(?:(?P<year>\d{4})-?(?P<month>\d{2})-?(?P<day>\d{2}))?"
-    r"(?:[-T ]?(?P<hour>\d{2})(?::(?P<minute>\d{2})(?::(?P<second>\d{2}))?|(?P<compact>\d{4}))"
-    r"(?:\.(?P<fraction>\d{1,9}))?)?"
+    r"(?:[-T ]?(?P<hour>\d{2})(?:"
+    r":(?P<minute>\d{2})(?::(?P<second>\d{2}))?(?:\.(?P<fraction>\d{1,9}))?"
+    r"|(?P<compact>\d{4})(?:(?P<compactfraction>\d{1,9})"
+    r"|\.(?P<compactdottedfraction>\d{1,9}))?))?"
     r"[ \t]*(?:Z|(?P<zsign>[+-])(?P<zhour>\d{2}):?(?P<zminute>\d{2})s?)?[ \t]*$"
 )
 _STAMP = re.compile(STAMP_PATTERN, re.ASCII)
@@ -404,11 +406,32 @@ def unix_of(text: str | None, day: int | None = None) -> int | None:
     match = _STAMP.match(text)
     if match is None:
         return None
-    year, month, dayof, hour, minute, second, compact, fraction = match.group(
-        "year", "month", "day", "hour", "minute", "second", "compact", "fraction"
+    (
+        year,
+        month,
+        dayof,
+        hour,
+        minute,
+        second,
+        compact,
+        compactfraction,
+        compactdottedfraction,
+        fraction,
+    ) = match.group(
+        "year",
+        "month",
+        "day",
+        "hour",
+        "minute",
+        "second",
+        "compact",
+        "compactfraction",
+        "compactdottedfraction",
+        "fraction",
     )
     if compact:
         minute, second = compact[:2], compact[2:]
+        fraction = compactfraction or compactdottedfraction
     if year is None and hour is None:
         return None
     if year is None:
@@ -864,7 +887,16 @@ def _cast_arrow_stamp_general(text: Any, dtype: pyarrow.DataType) -> Any:
     )
     seconds = compute.add(parsed.cast(pyarrow.int64()), compute.cast(leap, pyarrow.int64()))
     seconds = compute.subtract(seconds, zone_seconds)
-    fraction = compute.cast(compute.utf8_rpad(part("fraction", "0"), 9, "0"), pyarrow.int64())
+    fraction = compute.if_else(
+        given("compactfraction"),
+        part("compactfraction", "0"),
+        compute.if_else(
+            given("compactdottedfraction"),
+            part("compactdottedfraction", "0"),
+            part("fraction", "0"),
+        ),
+    )
+    fraction = compute.cast(compute.utf8_rpad(fraction, 9, "0"), pyarrow.int64())
 
     return _temporal(seconds, fraction, valid, dtype)
 

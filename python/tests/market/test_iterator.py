@@ -143,6 +143,24 @@ def test_log_altids_retain_lifecycle_identifiers_in_lookup_order() -> None:
     ]
 
 
+def test_log_altids_retain_global_and_root_order_identifiers() -> None:
+    columns = {
+        "globalorderid": pyarrow.array(["GLOBAL-1"]),
+        "rootorderid": pyarrow.array(["ROOT-1"]),
+        "rootoriginatororderid": pyarrow.array(["ORIGIN-1"]),
+        "orderid": pyarrow.array(["ORDER-3"]),
+    }
+
+    (altids,) = FixMsg.altids_arrow(columns, 1).to_pylist(maps_as_pydicts="strict")
+
+    assert list(altids.items()) == [
+        ("globalorderid", "GLOBAL-1"),
+        ("rootorderid", "ROOT-1"),
+        ("rootoriginatororderid", "ORIGIN-1"),
+        ("orderid", "ORDER-3"),
+    ]
+
+
 def test_log_altids_read_unpromoted_identifiers_from_parsed_entries() -> None:
     log = FixMsg(
         entries=[
@@ -325,9 +343,11 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
     source_batches = source.to_batches(max_chunksize=2)
     stored = list(FixMsg.from_arrow_reader(source_batches))
     expected = {Order: [], Execution: []}
+    expected_ordered = []
     for log in stored:
         for event in log.into_market_events():
             expected[type(event)].append(event)
+            expected_ordered.append(event)
 
     found = {Order: [], Execution: []}
     reader = pyarrow.RecordBatchReader.from_batches(schema, source_batches)
@@ -347,6 +367,20 @@ def test_market_arrow_batches_match_scalar_orders_and_executions() -> None:
         (Order, 10),
         (Execution, 3),
     ]
+    ordered = list(
+        FixMsg.into_ordered_market_events(
+            pyarrow.RecordBatchReader.from_batches(schema, source_batches)
+        )
+    )
+    assert [(type(event), event.hash) for event in ordered] == [
+        (type(event), event.hash) for event in expected_ordered
+    ]
+    report_at = next(
+        index
+        for index, event in enumerate(ordered)
+        if type(event) is Order and event.hash == expected[Order][1].hash
+    )
+    assert [type(event) for event in ordered[report_at : report_at + 2]] == [Order, Execution]
     for event_type in (Order, Execution):
         expected_table = pyarrow.Table.from_batches(
             list(event_type.into_arrow_reader(expected[event_type], batch_row_size=2)),
@@ -372,6 +406,8 @@ def test_an_empty_market_arrow_batch_emits_nothing() -> None:
     )
 
     assert list(FixMsg.into_market_arrow_batches(empty)) == []
+    reader = pyarrow.RecordBatchReader.from_batches(schema, [empty])
+    assert list(FixMsg.into_ordered_market_events(reader)) == []
 
 
 def test_flat_fix_arrow_translation_matches_the_scalar_reference() -> None:
@@ -1455,6 +1491,64 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
     side.named.clear()
 
     found = side.standing(Order(clordid="client-1"))
+
+    assert found is None
+
+
+def test_explicit_amendment_matches_when_venue_and_client_ids_both_move() -> None:
+    placed = initial(
+        Order(
+            unix=BASE,
+            side=Side.BID,
+            lastpx=100.0,
+            lastqty=5.0,
+            orderid="ORD-A",
+            clordid="CL-A",
+            state=State.NEW,
+        ),
+        BTC,
+    )
+    amended = initial(
+        Order(
+            unix=BASE + 10,
+            side=Side.BID,
+            lastpx=99.0,
+            lastqty=4.0,
+            orderid="ORD-B",
+            clordid="CL-B",
+            origclordid="CL-A",
+            state=State.OPEN,
+        ),
+        BTC,
+    )
+
+    latest = list(BookIterator.from_events([placed, amended], snapshot_every=0))[-1]
+
+    (revision,) = latest.deltas
+    assert latest.biddepth == 1 and latest.bidpx == 99.0 and latest.bidqty == 4.0
+    assert revision.orderid == "ORD-B" and revision.clordid == "CL-B"
+    assert revision.code == placed.code == "ORD-A"
+    assert revision.xhash == placed.xhash and revision.version == 1
+    assert revision.prevhash == placed.hash
+
+
+def test_reused_client_id_does_not_match_a_contradictory_venue_order() -> None:
+    placed = initial(
+        Order(
+            unix=BASE,
+            side=Side.BID,
+            lastpx=100.0,
+            lastqty=5.0,
+            orderid="ORD-A",
+            clordid="CLIENT",
+            state=State.NEW,
+        ),
+        BTC,
+    )
+    side = _Side(side=Side.BID)
+    assert side.apply(placed)
+
+    found = side.standing(Order(orderid="ORD-B", clordid="CLIENT"))
 
     assert found is None
 

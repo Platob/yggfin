@@ -2379,7 +2379,7 @@ def test_the_leaf_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> 
     """
     logs.append_arrow_table(log_table(FIX_LINE))
     leaves = FixMsg.into_field().leaf_names()
-    assert len(leaves) == 217
+    assert len(leaves) == 228
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]

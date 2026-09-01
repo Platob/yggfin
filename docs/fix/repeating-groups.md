@@ -26,8 +26,63 @@ entry index:
 
 `parse_fix` splits only names declared by that group's registry component. It
 uses the longest declared match, extracts partial or out-of-order indices, and
-leaves unknown members in `unmap`. A disputed split or a count that differs
+leaves unknown members in `entries`. A disputed split or a count that differs
 from the indexed members is kept in the row's `error`; the row still parses.
+
+## Control-separated members
+
+```python
+from rekep import FixMsg, Message
+from rekep.enums import Protocol
+
+sub = "\x04\x03"
+payload = (
+    "#NOPARTYIDS=1|"
+    "#NOPARTYIDS[0]=PARTYID=SYNTH-01" + sub
+    + "PARTYIDSOURCE=shortcodeid" + sub
+    + "PARTYROLE=executingsystem" + sub
+    + "PARTYROLEQUALIFIER=exchangeordersubmitter|"
+)
+row = FixMsg.from_message_batch([Message.from_text(payload)]).to_pylist()[0]
+
+print(Protocol(row["protocol"]).version)
+print(row["parties"])
+```
+
+```text
+4.4
+[{'partyid': 'SYNTH-01', 'partyidsource': 'P', 'partyrole': 16, 'partyrolequalifier': 30}]
+```
+
+The outer `|` keeps the indexed entry together; EOT/ETX separates members
+inside it. The registry supplies member boundaries and turns unambiguous value
+meanings into FIX codes. The recorded UL default remains `4.4`; current
+standard metadata may fill a member that a venue backported to that version.
+
+Unknown venue meanings stay lossless:
+
+```python
+for qualifier in ("buyside", "sellside"):
+    unknown = (
+        payload.replace("shortcodeid", "proprietary/customcode")
+        .replace("executingsystem", "orderoriginatorsystem")
+        .replace("exchangeordersubmitter", qualifier)
+    )
+    row = FixMsg.from_message_batch([Message.from_text(unknown)]).to_pylist()[0]
+
+    print(qualifier, row["parties"][0])
+    print([(entry["tag"], entry["value"]) for entry in row["entries"]])
+```
+
+```text
+buyside {'partyid': 'SYNTH-01', 'partyidsource': 'D', 'partyrole': None, 'partyrolequalifier': None}
+[(452, 'orderoriginatorsystem'), (2376, 'buyside')]
+sellside {'partyid': 'SYNTH-01', 'partyidsource': 'D', 'partyrole': None, 'partyrolequalifier': None}
+[(452, 'orderoriginatorsystem'), (2376, 'sellside')]
+```
+
+No feed-specific table assigns those spellings a numeric meaning. The typed
+members are null and the source values remain in `entries`.
 
 The reviewable record uses the common `Field` list representation:
 

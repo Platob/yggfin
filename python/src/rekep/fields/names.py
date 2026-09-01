@@ -37,17 +37,18 @@ def column_names(values: Any) -> Any:
             column_name(values.as_py()) if values.is_valid else None,
             pyarrow.string(),
         )
-    folded = compute.replace_substring_regex(
-        compute.utf8_lower(values), pattern=_ARROW_DROP, replacement=""
-    )
-    if not len(values):
-        return folded
-    ascii_only = compute.fill_null(compute.match_substring_regex(values, _ARROW_ASCII), True)
-    if compute.all(ascii_only, min_count=0).as_py():
-        return folded
-
     source = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
     encoded = compute.dictionary_encode(source)
+    dictionary = encoded.dictionary
+    folded = compute.replace_substring_regex(
+        compute.utf8_lower(dictionary), pattern=_ARROW_DROP, replacement=""
+    )
+    if not len(dictionary):
+        return compute.take(folded, encoded.indices)
+    ascii_only = compute.fill_null(compute.match_substring_regex(dictionary, _ARROW_ASCII), True)
+    if compute.all(ascii_only, min_count=0).as_py():
+        return compute.take(folded, encoded.indices)
+
     dictionary = pyarrow.array(
         [column_name(value.as_py()) for value in encoded.dictionary],
         pyarrow.string(),

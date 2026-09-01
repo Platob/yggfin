@@ -21,7 +21,9 @@ from rekep.fix.columns import (
     column_metadata,
     physical_type,
 )
+from rekep.fix.components import SecurityAltID, SideTrdRegTimestamp
 from rekep.fix.fields import fix_field, unix_of
+from rekep.fix.rules import Rules
 from rekep.market import (
     HASH,
     MIC,
@@ -1031,6 +1033,27 @@ def test_one_throwing_transcription_isolated_between_valid_rows(
     assert sum(batch.num_rows for _, batch in translated) == 2
 
 
+def test_failed_enrichment_fallback_does_not_repeat_the_failure(
+    codec: FixCodec,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def failing(*args, **kwargs):
+        del args, kwargs
+        raise pyarrow.ArrowInvalid("synthetic enrichment failure")
+
+    monkeypatch.setattr(Instrument, "from_fix_arrow", failing)
+    parsed = FixMsg.from_message_batch(
+        _raw_batch(Message(body="8=FIX.4.4|35=D|11=SYNTH|10=000|")),
+        codec,
+    )
+
+    assert parsed.num_rows == 1
+    assert parsed.column("error").to_pylist() == [
+        "FIX transcription failed: ArrowInvalid: synthetic enrichment failure"
+    ]
+    assert parsed.column("entries")[0].as_py()
+
+
 def _widened(batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
     """The batch as an Iceberg scan hands it back: every string 64-bit wide."""
 
@@ -1116,7 +1139,8 @@ def test_only_registry_fields_render_from_the_message_envelope() -> None:
         ("ParentClOrdID", "PARENT"),
         ("ISINCODE", "US0378331005"),
     ]
-    assert [entry.key for entry in row.unmap or ()] == ["ParentClOrdID", "ISINCODE"]
+    assert [entry.key for entry in row.entries or ()] == ["ParentClOrdID", "ISINCODE"]
+    assert not row.unmap, "registry-declared rendered names are retained as known fields"
 
 
 def test_an_exotic_stored_spelling_renders_verbatim() -> None:
@@ -1433,6 +1457,140 @@ def test_rendered_indexed_instrument_groups_resolve_the_same_way(
         ("AAPL", "BUY", 1.0),
         ("MSFT", "SELL", 2.0),
     ]
+
+    scalar = FixMsg.from_text(line, registry=registry)
+    assert [(leg.symbol, leg.side.name, leg.ratio) for leg in scalar.instrument.legs or ()] == [
+        ("AAPL", "BUY", 1.0),
+        ("MSFT", "SELL", 2.0),
+    ]
+    scalar_pairs = scalar.into_fix_pairs()
+    assert sum(key.endswith(".LEGSYMBOL") for key, _ in scalar_pairs) == 2
+    assert not any(key in {"555", "600", "624", "623"} for key, _ in scalar_pairs)
+
+
+def test_nested_source_component_is_not_rendered_again_at_the_message_root() -> None:
+    stamp = datetime.datetime(2026, 8, 29, 22, 5, 0, 41190)
+    row = FixMsg(
+        protocol=Protocol.with_version(Protocol.FIX, "4.4"),
+        sidetrdregts=[SideTrdRegTimestamp(sidetrdregtimestamp=stamp)],
+        entries=[
+            Entry(
+                tag=1012,
+                key="SideTrdRegTimestamp",
+                value="20260829-22:05:00.041190",
+                comp="NoSides[0].NoSideTrdRegTS[0]",
+            )
+        ],
+    )
+
+    pairs = row.into_fix_pairs()
+
+    assert (
+        "NoSides[0].NoSideTrdRegTS[0].SideTrdRegTimestamp",
+        "20260829-22:05:00.041190",
+    ) in pairs
+    assert not any(key in {"1016", "1012"} for key, _ in pairs)
+
+
+def test_nested_scoped_component_does_not_hide_a_distinct_root_group() -> None:
+    row = FixMsg(
+        protocol=Protocol.with_version(Protocol.FIX, "4.4"),
+        securityaltid=[
+            SecurityAltID(securityaltid="ROOT", securityaltidsource="4"),
+        ],
+        entries=[
+            Entry(
+                tag=455,
+                key="SecurityAltID",
+                value="NESTED",
+                comp="NoMDEntries[0].NoSecurityAltID[0]",
+            )
+        ],
+    )
+
+    pairs = row.into_fix_pairs()
+
+    assert ("454", "1") in pairs
+    assert ("455", "ROOT") in pairs
+    assert ("456", "4") in pairs
+    assert ("NoMDEntries[0].NoSecurityAltID[0].SecurityAltID", "NESTED") in pairs
+
+    prefixed = FixMsg(
+        protocol=Protocol.with_version(Protocol.FIX, "4.4"),
+        securityaltid=[SecurityAltID(securityaltid="ROOT", securityaltidsource="4")],
+        entries=[
+            Entry(
+                tag=455,
+                key="SecurityAltID",
+                value="ROOT",
+                comp="Instrument.NoSecurityAltID[0]",
+            ),
+            Entry(
+                tag=456,
+                key="SecurityAltIDSource",
+                value="4",
+                comp="Instrument.NoSecurityAltID[0]",
+            ),
+        ],
+    )
+    prefixed_pairs = prefixed.into_fix_pairs()
+    assert ("Instrument.NoSecurityAltID[0].SecurityAltID", "ROOT") in prefixed_pairs
+    assert ("Instrument.NoSecurityAltID[0].SecurityAltIDSource", "4") in prefixed_pairs
+    assert not any(key in {"454", "455", "456"} for key, _ in prefixed_pairs)
+
+
+def test_residual_group_member_does_not_hide_typed_members_after_storage(
+    codec: FixCodec,
+) -> None:
+    separator = "\x04\x03"
+    lines = [
+        (f"#NOPARTYIDS=1|#NOPARTYIDS[0]=PARTYID=P-1{separator}VENUEFLAG=kept|"),
+        f"#NOLEGS=1|#NOLEGS[0]=LEGSYMBOL=A{separator}LEGQTY=9|",
+        (f"#NOPARTYIDS=2|#NOPARTYIDS[0]=PARTYID=P-2{separator}VENUEFLAG=kept|"),
+    ]
+    batch = FixMsg.from_message_batch(
+        _raw_batch(*(Message(body=f"toBridge #MSGTYPE=D|{line}") for line in lines)),
+        codec,
+    )
+    parties, legs, mismatched = [
+        FixMsg.from_dict(row).into_fix_pairs() for row in batch.to_pylist()
+    ]
+
+    assert ("453", "1") in parties
+    assert ("448", "P-1") in parties
+    assert ("NOPARTYIDS[0].VENUEFLAG", "kept") in parties
+    assert ("555", "1") in legs
+    assert ("600", "A") in legs
+    assert ("NOLEGS[0].LegQty", "9") in legs
+    assert ("453", "2") in mismatched
+    assert ("448", "P-2") in mismatched
+    assert sum(key == "453" for key, _ in mismatched) == 1
+    assert mismatched.index(("453", "2")) < mismatched.index(("448", "P-2"))
+
+
+def test_control_separated_party_group_leaves_absent_instrument_values_null() -> None:
+    separator = "\x04\x03"
+    payload = (
+        "#NOPARTYIDS=1|#NOPARTYIDS[0]=PARTYID=SYNTH"
+        f"{separator}PARTYIDSOURCE=shortcodeid"
+        f"{separator}PARTYROLE=executingsystem"
+        f"{separator}PARTYROLEQUALIFIER=exchangeordersubmitter|"
+    )
+
+    parsed = FixMsg.from_message_batch([Message.from_text(payload)])
+
+    assert parsed.column("parties").to_pylist() == [
+        [
+            {
+                "partyid": "SYNTH",
+                "partyidsource": "P",
+                "partyrole": 16,
+                "partyrolequalifier": 30,
+            }
+        ]
+    ]
+    assert _instrument_column(parsed, "quantitytype").to_pylist() == [None]
+    assert parsed.column("error").to_pylist() == [None]
 
 
 def test_an_entry_scoped_alt_id_group_stays_with_its_entry(
@@ -1811,7 +1969,12 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
     assert parsed.column("avgpx").to_pylist() == [12.5, None, None]
     assert _instrument_column(parsed, "isincode").to_pylist() == [None, "XX0000084733", None]
     assert parsed.column("parties").to_pylist()[0] == [
-        {"partyid": "BUYSIDE", "partyidsource": "D", "partyrole": 1}
+        {
+            "partyid": "BUYSIDE",
+            "partyidsource": "D",
+            "partyrole": 1,
+            "partyrolequalifier": None,
+        }
     ]
     assert parsed.column("altids").to_pylist()[0] == [("origclordid", "ROOT")]
 
@@ -2509,7 +2672,7 @@ def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
     """One name, folded to store and spelled to read: the fold is the column and
     the dictionary's own spelling is what the column says it is called."""
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 134
+    assert len(names) == 145
     assert all(field.name == column_name(field.fix["name"]) for field in DECLARATIONS.values())
     assert all(field.fix.canonical == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {
@@ -2528,7 +2691,12 @@ def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
         453: "nopartyids",
         802: "nopartysubids",
     }
-    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole"]
+    assert Party.into_field().names == [
+        "partyid",
+        "partyidsource",
+        "partyrole",
+        "partyrolequalifier",
+    ]
 
 
 def test_no_other_lifted_column_lands_on_one_the_line_already_had() -> None:
@@ -2800,8 +2968,22 @@ def test_ul_enum_names_become_their_real_fix_wire_values(codec: FixCodec) -> Non
         for value in _instrument_column(parsed, "putorcall")
     )
     assert parsed.column("parties").to_pylist() == [
-        [{"partyid": "P-1", "partyidsource": "D", "partyrole": 3}],
-        [{"partyid": "P-1", "partyidsource": "D", "partyrole": 3}],
+        [
+            {
+                "partyid": "P-1",
+                "partyidsource": "D",
+                "partyrole": 3,
+                "partyrolequalifier": None,
+            }
+        ],
+        [
+            {
+                "partyid": "P-1",
+                "partyidsource": "D",
+                "partyrole": 3,
+                "partyrolequalifier": None,
+            }
+        ],
     ]
     assert parsed.column("error").to_pylist() == [None, None]
 
@@ -2821,20 +3003,34 @@ def test_ul_glued_explicit_groups_are_partial_lossless_and_row_isolated(
 
     assert _protocols(parsed) == ["UL4.4", "UL4.4"]
     expected = [
-        {"partyid": None, "partyidsource": None, "partyrole": 3},
-        {"partyid": "P-1", "partyidsource": "D", "partyrole": None},
+        {
+            "partyid": None,
+            "partyidsource": None,
+            "partyrole": 3,
+            "partyrolequalifier": None,
+        },
+        {
+            "partyid": "P-1",
+            "partyidsource": "D",
+            "partyrole": None,
+            "partyrolequalifier": None,
+        },
     ]
     assert parsed.column("parties").to_pylist() == [expected, expected]
     assert parsed.column("error").to_pylist() == [
         None,
         "NoPartyIDs count mismatch: declared 3, found 2 indexed groups",
     ]
+    assert parsed.column("unmap").to_pylist() == [None, None]
     assert [
         [(entry["comp"], entry["key"], entry["value"]) for entry in row]
-        for row in parsed.column("unmap").to_pylist()
+        for row in parsed.column("entries").to_pylist()
     ] == [
         [("NOPARTYIDS[3]", "VENUEFLAG", "kept")],
-        [("NOPARTYIDS[3]", "VENUEFLAG", "kept")],
+        [
+            (None, "NoPartyIDs", "3"),
+            ("NOPARTYIDS[3]", "VENUEFLAG", "kept"),
+        ],
     ]
     assert "protocolversion" not in parsed.schema.names
 
@@ -2878,6 +3074,35 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert lone.column("clordid").to_pylist() == ["PL9"]
     assert lone.column("side").to_pylist() == ["2"]
     assert lone.column("altids").to_pylist() == [[("clordid", "PL9")]]
+
+
+def test_a_custom_empty_rule_set_reclassifies_a_staged_message(
+    registry: FixRegistry,
+) -> None:
+    raw = _raw_batch(Message(body="#MSGTYPE=D|#CLORDID=SYNTH|"))
+    assert _protocols(raw) == ["UL"]
+
+    parsed = FixMsg.from_message_batch(
+        raw,
+        FixCodec(registry=registry, rules=Rules(rules=[])),
+    )
+
+    assert _protocols(parsed) == ["OTHER"]
+    assert parsed.column("entries").to_pylist() == [None]
+
+
+def test_a_stale_staged_protocol_never_overrides_the_payload(
+    codec: FixCodec,
+) -> None:
+    raw = _raw_batch(Message(body="8=FIX.4.4|35=D|11=SYNTH|10=000|"))
+    at = raw.schema.get_field_index("protocol")
+    stale = pyarrow.array([int(Protocol.OTHER)], raw.schema.field(at).type)
+    raw = raw.set_column(at, raw.schema.field(at), stale)
+
+    parsed = FixMsg.from_message_batch(raw, codec)
+
+    assert _protocols(parsed) == ["FIX4.4"]
+    assert parsed.column("clordid").to_pylist() == ["SYNTH"]
 
 
 def test_direction_reads_the_verb_before_the_payload(
@@ -3194,8 +3419,22 @@ def test_invalid_group_counts_are_diagnostic_and_incomplete_groups_stay_raw(
     assert parsed.column("parties").to_pylist() == [
         None,
         None,
-        [{"partyid": "P", "partyidsource": "D", "partyrole": 1}],
-        [{"partyid": "P", "partyidsource": "D", "partyrole": None}],
+        [
+            {
+                "partyid": "P",
+                "partyidsource": "D",
+                "partyrole": 1,
+                "partyrolequalifier": None,
+            }
+        ],
+        [
+            {
+                "partyid": "P",
+                "partyidsource": "D",
+                "partyrole": None,
+                "partyrolequalifier": None,
+            }
+        ],
         None,
         None,
     ]

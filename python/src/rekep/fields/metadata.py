@@ -190,9 +190,24 @@ class FixFieldValue(Convertible):
         """
         matched = _FIX_VALUE_ABBREVIATION.search(self.meaning)
         abbreviation = () if matched is None else (matched.group(1),)
+        # Parentheses explain a value rather than naming it. Bridges omit that
+        # explanation and regularly shorten the protocol word "identifier"
+        # to "ID"; both readings remain derived from the authoritative
+        # meaning, and collision removal below still refuses an ambiguous one.
+        concise = self.meaning.partition("(")[0].strip()
+        identifier = re.sub(r"\bidentifier\b", "ID", concise, flags=re.IGNORECASE)
         return tuple(
             dict.fromkeys(
-                one for one in (self.meaning, *abbreviation, *self.aliases, self.value) if one
+                one
+                for one in (
+                    self.meaning,
+                    concise,
+                    identifier,
+                    *abbreviation,
+                    *self.aliases,
+                    self.value,
+                )
+                if one
             )
         )
 

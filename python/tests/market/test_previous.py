@@ -739,6 +739,58 @@ def test_conflicting_order_ids_override_a_reused_client_id() -> None:
     assert other.version == 0 and other.parenthash == [first.hash]
 
 
+def test_explicit_amendments_keep_one_lifecycle_while_both_ids_move() -> None:
+    first = resting(orderid="ORD-A", clordid="CL-A")
+    second = changed(
+        _order(
+            unix=20,
+            orderid="ORD-B",
+            clordid="CL-B",
+            origclordid="CL-A",
+            state=State.OPEN,
+        ),
+        first,
+    )
+    third = changed(
+        _order(
+            unix=30,
+            orderid="ORD-C",
+            clordid="CL-C",
+            origclordid="CL-B",
+            state=State.OPEN,
+        ),
+        second,
+    )
+
+    assert [event.orderid for event in (first, second, third)] == ["ORD-A", "ORD-B", "ORD-C"]
+    assert [event.clordid for event in (first, second, third)] == ["CL-A", "CL-B", "CL-C"]
+    assert first.code == second.code == third.code == "ORD-A"
+    assert first.xhash == second.xhash == third.xhash
+    assert [event.version for event in (first, second, third)] == [0, 1, 2]
+
+
+def test_a_stable_root_id_reconciles_changed_venue_and_client_ids() -> None:
+    first = resting(
+        orderid="ORD-A",
+        clordid="CL-A",
+        altids={"rootorderid": "ROOT"},
+    )
+    moved = changed(
+        _order(
+            unix=20,
+            orderid="ORD-B",
+            clordid="CL-B",
+            altids={"rootorderid": "ROOT"},
+            state=State.OPEN,
+        ),
+        first,
+    )
+
+    assert moved.orderid == "ORD-B" and moved.clordid == "CL-B"
+    assert moved.code == first.code == "ORD-A"
+    assert moved.xhash == first.xhash
+
+
 def test_equal_lifecycle_hashes_reconcile_to_the_existing_code() -> None:
     first = Event(code="A").with_previous(None)
     later = Event(code="B", xhash=first.xhash).completed_from(first)

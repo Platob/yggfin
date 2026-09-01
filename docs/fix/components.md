@@ -33,6 +33,44 @@ one component is not copied into every owner:
 `component_field()` expands references when it builds the Arrow projection.
 Required FIX members become non-null fields; optional members remain nullable.
 
+## Typed projections
+
+```python
+from pprint import pprint
+
+from rekep.fix.components import Party, SecurityAltID, TrdRegTimestamp
+
+for row in (Party, SecurityAltID, TrdRegTimestamp):
+    print(row.__name__)
+    pprint(row.into_field().names, width=72)
+```
+
+```text
+Party
+['partyid', 'partyidsource', 'partyrole', 'partyrolequalifier']
+SecurityAltID
+['securityaltid', 'securityaltidsource', 'symbolpositionnumber']
+TrdRegTimestamp
+['trdregtimestamp',
+ 'trdregtimestamptype',
+ 'trdregtimestamporigin',
+ 'trdregtimestampmanualindicator',
+ 'desktype',
+ 'desktypesource',
+ 'deskorderhandlinginst',
+ 'informationbarrierid',
+ 'nbboentrytype',
+ 'nbboprice',
+ 'nbboqty',
+ 'nbbosource']
+```
+
+Every `ComponentGroup` derives its projection from that row declaration. The
+column name remains generic inside a struct while `fix:name` identifies the
+wire member, such as `symbol` reading `LegSymbol <600>`. Component trees from
+the registry decide where the group occurs, which members are required, and
+which ordered `fix:tags` can fill one typed member.
+
 The same declaration can build a Python component class:
 
 ```python

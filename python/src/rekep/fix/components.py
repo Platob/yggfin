@@ -32,6 +32,12 @@ class Party:
     partyrole: Annotated[int | None, DECLARED["PartyRole"]] = None
     """Role the party has in the transaction."""
 
+    partyrolequalifier: Annotated[
+        int | None,
+        DECLARED["PartyRoleQualifier"],
+        "Qualifier refining the party's transaction role.",
+    ] = None
+
 
 @scalar
 class TrdRegTimestamp:
@@ -45,6 +51,60 @@ class TrdRegTimestamp:
 
     trdregtimestamporigin: Annotated[str | None, DECLARED["TrdRegTimestampOrigin"]] = None
     """Who or what stamped it."""
+
+    trdregtimestampmanualindicator: Annotated[
+        bool | None,
+        DECLARED["TrdRegTimestampManualIndicator"],
+        "Whether the regulatory instant was captured manually.",
+    ] = None
+
+    desktype: Annotated[
+        str | None,
+        DECLARED["DeskType"],
+        "Trading-desk classification carried with the instant.",
+    ] = None
+
+    desktypesource: Annotated[
+        int | None,
+        DECLARED["DeskTypeSource"],
+        "Scheme defining the desk classification.",
+    ] = None
+
+    deskorderhandlinginst: Annotated[
+        str | None,
+        DECLARED["DeskOrderHandlingInst"],
+        "Regulatory handling instructions reported by the desk.",
+    ] = None
+
+    informationbarrierid: Annotated[
+        str | None,
+        DECLARED["InformationBarrierID"],
+        "Information barrier governing the trading unit.",
+    ] = None
+
+    nbboentrytype: Annotated[
+        int | None,
+        DECLARED["NBBOEntryType"],
+        "Side or kind of the reported NBBO entry.",
+    ] = None
+
+    nbboprice: Annotated[
+        float | None,
+        DECLARED["NBBOPrice"],
+        "Price of the reported NBBO entry.",
+    ] = None
+
+    nbboqty: Annotated[
+        float | None,
+        DECLARED["NBBOQty"],
+        "Quantity of the reported NBBO entry.",
+    ] = None
+
+    nbbosource: Annotated[
+        int | None,
+        DECLARED["NBBOSource"],
+        "Source of the reported NBBO entry.",
+    ] = None
 
 
 @scalar
@@ -77,6 +137,12 @@ class SecurityAltID:
 
     securityaltidsource: Annotated[str | None, DECLARED["SecurityAltIDSource"]] = None
     """Scheme or class of `SecurityAltID`, in `SecurityIDSource`'s codes."""
+
+    symbolpositionnumber: Annotated[
+        int | None,
+        DECLARED["SymbolPositionNumber"],
+        "Currency or digital-asset position within an FX-style symbol.",
+    ] = None
 
 
 @scalar
@@ -207,15 +273,16 @@ class ComponentGroup:
     @classmethod
     @cache
     def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`((column, FIX member name), ...)`, the group's delimiter first.
+        """`((column, FIX member name), ...)` from the row declaration.
 
-        The delimiter leads because it is what opens an entry, so its column is
-        the one every entry has. Every other member named here is lifted where
-        its value is one the column's type can hold, and stays residual
-        where it is not -- so a malformed stamp is kept as the text that
-        arrived rather than becoming a null nobody can explain.
+        The row declaration keeps generic nested names such as `symbol` while
+        its `fix:name` metadata identifies `LegSymbol`. Declaration order
+        keeps the group's delimiter first. A value stays residual when its
+        declared column cannot hold it.
         """
-        raise NotImplementedError
+        return tuple(
+            (member.name, member.fix.canonical) for member in cls.into_row().into_field().fields
+        )
 
     def __post_init__(self) -> None:
         """Hold stable declaration and name snapshots for repeated batches."""
@@ -562,7 +629,11 @@ class ComponentGroup:
         """
         wanted = column_name(self.component)
         grouped = column_name(self.group)
-        by_name = {column_name(component.name): component for component in self.components}
+        # `FixCodec` appends only safe typed-member supplements after the exact
+        # tree. The exact version therefore owns every tag it already declares.
+        by_name: dict[str, Field] = {}
+        for component in self.components:
+            by_name.setdefault(column_name(component.name), component)
         counts: set[int] = set()
         members: dict[int, str] = {}
         paths: dict[int, tuple[str, ...]] = {}
@@ -570,10 +641,7 @@ class ComponentGroup:
         name_tags = {column_name(name): int(tag) for name, tag in self.names.items()}
 
         def member_tags(member: Field) -> tuple[int, ...]:
-            found: list[int] = []
-            declared = member.fix.tag
-            if declared:
-                found.append(int(declared))
+            found = list(member.fix.tag_priority)
             mapped = name_tags.get(column_name(member.name))
             if mapped is not None and mapped not in found:
                 found.append(mapped)
@@ -703,7 +771,9 @@ class ComponentGroup:
         their presence on a line never refuses a top-level extraction.
         """
         grouped = column_name(self.group)
-        by_name = {column_name(component.name): component for component in self.components}
+        by_name: dict[str, Field] = {}
+        for component in self.components:
+            by_name.setdefault(column_name(component.name), component)
         name_tags = {column_name(name): int(tag) for name, tag in (self.names or {}).items()}
 
         def contains(declared: Field, seen: frozenset[str]) -> bool:
@@ -764,26 +834,13 @@ class Parties(ComponentGroup):
         """The `@scalar` class one party is."""
         return Party
 
-    @classmethod
-    @cache
-    def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`PartyID` opens an entry; the scheme and the role earn columns too."""
-        return (
-            ("PartyID", "PartyID"),
-            ("PartyIDSource", "PartyIDSource"),
-            ("PartyRole", "PartyRole"),
-        )
-
 
 @dataclasses.dataclass(eq=False)
 class TrdRegTimestamps(ComponentGroup):
     """FIX's TrdRegTimestamps component, entry by entry.
 
-    The regulatory clock: when a venue, a gateway or a desk stamped an order,
-    and which of those each stamp was. Structured for the same reason parties
-    are -- the three members always arrive together and mean nothing apart, so
-    a reader wanting "the venue's own stamp" should not be reassembling them
-    out of a flat pair list by index.
+    One entry keeps the regulatory instant beside its type, origin, desk and
+    NBBO context instead of requiring a reader to join indexed flat fields.
     """
 
     component: str = "TrdRegTimestamps"
@@ -794,16 +851,6 @@ class TrdRegTimestamps(ComponentGroup):
     def into_row(cls) -> type:
         """The `@scalar` class one regulatory stamp is."""
         return TrdRegTimestamp
-
-    @classmethod
-    @cache
-    def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`TrdRegTimestamp` opens an entry; its type and origin qualify it."""
-        return (
-            ("TrdRegTimestamp", "TrdRegTimestamp"),
-            ("TrdRegTimestampType", "TrdRegTimestampType"),
-            ("TrdRegTimestampOrigin", "TrdRegTimestampOrigin"),
-        )
 
 
 @dataclasses.dataclass(eq=False)
@@ -825,26 +872,13 @@ class SideTrdRegTimestamps(ComponentGroup):
         """The `@scalar` class one per-side regulatory stamp is."""
         return SideTrdRegTimestamp
 
-    @classmethod
-    @cache
-    def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`SideTrdRegTimestamp` opens an entry; its type and source qualify it."""
-        return (
-            ("SideTrdRegTimestamp", "SideTrdRegTimestamp"),
-            ("SideTrdRegTimestampType", "SideTrdRegTimestampType"),
-            ("SideTrdRegTimestampSrc", "SideTrdRegTimestampSrc"),
-        )
-
 
 @dataclasses.dataclass(eq=False)
 class SecurityAltIDs(ComponentGroup):
     """FIX's SecAltIDGrp component, entry by entry.
 
-    Every other identifier an instrument is known by -- an ISIN beside a
-    venue's own code, a CUSIP beside a Bloomberg ticker. Structured for the
-    same reason parties are: the identifier and its scheme always arrive
-    together and mean nothing apart, so a reader wanting "the ISIN" should not
-    be reassembling them out of a flat pair list by index.
+    One entry keeps an alternative identifier beside its scheme and optional
+    symbol position instead of requiring a reader to join indexed flat fields.
     """
 
     component: str = "SecAltIDGrp"
@@ -856,15 +890,6 @@ class SecurityAltIDs(ComponentGroup):
     def into_row(cls) -> type:
         """The `@scalar` class one alternative identifier is."""
         return SecurityAltID
-
-    @classmethod
-    @cache
-    def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`SecurityAltID` opens an entry; the scheme qualifies it."""
-        return (
-            ("SecurityAltID", "SecurityAltID"),
-            ("SecurityAltIDSource", "SecurityAltIDSource"),
-        )
 
 
 @dataclasses.dataclass(eq=False)
@@ -888,34 +913,6 @@ class Legs(ComponentGroup):
     def into_row(cls) -> type:
         """The `@scalar` class one leg is."""
         return Leg
-
-    @classmethod
-    @cache
-    def into_projection(cls) -> tuple[tuple[str, str], ...]:
-        """`LegSymbol` opens an entry; the members an instrument reads follow.
-
-        Each pair is `(the column, the field it reads)`: the leg's own field
-        under the generic name, because the nesting says it is a leg's.
-        """
-        return tuple(
-            (name.removeprefix("Leg"), name)
-            for name in (
-                "LegSymbol",
-                "LegSecurityID",
-                "LegSecurityIDSource",
-                "LegSecurityType",
-                "LegCFICode",
-                "LegSecurityExchange",
-                "LegMaturityDate",
-                "LegMaturityMonthYear",
-                "LegStrikePrice",
-                "LegPutOrCall",
-                "LegContractMultiplier",
-                "LegCurrency",
-                "LegSide",
-                "LegRatioQty",
-            )
-        )
 
 
 def _indexed_count_errors(

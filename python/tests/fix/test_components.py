@@ -94,11 +94,44 @@ def test_party_is_the_exact_fix_named_shape() -> None:
     """The members FIX declares, and nothing beside them: what the component
     does not project stays in the row's residual `entries`, not in a second
     residual of its own."""
-    assert Party.into_field().names == ["partyid", "partyidsource", "partyrole"]
+    assert Party.into_field().names == [
+        "partyid",
+        "partyidsource",
+        "partyrole",
+        "partyrolequalifier",
+    ]
     assert Party.into_field().field("partyid").metadata["fix:tag"] == "448"
     assert Party.into_field().field("partyidsource").metadata["fix:tag"] == "447"
     assert Party.into_field().field("partyrole").metadata["fix:tag"] == "452"
     assert Party.into_field().field("partyrole").dtype == pyarrow.int32()
+    assert Party.into_field().field("partyrolequalifier").metadata["fix:tag"] == "2376"
+
+
+def test_component_projection_is_derived_from_fix_metadata() -> None:
+    """Generic nested names still read their exact FIX member without a second list."""
+    assert Parties.into_projection() == (
+        ("partyid", "PartyID"),
+        ("partyidsource", "PartyIDSource"),
+        ("partyrole", "PartyRole"),
+        ("partyrolequalifier", "PartyRoleQualifier"),
+    )
+    assert Legs.into_projection()[0] == ("symbol", "LegSymbol")
+
+
+def test_component_member_alternate_tags_lift_into_one_typed_slot() -> None:
+    party_id = field_member("PartyID", 448)
+    party_id.fix.tags = (9448,)
+    component = block(
+        "Parties",
+        [group_member("NoPartyIDs", 453, [party_id, field_member("PartyRole", 452)])],
+    )
+
+    parties, residual = Parties(components=[component]).into_arrow_arrays(
+        _tags([(453, "1"), (9448, "SYSTEM-1"), (452, "16")])
+    )
+
+    assert parties.to_pylist()[0][0]["partyid"] == "SYSTEM-1"
+    assert residual.to_pylist() == [[]]
     assert PARTIES.value_field.nullable is False
 
 
@@ -121,8 +154,18 @@ def test_counted_parties_are_lifted_and_every_other_tag_keeps_its_order() -> Non
 
     assert parties.to_pylist() == [
         [
-            {"partyid": "BUYSIDE", "partyidsource": "D", "partyrole": 1},
-            {"partyid": "XPAR", "partyidsource": "G", "partyrole": 17},
+            {
+                "partyid": "BUYSIDE",
+                "partyidsource": "D",
+                "partyrole": 1,
+                "partyrolequalifier": None,
+            },
+            {
+                "partyid": "XPAR",
+                "partyidsource": "G",
+                "partyrole": 17,
+                "partyrolequalifier": None,
+            },
         ]
     ]
     assert _pairs(residual.to_pylist()[0]) == [(8, "FIX.4.4"), (55, "TTF")]
@@ -198,6 +241,7 @@ def test_nested_party_sub_ids_stay_lossless_in_the_residual() -> None:
         "partyid": "BUYSIDE",
         "partyidsource": "D",
         "partyrole": 1,
+        "partyrolequalifier": None,
     }
     assert _pairs(residual.to_pylist()[0]) == [
         (802, "2"),
@@ -329,11 +373,35 @@ def test_explicit_indices_extract_partial_out_of_order_groups_without_losing_unk
 
     assert parties.to_pylist() == [
         [
-            {"partyid": None, "partyidsource": "G", "partyrole": 1},
-            {"partyid": "B", "partyidsource": "D", "partyrole": None},
+            {
+                "partyid": None,
+                "partyidsource": "G",
+                "partyrole": 1,
+                "partyrolequalifier": None,
+            },
+            {
+                "partyid": "B",
+                "partyidsource": "D",
+                "partyrole": None,
+                "partyrolequalifier": None,
+            },
         ],
-        [{"partyid": "C", "partyidsource": None, "partyrole": None}],
-        [{"partyid": "plain", "partyidsource": None, "partyrole": None}],
+        [
+            {
+                "partyid": "C",
+                "partyidsource": None,
+                "partyrole": None,
+                "partyrolequalifier": None,
+            }
+        ],
+        [
+            {
+                "partyid": "plain",
+                "partyidsource": None,
+                "partyrole": None,
+                "partyrolequalifier": None,
+            }
+        ],
     ]
     assert _pairs(residual.to_pylist()[0]) == [(453, "3"), (0, "kept")]
     assert residual.to_pylist()[1:] == [[], []]
@@ -368,7 +436,14 @@ def test_an_invalid_role_is_retained_instead_of_becoming_null_data() -> None:
     parties, residual = _parties().into_arrow_arrays(source)
 
     assert parties.to_pylist() == [
-        [{"partyid": "BUYSIDE", "partyidsource": None, "partyrole": None}]
+        [
+            {
+                "partyid": "BUYSIDE",
+                "partyidsource": None,
+                "partyrole": None,
+                "partyrolequalifier": None,
+            }
+        ]
     ]
     assert _pairs(residual.to_pylist()[0]) == [(452, "dealer")], (
         "the value that arrived is kept as text; a null nobody can explain is worse"
@@ -558,11 +633,26 @@ def test_naming_a_component_the_registry_does_not_have_extracts_nothing() -> Non
 
 def test_a_regulatory_stamp_is_the_exact_fix_named_shape() -> None:
     names = TrdRegTimestamp.into_field().names
-    assert names == ["trdregtimestamp", "trdregtimestamptype", "trdregtimestamporigin"]
+    assert names == [
+        "trdregtimestamp",
+        "trdregtimestamptype",
+        "trdregtimestamporigin",
+        "trdregtimestampmanualindicator",
+        "desktype",
+        "desktypesource",
+        "deskorderhandlinginst",
+        "informationbarrierid",
+        "nbboentrytype",
+        "nbboprice",
+        "nbboqty",
+        "nbbosource",
+    ]
     field = TrdRegTimestamp.into_field()
     assert field.field("trdregtimestamp").metadata["fix:tag"] == "769"
     assert field.field("trdregtimestamptype").metadata["fix:tag"] == "770"
     assert field.field("trdregtimestamporigin").metadata["fix:tag"] == "771"
+    assert field.field("trdregtimestampmanualindicator").metadata["fix:tag"] == "2839"
+    assert field.field("nbboprice").metadata["fix:tag"] == "2832"
 
 
 def test_counted_regulatory_stamps_are_lifted_like_parties() -> None:
@@ -695,9 +785,10 @@ def _legs(**declared: object) -> Legs:
 
 def test_an_alternative_identifier_is_the_exact_fix_named_shape() -> None:
     field = SecurityAltID.into_field()
-    assert field.names == ["securityaltid", "securityaltidsource"]
+    assert field.names == ["securityaltid", "securityaltidsource", "symbolpositionnumber"]
     assert field.field("securityaltid").metadata["fix:tag"] == "455"
     assert field.field("securityaltidsource").metadata["fix:tag"] == "456"
+    assert field.field("symbolpositionnumber").metadata["fix:tag"] == "2957"
     assert SECURITY_ALT_IDS.value_field.nullable is False
 
 
@@ -752,8 +843,16 @@ def test_counted_alternative_identifiers_are_lifted_in_wire_order() -> None:
 
     assert found.to_pylist() == [
         [
-            {"securityaltid": "US0378331005", "securityaltidsource": "4"},
-            {"securityaltid": "037833100", "securityaltidsource": "1"},
+            {
+                "securityaltid": "US0378331005",
+                "securityaltidsource": "4",
+                "symbolpositionnumber": None,
+            },
+            {
+                "securityaltid": "037833100",
+                "securityaltidsource": "1",
+                "symbolpositionnumber": None,
+            },
         ]
     ]
     assert _pairs(residual.to_pylist()[0]) == [(48, "XS123"), (22, "4"), (55, "AAPL")]

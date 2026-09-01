@@ -111,7 +111,7 @@ print(FixMsg.from_message_batch([staged]).to_pylist()[0]["parties"])
 ```
 
 ```text
-[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3}]
+[{'partyid': 'BUY-A', 'partyidsource': 'D', 'partyrole': 3, 'partyrolequalifier': None}]
 ```
 
 `Instrument`, `Parties`, `TrdRegTimestamps`, `SideTrdRegTS` and

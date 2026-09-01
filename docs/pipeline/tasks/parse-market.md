@@ -46,6 +46,8 @@ commit_row_size: 250000
 The FIX registry supplies message dispatch and lifecycle mappings. Flat rows
 use Arrow kernels; structured or custom rows fall back to the same scalar
 translator.
+Book mode translates each stored batch once, emits `Order` before `Execution`
+when one report carries both, and releases the batch before reading the next.
 
 A bounded run starts one hour before the hour containing `start` and ends
 `max_lateness_ns` after the hour ceiling of `end`, then emits only

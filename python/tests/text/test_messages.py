@@ -427,8 +427,18 @@ def test_the_ul_default_resolves_the_bridge_dictionary(
 
 def test_the_ul_default_bridge_group_is_structured_in_wire_order(table: pyarrow.Table) -> None:
     assert table.column("parties")[BRIDGE].as_py() == [
-        {"partyid": "BUYSIDE", "partyidsource": "D", "partyrole": 1},
-        {"partyid": "XPAR", "partyidsource": "G", "partyrole": 17},
+        {
+            "partyid": "BUYSIDE",
+            "partyidsource": "D",
+            "partyrole": 1,
+            "partyrolequalifier": None,
+        },
+        {
+            "partyid": "XPAR",
+            "partyidsource": "G",
+            "partyrole": 17,
+            "partyrolequalifier": None,
+        },
     ]
     assert table.column("transacttime")[BRIDGE].as_py() == datetime(
         2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC
@@ -467,9 +477,9 @@ def test_mixed_fix_versions_read_parties_through_one_declaration(
     }
 
     assert set(parties) == {"P43", "P50"}
+    assert parties["P50"]["partyrolequalifier"] == 7
     assert residual["P43"] == [("PartySubID", "SUB43")]
     assert residual["P50"] == [
-        ("PartyRoleQualifier", "7"),
         ("NoPartySubIDs", "1"),
         ("PartySubID", "SUB50"),
         ("PartySubIDType", "1"),
@@ -511,7 +521,12 @@ def test_a_bridge_message_separated_by_its_own_markers_reads_the_same(
 def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -> None:
     """Two separators on one line, and neither is the other's."""
     assert table.column("parties")[HASHED].as_py() == [
-        {"partyid": "BUYSIDE", "partyidsource": None, "partyrole": 1}
+        {
+            "partyid": "BUYSIDE",
+            "partyidsource": None,
+            "partyrole": 1,
+            "partyrolequalifier": None,
+        }
     ]
 
 
@@ -998,8 +1013,15 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     assert table.column("beginstring")[PIPED].as_py() == "FIX.4.2"
     assert table.column("msgseqnum")[PIPED].as_py() == 1092
     assert _tagged(table.column("unmap")[BRIDGE]) == []
-    assert _named(table.column("unmap")[BRIDGE]) == BRIDGE_RAW_PAIRS
-    assert len(_keys(table.column("unmap")[BRIDGE])) == EXPECTED_BRIDGE_PAIRS
+    assert _named(table.column("entries")[BRIDGE]) == BRIDGE_RAW_PAIRS[7:13]
+    assert _named(table.column("unmap")[BRIDGE]) == [
+        *BRIDGE_RAW_PAIRS[:7],
+        *BRIDGE_RAW_PAIRS[13:],
+    ]
+    assert (
+        len(_keys(table.column("entries")[BRIDGE])) + len(_keys(table.column("unmap")[BRIDGE]))
+        == EXPECTED_BRIDGE_PAIRS
+    )
     for row in (PIPED, CARET, SOHED, BRIDGE, WRAPPED, HASHED):
         _assert_no_semantic_columns(table, row)
 

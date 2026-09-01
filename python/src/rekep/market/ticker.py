@@ -150,7 +150,7 @@ class SymbolTicker:
         """Build canonical tickers from promoted FIX instrument columns."""
         selected = registry if registry is not None else FixRegistry.from_builtin()
         securityid = _text_array(columns.get("securityid"), rows)
-        source = _text_array(columns.get("securityidsource"), rows)
+        source = _security_source_arrow(columns.get("securityidsource"), rows)
         symbol = _text_array(columns.get("symbol"), rows)
         exchange = _text_array(columns.get("securityexchange"), rows)
 
@@ -327,6 +327,28 @@ def _scheme_arrow(values: pyarrow.Array, registry: FixRegistry) -> pyarrow.Array
         pyarrow.array(names, pyarrow.string()),
         compute.index_in(values, value_set=unique),
     )
+
+
+def _security_source_arrow(value: Any, rows: int) -> pyarrow.Array:
+    """Wire source spellings from text or the component's packed enum values."""
+    if isinstance(value, pyarrow.ChunkedArray):
+        value = value.combine_chunks()
+    if isinstance(value, pyarrow.Array) and pyarrow.types.is_integer(value.type):
+        unique = compute.unique(value)
+        rendered = []
+        for item in unique.to_pylist():
+            source = SecurityIDSource.from_int(item) if item is not None else None
+            rendered.append(
+                "" if source is None or source is SecurityIDSource.UNKNOWN else source.into_fix()
+            )
+        return compute.fill_null(
+            compute.take(
+                pyarrow.array(rendered, pyarrow.string()),
+                compute.index_in(value, value_set=unique),
+            ),
+            "",
+        )
+    return _text_array(value, rows)
 
 
 def _canonical_arrow(values: pyarrow.Array) -> pyarrow.Array:

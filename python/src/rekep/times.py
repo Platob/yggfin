@@ -1,7 +1,8 @@
 """One reading of "an instant", whatever spelled it.
 
-A window written `2026-08-14`, `20260814-09:30:00.123` or `utcnow` means the
-same instant wherever it is configured.
+A window written `2026-08-14`, `20260814-09:30:00.123`,
+`20260828135029258000` or `utcnow` means the same instant wherever it is
+configured.
 """
 
 from __future__ import annotations
@@ -207,8 +208,9 @@ FIX = Stamp(
     clock_at=(9, 17),
 )
 
-#: `20260824100001123`: no separators at all, which is what a logger writes
-#: when it was told to keep lines short.
+#: `20260824100001123` and `20260828135029258000`: no separators at all,
+#: with one to nine fractional digits after the fourteen-digit clock. This is
+#: what compact loggers and bridge regulatory timestamps write.
 COMPACT = Stamp(
     name="compact",
     head=r"[0-9]{14}",

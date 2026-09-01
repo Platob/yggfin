@@ -51,6 +51,9 @@ def test_scalar_and_arrow_column_name_folds_are_exact_twins() -> None:
     values = pyarrow.chunked_array([["Msg_Type", "Straße"], [None, "Orig-Cl Ord_ID"]])
     expected = [column_name(value) if value is not None else None for value in values.to_pylist()]
     assert column_names(values).to_pylist() == expected
+    encoded = pyarrow.array(["Msg_Type", "Msg_Type", None]).dictionary_encode()
+    assert column_names(encoded).to_pylist() == ["msgtype", "msgtype", None]
+    assert column_names(pyarrow.nulls(3, pyarrow.string())).to_pylist() == [None] * 3
 
 
 def test_field_makes_a_dataclass() -> None:

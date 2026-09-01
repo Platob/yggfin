@@ -330,6 +330,21 @@ def test_a_value_resolves_the_standard_s_parenthesized_abbreviation() -> None:
     assert entry.fix.encode("ccp") == "ccp", "context is not the value's abbreviation"
 
 
+def test_a_value_resolves_without_explanatory_prose_or_identifier_expansion() -> None:
+    entry = _entry(
+        enumerated={
+            "C": "Generally accepted market participant identifier (e.g. NASD mnemonic)",
+            "P": "Short code identifier",
+        }
+    )
+
+    assert entry.fix.encode("generallyacceptedmarketparticipantidentifier") == "C"
+    assert entry.fix.encode("shortcodeid") == "P"
+    assert entry.fix.arrow_encode(
+        pyarrow.array(["GenerallyAcceptedMarketParticipantIdentifier", "ShortCodeID", "venue-own"])
+    ).to_pylist() == ["C", "P", "venue-own"]
+
+
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
     """An ambiguous translation that picks one silently is worse than none."""
     found, collisions = encodings_of(values_of({"1": "Cross", "2": "cross!"}))

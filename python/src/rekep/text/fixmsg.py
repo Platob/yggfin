@@ -5,6 +5,8 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
+import heapq
+from collections import Counter
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Annotated, Any, ClassVar
@@ -244,9 +246,10 @@ class FixMsg(Message):
     def link_registry(self, registry: FixRegistry | None) -> FixMsg:
         """Privately link the dictionary every read on this row resolves through."""
         self.__registry = registry
-        self.protocol = Protocol.with_version(
-            self.protocol, self.resolved_version(registry or type(self).into_registry())
-        )
+        selected = registry or type(self).into_registry()
+        codec = type(self).into_codec(selected)
+        version = self.resolved_version(selected) or codec.default_version(self.protocol)
+        self.protocol = Protocol.with_version(self.protocol, version)
         self._partition_scalar_entries()
         return self
 
@@ -261,7 +264,10 @@ class FixMsg(Message):
         codec = type(self).into_codec(self.registry)
         stored = pyarrow.array([_stored_entries(self._residual_entries())], type=ENTRIES)
         entries, unmap = type(self)._partition_entries(
-            stored, codec, self.resolved_version(codec.registry)
+            stored,
+            codec,
+            self.resolved_version(codec.registry),
+            structured=self.protocol.family is Protocol.UL,
         )
         self.entries = [Entry.from_stored(entry) for entry in entries[0].as_py() or ()]
         unresolved = unmap[0].as_py()
@@ -917,10 +923,38 @@ class FixMsg(Message):
                 .get(msg_type, EventType.UNKNOWN)
             )
         built = cls(**values).link_registry(registry)
+        family = Protocol.from_str(source.protocol).family
+        if (
+            not isinstance(source, cls)
+            and family in {Protocol.FIXML, Protocol.UL}
+            and any(Entry.from_stored(entry).comp for entry in source.entries or ())
+        ):
+            built._with_indexed_components(source, registry)
         built._enrich_prices()
         built.__raw_clocks = not isinstance(source, cls)
         built.__creaunix_declared = "creaunix" in declared
         return built
+
+    def _with_indexed_components(self, source: Message, registry: FixRegistry | None) -> None:
+        """Lift one scalar row's indexed groups through the Arrow authority."""
+        parsed = type(self).from_message_batch(
+            [source], type(self).into_codec(registry or type(self).into_registry())
+        )
+        row = type(self).from_dict(parsed.to_pylist()[0])
+        # The scalar object remains the source-spelled pair view: callers use
+        # it to inspect indexed names and malformed members exactly as read.
+        # Only the typed projections come back from the Arrow authority; a
+        # persisted FixMsg stores its normalized residuals through the batch
+        # path in the usual way.
+        for name in COMPONENT_COLUMNS:
+            if name == "legs":
+                if self.instrument.legs is None and row.instrument.legs is not None:
+                    self.instrument = dataclasses.replace(self.instrument, legs=row.instrument.legs)
+                continue
+            if _component_value(self, name) is None:
+                setattr(self, name, _component_value(row, name))
+        if row.error:
+            self.error = f"{self.error}; {row.error}" if self.error else row.error
 
     def _enrich_prices(self) -> None:
         """Fill the uniform and side price slots from compatible FIX facts."""
@@ -1069,13 +1103,53 @@ class FixMsg(Message):
         promoted = [pair for pair, kept in zip(promoted, keep_promoted, strict=True) if kept]
 
         component_fields: list[tuple[str, Entry]] = []
+        stored_component_fields: list[tuple[int, list[tuple[str, Entry]]]] = []
         for column, count_name, row_type in _component_groups():
             entries = _component_value(self, column)
             if entries is None:
                 continue
             count = _tag_of(count_name)
-            if _pair_identity(str(count)) not in stored_identities:
-                component_fields.extend(_component_fields(count, entries, row_type))
+            group = column_name(count_name)
+            scoped = FixCodec.into_components()[column].scoped
+            missing = _missing_component_fields(
+                count,
+                entries,
+                row_type,
+                group,
+                scoped,
+                access,
+                stored_entries,
+                stored,
+                stored_resolved,
+                stored_identities,
+            )
+            count_identity = _pair_identity(str(count))
+            count_at = next(
+                (
+                    index
+                    for index, (source, resolved) in enumerate(
+                        zip(stored, stored_resolved, strict=True)
+                    )
+                    if not _component_key(source[0])
+                    and _pair_identity(resolved[0]) == count_identity
+                ),
+                None,
+            )
+            if count_at is None:
+                component_fields.extend(missing)
+            elif missing:
+                # A retained count is source evidence, including a mismatch.
+                # Its synthesized readable members must follow it or the
+                # rendered sequence is not a FIX repeating group.
+                stored_component_fields.append((count_at + 1, missing))
+
+        for at, additions in sorted(stored_component_fields, reverse=True):
+            inserted_entries = [entry for _, entry in additions]
+            inserted_pairs = [(key, entry.value) for key, entry in additions]
+            stored_entries[at:at] = inserted_entries
+            stored[at:at] = inserted_pairs
+        if stored_component_fields:
+            stored_resolved = access.tagged_pairs(stored)
         component_records = [entry for _, entry in component_fields]
         components = [(key, entry.value) for key, entry in component_fields]
 
@@ -1402,12 +1476,13 @@ class FixMsg(Message):
             # keeps the answer the message stage stored, because there is no
             # other. Direction is written back onto the batch, appended where
             # the batch has no such column, so either conversion path carries it.
+            stored_protocols = columns.get("protocol")
+            stored_direction = columns.get("direction")
             carries_text = pyarrow.compute.fill_null(
                 pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
             )
             protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugin"))
             direction = codec.rules.into_arrow_direction_array(messages, protocols)
-            stored_protocols = columns.get("protocol")
             if stored_protocols is not None:
                 protocols = pyarrow.compute.if_else(
                     carries_text,
@@ -1416,7 +1491,6 @@ class FixMsg(Message):
                         stored_protocols.cast(_PROTOCOL_CODE, safe=False), Protocol.OTHER
                     ),
                 )
-            stored_direction = columns.get("direction")
             if stored_direction is not None:
                 direction = pyarrow.compute.if_else(carries_text, direction, stored_direction)
             columns["direction"] = direction
@@ -1563,7 +1637,13 @@ class FixMsg(Message):
             )
         columns.update(_session_batch_columns(columns, codec.null_values))
         columns["error"] = pyarrow.array([_error_text(error)], pyarrow.string())
-        built = cls.identified(columns, schema, 1, codec.registry)
+        # The full enrichment path raised the error that brought the row here.
+        # Build the declared defaults directly so fallback cannot repeat the
+        # same failure while trying to preserve its diagnostic.
+        built = pyarrow.RecordBatch.from_arrays(
+            [cast_arrow_fix(columns[name], schema.field(name).type) for name in schema.names],
+            schema=schema,
+        )
 
         # A failed parse has no parsed identity to earn. Keep the raw stage's
         # exact-payload identity. A projected hand-built row falls back to the
@@ -1790,7 +1870,21 @@ class FixMsg(Message):
             errors = _merge_error_columns(stored_errors, errors)
         lifted, entries = codec.into_lifted_columns(entries, version)
         promoted = cls._wire_session_columns(columns, codec, version, lifted)
-        entries, unmap = cls._partition_entries(entries, codec, version)
+        protocols = columns.get("protocol")
+        structured = (
+            False
+            if protocols is None
+            else pyarrow.compute.equal(
+                Protocol.into_family_arrow(protocols),
+                int(Protocol.UL),
+            )
+        )
+        entries, unmap = cls._partition_entries(
+            entries,
+            codec,
+            version,
+            structured=structured,
+        )
         found: dict[str, Any] = {
             **components,
             **lifted,
@@ -1868,7 +1962,11 @@ class FixMsg(Message):
 
     @staticmethod
     def _partition_entries(
-        entries: Any, codec: Any, version: str | None
+        entries: Any,
+        codec: Any,
+        version: str | None,
+        *,
+        structured: bool | pyarrow.Array = False,
     ) -> tuple[pyarrow.Array, pyarrow.Array]:
         """Retained fields split by identity in the selected version's registry index."""
         if isinstance(entries, pyarrow.ChunkedArray):
@@ -1887,10 +1985,24 @@ class FixMsg(Message):
         )
         index = codec.index_of(version)
         _, named_hit, _, _ = index.resolve_with_match(whole)
+        rendered_hit = compute.is_in(column_names(keys), value_set=codec._named_names)
+        nested = compute.or_(
+            compute.is_valid(comp),
+            compute.match_substring(keys, "."),
+        )
+        structured_rows = (
+            pyarrow.scalar(structured)
+            if isinstance(structured, bool)
+            else compute.take(structured, parents)
+        )
+        structured_hit = compute.and_(nested, structured_rows)
         known = compute.if_else(
             compute.not_equal(tags, 0),
             compute.fill_null(compute.is_in(tags, value_set=codec.known_tags), False),
-            compute.fill_null(named_hit, False),
+            compute.or_(
+                compute.fill_null(named_hit, False),
+                compute.or_(compute.fill_null(rendered_hit, False), structured_hit),
+            ),
         )
         mapped = _entry_subset(
             parents,
@@ -2432,16 +2544,10 @@ class FixMsg(Message):
         shapes fall back to the scalar authority. Each event type retains message
         order. `None` drains each type only at the end for one atomic commit.
         """
-        from rekep.market.fix_arrow import (
-            flat_market_parts,
-            flat_market_positions,
-            oms_market_parts,
-        )
         from rekep.market.orders import Execution, Order
 
         if batch_row_size is not None and batch_row_size <= 0:
             raise ValueError("batch_row_size must be positive")
-        batches = (source,) if isinstance(source, pyarrow.RecordBatch) else source
         event_types = (Order, Execution)
         pending: dict[type[Any], list[pyarrow.RecordBatch]] = {
             event_type: [] for event_type in event_types
@@ -2473,6 +2579,72 @@ class FixMsg(Message):
                 if pending_rows[event_type] == batch_row_size:
                     yield event_type, combined(event_type)
 
+        for translated in cls._market_arrow_parts(source, declared):
+            for event_type, batch, _, _ in translated:
+                yield from pushed(event_type, batch)
+        for event_type in event_types:
+            if pending_rows[event_type]:
+                yield event_type, combined(event_type)
+
+    @classmethod
+    def into_ordered_market_events(
+        cls,
+        source: pyarrow.RecordBatchReader,
+        **declared: Any,
+    ) -> Iterator[Any]:
+        """Translate bounded parsed batches into market objects in source order.
+
+        Each input batch is translated once through the Arrow market path, then
+        materialized before the next batch. An Order precedes the Execution the
+        same source row generated, including nested OMS rows.
+        """
+        from rekep.market.orders import Execution, Order
+
+        if not isinstance(source, pyarrow.RecordBatchReader):
+            raise TypeError(
+                f"into_ordered_market_events takes a RecordBatchReader, got {type(source).__name__}"
+            )
+        event_types = (Order, Execution)
+        type_rank = {event_type: rank for rank, event_type in enumerate(event_types)}
+
+        def events_of(
+            event_type: type[Any],
+            batch: pyarrow.RecordBatch,
+            origins: pyarrow.Array,
+            ranks: pyarrow.Array,
+        ) -> Iterator[tuple[int, int, int, Any]]:
+            events = event_type.from_arrow_reader((batch,))
+            return (
+                (origin, rank, type_rank[event_type], event)
+                for origin, rank, event in zip(
+                    origins.to_pylist(), ranks.to_pylist(), events, strict=True
+                )
+            )
+
+        for translated in cls._market_arrow_parts(source, declared):
+            streams = [events_of(*part) for part in translated]
+            for _, _, _, event in heapq.merge(
+                *streams, key=lambda item: (item[0], item[1], item[2])
+            ):
+                yield event
+
+    @classmethod
+    def _market_arrow_parts(
+        cls,
+        source: pyarrow.RecordBatch | pyarrow.RecordBatchReader | Iterable[pyarrow.RecordBatch],
+        declared: Mapping[str, Any],
+    ) -> Iterator[tuple[tuple[type[Any], pyarrow.RecordBatch, pyarrow.Array, pyarrow.Array], ...]]:
+        """One input batch's typed market parts with source positions and event ranks."""
+        from rekep.market.fix_arrow import (
+            flat_market_parts,
+            flat_market_positions,
+            oms_market_parts,
+        )
+        from rekep.market.orders import Execution, Order
+
+        batches = (source,) if isinstance(source, pyarrow.RecordBatch) else source
+        event_types = (Order, Execution)
+
         def scalar_parts(
             batch: pyarrow.RecordBatch, source_at: pyarrow.Array
         ) -> Iterator[tuple[type[Any], pyarrow.RecordBatch, pyarrow.Array, pyarrow.Array]]:
@@ -2482,15 +2654,15 @@ class FixMsg(Message):
             for origin, message in zip(
                 source_at.to_pylist(), cls.from_arrow_reader([batch]), strict=True
             ):
-                row_ranks = {event_type: 0 for event_type in event_types}
+                row_rank = 0
                 for event in message.into_market_events(**declared):
                     event_type = type(event)
                     if event_type not in events:
                         continue
                     events[event_type].append(event)
                     origins[event_type].append(origin)
-                    ranks[event_type].append(row_ranks[event_type])
-                    row_ranks[event_type] += 1
+                    ranks[event_type].append(row_rank)
+                    row_rank += 1
             for event_type in event_types:
                 if not events[event_type]:
                     continue
@@ -2514,21 +2686,27 @@ class FixMsg(Message):
             parts: Sequence[pyarrow.RecordBatch],
             origins: Sequence[pyarrow.Array],
             ranks: Sequence[pyarrow.Array],
-        ) -> pyarrow.RecordBatch:
+        ) -> tuple[pyarrow.RecordBatch, pyarrow.Array, pyarrow.Array]:
             table = pyarrow.Table.from_batches(
                 parts, schema=event_type.into_field().into_arrow_schema()
             ).combine_chunks()
+            source_at = pyarrow.concat_arrays(origins)
+            event_ranks = pyarrow.concat_arrays(ranks)
             keys = pyarrow.table(
                 {
-                    "source": pyarrow.concat_arrays(origins),
-                    "rank": pyarrow.concat_arrays(ranks),
+                    "source": source_at,
+                    "rank": event_ranks,
                 }
             )
             order = pyarrow.compute.sort_indices(
                 keys, sort_keys=[("source", "ascending"), ("rank", "ascending")]
             )
             table = table.take(order).combine_chunks()
-            return table.to_batches(max_chunksize=table.num_rows)[0]
+            return (
+                table.to_batches(max_chunksize=table.num_rows)[0],
+                pyarrow.compute.take(source_at, order),
+                pyarrow.compute.take(event_ranks, order),
+            )
 
         for incoming in batches:
             batch = cls.into_field().cast_arrow_batch(incoming)
@@ -2537,10 +2715,18 @@ class FixMsg(Message):
                 continue
             flat = flat_market_parts(batch, declared)
             if flat is not None:
-                for event_type, translated in zip(event_types, flat[:2], strict=True):
+                found = []
+                for type_index, (event_type, translated, origins) in enumerate(
+                    zip(event_types, flat[:2], flat[2:], strict=True)
+                ):
                     if translated is None:
                         continue
-                    yield from pushed(event_type, translated)
+                    ranks = pyarrow.repeat(
+                        pyarrow.scalar(type_index, pyarrow.int64()), translated.num_rows
+                    )
+                    found.append((event_type, translated, origins, ranks))
+                if found:
+                    yield tuple(found)
                 continue
             translated_parts: dict[type[Any], list[pyarrow.RecordBatch]] = {
                 event_type: [] for event_type in event_types
@@ -2558,15 +2744,15 @@ class FixMsg(Message):
                 oms_origins = oms[2:4]
                 oms_ranks = oms[4:]
                 claimed.append(pyarrow.compute.unique(oms_origins[0]))
-                for event_type, event_batch, origins, ranks in zip(
-                    event_types,
-                    oms_batches,
-                    oms_origins,
-                    oms_ranks,
-                    strict=True,
+                for type_index, (event_type, event_batch, origins, ranks) in enumerate(
+                    zip(event_types, oms_batches, oms_origins, oms_ranks, strict=True)
                 ):
                     if event_batch is None:
                         continue
+                    ranks = pyarrow.compute.add(
+                        pyarrow.compute.multiply(ranks, pyarrow.scalar(2, pyarrow.int64())),
+                        pyarrow.scalar(type_index, pyarrow.int64()),
+                    )
                     translated_parts[event_type].append(event_batch)
                     translated_at[event_type].append(origins)
                     translated_ranks[event_type].append(ranks)
@@ -2576,18 +2762,17 @@ class FixMsg(Message):
                 if translated is None:
                     continue
                 claimed.append(where)
-                for event_type, event_batch, local_at in zip(
-                    event_types,
-                    translated[:2],
-                    translated[2:],
-                    strict=True,
+                for type_index, (event_type, event_batch, local_at) in enumerate(
+                    zip(event_types, translated[:2], translated[2:], strict=True)
                 ):
                     if event_batch is None:
                         continue
                     translated_parts[event_type].append(event_batch)
                     translated_at[event_type].append(pyarrow.compute.take(where, local_at))
                     translated_ranks[event_type].append(
-                        pyarrow.repeat(pyarrow.scalar(0, pyarrow.int64()), event_batch.num_rows)
+                        pyarrow.repeat(
+                            pyarrow.scalar(type_index, pyarrow.int64()), event_batch.num_rows
+                        )
                     )
             all_rows = sequence(batch.num_rows)
             claimed_at = (
@@ -2603,20 +2788,18 @@ class FixMsg(Message):
                     translated_parts[event_type].append(event_batch)
                     translated_at[event_type].append(origins)
                     translated_ranks[event_type].append(ranks)
+            found = []
             for event_type in event_types:
                 if translated_parts[event_type]:
-                    yield from pushed(
+                    batch, origins, ranks = ordered(
                         event_type,
-                        ordered(
-                            event_type,
-                            translated_parts[event_type],
-                            translated_at[event_type],
-                            translated_ranks[event_type],
-                        ),
+                        translated_parts[event_type],
+                        translated_at[event_type],
+                        translated_ranks[event_type],
                     )
-        for event_type in event_types:
-            if pending_rows[event_type]:
-                yield event_type, combined(event_type)
+                    found.append((event_type, batch, origins, ranks))
+            if found:
+                yield tuple(found)
 
 
 def _has_misplaced_checksum(entries: Any) -> bool:
@@ -2991,6 +3174,68 @@ def _component_fields(
             if value is not None:
                 fields.append((str(tag), Entry.of(tag=tag, key=str(tag), value=value)))
     return fields
+
+
+def _missing_component_fields(
+    count_tag: int,
+    entries: Sequence[Any],
+    row_type: type[Any],
+    group: str,
+    scoped: bool,
+    access: FieldAccess,
+    stored_entries: Sequence[Entry],
+    stored: Sequence[tuple[str, Any]],
+    stored_resolved: Sequence[tuple[str, Any]],
+    stored_identities: Collection[tuple[str, int | str]],
+) -> list[tuple[str, Entry]]:
+    """Typed group fields not already carried by their source occurrence.
+
+    An unknown residual member proves only its own presence. Readable members
+    have already moved into the typed component, so deduplicating the whole
+    group would lose them when a stored row is rendered again.
+    """
+
+    def belongs(entry: Entry) -> bool:
+        if entry.comp is None:
+            return False
+        segments = entry.comp.split(".")
+        if not scoped:
+            return any(column_name(segment.partition("[")[0]) == group for segment in segments)
+        for segment in segments:
+            if column_name(segment.partition("[")[0]) == group:
+                return True
+            index = segment.rpartition("[")[2].removesuffix("]")
+            if segment.endswith("]") and index.isdigit():
+                return False
+        return False
+
+    carried: Counter[tuple[tuple[str, int | str], str]] = Counter()
+    for entry, source, tagged in zip(stored_entries, stored, stored_resolved, strict=True):
+        if belongs(entry):
+            carried[
+                (
+                    _pair_identity(tagged[0]),
+                    _fix_text(access.typed(tagged[0], source[1])),
+                )
+            ] += 1
+
+    generated = _component_fields(count_tag, entries, row_type)
+    resolved = access.tagged_pairs([(key, entry.value) for key, entry in generated])
+    missing: list[tuple[str, Entry]] = []
+    matched_source = False
+    for (key, entry), tagged in zip(generated[1:], resolved[1:], strict=True):
+        identity = (
+            _pair_identity(tagged[0]),
+            _fix_text(access.typed(tagged[0], entry.value)),
+        )
+        if carried[identity]:
+            carried[identity] -= 1
+            matched_source = True
+        else:
+            missing.append((key, entry))
+    if not matched_source and _pair_identity(str(count_tag)) not in stored_identities:
+        missing.insert(0, generated[0])
+    return missing
 
 
 def _fix_text(value: Any) -> str:

@@ -107,6 +107,7 @@ def test_a_period_is_not_an_instant_and_stays_text() -> None:
     [
         "20260821-09:59:00",
         "20260821-09:59:00.123456789",
+        "20260821095900123456",
         "20260821",
         "09:59:60.5",
         "19691231-23:59:59.999999999",
@@ -265,6 +266,22 @@ def test_a_stamp_a_date_and_a_time_of_day_each_read_as_the_type_declared() -> No
     millis = cast_arrow_fix(pyarrow.array(["10:30:00.5"]), pyarrow.time32("ms"))
     assert seconds.to_pylist() == [datetime.time(10, 30)]
     assert millis.to_pylist() == [datetime.time(10, 30, 0, 500000)]
+
+
+def test_a_compact_regulatory_timestamp_reads_in_scalar_and_arrow_paths() -> None:
+    text = "20260828135029258000"
+    expected = datetime.datetime(2026, 8, 28, 13, 50, 29, 258000)
+
+    assert scalar_fix_temporal(text, pyarrow.timestamp("us", tz="UTC")) == expected
+    assert cast_arrow_fix(pyarrow.array([text]), pyarrow.timestamp("us", tz="UTC")).to_pylist() == [
+        expected.replace(tzinfo=datetime.UTC)
+    ]
+
+    malformed = "20260828135029123.456"
+    assert scalar_fix_temporal(malformed, pyarrow.timestamp("us", tz="UTC")) is None
+    assert cast_arrow_fix(
+        pyarrow.array([malformed]), pyarrow.timestamp("us", tz="UTC")
+    ).to_pylist() == [None]
 
 
 def test_standard_and_iso_dashed_dates_share_the_timestamp_reading() -> None:

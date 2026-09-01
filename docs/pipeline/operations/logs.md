@@ -80,7 +80,7 @@ A six-stage run reads top to bottom:
 ```text
 INFO rekep.logs parse_fix reading messages=logs.messages
 INFO rekep.logs parse_fix routed 2 market, 9 misc
-INFO rekep.logs parse_fix resolved unix from SendingTime 2, recorded 9; 3 of 11 rows carry a symbolticker
+INFO rekep.logs parse_fix resolved unix from SendingTime 2, TransactTime 1, recorded 8; 5 of 11 rows carry a symbolticker
 INFO rekep.logs parse_fix finished: 11 read, 11 written, 0 skipped → market=fix.market, misc=fix.misc in 7.2s
 INFO rekep.logs parse_instruments reading market=fix.market
 INFO rekep.logs parse_instruments observed 1 instruments, of which 1 are new versions

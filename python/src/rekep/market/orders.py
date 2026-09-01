@@ -25,6 +25,8 @@ CLIENT_ORDER_CODE = "client_order"
 
 _ORDER_CODE_FIELDS = MappingProxyType(
     {
+        "globalorderid": (VENUE_ORDER_CODE, "GlobalOrderId"),
+        "rootorderid": (VENUE_ORDER_CODE, "RootOrderId"),
         "orderid": (VENUE_ORDER_CODE, "OrderID"),
         "secondaryorderid": (VENUE_ORDER_CODE, "SecondaryOrderID"),
         "quoteentryid": (VENUE_ORDER_CODE, "QuoteEntryID"),
@@ -33,6 +35,7 @@ _ORDER_CODE_FIELDS = MappingProxyType(
         "mdentryrefid": (VENUE_ORDER_CODE, "MDEntryRefID"),
         "origclordid": (CLIENT_ORDER_CODE, "OrigClOrdID"),
         "clordid": (CLIENT_ORDER_CODE, "ClOrdID"),
+        "rootoriginatororderid": (CLIENT_ORDER_CODE, "RootOriginatorOrderId"),
         "secondaryclordid": (CLIENT_ORDER_CODE, "SecondaryClOrdID"),
         "quotereqid": (CLIENT_ORDER_CODE, "QuoteReqID"),
     }
@@ -316,15 +319,44 @@ class Order(MarketEvent):
         """Whether FIX identifiers link this row to the preceding Order."""
         if not isinstance(previous, Order):
             return False
-        if self.orderid and previous.orderid and self.orderid != previous.orderid:
-            return False
-        same_order = self.orderid and self.orderid == previous.orderid
-        same_client_version = self.clordid and self.clordid == previous.clordid
-        amends_client_version = self.origclordid and self.origclordid in (
-            previous.clordid,
-            previous.origclordid,
+        moved_venue_id = bool(
+            self.orderid and previous.orderid and self.orderid != previous.orderid
         )
-        return bool(same_order or same_client_version or amends_client_version)
+        amended = bool(
+            self.origclordid and self.origclordid in (previous.clordid, previous.origclordid)
+        )
+        if amended:
+            return True
+        if not moved_venue_id and (
+            (self.orderid and self.orderid == previous.orderid)
+            or (self.clordid and self.clordid == previous.clordid)
+        ):
+            return True
+
+        current = tuple(self._code_fields_of(self))
+        held = tuple(self._code_fields_of(previous))
+        # A reused ClOrdID cannot reconcile two contradictory venue IDs. A
+        # second stable identity can: it is lifecycle evidence rather than an
+        # accidental text match.
+        stable_sources = {
+            "GlobalOrderId",
+            "RootOrderId",
+            "RootOriginatorOrderId",
+            "SecondaryOrderID",
+        }
+        if moved_venue_id:
+            current_keys = {
+                (namespace, value)
+                for namespace, source, value in current
+                if source in stable_sources
+            }
+            held_keys = {
+                (namespace, value) for namespace, source, value in held if source in stable_sources
+            }
+        else:
+            current_keys = {(namespace, value) for namespace, _, value in current}
+            held_keys = {(namespace, value) for namespace, _, value in held}
+        return not current_keys.isdisjoint(held_keys)
 
     def version_parts(self) -> tuple[Any, ...]:
         """An order's version moves with what it asked for, and how far it got."""

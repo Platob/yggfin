@@ -8,8 +8,9 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.enums import Protocol
+from rekep.enums import Protocol, SecurityIDSource
 from rekep.fix import FixCodec, FixRegistry
+from rekep.fix.fields import fix_field
 from rekep.market import (
     HASH,
     AssetKind,
@@ -543,3 +544,86 @@ def test_an_unknown_ticker_is_its_own_first_version() -> None:
         "XNAS:AAPL",
         "XNAS:MSFT",
     ]
+
+
+def test_registry_aliases_and_numeric_tags_fill_instrument_columns() -> None:
+    registry = FixRegistry.from_builtin()
+    found = Instrument.from_fix_arrow(
+        {
+            "AMON.ISINCODE": pyarrow.array(["US0000000001", "US0000000002", "GB0000000003"]),
+            "symbol": pyarrow.array([None, "SYNTH-B", None]),
+            55: pyarrow.array(["SYNTH-A", "IGNORED", None]),
+            "207": pyarrow.array(["XNAS", "XNYS", "XLON"]),
+            22: pyarrow.array(["4", "4", "4"]),
+            48: pyarrow.array(["US0000000001", "US0000000002", "GB0000000003"]),
+        },
+        registry=registry,
+    ).to_pylist()
+
+    assert [row["symbolticker"] for row in found] == [
+        "XNAS:SYNTH-A",
+        "XNYS:SYNTH-B",
+        "XLON:ISINNumber:GB0000000003",
+    ]
+    assert [row["isincode"] for row in found] == [
+        "US0000000001",
+        "US0000000002",
+        "GB0000000003",
+    ]
+
+
+def test_null_canonical_columns_fill_from_scalar_and_mixed_type_tags() -> None:
+    registry = FixRegistry.from_builtin()
+    found = Instrument.from_fix_arrow(
+        {
+            "symbol": None,
+            55: "SYNTH",
+            "securityid": pyarrow.array([None, None], pyarrow.string()),
+            48: pyarrow.array(["GB0000000001", "US0000000002"]),
+            "securityidsource": pyarrow.array([int(SecurityIDSource.ISIN), None], pyarrow.int32()),
+            22: pyarrow.array([None, "4"]),
+            "securityexchange": None,
+            207: pyarrow.array(["XLON", "XNAS"]),
+        },
+        rows=2,
+        registry=registry,
+    ).to_pylist()
+
+    assert [row["symbol"] for row in found] == ["SYNTH", "SYNTH"]
+    assert [row["securityidsource"] for row in found] == [
+        int(SecurityIDSource.ISIN),
+        int(SecurityIDSource.ISIN),
+    ]
+    assert [row["isincode"] for row in found] == ["GB0000000001", "US0000000002"]
+    assert [row["symbolticker"] for row in found] == ["XLON:SYNTH", "XNAS:SYNTH"]
+
+
+def test_mixed_security_source_tag_builds_an_isin_ticker_when_symbol_is_null() -> None:
+    (found,) = Instrument.from_fix_arrow(
+        {
+            "symbol": pyarrow.array([None], pyarrow.string()),
+            "securityid": pyarrow.array([None], pyarrow.string()),
+            48: pyarrow.array(["GB0000000001"]),
+            "securityidsource": pyarrow.array([None], pyarrow.int32()),
+            22: pyarrow.array(["4"]),
+            207: pyarrow.array(["XLON"]),
+        },
+        registry=FixRegistry.from_builtin(),
+    ).to_pylist()
+
+    assert found["securityidsource"] == int(SecurityIDSource.ISIN)
+    assert found["isincode"] == "GB0000000001"
+    assert found["symbolticker"] == "XLON:ISINNumber:GB0000000001"
+
+
+def test_fix_tags_fill_the_canonical_instrument_member(tmp_path: Path) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    symbol = fix_field("Symbol", 55, "String", version="4.4")
+    symbol.fix.tags = (30_038,)
+    registry._store_fields("4.4", (symbol,))
+
+    (found,) = Instrument.from_fix_arrow(
+        {30_038: pyarrow.array(["ALT-SYMBOL"])}, registry=registry
+    ).to_pylist()
+
+    assert found["symbol"] == found["symbolticker"] == "ALT-SYMBOL"

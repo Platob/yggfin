@@ -88,9 +88,9 @@ fields.
 
 `parse_fix` routed 2 rows to `fix.market` and 9 to `fix.misc`; no
 `fix.unknown` table was needed and no row carried a transcription error. It
-resolved `unix` from `SendingTime` on the 2
-market rows and fell back to the recording clock on the other 9, and 3 of the
-11 rows carried a `symbolticker`. The replay wrote nothing at any stage: 11
+resolved `unix` from `SendingTime` on 2 rows, from `TransactTime` on 1, and
+fell back to the recording clock on the other 8. Five of the 11 rows carried a
+`symbolticker`. The replay wrote nothing at any stage: 11
 FixMsg rows skipped, and the one canonical `InstrumentUpdate` unchanged.
 
 | Iceberg table | Rows | Iceberg snapshots |

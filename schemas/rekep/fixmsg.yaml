@@ -351,6 +351,11 @@ fields:
       nullable: true
       description: Identifies the type or role of the PartyID (448) specified.
       fix: {tag: '452', type: int, name: PartyRole}
+    - name: partyrolequalifier
+      type: int32
+      nullable: true
+      description: Qualifier refining the party's transaction role.
+      fix: {tag: '2376', type: int, name: PartyRoleQualifier}
 - name: trdregtimestamps
   type: list
   nullable: true
@@ -374,6 +379,51 @@ fields:
       nullable: true
       description: Text which identifies the "origin" (i.e. system which was used to generate the timestamp) for the Traded / Regulatory timestamp value.
       fix: {tag: '771', type: String, name: TrdRegTimestampOrigin}
+    - name: trdregtimestampmanualindicator
+      type: bool
+      nullable: true
+      description: Whether the regulatory instant was captured manually.
+      fix: {tag: '2839', type: Boolean, name: TrdRegTimestampManualIndicator}
+    - name: desktype
+      type: string
+      nullable: true
+      description: Trading-desk classification carried with the instant.
+      fix: {tag: '1033', type: String, name: DeskType}
+    - name: desktypesource
+      type: int32
+      nullable: true
+      description: Scheme defining the desk classification.
+      fix: {tag: '1034', type: int, name: DeskTypeSource}
+    - name: deskorderhandlinginst
+      type: string
+      nullable: true
+      description: Regulatory handling instructions reported by the desk.
+      fix: {tag: '1035', type: MultipleStringValue, name: DeskOrderHandlingInst}
+    - name: informationbarrierid
+      type: string
+      nullable: true
+      description: Information barrier governing the trading unit.
+      fix: {tag: '1727', type: String, name: InformationBarrierID}
+    - name: nbboentrytype
+      type: int32
+      nullable: true
+      description: Side or kind of the reported NBBO entry.
+      fix: {tag: '2831', type: int, name: NBBOEntryType}
+    - name: nbboprice
+      type: double
+      nullable: true
+      description: Price of the reported NBBO entry.
+      fix: {tag: '2832', type: Price, name: NBBOPrice}
+    - name: nbboqty
+      type: double
+      nullable: true
+      description: Quantity of the reported NBBO entry.
+      fix: {tag: '2833', type: Qty, name: NBBOQty}
+    - name: nbbosource
+      type: int32
+      nullable: true
+      description: Source of the reported NBBO entry.
+      fix: {tag: '2834', type: int, name: NBBOSource}
 - name: sidetrdregts
   type: list
   nullable: true
@@ -709,6 +759,11 @@ fields:
       nullable: true
       description: Identifies class or source of the SecurityAltID(455) value.
       fix: {tag: '456', type: String, name: SecurityAltIDSource}
+    - name: symbolpositionnumber
+      type: int32
+      nullable: true
+      description: Currency or digital-asset position within an FX-style symbol.
+      fix: {tag: '2957', type: int, name: SymbolPositionNumber}
 - name: instrument
   type: struct
   description: FIX Instrument facts, with InstrmtLegGrp retained inside the component.

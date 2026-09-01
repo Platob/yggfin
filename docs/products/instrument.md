@@ -38,6 +38,37 @@ carrying no symbol falls to `SecurityID <48>` with its `SecurityIDSource <22>`
 -- `XCME:ExchangeSymbol:BTCUSD` for the row above without its `55` -- and an
 identifier without its source is no key at all.
 
+## Registry names
+
+```python
+import pyarrow
+
+from rekep import Instrument
+from rekep.fix import FixRegistry
+
+rows = Instrument.from_fix_arrow(
+    {
+        "AMON.ISINCODE": pyarrow.array(["US0000000001", "GB0000000002"]),
+        55: pyarrow.array(["SYNTH-A", None]),
+        "207": pyarrow.array(["XNAS", "XLON"]),
+        22: pyarrow.array(["4", "4"]),
+        48: pyarrow.array(["US0000000001", "GB0000000002"]),
+    },
+    registry=FixRegistry(),
+).to_pylist()
+
+print([(row["symbolticker"], row["isincode"]) for row in rows])
+```
+
+```text
+[('XNAS:SYNTH-A', 'US0000000001'), ('XLON:ISINNumber:GB0000000002', 'GB0000000002')]
+```
+
+`from_fix_arrow` resolves canonical names, folded aliases, numeric tags, and
+ordered `fix:tags` through one cached registry plan. Canonical inputs lead and
+the remaining spellings fill nulls. `Leg.from_fix_arrow` uses the same rule,
+so ticker and ISIN derivation do not depend on a feed's preferred spelling.
+
 `EUR/NOK`, `EURNOK`, and `EUR.NOK` share one FX spelling. The ticker also
 classifies the instrument as currency and supplies `NOK` as its quote currency
 when those facts are otherwise absent.

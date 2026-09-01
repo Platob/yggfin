@@ -150,6 +150,7 @@ _PARTY_FIELDS: tuple[str, ...] = (
     "PartyID",
     "PartyIDSource",
     "PartyRole",
+    "PartyRoleQualifier",
     "NoPartyIDs",
     "NoPartySubIDs",
     "PartySubID",
@@ -163,6 +164,15 @@ _STAMP_GROUP_FIELDS: tuple[str, ...] = (
     "TrdRegTimestamp",
     "TrdRegTimestampType",
     "TrdRegTimestampOrigin",
+    "TrdRegTimestampManualIndicator",
+    "DeskType",
+    "DeskTypeSource",
+    "DeskOrderHandlingInst",
+    "InformationBarrierID",
+    "NBBOEntryType",
+    "NBBOPrice",
+    "NBBOQty",
+    "NBBOSource",
     "NoTrdRegTimestamps",
     "SideTrdRegTimestamp",
     "SideTrdRegTimestampType",
@@ -178,6 +188,7 @@ _STAMP_GROUP_FIELDS: tuple[str, ...] = (
 _INSTRUMENT_GROUP_FIELDS: tuple[str, ...] = (
     "SecurityAltID",
     "SecurityAltIDSource",
+    "SymbolPositionNumber",
     "NoSecurityAltID",
     "LegSymbol",
     "LegSecurityID",
@@ -283,6 +294,9 @@ _MERGED_FIELDS = _REGISTRY.merged_fields()
 # carry, so an `altids` key and a column key are never two spellings of one
 # field.
 _IDENTIFIER_NAMES: tuple[str, ...] = (
+    "GlobalOrderId",
+    "RootOrderId",
+    "RootOriginatorOrderId",
     "OrderID",
     "SecondaryOrderID",
     "OrigClOrdID",
