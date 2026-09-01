@@ -76,6 +76,9 @@ XML
 [('Order[0]', 'ID', 'C1'), ('Order[0].Leg[0]', 'Symbol', 'AAPL'), ('Order[0].Leg[1]', 'Symbol', 'MSFT')]
 ```
 
+`Message.from_text(xml)` and `Message(body=xml)` use the same structured
+reader.
+
 XML attributes and leaf elements become ordered `entries`. Indexed element
 paths are stored in `comp`, so repeated nested elements remain
 component-compatible. A malformed document keeps the row with an empty entry

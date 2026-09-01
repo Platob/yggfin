@@ -9,7 +9,7 @@ from rekep import FixMsg
 
 message = FixMsg.from_text(
     "8=FIX.4.4|35=D|11=C1|55=IBM|54=1|38=10|44=125.5|10=001"
-)
+).identify()
 
 print(message.protocol.code)
 print(message.get("Side").raw)
@@ -21,6 +21,9 @@ FIX4.4
 1
 IBM
 ```
+
+`identify()` promotes a scalar row's retained fields into typed components
+before assigning its parsed event identities.
 
 The separator is detected from SOH, pipe, EOT/ETX, `^A`, `^`, semicolon, or
 marked `#Name=Value` text. The Arrow parser resolves each distinct spelling
@@ -50,7 +53,7 @@ Pass `cache_dir` only when a task deliberately uses another complete registry
 store:
 
 ```python
-registry = FixRegistry(cache_dir="s3://example/registries/venue.zip")
+registry = FixRegistry(cache_dir="s3://bucket/registries/venue.zip")
 ```
 
 Use the [registry browser](registry.md) for fields, namespaces, components,

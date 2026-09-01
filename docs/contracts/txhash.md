@@ -6,16 +6,18 @@ from rekep.txhash import couple128, micros_of, vhash_of, wide_bytes
 vhash = -4_872_843_452_109_876_543
 value = couple128(1_700_000_000_000_000, vhash)
 
-assert micros_of(value) == 1_700_000_000_000_000
-assert vhash_of(value) == vhash
-assert len(wide_bytes(value)) == 16
+print(micros_of(value) == 1_700_000_000_000_000)
+print(vhash_of(value) == vhash)
+print(len(wide_bytes(value)))
 ```
-
-Event hashes use one composition:
 
 ```text
-hash = couple128(unix // 1_000, vhash)
+True
+True
+16
 ```
+
+Event hashes use `hash = couple128(unix // 1_000, vhash)`.
 
 The high signed 64 bits are epoch microseconds and the low 64 bits preserve
 the signed digest bit-for-bit.

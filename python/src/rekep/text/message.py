@@ -330,8 +330,8 @@ class Message(Event):
         """
         raw = text.encode("utf-8") if isinstance(text, str) else bytes(text)
         declared.setdefault("body", raw)
-        # This grammar needs its bracket-depth scanner. Let the same column
-        # parser used by text files own the scalar reading as well.
+        # Structured grammars need their own depth-aware readers. Let the same
+        # column parser used by text files own the scalar reading as well.
         from rekep.fix.rules import Rules
 
         protocol = (
@@ -339,7 +339,7 @@ class Message(Event):
             .into_arrow_protocol_array(pyarrow.array([raw], pyarrow.binary()))[0]
             .as_py()
         )
-        if Protocol.from_int(protocol) is Protocol.REFERENTIAL:
+        if Protocol.from_int(protocol) in {Protocol.XML, Protocol.REFERENTIAL}:
             return cls(**declared)
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
         entries = list(pairs)

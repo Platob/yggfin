@@ -276,16 +276,19 @@ Successfully built dist/rekep-1-py3-none-any.whl
 A pure-Python universal wheel, plus the bundled registry as its one non-Python
 payload (`rekep/fix/registry.zip`).
 
-`.github/workflows/release.yml` publishes both artifacts on a published
-release, or on demand:
+`.github/workflows/release.yml` attaches both artifacts to the GitHub release.
+It also publishes them to Artifactory when that publisher is configured:
 
 ```bash
 uv publish --no-attestations dist/rekep-*.whl dist/rekep-*.tar.gz
 ```
 
-It reads `UV_PUBLISH_URL`, `UV_PUBLISH_CHECK_URL`, `UV_PUBLISH_USERNAME` and
-`UV_PUBLISH_PASSWORD` from the `artifactory` GitHub environment. The registry
-is already inside both distributions and is not a second deployment artifact.
+The `artifactory` GitHub environment maps its two URLs, username and token to
+`UV_PUBLISH_URL`, `UV_PUBLISH_CHECK_URL`, `UV_PUBLISH_USERNAME` and
+`UV_PUBLISH_PASSWORD`. With all four settings absent, the release keeps its
+GitHub artifacts and skips Artifactory. A partial configuration fails before
+publishing; a complete but invalid one fails at `uv publish`. The registry is
+already inside both distributions and is not a second deployment artifact.
 
 ### Serving the wheel from S3
 

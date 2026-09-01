@@ -21,8 +21,8 @@ print(polars.from_arrow(arrow.empty_table()).width)
 ```
 
 ```text
-48 48
-48
+50 50
+50
 ```
 
 ## What the boundary buys

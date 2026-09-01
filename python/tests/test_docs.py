@@ -374,6 +374,24 @@ _OUTSIDE = (
     "TextFile.from_path",
 )
 
+_CHECKPOINT = "__REKEP_DOC_CHECKPOINT_9B173F9E__"
+
+
+def _link_directory(link: Path, target: Path) -> None:
+    """Expose one read-only checkout directory inside an example sandbox."""
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError as error:
+        if sys.platform != "win32" or getattr(error, "winerror", None) != 1314:
+            raise
+        # Directory junctions need no developer-mode privilege and exercise the
+        # same examples on Windows instead of silently skipping the whole page.
+        subprocess.run(  # noqa: S603
+            ["cmd.exe", "/d", "/c", "mklink", "/J", str(link), str(target)],
+            check=True,
+            capture_output=True,
+        )
+
 
 @pytest.mark.integration
 @pytest.mark.parametrize(("page", "fences"), pages(), ids=[one for one, _ in pages()])
@@ -386,6 +404,24 @@ def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) 
     Fences carry forward, so stdout does too: the block after fence *n* is the
     tail of everything the page has printed up to it.
     """
+    script: list[str] = []
+    checks: list[tuple[int, str, str]] = []
+    checked_script_length = 0
+    for index, source in enumerate(fences):
+        outside = any(mark in source for mark in _OUTSIDE)
+        script.append("pass" if outside else source)
+        stated = _stated_output(page, index)
+        if stated is None or outside:
+            continue
+        marker = f"{_CHECKPOINT}{index}"
+        script.append(f"print('\\n{marker}')")
+        checks.append((index, stated, marker))
+        checked_script_length = len(script)
+
+    if not checks:
+        return
+    script = script[:checked_script_length]
+
     with tempfile.TemporaryDirectory() as sandbox:
         # A reader runs these from the checkout, so a relative `schemas/` or
         # `data/` has to resolve -- but an example that *writes* is not a
@@ -393,33 +429,33 @@ def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) 
         # `catalog.db` and a warehouse where it is run. So: linked in, run
         # elsewhere, and whatever they create goes with the directory.
         root = Path(sandbox)
-        for shared in ("schemas", "data", "python"):
+        for shared in ("schemas", "data"):
             source_path = DOCS.parent / shared
             if source_path.exists():
-                try:
-                    (root / shared).symlink_to(source_path, target_is_directory=True)
-                except OSError as error:
-                    if getattr(error, "winerror", None) == 1314:
-                        pytest.skip("Windows symlink privilege is unavailable")
-                    raise
-        carried: list[str] = []
-        for index, source in enumerate(fences):
-            outside = any(mark in source for mark in _OUTSIDE)
-            carried.append("pass" if outside else source)
-            stated = _stated_output(page, index)
-            if stated is None or outside:
-                continue
-            run = subprocess.run(  # noqa: S603
-                [sys.executable, "-c", "\n".join(carried)],
-                capture_output=True,
-                text=True,
-                timeout=180,
-                cwd=root,
+                _link_directory(root / shared, source_path)
+
+        # One interpreter follows the page in order. The old one-process-per-
+        # assertion loop reran every earlier fence and made this suite quadratic.
+        run = subprocess.run(  # noqa: S603
+            [sys.executable, "-c", "\n".join(script)],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            cwd=root,
+        )
+        assert run.returncode == 0, f"{page} raised:\n{run.stderr[-2000:]}"
+
+        cumulative = ""
+        position = 0
+        for index, stated, marker in checks:
+            delimiter = f"\n{marker}\n"
+            checkpoint = run.stdout.find(delimiter, position)
+            assert checkpoint >= 0, f"{page}#{index} did not reach its output checkpoint"
+            cumulative += run.stdout[position:checkpoint]
+            assert cumulative.strip().endswith(stated), (
+                f"{page}#{index} prints\n{cumulative.strip()[-2000:]}\nnot\n{stated}"
             )
-            assert run.returncode == 0, f"{page}#{index} raised:\n{run.stderr[-2000:]}"
-            assert run.stdout.strip().endswith(stated), (
-                f"{page}#{index} prints\n{run.stdout.strip()[-2000:]}\nnot\n{stated}"
-            )
+            position = checkpoint + len(delimiter)
 
 
 def _stated_output(page: str, index: int) -> str | None:

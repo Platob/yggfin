@@ -42,13 +42,13 @@ jobs:
       run:
         working-directory: .
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The notes are every commit since the previous tag, so the run needs
           # the history and the tags rather than the default shallow clone.
           fetch-depth: 0
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Decide
         id: decide
         run: >-
@@ -79,6 +79,8 @@ jobs:
       needs.version.result == 'success'
       && (github.event_name != 'push' || needs.version.outputs.cut == 'true')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     environment: ${{ inputs.environment || 'artifactory' }}
     env:
       UV_PUBLISH_URL: ${{ vars.ARTIFACTORY_PYPI_URL }}
@@ -86,17 +88,56 @@ jobs:
       UV_PUBLISH_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
       UV_PUBLISH_PASSWORD: ${{ secrets.ARTIFACTORY_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # A manual rerun may start on a newer branch commit. Build the tag so
+          # `--clobber` can never replace release assets with unreleased code.
+          ref: ${{ github.event.release.tag_name || format('v{0}', needs.version.outputs.version) }}
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v5
-      - name: Check Artifactory configuration
-        shell: bash
-        run: |
-          test -n "$UV_PUBLISH_URL" || { echo "ARTIFACTORY_PYPI_URL is not set" >&2; exit 1; }
-          test -n "$UV_PUBLISH_CHECK_URL" || { echo "ARTIFACTORY_PYPI_CHECK_URL is not set" >&2; exit 1; }
-          test -n "$UV_PUBLISH_PASSWORD" || { echo "ARTIFACTORY_TOKEN is not set" >&2; exit 1; }
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build rekep
         run: uv build --no-sources
+      - name: Attach rekep to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || format('v{0}', needs.version.outputs.version) }}
+        run: >-
+          gh release upload "$RELEASE_TAG"
+          dist/rekep-*.whl dist/rekep-*.tar.gz --clobber
+      - name: Check Artifactory configuration
+        id: artifactory
+        shell: bash
+        run: |
+          names=(
+            ARTIFACTORY_PYPI_URL
+            ARTIFACTORY_PYPI_CHECK_URL
+            ARTIFACTORY_USERNAME
+            ARTIFACTORY_TOKEN
+          )
+          values=(
+            "$UV_PUBLISH_URL"
+            "$UV_PUBLISH_CHECK_URL"
+            "$UV_PUBLISH_USERNAME"
+            "$UV_PUBLISH_PASSWORD"
+          )
+          missing=()
+          present=0
+          for index in "${!values[@]}"; do
+            if test -n "${values[$index]}"; then
+              present=$((present + 1))
+            else
+              missing+=("${names[$index]}")
+            fi
+          done
+          if test "$present" -eq 0; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Artifactory is not configured; the GitHub release artifacts are complete."
+          elif test "${#missing[@]}" -ne 0; then
+            printf 'Artifactory is partially configured; missing: %s\n' "${missing[*]}" >&2
+            exit 1
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish rekep
+        if: steps.artifactory.outputs.configured == 'true'
         run: uv publish --no-attestations dist/rekep-*.whl dist/rekep-*.tar.gz

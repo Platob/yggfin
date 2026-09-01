@@ -82,7 +82,7 @@ print(len(EventType.ranked_at_least(EventType.STATE)))
 
 ```text
 40DONE FACT
-2
+5
 ```
 
 A vocabulary that declares no ranks ranks each member by its own packed code,

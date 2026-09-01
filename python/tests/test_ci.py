@@ -78,7 +78,7 @@ def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:
     assert all("comment.body" not in command for command in commands)
 
 
-def test_the_release_publishes_the_wheel_with_its_bundled_registry() -> None:
+def test_the_release_attaches_the_wheel_and_optionally_publishes_it() -> None:
     workflow = _workflow("release.yml")
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["on"]["release"]["types"] == ["published"]
@@ -88,17 +88,47 @@ def test_the_release_publishes_the_wheel_with_its_bundled_registry() -> None:
 
     job = workflow["jobs"]["publish"]
     assert "environment" in job
+    assert job["permissions"] == {"contents": "write"}
     assert job["env"]["UV_PUBLISH_URL"] == "${{ vars.ARTIFACTORY_PYPI_URL }}"
     assert job["env"]["UV_PUBLISH_CHECK_URL"] == ("${{ vars.ARTIFACTORY_PYPI_CHECK_URL }}")
+    assert job["env"]["UV_PUBLISH_USERNAME"] == "${{ secrets.ARTIFACTORY_USERNAME }}"
     assert job["env"]["UV_PUBLISH_PASSWORD"] == "${{ secrets.ARTIFACTORY_TOKEN }}"
 
     steps = job["steps"]
     checkout = next(step for step in steps if step.get("uses", "").startswith("actions/checkout@"))
+    assert checkout["uses"] == ("actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1")
+    assert "needs.version.outputs.version" in checkout["with"]["ref"]
+    assert "github.event.release.tag_name" in checkout["with"]["ref"]
     assert checkout["with"]["persist-credentials"] == "false"
+    setup = next(step for step in steps if step.get("uses", "").startswith("astral-sh/setup-uv@"))
+    assert setup["uses"] == "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d"
     commands = {step["name"]: step["run"] for step in steps if "name" in step and "run" in step}
     assert "uv build --no-sources" in commands["Build rekep"]
-    assert "UV_PUBLISH_CHECK_URL" in commands["Check Artifactory configuration"]
-    assert "uv publish --no-attestations" in commands["Publish rekep"]
+    attach = next(
+        step for step in steps if step.get("name") == "Attach rekep to the GitHub release"
+    )
+    assert attach["env"]["GH_TOKEN"] == "${{ github.token }}"
+    assert "gh release upload" in attach["run"]
+    assert "--clobber" in attach["run"]
+    configured = next(
+        step for step in steps if step.get("name") == "Check Artifactory configuration"
+    )
+    assert configured["id"] == "artifactory"
+    assert all(
+        name in configured["run"]
+        for name in (
+            "ARTIFACTORY_PYPI_URL",
+            "ARTIFACTORY_PYPI_CHECK_URL",
+            "ARTIFACTORY_USERNAME",
+            "ARTIFACTORY_TOKEN",
+        )
+    )
+    assert 'present" -eq 0' in configured["run"]
+    assert "partially configured" in configured["run"]
+    publish = next(step for step in steps if step.get("name") == "Publish rekep")
+    assert publish["if"] == "steps.artifactory.outputs.configured == 'true'"
+    assert "uv publish --no-attestations" in publish["run"]
+    assert steps.index(attach) < steps.index(configured) < steps.index(publish)
     assert not any("FIX registry" in name for name in commands)
 
 
@@ -166,8 +196,11 @@ def test_a_version_bump_is_what_cuts_a_release() -> None:
 
     steps = job["steps"]
     checkout = next(step for step in steps if step.get("uses", "").startswith("actions/checkout@"))
+    assert checkout["uses"] == ("actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1")
     assert checkout["with"]["persist-credentials"] == "false"
     assert checkout["with"]["fetch-depth"] == "0", "the notes span every commit since the tag"
+    setup = next(step for step in steps if step.get("uses", "").startswith("astral-sh/setup-uv@"))
+    assert setup["uses"] == "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d"
 
     commands = {step["name"]: step["run"] for step in steps if "name" in step and "run" in step}
     assert ".github/scripts/release_version.py" in commands["Decide"]

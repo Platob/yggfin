@@ -814,6 +814,19 @@ def test_xmlapi_body_keeps_ordered_attributes_and_nested_components() -> None:
     ]
 
 
+def test_from_text_xml_uses_the_ordered_structured_parser() -> None:
+    xml = b'<Order ID="C1"><Leg Symbol="AAPL"/><Leg Symbol="MSFT"/></Order>'
+
+    row = Message.from_text(xml)
+
+    assert row.protocol is Protocol.XML
+    assert [(entry.comp, entry.key, entry.value) for entry in row.entries] == [
+        ("Order[0]", "ID", "C1"),
+        ("Order[0].Leg[0]", "Symbol", "AAPL"),
+        ("Order[0].Leg[1]", "Symbol", "MSFT"),
+    ]
+
+
 def test_malformed_xml_isolated_to_its_row() -> None:
     bodies = pyarrow.array(
         [
