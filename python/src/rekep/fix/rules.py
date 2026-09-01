@@ -19,7 +19,7 @@ from rekep.convert import Convertible
 from rekep.entries import Entry
 from rekep.enums import Direction, EventType, Plugin, Protocol
 from rekep.fields import Field, column_name, scalar
-from rekep.fields.arrays import sequence
+from rekep.fields.arrays import scattered, sequence
 from rekep.fix.message import (
     BEGIN_STRING,
     FIX_MSG_TYPE_PATTERN,
@@ -387,35 +387,60 @@ class Rules(Convertible):
         becomes a direction. Neither matching is `UNKNOWN`, and so is both: no
         answer beats a guessed one. A protocol whose rules carry no structured
         codec has no anchor and stays `UNKNOWN` whole.
+
+        Where a payload starts is the protocol's own reading; where a verb sits
+        is not, so each anchor scans only the rows carrying its protocol and
+        the two verbs scan the column once. The anchors cannot join into a
+        single alternation: an alternation matches leftmost, so a `fix` anchor
+        standing earlier in a `ul` line would answer for it.
         """
         compute = pyarrow.compute
         rows = len(messages)
         unknown = pyarrow.scalar(int(Direction.UNKNOWN), pyarrow.int32())
-        found: Any = pyarrow.repeat(unknown, rows)
         if not rows:
-            return found
+            return pyarrow.repeat(unknown, rows)
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
         codes = Protocol.into_family_arrow(protocols)
+        # One array: the anchors are scanned per protocol and put back by row
+        # position, and a chunked column has no positions to put them at.
+        # `into_family_arrow` already combines, so only the text can be chunked.
+        if isinstance(text, pyarrow.ChunkedArray):
+            text = text.combine_chunks()
+        positions = sequence(rows)
+        unclaimed: Any = pyarrow.repeat(True, rows)
+        starts: list[Any] = []
+        places: list[Any] = []
         for protocol, anchor in self._anchors().items():
             selected = compute.fill_null(compute.equal(codes, protocol.into_stored()), False)
-            if not compute.any(selected, min_count=0).as_py():
+            at = compute.filter(positions, selected)
+            if not len(at):
                 continue
-            payload_at = compute.find_substring_regex(text, pattern=anchor)
-            received = _opens(
-                compute.find_substring_regex(text, pattern=INBOUND_PATTERN), payload_at
-            )
-            sent = _opens(compute.find_substring_regex(text, pattern=OUTBOUND_PATTERN), payload_at)
-            direction = compute.if_else(
-                compute.and_(sent, compute.invert(received)),
-                pyarrow.scalar(int(Direction.SENT), pyarrow.int32()),
-                compute.if_else(
-                    compute.and_(received, compute.invert(sent)),
-                    pyarrow.scalar(int(Direction.RECV), pyarrow.int32()),
-                    unknown,
-                ),
-            )
-            found = compute.if_else(selected, direction, found)
-        return found
+            # A selection that takes every row takes the column: filtering it
+            # would copy a megabyte of text to hand the scan the same bytes.
+            carrying = text if len(at) == rows else compute.filter(text, selected)
+            starts.append(compute.find_substring_regex(carrying, pattern=anchor))
+            places.append(at)
+            unclaimed = compute.and_(unclaimed, compute.invert(selected))
+        if not starts:
+            return pyarrow.repeat(unknown, rows)
+        # A row no anchor claims keeps the same -1 `find_substring_regex`
+        # writes for no match, which is the "no anchor" `_opens` already reads.
+        rest = compute.filter(positions, unclaimed)
+        if len(rest):
+            starts.append(pyarrow.repeat(pyarrow.scalar(-1, pyarrow.int32()), len(rest)))
+            places.append(rest)
+        payload_at = scattered(starts, places)
+        received = _opens(compute.find_substring_regex(text, pattern=INBOUND_PATTERN), payload_at)
+        sent = _opens(compute.find_substring_regex(text, pattern=OUTBOUND_PATTERN), payload_at)
+        return compute.if_else(
+            compute.and_(sent, compute.invert(received)),
+            pyarrow.scalar(int(Direction.SENT), pyarrow.int32()),
+            compute.if_else(
+                compute.and_(received, compute.invert(sent)),
+                pyarrow.scalar(int(Direction.RECV), pyarrow.int32()),
+                unknown,
+            ),
+        )
 
     def _anchors(self) -> dict[Protocol, str]:
         """`{protocol: where its payload starts}` for every structured rule.

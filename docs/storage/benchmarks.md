@@ -84,8 +84,8 @@ capture is 60% OTHER, 25% FIX and 15% FIXML.
 | `bench_text_file.py --rows 50000 --repeat 3 --only messages` | 26,248 rows/s | 6,316 rows/s |
 
 Vector tokenization reaches 68,262–370,264 rows/s and tag resolution reaches
-29.5M keys/s on the repeated run. The complete `Message` and `FixMsg` shapes
-remain below 50,000 rows/s.
+29.5M keys/s on the repeated run. That is one number for the whole FIX half;
+`bench_fixmsg.py` takes it apart, and what it costs now is below.
 
 ## Where the parse stages spend their time
 
@@ -108,8 +108,68 @@ pending exactly this measurement:
 | the two seconds at the front | one-time: a fresh codec materializes the merged field table and per-version declarations, then caches them. Dominates a short profile, vanishes over a long run. |
 | a bridge fast path | the reference path costs ~0.5 s/batch against the flat FIX path's 0.2 s, and per *field* a named read is already on par with a wire one — the row-rate gap is message size. Worth doing against a real FIXML-heavy capture, not this fixture. |
 
-Reproduce with `bench_text_file.capture` and `cProfile` over
-`Message.parse_arrow` and `FixMsg.from_message_batch` separately, warm.
+Reproduce with `bench_fixmsg.py --only stages` and `--only kernels`, which
+account one batch by transcription stage and by Arrow kernel and call site.
+`cProfile` cannot: nine tenths of this boundary runs inside kernels, and it
+reports one `pyarrow.compute` wrapper for all of them.
+
+### What the boundary cost, and what it costs now
+
+2026-09-01, Linux 6.18, Python 3.12, PyArrow 25.0.1, four cores, over
+`bench_fixmsg.py`'s 20,000-row captures. Every change below was asserted
+byte-identical first — 77 shapes across the four mixes at seven sizes, whole
+and with `body` projected away, widened to `large_string`, plus hand-built
+batches spanning four FIX versions, a misplaced `CheckSum <10>` that forces the
+recursive best-effort split, and one batch per protocol family — before any of
+it was timed.
+
+| mix | before | after | median |
+| --- | ---: | ---: | ---: |
+| mixed 60/25/15 | 15,507–19,797 rows/s | 21,520–26,308 rows/s | 1.36x |
+| wire FIX only | 25,099–32,707 rows/s | 29,133–38,118 rows/s | 1.24x |
+| bridge FIXML only | 9,157–12,371 rows/s | 13,439–16,145 rows/s | 1.38x |
+| unparsed text only | 27,328–35,022 rows/s | 39,505–49,881 rows/s | 1.44x |
+
+Alternating runs of the two trees, `--only mix --rows 20000`, ranges as well as
+the ratio because this host's spread is wider than some of the wins. On three
+of the four mixes the ranges do not overlap at all — the slowest run after
+beats the fastest run before. Wire FIX overlaps, and takes the flat
+specialization rather than the registry path, so its 1.24x is the weakest
+number here.
+
+Where the milliseconds went, over one 20,000-row mixed batch, `--only stages`
+(1,285 ms before, 915 ms after):
+
+| stage | before | after | what changed |
+| --- | ---: | ---: | --- |
+| resolve per version | 371.9 ms | 268.6 ms | the split is inverted once per batch, not once per column |
+| classify protocol | 248.9 ms | 258.7 ms | unchanged; see the parked row above |
+| identify | 240.2 ms | 177.6 ms | a digest part that frames alike in every row is one constant |
+| lift component groups | 164.6 ms | 46.7 ms | a component path is read once per distinct spelling |
+| transcription errors | 85.7 ms | 34.8 ms | an empty diagnostic side is not joined row by row |
+| classify direction | 31.8 ms | 19.8 ms | an anchor scans only the rows carrying its protocol |
+
+The three call sites that led the profile are the three that moved: the
+identity framing join went 100.5 ms to 63.5 ms, and `fix/components.py`'s
+91.2 ms path scan and `fields/arrays.py`'s 34.9 ms of repeated
+`array_sort_indices` left the top fifteen entirely. Read a single `--only
+kernels` figure as indicative: two post-change runs of that sweep accounted
+766 ms and 968 ms of the same batch.
+
+What leads now is `text/entries.py`'s `_parse_style` at 67 ms over two calls,
+tokenizing the bridge and text payloads — the same scan
+`Rules.into_arrow_protocol_array` is parked on above, which is why classify is
+the one stage that did not move. A batch still costs about 80 ms before any of
+its rows do, so 256 rows run at 2,666 rows/s against 26,261 for 20,000: hand
+this large batches.
+
+Three more were priced and left alone:
+
+| proposal | what the measurement said |
+| --- | --- |
+| skip the per-group `take` of wholly-null columns | 5.1 ms of the 8.2 ms those takes cost per 8,000-row mixed batch, but a dropped key changes which columns `_resolved_columns` sees, and the two groups' key sets must match or the scatter raises. 1% of the boundary for a behaviour change. |
+| stop re-inferring versions in `_resolved_batch_columns` | 17.5 ms per mixed 8,000-row batch, and not a duplicate: `_versions_arrow` is passed the newly *versioned* protocols and a `_begin_strings_arrow` rebuilt from them, and the two readings can legitimately disagree. |
+| a direction split on a nearly-homogeneous batch | the per-protocol split reads 0.93x where one anchored protocol takes 90% of the rows and the whole-column shortcut does not fire. Direction is 2% of the boundary, so this is ~0.2% there, and a per-category task batch is exactly that shape. Kept, because the mixed capture it is measured on is the one the pipeline reads. |
 
 ## What moved, and what only looked like it
 
@@ -117,7 +177,8 @@ Collapsing each rule's pattern list into one alternation nearly doubled
 classification: **1.9x** on `Rules.into_arrow_protocol_array` over the same
 65,536-row batch (571,000 → 1,076,000 rows/s), interleaved against the
 pre-change module in one process, protocol answers asserted identical first.
-Direction resolution was unchanged. That beats the 1.53x a position-based
+Direction resolution was unchanged by it, and moved on its own later — the
+section above. That beats the 1.53x a position-based
 combined pass measured on real captures, and it kept
 first-configured-rule-wins.
 

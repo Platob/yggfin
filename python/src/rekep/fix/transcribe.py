@@ -35,6 +35,7 @@ from rekep.fix.components import (
     SecurityAltIDs,
     SideTrdRegTimestamps,
     TrdRegTimestamps,
+    indexed_component_paths,
 )
 from rekep.fix.fields import FieldRule, FieldRules, cast_arrow_field, cast_arrow_fix
 from rekep.fix.message import (
@@ -130,10 +131,6 @@ _BEGIN_KEYS = pyarrow.array(["8", "beginstring"], pyarrow.string())
 _APPLICATION_KEYS = pyarrow.array(["1128", "applverid"], pyarrow.string())
 _DEFAULT_APPLICATION_KEYS = pyarrow.array(["1137", "defaultapplverid"], pyarrow.string())
 
-# An indexed component is already an unambiguous group-entry boundary. The
-# optional lead remains part of its identity so equal indices under two outer
-# entries never collapse together.
-_INDEXED_COMPONENT = r"(?s)^(?:(?P<lead>.*)\.)?(?P<group>[^.\[\]]+)\[(?P<index>[0-9]+)\]$"
 _GLUED_MARKER = "\x1eREKEP_GROUP\x1f"
 _GLUED_MEMBER = r"(?s)^(?P<key>[^=]+)=(?P<value>.*)$"
 
@@ -1099,16 +1096,20 @@ class FixCodec(Convertible):
         components = compute.struct_field(items, "comp")
         if components.null_count == len(components):
             return entries, pyarrow.nulls(rows, pyarrow.string())
-        view = compute.extract_regex(compute.fill_null(components, ""), _INDEXED_COMPONENT)
+        # Read on the distinct paths and kept there: the loop below asks one
+        # question per declared group, and asking it of a handful of spellings
+        # is what makes the groups a batch does *not* carry cost nothing.
+        view, at = indexed_component_paths(compute.fill_null(components, ""))
         groups = column_names(compute.struct_field(view, "group"))
         counts = pyarrow.repeat(pyarrow.scalar(1, pyarrow.int32()), len(items))
         expanded: list[tuple[Any, Any, Any, Any]] = []
         entry_errors = pyarrow.nulls(len(items), pyarrow.string())
 
         for folded, (display, members) in declared.items():
-            selected = compute.fill_null(compute.equal(groups, folded), False)
-            if not compute.any(selected, min_count=0).as_py():
+            named = compute.fill_null(compute.equal(groups, folded), False)
+            if not compute.any(named, min_count=0).as_py():
                 continue
+            selected = compute.take(named, at)
             raw = compute.filter(values, selected)
             marked = compute.replace_substring_regex(
                 raw,

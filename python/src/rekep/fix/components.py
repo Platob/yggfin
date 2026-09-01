@@ -224,8 +224,29 @@ _NO_SECURITY_ALT_ID = "NoSecurityAltID"
 _NO_LEGS = "NoLegs"
 _UNSIGNED = r"^[0-9]{1,18}$"
 _GROUP_STRIDE = 2**32
+#: An indexed component is already an unambiguous group-entry boundary. The
+#: optional lead remains part of its identity so equal indices under two outer
+#: entries never collapse together.
 _INDEXED_COMPONENT = r"(?s)^(?:(?P<lead>.*)\.)?(?P<group>[^.\[\]]+)\[(?P<index>[0-9]+)\]$"
 _INDEXED_ANCESTOR = r"\[[0-9]+\](?:\.|$)"
+
+
+def indexed_component_paths(paths: pyarrow.Array) -> tuple[Any, pyarrow.Array]:
+    """One reading of the `comp` column: `(view of each distinct path, its index)`.
+
+    A path names a place in the message tree, so how many spellings a batch
+    carries is bounded by the declaration and not by its rows -- the regex
+    reads a handful of values where it read one per field, which is 12x on a
+    bridge capture. The caller decides what to take back across the entries and
+    when, because a question answered on the distinct paths is answered on a
+    few of them. `null_encoding` so an absent path keeps an index and the
+    caller's own `fill_null` still decides what it means.
+    """
+    encoded = pyarrow.compute.dictionary_encode(paths, null_encoding="encode")
+    return (
+        pyarrow.compute.extract_regex(encoded.dictionary, _INDEXED_COMPONENT),
+        encoded.indices,
+    )
 
 
 @dataclasses.dataclass(eq=False)
@@ -312,6 +333,20 @@ class ComponentGroup:
             raise TypeError(f"{type(self).__name__} needs {ENTRIES}, got {actual}")
         return self._extract_with_errors(tags)
 
+    def _explicit_entries(self, components: pyarrow.Array) -> pyarrow.Array:
+        """Which entries name this group under an explicit `[index]`."""
+        compute = pyarrow.compute
+        view, at = indexed_component_paths(components)
+        groups = column_names(compute.struct_field(view, "group"))
+        explicit = compute.fill_null(compute.equal(groups, column_name(self.group)), False)
+        if self.scoped:
+            lead = compute.fill_null(compute.struct_field(view, "lead"), "")
+            explicit = compute.and_(
+                explicit,
+                compute.invert(compute.match_substring_regex(lead, _INDEXED_ANCESTOR)),
+            )
+        return compute.take(explicit, at)
+
     def _extract_with_errors(self, tags: pyarrow.Array) -> tuple[Any, Any, Any]:
         """Choose explicit indexed boundaries where the wire supplied them."""
         compute = pyarrow.compute
@@ -321,15 +356,7 @@ class ComponentGroup:
             extracted, residual = self._extract(tags)
             return extracted, residual, pyarrow.nulls(rows, pyarrow.string())
         components = compute.fill_null(compute.struct_field(entries, "comp"), "")
-        view = compute.extract_regex(components, _INDEXED_COMPONENT)
-        groups = column_names(compute.struct_field(view, "group"))
-        explicit = compute.fill_null(compute.equal(groups, column_name(self.group)), False)
-        if self.scoped:
-            lead = compute.fill_null(compute.struct_field(view, "lead"), "")
-            explicit = compute.and_(
-                explicit,
-                compute.invert(compute.match_substring_regex(lead, _INDEXED_ANCESTOR)),
-            )
+        explicit = self._explicit_entries(components)
         if not compute.any(explicit, min_count=0).as_py():
             extracted, residual = self._extract(tags)
             return extracted, residual, pyarrow.nulls(rows, pyarrow.string())
@@ -526,15 +553,7 @@ class ComponentGroup:
         positions = sequence(len(entries))
         row_ids = sequence(rows)
 
-        view = compute.extract_regex(components, _INDEXED_COMPONENT)
-        groups = column_names(compute.struct_field(view, "group"))
-        explicit = compute.fill_null(compute.equal(groups, column_name(self.group)), False)
-        if self.scoped:
-            lead = compute.fill_null(compute.struct_field(view, "lead"), "")
-            explicit = compute.and_(
-                explicit,
-                compute.invert(compute.match_substring_regex(lead, _INDEXED_ANCESTOR)),
-            )
+        explicit = self._explicit_entries(components)
         declared_member = compute.and_(
             explicit,
             compute.is_in(keys, value_set=self._member_array),

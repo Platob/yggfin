@@ -24,6 +24,7 @@ from rekep.fields.arrays import (
     groups_of,
     interleave,
     scattered,
+    scattered_columns,
     sequence,
 )
 from rekep.fix.access import Entry, FieldAccess, Reading
@@ -1779,54 +1780,61 @@ class FixMsg(Message):
             }
             parts.append(cls._resolved_columns(taken, codec, version.as_py() or None, len(where)))
             positions.append(where)
-        if not parts:
-            return {}
-        return {name: scattered([part[name] for part in parts], positions) for name in parts[0]}
+        return scattered_columns(parts, positions) if parts else {}
 
     @classmethod
     def _versions_arrow(cls, columns: Mapping[str, Any], codec: Any, rows: int) -> pyarrow.Array:
         """Exact versions from persisted application authority, then wire evidence."""
-        entries = columns.get("entries")
-        if entries is None:
-            entries = pyarrow.nulls(rows, ENTRIES)
+        compute = pyarrow.compute
         protocols = columns.get("protocol")
-        inferred, _ = codec.versions_of_entries(
-            entries,
-            cls._begin_strings_arrow(columns, rows),
-            columns.get("applverid"),
-            protocols,
-        )
+
+        def wire_evidence() -> pyarrow.Array:
+            """The version every entry list spells, read out of the payload."""
+            entries = columns.get("entries")
+            versions, _ = codec.versions_of_entries(
+                pyarrow.nulls(rows, ENTRIES) if entries is None else entries,
+                cls._begin_strings_arrow(columns, rows),
+                columns.get("applverid"),
+                protocols,
+            )
+            return versions
+
         if protocols is None:
-            return inferred
+            return wire_evidence()
         embedded = Protocol.into_versions_arrow(protocols)
-        authoritative = pyarrow.compute.and_(
-            pyarrow.compute.is_valid(embedded),
-            pyarrow.compute.invert(
-                pyarrow.compute.fill_null(pyarrow.compute.starts_with(embedded, "FIXT"), False)
+        transport = compute.fill_null(compute.starts_with(embedded, "FIXT"), False)
+        authoritative = compute.and_(compute.is_valid(embedded), compute.invert(transport))
+        registered = compute.and_(
+            compute.is_in(
+                embedded,
+                value_set=pyarrow.array(codec.registry.versions, pyarrow.string()),
             ),
+            compute.invert(transport),
         )
-        registered = pyarrow.compute.is_in(
-            embedded,
-            value_set=pyarrow.array(codec.registry.versions, pyarrow.string()),
+        unparsed = compute.equal(
+            Protocol.into_family_arrow(protocols), Protocol.OTHER.into_stored()
         )
-        registered = pyarrow.compute.and_(
-            registered,
-            pyarrow.compute.invert(
-                pyarrow.compute.fill_null(pyarrow.compute.starts_with(embedded, "FIXT"), False)
-            ),
+        # Every entry list is scanned to infer a version, and the two branches
+        # below discard that answer for a row whose protocol token already
+        # carries a version and for a row of unparsed text. Read the wire only
+        # where one of them survives: a batch the message stage already
+        # versioned needs no scan at all. The test is the batch's, not the
+        # row's -- one message whose version nothing states puts the whole
+        # batch back on the scan, which is what a column-wide kernel costs.
+        evidence = compute.and_(
+            compute.invert(authoritative), compute.invert(compute.fill_null(unparsed, True))
         )
-        resolved = pyarrow.compute.if_else(
+        inferred = (
+            wire_evidence()
+            if compute.any(evidence, min_count=0).as_py()
+            else pyarrow.nulls(rows, pyarrow.string())
+        )
+        resolved = compute.if_else(
             authoritative,
-            pyarrow.compute.if_else(registered, embedded, pyarrow.scalar(None, pyarrow.string())),
+            compute.if_else(registered, embedded, pyarrow.scalar(None, pyarrow.string())),
             inferred,
         )
-        return pyarrow.compute.if_else(
-            pyarrow.compute.equal(
-                Protocol.into_family_arrow(protocols), Protocol.OTHER.into_stored()
-            ),
-            pyarrow.scalar(None, pyarrow.string()),
-            resolved,
-        )
+        return compute.if_else(unparsed, pyarrow.scalar(None, pyarrow.string()), resolved)
 
     @classmethod
     def _begin_strings_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
@@ -2933,17 +2941,42 @@ def _null_value_mask(values: Any, null_values: Collection[str]) -> pyarrow.Array
 
 
 def _merge_error_columns(left: Any, right: Any) -> pyarrow.Array:
-    """Append nullable diagnostics without manufacturing text on clean rows."""
+    """Append nullable diagnostics without manufacturing text on clean rows.
+
+    A diagnostic column is null on every row it has nothing to say about, so a
+    clean batch reaches every one of its merges with both sides empty. Joining
+    two empty columns row by row to hand one of them back cost 3% of the whole
+    transcription, so an empty side is answered from the other one.
+    """
     compute = pyarrow.compute
+
+    def stated(column: Any) -> pyarrow.Array:
+        """Bounded and blanked, which is how every path here ends."""
+        text = compute.utf8_slice_codeunits(
+            compute.fill_null(column.cast(pyarrow.string(), safe=False), ""),
+            start=0,
+            stop=_ERROR_LENGTH,
+        )
+        return compute.if_else(
+            compute.equal(text, ""), pyarrow.nulls(len(text), pyarrow.string()), text
+        )
+
+    rows = len(left)
+    # Two widths are the join's to refuse, so a shortcut takes only one.
+    if rows == len(right):
+        empty_left = left.null_count == rows
+        empty_right = right.null_count == rows
+        if empty_left and empty_right:
+            return pyarrow.nulls(rows, pyarrow.string())
+        if empty_right:
+            return stated(left)
+        if empty_left:
+            return stated(right)
     left = compute.fill_null(left.cast(pyarrow.string(), safe=False), "")
     right = compute.fill_null(right.cast(pyarrow.string(), safe=False), "")
     both = compute.and_(compute.not_equal(left, ""), compute.not_equal(right, ""))
     separator = compute.if_else(both, "; ", "")
-    joined = compute.binary_join_element_wise(left, separator, right, "")
-    joined = compute.utf8_slice_codeunits(joined, start=0, stop=_ERROR_LENGTH)
-    return compute.if_else(
-        compute.equal(joined, ""), pyarrow.nulls(len(joined), pyarrow.string()), joined
-    )
+    return stated(compute.binary_join_element_wise(left, separator, right, ""))
 
 
 def _error_text(error: Exception) -> str:

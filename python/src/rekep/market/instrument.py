@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import functools
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Annotated, Any
 
@@ -1067,20 +1067,18 @@ def _referential_columns_arrow(
 ) -> dict[str, pyarrow.Array]:
     """Reference facts normalized from a Referential row's residual entries."""
     sources = _entry_arrays(columns, rows)
+    entry = _first_entries_arrow(sources, _REFERENTIAL_ENTRY_NAMES, rows)
     instrument_key = compute.coalesce(
-        _text(columns.get("instrumentkey"), rows),
-        _first_entry_arrow(sources, "InstrumentKey", rows),
+        _text(columns.get("instrumentkey"), rows), entry["InstrumentKey"]
     )
     identity = _instrument_key_columns_arrow(instrument_key, rows)
     stated_kind = _asset_kind_arrow(columns.get("referentialkind"), rows)
-    entry_kind = _asset_kind_arrow(_first_entry_arrow(sources, "AssetClass", rows), rows)
+    entry_kind = _asset_kind_arrow(entry["AssetClass"], rows)
     return {
         "instrumentkey": instrument_key,
         **identity,
         "kind": compute.if_else(compute.equal(stated_kind, 0), entry_kind, stated_kind),
-        "quantitytype": _quantity_type_arrow(
-            _first_entry_arrow(sources, "QuantityType", rows), rows, registry
-        ),
+        "quantitytype": _quantity_type_arrow(entry["QuantityType"], rows, registry),
         "tickladder": _tick_ladder_arrow(sources, rows),
     }
 
@@ -1142,10 +1140,22 @@ def _entry_arrays(columns: Mapping[str, Any], rows: int) -> tuple[pyarrow.Array,
     return tuple(found)
 
 
-def _first_entry_arrow(sources: Iterable[pyarrow.Array], name: str, rows: int) -> pyarrow.Array:
-    """First terminal key per row across retained then unmapped entries."""
-    wanted = column_name(name)
-    result = pyarrow.nulls(rows, pyarrow.string())
+#: The residual entry members a Referential row can carry, read in one pass.
+_REFERENTIAL_ENTRY_NAMES = ("InstrumentKey", "AssetClass", "QuantityType")
+
+
+def _first_entries_arrow(
+    sources: Iterable[pyarrow.Array], names: Sequence[str], rows: int
+) -> dict[str, pyarrow.Array]:
+    """First terminal key per row for each name, retained entries then unmapped.
+
+    One flatten and one terminal-key extraction per source, not per name: the
+    regex that strips a member's component path does not depend on which name
+    is then matched against it, and the entries are the batch's largest column.
+    """
+    wanted = {name: column_name(name) for name in names}
+    found = {name: pyarrow.nulls(rows, pyarrow.string()) for name in names}
+    ordinals = sequence(rows)
     for source in sources:
         items = compute.list_flatten(source)
         if not len(items):
@@ -1155,16 +1165,19 @@ def _first_entry_arrow(sources: Iterable[pyarrow.Array], name: str, rows: int) -
         terminal = compute.struct_field(
             compute.extract_regex(keys, r"^(?:.*\.)?(?P<name>[^.]*)$"), "name"
         )
-        matched = compute.fill_null(compute.equal(column_names(terminal), wanted), False)
-        if not compute.any(matched, min_count=0).as_py():
-            continue
-        matched_parents = compute.filter(parents, matched)
-        matched_values = compute.filter(
-            _text(compute.struct_field(items, "value"), len(items)), matched
-        )
-        positions = compute.index_in(sequence(rows), value_set=matched_parents)
-        result = compute.coalesce(result, compute.take(matched_values, positions))
-    return result
+        folded = column_names(terminal)
+        values = None
+        for name in names:
+            matched = compute.fill_null(compute.equal(folded, wanted[name]), False)
+            if not compute.any(matched, min_count=0).as_py():
+                continue
+            if values is None:
+                values = _text(compute.struct_field(items, "value"), len(items))
+            positions = compute.index_in(ordinals, value_set=compute.filter(parents, matched))
+            found[name] = compute.coalesce(
+                found[name], compute.take(compute.filter(values, matched), positions)
+            )
+    return found
 
 
 def _quantity_type_arrow(column: Any, rows: int, registry: FixRegistry | None) -> pyarrow.Array:

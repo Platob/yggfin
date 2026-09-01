@@ -41,7 +41,7 @@ from rekep.market import (
 from rekep.market.event import HOUR, SECOND
 from rekep.market.fix import FixEvents
 from rekep.text import Entry
-from rekep.text.fixmsg import _UNDIGESTED, _digest_text
+from rekep.text.fixmsg import _ERROR_LENGTH, _UNDIGESTED, _digest_text, _merge_error_columns
 
 #: The dictionary this repository publishes, beside `python/`, read offline:
 #: a contract that only holds while the site answers is not a contract.
@@ -1283,6 +1283,61 @@ def test_structured_fix_evidence_has_scalar_arrow_protocol_parity(
     assert scalar.protocol.code == stored.code == expected
     assert scalar.resolved_version() == version
     assert FixMsg.into_versions_arrow(batch).to_pylist() == [version]
+
+
+#: The four ways two diagnostic columns can meet, and a fifth that crosses the
+#: bound. Merging is skipped where one side says nothing, so each has to answer
+#: what joining them says.
+_DIAGNOSTICS: tuple[tuple[list[str | None], list[str | None]], ...] = (
+    ([None, None], [None, None]),
+    (["torn", None], [None, None]),
+    ([None, None], [None, "torn"]),
+    (["torn", None], [None, "late"]),
+    (["x" * _ERROR_LENGTH, "torn"], ["late", "y" * _ERROR_LENGTH]),
+)
+
+
+@pytest.mark.parametrize(("left", "right"), _DIAGNOSTICS)
+def test_merged_diagnostics_read_as_the_join_of_both_sides(
+    left: list[str | None], right: list[str | None]
+) -> None:
+    """The reference is the join; an empty side only makes it cheaper."""
+    compute = pyarrow.compute
+    columns = (pyarrow.array(left, pyarrow.string()), pyarrow.array(right, pyarrow.string()))
+    stated = [compute.fill_null(column, "") for column in columns]
+    separator = compute.if_else(
+        compute.and_(*(compute.not_equal(one, "") for one in stated)), "; ", ""
+    )
+    joined = compute.utf8_slice_codeunits(
+        compute.binary_join_element_wise(stated[0], separator, stated[1], ""),
+        start=0,
+        stop=_ERROR_LENGTH,
+    )
+    expected = compute.if_else(compute.equal(joined, ""), None, joined)
+
+    assert _merge_error_columns(*columns).to_pylist() == expected.to_pylist()
+
+
+def test_merged_diagnostics_refuse_two_widths() -> None:
+    """A shortcut takes one width; two remain the join's to refuse."""
+    with pytest.raises(pyarrow.ArrowInvalid):
+        _merge_error_columns(pyarrow.nulls(2, pyarrow.string()), pyarrow.array(["torn", None, ""]))
+
+
+def test_versions_read_alike_whether_or_not_the_wire_is_scanned() -> None:
+    """One row whose version nothing states puts the whole batch on the scan.
+
+    The scan is skipped for a batch every row of which already carries a
+    version, so the two readings have to agree where a batch mixes them.
+    """
+    versioned = Message(protocol="FIX4.4", beginstring="FIX.4.4", body="", entries=[])
+    unversioned = Message(protocol=Protocol.FIX, body="8=FIX.4.2|35=D|10=000|")
+
+    skipped = FixMsg.into_versions_arrow(FixMsg.from_message_batch([versioned, versioned]))
+    scanned = FixMsg.into_versions_arrow(FixMsg.from_message_batch([versioned, unversioned]))
+
+    assert skipped.to_pylist() == ["4.4", "4.4"]
+    assert scanned.to_pylist() == ["4.4", "4.2"]
 
 
 def test_other_protocol_is_authoritative_over_structured_version_evidence() -> None:
