@@ -9,17 +9,18 @@ uv run python benchmarks/bench_cast.py --quick
 uv run python benchmarks/bench_text_file.py --quick
 uv run python benchmarks/bench_fix.py --quick
 uv run python benchmarks/bench_fix_registry.py --quick
+uv run python benchmarks/bench_fixmsg.py --quick
 uv run python benchmarks/bench_market.py --quick
 uv run python benchmarks/bench_iceberg.py --quick
 ```
 
-All six finish in about four minutes together, which is what makes running
+All seven finish in about five minutes together, which is what makes running
 them a normal part of a change rather than an occasion.
 
 | page | path | script |
 | --- | --- | --- |
 | [Types](../contracts/types.md) | recursive Arrow casts | `bench_cast.py` |
-| [FixMsg](../fix/fixmsg.md) | text files, `Message` rows, FIX parsing | `bench_text_file.py` |
+| [FixMsg](../fix/fixmsg.md) | text files, `Message` rows, the boundary between them | `bench_text_file.py`, `bench_fixmsg.py` |
 | [FIX](../fix/index.md) | parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
 | [Market](../market/index.md) | identities, conversion, book folding | `bench_market.py` |
 | [Iceberg](iceberg.md) | reads, writes, merges, maintenance | `bench_iceberg.py` |
