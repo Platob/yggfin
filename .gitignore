@@ -225,3 +225,7 @@ data/.fix-*
 # the file warehouse its tables live in.
 data/catalog.db
 data/warehouse/
+
+# Scratch git worktrees an agent runner checks out inside the repository. The
+# rest of `.claude/` is project configuration and belongs in the history.
+.claude/worktrees/
