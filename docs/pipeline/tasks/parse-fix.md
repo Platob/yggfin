@@ -1,6 +1,6 @@
 # Parse FIX
 
-One task document runs the shared notebook for one category. Airflow injects
+One task document runs the shared application for one category. Airflow injects
 `market`, `misc`, and `unknown` into three parallel runs; each scans only its
 category and writes one typed `FixMsg` table.
 
@@ -8,28 +8,23 @@ category and writes one typed `FixMsg` table.
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=market \
-  --output parse_fix.executed.ipynb
+  tasks/parse_fix/parse_fix.yml --parameter category=market
 ```
 
-Run every category in parallel with distinct output documents:
+The step is `tasks/parse_fix/parse_fix.py`; `parse_fix.yml` configures it, and
+`category` is the only value that differs between its three runs.
+
+Run every category in parallel:
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=market \
-  --output parse_fix_market.executed.ipynb &
+  tasks/parse_fix/parse_fix.yml --parameter category=market &
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=misc \
-  --output parse_fix_misc.executed.ipynb &
+  tasks/parse_fix/parse_fix.yml --parameter category=misc &
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=unknown \
-  --output parse_fix_unknown.executed.ipynb &
+  tasks/parse_fix/parse_fix.yml --parameter category=unknown &
 
 wait
 ```
@@ -41,8 +36,7 @@ uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --parameter category=market \
   --parameter start=2026-08-21T10:00:00Z \
-  --parameter end=2026-08-21T11:00:00Z \
-  --output parse_fix_market.executed.ipynb
+  --parameter end=2026-08-21T11:00:00Z
 ```
 
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).

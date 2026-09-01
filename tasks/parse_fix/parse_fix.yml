@@ -1,5 +1,5 @@
 name: parse_fix
-notebook: parse_fix.ipynb
+application: parse_fix.py
 parameters:
   # Airflow overrides this one value for each parallel category run.
   category: market

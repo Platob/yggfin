@@ -1,22 +1,25 @@
 # Deploy and operate with Airflow
 
 Airflow runs eight publishing task instances from six task documents as the
-`rekep_market_pipeline` DAG and the catalog-wide maintenance notebook as
+`rekep_market_pipeline` DAG and the catalog-wide maintenance application as
 `rekep_iceberg_maintenance`. This page covers a local first run and the
 additional requirements for a distributed deployment.
 
-The DAGs use the Airflow 3 `airflow.sdk` API and
-`PapermillOperator(log_output=True)`. Use Airflow 3.x and
-`apache-airflow-providers-papermill>=3.13,<4` with Python 3.12 or newer.
-Airflow itself runs on Linux or another POSIX system; on Windows, use WSL2 or
-Linux containers.
+`tasks/airflow/market_pipeline.py` declares both DAGs against the Airflow 3
+`airflow.sdk` API; `tasks/airflow/marimo_operator.py` declares the
+`MarimoOperator(BaseOperator)` they run every task under. Use Airflow 3.x,
+`apache-airflow-providers-standard>=1.0,<2` and Python 3.12 or newer. Airflow
+itself runs on Linux or another POSIX system; on Windows, use WSL2 or Linux
+containers.
 
 !!! warning "Deploy the repository, not only the DAG file"
 
-    DAG parsing loads the YAML documents under `tasks/`, workers execute the
-    adjacent notebooks, and the default FIX registry is `data/fix`. Keep the
-    package, DAG, YAML, notebooks, schemas, and registry on the same revision.
-    A `rekep` wheel by itself is not a complete deployment.
+    A worker reads the YAML document under `tasks/`, imports the Marimo
+    application beside it, and reads the default FIX registry from `data/fix`.
+    The DAG names its own checkout as `Path(__file__).resolve().parents[2]`, so
+    the DAG file ships inside the repository it schedules. Keep the package,
+    DAG, YAML, applications, schemas and registry on the same revision. A
+    `rekep` wheel by itself is not a complete deployment.
 
 ## What Airflow runs
 
@@ -45,21 +48,94 @@ flowchart TD
 | `rekep_market_pipeline` | hourly in UTC | enabled from 2026-01-01 | one | `branch` (`root`), `books` (`true`) |
 | `rekep_iceberg_maintenance` | 02:30 UTC daily | disabled | one | `branch`, default `root` |
 
-For every scheduled run, Airflow replaces the YAML `start` and `end` values
-with its half-open data interval. The DAG's `branch` parameter replaces the
-YAML branch in every notebook, and `books` selects the parse-market path. Each
-FIX operator passes its category to the one `parse_fix.yml` definition. All
-other job settings continue to come from the checked-in YAML files.
+The publishing DAG spells its schedule as `CronDataIntervalTimetable("0 * * * *",
+timezone="UTC")` rather than as `@hourly`, so one run covers one closed hour
+whatever the deployment is configured to do. A bare cron string follows
+`[scheduler] create_cron_data_intervals`, which is off by default and gives
+every run a zero-width interval — and a zero-width `[start, end)` reads
+nothing, on every run, silently. The maintenance DAG reads no interval and
+keeps its plain cron string.
 
-Each notebook records a `result` scrap with non-negative counts, in the shape
-[every task returns](logs.md#what-one-task-returns). A route task reads that
-result and skips downstream work whose input count is zero: `read` starts all
-three `parse_fix_*` tasks, `parse_fix_market.read` starts both readers of
-`fix.market`, and `flatten.orders` / `flatten.executions` start the two
-flatteners. Routes use attempted or read counts rather than `written`, so an
-idempotent replay still reaches consumers even when the producer inserts no
-new rows. The misc and unknown FIX tasks are terminal and run beside the
-market task.
+Each `MarimoOperator` runs exactly one command, with the repository as the
+working directory:
+
+```text
+uv run --project <repository>/python --group runner --no-sync --offline --no-progress --no-env-file -- \
+  rekep task run <repository>/tasks/parse_fix/parse_fix.yml \
+  --parameters-file <attempt>/parameters.json --result-file <attempt>/result.json
+```
+
+That is the command a person runs locally, so a laptop and a worker differ in
+nothing but the machine. It is an argv list, never a shell string. `<attempt>`
+is a 0700 directory made per task attempt and named from the DAG id, task id,
+run id, map index and try number; the parameter document inside it is 0600, and
+both are deleted in a `finally` whether the task landed or raised.
+
+`--no-sync --offline` means a scheduled task never resolves a dependency,
+reaches an index, or writes to the environment it runs in. That environment is
+the deployment's, made once from the lock.
+
+Parameters merge once per task, later winning: the task document's defaults,
+then the operator's own `parameters` -- which is where each FIX task's
+`category` comes from -- then same-name DAG Params, then `data_interval_start`
+and `data_interval_end` into a declared `start` and `end`. Only a name the document already declares is set, so a task that does
+not take `books` is never handed the scheduler's, and `optimize_iceberg`, which
+declares no interval, is handed none. Values keep their native types: `books:
+false` is the boolean.
+
+Each application defines a `result` with non-negative counts, in the shape
+[every task returns](logs.md#what-one-task-returns). The operator validates it
+and returns it from `execute()`, so Airflow pushes that one small mapping to
+XCom under `return_value`. Nothing else is pushed: no Arrow data, no tables, no
+reports.
+
+A `@task.branch` route reads named counts out of the producer's result and
+skips downstream work whose input count is zero: `parse_messages.read` starts
+all three `parse_fix_*` tasks, `parse_fix_market.read` starts both readers of
+`fix.market`, and `parse_market.flatten.orders` and
+`parse_market.flatten.executions` start the two flatteners. Routes read
+attempted counts rather than `written`, so an idempotent replay still reaches
+consumers even when the producer inserts no new rows. The misc and unknown FIX
+tasks are terminal and run beside the market task.
+
+Nothing is read at DAG-import time: no YAML, no application, no catalog, no
+Connection and no Variable. Parsing and serializing both DAGs takes 41-45 ms
+and loads neither marimo, pyiceberg, pyarrow nor rekep; the serialized DAGs are
+13421 and 2382 bytes.
+
+Retries, retry delay, pools, queue, priority, execution timeout, callbacks,
+executor configuration, inlets and outlets are ordinary `BaseOperator`
+arguments and reach Airflow unchanged through the `marimo_task(name, **kwargs)`
+factory in the DAG.
+
+## Credentials a worker does not already have
+
+`document`, `repository`, `parameters` and `environment` are template fields,
+so a deployment binds a Connection, a Variable or a secret backend to one of
+them and Airflow resolves it when the task runs, never when the DAG is parsed.
+`environment` is the one projection: it names environment variables for the
+child process, which is how every credential this pipeline reads is supplied.
+
+```python
+from marimo_operator import MarimoOperator
+
+MarimoOperator(
+    task_id="parse_messages",
+    repository="/opt/rekep",
+    document="tasks/parse_messages/parse_messages.yml",
+    environment={
+        "S3_ACCESS_KEY_ID": "{{ conn.rekep_capture.login }}",
+        "S3_SECRET_ACCESS_KEY": "{{ conn.rekep_capture.password }}",
+        "S3_ENDPOINT_URL": "{{ conn.rekep_capture.host }}",
+    },
+)
+```
+
+`marimo_task(name, **kwargs)` in the DAG passes the same keywords through.
+
+The resolved value reaches the child's environment and nothing else: it is not
+written to the parameter document, not recorded in the task log, and not
+pushed to XCom. Keep credentials out of the task YAML, which is checked in.
 
 ## Configure the jobs first
 
@@ -84,9 +160,12 @@ catalog:
     warehouse: file://data/warehouse
 ```
 
-The DAG resolves those relative paths beneath `REKEP_ROOT`. This is useful for
-a single-host test, but the checkout must be writable and the catalog cannot
-coordinate distributed workers.
+The operator runs every task with the repository as its working directory, so
+`sqlite:///data/catalog.db` resolves inside the checkout. `rekep` makes a local
+`warehouse` absolute before a table records it, so `file://data/warehouse` and
+`data/warehouse` name one directory and a table stays readable from any working
+directory. This is useful for a single-host test, but the checkout must be
+writable and the catalog cannot coordinate distributed workers.
 
 For production, replace the catalog block consistently in all seven YAML files,
 including `tasks/optimize_iceberg/optimize_iceberg.yml`.
@@ -104,9 +183,9 @@ catalog:
     # KMS is a bucket default; per-request s3.sse.* is unsupported.
 ```
 
-Install `pyiceberg[glue]` for this catalog and provide AWS credentials through
-the worker's workload role or standard environment. Do not store credentials
-in the YAML.
+The `runner` group already carries this catalog's dependency as
+`rekep[glue]`. Provide AWS credentials through the worker's workload role or
+standard environment. Do not store credentials in the YAML.
 
 For MinIO or another S3-compatible store, configure every scheduler and worker
 with the same portable defaults instead:
@@ -121,7 +200,8 @@ export S3_REGION=us-east-1
 
 Location URL values override these defaults, and explicit `s3.*` catalog
 properties override both. Standard AWS profiles and workload roles continue to
-work when the portable variables are absent.
+work when the portable variables are absent. `s3://`, `s3a://` and `s3n://`
+warehouses keep the spelling the document gives them.
 
 Keep the table wiring aligned across the documents:
 
@@ -157,7 +237,7 @@ dependencies, keep `apache-airflow` pinned so pip cannot change its version.
 
 ```bash
 cd /path/to/rekep
-export REKEP_ROOT="$PWD"
+REPO="$PWD"
 
 python3.12 -m venv .venv-airflow
 source .venv-airflow/bin/activate
@@ -172,39 +252,39 @@ python -m pip install \
   --constraint "$CONSTRAINT_URL"
 python -m pip install \
   "apache-airflow==${AIRFLOW_VERSION}" \
-  "apache-airflow-providers-papermill>=3.13,<4" \
-  -e "${REKEP_ROOT}/python[iceberg,yaml]"
+  "apache-airflow-providers-standard>=1.0,<2" \
+  -e "${REPO}/python[yaml]"
 python -m pip check
 ```
 
-The Papermill provider installs Papermill, Scrapbook, IPython's kernel, and
-notebook conversion support. For the Glue example, add the catalog dependency
-inside the same environment:
+That environment reads the task document and starts the child. What the
+application itself imports lives in the separate `runner` environment, made
+once from the lock on every machine that runs a task:
 
 ```bash
-python -m pip install \
-  "apache-airflow==${AIRFLOW_VERSION}" \
-  "pyiceberg[glue]"
+uv sync --project "${REPO}/python" --locked --group runner
 ```
+
+The group is Marimo and the catalog extras a task imports:
+`marimo>=0.16,<1` and `rekep[glue,iceberg,polars,yaml]`.
 
 Configure paths before starting any Airflow component:
 
 ```bash
 export AIRFLOW_HOME="$HOME/airflow-rekep"
-export AIRFLOW__CORE__DAGS_FOLDER="$REKEP_ROOT/tasks/airflow"
-export REKEP_NOTEBOOK_OUTPUT="$AIRFLOW_HOME/rekep-notebooks"
+export AIRFLOW__CORE__DAGS_FOLDER="${REPO}/tasks/airflow"
 
-mkdir -p "$AIRFLOW_HOME" "$REKEP_NOTEBOOK_OUTPUT"
+mkdir -p "$AIRFLOW_HOME"
 ```
 
 | Variable | Purpose |
 | --- | --- |
-| `REKEP_ROOT` | Absolute root containing `tasks/`, `data/`, and `python/` |
-| `REKEP_NOTEBOOK_OUTPUT` | Writable location for executed notebooks |
+| `AIRFLOW_HOME` | Airflow's own metadata database, configuration, and logs |
 | `AIRFLOW__CORE__DAGS_FOLDER` | Makes Airflow discover `market_pipeline.py` |
 
-`REKEP_ROOT` and `REKEP_NOTEBOOK_OUTPUT` must be present in the DAG processor
-and every task worker. The DAG does not create the notebook output directory.
+Airflow puts the DAG bundle directory on `sys.path`, which is what makes
+`from marimo_operator import MarimoOperator` resolve. Deploy both files
+together.
 
 Start a local all-in-one Airflow instance:
 
@@ -230,44 +310,46 @@ airflow dags list-import-errors --local
 ```
 
 `rekep_market_pipeline` must appear in the list and the import-error list must
-be empty. Also verify that the hard-coded `python3` notebook kernel resolves to
-the environment containing `rekep`:
+be empty. From the repository root, check that the worker resolves `uv` and the
+prepared `runner` group:
 
 ```bash
-jupyter kernelspec list
-python -c "import rekep, scrapbook; print(rekep.__file__)"
-```
-
-If `python3` is absent, register this interpreter:
-
-```bash
-python -m ipykernel install --sys-prefix --name python3 --display-name "rekep Airflow"
+uv --version
+uv run --project "$PWD/python" --group runner python -c "import marimo, rekep; print(rekep.__file__)"
 ```
 
 ## Test one interval
 
 Use a scratch catalog or a dedicated Iceberg branch for validation because
-`airflow dags test` executes every selected notebook and therefore writes its
-configured tables. It tests locally without creating a normal scheduled DAG
+`airflow dags test` executes every selected application and therefore writes
+its configured tables. It tests locally without creating a normal scheduled DAG
 run.
 
 ```bash
 airflow dags test \
-  --dagfile-path "$REKEP_ROOT/tasks/airflow/market_pipeline.py" \
+  --dagfile-path "${REPO}/tasks/airflow/market_pipeline.py" \
   --conf '{"branch":"root"}' \
   rekep_market_pipeline \
   2026-08-21T10:00:00Z
 ```
 
-For the hourly schedule, that logical date selects the
-`[2026-08-21T10:00:00Z, 2026-08-21T11:00:00Z)` interval. The interval is UTC;
-the `timezone` in `parse_messages.yml` controls how timestamps without an
-offset are interpreted inside the source logs.
+`airflow dags test` reads its positional argument as the instant the run is
+made at, so that command covers `[2026-08-21T09:00:00Z,
+2026-08-21T10:00:00Z)`. A *scheduled* run is named by the hour it covers
+instead: logical date `2026-08-21T10:00:00Z` covers
+`[2026-08-21T10:00:00Z, 2026-08-21T11:00:00Z)` and starts once 11:00 has
+passed. The interval is UTC; the `timezone` in `parse_messages.yml` controls
+how timestamps without an offset are interpreted inside the source logs.
 
-Executed notebooks are retained under `REKEP_NOTEBOOK_OUTPUT`, named by task
-and run timestamp. `log_output=True` also places notebook cell output in the
-Airflow task log — including the package's own records, which each task
-document sets the level of. See [Logs](logs.md).
+The operator streams the child's output into the Airflow task log line by line
+— including the package's own records, which each task document sets the level
+of. See [Logs](logs.md).
+
+Against the checked-in message fixture and one local SQLite catalog, the
+six-task workflow takes 59.0 s at its fastest, 60.2 s at the median and 62.1 s
+at its slowest, wall clock. About 5.4 s of each task is startup before its
+first cell runs: `uv`, the interpreter, and the package's imports. The counts
+that run produces are pinned on [End-to-end run](run.md).
 
 ## Start scheduled runs
 
@@ -326,7 +408,7 @@ Inspect and adjust that retention before unpausing the DAG. Schedule it for a
 quiet warehouse period; the shipped 02:30 UTC time avoids the top-of-hour start
 of the publishing DAG. The orphan grace protects new uncommitted files, and a
 catalog conflict fails the run rather than silently overwriting another commit.
-Airflow retries the notebook twice at ten-minute intervals.
+Airflow retries the task twice at ten-minute intervals.
 
 Run one maintenance pass manually with:
 
@@ -336,9 +418,9 @@ airflow dags trigger \
   rekep_iceberg_maintenance
 ```
 
-The executed notebook's `result` scrap carries the keys every task returns,
-plus `tables`, `expired`, `deleted`, `byte_size` and a per-table `reports`
-breakdown. See [what one task returns](logs.md#what-one-task-returns).
+Its result carries the keys every task returns, plus `tables`, `expired`,
+`deleted`, `byte_size` and a per-table `reports` breakdown. See
+[what one task returns](logs.md#what-one-task-returns).
 
 ## Backfill historical hours
 
@@ -391,11 +473,39 @@ zero writes because the declared keys are already stored. That is not an empty
 input: the read/attempted counts still route the replay through downstream
 parsing and schema logic.
 
+## Follow a table through the asset outlets
+
+Seven tasks declare one Airflow `Asset` outlet, named for the table they
+write on every run:
+
+| Task | Asset |
+| --- | --- |
+| `parse_messages` | `logs.messages` |
+| `parse_fix_market` | `fix.market` |
+| `parse_fix_misc` | `fix.misc` |
+| `parse_fix_unknown` | `fix.unknown` |
+| `parse_instruments` | `market.instruments` |
+| `flatten_orders` | `market.orders` |
+| `flatten_executions` | `market.executions` |
+
+The operator attaches `{task, read, written, skipped}` to that run's asset
+event, so the UI carries per-run counts beside the lineage. `parse_market`
+declares no outlet: it writes books or events depending on `books`, and an
+asset event is a claim that one named table was written. Nothing is scheduled
+on these assets.
+
+## Cancel a running task
+
+Clearing or failing a running task calls the operator's `on_kill()`, which
+sends SIGTERM to the child's process group: `uv` and the application under it
+both stop. The attempt directory holding the parameter document is deleted on
+the way out.
+
 ## Monitor and recover
 
-Use Grid view for task state and each task's **Log** tab for notebook output.
-The retained executed notebook is the complete cell-by-cell artifact, while
-the `result` Scrapbook scrap is the routing contract.
+Use Grid view for task state and each task's **Log** tab for the run's records.
+The **XCom** tab holds the returned result under `return_value`, which is the
+routing contract.
 
 ```bash
 airflow dags list-runs --output table rekep_market_pipeline
@@ -419,23 +529,19 @@ airflow tasks clear \
   rekep_market_pipeline
 ```
 
-Executed notebooks accumulate and are not deleted by the DAG. Apply a
-retention policy after the corresponding DAG runs no longer need them for
-routing or diagnosis.
-
 ## Production deployment checklist
 
 The repository does not ship a Docker, Compose, or Helm deployment. Integrate
 the DAG into the Airflow platform your organization already operates. Airflow
 3's versioned Git DAG bundles or an immutable image containing the complete
-repository are suitable ways to keep the DAG and notebooks on one revision.
+repository are suitable ways to keep the DAG and applications on one revision.
 
 | Concern | Local validation | Distributed production |
 | --- | --- | --- |
 | Airflow metadata | Standalone SQLite | External PostgreSQL or MySQL |
 | DAG delivery | Local DAG folder | Versioned DAG bundle or immutable image |
 | Python runtime | One virtual environment | Same pinned image on processor and workers |
-| Executed notebooks | Local directory | Shared writable volume or supported object store |
+| Task runtime | `runner` group synced in the checkout | Same locked `runner` environment on every worker |
 | Iceberg catalog | SQLite | Glue, REST, or another concurrent catalog |
 | Iceberg warehouse | Local files | Shared object storage |
 | Task logs | Local files | Remote logging or persistent shared logs |
@@ -443,18 +549,20 @@ repository are suitable ways to keep the DAG and notebooks on one revision.
 
 Before promotion:
 
-1. Install the same Airflow, Papermill provider, `rekep`, catalog extras, and
-   `python3` kernel on every task worker and the DAG processor.
-2. Make the same absolute `REKEP_ROOT` available everywhere, or use a versioned
-   bundle whose paths stay valid for the complete DAG run.
-3. Mount `REKEP_NOTEBOOK_OUTPUT` read/write on every worker, or configure a URL
-   supported by both Papermill and Scrapbook with the same credentials.
+1. Install the same Airflow, standard provider and `rekep[yaml]` on the DAG
+   processor and every task worker.
+2. Ship `uv` on every task worker and prepare the `runner` environment there
+   with `uv sync --project python --locked --group runner`, so a scheduled task
+   resolves nothing.
+3. Deliver the DAG inside the checkout it schedules, or set `repository` on the
+   operator, which is a template field, to a path that stays valid for the
+   complete DAG run.
 4. Replace all local SQLite/file catalog blocks consistently and verify source,
-   registry, catalog, warehouse, and notebook-output access from a worker.
+   registry, catalog and warehouse access from a worker.
 5. Keep credentials out of YAML and use Airflow's secret backend or workload
    identity.
-6. Configure remote task logging, metadata database backups, health checks,
-   notebook retention, and alerting.
+6. Configure remote task logging, metadata database backups, health checks, and
+   alerting.
 7. Run `airflow dags test` against a scratch destination, inspect expected
    skips, then dry-run the intended backfill before unpausing.
 
@@ -466,14 +574,15 @@ chronological order.
 
 | Symptom | Check |
 | --- | --- |
-| DAG is absent | Run `airflow dags list-import-errors --local`; verify Airflow 3, provider 3.13+, and `REKEP_ROOT`. |
-| YAML or notebook is missing | Deploy the complete repository revision and keep `REKEP_ROOT` identical on processors and workers. |
-| `No such kernel named python3` | Register the worker environment with `ipykernel` and verify `jupyter kernelspec list`. |
-| Notebook output cannot be opened | Create `REKEP_NOTEBOOK_OUTPUT`, fix permissions, and make it shared across workers. |
-| Route says the `result` scrap is absent | Inspect the producer's executed notebook; it did not reach its result cell or an incompatible notebook was deployed. |
+| DAG is absent | Run `airflow dags list-import-errors --local`; verify Airflow 3, `apache-airflow-providers-standard`, and `AIRFLOW__CORE__DAGS_FOLDER`. |
+| `No module named marimo_operator` | Deploy `marimo_operator.py` beside `market_pipeline.py` so the DAG bundle directory carries both. |
+| `is not a rekep checkout` | The DAG is outside the repository; deploy the complete revision, or pass `repository` to `marimo_task`. |
+| YAML or application is missing | Deploy the complete repository revision to the DAG processor and every worker. |
+| `running a task needs marimo` | The worker has no `runner` environment; run `uv sync --project python --locked --group runner` there. |
+| Route says the result is absent | The application defines no `result`; `rekep task run` says `<path> defines no result`. |
 | SQLite is locked or files disappear | The local catalog/warehouse is being used by distributed or ephemeral workers; move to concurrent shared storage. |
 | `Cannot scan unknown ref` | Use `root`, `main`, or `master`, or create the named branch on every relevant table first. |
-| Many tasks are skipped | Compare the producer's `result` counts with the routing table above; zero-input skips are intentional. |
+| Many tasks are skipped | Compare the producer's result counts with the routing table above; zero-input skips are intentional. |
 | Replay writes zero rows | Expected with `merge_by: true` when keys already exist; confirm read/attempted counts and downstream routing. |
 | Thousands of runs become queued | Pause the DAG and review its 2026-01-01 start date and `catchup=True` policy. |
 
@@ -481,9 +590,11 @@ chronological order.
 
 - [Install Airflow with constraints](https://airflow.apache.org/docs/apache-airflow/stable/installation/installing-from-pypi.html)
 - [Airflow prerequisites and supported platforms](https://airflow.apache.org/docs/apache-airflow/stable/installation/prerequisites.html)
-- [Papermill provider requirements](https://airflow.apache.org/docs/apache-airflow-providers-papermill/stable/index.html)
+- [Standard provider](https://airflow.apache.org/docs/apache-airflow-providers-standard/stable/index.html)
 - [Airflow CLI reference](https://airflow.apache.org/docs/apache-airflow/stable/cli-and-env-variables-ref.html)
 - [DAG bundles](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/dag-bundles.html)
 - [Production deployment](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/production-deployment.html)
 - [DAG runs and catch-up](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dag-run.html)
 - [Task logging](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/logging-tasks.html)
+- [marimo documentation](https://docs.marimo.io/)
+- [uv documentation](https://docs.astral.sh/uv/)

@@ -8,8 +8,7 @@ Book mode folds resting state and writes `market.books`:
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/parse_market/parse_market.yml \
-  --output parse_market.executed.ipynb
+  tasks/parse_market/parse_market.yml
 ```
 
 Direct mode writes only the Order and Execution events carried by FIX:
@@ -17,9 +16,11 @@ Direct mode writes only the Order and Execution events carried by FIX:
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_market/parse_market.yml \
-  --parameter books=false \
-  --output parse_market.direct.executed.ipynb
+  --parameter books=false
 ```
+
+Both modes run `tasks/parse_market/parse_market.py`; `parse_market.yml`
+supplies every parameter the command line leaves out.
 
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 

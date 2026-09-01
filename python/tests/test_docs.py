@@ -12,7 +12,6 @@ from __future__ import annotations
 import ast
 import builtins
 import importlib
-import json
 import re
 import subprocess
 import sys
@@ -304,12 +303,13 @@ def test_every_workflow_step_has_a_runnable_command(page_name: str, task_documen
     assert "## Run this step" in page
     assert "uv run --project python --group runner rekep task run" in page
     assert relative in page
-    assert f"--output {task.name}.executed.ipynb" in page
+    application = task.into_application_path(document).relative_to(DOCS.parent).as_posix()
+    assert application in page, "and the page names the application it runs"
     assert relative in workflow
 
 
 def test_every_task_injects_one_catalog_document() -> None:
-    """Notebook parameters keep catalog identity and properties atomic."""
+    """Task parameters keep catalog identity and properties atomic."""
     for task_document in TASK_DOCUMENTS:
         document = DOCS.parent / "tasks" / task_document
         task = Task.from_yaml(document)
@@ -317,13 +317,7 @@ def test_every_task_injects_one_catalog_document() -> None:
         assert "catalog_properties" not in parameters
         assert set(parameters["catalog"]) == {"name", "properties"}
 
-        notebook = json.loads(task.into_notebook_path(document).read_text(encoding="utf-8"))
-        source = "".join(
-            line
-            for cell in notebook["cells"]
-            if cell["cell_type"] == "code"
-            for line in cell["source"]
-        )
+        source = task.into_application_path(document).read_text(encoding="utf-8")
         assert "IcebergCatalog.from_dict(catalog)" in source
         assert "catalog_properties" not in source
 
@@ -336,26 +330,18 @@ def test_airflow_reuses_one_parse_fix_definition_for_every_category() -> None:
     assert "task_name" not in configured.parameters
     assert "target" not in configured.parameters
 
-    notebook = json.loads(configured.into_notebook_path(document).read_text(encoding="utf-8"))
-    parameter_cell = next(
-        cell for cell in notebook["cells"] if "parameters" in cell["metadata"].get("tags", ())
-    )
-    parameter_source = "".join(parameter_cell["source"])
-    source = "".join(
-        line for cell in notebook["cells"] if cell["cell_type"] == "code" for line in cell["source"]
-    )
-    assert "task_name =" not in parameter_source
-    assert "target =" not in parameter_source
-    assert 'task_name = f"parse_fix_{category}"' in source
-    assert 'target = f"fix.{category}"' in source
+    source = configured.into_application_path(document).read_text(encoding="utf-8")
+    parameters, _, body = source.partition("def _(log_level):")
+    assert "task_name =" not in parameters
+    assert "target =" not in parameters
+    assert 'task_name = f"parse_fix_{category}"' in body
+    assert 'target = f"fix.{category}"' in body
 
     dag = (DOCS.parent / "tasks" / "airflow" / "market_pipeline.py").read_text(encoding="utf-8")
-    assert 'fix_document = "tasks/parse_fix/parse_fix.yml"' in dag
     compact = "".join(dag.split())
+    assert 'CATEGORIES=("market","misc","unknown")' in compact
+    assert '"parse_fix",f"parse_fix_{category}",parameters={"category":category}' in compact
     for category in ("market", "misc", "unknown"):
-        assert (
-            f'notebook_task("parse_fix_{category}",fix_document,category="{category}")' in compact
-        )
         assert not (document.parent / f"parse_fix_{category}.yml").exists()
 
 
@@ -368,19 +354,12 @@ def test_workflow_tasks_commit_bounded_groups_of_batches() -> None:
         assert parameters["commit_batch_num"] == 8
         assert parameters["commit_row_size"] is None
 
-        notebook = json.loads(task.into_notebook_path(document).read_text(encoding="utf-8"))
-        parameter_cell = next(
-            cell for cell in notebook["cells"] if "parameters" in cell["metadata"].get("tags", ())
-        )
-        parameter_source = "".join(parameter_cell["source"])
-        source = "".join(
-            line
-            for cell in notebook["cells"]
-            if cell["cell_type"] == "code"
-            for line in cell["source"]
-        )
-        assert "commit_batch_num = 8\n" in parameter_source
-        assert "commit_row_size = None\n" in parameter_source
+        # The document is the only place the cadence is written: the parameter
+        # cell reads it back rather than repeating the number in Python.
+        source = task.into_application_path(document).read_text(encoding="utf-8")
+        assert 'commit_batch_num = _defaults["commit_batch_num"]' in source
+        assert 'commit_row_size = _defaults["commit_row_size"]' in source
+        assert "commit_batch_num = 8" not in source
         assert "commit_batch_num=commit_batch_num" in source
 
         page = (DOCS / "pipeline" / "tasks" / f"{page_name}.md").read_text(encoding="utf-8")

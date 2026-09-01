@@ -1,7 +1,7 @@
 # Benchmarks
 
-Reusable internal paths, not notebooks or orchestration. Each script asserts
-its result before timing it.
+Reusable internal paths, not task applications or orchestration. Each script
+asserts its result before timing it.
 
 ```bash
 cd python
@@ -161,7 +161,7 @@ value identity includes every ordered live Order `vhash`, so dense-book
 throughput also measures that linear input; duplicate-event shortcuts skip the
 walk when no Book is emitted.
 
-The [notebook smoke run](../pipeline/operations/run.md) exercises all six
+The [task smoke run](../pipeline/operations/run.md) exercises all six
 jobs, all three log routes, registry-backed instrument enrichment, book
 recovery rows, auditable rejection, and a zero-write replay. The bounded
 market benchmark separately rejected 10 of 200 malformed events and emitted 70

@@ -5,15 +5,15 @@ The wheel already contains the FIX registry used by an unconfigured worker.
 
 !!! warning "A wheel by itself is not a deployment"
 
-    DAG parsing reads the YAML under `tasks/`, workers execute the adjacent
-    notebooks. Keep package, DAG, YAML, notebooks, and schemas on one revision — see
+    A worker reads the YAML under `tasks/` and runs the application beside it.
+    Keep package, DAG, YAML, applications, and schemas on one revision — see
     [Deploy and operate with Airflow](airflow.md).
 
 ## 1. Install
 
 ```bash
 pip install "rekep[iceberg]"              # persisted tables
-pip install "rekep[iceberg,polars,yaml]"  # what the notebooks import
+pip install "rekep[iceberg,polars,yaml]"  # what the task applications import
 pip install "rekep[all]"                  # plus Glue, for a catalog on AWS
 ```
 

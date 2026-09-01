@@ -1,5 +1,5 @@
 name: parse_market
-notebook: parse_market.ipynb
+application: parse_market.py
 parameters:
   project_root: .
   # The FIX dictionary. A directory, a zip, or either on a bucket:

@@ -2,8 +2,7 @@
 
 A correctness run measured 2026-09-01 executes eight task runs from six task
 documents against the checked-in message fixture and a fresh local Iceberg
-warehouse, then replays the same input. Throughput
-measurements live on
+warehouse, then replays the same input. Throughput measurements live on
 [Benchmarks](../../storage/benchmarks.md).
 
 ![End-to-end execution architecture](../../assets/workflow-run.svg#only-dark)
@@ -30,49 +29,44 @@ the catalog is left as it is, properties included, and reported `present`.
 
 ## Run the workflow locally
 
-From the repository root. The `runner` dependency group is Papermill and the
-kernel it executes a notebook under:
+Prepare the environment once. The `runner` dependency group is Marimo and the
+catalog extras a task imports:
+
+```bash
+uv sync --project python --locked --group runner
+```
+
+Then, from the repository root:
 
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter source=python/tests/data \
   --parameter pattern=app_messages_sample.txt \
-  --parameter timezone=UTC \
-  --output parse_messages.executed.ipynb
+  --parameter timezone=UTC
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=market \
-  --output parse_fix_market.executed.ipynb &
+  tasks/parse_fix/parse_fix.yml --parameter category=market &
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=misc \
-  --output parse_fix_misc.executed.ipynb &
+  tasks/parse_fix/parse_fix.yml --parameter category=misc &
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --parameter category=unknown \
-  --output parse_fix_unknown.executed.ipynb &
+  tasks/parse_fix/parse_fix.yml --parameter category=unknown &
 
 wait
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_instruments/parse_instruments.yml \
-  --output parse_instruments.executed.ipynb
+  tasks/parse_instruments/parse_instruments.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_market/parse_market.yml \
-  --output parse_market.executed.ipynb
+  tasks/parse_market/parse_market.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/flatten_orders/flatten_orders.yml \
-  --output flatten_orders.executed.ipynb
+  tasks/flatten_orders/flatten_orders.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/flatten_executions/flatten_executions.yml \
-  --output flatten_executions.executed.ipynb
+  tasks/flatten_executions/flatten_executions.yml
 ```
 
 The three FIX commands reuse one task document and each scans only the category
@@ -83,11 +77,11 @@ commands run unchanged against S3 — only the `source`, `fix_dictionary` and
 `catalog.properties` values in the YAML move; see
 [AWS S3](deploy.md#aws-s3). Each command writes the
 run's records to `stderr` as they happen and the task's result to `stdout`;
-[Logs](logs.md) has the record a stage opens and closes with, and the keys
-every result carries. The shipped documents write
+`--result-file PATH` publishes that same JSON document atomically, and is what
+`MarimoOperator` reads. [Logs](logs.md) has the record a stage opens and closes
+with, and the keys every result carries. The shipped documents write
 a SQLite catalog to `data/catalog.db` and a file warehouse to `data/warehouse`,
-both ignored by git along with the executed notebooks -- delete them for a
-clean run.
+both ignored by git -- delete them for a clean run.
 
 ## Pinned results
 
@@ -95,35 +89,40 @@ The run used the default eight-batch commit cadence. Its 11 source records
 span FIX wire, FIXML, operational prose, a folded stack trace and unknown
 fields.
 
-| Notebook | First run | Replay writes |
+| Task | First run | Replay writes |
 | --- | --- | ---: |
 | `parse_messages` | 11 read, 11 written | 0 |
 | `parse_fix_market` | 2 read, 2 FixMsg written | 0 |
-| `parse_fix_misc` | 7 read, 7 FixMsg written | 0 |
-| `parse_fix_unknown` | 1 read, 1 FixMsg written | 0 |
+| `parse_fix_misc` | 8 read, 8 FixMsg written | 0 |
+| `parse_fix_unknown` | 0 read, 0 written | 0 |
 | `parse_instruments` | 1 observed, 1 written | 0 |
 | `parse_market` | 2 Books written; 2 Orders and 1 Execution nested | 0 |
 | `flatten_orders` | 2 projected, 2 written | 0 |
 | `flatten_executions` | 1 projected, 1 written | 0 |
 
 The FIX tasks left the `35=0` heartbeat in `logs.messages`.
-`parse_fix_market` selected 2 rows, `parse_fix_misc` selected 7, and
-`parse_fix_unknown` selected 1. No row carried a transcription error.
-Together they resolved `unix` from `SendingTime` on 1 row, from
-`TransactTime` on 1, and from the recording clock on the other 8. Five of the
-10 rows carried a `symbolticker`. The replay wrote nothing at any stage: 10
-FixMsg rows were skipped and the one canonical `InstUpdate` was unchanged.
+`parse_fix_market` selected 2 rows and `parse_fix_misc` selected the other 8;
+every protocol this fixture carries is a configured one, so
+`parse_fix_unknown` selected none and created an empty `fix.unknown`. No row
+carried a transcription error. Together they resolved `unix` from
+`SendingTime` on 1 row, from `TransactTime` on 1, and from the recording clock
+on the other 8. Five of the 10 rows carried a `symbolticker`. The replay wrote
+nothing at any stage: 10 FixMsg rows were skipped and the one canonical
+`InstUpdate` was unchanged.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
 | `logs.messages` | 11 | 1 |
 | `fix.market` | 2 | 1 |
-| `fix.misc` | 7 | 1 |
-| `fix.unknown` | 1 | 1 |
+| `fix.misc` | 8 | 1 |
+| `fix.unknown` | 0 | 0 |
 | `market.instruments` | 1 | 1 |
 | `market.books` | 2 | 1 |
 | `market.orders` | 2 | 1 |
 | `market.executions` | 1 | 1 |
+
+Every table a run wrote holds exactly one snapshot, the commit the first run
+made; the replay adds none. `fix.unknown` is created empty and holds none.
 
 ## Sampled output
 

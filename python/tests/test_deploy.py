@@ -124,7 +124,7 @@ def test_a_task_catalog_refuses_legacy_or_misspelled_keys(
     document = tmp_path / "task.yml"
     document.write_text(
         "name: invalid\n"
-        "notebook: task.ipynb\n"
+        "application: task.py\n"
         "parameters:\n"
         "  catalog:\n"
         "    catalog_name: legacy\n"

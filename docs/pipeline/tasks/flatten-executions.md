@@ -7,9 +7,11 @@ preserving order links and appending the carrying `Book.hash` to `parenthash`.
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/flatten_executions/flatten_executions.yml \
-  --output flatten_executions.executed.ipynb
+  tasks/flatten_executions/flatten_executions.yml
 ```
+
+The step is `tasks/flatten_executions/flatten_executions.py`, and
+`flatten_executions.yml` holds the parameters below.
 
 ```yaml
 source: market.books

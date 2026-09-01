@@ -9,9 +9,11 @@ wire shape but leaves FIX names, components and typed values to the three
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
-  --parameter source=python/tests/data/app_messages_sample.txt \
-  --output parse_messages.executed.ipynb
+  --parameter source=python/tests/data/app_messages_sample.txt
 ```
+
+The command runs `tasks/parse_messages/parse_messages.py`; the adjacent
+`parse_messages.yml` declares its parameters and their defaults.
 
 Calendar-partitioned paths expand before the files are opened:
 

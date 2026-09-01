@@ -224,10 +224,12 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 
 ## Workflow ownership
 
-Concrete jobs are notebooks under `tasks/<name>/`, beside a YAML document that
-points to the notebook. Package code contains reusable parsing and model logic,
-not project-specific job classes. `Task` only defines/serializes notebook
-configuration. Airflow executes the notebooks through its Papermill provider.
+Concrete jobs are Marimo applications under `tasks/<name>/`, beside a YAML
+document that points to the application. Package code contains reusable parsing
+and model logic, not project-specific job classes. `Task` only
+defines/serializes application configuration. Airflow executes them with the
+repository's `MarimoOperator`, which runs `rekep task run` in the locked `uv`
+environment and routes the JSON result through XCom.
 
 The supported graph is:
 
@@ -260,14 +262,16 @@ Every task returns the same result keys and brackets itself with the same two
 INFO records, both built by `rekep.logs.Stage`: `task`, `read`, `written`,
 `skipped`, `sources`, `targets`, `window`, `elapsed_ms`, and whatever else a
 task alone knows under its own name. The numbers in the closing record are the
-numbers in the returned dict or one of them is wrong. A notebook that hand-rolls
-its own result shape is a notebook the Airflow routes and the docs cannot both
-be right about.
+numbers in the returned dict or one of them is wrong. An application that
+hand-rolls its own result shape is an application the Airflow routes and the
+docs cannot both be right about.
 
 ## Tests and benchmarks
 
-- Test reusable internal logic; do not mirror notebooks with packaged task
-  tests.
+- Test reusable internal logic; do not re-test it through a task application.
+  The workflow's own contract -- the counts each task returns and the rows each
+  table holds, over the checked-in fixture -- is pinned once, as an
+  `integration` test.
 - Mark long Iceberg transactions `integration`. Default CI excludes them; the
   integration workflow opts in explicitly.
 - Derive expectations from fixtures, then pin counts so broken producers cannot
@@ -288,7 +292,7 @@ python/src/rekep/
   market/       event, instrument, order, execution, and book logic
   iceberg/      catalog, dataset, and the schema bridge
   text/         FixMsg plus streamed text files
-  tasks/        notebook configuration only
+  tasks/        application configuration only
   arrow_path.py     one URL and the Arrow filesystem serving its path
   arrow_file_io.py  the Iceberg FileIO: locations, spills, content cache
   console.py    terminal styling: colour, boxes, tables, spinners
@@ -296,7 +300,7 @@ python/src/rekep/
   times.py      one reading of "an instant", whatever spelled it
 schemas/rekep/  the six persisted output contracts
 data/fix/       the FIX dictionary: tag-range shards, components, messages
-tasks/          notebooks, adjacent YAML, and Airflow DAG
+tasks/          Marimo applications, adjacent YAML, the operator and the DAG
 ```
 
 Comments explain why a constraint exists. Docstrings and descriptions never

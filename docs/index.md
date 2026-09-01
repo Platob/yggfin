@@ -59,9 +59,9 @@ flowchart TD
     PK -->|books: false| E
 ```
 
-Concrete stages are notebooks with adjacent YAML files under `tasks/`. The
-package owns reusable parsing, schemas, lifecycle logic, and storage adapters;
-it does not own deployment-specific jobs.
+Concrete stages are Marimo applications with adjacent YAML files under
+`tasks/`. The package owns reusable parsing, schemas, lifecycle logic, and
+storage adapters; it does not own deployment-specific jobs.
 
 ## One record end to end
 

@@ -4,7 +4,7 @@
 
 One Arrow schema defines each record. Producers and consumers cast against the
 same declaration, so width, order, nullability, metadata, and nested types do
-not drift between notebooks, Iceberg, Python, or a later Rust stage.
+not drift between task applications, Iceberg, Python, or a later Rust stage.
 
 ```python
 from rekep import Book
@@ -57,9 +57,10 @@ where engines do not provide useful bounds anyway.
 
 ## Separate reusable logic from orchestration
 
-Package classes parse, normalize, fold, cast, and store data. Notebook tasks
-choose sources, targets, time windows, and deployment policy. `Task` describes
-a notebook config; it never hides the notebook implementation.
+Package classes parse, normalize, fold, cast, and store data. Task
+applications choose sources, targets, time windows, and deployment policy.
+`Task` describes an application config; it never hides the application
+implementation.
 
 ## Documentation budget
 

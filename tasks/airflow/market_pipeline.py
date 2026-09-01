@@ -1,94 +1,81 @@
-"""Airflow DAG executing the repository's notebook tasks."""
+"""Airflow DAGs executing the repository's task applications."""
 
 from __future__ import annotations
 
 import datetime
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-import scrapbook as sb
-from airflow.providers.papermill.operators.papermill import PapermillOperator
-from airflow.sdk import Param, dag, task
-from rekep.tasks import Task
+from airflow.sdk import Asset, CronDataIntervalTimetable, Param, dag, task
+from marimo_operator import MarimoOperator
 
-ROOT = Path(os.environ.get("REKEP_ROOT", Path(__file__).resolve().parents[2])).resolve()
-OUTPUT_ROOT = os.environ.get("REKEP_NOTEBOOK_OUTPUT", "/tmp/rekep-notebooks")
+#: One closed hour of capture per run, named by the hour it covers and started
+#: once that hour has ended. Spelled as a timetable rather than as `@hourly`
+#: because a bare cron string follows `[scheduler] create_cron_data_intervals`,
+#: which is off by default and gives every run a zero-width interval -- and a
+#: zero-width `[start, end)` reads nothing, on every run, silently.
+HOURLY = CronDataIntervalTimetable("0 * * * *", timezone="UTC")
+
+#: The checkout holding `python/`, `tasks/` and `data/`. A versioned DAG bundle
+#: or an image places this file inside the repository it schedules, so the path
+#: math is the whole answer; `repository` is templated for a deployment that
+#: keeps the DAG somewhere else.
+ROOT = str(Path(__file__).resolve().parents[2])
+
+#: The message categories `parse_fix` runs once each, in the spelling
+#: `rekep.fix.rules` gives them. Named here rather than imported, so the DAG
+#: parses without the package a worker runs the task under.
+CATEGORIES = ("market", "misc", "unknown")
+
+#: The table a task writes on every run, keyed by its Airflow task id and named
+#: by the identifier the catalog knows it as. `parse_market` writes books or
+#: events depending on its `books` parameter, so it declares none: an asset
+#: event is a claim that one named table was written.
+WRITES = {
+    "parse_messages": "logs.messages",
+    **{f"parse_fix_{category}": f"fix.{category}" for category in CATEGORIES},
+    "parse_instruments": "market.instruments",
+    "flatten_orders": "market.orders",
+    "flatten_executions": "market.executions",
+}
 
 
-def rooted_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
-    """Make repository-relative catalog locations worker-independent."""
-    rooted = dict(parameters)
-    if "project_root" in rooted:
-        rooted["project_root"] = str(ROOT)
-    catalog = dict(rooted.get("catalog", {}))
-    properties = dict(catalog.get("properties", {}))
-    uri = properties.get("uri", "")
-    sqlite = "sqlite:///"
-    if uri.startswith(sqlite):
-        path = Path(uri.removeprefix(sqlite))
-        if not path.is_absolute():
-            properties["uri"] = f"{sqlite}{(ROOT / path).as_posix()}"
-    warehouse = properties.get("warehouse", "")
-    local = "file://"
-    if warehouse.startswith(local):
-        path = Path(warehouse.removeprefix(local))
-        if not path.is_absolute():
-            properties["warehouse"] = f"{local}{(ROOT / path).as_posix()}"
-    if properties:
-        catalog["properties"] = properties
-        rooted["catalog"] = catalog
-    return rooted
+def marimo_task(name: str, task_id: str | None = None, **kwargs: Any) -> MarimoOperator:
+    """One task application, named once.
 
-
-def notebook_task(
-    task_id: str, document: str, *, category: str | None = None
-) -> PapermillOperator:
-    """Build one operator from an adjacent YAML/notebook pair."""
-    path = ROOT / document
-    configured = Task.from_yaml(path)
-    parameters = rooted_parameters(configured.parameters)
-    if category is not None:
-        parameters["category"] = category
-    if "branch" in parameters:
-        parameters["branch"] = "{{ params.branch }}"
-    if "books" in parameters:
-        parameters["books"] = "{{ params.books }}"
-    if "start" in parameters:
-        parameters["start"] = "{{ data_interval_start.isoformat() }}"
-    if "end" in parameters:
-        parameters["end"] = "{{ data_interval_end.isoformat() }}"
-    return PapermillOperator(
+    `task_id` names the Airflow task when one document runs more than once --
+    `parse_fix` is three, one per message category. Everything else is a
+    `BaseOperator` argument -- retries, pools, queue, execution timeout,
+    callbacks -- and reaches Airflow unchanged.
+    """
+    task_id = task_id or name
+    written = WRITES.get(task_id)
+    return MarimoOperator(
         task_id=task_id,
-        input_nb=str(configured.into_notebook_path(path)),
-        output_nb=f"{OUTPUT_ROOT}/{task_id}-{{{{ ts_nodash }}}}.ipynb",
-        parameters=parameters,
-        kernel_name="python3",
-        log_output=True,
+        repository=ROOT,
+        document=f"tasks/{name}/{name}.yml",
+        doc_md=f"`tasks/{name}/{name}.py`, configured by `tasks/{name}/{name}.yml`.",
+        outlets=[Asset(name=written)] if written else [],
+        **kwargs,
     )
 
 
 def _count_at(result: object, path: str) -> int:
-    """One non-negative count in a notebook's returned mapping."""
+    """One non-negative count in a task's returned mapping."""
     value = result
     for name in path.split("."):
         if not isinstance(value, Mapping) or name not in value:
-            raise ValueError(f"notebook result has no {path!r}")
+            raise ValueError(f"task result has no {path!r}")
         value = value[name]
     if type(value) is not int or value < 0:
-        raise ValueError(f"notebook result {path!r} is not a non-negative count")
+        raise ValueError(f"task result {path!r} is not a non-negative count")
     return value
 
 
 @task.branch
-def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
-    """Choose direct downstream tasks from named counts in a notebook result."""
-    url = getattr(output, "url", output)
-    notebook = sb.read_notebook(url)
-    if "result" not in notebook.scraps:
-        raise ValueError(f"{url} has no 'result' scrap")
-    result = notebook.scraps["result"].data
+def route(result: Any, then: dict[str, str]) -> list[str] | None:
+    """Choose direct downstream tasks from named counts in a task result."""
     selected = [task_id for task_id, path in then.items() if _count_at(result, path)]
     return selected or None
 
@@ -96,7 +83,7 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
 @dag(
     dag_id="rekep_market_pipeline",
     description="Parse logs and publish market tables.",
-    schedule="@hourly",
+    schedule=HOURLY,
     start_date=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
     catchup=True,
     max_active_runs=1,
@@ -105,49 +92,40 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
         "branch": Param("root", type="string", minLength=1),
         "books": Param(True, type="boolean"),
     },
-    tags=["rekep", "arrow", "iceberg", "market", "notebook"],
+    tags=["rekep", "arrow", "iceberg", "market", "marimo"],
 )
 def market_pipeline() -> None:
-    messages = notebook_task(
-        "parse_messages", "tasks/parse_messages/parse_messages.yml"
-    )
-    # Category is the only per-run input; the notebook derives its table and
-    # observable task name so neither can drift from the selected rows.
-    fix_document = "tasks/parse_fix/parse_fix.yml"
-    parsed_market = notebook_task("parse_fix_market", fix_document, category="market")
-    parsed_misc = notebook_task("parse_fix_misc", fix_document, category="misc")
-    parsed_unknown = notebook_task(
-        "parse_fix_unknown", fix_document, category="unknown"
-    )
-    instrument_updates = notebook_task(
-        "parse_instruments", "tasks/parse_instruments/parse_instruments.yml"
-    )
-    market = notebook_task("parse_market", "tasks/parse_market/parse_market.yml")
-    orders = notebook_task("flatten_orders", "tasks/flatten_orders/flatten_orders.yml")
-    executions = notebook_task(
-        "flatten_executions", "tasks/flatten_executions/flatten_executions.yml"
-    )
+    messages = marimo_task("parse_messages")
+    # Category is the only per-run input; the application derives its table and
+    # the task name it reports from it, so neither can drift from the rows it
+    # selected.
+    parsed = {
+        category: marimo_task(
+            "parse_fix", f"parse_fix_{category}", parameters={"category": category}
+        )
+        for category in CATEGORIES
+    }
+    instrument_updates = marimo_task("parse_instruments")
+    market = marimo_task("parse_market")
+    orders = marimo_task("flatten_orders")
+    executions = marimo_task("flatten_executions")
 
-    messages_route = after_notebook.override(task_id="route_messages")(
-        output=messages.output,
-        then={
-            "parse_fix_market": "read",
-            "parse_fix_misc": "read",
-            "parse_fix_unknown": "read",
-        },
+    messages_route = route.override(task_id="route_messages")(
+        result=messages.output,
+        then={f"parse_fix_{category}": "read" for category in CATEGORIES},
     )
-    messages_route >> [parsed_market, parsed_misc, parsed_unknown]
+    messages_route >> list(parsed.values())
 
     # Both consumers read `fix.market`; the two terminal FIX tasks have no
     # downstream work and never hold this branch open.
-    fix_route = after_notebook.override(task_id="route_fix_market")(
-        output=parsed_market.output,
+    fix_route = route.override(task_id="route_fix_market")(
+        result=parsed["market"].output,
         then={"parse_instruments": "read", "parse_market": "read"},
     )
     fix_route >> [instrument_updates, market]
 
-    market_route = after_notebook.override(task_id="route_market")(
-        output=market.output,
+    market_route = route.override(task_id="route_market")(
+        result=market.output,
         then={
             "flatten_orders": "flatten.orders",
             "flatten_executions": "flatten.executions",
@@ -171,10 +149,10 @@ market_pipeline()
         "retry_delay": datetime.timedelta(minutes=10),
     },
     params={"branch": Param("root", type="string", minLength=1)},
-    tags=["rekep", "iceberg", "maintenance", "notebook"],
+    tags=["rekep", "iceberg", "maintenance", "marimo"],
 )
 def iceberg_maintenance() -> None:
-    notebook_task("optimize_iceberg", "tasks/optimize_iceberg/optimize_iceberg.yml")
+    marimo_task("optimize_iceberg")
 
 
 iceberg_maintenance()

@@ -11,14 +11,6 @@ from typing import Annotated, Any
 
 import pyarrow
 import pyarrow.compute
-from pyiceberg.expressions import (
-    And,
-    BooleanExpression,
-    EqualTo,
-    In,
-    Not,
-    Or,
-)
 
 from rekep.convert import Convertible
 from rekep.entries import Entry
@@ -319,10 +311,14 @@ class Rules(Convertible):
             rule.protocol for rule in self.rules if rule.protocol is not Protocol.OTHER
         )
 
-    def into_iceberg_category_filter(
-        self, category: str, versions: tuple[str, ...] = ()
-    ) -> BooleanExpression:
-        """The complete source predicate for one persisted FIX category."""
+    def into_iceberg_category_filter(self, category: str, versions: tuple[str, ...] = ()) -> Any:
+        """The complete source predicate for one persisted FIX category.
+
+        pyiceberg is an extra, and classification is not: the expressions are
+        imported here so reaching for a rule never needs the catalog installed.
+        """
+        from pyiceberg.expressions import And, EqualTo, In, Not, Or
+
         market = In("eventtype", EventType.ranked_at_least(EventType.INTENT))
         known_protocols = {protocol.into_stored() for protocol in self.protocols}
         known_protocols.update(

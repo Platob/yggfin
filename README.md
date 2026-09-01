@@ -43,10 +43,10 @@ parse_messages --+                                                     `-> flatt
 `parse_market` can instead set `books: false` and write FIX-carried orders and
 executions directly, without a book table or the two flattening stages.
 
-Each task is an adjacent YAML/notebook pair under `tasks/`. Airflow reuses the
-one `parse_fix` definition for three category runs with pushed filters. Airflow
-runs the notebooks through `PapermillOperator`; package `Task` only reads and
-writes their configuration.
+Each step is a Marimo application under `tasks/<step>/` with an adjacent YAML
+config. Airflow reuses the one `parse_fix` definition for three category runs
+with pushed filters, and runs every application through `MarimoOperator`;
+package `Task` only reads and writes their configuration.
 
 Core properties:
 

@@ -30,8 +30,8 @@ level for every library the caller also imported.
 
 ## In a task
 
-Every task document carries the level, and the notebook applies it before the
-first record:
+Every task document carries the level, and the application applies it before
+the first record:
 
 ```yaml
 # tasks/parse_messages/parse_messages.yml
@@ -42,12 +42,11 @@ parameters:
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
-  --parameter log_level=DEBUG \
-  --output parse_messages.executed.ipynb
+  --parameter log_level=DEBUG
 ```
 
-Airflow runs the notebooks with `log_output=True`, so the same records reach
-the task log with no DAG change.
+`MarimoOperator` streams the application's `stderr` into the Airflow task log,
+so the same records reach it with no DAG change.
 
 ## On the command line
 
@@ -98,8 +97,8 @@ INFO rekep.logs parse_instruments observed 1 instruments, of which 1 are new ver
 INFO rekep.logs parse_instruments finished: 1 read, 1 written, 0 skipped → instruments=market.instruments in 3.2s
 ```
 
-`rekep task run` writes these to `stderr` as the notebook produces them, and
-the returned dict to `stdout` — so a run is readable and a pipe into `jq`
+`rekep task run` writes these to `stderr` as the application produces them,
+and the returned dict to `stdout` — so a run is readable and a pipe into `jq`
 still gets only the payload.
 
 The same run at `DEBUG` adds the cast and the staged file:
@@ -152,6 +151,10 @@ out of context says which task it came from and a reader learns one shape:
 | `targets` | what was written, keyed the same way; a role a run did not use is absent |
 | `window` | the half-open `[start, end)` interval, in nanoseconds since the epoch |
 | `elapsed_ms` | how long the task took |
+
+`rekep.logs.Stage.validated` is what reads that shape back: `rekep task run`
+checks the application's `result` with it, and `MarimoOperator` checks the
+result document the run published.
 
 Whatever else a task knows keeps its own name beside them: every `parse_fix_*`
 task adds `category`, `unixsource`, `tickered` and `errors`; `parse_market`
