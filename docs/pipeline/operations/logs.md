@@ -65,8 +65,8 @@ payload.
 Eleven rows through `parse_messages`, at `INFO`:
 
 ```text
-INFO rekep.logs parse_messages reading capture=python/tests/data/app_messages_sample.txt
-INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 59 columns, partitioned by {'unixpartition': 'identity'}
+INFO rekep.logs parse_messages reading capture=python/tests/data
+INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 58 columns, partitioned by {'unixpartition': 'identity'}
 INFO rekep.iceberg.dataset logs.messages wrote branch=main snapshot=2257423558696136046 in 97ms
 INFO rekep.logs parse_messages finished: 11 read, 11 written, 0 skipped → messages=logs.messages in 0.9s
 ```
@@ -75,13 +75,24 @@ Four records, because four things finished. The stage brackets the run, and
 the numbers in its closing record are the numbers in the dict it returns —
 the same rule maintenance already follows.
 
-A six-stage run reads top to bottom:
+The parallel FIX section reads one category per task:
 
 ```text
-INFO rekep.logs parse_fix reading messages=logs.messages
-INFO rekep.logs parse_fix routed 2 market, 8 misc
-INFO rekep.logs parse_fix resolved unix from SendingTime 1, TransactTime 1, recorded 8; 5 of 10 rows carry a symbolticker
-INFO rekep.logs parse_fix finished: 10 read, 10 written, 0 skipped → market=fix.market, misc=fix.misc in 7.2s
+INFO rekep.logs parse_fix_market reading messages=logs.messages
+INFO rekep.logs parse_fix_market selected 2 market rows
+INFO rekep.logs parse_fix_market resolved unix from SendingTime 1, recorded 1; 2 of 2 rows carry a symbolticker
+INFO rekep.logs parse_fix_market retained 0 rows with FIX transcription errors
+INFO rekep.logs parse_fix_market finished: 2 read, 2 written, 0 skipped → market=fix.market in 2.5s
+INFO rekep.logs parse_fix_misc reading messages=logs.messages
+INFO rekep.logs parse_fix_misc selected 7 misc rows
+INFO rekep.logs parse_fix_misc resolved unix from TransactTime 1, recorded 6; 2 of 7 rows carry a symbolticker
+INFO rekep.logs parse_fix_misc retained 0 rows with FIX transcription errors
+INFO rekep.logs parse_fix_misc finished: 7 read, 7 written, 0 skipped → misc=fix.misc in 2.8s
+INFO rekep.logs parse_fix_unknown reading messages=logs.messages
+INFO rekep.logs parse_fix_unknown selected 1 unknown rows
+INFO rekep.logs parse_fix_unknown resolved unix from recorded 1; 1 of 1 rows carry a symbolticker
+INFO rekep.logs parse_fix_unknown retained 0 rows with FIX transcription errors
+INFO rekep.logs parse_fix_unknown finished: 1 read, 1 written, 0 skipped → unknown=fix.unknown in 0.1s
 INFO rekep.logs parse_instruments reading market=fix.market
 INFO rekep.logs parse_instruments observed 1 instruments, of which 1 are new versions
 INFO rekep.logs parse_instruments finished: 1 read, 1 written, 0 skipped → instruments=market.instruments in 3.2s
@@ -142,10 +153,11 @@ out of context says which task it came from and a reader learns one shape:
 | `window` | the half-open `[start, end)` interval, in nanoseconds since the epoch |
 | `elapsed_ms` | how long the task took |
 
-Whatever else a task knows keeps its own name beside them: `parse_fix` adds
-`routed`, `unixsource` and `tickered`; `parse_market` adds `mode`, `products`,
-`flatten`, `checkpoint` and `scan`; `optimize_iceberg` adds `tables`,
-`expired`, `deleted`, `byte_size` and `reports`.
+Whatever else a task knows keeps its own name beside them: every `parse_fix_*`
+task adds `category`, `unixsource`, `tickered` and `errors`; `parse_market`
+adds `mode`, `products`, `flatten`, `checkpoint` and `scan`;
+`optimize_iceberg` adds `tables`, `expired`, `deleted`, `byte_size` and
+`reports`.
 
 ```python
 from rekep.logs import Stage

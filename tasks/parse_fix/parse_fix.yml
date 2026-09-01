@@ -1,31 +1,23 @@
 name: parse_fix
 notebook: parse_fix.ipynb
 parameters:
+  # Airflow overrides this one value for each parallel category run.
+  category: market
   project_root: .
   # Protocol-neutral message rows written by `parse_messages`.
   source: logs.messages
   start: null
   end: null
-  # The FIX dictionary. A directory, a zip, or either on a bucket:
-  # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
   # null uses the package's registry.zip; set a directory, zip or bucket URL
   # only to pin a separately published dictionary.
   fix_dictionary: null
   null_values: ["", "null", "<null>", "n/a", "none"]
   # Heartbeat and TestRequest remain in logs.messages; FIX tables carry facts.
   exclude_msgtypes: ["0", "1"]
-  # ULBridge rows without version evidence are read under this application
-  # dictionary and persist it in `protocol`; null leaves them unresolved.
-  ul_default_version: "4.4"
-  # Each rule may extend indexed-group delimiter detection with
-  # `extra_entry_separators`; keep this document aligned with parse_messages.
-  # The shipped UL rule pops `DetailedCFICode` into `CFICode`, so the detailed
-  # enrichment replaces a generic CFI value before the field is lifted.
+  # Rules may extend indexed-group delimiter detection; keep this document
+  # aligned with parse_messages.yml.
   protocols: null
-  # How named fields read, where a job says what the dictionary cannot: a
-  # vendor tag that carries an instant, a value spelling only this estate
-  # uses. `type` is an Arrow type (`timestamp[s]`, `timestamp[us, tz=UTC]`) or
-  # a FIX datatype; `values` maps what a feed writes to what it means.
+  # Registry field overrides for facts a private feed spells differently.
   #
   # fields:
   #   rules:
@@ -35,16 +27,15 @@ parameters:
   #       values: {BUYSIDE: "1", SELLSIDE: "2"}
   fields: null
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
-  # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
-  # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
+  # `glue` extra. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog:
   #   name: rekep-production
   #   properties:
   #     type: glue
   #     warehouse: s3://example-bucket/rekep/warehouse
-  #     glue.region: eu-west-1   # Catalog region.
-  #     s3.region: eu-west-1     # Warehouse region.
-  #     glue.id: "123456789012"  # Optional cross-account catalog ID.
+  #     glue.region: eu-west-1
+  #     s3.region: eu-west-1
+  #     glue.id: "123456789012"
   #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
   catalog:
     name: rekep
@@ -59,11 +50,10 @@ parameters:
     write.metadata.delete-after-commit.enabled: "true"
   # root, main, and master name the same Iceberg root branch.
   branch: root
-  target_pattern: "fix.{category}"
   merge_by: true
   # Commit after eight retained RecordBatches; an optional row cap may end sooner.
   commit_batch_num: 8
   commit_row_size: null
   limit: null
-  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
+  # DEBUG adds per-file and per-plan detail; INFO records completed operations.
   log_level: INFO

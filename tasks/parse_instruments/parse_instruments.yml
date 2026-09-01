@@ -2,7 +2,7 @@ name: parse_instruments
 notebook: parse_instruments.ipynb
 parameters:
   project_root: .
-  # Checked FIX market messages, as `parse_fix` wrote them. Reference data is
+  # Checked FIX market messages, as `parse_fix_market` wrote them. Reference data is
   # read back out of the stored table rather than off the parse, so a rule
   # change here reruns against captures already parsed.
   source: fix.market

@@ -1,7 +1,7 @@
 # Message
 
-One log line, tokenized. Protocol-neutral: the header is lifted into columns,
-every other field stays in `entries` in wire order.
+One log line, tokenized. The header and registry version are lifted into
+columns; every other field stays untyped in `entries` in wire order.
 
 ```python
 from rekep import Message
@@ -20,7 +20,7 @@ print([(entry.tag, entry.value) for entry in row.entries])
 ```
 
 ```text
-FIX 8 7 VENUE DESK
+FIX4.4 8 7 VENUE DESK
 VENUEBRIDGE True
 [(11, 'C1'), (55, 'BTC-USD'), (54, '1'), (10, '000')]
 ```
@@ -34,15 +34,16 @@ market rows. Missing or overwide source names are `UNKNOWN`.
     UTF-8 view; identity and writes keep the original bytes.
 
     ```python
-    Message.from_text(line).protocol  # Protocol.FIX
+    Message.from_text(line).protocol.code  # "FIX4.4"
     Message.from_text(line).body      # b"8=FIX.4.4|..."
     ```
 
 ## Four structured protocols
 
-`protocol` says which grammar the payload is written in, and the keys decide
-it -- never the values, and never a MsgType. It stores a
-[`Protocol`](../enums/protocol.md) code, not the text.
+`protocol` says which grammar the payload is written in and carries the
+registry version when one resolves. The keys decide the grammar -- never the
+values, and never a MsgType. The column stores a packed
+[`Protocol`](../enums/protocol.md) code, not text.
 
 | code | what the payload's keys are |
 | --- | --- |

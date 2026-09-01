@@ -45,14 +45,14 @@ EXPECTED_PROTOCOLS = [
     "FIX4.2",
     "FIX",
     "FIX4.4",
-    # A bare named document uses the codec's declared application version.
-    "UL4.4",
+    # A bare named document uses the newest application version in the registry.
+    "UL5SP2",
     # The same names inside a numbered frame, which makes one mixed message.
     "FIXML4.2",
     "OTHER",
     "OTHER",
     "OTHER",
-    "UL4.4",
+    "UL5SP2",
 ]
 
 #: Derived from the bridge line, then pinned: eleven tokens, two of which carry
@@ -252,7 +252,7 @@ def raw_table(codec: FixCodec) -> pyarrow.Table:
     with TextFile.from_path(
         SAMPLE,
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     ) as log:
         return log.read_arrow_table()
 
@@ -317,13 +317,11 @@ def test_every_line_lands_in_the_protocol_the_rules_claim(table: pyarrow.Table) 
 
 
 def test_the_stored_column_and_a_rebuilt_row_agree(raw_table: pyarrow.Table) -> None:
-    """The raw classifier agrees with the stored protocol's grammar family."""
+    """The raw classifier and scalar constructor retain the same version."""
     rebuilt = [
         Message(body=one) for one in raw_table.column("body").cast(pyarrow.string()).to_pylist()
     ]
-    stored = [
-        Protocol.from_int(code).family.code for code in raw_table.column("protocol").to_pylist()
-    ]
+    stored = [Protocol.from_int(code).code for code in raw_table.column("protocol").to_pylist()]
     assert [row.protocol.code for row in rebuilt] == stored
 
 
@@ -404,7 +402,7 @@ def test_a_flat_tag_stays_only_for_a_repeat_or_a_lossless_audit(table: pyarrow.T
 def test_every_field_of_the_bridge_line_lands_in_one_of_the_four_places(
     table: pyarrow.Table,
 ) -> None:
-    """The UL default resolves known fields and keeps the unknown one verbatim."""
+    """Registry latest resolves known fields and keeps the unknown one verbatim."""
     assert _tagged(table.column("entries")[BRIDGE]) == [
         (44, "41.2500"),
         (60, "20260814-00:05:01.148"),
@@ -416,16 +414,18 @@ def test_every_field_of_the_bridge_line_lands_in_one_of_the_four_places(
     assert table.column("lastpx")[BRIDGE].as_py() == 41.25
 
 
-def test_the_ul_default_resolves_the_bridge_dictionary(
+def test_the_registry_latest_resolves_the_bridge_dictionary(
     table: pyarrow.Table,
 ) -> None:
-    assert _protocols(table)[BRIDGE] == "UL4.4"
+    assert _protocols(table)[BRIDGE] == "UL5SP2"
     assert _instrument_column(table, "symbol")[BRIDGE].as_py() == "TTF"
     assert _instrument_column(table, "isincode")[BRIDGE].as_py() == "XX0000084733"
     assert _named(table.column("unmap")[BRIDGE]) == [("UNKNOWNVENUEFIELD", "Z9")]
 
 
-def test_the_ul_default_bridge_group_is_structured_in_wire_order(table: pyarrow.Table) -> None:
+def test_the_registry_latest_bridge_group_is_structured_in_wire_order(
+    table: pyarrow.Table,
+) -> None:
     assert table.column("parties")[BRIDGE].as_py() == [
         {
             "partyid": "BUYSIDE",
@@ -533,13 +533,13 @@ def test_a_nested_entry_survives_a_marker_separated_line(table: pyarrow.Table) -
 def test_a_wire_message_that_only_mentions_a_marker_stays_a_wire_message() -> None:
     """A marker inside a `Text <58>` value is prose, so the frame stays numbered."""
     quoted = "8=FIX.4.4|35=8|58=see #A=1 and #B=2|10=1|"
-    assert Message(body=quoted).protocol is Protocol.FIX
-    assert Message(body="8=FIX.4.2|35=ULX|#A=1|#B=2").protocol is Protocol.FIXML, (
+    assert Message(body=quoted).protocol is Protocol.from_str("FIX4.4")
+    assert Message(body="8=FIX.4.2|35=ULX|#A=1|#B=2").protocol is Protocol.from_str("FIXML4.2"), (
         "and marked keys of its own make the same frame mixed"
     )
 
 
-def test_ul_default_leaves_only_unknown_names_unmapped(table: pyarrow.Table) -> None:
+def test_registry_latest_leaves_only_unknown_names_unmapped(table: pyarrow.Table) -> None:
     assert _named(table.column("unmap")[BRIDGE]) == [("UNKNOWNVENUEFIELD", "Z9")]
     assert _instrument_column(table, "isincode")[BRIDGE].as_py() == "XX0000084733"
 
@@ -756,14 +756,16 @@ def test_a_hop_stays_in_the_pair_list_because_one_row_of_it_is_not_one_value(
     assert parsed.column("sendercompid")[0].as_py() == "BUYSIDE", "and the scalars still lifted"
 
 
-def test_ul_default_resolves_names_the_dictionary_knows(tmp_path: Path, codec: FixCodec) -> None:
+def test_registry_latest_resolves_names_the_dictionary_knows(
+    tmp_path: Path, codec: FixCodec
+) -> None:
     parsed = _one_line(
         tmp_path / "named.txt",
         codec,
         "ULBridge",
         "toBridge #ISINCODE=XX00#SYMBOL=TTF#SIDE=1#ACCOUNT=<null>#SENDERCOMPID=BRIDGE1",
     )
-    assert _protocols(parsed) == ["UL4.4"]
+    assert _protocols(parsed) == ["UL5SP2"]
     assert parsed.column("entries")[0].as_py() == []
     assert parsed.column("unmap")[0].as_py() is None
     assert _instrument_column(parsed, "isincode")[0].as_py() == "XX00"
@@ -796,7 +798,7 @@ def test_the_capture_reparses_to_the_same_instants(
     with TextFile.from_path(
         copy,
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     ) as again:
         written = _parsed(again.read_arrow_table(), codec)
     assert written.column("unix").to_pylist() == table.column("unix").to_pylist()
@@ -826,7 +828,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     with TextFile.from_path(
         SAMPLE,
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=own.rules,
+        protocol_codec=own,
     ) as log:
         table = _parsed(log.read_arrow_table(), own)
     found = _protocols(table)
@@ -851,7 +853,7 @@ def test_a_file_that_declares_no_rules_interprets_nothing_past_the_header(
     with TextFile.from_path(
         SAMPLE,
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=quiet.rules,
+        protocol_codec=quiet,
     ) as log:
         table = _parsed(log.read_arrow_table(), quiet)
     assert _protocols(table) == ["OTHER"] * EXPECTED_RECORDS
@@ -991,7 +993,7 @@ def test_a_cold_dictionary_reports_uncertainty_and_never_costs_the_capture(
     with TextFile.from_path(
         SAMPLE,
         msg_type_event_types=event_types(cold.registry),
-        protocol_rules=cold.rules,
+        protocol_codec=cold,
     ) as log:
         table = _parsed(log.read_arrow_table(), cold)
     assert table.num_rows == EXPECTED_RECORDS
@@ -1037,7 +1039,7 @@ def test_a_folder_of_captures_reads_the_messages_too(tmp_path: Path, codec: FixC
         tmp_path,
         static_values={"bridge": "bridge-1"},
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     )
     table = _parsed(files.read_arrow_table(), codec)
     assert table.num_rows == EXPECTED_RECORDS * 2
@@ -1203,7 +1205,7 @@ def _staged_lines(path: Path, plugin: str, messages: list[str]) -> pyarrow.Table
     with TextFile.from_path(
         path,
         msg_type_event_types=event_types(),
-        protocol_rules=Rules.into_default(),
+        protocol_codec=FixCodec(rules=Rules.into_default()),
     ) as log:
         return log.read_arrow_table()
 
@@ -1214,7 +1216,7 @@ def _lines(path: Path, codec: FixCodec, plugin: str, messages: list[str]) -> pya
     with TextFile.from_path(
         path,
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     ) as log:
         return _parsed(log.read_arrow_table(), codec)
 
@@ -1247,7 +1249,7 @@ def _parsed_lines(codec: FixCodec, *lines: str) -> pyarrow.Table:
         messages.column("body"),
         event_types(codec.registry),
         messages.column("plugin"),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     )
     messages = messages.set_column(
         messages.schema.get_field_index("eventtype"), "eventtype", parsed["eventtype"]
@@ -1303,7 +1305,7 @@ def transacted(tmp_path: Path, codec: FixCodec) -> pyarrow.Table:
     with TextFile.from_path(
         path,
         msg_type_event_types=event_types(codec.registry),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     ) as log:
         return _parsed(log.read_arrow_table(), codec)
 
@@ -1382,14 +1384,14 @@ def staged(tmp_path: Path) -> pyarrow.Table:
     with TextFile.from_path(
         path,
         msg_type_event_types=event_types(),
-        protocol_rules=Rules.into_default(),
+        protocol_codec=FixCodec(rules=Rules.into_default()),
     ) as log:
         return log.read_arrow_table()
 
 
 @pytest.fixture
 def resolved(staged: pyarrow.Table, codec: FixCodec) -> pyarrow.Table:
-    """What `parse_fix` makes of the raw rows."""
+    """What `parse_fix_*` makes of the raw rows."""
     return _parsed(staged, codec)
 
 
@@ -1419,7 +1421,7 @@ def test_the_message_stage_keeps_raw_source_facts_and_unresolved_arguments(
     assert "entries" in staged.schema.names
     assert staged.column("msgtype").to_pylist() == ["D", "D", None, None]
     assert not {"Side", "Parties"} & set(staged.schema.names)
-    assert _protocols(staged) == ["FIX", "UL", "MISC", "OTHER"]
+    assert _protocols(staged) == ["FIX4.4", "UL4.4", "MISC", "OTHER"]
     # `8=FIX.4.4|35=D` opened the line and neither is here: `entries` starts at
     # the first field the header lift left behind.
     assert [entry["value"] for entry in staged.column("entries")[0].as_py()[:3]] == [
@@ -1471,22 +1473,6 @@ def test_fix_conversion_never_parses_the_raw_message_again(
     assert counting.parsed_rows == 0
 
 
-def test_the_redirection_sends_one_input_to_all_three_tables(
-    resolved: pyarrow.Table,
-) -> None:
-    """One condition, one place: what `eventtype` the rules made of the line.
-
-    The second row is the interesting one: its named `#MSGTYPE=D` is promoted
-    before FIX transcription, so it takes the same market route as wire tag 35.
-    """
-    rules = Rules()
-    categories = rules.into_arrow_category_array(
-        resolved.column("protocol").combine_chunks(),
-        resolved.column("eventtype").combine_chunks(),
-    )
-    assert categories.to_pylist() == ["market", "market", "misc", "misc"]
-
-
 def test_fixmsg_never_persists_the_raw_body() -> None:
     """Parsed fields and residual entries are the persisted payload reading."""
     assert "body" not in FixMsg.into_field().names
@@ -1528,6 +1514,27 @@ def test_a_fixt_message_resolves_through_its_application_version(codec: FixCodec
     parsed = _parsed_lines(codec, *messages.to_pylist())
     assert _protocols(parsed) == ["FIX5SP2"]
     assert Protocol.from_int(parsed.column("protocol")[0].as_py()).version == "5.0.SP2"
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("8=FIX.4.4|35=D|11=C1|10=000", "FIX4.4"),
+        ("8=FIXT.1.1|35=D|1128=9|11=C1|10=000", "FIX5SP2"),
+        ("8=FIXT.1.1|35=D|11=C1|10=000", "FIXT1.1"),
+        ("8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044", "FIXML4.2"),
+        ("ACCOUNT=A1|MSGTYPE=D|CLORDID=C1|SIDE=1", "UL5SP2"),
+    ],
+    ids=("fix", "fixt-application", "fixt-transport", "fixml", "ul"),
+)
+def test_message_and_fixmsg_store_one_protocol_code(
+    codec: FixCodec, line: str, expected: str
+) -> None:
+    raw = Message.into_arrow_reader([Message(body=line)]).read_all()
+    parsed = _parsed(raw, codec)
+
+    assert _protocols(raw) == [expected]
+    assert _protocols(parsed) == [expected]
 
 
 def test_wire_order_survives_dictionary_completion(codec: FixCodec) -> None:

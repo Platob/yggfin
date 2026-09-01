@@ -32,20 +32,24 @@ the same Iceberg root ref; every other branch must already exist on every
 relevant table.
 
 ```text
-parse_messages -> route_messages -> parse_fix -> route_fix
-                                                +-> parse_instruments
-                                                `-> parse_market -> route_market
-                                                                    +-> flatten_orders
-                                                                    `-> flatten_executions
+parse_messages -> route_messages -+-> parse_fix_market -> route_fix_market
+                                  |                       +-> parse_instruments
+                                  |                       `-> parse_market -> route_market
+                                  |                                           +-> flatten_orders
+                                  |                                           `-> flatten_executions
+                                  +-> parse_fix_misc
+                                  `-> parse_fix_unknown
 ```
 
 Every notebook returns counts through Scrapbook. Routes use attempted/read
 counts rather than new writes, so retries and intentional replays still reach
-their consumers. Empty intervals are skipped. In direct mode `parse_market`
-writes orders and executions itself and returns zero `flatten` counts, so both
-flattening tasks are skipped at runtime. In book mode each flattener is routed
-from its own nested row count; an interval with only orders does not run the
-execution flattener, or vice versa.
+their consumers. The three FIX instances reuse `parse_fix.yml` and receive
+their category from the DAG; the misc and unknown instances are terminal.
+Empty intervals are skipped. In direct mode
+`parse_market` writes orders and executions itself and returns zero `flatten`
+counts, so both flattening tasks are skipped at runtime. In book mode each
+flattener is routed from its own nested row count; an interval with only
+orders does not run the execution flattener, or vice versa.
 
 Set the DAG's boolean `books` parameter to `false` for direct mode without
 editing the deployed YAML; native template rendering keeps it a boolean in the

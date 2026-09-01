@@ -22,7 +22,7 @@ from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset, arrow_chunks
 from rekep.fields import Field, StructField, TimestampField
 from rekep.fields.arrays import groups_of, scattered
-from rekep.filesystems import ArrowFile, resolve
+from rekep.filesystems import ArrowFile
 from rekep.market.event import ALTIDS_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
 from rekep.text.message import Message
@@ -196,8 +196,8 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: UNKNOWN, so registry coverage remains observable.
     msg_type_event_types: Mapping[str, int | str] = dataclass_field(default_factory=dict)
 
-    #: Syntax-only protocol classifier; it never reads registry fields.
-    protocol_rules: Any | None = None
+    #: Protocol classifier and registry-version authority shared with FIX transcription.
+    protocol_codec: Any | None = None
 
     #: Raw key replacements selected by the plugin named in the log header.
     plugin_keys: Mapping[str, Mapping[str, str]] = dataclass_field(default_factory=dict)
@@ -225,23 +225,35 @@ class TextFile(Dataset, io.BufferedIOBase):
     fileio: InitVar[ArrowFile | None] = None
 
     def __post_init__(self, fileio: ArrowFile | None) -> None:
-        """Compile the header and bind one lazy Arrow input owner."""
+        """Normalize the source URI and bind one lazy Arrow input owner."""
         self.header_pattern = compiled_header(self.header_pattern)
         self.plugin_keys = {
             str(plugin): dict(replacements) for plugin, replacements in self.plugin_keys.items()
         }
         self.null_values = tuple(str(value) for value in self.null_values)
-        if fileio is None and self.filesystem is None:
-            self.filesystem, self.url = resolve(self.url)
-        if fileio is None:
-            fileio = ArrowFile.from_location(self.url, self.filesystem)
-        elif fileio.opened is None:
-            fileio = fileio.at(self.url, self.filesystem)
+        location = self.url
+        if fileio is None or fileio.opened is None:
+            path = ArrowPath.from_url(location, self.filesystem)
+            self.url = path.uri
+            self.filesystem = path.filesystem
+            if fileio is None:
+                fileio = ArrowFile.from_location(path.path, path.filesystem)
+            else:
+                fileio = fileio.at(path.path, path.filesystem)
+        else:
+            self.url = Url.from_string(location).into_string()
         if self.filesystem is None:
             self.filesystem = fileio.filesystem
-            if self.filesystem is not None and fileio.path is not None:
-                self.url = fileio.path
         self.fileio = fileio
+
+    @cached_property
+    def arrow_path(self) -> ArrowPath:
+        """The normalized source URI paired with its backend-relative path."""
+        filesystem = self.filesystem
+        path = self.fileio.path
+        if filesystem is None or path is None:
+            raise NotImplementedError("an injected input stream has no filesystem path")
+        return ArrowPath(self.url, filesystem, filesystem_path=path)
 
     # -- building -----------------------------------------------------------
 
@@ -331,7 +343,7 @@ class TextFile(Dataset, io.BufferedIOBase):
     def exists(self) -> bool:
         """Whether the file is there yet."""
         if self.filesystem is not None:
-            return ArrowPath(self.url, self.filesystem).exists()
+            return self.arrow_path.exists()
         opened = self.fileio.opened
         return bool(opened is not None and getattr(opened, "exists", lambda: True)())
 
@@ -347,7 +359,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         if filesystem is None:
             raise NotImplementedError("an injected input stream cannot create a text file")
         try:
-            ArrowPath(self.url, filesystem).write_bytes(b"", overwrite=False)
+            self.arrow_path.write_bytes(b"", overwrite=False)
         except FileExistsError:
             pass
         return self
@@ -447,7 +459,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             filesystem = self.filesystem
             if filesystem is None:
                 raise pyarrow.ArrowNotImplementedError("an injected input stream cannot append")
-            stream = ArrowPath(self.url, filesystem).open_append()
+            stream = self.arrow_path.open_append()
         except pyarrow.ArrowNotImplementedError as error:
             raise NotImplementedError(
                 f"{getattr(self.filesystem, 'type_name', 'input stream')} cannot append, and a "
@@ -766,7 +778,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             bodies,
             self.msg_type_event_types,
             columns["plugin"],
-            self.protocol_rules,
+            self.protocol_codec,
             self.plugin_keys,
             self.null_values,
         )

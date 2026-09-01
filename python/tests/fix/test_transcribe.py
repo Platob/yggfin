@@ -43,7 +43,8 @@ from rekep.fix.transcribe import (
     APPLICATION_VERSION_SOURCE,
     BEGIN_STRING_SOURCE,
     NO_SOURCE,
-    PROTOCOL_DEFAULT_SOURCE,
+    PROTOCOL_SOURCE,
+    REGISTRY_LATEST_SOURCE,
     TagIndex,
     _typed_component_supplement,
     _version_from_evidence,
@@ -687,19 +688,28 @@ def test_a_protocol_rule_does_not_supply_a_fix_version(codec: FixCodec) -> None:
     assert own.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == [None]
 
 
-def test_ul_uses_its_declared_default_only_without_version_evidence() -> None:
+def test_ul_uses_the_registry_latest_only_without_version_evidence() -> None:
     bare = FixCodec(registry=FixRegistry(cache_dir=DATA))
     assert bare.version_of("toBridge #A=1|#B=2") == (
-        "4.4",
-        PROTOCOL_DEFAULT_SOURCE,
+        "5.0.SP2",
+        REGISTRY_LATEST_SOURCE,
     )
-    assert bare.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == ["4.4"]
-
-    disabled = FixCodec(registry=bare.registry, ul_default_version=None)
-    assert disabled.version_of("toBridge #A=1|#B=2") == (None, NO_SOURCE)
+    assert bare.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == ["5.0.SP2"]
 
 
-def test_ul_version_evidence_leads_the_declared_default(codec: FixCodec) -> None:
+@pytest.mark.parametrize("versions", [(), ("FIXT1.1",)], ids=("empty", "transport-only"))
+def test_ul_stays_unversioned_without_an_application_registry(
+    tmp_path: Path, versions: tuple[str, ...]
+) -> None:
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry._store_versions(versions)
+    codec = FixCodec(registry=registry)
+
+    assert codec.version_of("toBridge #A=1|#B=2") == (None, NO_SOURCE)
+    assert codec.versions_of(pyarrow.array(["toBridge #A=1|#B=2"])).to_pylist() == [None]
+
+
+def test_ul_version_evidence_leads_the_registry_latest(codec: FixCodec) -> None:
     messages = pyarrow.array(
         [
             "toBridge #BEGINSTRING=FIX.4.2|#MSGTYPE=D",
@@ -708,7 +718,23 @@ def test_ul_version_evidence_leads_the_declared_default(codec: FixCodec) -> None
         ]
     )
 
-    assert codec.versions_of(messages, "UL").to_pylist() == ["4.2", None, "4.4"]
+    assert codec.versions_of(messages, "UL").to_pylist() == ["4.2", None, "5.0.SP2"]
+
+
+def test_embedded_protocol_version_leads_the_registry_latest(codec: FixCodec) -> None:
+    message = "toBridge #MSGTYPE=D|#SYMBOL=X"
+    pairs = codec.into_pairs(pyarrow.array([message]), Protocol.UL)
+    entries = codec.into_message_entries(pairs)
+    protocols = pyarrow.array(
+        [Protocol.with_version(Protocol.UL, "4.4").into_stored()],
+        Protocol.into_storage_type(),
+    )
+
+    assert codec.version_of(message, "UL4.4") == ("4.4", PROTOCOL_SOURCE)
+    assert codec.versions_of_pairs(pairs, "UL4.4").to_pylist() == ["4.4"]
+    versions, sources = codec.versions_of_entries(entries, None, protocols=protocols)
+    assert versions.to_pylist() == ["4.4"]
+    assert sources.to_pylist() == [PROTOCOL_SOURCE]
 
 
 @pytest.mark.parametrize(
@@ -1371,8 +1397,7 @@ def _completed_ul(codec: FixCodec, message: str) -> tuple[str, pyarrow.Array]:
     return version, codec.complete_entries(entries, version)
 
 
-def test_ul_44_accepts_a_later_standard_party_member(packaged: FixCodec) -> None:
-    """A backported EP field is typed while the recorded read version remains 4.4."""
+def test_latest_ul_accepts_the_standard_party_member(packaged: FixCodec) -> None:
     message = (
         "#NOPARTYIDS=1|"
         "#NOPARTYIDS[0]=PARTYID=SYSTEM-1"
@@ -1384,7 +1409,7 @@ def test_ul_44_accepts_a_later_standard_party_member(packaged: FixCodec) -> None
     version, entries = _completed_ul(packaged, message)
     columns, residual = packaged.into_component_columns(entries, version)
 
-    assert version == "4.4"
+    assert version == "5.0.SP2"
     assert columns["parties"].to_pylist() == [
         [
             {
@@ -1471,7 +1496,7 @@ def test_backported_tag_is_known_in_scalar_and_batch_paths(packaged: FixCodec) -
     stored = rekep.FixMsg.from_message_batch([rekep.Message.from_text(message)], packaged)
     batch = rekep.FixMsg.from_dict(stored.to_pylist()[0])
 
-    assert scalar.protocol.version == batch.protocol.version == "4.4"
+    assert scalar.protocol.version == batch.protocol.version == "5.0.SP2"
     assert scalar.unmap is None and batch.unmap is None
     assert scalar.get(2376).value == batch.get(2376).value == 30
     assert scalar.get(2376).raw == "exchangeordersubmitter", "scalar audit keeps source text"

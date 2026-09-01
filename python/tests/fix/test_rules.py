@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pyarrow
 import pytest
+from pyiceberg.expressions import And, EqualTo, In, Not, Or
 
 from rekep.enums.codes import Direction, Protocol
 from rekep.fix import Rule, Rules
@@ -117,14 +118,26 @@ def test_a_batch_classifies_every_row_where_it_stands() -> None:
 @pytest.mark.parametrize(
     ("message", "expected", "msgtype"),
     [
-        ("8=FIX.4.4|35=D|11=ORDER-1|55=AAPL|54=1|38=10|10=000", "FIX", "D"),
-        (SOH.join(("8=FIX.4.2", "35=8", "150=2", "39=2", "10=000")), "FIX", "8"),
-        ("8=FIX.4.2|35=UL|49=A|56=B|10=000", "FIX", "UL"),
-        ("8=FIX.4.4|35=D|11=ORDER-1|SYMBOL=AAPL|SIDE=1|10=000", "FIXML", "D"),
-        ("8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044", "FIXML", "UL"),
-        ("ACCOUNT=A1|MSGTYPE=D|CLORDID=ORDER-1|SYMBOL=AAPL|SIDE=1", "UL", "D"),
-        ("EXECTYPE=fill|CURRENCY=NOK|COUNTERAMOUNT=1200", "UL", None),
-        ("MSGTYPE=UL|ACCOUNT=A1|SYMBOL=AAPL", "UL", "UL"),
+        ("8=FIX.4.4|35=D|11=ORDER-1|55=AAPL|54=1|38=10|10=000", "FIX4.4", "D"),
+        (
+            SOH.join(("8=FIX.4.2", "35=8", "150=2", "39=2", "10=000")),
+            "FIX4.2",
+            "8",
+        ),
+        ("8=FIX.4.2|35=UL|49=A|56=B|10=000", "FIX4.2", "UL"),
+        (
+            "8=FIX.4.4|35=D|11=ORDER-1|SYMBOL=AAPL|SIDE=1|10=000",
+            "FIXML4.4",
+            "D",
+        ),
+        ("8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044", "FIXML4.2", "UL"),
+        (
+            "ACCOUNT=A1|MSGTYPE=D|CLORDID=ORDER-1|SYMBOL=AAPL|SIDE=1",
+            "UL5SP2",
+            "D",
+        ),
+        ("EXECTYPE=fill|CURRENCY=NOK|COUNTERAMOUNT=1200", "UL5SP2", None),
+        ("MSGTYPE=UL|ACCOUNT=A1|SYMBOL=AAPL", "UL5SP2", "UL"),
     ],
     ids=(
         "wire-tags",
@@ -140,9 +153,7 @@ def test_a_batch_classifies_every_row_where_it_stands() -> None:
 def test_the_shape_decides_the_protocol_and_msgtype_stays_its_own(
     message: str, expected: str, msgtype: str | None
 ) -> None:
-    """`35=UL` is a MsgType. A numbered-only frame carrying it is FIX; the same
-    frame with a named payload beside it is FIXML; a bare named document is UL
-    whatever its `MSGTYPE` says. The discriminator survives all three."""
+    """The grammar and its resolved version share one protocol code."""
     parsed = Message.parse_arrow(pyarrow.array([message], pyarrow.string()))
     assert spelled(parsed["protocol"]) == [expected]
     assert parsed["msgtype"].to_pylist() == [msgtype]
@@ -164,8 +175,9 @@ def test_a_value_full_of_digits_is_still_a_value() -> None:
 
 def test_the_scalar_row_and_the_column_agree() -> None:
     """One classifier: a row built from text answers what its batch answers."""
-    for line, expected in LINES.items():
-        assert Message(body=line).protocol.code == expected
+    for line in LINES:
+        parsed = Message.parse_arrow(pyarrow.array([line], pyarrow.string()))
+        assert Message(body=line).protocol.code == spelled(parsed["protocol"])[0]
 
 
 def test_xml_inside_a_fix_value_does_not_replace_the_fix_envelope() -> None:
@@ -362,52 +374,29 @@ def test_direction_words_produce_packed_codes_before_the_payload() -> None:
     ]
 
 
-def test_categories_agree_one_row_and_one_column_at_a_time() -> None:
-    protocols = ["FIX", "OTHER", "FIXML", "UL", "OTHER", "SBE", None]
-    eventtypes = [
-        EventType.ORDER,
-        EventType.MISC,
-        EventType.UNKNOWN,
-        EventType.UNKNOWN,
-        EventType.UNKNOWN,
-        0,
-        None,
-    ]
-    scalar = [
-        DEFAULT.category_of(protocol, eventtype)
-        for protocol, eventtype in zip(protocols, eventtypes, strict=True)
-    ]
-    assert scalar == [
-        MARKET_CATEGORY,
-        MISC_CATEGORY,
-        MISC_CATEGORY,
-        MISC_CATEGORY,
-        UNKNOWN_CATEGORY,
-        UNKNOWN_CATEGORY,
-        UNKNOWN_CATEGORY,
-    ]
-    vector = DEFAULT.into_arrow_category_array(
-        packed(*protocols),
-        pyarrow.array([None if eventtype is None else int(eventtype) for eventtype in eventtypes]),
+def test_category_filters_are_one_exact_iceberg_partition() -> None:
+    versions = ("4.4", "5.0.SP2")
+    market = In("eventtype", EventType.ranked_at_least(EventType.INTENT))
+    protocols = {protocol.into_stored() for protocol in DEFAULT.protocols}
+    protocols.update(
+        Protocol.with_version(protocol, version).into_stored()
+        for protocol in DEFAULT.protocols
+        for version in versions
     )
-    assert vector.to_pylist() == scalar
+    known_non_market = Or(
+        EqualTo("eventtype", int(EventType.MISC)),
+        In("protocol", protocols),
+    )
 
-
-def test_categories_agree_on_codes_no_member_spells() -> None:
-    """Case-variant packed bytes, a previous release's ordinal ids, junk:
-    the scalar rule and the kernel answer identically on every one, because
-    `from_int` answers only on the compiled codes the kernel's sets hold."""
-    respelled = int.from_bytes(b"order", "big", signed=True)
-    eventtypes = [respelled, 110, 210, 410, 999, -1, 0]
-    for protocol in (None, "FIX"):
-        scalar = [DEFAULT.category_of(protocol, eventtype) for eventtype in eventtypes]
-        vector = DEFAULT.into_arrow_category_array(
-            packed(*[protocol] * len(eventtypes)),
-            pyarrow.array(eventtypes, pyarrow.int64()),
-        )
-        assert vector.to_pylist() == scalar
-    assert DEFAULT.category_of("FIX", respelled) == MISC_CATEGORY
-    assert DEFAULT.category_of(None, respelled) == UNKNOWN_CATEGORY
+    assert DEFAULT.into_iceberg_category_filter(MARKET_CATEGORY, versions) == market
+    assert DEFAULT.into_iceberg_category_filter(MISC_CATEGORY, versions) == And(
+        Not(market), known_non_market
+    )
+    assert DEFAULT.into_iceberg_category_filter(UNKNOWN_CATEGORY, versions) == And(
+        Not(market), Not(known_non_market)
+    )
+    with pytest.raises(ValueError, match="category must be one of"):
+        DEFAULT.into_iceberg_category_filter("other")
 
 
 def test_a_rule_may_be_told_apart_by_its_plugin() -> None:
@@ -450,10 +439,7 @@ def test_a_versioned_protocol_uses_its_family_rule() -> None:
     assert DEFAULT.rule("FIX4.4") is DEFAULT.rule(Protocol.FIX)
     assert DEFAULT.rule("FIX.5.0.SP2") is DEFAULT.rule(Protocol.FIX)
     assert DEFAULT.rule("FIXML.5.0.SP2") is DEFAULT.rule(Protocol.FIXML)
-    assert DEFAULT.category_of("UL4.4", EventType.ORDER) == MARKET_CATEGORY
-    assert DEFAULT.into_arrow_category_array(
-        packed("UL4.4"), pyarrow.array([int(EventType.UNKNOWN)], pyarrow.int64())
-    ).to_pylist() == [MISC_CATEGORY]
+    assert Protocol.UL in DEFAULT.protocols
 
 
 @pytest.mark.parametrize(

@@ -67,17 +67,19 @@ Wire FIX reads `BeginString <8>`. FIXT then reads `ApplVerID <1128>` or
 `DefaultApplVerID <1137>`. The resolved version is stored in `protocol`, so a
 persisted row is reproducible.
 
-UL bridge rows commonly omit all three fields. `FixCodec.ul_default_version`
-declares the application version used for those rows and defaults to `4.4`:
+UL bridge rows commonly omit all three fields. They use the newest application
+version in the selected registry:
 
 ```python
-from rekep.fix import FixCodec
+from rekep.fix import FixRegistry
 
-codec = FixCodec(ul_default_version="5.0.SP2")
+registry = FixRegistry()
+assert registry.latest_application_version == "5.0.SP2"
 ```
 
-This default applies only to unversioned UL. Unknown ordinary FIX evidence is
-not silently replaced.
+This fallback applies only to evidence-free UL. An embedded protocol version
+or ordinary FIX evidence stays authoritative; unresolved FIX evidence is not
+silently replaced.
 
 ## Reference envelopes
 

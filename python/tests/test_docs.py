@@ -21,20 +21,24 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
-import yaml
+
+from rekep.tasks import Task
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
 
-WORKFLOW_STEPS = (
-    ("parse-messages", "parse_messages"),
-    ("parse-fix", "parse_fix"),
-    ("parse-instruments", "parse_instruments"),
-    ("parse-market", "parse_market"),
-    ("flatten-orders", "flatten_orders"),
-    ("flatten-executions", "flatten_executions"),
+WORKFLOW_TASKS = (
+    ("parse-messages", "parse_messages/parse_messages.yml"),
+    ("parse-fix", "parse_fix/parse_fix.yml"),
+    ("parse-instruments", "parse_instruments/parse_instruments.yml"),
+    ("parse-market", "parse_market/parse_market.yml"),
+    ("flatten-orders", "flatten_orders/flatten_orders.yml"),
+    ("flatten-executions", "flatten_executions/flatten_executions.yml"),
 )
 
-TASK_NAMES = (*[task for _, task in WORKFLOW_STEPS], "optimize_iceberg")
+TASK_DOCUMENTS = (
+    *(document for _, document in WORKFLOW_TASKS),
+    "optimize_iceberg/optimize_iceberg.yml",
+)
 
 #: A fenced block and the language it claims, for the `python` ones.
 _FENCE = re.compile(r"^```(\w+)\n(.*?)^```", re.MULTILINE | re.DOTALL)
@@ -288,30 +292,32 @@ def test_fix_component_docs_keep_nested_contracts_collapsible() -> None:
     assert "font-weight: 700" not in styles
 
 
-@pytest.mark.parametrize(("page_name", "task_name"), WORKFLOW_STEPS)
-def test_every_workflow_step_has_a_runnable_command(page_name: str, task_name: str) -> None:
+@pytest.mark.parametrize(("page_name", "task_document"), WORKFLOW_TASKS)
+def test_every_workflow_step_has_a_runnable_command(page_name: str, task_document: str) -> None:
     page = (DOCS / "pipeline" / "tasks" / f"{page_name}.md").read_text(encoding="utf-8")
     workflow = (DOCS / "pipeline" / "operations" / "run.md").read_text(encoding="utf-8")
-    document = DOCS.parent / "tasks" / task_name / f"{task_name}.yml"
+    document = DOCS.parent / "tasks" / task_document
+    task = Task.from_yaml(document)
+    relative = document.relative_to(DOCS.parent).as_posix()
 
     assert document.is_file()
     assert "## Run this step" in page
     assert "uv run --project python --group runner rekep task run" in page
-    assert f"tasks/{task_name}/{task_name}.yml" in page
-    assert f"--output {task_name}.executed.ipynb" in page
-    assert f"tasks/{task_name}/{task_name}.yml" in workflow
+    assert relative in page
+    assert f"--output {task.name}.executed.ipynb" in page
+    assert relative in workflow
 
 
 def test_every_task_injects_one_catalog_document() -> None:
     """Notebook parameters keep catalog identity and properties atomic."""
-    for task_name in TASK_NAMES:
-        directory = DOCS.parent / "tasks" / task_name
-        document = yaml.safe_load((directory / f"{task_name}.yml").read_text(encoding="utf-8"))
-        parameters = document["parameters"]
+    for task_document in TASK_DOCUMENTS:
+        document = DOCS.parent / "tasks" / task_document
+        task = Task.from_yaml(document)
+        parameters = task.parameters
         assert "catalog_properties" not in parameters
         assert set(parameters["catalog"]) == {"name", "properties"}
 
-        notebook = json.loads((directory / f"{task_name}.ipynb").read_text(encoding="utf-8"))
+        notebook = json.loads(task.into_notebook_path(document).read_text(encoding="utf-8"))
         source = "".join(
             line
             for cell in notebook["cells"]
@@ -322,16 +328,47 @@ def test_every_task_injects_one_catalog_document() -> None:
         assert "catalog_properties" not in source
 
 
+def test_airflow_reuses_one_parse_fix_definition_for_every_category() -> None:
+    document = DOCS.parent / "tasks" / "parse_fix" / "parse_fix.yml"
+    configured = Task.from_yaml(document)
+    assert configured.name == "parse_fix"
+    assert configured.parameters["category"] == "market"
+    assert "task_name" not in configured.parameters
+    assert "target" not in configured.parameters
+
+    notebook = json.loads(configured.into_notebook_path(document).read_text(encoding="utf-8"))
+    parameter_cell = next(
+        cell for cell in notebook["cells"] if "parameters" in cell["metadata"].get("tags", ())
+    )
+    parameter_source = "".join(parameter_cell["source"])
+    source = "".join(
+        line for cell in notebook["cells"] if cell["cell_type"] == "code" for line in cell["source"]
+    )
+    assert "task_name =" not in parameter_source
+    assert "target =" not in parameter_source
+    assert 'task_name = f"parse_fix_{category}"' in source
+    assert 'target = f"fix.{category}"' in source
+
+    dag = (DOCS.parent / "tasks" / "airflow" / "market_pipeline.py").read_text(encoding="utf-8")
+    assert 'fix_document = "tasks/parse_fix/parse_fix.yml"' in dag
+    compact = "".join(dag.split())
+    for category in ("market", "misc", "unknown"):
+        assert (
+            f'notebook_task("parse_fix_{category}",fix_document,category="{category}")' in compact
+        )
+        assert not (document.parent / f"parse_fix_{category}.yml").exists()
+
+
 def test_workflow_tasks_commit_bounded_groups_of_batches() -> None:
-    """The six jobs expose one cadence and keep the row cap optional."""
-    for page_name, task_name in WORKFLOW_STEPS:
-        directory = DOCS.parent / "tasks" / task_name
-        document = yaml.safe_load((directory / f"{task_name}.yml").read_text(encoding="utf-8"))
-        parameters = document["parameters"]
+    """The task documents expose one cadence and keep the row cap optional."""
+    for page_name, task_document in WORKFLOW_TASKS:
+        document = DOCS.parent / "tasks" / task_document
+        task = Task.from_yaml(document)
+        parameters = task.parameters
         assert parameters["commit_batch_num"] == 8
         assert parameters["commit_row_size"] is None
 
-        notebook = json.loads((directory / f"{task_name}.ipynb").read_text(encoding="utf-8"))
+        notebook = json.loads(task.into_notebook_path(document).read_text(encoding="utf-8"))
         parameter_cell = next(
             cell for cell in notebook["cells"] if "parameters" in cell["metadata"].get("tags", ())
         )
@@ -536,6 +573,24 @@ def _hooks() -> ModuleType:
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     return importlib.import_module("docs_hooks")
+
+
+def test_the_ascii_code_page_covers_each_physical_width() -> None:
+    """The shared widget and its catalog carry every persisted ASCII base."""
+    catalog = _hooks()._enum_catalog()["enums"]
+    script = (DOCS / "javascripts" / "ascii-codes.js").read_text(encoding="utf-8")
+
+    assert {(one["base"], one["byte_width"], one["stored"]) for one in catalog} == {
+        ("Ascii32", 4, "int32"),
+        ("Ascii64", 8, "int64"),
+        ("Ascii128", 16, "fixed_size_binary[16]"),
+    }
+    assert all(f'value="{width}"' in script for width in (4, 8, 16))
+    by_name = {one["name"]: one for one in catalog}
+    for name in ("Protocol", "Plugin"):
+        assert by_name[name]["base"] == "Ascii128"
+        assert by_name[name]["stored"] == "fixed_size_binary[16]"
+        assert all(len(member["value"]) == 32 for member in by_name[name]["members"])
 
 
 def test_a_neutral_inverts_and_an_accent_is_left_alone() -> None:

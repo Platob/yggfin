@@ -1,13 +1,15 @@
 # Notebook workflow
 
-Pipeline implementations live in `tasks/<name>/<name>.ipynb`. Each adjacent
-YAML file points to its notebook and supplies parameters:
+Pipeline implementations live under `tasks/<name>/`. Each adjacent YAML file
+points to its notebook and supplies parameters. One FIX task document is
+reused for every routed category:
 
 ```yaml
 name: parse_fix
 notebook: parse_fix.ipynb
 parameters:
   source: logs.messages
+  category: market
 ```
 
 Run the same task document locally that Airflow gives Papermill:
@@ -15,6 +17,7 @@ Run the same task document locally that Airflow gives Papermill:
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
+  --parameter category=market \
   --output parse_fix.executed.ipynb
 ```
 
@@ -24,22 +27,23 @@ contains no prebuilt pipeline jobs or task reports.
 ## Flow
 
 ```text
-Text files -> parse_messages -> logs.messages -> parse_fix -+-> fix.misc
-                                                   |        `-> fix.unknown
-                                                   `-> fix.market -+-> parse_instruments -> market.instruments
-                                                                   `-> parse_market -+-> Book -+-> Order
-                                                                                     |         `-> Execution
-                                                                                     `---------> Order + Execution (books: false)
+Text files -> parse_messages -> logs.messages -+-> parse_fix_market -> fix.market -+-> parse_instruments -> market.instruments
+                                               |                                  `-> parse_market -+-> Book -+-> Order
+                                               |                                                    |         `-> Execution
+                                               |                                                    `---------> Order + Execution (books: false)
+                                               +-> parse_fix_misc -> fix.misc
+                                               `-> parse_fix_unknown -> fix.unknown
 ```
 
-`parse_messages` tokenizes once and assigns `MsgType` and `eventtype`;
-`parse_fix` pushes the market-event selection to Iceberg and owns protocol and
-dictionary resolution from there. Keeping `logs.messages` is what lets a field
-or protocol change rerun FIX resolution without reopening the source logs --
-only a MsgType event-metadata change rebuilds it, because that changes its
-stored `eventtype`.
+`parse_messages` tokenizes once and assigns `MsgType` and `eventtype`.
+Airflow runs the one `parse_fix` definition three times with mutually exclusive
+event categories. Each run transcribes only its selected rows and owns one
+`fix.*` table. Keeping `logs.messages` is what lets a field or protocol
+change rerun FIX resolution without reopening the source logs -- only a
+MsgType event-metadata change rebuilds it, because that changes its stored
+`eventtype`.
 
-`parse_instruments` reads the rows `parse_fix` wrote to `fix.market` and
+`parse_instruments` reads the rows `parse_fix_market` wrote to `fix.market` and
 versions `market.instruments` from their nested `Instrument` components. One
 current `InstUpdate` is keyed by its sixteen-byte `xhash`, with
 `instrument.symbolticker` as its readable identity. It is a second reader of

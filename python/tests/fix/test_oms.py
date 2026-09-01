@@ -6,7 +6,6 @@ import pyarrow
 
 from rekep.enums import EventType, State
 from rekep.fix.oms import OmsOrder, OmsOrders
-from rekep.fix.rules import Rules
 from rekep.market.orders import Execution, Order
 from rekep.text.fixmsg import FixMsg
 from rekep.text.message import Message
@@ -174,9 +173,6 @@ def test_oms_orders_classify_only_unclassified_rows_as_market_orders() -> None:
         int(EventType.MISC),
         int(EventType.EXECUTION),
     ]
-    assert Rules().into_arrow_category_array(
-        parsed.column("protocol"), parsed.column("eventtype")
-    ).to_pylist() == ["market", "misc", "market"]
 
 
 def test_oms_market_translation_accepts_storage_empty_component_lists() -> None:

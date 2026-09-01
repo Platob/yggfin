@@ -46,6 +46,19 @@ spelling this package has never compiled still answers.
 
 <div class="ascii-codes" data-ascii-codes data-source="../../assets/enum-codes.json"></div>
 
+### Ascii128
+
+Select `Ascii128` above to enter or copy a sixteen-byte value as 32 hexadecimal
+digits. The decoded spelling uses the same padding rule as the integer bases:
+
+```python
+from rekep.enums import Plugin
+
+encoded = Plugin.from_str("XMLAPI").into_stored()
+assert encoded == b"XMLAPI".ljust(16, b"\0")
+assert Plugin.from_stored(encoded).code == "XMLAPI"
+```
+
 ## What a code may be
 
 A code is at most `BYTE_WIDTH` characters of printable ASCII — bytes 32 to

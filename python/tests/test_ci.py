@@ -248,9 +248,18 @@ def _repository(tmp_path: Path, version: str, tags: tuple[str, ...] = ()) -> Pat
         ("0.1.0", ("v0.1.0",), False, "0.1.0"),
         ("0.1.0", ("v0.1.0", "v0.2.0"), False, "0.2.0"),
         ("1.0.0", ("v0.9.0", "v0.10.0"), True, "0.10.0"),
+        ("1.0.0", ("v1",), False, "1"),
         ("1.0.0rc1", ("v0.9.0",), True, "0.9.0"),
     ],
-    ids=["first", "bump", "already", "behind", "ten-sorts-after-nine", "prerelease"],
+    ids=[
+        "first",
+        "bump",
+        "already",
+        "behind",
+        "ten-sorts-after-nine",
+        "same-release-abbreviated-tag",
+        "prerelease",
+    ],
 )
 def test_a_release_is_cut_only_for_a_version_ahead_of_every_tag(
     tmp_path: Path, version: str, tags: tuple[str, ...], cut: bool, previous: str
@@ -289,7 +298,17 @@ def test_a_computed_version_is_refused_rather_than_guessed_at(tmp_path: Path) ->
         RELEASE.project_version(pyproject)
 
 
+@pytest.mark.parametrize("version", ["1", "1.0", "1.0.0.0", "01.0.0"])
+def test_a_declared_release_uses_canonical_three_part_versioning(
+    tmp_path: Path, version: str
+) -> None:
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(f'[project]\nname = "rekep"\nversion = "{version}"\n', encoding="utf-8")
+    with pytest.raises((ValueError, RELEASE.InvalidVersion), match="version|Invalid"):
+        RELEASE.project_version(pyproject)
+
+
 def test_the_declared_version_is_the_one_the_workflow_reads() -> None:
     """The script defaults to the path the repository actually keeps it at."""
-    assert RELEASE.project_version(ROOT / "python" / "pyproject.toml")
+    assert RELEASE.project_version(ROOT / "python" / "pyproject.toml") == "1.0.0"
     assert sys.executable, "the script runs under whatever uv resolves"

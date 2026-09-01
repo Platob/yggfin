@@ -42,11 +42,15 @@ def rooted_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
     return rooted
 
 
-def notebook_task(task_id: str, document: str) -> PapermillOperator:
+def notebook_task(
+    task_id: str, document: str, *, category: str | None = None
+) -> PapermillOperator:
     """Build one operator from an adjacent YAML/notebook pair."""
     path = ROOT / document
     configured = Task.from_yaml(path)
     parameters = rooted_parameters(configured.parameters)
+    if category is not None:
+        parameters["category"] = category
     if "branch" in parameters:
         parameters["branch"] = "{{ params.branch }}"
     if "books" in parameters:
@@ -107,7 +111,14 @@ def market_pipeline() -> None:
     messages = notebook_task(
         "parse_messages", "tasks/parse_messages/parse_messages.yml"
     )
-    parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
+    # Category is the only per-run input; the notebook derives its table and
+    # observable task name so neither can drift from the selected rows.
+    fix_document = "tasks/parse_fix/parse_fix.yml"
+    parsed_market = notebook_task("parse_fix_market", fix_document, category="market")
+    parsed_misc = notebook_task("parse_fix_misc", fix_document, category="misc")
+    parsed_unknown = notebook_task(
+        "parse_fix_unknown", fix_document, category="unknown"
+    )
     instrument_updates = notebook_task(
         "parse_instruments", "tasks/parse_instruments/parse_instruments.yml"
     )
@@ -118,15 +129,20 @@ def market_pipeline() -> None:
     )
 
     messages_route = after_notebook.override(task_id="route_messages")(
-        output=messages.output, then={"parse_fix": "read"}
+        output=messages.output,
+        then={
+            "parse_fix_market": "read",
+            "parse_fix_misc": "read",
+            "parse_fix_unknown": "read",
+        },
     )
-    messages_route >> parsed
+    messages_route >> [parsed_market, parsed_misc, parsed_unknown]
 
-    # Both read `fix.market`, neither writes what the other reads, so they run
-    # side by side on the one count that says the table gained rows.
-    fix_route = after_notebook.override(task_id="route_fix")(
-        output=parsed.output,
-        then={"parse_instruments": "routed.market", "parse_market": "routed.market"},
+    # Both consumers read `fix.market`; the two terminal FIX tasks have no
+    # downstream work and never hold this branch open.
+    fix_route = after_notebook.override(task_id="route_fix_market")(
+        output=parsed_market.output,
+        then={"parse_instruments": "read", "parse_market": "read"},
     )
     fix_route >> [instrument_updates, market]
 

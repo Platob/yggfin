@@ -112,7 +112,7 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
 - name: sourceurl
   type: string
-  description: Path of the log the row came from, as its filesystem addresses it.
+  description: Normalized absolute URI of the log the row came from.
   fix: {name: SourceURL}
 - name: sourcerownum
   type: int64

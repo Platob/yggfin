@@ -232,14 +232,19 @@ configuration. Airflow executes the notebooks through its Papermill provider.
 The supported graph is:
 
 ```text
-parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
-                             `-> parse_market -+-> flatten_orders
-                                               `-> flatten_executions
+parse_messages -+-> parse_fix_market -> fix.market -+-> parse_instruments -> market.instruments
+               |                                  `-> parse_market -+-> flatten_orders
+               |                                                    `-> flatten_executions
+               +-> parse_fix_misc -> fix.misc
+               `-> parse_fix_unknown -> fix.unknown
 ```
 
-`parse_fix` owns FIX translation and the resolved `unix` clock. It nests the
-`Instrument` component, whose class owns ticker and ISIN derivation.
-`parse_instruments` reads the rows it wrote and versions
+The one `parse_fix` task definition receives a category for three independent
+Airflow runs after `parse_messages`. Each pushes its complete category predicate
+into Iceberg, transcribes only selected rows, and owns one `fix.*` table.
+`parse_fix_market` owns FIX translation and the resolved `unix` clock for market rows. It nests
+the `Instrument` component, whose class owns ticker and ISIN derivation.
+`parse_instruments` reads the rows it wrote to `fix.market` and versions
 `market.instruments` through `InstUpdate.versioned`, so every caller
 uses the same enrichment and versioning rule.
 

@@ -1,37 +1,75 @@
 # Parse FIX
 
-`parse_fix` transcribes `logs.messages` through the FIX registry and writes
-typed `FixMsg` rows.
+One task document runs the shared notebook for one category. Airflow injects
+`market`, `misc`, and `unknown` into three parallel runs; each scans only its
+category and writes one typed `FixMsg` table.
 
 ## Run this step
 
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
+  --parameter category=market \
   --output parse_fix.executed.ipynb
 ```
 
-Add a half-open replay interval when needed:
+Run every category in parallel with distinct output documents:
 
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
+  --parameter category=market \
+  --output parse_fix_market.executed.ipynb &
+
+uv run --project python --group runner rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --parameter category=misc \
+  --output parse_fix_misc.executed.ipynb &
+
+uv run --project python --group runner rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --parameter category=unknown \
+  --output parse_fix_unknown.executed.ipynb &
+
+wait
+```
+
+Add the same half-open replay interval to every task when needed:
+
+```bash
+uv run --project python --group runner rekep task run \
+  tasks/parse_fix/parse_fix.yml \
+  --parameter category=market \
   --parameter start=2026-08-21T10:00:00Z \
   --parameter end=2026-08-21T11:00:00Z \
-  --output parse_fix.executed.ipynb
+  --output parse_fix_market.executed.ipynb
 ```
 
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 
-## Transcription
+## Category scans
 
 ```text
-logs.messages
-  -> resolve protocol, tags, values and components
-  -> derive transaction and creation clocks
-  -> nest Instrument and repeating groups
-  -> fix.market | fix.misc | fix.unknown
+logs.messages -+-> market predicate  -> transcribe -> fix.market
+               +-> misc predicate    -> transcribe -> fix.misc
+               `-> unknown predicate -> transcribe -> fix.unknown
 ```
+
+The predicates are mutually exclusive and execute in Iceberg before FIX
+transcription:
+
+| Category run | Selection | Target |
+| --- | --- | --- |
+| `parse_fix_market` | `eventtype` ranked at least `INTENT` | `fix.market` |
+| `parse_fix_misc` | not market, and either `eventtype == MISC` or a configured protocol | `fix.misc` |
+| `parse_fix_unknown` | not market, not `MISC`, and no configured protocol | `fix.unknown` |
+
+MsgTypes in `exclude_msgtypes` are removed before those predicates. A null
+MsgType remains eligible for best-effort transcription. Only
+`parse_fix_market` has downstream consumers; the other two tables are
+terminal audit products.
+
+## Transcription
 
 A market row keeps filterable values flat and the reference component nested:
 
@@ -58,17 +96,23 @@ unpromoted fields remain in `entries`; unknown names move to `unmap`. A bad
 field fills the row's `error` and the remaining fields are transcribed on a
 best-effort basis.
 
-## Rules
+## Task parameters
 
-The adjacent task document owns estate-specific readings:
+The one task document owns the shared parsing and commit rules:
 
 ```yaml
 fix_dictionary: null # Packaged registry.zip; set a path or URL to override it.
 null_values: ["", "null", "<null>", "n/a", "none"]
 exclude_msgtypes: ["0", "1"] # Heartbeat and TestRequest stay in logs.messages.
-ul_default_version: "4.4" # Stored as UL4.4 when the row states no version.
+protocols: null
+fields: null
 commit_batch_num: 8
 commit_row_size: null # Optional earlier row cap.
+```
+
+Custom field rules use the same shape:
+
+```yaml
 fields:
   rules:
     - field: "9999"
@@ -78,15 +122,11 @@ fields:
 ```
 
 FIX dates, times and timestamps are stored as `timestamp[us]`; date-only
-values land at midnight. Keep `fix_dictionary` and custom protocol rules
+values land at midnight. An evidence-free UL row uses the selected registry's
+newest application version. Keep `fix_dictionary` and custom protocol rules
 aligned with `parse_messages.yml`.
 
-The source scan excludes configured MsgTypes before transcription. Rows with
-no MsgType remain eligible for best-effort parsing. Routed categories buffer
-at most eight RecordBatches before each storage commit.
-
-Market event codes route to `fix.market`. Known non-market traffic routes to
-`fix.misc`; an unknown event on an unknown protocol routes to `fix.unknown`.
-The source scan uses recording time, while output `unix` uses the best FIX
-clock. A consumer requests event order when it needs it; this task does not
-add a physical write sort.
+Each category run buffers at most eight input RecordBatches before a storage commit.
+The source interval uses the recording clock; the resulting `unix` uses the
+best FIX clock. Consumers request event ordering when needed, so the FIX tasks
+do not add a physical write sort.

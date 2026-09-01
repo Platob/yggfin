@@ -109,7 +109,8 @@ NULL_VALUES: frozenset[str] = frozenset({"", "null", "<null>", "n/a", "none"})
 #: either transport or application evidence.
 BEGIN_STRING_SOURCE = "begin_string"
 APPLICATION_VERSION_SOURCE = "application_version"
-PROTOCOL_DEFAULT_SOURCE = "protocol_default"
+PROTOCOL_SOURCE = "protocol"
+REGISTRY_LATEST_SOURCE = "registry_latest"
 NO_SOURCE = "none"
 
 _APPL_VERSIONS = {
@@ -343,17 +344,6 @@ class FixCodec(Convertible):
     #: reading of that field, because every one of them resolves through
     #: `tag_field` and casts through `cast_arrow_fix`.
     fields: FieldRules = dataclasses.field(default_factory=FieldRules)
-
-    #: Application version used only for a UL row that states no version
-    #: evidence. The selected version is embedded in `FixMsg.protocol`, so a
-    #: stored row never depends on this setting when read again.
-    ul_default_version: str | None = "4.4"
-
-    def __post_init__(self) -> None:
-        """Normalize the optional UL application-version declaration."""
-        if self.ul_default_version is not None:
-            stated = str(self.ul_default_version).strip()
-            self.ul_default_version = stated or None
 
     # -- the seam -----------------------------------------------------------
 
@@ -604,7 +594,7 @@ class FixCodec(Convertible):
     # -- the message stage ----------------------------------------------------
     #
     # Structuration without the dictionary: what a line spells, cut into the
-    # same struct the resolved rows use. `parse_fix` completes the same column
+    # same struct the resolved rows use. `parse_fix_*` completes the same column
     # in place rather than converting a shape.
 
     def into_message_entries(self, pairs: Any) -> Any:
@@ -714,7 +704,11 @@ class FixCodec(Convertible):
             compute.if_else(fixt, APPLICATION_VERSION_SOURCE, BEGIN_STRING_SOURCE),
             NO_SOURCE,
         )
-        default_version = self._ul_default
+        if protocols is not None:
+            embedded = self._protocol_versions(protocols, rows)
+            sources = compute.if_else(compute.is_valid(embedded), PROTOCOL_SOURCE, sources)
+            versions = compute.coalesce(embedded, versions)
+        default_version = self._latest_version
         if protocols is not None and default_version is not None:
             families = Protocol.into_family_arrow(_as_array(protocols, rows))
             unstated = _all_absent(begins, application, default)
@@ -723,8 +717,34 @@ class FixCodec(Convertible):
                 compute.and_(compute.is_null(versions), unstated),
             )
             versions = compute.if_else(selected, default_version, versions)
-            sources = compute.if_else(selected, PROTOCOL_DEFAULT_SOURCE, sources)
+            sources = compute.if_else(selected, REGISTRY_LATEST_SOURCE, sources)
         return versions, sources
+
+    def into_versioned_protocols(
+        self,
+        entries: Any,
+        begin_strings: Any,
+        application_versions: Any,
+        protocols: Any,
+    ) -> pyarrow.Array:
+        """Protocol codes carrying their authoritative registry version."""
+        versions, _ = self.versions_of_entries(
+            entries,
+            begin_strings,
+            application_versions,
+            protocols,
+        )
+        resolved = Protocol.with_versions_arrow(protocols, versions)
+        if begin_strings is None:
+            return resolved
+        # A valid wire version remains source data before this registry can
+        # type its fields. Resolved and embedded application versions lead;
+        # BeginString only fills rows for which neither supplied an answer.
+        public_versions = pyarrow.compute.coalesce(
+            Protocol.into_versions_arrow(resolved),
+            _as_array(begin_strings, len(resolved)).cast(pyarrow.string(), safe=False),
+        )
+        return Protocol.with_versions_arrow(resolved, public_versions)
 
     def complete_entries(self, entries: Any, version: str | None = None) -> Any:
         """A message-stage `entries` column, resolved the rest of the way.
@@ -1179,8 +1199,14 @@ class FixCodec(Convertible):
         self, message: str | None, protocol: Protocol | str | int = Protocol.OTHER
     ) -> tuple[str | None, str]:
         """Which FIX version a message is read under, and where that came from."""
+        parse_protocol = Protocol.from_str(protocol)
+        if (
+            parse_protocol.version is not None
+            and not parse_protocol.version.startswith("FIXT")
+            and (embedded := self.version_named(parse_protocol.version)) is not None
+        ):
+            return embedded, PROTOCOL_SOURCE
         if message:
-            parse_protocol = Protocol.from_str(protocol)
             if parse_protocol is Protocol.OTHER:
                 parse_protocol = Protocol.from_str(
                     self.rules.into_arrow_protocol_array(
@@ -1196,14 +1222,18 @@ class FixCodec(Convertible):
                 default_column[0].as_py(),
                 self._spellings,
             )
-            if version is None and parse_protocol is Protocol.UL and self._ul_default is not None:
+            if (
+                version is None
+                and parse_protocol.family is Protocol.UL
+                and self._latest_version is not None
+            ):
                 evidence = (
                     begin,
                     application_column[0].as_py(),
                     default_column[0].as_py(),
                 )
                 if all(not str(value or "").strip() for value in evidence):
-                    return self._ul_default, PROTOCOL_DEFAULT_SOURCE
+                    return self._latest_version, REGISTRY_LATEST_SOURCE
             return version, source
         return None, NO_SOURCE
 
@@ -1271,13 +1301,19 @@ class FixCodec(Convertible):
                     pyarrow.scalar(named),
                     versions,
                 )
-        if declared is Protocol.UL and self._ul_default is not None:
+        if (
+            declared.version is not None
+            and not declared.version.startswith("FIXT")
+            and (embedded := self.version_named(declared.version)) is not None
+        ):
+            versions = pyarrow.repeat(pyarrow.scalar(embedded, pyarrow.string()), len(pairs))
+        if declared.family is Protocol.UL and self._latest_version is not None:
             versions = compute.if_else(
                 compute.and_(
                     compute.is_null(versions),
                     _all_absent(begins, application, default_application),
                 ),
-                self._ul_default,
+                self._latest_version,
                 versions,
             )
         return versions
@@ -1560,16 +1596,30 @@ class FixCodec(Convertible):
         )
 
     @cached_property
-    def _ul_default(self) -> str | None:
-        """Canonical declared UL default, or None when the registry lacks it."""
-        return (
-            None if self.ul_default_version is None else self.version_named(self.ul_default_version)
+    def _latest_version(self) -> str | None:
+        """Newest application version this codec's registry can resolve."""
+        return self.registry.latest_application_version
+
+    def _protocol_versions(self, protocols: Any, rows: int) -> pyarrow.Array:
+        """Registered application versions already embedded in protocol codes."""
+        embedded = Protocol.into_versions_arrow(_as_array(protocols, rows))
+        version_keys, version_values = self._version_lookup
+        registered = pyarrow.compute.take(
+            version_values,
+            pyarrow.compute.index_in(_version_keys_arrow(embedded), value_set=version_keys),
+        )
+        transport = pyarrow.compute.fill_null(pyarrow.compute.starts_with(embedded, "FIXT"), False)
+        return pyarrow.compute.if_else(
+            transport, pyarrow.scalar(None, pyarrow.string()), registered
         )
 
     def default_version(self, protocol: Protocol | str | int) -> str | None:
-        """Declared application version for a protocol carrying no evidence."""
+        """Latest registry version for unversioned UL syntax."""
         parsed = Protocol.from_str(protocol)
-        return self._ul_default if parsed is Protocol.UL or parsed.family is Protocol.UL else None
+        embedded = parsed.version
+        if embedded is not None and not embedded.startswith("FIXT"):
+            return self.version_named(embedded)
+        return self._latest_version if parsed.family is Protocol.UL else None
 
     def _tags(self, version: str | None) -> dict[str, int]:
         """`{name: tag}` for one version plus safe typed component supplements."""
@@ -2157,7 +2207,7 @@ def _canonical_names(
 ) -> tuple[Any, Any]:
     """`(tag, canonical spelling)` for a version and scoped typed supplements.
 
-    What `parse_fix` canonicalizes a key to: a bridge writes `PARTYID` and the
+    What `parse_fix_*` canonicalizes a key to: a bridge writes `PARTYID` and the
     registry spells it `PartyID`, and a stored column read by a person should
     say what the standard says. A typed component can admit a later member
     only after its containing group and physical type have been checked.

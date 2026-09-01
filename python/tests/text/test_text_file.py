@@ -46,7 +46,7 @@ def test_sample_has_no_retained_fix_payload_fields() -> None:
     with TextFile.from_path(
         SAMPLE,
         msg_type_event_types=registry.msg_type_event_types(),
-        protocol_rules=codec.rules,
+        protocol_codec=codec,
     ) as log:
         messages = log.read_arrow_table()
     parsed = pyarrow.Table.from_batches(
@@ -326,20 +326,20 @@ def test_the_reader_and_the_window_accept_the_same_spellings() -> None:
 # -- construction -----------------------------------------------------------
 
 
-def test_post_init_builds_the_filesystem_and_rewrites_url(plain: Path) -> None:
+def test_post_init_keeps_a_normalized_absolute_source_url(plain: Path) -> None:
     log = TextFile(url=plain.as_uri())
     assert isinstance(log.filesystem, pyarrow.fs.LocalFileSystem)
-    assert log.url != plain.as_uri(), "url should be rewritten as a filesystem path"
-    assert log.url.endswith("app.txt")
-    assert "://" not in log.url
+    assert log.url == plain.as_uri()
+    assert log.arrow_path.path == plain.as_posix()
     log.close()
 
 
-def test_supplied_filesystem_leaves_url_alone(plain: Path) -> None:
+def test_supplied_filesystem_keeps_its_path_separate_from_the_source_url(plain: Path) -> None:
     filesystem = pyarrow.fs.LocalFileSystem()
     log = TextFile(url=str(plain), filesystem=filesystem)
     assert log.filesystem is filesystem
-    assert log.url == str(plain)
+    assert log.url == plain.as_uri()
+    assert log.arrow_path.path == plain.as_posix()
     with log:
         assert log.read() == SAMPLE_BYTES
 
@@ -353,6 +353,15 @@ def test_from_path_accepts_a_relative_path(plain: Path, monkeypatch: pytest.Monk
     monkeypatch.chdir(plain.parent)
     with TextFile.from_path("app.txt") as log:
         assert log.read() == SAMPLE_BYTES
+
+
+def test_a_relative_holder_url_is_recorded_as_one_absolute_uri(
+    plain: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(plain.parent)
+    with TextFile(url="app.txt") as log:
+        assert log.url == plain.as_uri()
+        assert set(log.read_arrow_table().column("sourceurl").to_pylist()) == {plain.as_uri()}
 
 
 def test_construction_is_only_ever_a_classmethod() -> None:
@@ -512,8 +521,9 @@ def test_a_remote_compressed_log_spills_raw_bytes_and_refreshes_when_it_grows(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     store = pyarrow.fs._MockFileSystem()
-    store.create_dir("captures")
-    remote = "captures/app.txt.gz"
+    remote = "bucket/captures/app.txt.gz"
+    sourceurl = "s3://bucket/captures/app.txt.gz"
+    store.create_dir("bucket/captures", recursive=True)
     first_payload = gzip.compress(SAMPLE_BYTES)
     with store.open_output_stream(remote, compression=None) as stream:
         stream.write(first_payload)
@@ -528,11 +538,11 @@ def test_a_remote_compressed_log_spills_raw_bytes_and_refreshes_when_it_grows(
         return materialized
 
     monkeypatch.setattr(ArrowFile, "spill", into_test_cache)
-    log = TextFile(url=remote, filesystem=store, spill=True)
+    log = TextFile(url=sourceurl, filesystem=store, spill=True)
     first = log.read_arrow_table()
 
     assert first.num_rows == EXPECTED_RECORDS
-    assert set(first.column("sourceurl").to_pylist()) == {remote}
+    assert set(first.column("sourceurl").to_pylist()) == {sourceurl}
     target = Path(spilled[0])
     assert not target.exists(), "normal reader exhaustion purges its compressed spill"
 
@@ -819,8 +829,8 @@ def test_text_file_has_no_protocol_codec_option(wire: Path) -> None:
         TextFile.from_path(wire, codec=object())
 
 
-def test_protocol_rules_are_caller_owned(wire: Path) -> None:
-    assert TextFile.from_path(wire).protocol_rules is None
+def test_protocol_codec_is_caller_owned(wire: Path) -> None:
+    assert TextFile.from_path(wire).protocol_codec is None
 
 
 # -- arrow reader -----------------------------------------------------------

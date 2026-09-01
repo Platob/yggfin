@@ -83,7 +83,7 @@ class Stage:
 
     The numbers are the notebook's -- a task is a job, and jobs live under
     `tasks/`. What lives here is the *shape* they are reported in and the two
-    records that say them, because six notebooks agreeing on that by hand is
+    records that say them, because eight notebooks agreeing on that by hand is
     six chances to disagree, and they had: `read` was an integer in five of
     them and a mapping in the sixth, `skipped` was in three, and the table a
     stage wrote was `target` in four and `targets` in two, spelled two ways.

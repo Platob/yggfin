@@ -11,6 +11,14 @@ from typing import Annotated, Any
 
 import pyarrow
 import pyarrow.compute
+from pyiceberg.expressions import (
+    And,
+    BooleanExpression,
+    EqualTo,
+    In,
+    Not,
+    Or,
+)
 
 from rekep.convert import Convertible
 from rekep.entries import Entry
@@ -304,25 +312,39 @@ class Rules(Convertible):
                 return rule
         return OTHER
 
-    def category_of(
-        self, protocol: Protocol | str | int | None, eventtype: int | EventType | None
-    ) -> str:
-        """Target category for one parsed row."""
-        kind = EventType.from_int(eventtype) if eventtype is not None else None
-        if kind is not None and kind.rank >= EventType.INTENT.rank:
-            return MARKET_CATEGORY
-        if kind is EventType.MISC:
-            return MISC_CATEGORY
-        if Protocol.from_str(protocol).family in self.protocols:
-            return MISC_CATEGORY
-        return UNKNOWN_CATEGORY
-
     @property
     def protocols(self) -> frozenset[Protocol]:
         """Recognised protocol codes, excluding the fall-through value."""
         return frozenset(
             rule.protocol for rule in self.rules if rule.protocol is not Protocol.OTHER
         )
+
+    def into_iceberg_category_filter(
+        self, category: str, versions: tuple[str, ...] = ()
+    ) -> BooleanExpression:
+        """The complete source predicate for one persisted FIX category."""
+        market = In("eventtype", EventType.ranked_at_least(EventType.INTENT))
+        known_protocols = {protocol.into_stored() for protocol in self.protocols}
+        known_protocols.update(
+            Protocol.with_version(protocol, version).into_stored()
+            for protocol in self.protocols
+            for version in versions
+        )
+        known_non_market = Or(
+            EqualTo("eventtype", int(EventType.MISC)),
+            In("protocol", known_protocols),
+        )
+        predicates = {
+            MARKET_CATEGORY: market,
+            MISC_CATEGORY: And(Not(market), known_non_market),
+            UNKNOWN_CATEGORY: And(Not(market), Not(known_non_market)),
+        }
+        try:
+            return predicates[category]
+        except KeyError as error:
+            raise ValueError(
+                f"category must be one of {tuple(predicates)}, got {category!r}"
+            ) from error
 
     def into_arrow_protocol_array(
         self, messages: Any, plugins: Any = None, entries: Any = None
@@ -409,45 +431,6 @@ class Rules(Convertible):
         return {
             protocol: joined_pattern(*anchors) for protocol, anchors in found.items() if anchors
         }
-
-    def into_arrow_category_array(self, protocols: Any, eventtypes: Any) -> pyarrow.Array:
-        """Target category per parsed row, using the scalar rule in kernels."""
-        compute = pyarrow.compute
-        rows = len(protocols)
-        if len(eventtypes) != rows:
-            raise ValueError("protocol and eventtype columns must have the same length")
-        if not rows:
-            return pyarrow.array([], pyarrow.string())
-
-        event_codes = compute.fill_null(eventtypes.cast(pyarrow.int64(), safe=False), 0)
-        market = compute.fill_null(
-            compute.is_in(
-                event_codes,
-                value_set=pyarrow.array(
-                    sorted(EventType.ranked_at_least(EventType.INTENT)), pyarrow.int64()
-                ),
-            ),
-            False,
-        )
-        known = compute.fill_null(
-            compute.is_in(
-                Protocol.into_family_arrow(protocols),
-                value_set=pyarrow.array(
-                    [protocol.into_stored() for protocol in sorted(self.protocols)],
-                    _PROTOCOL_CODE,
-                ),
-            ),
-            False,
-        )
-        known = compute.or_(known, compute.equal(event_codes, int(EventType.MISC)))
-        non_market = compute.if_else(
-            known,
-            pyarrow.scalar(MISC_CATEGORY),
-            pyarrow.scalar(UNKNOWN_CATEGORY),
-        )
-        return compute.if_else(market, pyarrow.scalar(MARKET_CATEGORY), non_market).cast(
-            pyarrow.string(), safe=False
-        )
 
 
 def _opens(verb_at: Any, payload_at: Any) -> Any:

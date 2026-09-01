@@ -1,5 +1,7 @@
 """rekep: trading log parser."""
 
+from importlib.metadata import version as package_version
+
 from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
@@ -35,7 +37,7 @@ from rekep.text import Entry, FixMsg, Message, TextFile, TextFiles
 from rekep.times import datetime_of, unix_of
 from rekep.urls import Url
 
-__version__ = "1"
+__version__ = package_version("rekep")
 
 __all__ = [
     "ArrowPath",

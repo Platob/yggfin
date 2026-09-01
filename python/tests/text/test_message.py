@@ -176,7 +176,7 @@ def test_a_direct_entry_drops_a_leading_marker_and_normalizes_the_required_value
 
 
 def test_direction_is_resolved_where_the_raw_line_still_exists() -> None:
-    """`parse_fix` reads these rows back with `body` projected out, so the
+    """`parse_fix_*` reads these rows back with `body` projected out, so the
     message stage is where the verb before the payload has to become the
     stored answer -- for the batch reading and the scalar row alike."""
     lines = [
@@ -760,7 +760,7 @@ def test_the_raw_stage_reads_every_separator_the_fix_parsers_declare() -> None:
 
     parsed = Message.parse_arrow(pyarrow.array([line]))
 
-    assert Protocol.from_int(parsed["protocol"][0].as_py()) is Protocol.FIX
+    assert Protocol.from_int(parsed["protocol"][0].as_py()) is Protocol.from_str("FIX4.2")
     assert parsed["msgtype"][0].as_py() == "D"
     assert parsed["sendercompid"][0].as_py() == "SEND"
     assert Message.msg_types_arrow(pyarrow.array([line]))[0].as_py() == "D"
@@ -795,12 +795,12 @@ def test_a_row_carrying_its_body_answers_the_syntax_columns_either_way() -> None
     """Whoever tokenized its arguments -- `from_text` retains the body."""
     line = "8=FIX.4.2|9=176|35=D|34=1092|49=BUYSIDE|56=XPAR|11=ORD-1|10=203"
 
-    assert Message.from_text(line).protocol is Protocol.FIX
-    assert Message(body=line).protocol is Protocol.FIX
+    assert Message.from_text(line).protocol is Protocol.from_str("FIX4.2")
+    assert Message(body=line).protocol is Protocol.from_str("FIX4.2")
     # The sentinel is the member, so a caller spelling the default still gets
     # the reading rather than keeping the word it passed in.
-    assert Message(body=line, protocol="other").protocol is Protocol.FIX
-    assert Message(body=line, protocol="ul").protocol is Protocol.UL
+    assert Message(body=line, protocol="other").protocol is Protocol.from_str("FIX4.2")
+    assert Message(body=line, protocol="ul").protocol is Protocol.from_str("UL4.2")
 
 
 def test_xmlapi_body_keeps_ordered_attributes_and_nested_components() -> None:
@@ -853,7 +853,7 @@ def test_malformed_xml_isolated_to_its_row() -> None:
     assert [Protocol.from_int(code) for code in parsed["protocol"].to_pylist()] == [
         Protocol.XML,
         Protocol.XML,
-        Protocol.FIX,
+        Protocol.from_str("FIX4.4"),
     ]
     assert parsed["parseerror"].to_pylist()[0] is None
     assert parsed["parseerror"].to_pylist()[1].startswith("XML parse failed: ParseError:")
@@ -905,7 +905,7 @@ def test_malformed_referential_isolated_to_its_row() -> None:
     assert [Protocol.from_int(code) for code in parsed["protocol"].to_pylist()] == [
         Protocol.REFERENTIAL,
         Protocol.REFERENTIAL,
-        Protocol.UL,
+        Protocol.from_str("UL5SP2"),
     ]
     assert parsed["parseerror"].to_pylist()[0] is None
     assert parsed["parseerror"].to_pylist()[1].startswith("Referential parse failed: ValueError:")

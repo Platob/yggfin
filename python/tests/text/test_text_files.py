@@ -54,21 +54,17 @@ def capture(tmp_path: Path) -> Path:
 
 
 def relative(files: TextFiles, root: Path) -> list[str]:
-    """The set's paths, relative to the folder, so assertions read as names.
+    """The set's normalized source URIs, relative to the fixture folder.
 
-    `as_posix()`, not `str()`: `Url` spells every local path with forward
-    slashes on either host, so a Windows `str(root)` is a prefix of none of
-    them. Reducing against it silently handed back whole paths -- which
-    compare against nothing, and turned one spelling difference into fifteen
-    failures on the windows-latest leg. The reduction is asserted here for
-    that reason: a helper that can quietly not reduce cannot be trusted by the
-    assertions built on it.
+    Parsing each URI back through `Url` checks the public output rather than
+    reaching into the filesystem-relative paths retained for I/O.
     """
     base = root.as_posix()
     paths = []
     for url in files.into_urls():
-        assert url.startswith(base), f"{url!r} is not under {base!r}, so nothing reduces it"
-        paths.append(url[len(base) :].lstrip("/"))
+        path = Url.from_string(url).store_path
+        assert path.startswith(base), f"{url!r} is not under {base!r}, so nothing reduces it"
+        paths.append(path[len(base) :].lstrip("/"))
     return paths
 
 
@@ -94,9 +90,12 @@ def test_calendar_tokens_expand_source_roots_over_the_inclusive_days(tmp_path: P
         pattern="*.txt",
     )
 
-    assert files.roots == (
-        (tmp_path / "capture/2026/12/31").as_posix(),
-        (tmp_path / "capture/2027/01/01").as_posix(),
+    assert files.roots == tuple(
+        path.as_uri()
+        for path in (
+            tmp_path / "capture/2026/12/31",
+            tmp_path / "capture/2027/01/01",
+        )
     )
     assert [Path(url).name for url in files.into_urls()] == ["ticks.txt", "ticks.txt"]
 
@@ -129,7 +128,11 @@ def test_remote_calendar_tokens_keep_one_resolved_store_and_ignore_query_tokens(
     )
 
     assert files.filesystem is store
-    assert files.roots == ("bucket/capture/2026/08/31",)
+    assert files.roots == ("s3://bucket/capture/2026/08/31?marker=%7Bday%7D",)
+    assert (
+        files.into_arrow_table().column("sourceurl").to_pylist()
+        == ["s3://bucket/capture/2026/08/31/ticks.txt?marker=%7Bday%7D"] * EXPECTED_RECORDS
+    )
     assert [info.path for info in files.into_file_infos()] == [
         "bucket/capture/2026/08/31/ticks.txt"
     ]
@@ -260,7 +263,7 @@ def test_the_walk_is_lazy(capture: Path) -> None:
 def test_an_empty_set_reads_as_no_rows() -> None:
     files = TextFiles()
     assert files.exists is False
-    assert files.protocol_rules is None
+    assert files.protocol_codec is None
     table = files.into_arrow_table()
     assert table.num_rows == 0
     assert table.schema.equals(Message.into_field().into_arrow_schema())
@@ -284,24 +287,17 @@ def test_a_missing_folder_does_not_exist_rather_than_raising(tmp_path: Path) -> 
 
 
 def test_from_folder_resolves_a_local_path_through_its_filesystem(capture: Path) -> None:
-    """A root is rewritten as the path its filesystem understands, as a url is."""
+    """A root URI stays distinct from the path its filesystem understands."""
     files = TextFiles.from_folder(capture)
-    assert files.roots == (capture.as_posix(),)
+    assert files.roots == (capture.as_uri(),)
     assert isinstance(files.filesystem, pyarrow.fs.LocalFileSystem)
 
 
-def test_a_supplied_filesystem_resolves_nothing_but_still_spells_a_local_root(
+def test_a_supplied_filesystem_keeps_a_normalized_local_root(
     capture: Path,
 ) -> None:
-    """The path stays the caller's; only its separators are this package's.
-
-    `pyarrow.fs` answers a local listing with forward slashes on either host,
-    so a root spelled `C:\\logs` is a prefix of none of the paths the set goes
-    on to hold -- and everything that reduces one against the other silently
-    stops reducing.
-    """
     files = TextFiles.from_folder(str(capture), pyarrow.fs.LocalFileSystem())
-    assert files.roots == (capture.as_posix(),)
+    assert files.roots == (capture.as_uri(),)
     assert all(url.startswith(files.roots[0]) for url in files.into_urls())
 
 
@@ -330,7 +326,7 @@ def test_a_set_is_a_dataset(capture: Path) -> None:
 
 
 def test_from_redirects_on_the_source(capture: Path) -> None:
-    assert TextFiles.from_(str(capture)).roots == (capture.as_posix(),)
+    assert TextFiles.from_(str(capture)).roots == (capture.as_uri(),)
 
 
 @pytest.mark.parametrize(

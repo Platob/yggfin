@@ -15,7 +15,7 @@ parameters:
   # Null reads the registry bundled in the installed package.
   fix_dictionary: null
   # Protocol syntax classification. Null uses the shipped default rules; keep
-  # custom rules aligned with parse_fix. Rules may add literal nested-group
+  # custom rules aligned with parse_fix.yml. Rules may add literal nested-group
   # delimiters through `extra_entry_separators`.
   protocols: null
   pattern: "*.log*"
