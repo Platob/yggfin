@@ -21,7 +21,7 @@ from pyiceberg.typedef import EMPTY_DICT, Properties
 
 from rekep.arrow_path import ArrowPath
 from rekep.filesystems import ArrowFile, openable_parts
-from rekep.urls import S3, Url, s3_environment
+from rekep.urls import LOCAL, S3, Url, s3_environment
 
 #: The `metadata.json` names Iceberg mints per attempt: a version number, a
 #: UUID and the suffix. A name *without* the UUID -- `v3.metadata.json`, which
@@ -412,9 +412,21 @@ class _TeeStream:
 
 
 def canonical_location(location: str) -> str:
-    """An S3 location containing only its scheme, bucket, and object key."""
+    """One catalog location, spelled the way every reader will read it back.
+
+    An S3 location keeps its store and object key alone, so nothing a catalog
+    configures leaks into stored metadata. A local one is made absolute: a
+    warehouse is written into every table's metadata and every manifest, so a
+    relative one names a different directory from every working directory but
+    the one that created the table. Neither is re-encoded -- a `%` in a path
+    is a character of the object's name.
+    """
     url = spelled(location)
-    return url.canonical if url.scheme in S3 else location
+    if url.scheme in S3:
+        return url.canonical
+    if url.scheme in LOCAL:
+        return f"file:///{url.resolve().lstrip('/')}"
+    return location
 
 
 def spelled(location: str) -> Url:

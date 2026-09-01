@@ -1,5 +1,5 @@
 name: parse_fix
-notebook: parse_fix.ipynb
+application: parse_fix.py
 parameters:
   project_root: .
   # Protocol-neutral message rows written by `parse_messages`.

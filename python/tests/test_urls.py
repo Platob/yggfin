@@ -420,9 +420,27 @@ def test_a_copy_is_where_a_walk_branches() -> None:
     assert child.query is not root.query
 
 
-@pytest.mark.parametrize("location", ["data/fix", "file:data/fix", "local:data/fix"])
+@pytest.mark.parametrize(
+    "location",
+    ["data/fix", "file:data/fix", "local:data/fix", "file://data/fix", "local://data/fix"],
+)
 def test_resolve_roots_a_relative_local_location(location: str, tmp_path: Path) -> None:
     assert Url.from_string(location).resolve(tmp_path) == (tmp_path / "data/fix").as_posix()
+
+
+def test_a_local_authority_is_the_first_segment_of_the_path() -> None:
+    """`file://data/warehouse` is the relative directory `data/warehouse`.
+
+    RFC 8089 keeps the authority for a host and a local filesystem has none
+    but `localhost`, so every writer of that spelling means the segment --
+    and reading it as a host drops it and leaves an absolute path elsewhere.
+    """
+    url = Url.from_string("file://data/warehouse")
+
+    assert (url.host, url.path) == ("", "data/warehouse")
+    assert url.bucket == "", "a local path is in no bucket"
+    assert Url.from_string("file://localhost/var/log").path == "/var/log"
+    assert Url.from_string("file://localhost/var/log").host == "localhost"
 
 
 def test_resolve_keeps_an_absolute_local_location(tmp_path: Path) -> None:

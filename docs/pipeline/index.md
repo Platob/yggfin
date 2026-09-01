@@ -1,25 +1,34 @@
-# Notebook workflow
+# Marimo task workflow
 
-Pipeline implementations live in `tasks/<name>/<name>.ipynb`. Each adjacent
-YAML file points to its notebook and supplies parameters:
+Pipeline implementations live in `tasks/<name>/<name>.py`, one Marimo
+application each. The adjacent YAML file names that application and supplies
+its parameters:
 
 ```yaml
 name: parse_fix
-notebook: parse_fix.ipynb
+application: parse_fix.py
 parameters:
   source: logs.messages
 ```
 
-Run the same task document locally that Airflow gives Papermill:
+Run the same task document locally that Airflow runs on a schedule:
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --output parse_fix.executed.ipynb
+  tasks/parse_fix/parse_fix.yml
 ```
 
-`Task` only resolves the configuration. Papermill owns execution; the package
-contains no prebuilt pipeline jobs or task reports.
+Open the same application interactively:
+
+```bash
+uv run --project python --group runner marimo edit tasks/parse_fix/parse_fix.py
+```
+
+`Task` only resolves the configuration: it reads the document and resolves the
+application beside it. The application's `parameters` cell defines exactly the
+keys the YAML declares and reads its defaults out of that document, so an
+interactive session and a scheduled run are configured by the same file. The
+package contains no prebuilt pipeline jobs or task reports.
 
 ## Flow
 

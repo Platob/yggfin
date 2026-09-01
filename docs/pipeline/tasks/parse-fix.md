@@ -7,9 +7,10 @@ typed `FixMsg` rows.
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --output parse_fix.executed.ipynb
+  tasks/parse_fix/parse_fix.yml
 ```
+
+The step is `tasks/parse_fix/parse_fix.py`; `parse_fix.yml` configures it.
 
 Add a half-open replay interval when needed:
 
@@ -17,8 +18,7 @@ Add a half-open replay interval when needed:
 uv run --project python --group runner rekep task run \
   tasks/parse_fix/parse_fix.yml \
   --parameter start=2026-08-21T10:00:00Z \
-  --parameter end=2026-08-21T11:00:00Z \
-  --output parse_fix.executed.ipynb
+  --parameter end=2026-08-21T11:00:00Z
 ```
 
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).

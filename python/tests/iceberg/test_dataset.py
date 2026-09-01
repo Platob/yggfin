@@ -4801,7 +4801,8 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
     the table. The same shape as `abfss://container@account.../x`, which cannot
     be exercised here. On Windows the odd spelling is a different one: `file:`
     plus a drive letter is a URI nothing resolves, and the trap is the bare
-    `C:/x` path itself, which is not a URI at all.
+    `C:/x` path itself, which is not a URI at all. Every one of them reaches a
+    table as the one absolute `file:///x` a reader resolves.
     """
     warehouse = tmp_path / "warehouse"
     warehouse.mkdir()
@@ -4820,7 +4821,7 @@ def test_a_sweep_finds_the_files_however_the_warehouse_is_spelled(tmp_path: Path
         quotes_.append_arrow(quotes(2), commit_row_size=1_000_000)
     stored = quotes_.read_arrow_table().num_rows
     location = quotes_.get_or_create_table().location()
-    assert not location.startswith("file://"), "the odd spelling survived into the location"
+    assert location == f"{warehouse.as_uri()}/trading/quotes", "one spelling reaches the table"
     quotes_.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
     assert quotes_.refresh().read_arrow_table().num_rows == stored, "the table still reads"
 

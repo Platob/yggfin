@@ -30,8 +30,8 @@
   <text class="title" x="745" y="380">Iceberg / Parquet</text>
   <text class="text" x="745" y="407">ids | partitions | pruning</text>
   <rect class="node" x="925" y="345" width="220" height="90"/>
-  <text class="title" x="1035" y="380">Notebook tasks</text>
-  <text class="text" x="1035" y="407">Papermill / Airflow</text>
+  <text class="title" x="1035" y="380">Task applications</text>
+  <text class="text" x="1035" y="407">Marimo / Airflow</text>
   <rect class="node" x="180" y="520" width="250" height="72"/>
   <text class="title" x="305" y="552">Analytics engines</text>
   <text class="text" x="305" y="576">Spark | Doris | DuckDB</text>

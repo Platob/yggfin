@@ -85,7 +85,7 @@ def test_importing_the_package_configures_nothing() -> None:
 
 
 def test_configure_is_idempotent_and_scoped() -> None:
-    """A notebook runs two tasks; the second must not print everything twice."""
+    """A process runs two tasks; the second must not print everything twice."""
     logger = configure("DEBUG")
     again = configure("INFO")
 
@@ -187,8 +187,9 @@ def test_every_emitting_module_is_named_by_its_own_path() -> None:
 
 
 def test_every_task_returns_the_same_keys(caplog: pytest.LogCaptureFixture) -> None:
-    """Six notebooks agreeing on a shape by hand is six chances to disagree,
-    and they had: `read` was an integer in five and a mapping in the sixth."""
+    """Seven applications agreeing on a shape by hand is seven chances to
+    disagree, and they had: `read` was an integer in five and a mapping in the
+    sixth."""
     with caplog.at_level(logging.INFO, logger=ROOT):
         stage = Stage(
             "parse_fix",

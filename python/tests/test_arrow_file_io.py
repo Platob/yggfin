@@ -7,6 +7,7 @@ below it, because "served from memory" is the whole claim.
 """
 
 import gzip
+import os
 import threading
 from datetime import date, datetime
 from pathlib import Path
@@ -538,11 +539,38 @@ def test_s3_process_defaults_exist_before_a_table_location_is_known(
 def test_a_location_that_says_nothing_adds_nothing() -> None:
     for properties in (
         {"warehouse": "s3://bucket/wh"},
-        {"warehouse": "/tmp/wh", "vendor.option": "kept"},
+        {"warehouse": "file:///tmp/wh", "vendor.option": "kept"},
         {"vendor.option": "kept"},
         {},
     ):
         assert inferred_properties(properties) == properties
+
+
+def test_a_local_warehouse_is_made_absolute_before_a_table_records_it() -> None:
+    """A warehouse is written into every table's metadata and every manifest,
+    so a relative one names a different directory from every working directory
+    but the one that created the table."""
+    root = os.getcwd()
+
+    assert inferred_properties({"warehouse": "data/warehouse"}) == {
+        "warehouse": f"file://{root}/data/warehouse"
+    }
+    assert inferred_properties({"warehouse": "file://data/warehouse"}) == {
+        "warehouse": f"file://{root}/data/warehouse"
+    }, "the authority form every task document ships is the same directory"
+    assert inferred_properties({"warehouse": "/tmp/wh"}) == {"warehouse": "file:///tmp/wh"}
+    assert inferred_properties({"uri": "sqlite:///data/catalog.db"}) == {
+        "uri": "sqlite:///data/catalog.db"
+    }, "a connection string is not a location; SQLAlchemy roots it at the cwd"
+
+
+@pytest.mark.parametrize("scheme", sorted(S3))
+def test_an_object_store_warehouse_keeps_the_spelling_it_was_given(scheme: str) -> None:
+    """`s3`, `s3a` and `s3n` name one store; the caller's spelling is how they
+    addressed it and reading a stored location back has to reach the same one."""
+    assert canonical_location(f"{scheme}://bucket/rekep/wh?region=eu-west-1") == (
+        f"{scheme}://bucket/rekep/wh"
+    )
 
 
 def test_the_filesystem_a_catalog_builds_reaches_that_endpoint() -> None:

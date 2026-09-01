@@ -1,4 +1,4 @@
-"""Notebook task documents."""
+"""Marimo task documents."""
 
 from rekep.tasks.task import Task
 

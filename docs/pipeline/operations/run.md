@@ -1,8 +1,8 @@
 # End-to-end run
 
-A correctness run measured 2026-08-30 executes the six notebook tasks against
-the checked-in message fixture and a fresh local Iceberg warehouse, then
-replays the same input. Throughput measurements live on
+A correctness run measured 2026-09-01 executes the six task applications
+against the checked-in message fixture and a fresh local Iceberg warehouse,
+then replays the same input. Throughput measurements live on
 [Benchmarks](../../storage/benchmarks.md).
 
 ![End-to-end execution architecture](../../assets/workflow-run.svg#only-dark)
@@ -29,34 +29,34 @@ the catalog is left as it is, properties included, and reported `present`.
 
 ## Run the workflow locally
 
-From the repository root. The `runner` dependency group is Papermill and the
-kernel it executes a notebook under:
+Prepare the environment once. The `runner` dependency group is Marimo and the
+catalog extras a task imports:
+
+```bash
+uv sync --project python --locked --group runner
+```
+
+Then, from the repository root:
 
 ```bash
 uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
-  --parameter source=python/tests/data/app_messages_sample.txt \
-  --output parse_messages.executed.ipynb
+  --parameter source=python/tests/data/app_messages_sample.txt
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml \
-  --output parse_fix.executed.ipynb
+  tasks/parse_fix/parse_fix.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_instruments/parse_instruments.yml \
-  --output parse_instruments.executed.ipynb
+  tasks/parse_instruments/parse_instruments.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_market/parse_market.yml \
-  --output parse_market.executed.ipynb
+  tasks/parse_market/parse_market.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/flatten_orders/flatten_orders.yml \
-  --output flatten_orders.executed.ipynb
+  tasks/flatten_orders/flatten_orders.yml
 
 uv run --project python --group runner rekep task run \
-  tasks/flatten_executions/flatten_executions.yml \
-  --output flatten_executions.executed.ipynb
+  tasks/flatten_executions/flatten_executions.yml
 ```
 
 The YAML selects the catalog, branch, tables and commit cadence. Repeatable
@@ -65,11 +65,11 @@ unchanged against S3 — only the `source`, `fix_dictionary` and
 `catalog.properties` values in the YAML move; see
 [AWS S3](deploy.md#aws-s3). Each command writes the
 run's records to `stderr` as they happen and the task's result to `stdout`;
-[Logs](logs.md) has the record a stage opens and closes with, and the keys
-every result carries. The shipped documents write
+`--result-file PATH` publishes that same JSON document atomically, and is what
+`MarimoOperator` reads. [Logs](logs.md) has the record a stage opens and closes
+with, and the keys every result carries. The shipped documents write
 a SQLite catalog to `data/catalog.db` and a file warehouse to `data/warehouse`,
-both ignored by git along with the executed notebooks -- delete them for a
-clean run.
+both ignored by git -- delete them for a clean run.
 
 ## Pinned results
 
@@ -77,7 +77,7 @@ The run used the default eight-batch commit cadence. Its 11 source records
 span FIX wire, FIXML, operational prose, a folded stack trace and unknown
 fields.
 
-| Notebook | First run | Replay writes |
+| Task | First run | Replay writes |
 | --- | --- | ---: |
 | `parse_messages` | 11 read, 11 written | 0 |
 | `parse_fix` | 10 read, 10 FixMsg written | 0 |
@@ -97,12 +97,15 @@ skipped and the one canonical `InstUpdate` was unchanged.
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
 | `logs.messages` | 11 | 1 |
-| `fix.market` | 2 | 2 |
-| `fix.misc` | 8 | 2 |
+| `fix.market` | 2 | 1 |
+| `fix.misc` | 8 | 1 |
 | `market.instruments` | 1 | 1 |
-| `market.books` | 2 | 2 |
-| `market.orders` | 2 | 2 |
+| `market.books` | 2 | 1 |
+| `market.orders` | 2 | 1 |
 | `market.executions` | 1 | 1 |
+
+Every one of the seven tables holds exactly one snapshot, the commit the first
+run made; the replay adds none.
 
 ## Sampled output
 

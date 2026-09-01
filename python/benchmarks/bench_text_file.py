@@ -447,7 +447,7 @@ def messages(rows: int, repeat: int, quick: bool) -> None:
     the whole capture without holding it, and the two after it race over one
     batch of that size *per protocol*, filled from the same stream, because a
     batch is the unit the parser is handed. What a whole capture costs end to
-    end is the notebook run's measurement (`docs/pipeline/operations/run.md`),
+    end is the workflow run's measurement (`docs/pipeline/operations/run.md`),
     not this one's.
     """
     # A deprecation notice printed between two rows of a table is a table

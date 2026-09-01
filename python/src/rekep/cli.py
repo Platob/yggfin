@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
+import importlib.util
 import json
+import os
 import pathlib
 import sys
+import traceback
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -36,7 +40,7 @@ from rekep.fix.store import (
     field_record_document,
 )
 from rekep.iceberg import IcebergCatalog
-from rekep.logs import COMMAND_LEVEL, configure
+from rekep.logs import COMMAND_LEVEL, Stage, configure
 from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
@@ -557,57 +561,87 @@ def apply_keys(arguments: argparse.Namespace) -> int:
 
 
 def run_task(arguments: argparse.Namespace) -> int:
-    """Execute one task document's notebook, through Papermill.
+    """Execute one task document's Marimo application in this process.
 
     The one reproducible command a local run is: the same YAML Airflow hands
-    to `PapermillOperator`, the same notebook, the same parameters -- so a run
+    to `MarimoOperator`, the same application, the same definitions -- so a run
     on a laptop and a run on a worker differ in nothing but the machine.
     """
-    try:
-        import papermill
-    except ImportError as error:  # pragma: no cover - papermill is a dev tool
-        raise ImportError(
-            "running a task needs papermill and a kernel to run the notebook under: "
-            "uv run --project python --group runner rekep task run ..."
-        ) from error
-
     document = pathlib.Path(arguments.document).resolve()
     task = Task.from_yaml(str(document))
+    application = task.into_application_path(document)
     parameters = dict(task.parameters)
+    if arguments.parameters_file:
+        parameters.update(_parameters_document(arguments.parameters_file))
+    # A command-line override is typed by the person running the command and
+    # wins over the document a caller wrote for it.
     for spelled in arguments.parameter or ():
-        name, _, value = spelled.partition("=")
-        if not _:
+        name, separator, value = spelled.partition("=")
+        if not separator:
             raise ValueError(f"a parameter is name=value, not {spelled!r}")
         parameters[name] = _parameter(value)
-    target = arguments.output or f"{task.name}.executed.ipynb"
-    CONSOLE.warn(f"{task.name} {CONSOLE.glyph('arrow')} {target}")
-    executed = papermill.execute_notebook(
-        str(task.into_notebook_path(document)),
-        target,
-        parameters=parameters,
-        kernel_name=arguments.kernel,
-        progress_bar=False,
-    )
-    _replay(executed)
+    CONSOLE.warn(f"{task.name} {CONSOLE.glyph('arrow')} {application.name}")
+    app = _application(application)
+    try:
+        # The payload on `stdout` is the result document alone, so whatever an
+        # application prints joins the records on `stderr` rather than the JSON
+        # a caller pipes into `jq`.
+        with contextlib.redirect_stdout(sys.stderr):
+            _, definitions = app.run(defs=parameters)
+    except Exception as error:
+        # A failing cell is a defect in the job, and the line that raised is
+        # the whole diagnosis; `main` condenses what it catches to one line.
+        traceback.print_exc()
+        CONSOLE.fail(f"{task.name}: {type(error).__name__}: {error}")
+        return 1
+    if "result" not in definitions:
+        raise ValueError(f"{application} defines no result")
+    result = Stage.validated(definitions["result"])
+    if result["task"] != task.name:
+        raise ValueError(f"{application} returned {result['task']!r}, not {task.name!r}")
+    payload = json.dumps(result, ensure_ascii=False, separators=(",", ":"))
+    if arguments.result_file:
+        _publish(pathlib.Path(arguments.result_file), payload)
+    print(payload)
     CONSOLE.ok(task.name)
     return 0
 
 
-def _replay(executed: Mapping[str, Any]) -> None:
-    """What the notebook said, where the person who ran it is looking.
+def _application(path: pathlib.Path) -> Any:
+    """The `app` a Marimo application module exports, imported from `path`."""
+    if importlib.util.find_spec("marimo") is None:
+        raise ImportError(
+            "running a task needs marimo: uv sync --project python --locked --group runner"
+        )
+    specification = importlib.util.spec_from_file_location(path.stem, path)
+    if specification is None or specification.loader is None:
+        raise ImportError(f"{path} is not an importable module")
+    module = importlib.util.module_from_spec(specification)
+    sys.modules[specification.name] = module
+    specification.loader.exec_module(module)
+    app = getattr(module, "app", None)
+    if app is None:
+        raise AttributeError(f"{path} exports no marimo app")
+    return app
 
-    Papermill captures a kernel's `stderr` into the executed document and
-    nothing else surfaces it. Records return to `stderr`, while the last cell's
-    value goes to `stdout` for pipelines such as `jq`.
-    """
-    cells = executed.get("cells", [])
-    for cell in cells:
-        for output in cell.get("outputs", []):
-            if output.get("output_type") == "stream":
-                sys.stderr.write("".join(output.get("text", ())))
-            text = output.get("data", {}).get("text/plain")
-            if text and cell is cells[-1]:
-                print(text)
+
+def _parameters_document(path: str) -> Mapping[str, Any]:
+    """One JSON document of overrides, as the mapping it spells."""
+    document = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    if not isinstance(document, Mapping):
+        raise TypeError(f"{path} is a JSON object of parameters")
+    return document
+
+
+def _publish(path: pathlib.Path, payload: str) -> None:
+    """Write `payload` where a reader sees the whole document or none of it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    staged = path.with_name(f"{path.name}.{os.getpid()}.partial")
+    with staged.open("w", encoding="utf-8") as stream:
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(staged, path)
 
 
 def deploy_tables(arguments: argparse.Namespace) -> int:
@@ -711,11 +745,11 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     tasks = commands.add_parser(
-        "task", help="run notebook tasks", description="Execute project task documents."
+        "task", help="run task applications", description="Execute project task documents."
     )
     running = tasks.add_subparsers(
         dest="action", required=True, title="commands", metavar="COMMAND"
-    ).add_parser("run", help="execute one task document's notebook")
+    ).add_parser("run", help="execute one task document's Marimo application")
     running.add_argument("document", help="path to a task YAML under tasks/")
     running.add_argument(
         "--parameter",
@@ -724,8 +758,18 @@ def _parser() -> argparse.ArgumentParser:
         metavar="NAME=VALUE",
         help="override one parameter; repeatable, values read as JSON then as text",
     )
-    running.add_argument("--output", default=None, help="where to write the executed notebook")
-    running.add_argument("--kernel", default="python3", help="Jupyter kernel to execute under")
+    running.add_argument(
+        "--parameters-file",
+        default=None,
+        metavar="PATH",
+        help="JSON object of overrides, applied under any --parameter",
+    )
+    running.add_argument(
+        "--result-file",
+        default=None,
+        metavar="PATH",
+        help="where the result document is published, atomically",
+    )
     running.set_defaults(run=run_task)
 
     iceberg = commands.add_parser(

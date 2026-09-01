@@ -7,9 +7,11 @@
 
 ```bash
 uv run --project python --group runner rekep task run \
-  tasks/parse_instruments/parse_instruments.yml \
-  --output parse_instruments.executed.ipynb
+  tasks/parse_instruments/parse_instruments.yml
 ```
+
+`tasks/parse_instruments/parse_instruments.py` is the application;
+`parse_instruments.yml` beside it holds the parameters.
 
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 

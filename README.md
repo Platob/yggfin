@@ -41,9 +41,9 @@ parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
 `parse_market` can instead set `books: false` and write FIX-carried orders and
 executions directly, without a book table or the two flattening stages.
 
-Each step is a notebook under `tasks/<step>/` with an adjacent YAML config.
-Airflow runs the same notebooks through `PapermillOperator`; package `Task`
-only reads and writes their configuration.
+Each step is a Marimo application under `tasks/<step>/` with an adjacent YAML
+config. Airflow runs the same applications through `MarimoOperator`; package
+`Task` only reads and writes their configuration.
 
 Core properties:
 

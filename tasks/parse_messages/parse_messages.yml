@@ -1,5 +1,5 @@
 name: parse_messages
-notebook: parse_messages.ipynb
+application: parse_messages.py
 parameters:
   project_root: .
   # Raw input may be an S3 prefix. Calendar tokens select only the closed

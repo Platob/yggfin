@@ -1,5 +1,5 @@
 name: parse_instruments
-notebook: parse_instruments.ipynb
+application: parse_instruments.py
 parameters:
   project_root: .
   # Checked FIX market messages, as `parse_fix` wrote them. Reference data is

@@ -55,7 +55,7 @@ raw stage's `vhash`, so changing parser wording cannot change its identity. It
 is separate from `reason`, which keeps FIX `Text <58>` and upstream business
 diagnostics.
 `parse_instruments` and `parse_market` push down `error IS NULL`, and the class
-conversion APIs enforce the same quarantine for callers outside the notebooks.
+conversion APIs enforce the same quarantine for callers outside the tasks.
 
 The stage consumes the arguments `TextFile`/`TextFiles` already stored and may
 reclassify their binary `body` under feed-specific rules. A batch arriving

@@ -1,5 +1,5 @@
 name: optimize_iceberg
-notebook: optimize_iceberg.ipynb
+application: optimize_iceberg.py
 parameters:
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does

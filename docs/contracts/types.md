@@ -85,7 +85,7 @@ print(unix_of("2026-08-14"), unix_of("2026-08-14", upper=True))
 A naive instant is read as UTC. `upper=True` treats a value naming a whole
 day as the exclusive end of it, so `end: 2026-08-14` means all of the 14th.
 What names no instant is `None`, never a guess -- a day-first `03/04/2026` is
-refused rather than silently moved a month. Every task notebook takes its
+refused rather than silently moved a month. Every task application takes its
 window through this, so one spelling means one instant in every job.
 
 ### The shapes a stamp is written in

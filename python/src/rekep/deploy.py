@@ -1,6 +1,6 @@
 """The tables a pipeline run writes, created before anything runs.
 
-A notebook creates its own target on the first write, so a run against an
+A task creates its own target on the first write, so a run against an
 empty catalog already lands every table it needs. That is not enough where the
 catalog is not the runner's to write to: a Glue catalog over an S3 warehouse
 is deployed once, by whoever owns the account, ahead of the jobs that fill it.
@@ -33,7 +33,7 @@ class Deployed:
     #: Catalog table identifier, `namespace.table`.
     table: str
 
-    #: The declaring class. Its `into_field` is what the notebook writing this
+    #: The declaring class. Its `into_field` is what the task writing this
     #: table builds its own schema from, so a deployed table and a written one
     #: cannot disagree.
     shape: type

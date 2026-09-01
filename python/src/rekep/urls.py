@@ -36,6 +36,9 @@ SCHEME = re.compile(
 #: Schemes that name a file on this machine.
 LOCAL = frozenset({"", "file", "local"})
 
+#: The one authority a local URI may carry, and what it names: this machine.
+LOCALHOST = "localhost"
+
 #: Schemes whose byte transport is HTTP rather than a `pyarrow.fs` filesystem.
 HTTP = frozenset({"http", "https"})
 
@@ -229,11 +232,20 @@ class Url:
             ) from error
         user, password = _credentials(parsed.netloc)
         path = urllib.parse.unquote(parsed.path) if decode else parsed.path
+        host = _host(parsed)
+        if scheme in LOCAL and host not in ("", LOCALHOST):
+            # `file://data/warehouse` is the relative directory
+            # `data/warehouse`. RFC 8089 keeps the authority for a host, a
+            # local filesystem has none but `localhost`, and every writer of
+            # that spelling means the segment -- reading it as a host drops it
+            # and turns the rest into an absolute path somewhere else.
+            path = f"{host}{path}"
+            host = ""
         return cls(
             scheme=scheme,
             user=user,
             password=password,
-            host=_host(parsed),
+            host=host,
             port=port,
             path=_drive_path(path) if scheme in LOCAL else path.lstrip("/"),
             query=dict(urllib.parse.parse_qsl(parsed.query)),

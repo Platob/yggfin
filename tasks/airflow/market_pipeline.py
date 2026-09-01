@@ -1,90 +1,73 @@
-"""Airflow DAG executing the repository's notebook tasks."""
+"""Airflow DAGs executing the repository's task applications."""
 
 from __future__ import annotations
 
 import datetime
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-import scrapbook as sb
-from airflow.providers.papermill.operators.papermill import PapermillOperator
-from airflow.sdk import Param, dag, task
-from rekep.tasks import Task
+from airflow.sdk import Asset, CronDataIntervalTimetable, Param, dag, task
+from marimo_operator import MarimoOperator
 
-ROOT = Path(os.environ.get("REKEP_ROOT", Path(__file__).resolve().parents[2])).resolve()
-OUTPUT_ROOT = os.environ.get("REKEP_NOTEBOOK_OUTPUT", "/tmp/rekep-notebooks")
+#: One closed hour of capture per run, named by the hour it covers and started
+#: once that hour has ended. Spelled as a timetable rather than as `@hourly`
+#: because a bare cron string follows `[scheduler] create_cron_data_intervals`,
+#: which is off by default and gives every run a zero-width interval -- and a
+#: zero-width `[start, end)` reads nothing, on every run, silently.
+HOURLY = CronDataIntervalTimetable("0 * * * *", timezone="UTC")
 
+#: The checkout holding `python/`, `tasks/` and `data/`. A versioned DAG bundle
+#: or an image places this file inside the repository it schedules, so the path
+#: math is the whole answer; `repository` is templated for a deployment that
+#: keeps the DAG somewhere else.
+ROOT = str(Path(__file__).resolve().parents[2])
 
-def rooted_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
-    """Make repository-relative catalog locations worker-independent."""
-    rooted = dict(parameters)
-    if "project_root" in rooted:
-        rooted["project_root"] = str(ROOT)
-    catalog = dict(rooted.get("catalog", {}))
-    properties = dict(catalog.get("properties", {}))
-    uri = properties.get("uri", "")
-    sqlite = "sqlite:///"
-    if uri.startswith(sqlite):
-        path = Path(uri.removeprefix(sqlite))
-        if not path.is_absolute():
-            properties["uri"] = f"{sqlite}{(ROOT / path).as_posix()}"
-    warehouse = properties.get("warehouse", "")
-    local = "file://"
-    if warehouse.startswith(local):
-        path = Path(warehouse.removeprefix(local))
-        if not path.is_absolute():
-            properties["warehouse"] = f"{local}{(ROOT / path).as_posix()}"
-    if properties:
-        catalog["properties"] = properties
-        rooted["catalog"] = catalog
-    return rooted
+#: The tables a task writes on every run, named by the identifier the catalog
+#: knows them by. `parse_market` writes books or events depending on its
+#: `books` parameter, so it declares none: an asset event is a claim that the
+#: table was written, and only these five are unconditional.
+WRITES = {
+    "parse_messages": "logs.messages",
+    "parse_fix": "fix.market",
+    "parse_instruments": "market.instruments",
+    "flatten_orders": "market.orders",
+    "flatten_executions": "market.executions",
+}
 
 
-def notebook_task(task_id: str, document: str) -> PapermillOperator:
-    """Build one operator from an adjacent YAML/notebook pair."""
-    path = ROOT / document
-    configured = Task.from_yaml(path)
-    parameters = rooted_parameters(configured.parameters)
-    if "branch" in parameters:
-        parameters["branch"] = "{{ params.branch }}"
-    if "books" in parameters:
-        parameters["books"] = "{{ params.books }}"
-    if "start" in parameters:
-        parameters["start"] = "{{ data_interval_start.isoformat() }}"
-    if "end" in parameters:
-        parameters["end"] = "{{ data_interval_end.isoformat() }}"
-    return PapermillOperator(
-        task_id=task_id,
-        input_nb=str(configured.into_notebook_path(path)),
-        output_nb=f"{OUTPUT_ROOT}/{task_id}-{{{{ ts_nodash }}}}.ipynb",
-        parameters=parameters,
-        kernel_name="python3",
-        log_output=True,
+def marimo_task(name: str, **kwargs: Any) -> MarimoOperator:
+    """One task application, named once.
+
+    Everything else is a `BaseOperator` argument -- retries, pools, queue,
+    execution timeout, callbacks -- and reaches Airflow unchanged.
+    """
+    written = WRITES.get(name)
+    return MarimoOperator(
+        task_id=name,
+        repository=ROOT,
+        document=f"tasks/{name}/{name}.yml",
+        doc_md=f"`tasks/{name}/{name}.py`, configured by `tasks/{name}/{name}.yml`.",
+        outlets=[Asset(name=written)] if written else [],
+        **kwargs,
     )
 
 
 def _count_at(result: object, path: str) -> int:
-    """One non-negative count in a notebook's returned mapping."""
+    """One non-negative count in a task's returned mapping."""
     value = result
     for name in path.split("."):
         if not isinstance(value, Mapping) or name not in value:
-            raise ValueError(f"notebook result has no {path!r}")
+            raise ValueError(f"task result has no {path!r}")
         value = value[name]
     if type(value) is not int or value < 0:
-        raise ValueError(f"notebook result {path!r} is not a non-negative count")
+        raise ValueError(f"task result {path!r} is not a non-negative count")
     return value
 
 
 @task.branch
-def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
-    """Choose direct downstream tasks from named counts in a notebook result."""
-    url = getattr(output, "url", output)
-    notebook = sb.read_notebook(url)
-    if "result" not in notebook.scraps:
-        raise ValueError(f"{url} has no 'result' scrap")
-    result = notebook.scraps["result"].data
+def route(result: Any, then: dict[str, str]) -> list[str] | None:
+    """Choose direct downstream tasks from named counts in a task result."""
     selected = [task_id for task_id, path in then.items() if _count_at(result, path)]
     return selected or None
 
@@ -92,7 +75,7 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
 @dag(
     dag_id="rekep_market_pipeline",
     description="Parse logs and publish market tables.",
-    schedule="@hourly",
+    schedule=HOURLY,
     start_date=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
     catchup=True,
     max_active_runs=1,
@@ -101,37 +84,31 @@ def after_notebook(output: Any, then: dict[str, str]) -> list[str] | None:
         "branch": Param("root", type="string", minLength=1),
         "books": Param(True, type="boolean"),
     },
-    tags=["rekep", "arrow", "iceberg", "market", "notebook"],
+    tags=["rekep", "arrow", "iceberg", "market", "marimo"],
 )
 def market_pipeline() -> None:
-    messages = notebook_task(
-        "parse_messages", "tasks/parse_messages/parse_messages.yml"
-    )
-    parsed = notebook_task("parse_fix", "tasks/parse_fix/parse_fix.yml")
-    instrument_updates = notebook_task(
-        "parse_instruments", "tasks/parse_instruments/parse_instruments.yml"
-    )
-    market = notebook_task("parse_market", "tasks/parse_market/parse_market.yml")
-    orders = notebook_task("flatten_orders", "tasks/flatten_orders/flatten_orders.yml")
-    executions = notebook_task(
-        "flatten_executions", "tasks/flatten_executions/flatten_executions.yml"
-    )
+    messages = marimo_task("parse_messages")
+    parsed = marimo_task("parse_fix")
+    instrument_updates = marimo_task("parse_instruments")
+    market = marimo_task("parse_market")
+    orders = marimo_task("flatten_orders")
+    executions = marimo_task("flatten_executions")
 
-    messages_route = after_notebook.override(task_id="route_messages")(
-        output=messages.output, then={"parse_fix": "read"}
+    messages_route = route.override(task_id="route_messages")(
+        result=messages.output, then={"parse_fix": "read"}
     )
     messages_route >> parsed
 
     # Both read `fix.market`, neither writes what the other reads, so they run
     # side by side on the one count that says the table gained rows.
-    fix_route = after_notebook.override(task_id="route_fix")(
-        output=parsed.output,
+    fix_route = route.override(task_id="route_fix")(
+        result=parsed.output,
         then={"parse_instruments": "routed.market", "parse_market": "routed.market"},
     )
     fix_route >> [instrument_updates, market]
 
-    market_route = after_notebook.override(task_id="route_market")(
-        output=market.output,
+    market_route = route.override(task_id="route_market")(
+        result=market.output,
         then={
             "flatten_orders": "flatten.orders",
             "flatten_executions": "flatten.executions",
@@ -155,10 +132,10 @@ market_pipeline()
         "retry_delay": datetime.timedelta(minutes=10),
     },
     params={"branch": Param("root", type="string", minLength=1)},
-    tags=["rekep", "iceberg", "maintenance", "notebook"],
+    tags=["rekep", "iceberg", "maintenance", "marimo"],
 )
 def iceberg_maintenance() -> None:
-    notebook_task("optimize_iceberg", "tasks/optimize_iceberg/optimize_iceberg.yml")
+    marimo_task("optimize_iceberg")
 
 
 iceberg_maintenance()

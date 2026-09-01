@@ -26,6 +26,7 @@ import datetime
 import logging
 import sys
 import time
+from collections.abc import Mapping
 from typing import Any
 
 #: The parent of every logger in the package. Each module holds its own
@@ -34,7 +35,7 @@ from typing import Any
 #: filters or silences the whole package by.
 ROOT = "rekep"
 
-#: What a task run shows when nothing says otherwise. A notebook is read after
+#: What a task run shows when nothing says otherwise. A task log is read after
 #: the fact by somebody asking what happened, which is what INFO answers.
 TASK_LEVEL = "INFO"
 
@@ -56,15 +57,15 @@ def configure(level: str | int = TASK_LEVEL) -> logging.Logger:
 
     Idempotent, and scoped to `rekep` rather than the root logger: configuring
     the root would decide the level for every library the caller also imports.
-    Repeated calls move the level and leave one handler, so a notebook that
+    Repeated calls move the level and leave one handler, so a process that
     runs two tasks does not print every record twice.
     """
     logger = logging.getLogger(ROOT)
     logger.setLevel(logging.getLevelNamesMapping()[level] if isinstance(level, str) else level)
     for handler in list(logger.handlers):
         logger.removeHandler(handler)
-    # Resolved now rather than held: `sys.stderr` under papermill is the
-    # kernel's, and a handler built at import would hold whatever it was then.
+    # Resolved now rather than held: a handler built at import would keep
+    # whatever `sys.stderr` was then, and a runner replaces it.
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(handler)
@@ -81,18 +82,31 @@ def configure(level: str | int = TASK_LEVEL) -> logging.Logger:
 class Stage:
     """One task's run: what it opened on, and the result it closes with.
 
-    The numbers are the notebook's -- a task is a job, and jobs live under
+    The numbers are the application's -- a task is a job, and jobs live under
     `tasks/`. What lives here is the *shape* they are reported in and the two
-    records that say them, because six notebooks agreeing on that by hand is
-    six chances to disagree, and they had: `read` was an integer in five of
-    them and a mapping in the sixth, `skipped` was in three, and the table a
+    records that say them, because seven applications agreeing on that by hand
+    is seven chances to disagree, and they had: `read` was an integer in five
+    of them and a mapping in the sixth, `skipped` was in three, and the table a
     stage wrote was `target` in four and `targets` in two, spelled two ways.
 
-    Every task now returns the same keys -- `task`, `read`, `written`,
-    `skipped`, `sources`, `targets`, `window`, `elapsed_ms` -- and whatever
-    else it alone knows, under its own name. A run reads top to bottom, and a
-    scrap read out of context says which task it came from.
+    Every task returns the same keys -- `task`, `read`, `written`, `skipped`,
+    `sources`, `targets`, `window`, `elapsed_ms` -- and whatever else it alone
+    knows, under its own name. `validated` is the same shape read back: a
+    runner writes the result and Airflow routes on it, so both ends check it
+    rather than trusting a mapping across a process boundary.
     """
+
+    #: What every result carries. A key here is a key a route may read.
+    KEYS = (
+        "task",
+        "read",
+        "written",
+        "skipped",
+        "sources",
+        "targets",
+        "window",
+        "elapsed_ms",
+    )
 
     #: The task document's own name, so a result identifies itself.
     task: str
@@ -155,21 +169,43 @@ class Stage:
             f" {chr(0x2192)} {_named(self.targets)}" if self.targets else "",
             elapsed,
         )
-        return glued(result)
-
-
-def glued(result: dict[str, Any]) -> dict[str, Any]:
-    """Publish `result` as this notebook's `result` scrap, and hand it back.
-
-    Scrapbook is the runner's, not this package's, so a process without it
-    still returns the result rather than failing over a record nobody reads.
-    """
-    try:
-        import scrapbook
-    except ImportError:
         return result
-    scrapbook.glue("result", result, encoder="json")
-    return result
+
+    @staticmethod
+    def validated(result: Any) -> dict[str, Any]:
+        """`result` as a task result, or the reason it is not one."""
+        if not isinstance(result, Mapping):
+            raise TypeError(f"a task result is a mapping, not {type(result).__name__}")
+        missing = sorted(set(Stage.KEYS) - set(result))
+        if missing:
+            raise ValueError(f"a task result is missing {', '.join(missing)}")
+        if not isinstance(result["task"], str) or not result["task"]:
+            raise ValueError("a task result names the task that returned it")
+        for name in ("read", "written", "skipped", "elapsed_ms"):
+            _count(result[name], name)
+        for name in ("sources", "targets"):
+            places = result[name]
+            if not isinstance(places, Mapping) or any(
+                not isinstance(role, str) or not isinstance(place, str)
+                for role, place in places.items()
+            ):
+                raise TypeError(f"a task result spells {name} as role=name text")
+        window = result["window"]
+        if not isinstance(window, Mapping) or set(window) != {"start", "end"}:
+            raise ValueError("a task result window is a start and an end")
+        for bound in window.values():
+            if bound is not None and (isinstance(bound, bool) or not isinstance(bound, int)):
+                raise TypeError("a window bound is epoch nanoseconds or null")
+        return dict(result)
+
+
+def _count(value: Any, name: str) -> int:
+    """One non-negative count, refusing the `bool` that is also an `int`."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"a task result spells {name} as an integer")
+    if value < 0:
+        raise ValueError(f"a task result {name} is not negative")
+    return value
 
 
 def _named(places: dict[str, str]) -> str:
