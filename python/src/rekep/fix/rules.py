@@ -7,10 +7,13 @@ import functools
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import pyarrow
 import pyarrow.compute
+
+if TYPE_CHECKING:
+    from pyiceberg.expressions import BooleanExpression
 
 from rekep.convert import Convertible
 from rekep.entries import Entry
@@ -311,11 +314,13 @@ class Rules(Convertible):
             rule.protocol for rule in self.rules if rule.protocol is not Protocol.OTHER
         )
 
-    def into_iceberg_category_filter(self, category: str, versions: tuple[str, ...] = ()) -> Any:
+    def into_iceberg_category_filter(
+        self, category: str, versions: tuple[str, ...] = ()
+    ) -> BooleanExpression:
         """The complete source predicate for one persisted FIX category.
 
-        pyiceberg is an extra, and classification is not: the expressions are
-        imported here so reaching for a rule never needs the catalog installed.
+        pyiceberg is an extra, and classification is not: the expression is
+        imported only when this storage boundary is used.
         """
         from pyiceberg.expressions import And, EqualTo, In, Not, Or
 

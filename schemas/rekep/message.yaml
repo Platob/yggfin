@@ -122,6 +122,11 @@ fields:
   type: string
   description: Contents of the first bracketed header field.
   fix: {name: ThreadName}
+- name: level
+  type: string
+  nullable: true
+  description: Severity in the parenthesized header token; null when omitted.
+  fix: {name: Level}
 - name: body
   type: binary
   description: Payload after the fixed log header, with continuation lines folded in.

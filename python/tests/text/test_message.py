@@ -61,6 +61,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
         "sourceurl",
         "sourcerownum",
         "threadname",
+        "level",
         "body",
         "protocol",
         *LIFTED_HEADER,
@@ -554,6 +555,13 @@ def test_generic_arguments_keep_prefixes_whitespace_and_empty_values() -> None:
         [("A", ""), ("B", "2")],
     ]
     assert all(entry["value"] is not None for row in parsed for entry in row)
+
+
+def test_payload_token_diagnostics_are_row_local_and_best_effort() -> None:
+    found = Message.parse_arrow(pyarrow.array(["A=1|broken token=lost|B=2|"]))
+
+    assert [entry["key"] for entry in found["entries"][0].as_py()] == ["A", "B"]
+    assert found["parseerror"].to_pylist() == ["FIX parse skipped unmatched tokens: 1"]
 
 
 def test_an_indexed_group_can_be_the_first_argument() -> None:

@@ -148,12 +148,11 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         parenthash=[9],
         state=State.NEW,
         code="B1",
-        altids={"order": "B1"},
+        altids={"orderid": "B1"},
         metadata={"source": "bid"},
         side=Side.BID,
         lastpx=100.0,
         lastqty=3.0,
-        orderid="B1",
     )
     ask = Order(
         unix=1,
@@ -164,12 +163,11 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         parenthash=[19],
         state=State.NEW,
         code="A1",
-        altids={"order": "A1"},
+        altids={"orderid": "A1"},
         metadata={"source": "ask"},
         side=Side.ASK,
         lastpx=101.0,
         lastqty=4.0,
-        orderid="A1",
     )
     execution = Execution(
         unix=2,
@@ -180,12 +178,11 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         parenthash=[bid.hash],
         state=State.FILLED,
         code="E1",
-        altids={"execution": "E1"},
+        altids={"execid": "E1"},
         metadata={"source": "trade"},
         side=Side.BID,
         lastpx=100.0,
         lastqty=1.0,
-        execid="E1",
     )
     rows = [
         Book(
@@ -193,7 +190,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
             plugin="book-feed",
             linkhashes=[bid.hash, execution.hash],
             parenthash=[bid.hash, execution.hash],
-            altids={"symbol": "BTC-USD"},
+            altids={"bookid": "BTC-USD-DELTA"},
             metadata={"kind": "delta"},
             bidlevels=[Level(px=100.0, qty=3.0)],
             asklevels=[Level(px=101.0, qty=4.0)],
@@ -206,7 +203,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
             snapunix=3,
             linkhashes=[bid.hash, ask.hash],
             parenthash=[bid.hash, ask.hash],
-            altids={"symbol": "BTC-USD"},
+            altids={"bookid": "BTC-USD-SNAPSHOT"},
             metadata={"kind": "snapshot"},
             bidlevels=[Level(px=100.0, qty=3.0)],
             asklevels=[Level(px=101.0, qty=4.0)],

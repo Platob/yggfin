@@ -100,8 +100,12 @@ instrument = next(InstUpdate.from_fixmsgs([fixmsg])).instrument
 book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
 
 assert message.MsgType == fixmsg.MsgType == "8"
-assert (order.clordid, order.lastqty) == ("CL-7", 6.0)
-assert (execution.execid, execution.lastqty, execution.lastpx) == ("EX-3", 4.0, 100.25)
+assert (order.altids["clordid"], order.lastqty) == ("CL-7", 6.0)
+assert (execution.altids["execid"], execution.lastqty, execution.lastpx) == (
+    "EX-3",
+    4.0,
+    100.25,
+)
 assert instrument is not None
 assert instrument.symbolticker == book.symbolticker == "XCME:BTC-USD"
 ```

@@ -44,7 +44,7 @@ LINES = {
     "Referential(dbi|equity|dbi;GB00BN7SWP63_XLON_GBX|[quantity-type=])": "REFER",
     "<Order ClOrdID='XML-1'><Instrument><Symbol>IBM</Symbol></Instrument></Order>": "XML",
     "Receiving XmlApi: <Execution ExecID='E1'><LastQty>2</LastQty></Execution>": "XML",
-    "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR": "OTHER",
+    "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR": "UL",
     "Message rejected because : ignoring OMSSales expiry message": "OTHER",
     "no level printed by this plugin": "OTHER",
     "heartbeat emitted seq=7": "MISC",
@@ -113,6 +113,16 @@ def test_a_line_lands_in_the_protocol_its_keys_claim(message: str, expected: str
 def test_a_batch_classifies_every_row_where_it_stands() -> None:
     """One pass over a mixed batch, and every row keeps its own position."""
     assert protocols_of(*LINES) == list(LINES.values())
+
+
+def test_an_unmarked_rendered_prefix_keeps_every_field() -> None:
+    line = "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR"
+
+    found = Message.parse_arrow(pyarrow.array([line]))
+    entries = found["entries"][0].as_py()
+
+    assert [entry["key"] for entry in entries] == ["ACCOUNT", "CLIENTID", "VENUE"]
+    assert protocols_of(line) == ["UL"]
 
 
 @pytest.mark.parametrize(

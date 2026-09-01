@@ -10,6 +10,7 @@ import datetime
 
 import pytest
 
+from rekep.enums import ManualIndicator
 from rekep.fix import FixFieldValue, FixRegistry, fix_field, record_copy
 from rekep.market import (
     MIC,
@@ -215,12 +216,14 @@ def test_a_later_fix_version_keeps_the_lifecycles_known_creation() -> None:
 
 
 def test_a_later_explicit_creation_fills_an_unknown_lifecycle_creation() -> None:
-    first = Order(unix=1, symbolticker="AAPL", clordid="C1", lastqty=1).with_previous(None)
+    first = Order(unix=1, symbolticker="AAPL", altids={"clordid": "C1"}, lastqty=1).with_previous(
+        None
+    )
     later = Order(
         unix=2,
         creaunix=3,
         symbolticker="AAPL",
-        clordid="C1",
+        altids={"clordid": "C1"},
         lastqty=2,
     ).with_previous(first)
 
@@ -229,8 +232,8 @@ def test_a_later_explicit_creation_fills_an_unknown_lifecycle_creation() -> None
 
 
 def test_creation_does_not_cross_into_another_lifecycle() -> None:
-    first = Order(unix=1, creaunix=2, symbolticker="AAPL", clordid="C1")
-    other = Order(unix=3, symbolticker="AAPL", clordid="C2")
+    first = Order(unix=1, creaunix=2, symbolticker="AAPL", altids={"clordid": "C1"})
+    other = Order(unix=3, symbolticker="AAPL", altids={"clordid": "C2"})
 
     completed = other.completed_from(first)
 
@@ -471,7 +474,8 @@ def test_a_trade_correction_keeps_its_execid_and_anchors_on_execrefid() -> None:
     report = FILLED.replace("|17=EX-3|", "|17=EX-4|19=EX-3|").replace("|150=F|", "|150=G|")
     _, corrected = events(report)
 
-    assert corrected.execid == "EX-4" and corrected.execrefid == "EX-3"
+    assert corrected.altids["execid"] == "EX-4"
+    assert corrected.altids["execrefid"] == "EX-3"
     assert corrected.code == "EX-3"
 
 
@@ -503,8 +507,22 @@ def test_an_order_carries_every_slot_the_message_filled() -> None:
     assert (order.lastqty, order.vwap, fill.vwap) == (6.0, None, 100.25)
     assert order.metadata["6"] == fill.metadata["6"] == "100.25"
     assert not hasattr(order, "cumqty") and not hasattr(order, "leavesqty")
-    assert (order.orderid, order.clordid) == ("ORD-9", "CL-7")
-    assert order.origclordid == "CL-6"
+    assert (order.altids["orderid"], order.altids["clordid"]) == ("ORD-9", "CL-7")
+    assert order.altids["origclordid"] == "CL-6"
+
+
+def test_manual_order_indicator_lifts_into_orders_and_executions_on_both_paths() -> None:
+    line = FILLED.replace("|1057=Y|", "|1028=Y|1057=Y|")
+    order, execution = events(line)
+
+    assert order.manualindicator is execution.manualindicator is ManualIndicator.MANUAL
+
+    parsed = FixMsg.from_message_batch([Message(body=line, recunix=order.recunix)])
+    translated = {shape: batch for shape, batch in FixMsg.into_market_arrow_batches(parsed)}
+    assert translated[Order].column("manualindicator").to_pylist() == [int(ManualIndicator.MANUAL)]
+    assert translated[Execution].column("manualindicator").to_pylist() == [
+        int(ManualIndicator.MANUAL)
+    ]
 
 
 def test_avgpx_is_evidence_not_a_vwap_when_prior_fills_are_unknown() -> None:
@@ -548,7 +566,8 @@ def test_instrument_fields_never_identify_an_order_or_execution() -> None:
         "35=AE|55=AAPL|48=US0378331005|22=4|54=1|31=100|32=1|60=20260821-10:00:01"
     )
 
-    assert order.instrumentxhash and execution.instrumentxhash
+    assert not hasattr(order, "instrumentxhash") and not hasattr(execution, "instrumentxhash")
+    assert order.symbolticker == execution.symbolticker == "AAPL"
     assert order.code == execution.code == ""
     assert order.xhash == execution.xhash == NIL
     assert not ({"symbol", "securityid", "isincode"} & order.altids.keys())
@@ -803,8 +822,8 @@ def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> Non
     assert instrument.symbol == "BTC-USD"
     assert order.symbolticker == "XCME:BTC-USD"
     assert instrument.securityexchange == "XCME" and instrument.currency is Currency.USD
-    assert order.instrumentxhash == instrument.xhash != 0
-    assert fill.instrumentxhash == order.instrumentxhash
+    assert not hasattr(order, "instrumentxhash") and not hasattr(fill, "instrumentxhash")
+    assert fill.symbolticker == order.symbolticker == instrument.symbolticker
     assert order.altids["orderid"] == order.code
     assert fill.altids["execid"] == fill.code
 
@@ -1126,7 +1145,11 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     reader = FixEvents.from_text(line, registry=registry)
     (order,) = list(reader)
     assert reader.version == "VENUE1"
-    assert (order.symbolticker, order.clordid, order.side) == ("AAPL", "CUSTOM-1", Side.BUY)
+    assert (order.symbolticker, order.altids["clordid"], order.side) == (
+        "AAPL",
+        "CUSTOM-1",
+        Side.BUY,
+    )
     assert (order.lastqty, order.lastpx, order.unix) == (
         7.0,
         10.5,
@@ -1151,7 +1174,7 @@ def test_an_offline_registry_selects_version_specific_wire_tags(tmp_path) -> Non
     )
     (pair_order,) = list(pair_reader)
     assert pair_reader.version == "VENUE1"
-    assert (pair_order.symbolticker, pair_order.clordid, pair_order.side) == (
+    assert (pair_order.symbolticker, pair_order.altids["clordid"], pair_order.side) == (
         "AAPL",
         "CUSTOM-1",
         Side.BUY,
@@ -1421,11 +1444,11 @@ def test_a_two_sided_trade_capture_report_is_one_row_per_side_of_one_trade_lifec
     events = list(FixEvents.from_text(wire))
 
     assert [type(one) for one in events] == [Execution, Execution]
-    assert [(one.side, one.orderid, one.clordid) for one in events] == [
+    assert [(one.side, one.altids["orderid"], one.altids["clordid"]) for one in events] == [
         (Side.BUY, "O-BUY", "C-BUY"),
         (Side.SELL, "O-SELL", "C-SELL"),
     ]
-    assert {one.tradeid for one in events} == {"M-1"}
+    assert {one.altids["trdmatchid"] for one in events} == {"M-1"}
     assert {(one.lastpx, one.lastqty, one.unix) for one in events} == {(99.5, 7.0, events[0].unix)}
     assert events[0].xhash == events[1].xhash == events[0].xhash_of("M-1")
 
@@ -1436,13 +1459,17 @@ def test_a_single_sided_or_flat_trade_capture_report_stays_one_execution() -> No
         "552=1|54=1|37=O-9|11=C-9|10=000"
     )
     (execution,) = list(FixEvents.from_text(single))
-    assert (execution.side, execution.orderid, execution.lastpx) == (Side.BUY, "O-9", 101.0)
+    assert (execution.side, execution.altids["orderid"], execution.lastpx) == (
+        Side.BUY,
+        "O-9",
+        101.0,
+    )
 
     flat = (
         "8=FIX.4.4|35=AE|571=R3|880=M-3|31=50|32=1|55=MSFT|54=2|37=O-3|60=20260814-11:00:00|10=000"
     )
     (execution,) = list(FixEvents.from_text(flat))
-    assert (execution.side, execution.orderid) == (Side.SELL, "O-3")
+    assert (execution.side, execution.altids["orderid"]) == (Side.SELL, "O-3")
 
 
 def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
@@ -1459,11 +1486,11 @@ def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
     )
     events = list(FixMsg.from_text(line).into_fix_events(fix_version="4.4"))
 
-    assert [(one.side, one.orderid) for one in events] == [
+    assert [(one.side, one.altids["orderid"]) for one in events] == [
         (Side.BUY, "O-BUY"),
         (Side.SELL, "O-SELL"),
     ]
-    assert {one.tradeid for one in events} == {"M-9"}
+    assert {one.altids["trdmatchid"] for one in events} == {"M-9"}
     instrument = next(InstUpdate.from_fixmsgs([FixMsg.from_text(line)])).instrument
     assert [leg.symbol for leg in instrument.legs] == ["EUR/USD-NEAR", "EUR/USD-FAR"]
 
@@ -1479,8 +1506,7 @@ def test_a_cancel_reject_reads_where_the_order_stands_from_ordstatus() -> None:
     (order,) = list(FixEvents.from_text(line))
 
     assert order.state is State.FILLED
-    assert order.cxlrejreason == 1
-    assert order.cxlrejresponseto == "1"
+    assert not hasattr(order, "cxlrejreason") and not hasattr(order, "cxlrejresponseto")
     assert order.reason is not None
     coded, response, text = order.reason.split("; ")
     assert coded.startswith("CxlRejReason=1")
@@ -1532,7 +1558,12 @@ def test_a_trade_capture_report_request_carrying_a_trade_is_an_execution() -> No
     )
     (execution,) = list(FixEvents.from_text(line))
     assert isinstance(execution, Execution)
-    assert (execution.side, execution.lastpx, execution.lastqty, execution.tradeid) == (
+    assert (
+        execution.side,
+        execution.lastpx,
+        execution.lastqty,
+        execution.altids["trdmatchid"],
+    ) == (
         Side.BUY,
         100.0,
         5.0,
@@ -1556,7 +1587,6 @@ def test_an_execution_carries_how_its_trade_settles() -> None:
 def test_the_order_intent_link_identifier_is_typed_and_coded() -> None:
     line = "8=FIX.4.4|35=D|11=C-1|583=LINK-9|55=AAPL|54=1|38=5|44=10|60=20260814-10:00:00|10=000"
     (order,) = list(FixEvents.from_text(line))
-    assert order.clordlinkid == "LINK-9"
     assert order.altids["clordlinkid"] == "LINK-9"
 
 
@@ -1570,9 +1600,9 @@ def test_the_parent_identities_a_bridge_renders_reach_the_order() -> None:
         "#TRANSACTTIME=20260814-10:00:00"
     )
     (order,) = list(FixEvents.from_text(line))
-    assert order.parentclordid == "P-1"
-    assert order.parentorderid == "V-9"
-    assert order.clordid == "C-2"
+    assert order.altids["parentclordid"] == "P-1"
+    assert order.altids["parentorderid"] == "V-9"
+    assert order.altids["clordid"] == "C-2"
     assert "PARENTCLORDID" not in order.metadata, "a field with a column is not metadata"
     assert "PARENTORDERID" not in order.metadata, "under the bridge's spelling either"
 
@@ -1605,9 +1635,9 @@ def test_a_side_never_answers_with_its_siblings_fields() -> None:
     )
     first, second = list(FixEvents.from_text(wire))
 
-    assert (first.clordid, second.clordid) == ("C-BUY", None)
+    assert (first.altids["clordid"], second.altids.get("clordid")) == ("C-BUY", None)
     assert "1" not in (second.metadata or {}).values(), "no borrowed account either"
-    assert {one.tradeid for one in (first, second)} == {"M-1"}, (
+    assert {one.altids["trdmatchid"] for one in (first, second)} == {"M-1"}, (
         "the report level still falls through"
     )
     assert {one.lastpx for one in (first, second)} == {99.5}
@@ -1623,7 +1653,7 @@ def test_a_side_with_nested_parties_does_not_truncate_the_sides_after_it() -> No
     )
     events = list(FixEvents.from_text(wire))
 
-    assert [(one.side, one.orderid) for one in events] == [
+    assert [(one.side, one.altids["orderid"]) for one in events] == [
         (Side.BUY, "O-BUY"),
         (Side.SELL, "O-SELL"),
     ]
@@ -1656,7 +1686,7 @@ def test_a_pure_trade_report_query_fabricates_no_execution() -> None:
         "60=20260814-10:00:00|10=000"
     )
     (execution,) = list(FixEvents.from_text(echoed))
-    assert (execution.tradeid, execution.lastpx) == ("M-1", 100.0)
+    assert (execution.altids["trdmatchid"], execution.lastpx) == ("M-1", 100.0)
 
 
 def test_a_side_with_its_own_regulatory_stamp_keeps_it() -> None:

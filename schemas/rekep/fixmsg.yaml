@@ -122,6 +122,11 @@ fields:
   type: string
   description: Contents of the first bracketed header field.
   fix: {name: ThreadName}
+- name: level
+  type: string
+  nullable: true
+  description: Severity in the parenthesized header token; null when omitted.
+  fix: {name: Level}
 - name: protocol
   type: fixed_size_binary[16]
   description: Protocol grammar and resolved version; OTHER carries neither.

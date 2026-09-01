@@ -110,13 +110,9 @@ fields:
   type: string
   nullable: true
   description: Why this event was rejected or could not be interpreted, when known.
-- name: instrumentxhash
-  type: fixed_size_binary[16]
-  description: Canonical Instrument identity used to join market rows.
-  fix: {name: InstrumentXhash}
 - name: symbolticker
   type: string
-  description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
+  description: Canonical instrument key; empty when the source cannot identify it.
   fix: {name: SymbolTicker}
 - name: kind
   type: int64
@@ -388,13 +384,9 @@ fields:
       type: string
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
-    - name: instrumentxhash
-      type: fixed_size_binary[16]
-      description: Canonical Instrument identity used to join market rows.
-      fix: {name: InstrumentXhash}
     - name: symbolticker
       type: string
-      description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
+      description: Canonical instrument key; empty when the source cannot identify it.
       fix: {name: SymbolTicker}
     - name: kind
       type: int64
@@ -478,46 +470,11 @@ fields:
     - name: indicative
       type: bool
       description: Whether this interest is a quote rather than a firm order.
-    - name: orderid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-      fix: {tag: '37', type: String, name: OrderID}
-    - name: clordid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
-      fix: {tag: '11', type: String, name: ClOrdID}
-    - name: origclordid
-      type: string
-      nullable: true
-      description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-      fix: {tag: '41', type: String, name: OrigClOrdID}
-    - name: clordlinkid
-      type: string
-      nullable: true
-      description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
-      fix: {tag: '583', type: String, name: ClOrdLinkID}
-    - name: parentclordid
-      type: string
-      nullable: true
-      description: Client order identity of the parent in a replace chain, as the bridge renders it.
-      fix: {type: String, name: ParentClOrdID}
-    - name: parentorderid
-      type: string
-      nullable: true
-      description: Venue order identity of the parent in a replace chain, as the bridge renders it.
-      fix: {type: String, name: ParentOrderID}
-    - name: cxlrejreason
+    - name: manualindicator
       type: int32
-      nullable: true
-      description: Code to identify reason for rejection of cancellation or modification.
-      fix: {tag: '102', type: int, name: CxlRejReason}
-    - name: cxlrejresponseto
-      type: string
-      nullable: true
-      description: Identifies the type of request that a Cancel Reject is in response to.
-      fix: {tag: '434', type: char, name: CxlRejResponseTo}
+      description: Indicates if an order, quote or trade was initially received manually (as opposed to electronically) or if it was entered manually (as opposed to entered by automated trading software).
+      fix: {tag: '1028', type: Boolean, name: ManualOrderIndicator}
+      enum: {name: ManualIndicator, key_type: int32, values: '{"0":"UNKNOWN","1096111183":"AUTOMATIC","1296125516":"MANUAL"}', value_type: utf8, fix_values: '{"1028":{"N":1096111183,"Y":1296125516}}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"0":"AUTOMATIC","1":"MANUAL","AUTOMATIC":"AUTO","ELECTRONIC":"AUTOMATIC","FALSE":"AUTOMATIC","MANUAL":"MANL","N":"AUTOMATIC","NO":"AUTOMATIC","TRUE":"MANUAL","Y":"MANUAL","YES":"MANUAL"}'}
 - name: executions
   type: list
   description: Execution evidence belonging to this book delta.
@@ -629,13 +586,9 @@ fields:
       type: string
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
-    - name: instrumentxhash
-      type: fixed_size_binary[16]
-      description: Canonical Instrument identity used to join market rows.
-      fix: {name: InstrumentXhash}
     - name: symbolticker
       type: string
-      description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
+      description: Canonical instrument key; empty when the source cannot identify it.
       fix: {name: SymbolTicker}
     - name: kind
       type: int64
@@ -697,36 +650,6 @@ fields:
         type: string
       value:
         type: string
-    - name: execid
-      type: string
-      nullable: true
-      description: Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)).
-      fix: {tag: '17', type: String, name: ExecID}
-    - name: execrefid
-      type: string
-      nullable: true
-      description: Reference identifier used with Trade, Trade Cancel and Trade Correct execution types.
-      fix: {tag: '19', type: String, name: ExecRefID}
-    - name: tradeid
-      type: string
-      nullable: true
-      description: The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty.
-      fix: {tag: '1003', type: String, name: TradeID}
-    - name: orderid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-      fix: {tag: '37', type: String, name: OrderID}
-    - name: clordid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
-      fix: {tag: '11', type: String, name: ClOrdID}
-    - name: origclordid
-      type: string
-      nullable: true
-      description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-      fix: {tag: '41', type: String, name: OrigClOrdID}
     - name: cumqty
       type: double
       nullable: true
@@ -746,6 +669,11 @@ fields:
       nullable: true
       description: Used to identify whether the order initiator is an aggressor or not in the trade.
       fix: {tag: '1057', type: Boolean, name: AggressorIndicator}
+    - name: manualindicator
+      type: int32
+      description: Indicates if an order, quote or trade was initially received manually (as opposed to electronically) or if it was entered manually (as opposed to entered by automated trading software).
+      fix: {tag: '1028', type: Boolean, name: ManualOrderIndicator}
+      enum: {name: ManualIndicator, key_type: int32, values: '{"0":"UNKNOWN","1096111183":"AUTOMATIC","1296125516":"MANUAL"}', value_type: utf8, fix_values: '{"1028":{"N":1096111183,"Y":1296125516}}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"0":"AUTOMATIC","1":"MANUAL","AUTOMATIC":"AUTO","ELECTRONIC":"AUTOMATIC","FALSE":"AUTOMATIC","MANUAL":"MANL","N":"AUTOMATIC","NO":"AUTOMATIC","TRUE":"MANUAL","Y":"MANUAL","YES":"MANUAL"}'}
     - name: settldate
       type: timestamp[us]
       nullable: true
@@ -879,13 +807,9 @@ fields:
       type: string
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
-    - name: instrumentxhash
-      type: fixed_size_binary[16]
-      description: Canonical Instrument identity used to join market rows.
-      fix: {name: InstrumentXhash}
     - name: symbolticker
       type: string
-      description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
+      description: Canonical instrument key; empty when the source cannot identify it.
       fix: {name: SymbolTicker}
     - name: kind
       type: int64
@@ -969,46 +893,11 @@ fields:
     - name: indicative
       type: bool
       description: Whether this interest is a quote rather than a firm order.
-    - name: orderid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-      fix: {tag: '37', type: String, name: OrderID}
-    - name: clordid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
-      fix: {tag: '11', type: String, name: ClOrdID}
-    - name: origclordid
-      type: string
-      nullable: true
-      description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-      fix: {tag: '41', type: String, name: OrigClOrdID}
-    - name: clordlinkid
-      type: string
-      nullable: true
-      description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
-      fix: {tag: '583', type: String, name: ClOrdLinkID}
-    - name: parentclordid
-      type: string
-      nullable: true
-      description: Client order identity of the parent in a replace chain, as the bridge renders it.
-      fix: {type: String, name: ParentClOrdID}
-    - name: parentorderid
-      type: string
-      nullable: true
-      description: Venue order identity of the parent in a replace chain, as the bridge renders it.
-      fix: {type: String, name: ParentOrderID}
-    - name: cxlrejreason
+    - name: manualindicator
       type: int32
-      nullable: true
-      description: Code to identify reason for rejection of cancellation or modification.
-      fix: {tag: '102', type: int, name: CxlRejReason}
-    - name: cxlrejresponseto
-      type: string
-      nullable: true
-      description: Identifies the type of request that a Cancel Reject is in response to.
-      fix: {tag: '434', type: char, name: CxlRejResponseTo}
+      description: Indicates if an order, quote or trade was initially received manually (as opposed to electronically) or if it was entered manually (as opposed to entered by automated trading software).
+      fix: {tag: '1028', type: Boolean, name: ManualOrderIndicator}
+      enum: {name: ManualIndicator, key_type: int32, values: '{"0":"UNKNOWN","1096111183":"AUTOMATIC","1296125516":"MANUAL"}', value_type: utf8, fix_values: '{"1028":{"N":1096111183,"Y":1296125516}}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"0":"AUTOMATIC","1":"MANUAL","AUTOMATIC":"AUTO","ELECTRONIC":"AUTOMATIC","FALSE":"AUTOMATIC","MANUAL":"MANL","N":"AUTOMATIC","NO":"AUTOMATIC","TRUE":"MANUAL","Y":"MANUAL","YES":"MANUAL"}'}
 - name: askalive
   type: list
   description: Complete living ask orders, populated only on snapshots.
@@ -1121,13 +1010,9 @@ fields:
       type: string
       nullable: true
       description: Why this event was rejected or could not be interpreted, when known.
-    - name: instrumentxhash
-      type: fixed_size_binary[16]
-      description: Canonical Instrument identity used to join market rows.
-      fix: {name: InstrumentXhash}
     - name: symbolticker
       type: string
-      description: Canonical spelling of the instrument `instrumentxhash` names; empty when unstated.
+      description: Canonical instrument key; empty when the source cannot identify it.
       fix: {name: SymbolTicker}
     - name: kind
       type: int64
@@ -1211,43 +1096,8 @@ fields:
     - name: indicative
       type: bool
       description: Whether this interest is a quote rather than a firm order.
-    - name: orderid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days.
-      fix: {tag: '37', type: String, name: OrderID}
-    - name: clordid
-      type: string
-      nullable: true
-      description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field.
-      fix: {tag: '11', type: String, name: ClOrdID}
-    - name: origclordid
-      type: string
-      nullable: true
-      description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests.
-      fix: {tag: '41', type: String, name: OrigClOrdID}
-    - name: clordlinkid
-      type: string
-      nullable: true
-      description: Permits order originators to tie together groups of orders in which trades resulting from orders are associated for a specific purpose, for example the calculation of average execution price for a customer or to associate lists submitted to a broker as waves of a larger program trade.
-      fix: {tag: '583', type: String, name: ClOrdLinkID}
-    - name: parentclordid
-      type: string
-      nullable: true
-      description: Client order identity of the parent in a replace chain, as the bridge renders it.
-      fix: {type: String, name: ParentClOrdID}
-    - name: parentorderid
-      type: string
-      nullable: true
-      description: Venue order identity of the parent in a replace chain, as the bridge renders it.
-      fix: {type: String, name: ParentOrderID}
-    - name: cxlrejreason
+    - name: manualindicator
       type: int32
-      nullable: true
-      description: Code to identify reason for rejection of cancellation or modification.
-      fix: {tag: '102', type: int, name: CxlRejReason}
-    - name: cxlrejresponseto
-      type: string
-      nullable: true
-      description: Identifies the type of request that a Cancel Reject is in response to.
-      fix: {tag: '434', type: char, name: CxlRejResponseTo}
+      description: Indicates if an order, quote or trade was initially received manually (as opposed to electronically) or if it was entered manually (as opposed to entered by automated trading software).
+      fix: {tag: '1028', type: Boolean, name: ManualOrderIndicator}
+      enum: {name: ManualIndicator, key_type: int32, values: '{"0":"UNKNOWN","1096111183":"AUTOMATIC","1296125516":"MANUAL"}', value_type: utf8, fix_values: '{"1028":{"N":1096111183,"Y":1296125516}}', encoding: ascii-big-endian, byte_width: '4', padding: nul-right, aliases: '{"0":"AUTOMATIC","1":"MANUAL","AUTOMATIC":"AUTO","ELECTRONIC":"AUTOMATIC","FALSE":"AUTOMATIC","MANUAL":"MANL","N":"AUTOMATIC","NO":"AUTOMATIC","TRUE":"MANUAL","Y":"MANUAL","YES":"MANUAL"}'}

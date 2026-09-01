@@ -20,12 +20,14 @@ from rekep.fields.arrays import (
     sequence,
 )
 from rekep.fix.message import (
+    BARE_VECTOR,
     BEGIN_STRING,
     BEGIN_VECTOR,
     FIX_MSG_TYPE_PATTERN,
     MARKED_VECTOR,
     NAMED_MSG_TYPE_PATTERN,
     split_payload_arrow,
+    unmatched_token_diagnostics,
 )
 from rekep.fix.rules import joined_pattern
 
@@ -49,6 +51,9 @@ _MARKED_SEPARATOR = (
 )
 _PAIR_PUNCTUATION_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>{_PUNCTUATION}){_WS}*{_ASSIGNMENT}"
 _PAIR_WHITESPACE_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>[ \t]+){_ASSIGNMENT}"
+# The payload gate uses the strict form: punctuation before the space is prose
+# such as `state=done, count=2`, not a bridge's whitespace delimiter.
+_STRUCTURED_WHITESPACE = rf"(?s){_ASSIGNMENT}[^ \t\r\n,{{}}]*[ \t]+{_ASSIGNMENT}"
 _SEPARATORS = r"\x04\x03|\^A|[\x01|^;#]"
 _TRAILING_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>{_SEPARATORS}){_WS}*$"
 _STRUCTURED_PAIRS = rf"(?s){_ASSIGNMENT}.*?(?:{_SEPARATORS}){_WS}*{_ASSIGNMENT}"
@@ -74,7 +79,11 @@ _REFERENTIAL_COMP = "Referential"
 #: of the splitter is what makes a capture full of them cheap -- finding one
 #: token is deliberately cheaper than splitting a whole payload.
 _STRUCTURED = joined_pattern(
-    _STRUCTURED_PAIRS, BEGIN_STRING, FIX_MSG_TYPE_PATTERN, NAMED_MSG_TYPE_PATTERN
+    _STRUCTURED_PAIRS,
+    _STRUCTURED_WHITESPACE,
+    BEGIN_STRING,
+    FIX_MSG_TYPE_PATTERN,
+    NAMED_MSG_TYPE_PATTERN,
 )
 
 
@@ -99,28 +108,54 @@ def payload_arrow(messages):
     log line is a sentence rather than a message -- so a row with no payload
     carries no arguments and, having no keys, no protocol either.
     """
+    return _payload_arrow(messages, False)
+
+
+def payload_arrow_with_diagnostics(messages):
+    """Payload entries and nullable unmatched-token diagnostics per row."""
+    return _payload_arrow(messages, True)
+
+
+def _payload_arrow(messages, with_diagnostics: bool):
+    """Implement the gated payload parse once for entries and diagnostics."""
     compute = pyarrow.compute
     if isinstance(messages, pyarrow.ChunkedArray):
-        return pyarrow.chunked_array(
-            [payload_arrow(chunk) for chunk in messages.chunks], type=ENTRIES
-        )
+        parsed = [_payload_arrow(chunk, with_diagnostics) for chunk in messages.chunks]
+        if with_diagnostics:
+            return (
+                pyarrow.chunked_array([part[0] for part in parsed], type=ENTRIES),
+                pyarrow.chunked_array([part[1] for part in parsed], pyarrow.string()),
+            )
+        return pyarrow.chunked_array(parsed, type=ENTRIES)
     rows = len(messages)
     if not rows:
-        return pyarrow.array([], type=ENTRIES)
+        empty = pyarrow.array([], type=ENTRIES)
+        return (empty, pyarrow.array([], pyarrow.string())) if with_diagnostics else empty
     carried = looks_structured_arrow(messages)
     if compute.all(carried, min_count=0).as_py():
-        return parse_arrow(messages)
+        return _parse_arrow(messages, with_diagnostics)
     empty = pyarrow.scalar([], ENTRIES)
     if not compute.any(carried, min_count=0).as_py():
-        return pyarrow.repeat(empty, rows)
+        entries = pyarrow.repeat(empty, rows)
+        return (entries, pyarrow.nulls(rows, pyarrow.string())) if with_diagnostics else entries
     positions = sequence(rows)
     carried_at = compute.filter(positions, carried)
+    skipped_at = compute.filter(positions, compute.invert(carried))
+    parsed = _parse_arrow(compute.take(messages, carried_at), with_diagnostics)
+    if with_diagnostics:
+        return (
+            scattered(
+                [parsed[0], pyarrow.repeat(empty, rows - len(carried_at))],
+                [carried_at, skipped_at],
+            ),
+            scattered(
+                [parsed[1], pyarrow.nulls(rows - len(carried_at), pyarrow.string())],
+                [carried_at, skipped_at],
+            ),
+        )
     return scattered(
-        [
-            parse_arrow(compute.take(messages, carried_at)),
-            pyarrow.repeat(empty, rows - len(carried_at)),
-        ],
-        [carried_at, compute.filter(positions, compute.invert(carried))],
+        [parsed, pyarrow.repeat(empty, rows - len(carried_at))],
+        [carried_at, skipped_at],
     )
 
 
@@ -600,33 +635,48 @@ def _xml_name(name: Any) -> str:
 
 def parse_arrow(messages):
     """Split text into ordered arguments without protocol interpretation."""
+    return _parse_arrow(messages, False)
+
+
+def _parse_arrow(messages, with_diagnostics: bool):
+    """Implement entry splitting once for the public and diagnostic readings."""
     if isinstance(messages, pyarrow.ChunkedArray):
-        return pyarrow.chunked_array(
-            [parse_arrow(chunk) for chunk in messages.chunks], type=ENTRIES
-        )
+        parsed = [_parse_arrow(chunk, with_diagnostics) for chunk in messages.chunks]
+        if with_diagnostics:
+            return (
+                pyarrow.chunked_array([part[0] for part in parsed], type=ENTRIES),
+                pyarrow.chunked_array([part[1] for part in parsed], pyarrow.string()),
+            )
+        return pyarrow.chunked_array(parsed, type=ENTRIES)
     if not len(messages):
-        return pyarrow.array([], type=ENTRIES)
+        empty = pyarrow.array([], type=ENTRIES)
+        return (empty, pyarrow.array([], pyarrow.string())) if with_diagnostics else empty
 
     compute = pyarrow.compute
     text = _from_message_start(compute.fill_null(messages.cast(pyarrow.string(), safe=False), ""))
     common = _common_separators(text)
     common_rows = compute.is_valid(common)
     if compute.all(common_rows, min_count=0).as_py():
-        return _parse_grouped(text, common)
+        return _parse_grouped(text, common, with_diagnostics)
     if compute.any(common_rows, min_count=0).as_py():
         positions = sequence(len(text))
         common_at = compute.filter(positions, common_rows)
         generic_at = compute.filter(positions, compute.invert(common_rows))
-        return scattered(
-            [
-                _parse_grouped(
-                    compute.filter(text, common_rows), compute.filter(common, common_rows)
-                ),
-                _parse_generic(compute.filter(text, compute.invert(common_rows))),
-            ],
-            [common_at, generic_at],
+        common_part = _parse_grouped(
+            compute.filter(text, common_rows),
+            compute.filter(common, common_rows),
+            with_diagnostics,
         )
-    return _parse_generic(text)
+        generic_part = _parse_generic(
+            compute.filter(text, compute.invert(common_rows)), with_diagnostics
+        )
+        if with_diagnostics:
+            return (
+                scattered([common_part[0], generic_part[0]], [common_at, generic_at]),
+                scattered([common_part[1], generic_part[1]], [common_at, generic_at]),
+            )
+        return scattered([common_part, generic_part], [common_at, generic_at])
+    return _parse_generic(text, with_diagnostics)
 
 
 def pop_arrow(
@@ -696,11 +746,12 @@ def _from_message_start(text: pyarrow.Array) -> pyarrow.Array:
     """
     compute = pyarrow.compute
     begun = compute.struct_field(compute.extract_regex(text, BEGIN_VECTOR), "msg")
-    bridged = compute.struct_field(compute.extract_regex(text, MARKED_VECTOR), "msg")
-    return compute.coalesce(begun, bridged, text)
+    marked = compute.struct_field(compute.extract_regex(text, MARKED_VECTOR), "msg")
+    bare = compute.struct_field(compute.extract_regex(text, BARE_VECTOR), "msg")
+    return compute.coalesce(begun, marked, bare, text)
 
 
-def _parse_generic(text: pyarrow.Array) -> pyarrow.Array:
+def _parse_generic(text: pyarrow.Array, with_diagnostics: bool = False) -> Any:
     """Parse rows whose separator needs the complete inference rule."""
     compute = pyarrow.compute
     marked = compute.extract_regex(text, _MARKED_SEPARATOR)
@@ -719,19 +770,26 @@ def _parse_generic(text: pyarrow.Array) -> pyarrow.Array:
         compute.coalesce(marked_separator, punctuated, spaced, trailing),
         _DEFAULT_SEPARATOR,
     )
-    return _parse_grouped(text, separators)
+    return _parse_grouped(text, separators, with_diagnostics)
 
 
-def _parse_grouped(text: pyarrow.Array, separators: pyarrow.Array) -> pyarrow.Array:
+def _parse_grouped(
+    text: pyarrow.Array, separators: pyarrow.Array, with_diagnostics: bool = False
+) -> Any:
     """Parse rows grouped by one already-settled separator."""
     compute = pyarrow.compute
     groups = list(groups_of(separators))
     if len(groups) == 1:
-        return _parse_style(text, groups[0][0].as_py())
+        return _parse_style(text, groups[0][0].as_py(), with_diagnostics)
     parts, positions = [], []
     for separator, where in groups:
-        parts.append(_parse_style(compute.take(text, where), separator.as_py()))
+        parts.append(_parse_style(compute.take(text, where), separator.as_py(), with_diagnostics))
         positions.append(where)
+    if with_diagnostics:
+        return (
+            scattered([part[0] for part in parts], positions),
+            scattered([part[1] for part in parts], positions),
+        )
     return scattered(parts, positions)
 
 
@@ -768,7 +826,7 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
     return common
 
 
-def _parse_style(text: Any, separator: str) -> pyarrow.Array:
+def _parse_style(text: Any, separator: str, with_diagnostics: bool = False) -> Any:
     """Parse one homogeneous separator style in Arrow kernels."""
     compute = pyarrow.compute
     marked_at = compute.find_substring_regex(text, rf"#{_BARE_KEY}{_WS}*=")
@@ -794,6 +852,7 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
     parsed = compute.extract_regex(tokens.values, _TOKEN)
     keys = compute.struct_field(parsed, "key")
     matched = compute.fill_null(compute.is_valid(keys), False)
+    diagnostics = unmatched_token_diagnostics(tokens, matched) if with_diagnostics else None
     keys = compute.filter(keys, matched)
     if separator == "#":
         parents = compute.list_parent_indices(tokens)
@@ -815,4 +874,5 @@ def _parse_style(text: Any, separator: str) -> pyarrow.Array:
     entries = pyarrow.StructArray.from_arrays(
         Entry.structure_arrow(keys, values), fields=list(Entry.into_field().dtype)
     )
-    return pyarrow.ListArray.from_arrays(offsets, entries, type=ENTRIES)
+    result = pyarrow.ListArray.from_arrays(offsets, entries, type=ENTRIES)
+    return (result, diagnostics) if with_diagnostics else result

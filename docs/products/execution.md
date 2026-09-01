@@ -19,15 +19,15 @@ execution = [
 print(
     execution.lastqty,
     execution.lastpx,
-    execution.execid,
-    execution.orderid,
+    execution.altids["execid"],
+    execution.altids["orderid"],
     sorted(execution.altids),
     execution.state.name,
 )
 ```
 
 ```text
-10.0 100.25 E1 O1 ['clordid', 'code', 'execid', 'orderid', 'symbolticker'] FILLED
+10.0 100.25 E1 O1 ['clordid', 'code', 'execid', 'orderid'] FILLED
 ```
 
 Missing identifiers may resolve against indexed live order names. Venue

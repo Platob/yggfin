@@ -42,7 +42,6 @@ all-zero sentinel rather than the digest of emptiness.
 ```text
 hash:            fixed_size_binary[16]
 xhash:           fixed_size_binary[16]
-instrumentxhash: fixed_size_binary[16]
 prevhash:        fixed_size_binary[16]
 linkhashes:      list<item: fixed_size_binary[16]>
 parenthash:      list<item: fixed_size_binary[16]>
@@ -59,9 +58,9 @@ xhash = Event.xhash_of("ORD-1")
 assert txhash.wide_bytes(xhash) == xxhash.xxh3_128_digest(b"ORD-1")
 ```
 
-`altids` records every readable code under its folded field name, including
-the selected lifecycle `code`. Typed fields such as `orderid`, `execid`, and
-`symbolticker` remain present even when another one anchors the lifecycle.
+`altids` records every readable lifecycle code under its folded field name,
+including the selected `code`. Instrument reference identifiers stay out of
+that map; `symbolticker` is the market row's canonical instrument key.
 
 An event `hash` composes its epoch microseconds with its `vhash` without
 hashing the payload again. It is stored as sixteen big-endian two's-complement
@@ -73,8 +72,8 @@ exact event versions used to construct this one. `linkhashes`
 
 XXH3-64 composite digests remain signed `int64`. `vhash` is the clock-free
 event value. `xhash` is the direct clock-free XXH3-128 digest of UTF-8 `code`.
-`Instrument.xhash`, `Leg.xhash`, and `instrumentxhash` use the same operation
-over `symbolticker`. A lifecycle or reference identity nested in another
+`Instrument.xhash` and `Leg.xhash` use the same operation over
+`symbolticker`. A lifecycle or reference identity nested in another
 identity frame enters as its stored sixteen bytes; Book value hashes keep
 their native signed `int64` payloads.
 

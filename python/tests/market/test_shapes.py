@@ -53,11 +53,9 @@ ENVELOPE = [
     "reason",
 ]
 
-#: What `MarketEvent` adds on top, also in order. `instrumentxhash` leads because
-#: it is the join column: an engine that prunes on it reads it first, and a
-#: declaration order is a physical order everywhere the schema travels.
+#: What `MarketEvent` adds on top, also in order. The ticker leads because it
+#: is the only instrument key and declaration order is physical schema order.
 PRICED = [
-    "instrumentxhash",
     "symbolticker",
     "kind",
     "side",
@@ -102,7 +100,8 @@ def test_every_event_leaves_physical_sorting_to_the_writer(shape: type) -> None:
 def test_the_hour_is_the_only_partition_a_market_event_declares(shape: type) -> None:
     """A hash bucket splits every hour into as many files and prunes nothing extra."""
     assert list(shape.into_field().partition_keys()) == ["unixpartition"]
-    assert not shape.into_field().field("instrumentxhash").nullable
+    assert not shape.into_field().field("symbolticker").nullable
+    assert "instrumentxhash" not in shape.into_field().names
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)
@@ -188,11 +187,24 @@ def test_transient_instrument_uses_a_slot_but_not_a_market_column() -> None:
 
 
 def test_an_order_carries_what_it_asked_for_and_how_far_it_got() -> None:
-    assert {"kind", "timeinforce", "stoppx", "hiddenqty", "vwap", "indicative"} <= set(
-        Order.into_field().names
-    )
+    assert {
+        "kind",
+        "timeinforce",
+        "stoppx",
+        "hiddenqty",
+        "vwap",
+        "indicative",
+        "manualindicator",
+    } <= set(Order.into_field().names)
     assert not {"display_qty", "cumqty", "leavesqty"} & set(Order.into_field().names)
-    assert "origclordid" in Order.into_field().names
+    assert not {
+        "orderid",
+        "clordid",
+        "origclordid",
+        "cxlqty",
+        "cxlrejreason",
+        "cxltype",
+    } & set(Order.into_field().names)
 
 
 def test_currency_is_typed_but_price_convention_stays_explicit() -> None:
@@ -220,8 +232,46 @@ def test_every_event_uses_one_typed_list_for_exact_event_links() -> None:
     )
 
 
-def test_an_execution_carries_each_source_order_identifier() -> None:
-    assert {"orderid", "clordid", "origclordid"} <= set(Execution.into_field().names)
+@pytest.mark.parametrize("shape", (Order, Execution), ids=lambda cls: cls.__name__)
+def test_order_identifiers_have_one_persisted_store(shape: type) -> None:
+    names = set(shape.into_field().names)
+    assert "altids" in names
+    assert (
+        not {
+            "orderid",
+            "clordid",
+            "origclordid",
+            "execid",
+            "execrefid",
+            "tradeid",
+        }
+        & names
+    )
+
+
+def test_market_contracts_never_persist_cancel_transport_fields() -> None:
+    def nested_names(field: pyarrow.Field) -> set[str]:
+        found = {field.name}
+        dtype = field.type
+        if pyarrow.types.is_struct(dtype):
+            for child in dtype:
+                found.update(nested_names(child))
+        elif pyarrow.types.is_list(dtype) or pyarrow.types.is_large_list(dtype):
+            found.update(nested_names(dtype.value_field))
+        return found
+
+    for shape in (Order, Execution, Book):
+        names = {
+            name for field in shape.into_field().into_arrow_schema() for name in nested_names(field)
+        }
+        assert not {name for name in names if name.startswith("cxl")}
+
+
+def test_order_and_execution_share_the_manual_indicator_code() -> None:
+    for shape in (Order, Execution):
+        indicator = shape.into_field().field("manualindicator")
+        assert indicator.dtype == pyarrow.int32()
+        assert indicator.fix["name"] == "ManualOrderIndicator"
 
 
 def test_a_level_carries_only_price_and_quantity() -> None:
@@ -287,7 +337,7 @@ FILTERED = {
         "eventtype",
         "state",
         "code",
-        "instrumentxhash",
+        "symbolticker",
         "side",
         "lastpx",
     ),
@@ -297,14 +347,14 @@ FILTERED = {
         "eventtype",
         "state",
         "code",
-        "instrumentxhash",
+        "symbolticker",
         "lastpx",
     ),
     Book: (
         "unix",
         "unixpartition",
         "eventtype",
-        "instrumentxhash",
+        "symbolticker",
         "lastpx",
         "spread",
         "vwap",

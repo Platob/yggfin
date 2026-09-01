@@ -2,8 +2,9 @@
 
 Market tables store immutable event versions. `vhash` identifies its value,
 `hash` anchors that value to the event time, `prevhash` names its predecessor,
-and `xhash` identifies its lifecycle from `code`. `altids` retains every code
-under its folded field name. `linkhashes` holds ordered exact event `hash` values;
+and `xhash` identifies its lifecycle from `code`. `altids` retains every
+lifecycle code under its folded field name; `symbolticker` alone identifies
+the instrument. `linkhashes` holds ordered exact event `hash` values;
 `parenthash` separately records exact construction provenance.
 
 Each product has its own page: [Instrument update](../products/instrument.md),
@@ -13,13 +14,14 @@ Each product has its own page: [Instrument update](../products/instrument.md),
 ```python
 from rekep import FixMsg
 
-line = "8=FIX.4.4|35=8|11=C1|37=O1|17=E1|55=BTC-USD|54=1|31=100.25|32=10|38=10|39=2|150=F|10=000"
+line = "8=FIX.4.4|35=8|11=C1|37=O1|17=E1|55=BTC-USD|54=1|31=100.25|32=10|38=10|39=2|150=F|1028=Y|10=000"
 events = list(FixMsg.from_text(line).into_market_events(fix_version="4.4"))
 for event in events:
     print(type(event).__name__, event.state.name, event.lastpx, event.lastqty)
 
 order, execution = events
 print(order.altids["orderid"], execution.altids["execid"])
+print(order.manualindicator.name, execution.manualindicator.name)
 print(order.linkhashes == [execution.hash])
 print(execution.linkhashes == [order.hash])
 ```
@@ -28,6 +30,7 @@ print(execution.linkhashes == [order.hash])
 Order FILLED None 0.0
 Execution FILLED 100.25 10.0
 O1 E1
+MANUAL MANUAL
 True
 True
 ```
@@ -36,14 +39,15 @@ The related rows point at exact versions. `prevhash` names the preceding
 version and `parenthash` records construction provenance. The complete byte
 contract is in [Identity and binary conversions](../contracts/identity.md).
 
-`MarketEvent` adds `instrumentxhash` and its readable `symbolticker`, kind,
-side, `lastpx`, `lastqty`, notional, currency, and their previous values. An
+`MarketEvent` adds its canonical `symbolticker`, kind, side, `lastpx`,
+`lastqty`, notional, currency, and their previous values. An
 Order uses limit price and remaining live quantity; an Execution uses
 `LastPx <31>` and `LastQty <32>`; a Book uses midpoint and touch-size sum.
 `pxunit` and `qtyunit` keep their names and qualify those two summaries.
 `lastmkt` carries standard `LastMkt <30>` metadata while retaining the packed
-`MIC` enum. Protocol spelling stays in metadata; stored fields use common
-semantics.
+`MIC` enum. `manualindicator` lifts `ManualOrderIndicator <1028>` into the
+packed `ManualIndicator` code on orders and executions. Protocol spelling
+stays in metadata; stored fields use common semantics.
 Parsed logs retain FIX wire order as `MsgSeqNum`; normalized market events do
 not repeat it.
 

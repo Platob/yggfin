@@ -346,12 +346,7 @@ def envelope(rows: int) -> dict[str, object]:
         "version": [1] * rows,
         "state": [210] * rows,
         "code": codes,
-        "altids": [
-            {"code": code, "symbol": f"S{index % 5000}"} for index, code in enumerate(codes)
-        ],
-        "instrumentxhash": [
-            txhash.wide_bytes(Event.xhash_of(f"S{index % 5000}")) for index in range(rows)
-        ],
+        "altids": [{"code": code} for code in codes],
         "symbolticker": [f"S{index % 5000}" for index in range(rows)],
         "kind": [0] * rows,
         "side": [0] * rows,
@@ -522,7 +517,7 @@ def stream(events: int) -> list[object]:
                         lastpx=100.0 + generate.randrange(-20, 20) * 0.01,
                         lastqty=1.0,
                         state=State.FILLED,
-                        execid=f"E{index}",
+                        altids={"execid": f"E{index}"},
                     )
                 )
             )
@@ -535,7 +530,7 @@ def stream(events: int) -> list[object]:
                     side=side,
                     lastpx=float("nan") if index % 20 == 0 else quoted,
                     lastqty=float(generate.randrange(1, 50)),
-                    orderid=named,
+                    altids={"orderid": named},
                     state=State.CANCELLED if shape == 2 else State.NEW,
                     kind=MarketKind.LIMIT_ORDER if index % 20 == 0 else MarketKind.UNKNOWN,
                 )
@@ -563,7 +558,7 @@ def shaped_stream(events: int, live_levels: int, orders_per_level: int) -> Itera
             side=Side.BID,
             lastpx=100.0 - level * 0.01,
             lastqty=1.0 + cycle % 2,
-            orderid=f"M{slot}",
+            altids={"orderid": f"M{slot}"},
             state=State.NEW,
         )
         built = event.attach_instrument(instrument).with_previous(None)
@@ -613,9 +608,9 @@ def bench_standing(rows: int, repeat: int) -> None:
                     altids={
                         "secondary_order_id": f"V{index}",
                         "secondary_cl_ord_id": f"C{index}",
+                        "orderid": f"O{index}",
+                        "clordid": f"CL{index}",
                     },
-                    orderid=f"O{index}",
-                    clordid=f"CL{index}",
                     side=Side.BID,
                     lastpx=100.0,
                     lastqty=1.0,
@@ -821,8 +816,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 xhash=index + 1,
                 hash=index + 1,
                 code=f"O{index}",
-                altids={"symbol": "BTC-USD"},
-                orderid=f"O{index}",
+                altids={"orderid": f"O{index}"},
                 side=Side.BID,
                 lastpx=100.0,
                 lastqty=1.0,
@@ -872,8 +866,7 @@ def bench_lifecycle(rows: int, repeat: int) -> None:
                 xhash=index + 1,
                 hash=index + 1,
                 code=f"O{index}",
-                altids={"symbol": "BTC-USD"},
-                orderid=f"O{index}",
+                altids={"orderid": f"O{index}"},
                 side=Side.BID,
                 lastpx=float(live - index),
                 lastqty=1.0,

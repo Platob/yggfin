@@ -240,6 +240,13 @@ class Entry(Convertible, Mapping[str, Any]):
         return payload_arrow(messages)
 
     @classmethod
+    def payload_arrow_with_diagnostics(cls, messages: Any) -> tuple[Any, Any]:
+        """Payload entries and nullable unmatched-token diagnostics per row."""
+        from rekep.text.entries import payload_arrow_with_diagnostics
+
+        return payload_arrow_with_diagnostics(messages)
+
+    @classmethod
     def normalized_arrow(
         cls,
         stored: Any,

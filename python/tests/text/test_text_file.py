@@ -40,7 +40,7 @@ def test_sample_shape_is_what_the_tests_assume() -> None:
     assert len(CONTINUATIONS) == EXPECTED_CONTINUATIONS
 
 
-def test_sample_has_no_retained_fix_payload_fields() -> None:
+def test_sample_retains_only_unlifted_fix_payload_fields() -> None:
     registry = FixRegistry.from_builtin()
     codec = FixCodec(registry=registry)
     with TextFile.from_path(
@@ -54,8 +54,23 @@ def test_sample_has_no_retained_fix_payload_fields() -> None:
     )
 
     assert parsed.num_rows == EXPECTED_RECORDS
-    assert parsed.column("entries").to_pylist() == [None] * EXPECTED_RECORDS
-    assert parsed.column("unmap").to_pylist() == [None] * EXPECTED_RECORDS
+    entries = parsed.column("entries").to_pylist()
+    assert entries[2] == [{"tag": 109, "key": "ClientID", "value": "MCFP2", "comp": None}]
+    assert entries[7] == []
+    assert entries[16] == [{"tag": 30015, "key": "State", "value": "PARTIAL", "comp": None}]
+    assert [entry for index, entry in enumerate(entries) if index not in {2, 7, 16}] == [None] * (
+        EXPECTED_RECORDS - 3
+    )
+    unmap = parsed.column("unmap").to_pylist()
+    assert unmap[2] == [{"tag": 0, "key": "VENUE", "value": "XPAR", "comp": None}]
+    assert unmap[7] == [
+        {"tag": 0, "key": "QTY", "value": "1200", "comp": None},
+        {"tag": 0, "key": "PX", "value": "41.2500", "comp": None},
+    ]
+    assert unmap[16] == [{"tag": 0, "key": "ORDER", "value": "ORD-0000038106", "comp": None}]
+    assert [entry for index, entry in enumerate(unmap) if index not in {2, 7, 16}] == [None] * (
+        EXPECTED_RECORDS - 3
+    )
 
 
 @pytest.fixture
@@ -626,6 +641,7 @@ MESSAGE_COLUMNS = [
     "sourceurl",
     "sourcerownum",
     "threadname",
+    "level",
     "body",
     "protocol",
     *SESSION_COLUMNS,
@@ -920,13 +936,13 @@ def test_message_regexes_count_unicode_characters_not_utf8_bytes(tmp_path: Path)
 def _counting_splitter(monkeypatch: pytest.MonkeyPatch) -> list[int]:
     """How many rows reach the key/value splitter, one entry per call."""
     parsed: list[int] = []
-    original = entries.parse_arrow
+    original = entries._parse_arrow
 
-    def counted(messages):  # noqa: ANN001, ANN202 - observes the parser boundary
+    def counted(messages, with_diagnostics):  # noqa: ANN001, ANN202 - observes parser boundary
         parsed.append(len(messages))
-        return original(messages)
+        return original(messages, with_diagnostics)
 
-    monkeypatch.setattr(entries, "parse_arrow", counted)
+    monkeypatch.setattr(entries, "_parse_arrow", counted)
     return parsed
 
 
@@ -1192,6 +1208,7 @@ def test_first_row(plain: Path) -> None:
     assert first["sourceurl"] == url
     assert first["unix"] == FIRST_UNIX
     assert first["threadname"] == "250-e7256476:9effef3e6a:72505"
+    assert first["level"] == "DEBUG"
     assert first["plugin"] == Plugin.UNKNOWN.into_stored()
     assert first["body"].startswith(b"-> [5] {trade")
 
@@ -1275,10 +1292,19 @@ def test_event_hash_is_stable_across_reads(plain: Path) -> None:
         )
 
 
-def test_level_is_stripped_from_the_message(plain: Path) -> None:
-    """`level` is parsed by the regex but not a column: it must not leak."""
+def test_level_is_persisted_beside_the_message(plain: Path) -> None:
+    """The header severity remains queryable and stays outside the body."""
     with TextFile(url=plain.as_uri()) as log:
-        messages = log.into_arrow_table().column("body").cast(pyarrow.string()).to_pylist()
+        table = log.into_arrow_table()
+    messages = table.column("body").cast(pyarrow.string()).to_pylist()
+    levels = table.column("level").to_pylist()
+    assert levels.count(None) == 1
+    assert {level for level in levels if level is not None} == {
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+    }
     assert not any(message.startswith(("(DEBUG)", "(INFO)", "(WARNING)")) for message in messages)
 
 
@@ -2044,7 +2070,7 @@ def test_a_write_renders_lines_that_parse_back(plain: Path, tmp_path: Path) -> N
 
     again = TextFile.from_path(tmp_path / "written.txt").read_arrow_table()
     assert again.num_rows == source.num_rows
-    for column in ("unix", "unixpartition", "threadname", "plugin", "body"):
+    for column in ("unix", "unixpartition", "threadname", "plugin", "level", "body"):
         assert again.column(column).to_pylist() == source.column(column).to_pylist(), column
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from types import MappingProxyType
 from typing import Any
 
@@ -303,6 +303,8 @@ _IDENTIFIER_NAMES: tuple[str, ...] = (
     "ClOrdID",
     "SecondaryClOrdID",
     "ClOrdLinkID",
+    "ParentClOrdID",
+    "ParentOrderID",
     "ExecID",
     "SecondaryExecID",
     "ExecRefID",
@@ -322,6 +324,8 @@ def _identifier_tag(name: str) -> int:
     member = _MERGED_FIELDS.get(name)
     if member is not None and (tag := member.fix.tag) is not None:
         return tag
+    if name in {"ParentClOrdID", "ParentOrderID"}:
+        return 0
     if name == "MDEntryRefID":
         return 280
     raise ValueError(f"FIX identifier {name!r} has no tag")
@@ -330,6 +334,19 @@ def _identifier_tag(name: str) -> int:
 IDENTIFIER_FIELDS: tuple[tuple[str, str, int], ...] = tuple(
     (column_name(name), name, _identifier_tag(name)) for name in _IDENTIFIER_NAMES
 )
+
+
+def identifier_altids(value_of: Callable[[int | str], Any]) -> dict[str, str]:
+    """Lifecycle identifiers returned by one scalar field reader, in lookup order."""
+    found: dict[str, str] = {}
+    for stored, field, tag in IDENTIFIER_FIELDS:
+        value = value_of(tag) if tag else None
+        if value is None:
+            value = value_of(field)
+        if value is not None and str(value):
+            found.setdefault(stored, str(value))
+    return found
+
 
 _ORDER = (
     _SESSION_FIELDS

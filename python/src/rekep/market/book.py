@@ -1878,10 +1878,8 @@ class BookIterator:
             raise ValueError("a book event requires a nonblank `symbolticker`")
         known = self.folding.get(ticker)
         if known is not None:
-            event.instrumentxhash = known.instrument.xhash
             return known
         state = self._started(event)
-        event.instrumentxhash = state.instrument.xhash
         self.folding[ticker] = state
         return state
 
@@ -1899,7 +1897,6 @@ class BookIterator:
             unix=event.unix,
             creaunix=creation,
             plugin=event.plugin,
-            instrumentxhash=instrument.xhash,
             symbolticker=ticker,
             altids=dict(event.altids),
             currency=event.currency,
@@ -1936,7 +1933,6 @@ class BookIterator:
             if parsed is not None and parsed.symbolticker == ticker
             else Instrument(symbolticker=ticker, currency=snapshot.currency)
         )
-        snapshot.instrumentxhash = instrument.xhash
         snapshot.attach_instrument(instrument)
         state = _Folding(
             symbolticker=ticker,
@@ -2208,7 +2204,6 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         unix=unix,
         creaunix=state.creaunix,
         plugin=about.plugin,
-        instrumentxhash=state.instrument.xhash,
         symbolticker=state.symbolticker,
         code=state.code,
         altids=dict(about.altids),

@@ -44,12 +44,14 @@ NARROWED = {
 }
 
 #: Fields narrowed by name rather than by datatype. `SecurityIDSource <22>` is
-#: enumerated exactly like the `char` fields above, while `LastMkt <30>` carries
-#: an ISO 10383 MIC. FIX types both as general text, so admitting their broad
-#: datatypes here would let unrelated strings narrow silently.
+#: enumerated exactly like the `char` fields above, `LastMkt <30>` carries an
+#: ISO 10383 MIC, and `ManualOrderIndicator <1028>` retains a third unknown
+#: state beside FIX Boolean. Admitting their broad datatypes here would let
+#: unrelated fields narrow silently.
 NARROWED_FIELDS = {
     "SecurityIDSource": (pyarrow.int32(),),
     "LastMkt": (pyarrow.int32(),),
+    "ManualOrderIndicator": (pyarrow.int32(),),
 }
 
 

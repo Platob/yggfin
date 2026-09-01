@@ -42,6 +42,7 @@ from rekep.fix.message import (
     MARKED_SEPARATOR_VECTOR,
     MARKER,
     NAMED_SEPARATOR_VECTOR,
+    RENDERED_SEPARATOR_VECTOR,
     SEPARATOR_VECTOR,
     SEPARATORS,
     SOH,
@@ -517,6 +518,10 @@ class FixCodec(Convertible):
                 pyarrow.scalar(MARKER),
             )
             found = bridge if found is None else compute.coalesce(found, bridge)
+            rendered = compute.struct_field(
+                compute.extract_regex(text, RENDERED_SEPARATOR_VECTOR), "sep"
+            )
+            found = rendered if found is None else compute.coalesce(found, rendered)
         return compute.fill_null(found, "")
 
     def drop_null_values(self, pairs: Any) -> Any:

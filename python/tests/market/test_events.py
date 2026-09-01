@@ -8,6 +8,7 @@ import pyarrow
 import pytest
 
 from rekep import txhash
+from rekep.enums import ManualIndicator
 from rekep.market import (
     HASH,
     MIC,
@@ -147,7 +148,7 @@ def test_a_snapshot_drops_previous_market_values_because_they_are_a_delta() -> N
 def test_an_unchanged_state_expires_once_after_one_day() -> None:
     current = Book(
         unix=1,
-        instrumentxhash=1,
+        symbolticker="AAPL",
         code="AAPL",
         state=State.OPEN,
     ).identify()
@@ -160,7 +161,7 @@ def test_an_unchanged_state_expires_once_after_one_day() -> None:
 
 
 def test_a_finished_state_does_not_emit_an_unchanged_snapshot() -> None:
-    closed = Book(unix=1, instrumentxhash=1, state=State.CLOSED).identify()
+    closed = Book(unix=1, symbolticker="AAPL", state=State.CLOSED).identify()
     assert closed.make_snapshot(HOUR) is None
 
 
@@ -209,8 +210,8 @@ def test_an_empty_event_stream_still_declares_its_schema() -> None:
 
 
 def test_an_empty_book_version_includes_explicit_empty_side_lengths() -> None:
-    unix, instrumentxhash = 1_710_374_400_000_000_123, 42
-    built = Book(unix=unix, instrumentxhash=instrumentxhash).identify()
+    unix = 1_710_374_400_000_000_123
+    built = Book(unix=unix, symbolticker="AAPL").identify()
     expected = (*built._version_prefix_parts(0), 0)
 
     assert built.version_parts() == expected
@@ -272,14 +273,14 @@ def test_xhash_ignores_the_event_shape_and_market_scope() -> None:
         Event(creaunix=creation, code="ORD-1"),
         Order(
             creaunix=creation,
-            instrumentxhash=1,
+            symbolticker="AAPL",
             lastmkt=MIC.from_str("XNAS"),
             side=Side.BUY,
             code="ORD-1",
         ),
         Execution(
             creaunix=creation,
-            instrumentxhash=2,
+            symbolticker="MSFT",
             lastmkt=MIC.from_str("XLON"),
             side=Side.SELL,
             code="ORD-1",
@@ -322,7 +323,8 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     assert "fix:tag" not in declared.field("code").metadata, "a lifecycle is not a FIX field"
     assert declared.field("code").dtype == pyarrow.string()
     assert declared.field("xhash").dtype == HASH
-    assert MarketEvent.into_field().field("instrumentxhash").dtype == HASH
+    assert "instrumentxhash" not in MarketEvent.into_field().names
+    assert MarketEvent.into_field().field("symbolticker").dtype == pyarrow.string()
     assert declared.field("linkhashes").dtype.value_type == HASH
     assert declared.field("altids").dtype == ALTIDS_TYPE
     assert declared.names.index("altids") == declared.names.index("code") + 1
@@ -342,14 +344,20 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     "event,code,source",
     (
         (Event(code="GENERIC"), "GENERIC", "Code"),
-        (Book(instrumentxhash=1, symbolticker="AAPL"), "AAPL", "SymbolTicker"),
-        (Order(orderid="O-1"), "O-1", "OrderID"),
-        (Order(origclordid="C-0", clordid="C-1"), "C-0", "OrigClOrdID"),
-        (Order(clordid="C-1"), "C-1", "ClOrdID"),
-        (Execution(execid="E-1"), "E-1", "ExecID"),
-        (Execution(tradeid="T-1"), "T-1", "TradeID"),
+        (Order(altids={"orderid": "O-1"}), "O-1", "OrderID"),
         (
-            Execution(state=State.CANCELLED, execid="E-2", execrefid="E-1"),
+            Order(altids={"origclordid": "C-0", "clordid": "C-1"}),
+            "C-0",
+            "OrigClOrdID",
+        ),
+        (Order(altids={"clordid": "C-1"}), "C-1", "ClOrdID"),
+        (Execution(altids={"execid": "E-1"}), "E-1", "ExecID"),
+        (Execution(altids={"tradeid": "T-1"}), "T-1", "TradeID"),
+        (
+            Execution(
+                state=State.CANCELLED,
+                altids={"execid": "E-2", "execrefid": "E-1"},
+            ),
             "E-1",
             "ExecRefID",
         ),
@@ -363,6 +371,13 @@ def test_a_lifecycle_code_names_the_field_that_supplied_it(
     assert event.altids["code"] == event.altids[source.lower()] == code
 
 
+def test_an_instrument_only_market_event_uses_the_ticker_without_aliasing_it() -> None:
+    event = Book(symbolticker="AAPL").identify()
+
+    assert event.code == "AAPL"
+    assert event.altids == {"code": "AAPL"}
+
+
 def test_an_instrument_update_keeps_the_nested_ticker_in_all_code_slots() -> None:
     update = InstUpdate.from_instrument(Instrument(symbolticker="AAPL")).identify()
     assert update.code == "AAPL"
@@ -374,20 +389,33 @@ def test_reference_data_is_transient_and_only_its_identity_is_stored(shape: type
     instrument = Instrument(symbol="BTC-USD", currency=Currency.USD)
     assert instrument.xhash != NIL
     built = shape().attach_instrument(instrument)
-    scoped = shape(instrumentxhash=7, code="given").attach_instrument(instrument)
-    assert built.instrumentxhash == instrument.xhash
+    scoped = shape(symbolticker="ETH/USD", code="given").attach_instrument(instrument)
     assert built.symbolticker == instrument.symbolticker
-    assert scoped.instrumentxhash == 7 and scoped.code == "given"
-    assert scoped.symbolticker == instrument.symbolticker
+    assert scoped.code == "given" and scoped.symbolticker == "ETH/USD"
     assert built.currency is instrument.currency
+    assert "instrumentxhash" not in shape.into_field().names
     assert "instrument" not in shape.into_field().names
     assert built.into_instrument() is instrument
 
 
-def test_a_row_that_names_no_instrument_keeps_the_hash_it_was_handed() -> None:
-    """A projection reading back the flat column alone must not lose it to a NIL."""
-    assert Order(instrumentxhash=7).instrumentxhash == 7
-    assert Order().instrumentxhash == NIL, "and unset really is unset"
+@pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)
+def test_market_altids_keep_lifecycle_codes_but_drop_instrument_codes(shape: type) -> None:
+    event = shape(
+        symbolticker="AAPL",
+        altids={
+            "ClOrdID": "C-1",
+            "instrumentid": "INSTRUMENT-1",
+            "securityid": "SECURITY-1",
+            "SecurityAltID": "XX0000000002",
+            "isin": "XX0000000001",
+            "symbolticker": "AAPL",
+        },
+    )
+    event.name_altid("UnderlyingSecurityID", "UNDERLYING-1")
+    event.name_altid("Symbol", "MSFT")
+    event.name_altid("SecondaryOrderID", "ORDER-2")
+
+    assert event.altids == {"clordid": "C-1", "secondaryorderid": "ORDER-2"}
 
 
 def test_a_stored_market_ticker_is_canonicalized_once() -> None:
@@ -412,14 +440,20 @@ def test_the_market_fallback_stores_the_readable_part_its_xhash_uses() -> None:
     built = Book(side=Side.UNKNOWN).attach_instrument(instrument).with_previous(None)
     assert built is not None
     assert built.code == instrument.symbolticker
-    assert built.altids["code"] == built.altids["symbolticker"] == instrument.symbolticker
+    assert built.altids == {"code": instrument.symbolticker}
     assert built.xhash == Event.xhash_of(built.code)
 
 
-def test_the_instrument_identity_is_flat_required_and_not_partitioned_on() -> None:
-    """The hour prunes an instrument read already; bucketing a hash only adds files."""
-    identity = Order.into_field().field("instrumentxhash")
-    assert not identity.nullable
-    assert not identity.is_partition_key
+def test_the_symbol_ticker_is_the_only_flat_instrument_key() -> None:
     ticker = Order.into_field().field("symbolticker")
     assert ticker.dtype == pyarrow.string() and not ticker.nullable
+    assert not ticker.is_partition_key
+    assert "instrumentxhash" not in Order.into_field().names
+
+
+@pytest.mark.parametrize("shape", (Order, Execution), ids=lambda cls: cls.__name__)
+def test_order_and_execution_keep_manual_indicator_as_a_typed_code(shape: type) -> None:
+    event = shape(manualindicator=ManualIndicator.MANUAL)
+
+    assert event.manualindicator is ManualIndicator.MANUAL
+    assert shape.into_field().field("manualindicator").dtype == pyarrow.int32()

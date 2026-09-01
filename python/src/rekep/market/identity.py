@@ -266,7 +266,7 @@ def read_member(name: str, value: Any) -> Any:
 
 
 #: Members whose Arrow representation is a sixteen-byte identity.
-_WIDE_MEMBERS = frozenset(("hash", "xhash", "prevhash", "instrumentxhash"))
+_WIDE_MEMBERS = frozenset(("hash", "xhash", "prevhash"))
 
 #: Lists whose items use the same sixteen-byte anchored-hash representation.
 _WIDE_LIST_MEMBERS = frozenset(("linkhashes", "parenthash"))

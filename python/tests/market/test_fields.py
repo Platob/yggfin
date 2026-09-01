@@ -91,9 +91,8 @@ def test_hash_widths_match_their_roles() -> None:
         field = shape.into_field()
         if "hash" in field.names:
             assert field.field("hash").dtype == HASH, shape.__name__
-        for name in ("xhash", "instrumentxhash"):
-            if name in field.names:
-                assert field.field(name).dtype == HASH, f"{shape.__name__}.{name}"
+        if "xhash" in field.names:
+            assert field.field("xhash").dtype == HASH, f"{shape.__name__}.xhash"
         if "vhash" in field.names:
             assert field.field("vhash").dtype == pyarrow.int64(), shape.__name__
     assert "xhash" not in Leg.into_field().names, "leg reference identity is derived, not stored"

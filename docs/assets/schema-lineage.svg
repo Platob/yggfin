@@ -72,7 +72,7 @@
 
   <rect class="market" x="525" y="475" width="345" height="195" rx="15"/>
   <text class="label" x="698" y="508">Book contract</text>
-  <text class="small" x="698" y="536">instrumentxhash | bidlevels | asklevels</text>
+  <text class="small" x="698" y="536">symbolticker | bidlevels | asklevels</text>
   <text class="small" x="698" y="558">deltas | executions | bidalive | askalive</text>
   <text class="small" x="698" y="580">lastpx | lastqty | VWAP | imbalance</text>
   <image href="logos/apache-iceberg.svg" x="565" y="610" width="102" height="28"/>

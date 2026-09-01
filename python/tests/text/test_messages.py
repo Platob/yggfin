@@ -40,7 +40,8 @@ EXPECTED_CONTINUATIONS = 3
 #: Which protocol each record carries, in file order. The whole point of the
 #: fixture, so it is spelled out rather than derived from the rules it checks.
 EXPECTED_PROTOCOLS = [
-    "OTHER",
+    # Unmarked rendered fields after prose are a UL document, not log noise.
+    "UL5SP2",
     "OTHER",
     "FIX4.2",
     "FIX",
@@ -270,11 +271,11 @@ def test_retained_fixture_fields_partition_into_entries_and_unmap(
     entries = pyarrow.compute.list_value_length(table.column("entries")).to_pylist()
     unmap = pyarrow.compute.list_value_length(table.column("unmap")).to_pylist()
 
-    assert entries == [None, None, 1, 1, 2, 2, 0, None, None, None, 0]
-    assert unmap == [None, None, None, None, None, 1, None, None, None, None, 1]
-    assert sum(length or 0 for length in entries) == 6
-    assert sum(length or 0 for length in unmap) == 2
-    assert sum(length or 0 for length in entries + unmap) == 8
+    assert entries == [1, None, 1, 1, 2, 2, 0, None, None, None, 0]
+    assert unmap == [1, None, None, None, None, 1, None, None, None, None, 1]
+    assert sum(length or 0 for length in entries) == 7
+    assert sum(length or 0 for length in unmap) == 3
+    assert sum(length or 0 for length in entries + unmap) == 10
 
 
 # -- the protocols -----------------------------------------------------------

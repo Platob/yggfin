@@ -127,7 +127,7 @@ DEFAULT_READ_BYTE_SIZE = 1 << 22
 DEFAULT_MAX_ROW_BYTE_SIZE = 1 << 26
 
 # Columns a line physically carries; the rest of the parsed row is derived.
-_RENDERED = ("unix", "threadname", "plugin", "body")
+_RENDERED = ("unix", "threadname", "plugin", "level", "body")
 
 
 def compiled_header(source: re.Pattern[bytes] | str | bytes) -> re.Pattern[bytes]:
@@ -178,7 +178,8 @@ class TextFile(Dataset, io.BufferedIOBase):
     #: configures its own by handing over the pattern source: a `str` or
     #: `bytes` is compiled here, so a log whose header this package has never
     #: seen is a document change and not a code change. It must name the same
-    #: groups -- `timestamp`, `threadname`, `plugin`, `body`.
+    #: groups -- `timestamp`, `threadname`, `plugin`, `body`; an optional
+    #: `level` group persists the logger severity when the header carries one.
     header_pattern: re.Pattern[bytes] | str | bytes = HEADER_PATTERN
 
     #: Shape reads and writes land on. None is `into_row()`'s own -- what the parser
@@ -591,7 +592,10 @@ class TextFile(Dataset, io.BufferedIOBase):
         """Parse bounded raw rows only after their payload and time survive."""
         groups = self.header_pattern.groupindex
         indices = tuple(groups[name] for name in ("timestamp", "threadname", "plugin", "body"))
-        rows: list[tuple[bytes, bytes | None, bytes | None, bytes | bytearray | None]] = []
+        level_index = groups.get("level")
+        rows: list[
+            tuple[bytes, bytes | None, bytes | None, bytes | None, bytes | bytearray | None]
+        ] = []
         row_byte_sizes: list[int] = []
         # Bytes of each row the reader saw and did not keep, so a truncated row
         # says how much of itself is missing instead of looking whole.
@@ -624,17 +628,19 @@ class TextFile(Dataset, io.BufferedIOBase):
                     added = len(line) + 1
                     kept = added if added <= room else max(room, 0)
                     if kept:
-                        timestamp, thread, plugin, body = rows[-1]
+                        timestamp, thread, plugin, level, body = rows[-1]
                         if not isinstance(body, bytearray):
                             body = bytearray(body or b"")
                         body.extend(b"\n")
                         body.extend(line if kept == added else line[: kept - 1])
-                        rows[-1] = (timestamp, thread, plugin, body)
+                        rows[-1] = (timestamp, thread, plugin, level, body)
                         row_byte_sizes[-1] += kept
                         held_bytes += kept
                     dropped_byte_sizes[-1] += added - kept + dropped
                 continue
-            found = match.group(*indices)
+            timestamp, thread, plugin, body = match.group(*indices)
+            level = match.group(level_index) if level_index is not None else None
+            found = (timestamp, thread, plugin, level, body)
             rows.append(found)
             rownums.append(rownum)
             row_byte_sizes.append(len(line))
@@ -704,7 +710,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         one.
         """
         schema = self.schema
-        timestamps, threads, plugins, bodies = (
+        timestamps, threads, plugins, levels, bodies = (
             pyarrow.array(values, type=pyarrow.binary()) for values in zip(*rows, strict=True)
         )
         rownums_array = pyarrow.array(rownums, type=pyarrow.int64())
@@ -712,9 +718,17 @@ class TextFile(Dataset, io.BufferedIOBase):
 
         selected = _plugin_mask(plugins, technical_plugins)
         if selected is not None:
-            timestamps, threads, plugins, bodies, rownums_array, reasons = (
+            timestamps, threads, plugins, levels, bodies, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (timestamps, threads, plugins, bodies, rownums_array, reasons)
+                for values in (
+                    timestamps,
+                    threads,
+                    plugins,
+                    levels,
+                    bodies,
+                    rownums_array,
+                    reasons,
+                )
             )
         if not len(timestamps):
             return _empty_batch(schema)
@@ -723,9 +737,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         unix = _unix_nanos(local, self.timezone)
         selected = _unix_mask(unix, start_unix, end_unix)
         if selected is not None:
-            unix, threads, plugins, bodies, rownums_array, reasons = (
+            unix, threads, plugins, levels, bodies, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, bodies, rownums_array, reasons)
+                for values in (unix, threads, plugins, levels, bodies, rownums_array, reasons)
             )
         if not len(unix):
             return _empty_batch(schema)
@@ -733,9 +747,18 @@ class TextFile(Dataset, io.BufferedIOBase):
         text = pyarrow.compute.fill_null(_utf8(bodies), "")
         selected = _message_mask(text, include_regexes, exclude_regexes)
         if selected is not None:
-            unix, threads, plugins, bodies, text, rownums_array, reasons = (
+            unix, threads, plugins, levels, bodies, text, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, bodies, text, rownums_array, reasons)
+                for values in (
+                    unix,
+                    threads,
+                    plugins,
+                    levels,
+                    bodies,
+                    text,
+                    rownums_array,
+                    reasons,
+                )
             )
         count = len(unix)
         if not count:
@@ -745,9 +768,18 @@ class TextFile(Dataset, io.BufferedIOBase):
             Message.msg_types_arrow(bodies), include_msgtypes, exclude_msgtypes
         )
         if selected is not None:
-            unix, threads, plugins, bodies, text, rownums_array, reasons = (
+            unix, threads, plugins, levels, bodies, text, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (unix, threads, plugins, bodies, text, rownums_array, reasons)
+                for values in (
+                    unix,
+                    threads,
+                    plugins,
+                    levels,
+                    bodies,
+                    text,
+                    rownums_array,
+                    reasons,
+                )
             )
         count = len(unix)
         if not count:
@@ -771,6 +803,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             "sourceurl": pyarrow.repeat(self.url, count),
             "sourcerownum": rownums_array,
             "threadname": pyarrow.compute.fill_null(_utf8(threads), ""),
+            "level": _utf8(levels),
             "plugin": pyarrow.compute.fill_null(_utf8(plugins), ""),
             "body": pyarrow.compute.fill_null(bodies, b""),
         }
@@ -971,6 +1004,12 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
         stamps = stamps.cast(pyarrow.timestamp("us", "UTC")).cast(pyarrow.timestamp("us", timezone))
     stamps = compute.strftime(stamps, format="%Y-%m-%d %H:%M:%S")
     stamps = compute.utf8_replace_slice(stamps, start=23, stop=23, replacement="_")
+    levels = rows.column("level").cast(pyarrow.binary())
+    rendered_levels = compute.if_else(
+        compute.is_valid(levels),
+        compute.binary_join_element_wise(b"(", compute.fill_null(levels, b""), b") ", b""),
+        pyarrow.scalar(b"", pyarrow.binary()),
+    )
     lines = compute.binary_join_element_wise(
         stamps.cast(pyarrow.binary()),
         b" [",
@@ -978,6 +1017,7 @@ def _rendered(rows: pyarrow.Table, timezone: str | None = None) -> bytes:
         b"] [",
         rows.column("plugin").cast(pyarrow.binary()),
         b"] ",
+        rendered_levels,
         rows.column("body").cast(pyarrow.binary()),
         b"",
     )

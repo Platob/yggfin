@@ -100,12 +100,18 @@ class MarketConvertible(Convertible):
         """Build from raw entries read through one registry version."""
         from rekep.entries import Entry
         from rekep.fix.access import FieldAccess
+        from rekep.fix.columns import identifier_altids
         from rekep.market.event import _entry_values
 
         source = (entries,) if isinstance(entries, Entry) else entries
         selected = registry or FixRegistry.from_builtin()
         access = FieldAccess.of(selected, version)
-        values = _entry_values(cls, tuple(access.entries_of(source)), access)
+        materialized = tuple(access.entries_of(source))
+        values = _entry_values(cls, materialized, access)
+        if "altids" in cls.into_field().names and "altids" not in overrides:
+            altids = identifier_altids(lambda field: access.reading(materialized, field).raw)
+            if altids:
+                values["altids"] = altids
         values.update(overrides)
         return cls.from_dict(values)
 

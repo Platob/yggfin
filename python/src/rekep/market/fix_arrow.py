@@ -9,7 +9,16 @@ import pyarrow
 import pyarrow.compute as compute
 
 from rekep import txhash
-from rekep.enums import MIC, Currency, EventType, MarketKind, Side, State, TimeInForce
+from rekep.enums import (
+    MIC,
+    Currency,
+    EventType,
+    ManualIndicator,
+    MarketKind,
+    Side,
+    State,
+    TimeInForce,
+)
 from rekep.fields import TimestampField, column_names, encoded_key
 from rekep.fields.arrays import (
     as_entry_list,
@@ -25,6 +34,7 @@ from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_field, cast_arrow_fix
 from rekep.fix.oms import OMS_FIX_VERSION
 from rekep.market.event import (
+    _INSTRUMENT_ALTID_NAMES,
     Event,
     _declared_temporal_arrow,
     _mapping_frame_arrow,
@@ -41,7 +51,6 @@ from rekep.market.fix import (
 )
 from rekep.market.identity import (
     HASH,
-    arrow_of,
     framed_arrow,
     hash_bytes_arrow,
 )
@@ -94,6 +103,7 @@ _READ_FIELDS = (
     "OrigClOrdID",
     "Price",
     "MDEntryPx",
+    "ManualOrderIndicator",
     "SecurityExchange",
     "SecurityID",
     "SecurityIDSource",
@@ -711,7 +721,6 @@ class _Shared:
         self.reason = columns["reason"].cast(pyarrow.string(), safe=False)
         self.lastmkt = columns["lastmkt"].cast(pyarrow.int32(), safe=False)
         self.symbolticker = _ticker_array(values, tags)
-        self.instrumentxhash = Event.xhash_arrow(self.symbolticker)
         self.altids = FixMsg.altids_arrow(columns, rows, tags.tags)
         self.metadata = _metadata(values, tags)
         stated_currency, stated_unit = _currencies(values.text("Currency"))
@@ -817,7 +826,6 @@ def _orders(
     named = _first_nonempty(orderid, previous_client_id, client_id, fallback="")
     symbolticker = shared.take(shared.symbolticker, where)
     code = _first_nonempty(named, symbolticker, fallback="")
-    instrumentxhash = shared.take(shared.instrumentxhash, where)
     lastmkt = shared.take(shared.lastmkt, where)
     creaunix = shared.take(shared.creaunix, where)
     xhash = Order.xhash_arrow(code)
@@ -830,23 +838,22 @@ def _orders(
     pxunit = shared.take(shared.pxunit, where)
     qtyunit = _constant(len(where), "", pyarrow.string())
     metadata = shared.take(shared.metadata, where)
-    clordlinkid = shared.take(values.text("ClOrdLinkID"), where)
-    parentclordid = shared.take(values.text("ParentClOrdID"), where)
-    parentorderid = shared.take(values.text("ParentOrderID"), where)
+    manualindicator = shared.take(
+        compute.fill_null(
+            ManualIndicator.arrow_from_strings(values.text("ManualOrderIndicator")),
+            pyarrow.scalar(int(ManualIndicator.UNKNOWN), pyarrow.int32()),
+        ),
+        where,
+    )
     altids = _event_altids(
         shared.take(shared.altids, where),
-        ("symbolticker", symbolticker),
-        ("parentclordid", parentclordid),
-        ("parentorderid", parentorderid),
         ("code", code),
     )
-    null_text = pyarrow.nulls(len(where), pyarrow.string())
     vhash = _value_hash_arrow(
         Order,
         (eventtype, state, lastmkt, code, reason),
         altids,
         (
-            arrow_of(instrumentxhash),
             symbolticker,
             kind,
             side,
@@ -864,14 +871,7 @@ def _orders(
             hidden,
             vwap,
             False,
-            orderid,
-            client_id,
-            previous_client_id,
-            clordlinkid,
-            parentclordid,
-            parentorderid,
-            pyarrow.nulls(len(where), pyarrow.int32()),
-            null_text,
+            manualindicator,
         ),
     )
     event_hash = txhash.couple128_arrow(Order._clock_micros(unix), vhash)
@@ -894,7 +894,6 @@ def _orders(
         "prevhash": pyarrow.nulls(len(where), HASH),
         "lastmkt": lastmkt,
         "reason": reason,
-        "instrumentxhash": instrumentxhash,
         "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
@@ -910,15 +909,7 @@ def _orders(
         "hiddenqty": hidden,
         "vwap": vwap,
         "indicative": _constant(len(where), False, pyarrow.bool_()),
-        "orderid": orderid,
-        "clordid": client_id,
-        "origclordid": previous_client_id,
-        # The reject-only columns stay null here: a row carrying either is
-        # `_REASON_FIELDS`-complex and translates through the scalar path.
-        "clordlinkid": clordlinkid,
-        # Namespace identities live in their resolved columns, never as tags.
-        "parentclordid": parentclordid,
-        "parentorderid": parentorderid,
+        "manualindicator": manualindicator,
     }
     return _batch(Order, columns, len(where))
 
@@ -956,13 +947,9 @@ def _executions(
     named = compute.fill_null(compute.if_else(corrected, execrefid, ordinary), "")
     symbolticker = shared.take(shared.symbolticker, where)
     code = _first_nonempty(named, symbolticker, fallback="")
-    instrumentxhash = shared.take(shared.instrumentxhash, where)
     lastmkt = shared.take(shared.lastmkt, where)
     creaunix = shared.take(shared.creaunix, where)
     xhash = Execution.xhash_arrow(code)
-    orderid = shared.take(values.text("OrderID"), where)
-    client_id = shared.take(values.text("ClOrdID"), where)
-    previous_client_id = shared.take(values.text("OrigClOrdID"), where)
     price = shared.take(
         compute.coalesce(
             values.number("LastPx"), values.number("MDEntryPx"), values.number("Price")
@@ -993,6 +980,13 @@ def _executions(
             pyarrow.scalar(None, pyarrow.bool_()),
         ),
     )
+    manualindicator = shared.take(
+        compute.fill_null(
+            ManualIndicator.arrow_from_strings(values.text("ManualOrderIndicator")),
+            pyarrow.scalar(int(ManualIndicator.UNKNOWN), pyarrow.int32()),
+        ),
+        where,
+    )
     order_by_source = _order_lookup(orders, order_at, where)
     order_hash = order_by_source["hash"]
     expunix = compute.coalesce(shared.take(shared.expunix, where), order_by_source["expunix"])
@@ -1013,7 +1007,6 @@ def _executions(
     eventtype = _constant(rows, int(EventType.EXECUTION), pyarrow.int64())
     altids = _event_altids(
         shared.take(shared.altids, where),
-        ("symbolticker", symbolticker),
         ("code", code),
     )
     pxunit = shared.take(shared.pxunit, where)
@@ -1028,7 +1021,6 @@ def _executions(
     )
     settlcurrfxratecalc = shared.take(values.text("SettlCurrFxRateCalc"), where)
     market_values = (
-        arrow_of(instrumentxhash),
         symbolticker,
         kind,
         side,
@@ -1040,16 +1032,11 @@ def _executions(
         null_float,
     )
     execution_values = (
-        execid,
-        execrefid,
-        tradeid,
-        orderid,
-        client_id,
-        previous_client_id,
         filled,
         leaves,
         vwap,
         aggressorindicator,
+        manualindicator,
         _declared_temporal_arrow(settldate),
         settltype,
         settlcurrency,
@@ -1084,7 +1071,6 @@ def _executions(
         "parenthash": parent,
         "lastmkt": lastmkt,
         "reason": reason,
-        "instrumentxhash": instrumentxhash,
         "symbolticker": symbolticker,
         "kind": kind,
         "side": side,
@@ -1094,16 +1080,11 @@ def _executions(
         "lastqty": lastqty,
         "qtyunit": qtyunit,
         "metadata": metadata,
-        "execid": execid,
-        "execrefid": execrefid,
-        "tradeid": tradeid,
-        "orderid": orderid,
-        "clordid": client_id,
-        "origclordid": previous_client_id,
         "cumqty": filled,
         "leavesqty": leaves,
         "vwap": vwap,
         "aggressorindicator": aggressorindicator,
+        "manualindicator": manualindicator,
         "settldate": settldate,
         "settltype": settltype,
         "settlcurrency": settlcurrency,
@@ -1399,9 +1380,8 @@ def _event_altids(altids: pyarrow.Array, *codes: tuple[str, pyarrow.Array]) -> p
     parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
     rows = len(altids)
     special_names = tuple(name for name, _ in codes)
-    ordinary = compute.invert(
-        compute.is_in(keys, value_set=pyarrow.array(special_names, keys.type))
-    )
+    excluded = (*special_names, *_INSTRUMENT_ALTID_NAMES)
+    ordinary = compute.invert(compute.is_in(keys, value_set=pyarrow.array(excluded, keys.type)))
     parents = compute.filter(parents, ordinary)
     keys = compute.filter(keys, ordinary)
     values = compute.filter(values, ordinary)

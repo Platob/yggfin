@@ -7,7 +7,6 @@ below it, because "served from memory" is the whole claim.
 """
 
 import gzip
-import os
 import threading
 from datetime import date, datetime
 from pathlib import Path
@@ -559,13 +558,11 @@ def test_a_local_warehouse_is_made_absolute_before_a_table_records_it() -> None:
     """A warehouse is written into every table's metadata and every manifest,
     so a relative one names a different directory from every working directory
     but the one that created the table."""
-    root = os.getcwd()
+    warehouse = (Path.cwd() / "data" / "warehouse").as_uri()
 
-    assert inferred_properties({"warehouse": "data/warehouse"}) == {
-        "warehouse": f"file://{root}/data/warehouse"
-    }
+    assert inferred_properties({"warehouse": "data/warehouse"}) == {"warehouse": warehouse}
     assert inferred_properties({"warehouse": "file://data/warehouse"}) == {
-        "warehouse": f"file://{root}/data/warehouse"
+        "warehouse": warehouse
     }, "the authority form every task document ships is the same directory"
     assert inferred_properties({"warehouse": "/tmp/wh"}) == {"warehouse": "file:///tmp/wh"}
     assert inferred_properties({"uri": "sqlite:///data/catalog.db"}) == {

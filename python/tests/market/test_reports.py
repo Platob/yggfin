@@ -133,7 +133,7 @@ def test_full_fill_is_terminal_zero_and_does_not_consume_an_unrelated_order() ->
 
     latest = list(Book.from_events([*accepted(), other, *filled], snapshot_every=0))[-1]
 
-    filled_order = next(order for order in latest.deltas if order.orderid == "ORDER-1")
+    filled_order = next(order for order in latest.deltas if order.altids["orderid"] == "ORDER-1")
     assert filled_order.state is State.FILLED and filled_order.lastqty == 0.0
     assert latest.bidqty == 50.0 and latest.biddepth == 1
 

@@ -20,6 +20,7 @@ from rekep.enums import (
     Currency,
     Direction,
     EventType,
+    ManualIndicator,
     MarketKind,
     OptionKind,
     Plugin,
@@ -42,7 +43,7 @@ BANDED = (
     EventType,
 )
 
-PACKED = (Direction, Side, TimeInForce, EventType)
+PACKED = (Direction, Side, TimeInForce, EventType, ManualIndicator)
 
 
 def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
@@ -53,6 +54,7 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         Currency,
         Direction,
         EventType,
+        ManualIndicator,
         MarketKind,
         OptionKind,
         Plugin,
@@ -165,6 +167,7 @@ def test_every_ascii_set_is_open_and_stored_bytes_stay_exact() -> None:
         (State, "OWN"),
         (AssetKind, "OWN"),
         (MarketKind, "OWN"),
+        (ManualIndicator, "OWN"),
         (OptionKind, "OWN"),
         (Plugin, "OWN"),
         (Protocol, "OWN"),
@@ -577,6 +580,31 @@ def test_market_kind_fix_values_are_tag_scoped() -> None:
     assert MarketKind.from_fix("J") is MarketKind.UNKNOWN
     assert MarketKind.from_fix("F", tag=150) is MarketKind.TRADE
     assert MarketKind.TRADE.into_fix(150) == "F"
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("Y", ManualIndicator.MANUAL),
+        ("true", ManualIndicator.MANUAL),
+        ("manual", ManualIndicator.MANUAL),
+        ("N", ManualIndicator.AUTOMATIC),
+        ("false", ManualIndicator.AUTOMATIC),
+        ("electronic", ManualIndicator.AUTOMATIC),
+    ],
+)
+def test_manual_indicator_reads_fix_and_rendered_boolean_spellings(
+    value: str, expected: ManualIndicator
+) -> None:
+    assert ManualIndicator.from_fix(value) is expected
+    assert expected.into_fix() == ("Y" if expected is ManualIndicator.MANUAL else "N")
+
+
+def test_manual_indicator_keeps_a_future_wire_code() -> None:
+    future = ManualIndicator.from_fix("X")
+
+    assert future.code == "X"
+    assert future.into_fix() == "X"
 
 
 def test_time_in_force_covers_the_fix_latest_code_set() -> None:

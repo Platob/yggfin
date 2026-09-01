@@ -73,9 +73,9 @@ so ticker and ISIN derivation do not depend on a feed's preferred spelling.
 classifies the instrument as currency and supplies `NOK` as its quote currency
 when those facts are otherwise absent.
 
-`InstUpdate.xhash`, `Instrument.xhash`, each `Leg.xhash`, and flat
-`instrumentxhash` joins are the same sixteen-byte XXH3-128 identity derived
-directly from UTF-8 `symbolticker`. They carry no event clock.
+`InstUpdate.xhash`, `Instrument.xhash`, and each `Leg.xhash` are the same
+sixteen-byte XXH3-128 identity derived directly from UTF-8 `symbolticker`.
+Market operations join reference data by the readable `symbolticker` key.
 
 ## Lineage
 

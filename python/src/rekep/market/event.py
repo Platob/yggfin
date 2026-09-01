@@ -17,7 +17,7 @@ import pyarrow.compute
 from rekep import txhash
 from rekep.annotations import SEQUENCE_ORIGINS, item_annotation, unwrap_annotated, unwrap_optional
 from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Plugin, Side, State
-from rekep.fields import Field, scalar
+from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask
 from rekep.market.fields import MarketConvertible, fix_tag
 from rekep.market.identity import (
@@ -28,7 +28,6 @@ from rekep.market.identity import (
     hash128_bytes,
     hash128_bytes_arrow,
     hash_arrow,
-    hash_bytes_of,
     hash_of,
 )
 from rekep.market.ticker import SymbolTicker
@@ -83,6 +82,44 @@ _SOURCE_IDENTITY_MEMBERS = frozenset(
 )
 
 _MISSING = object()
+
+_INSTRUMENT_ALTID_NAMES = frozenset(
+    {
+        "bloombergcode",
+        "cusip",
+        "exchangeid",
+        "legsecurityid",
+        "legsecurityidsource",
+        "legsymbol",
+        "instrumentid",
+        "isin",
+        "isincode",
+        "ric",
+        "securityaltid",
+        "securityaltidsource",
+        "securityexchange",
+        "securityid",
+        "securityidsource",
+        "sedol",
+        "symbol",
+        "symbolticker",
+        "underlying",
+        "underlyingsecurityid",
+        "underlyingsecurityidsource",
+        "underlyingsymbol",
+    }
+)
+
+
+def _market_altids(values: Mapping[str, str]) -> dict[str, str]:
+    """Fold lifecycle identifiers and discard instrument reference codes."""
+    found: dict[str, str] = {}
+    for name, value in values.items():
+        folded = column_name(name)
+        if folded and folded not in _INSTRUMENT_ALTID_NAMES and value:
+            found.setdefault(folded, str(value))
+    return found
+
 
 #: Every readable identity carried by a row, keyed by its folded field name.
 #: Lookup code decides which identities are comparable; storage does not drop
@@ -673,21 +710,11 @@ class MarketEvent(Event):
     # not a member: market events persist only the flat identity.
     __instrument: Instrument | None = None
 
-    # Flat and first. An event stream is read one instrument at a time far more
-    # often than it is read whole, and `instrument.xhash` cannot serve that: an
-    # engine pushes a predicate down only for a top-level scalar.
+    # Flat and first because an engine pushes a predicate down only for a
+    # top-level scalar. The canonical ticker is both the readable key and the
+    # one identity used to group market operations.
     #
-    # Not a partition, deliberately. The value is a hash, so bucketing it split
-    # every hour into as many files as buckets while the hour itself already
-    # prunes the read -- more small files for a filter that was already exact.
-    instrumentxhash: Annotated[int, Field(dtype=HASH), Field.column("InstrumentXhash")] = NIL
-    """Canonical Instrument identity used to join market rows."""
-
-    # Beside the hash rather than only inside `altids`: a hash joins, and a
-    # person reads. Every filter, group and error message about an instrument
-    # was reaching into a map for the one key this package writes itself.
-    #
-    # Not a partition either, and this one is measured rather than argued. The
+    # Not a partition, and this is measured rather than argued. The
     # case for bucketing it is real -- `unixpartition` prunes time and not
     # instrument, so a scan for one instrument across a week opens every
     # hour's files. But bucketing does not fix that: the bucket prunes files
@@ -699,7 +726,7 @@ class MarketEvent(Event):
     # to 1,152, the mean file fell from 76 KiB to 25, and the hourly read
     # every consumer writes went 24 ms to 165 to 320. See docs/market/index.md.
     symbolticker: Annotated[str, Field.column("SymbolTicker")] = ""
-    """Canonical spelling of the instrument `instrumentxhash` names; empty when unstated."""
+    """Canonical instrument key; empty when the source cannot identify it."""
 
     kind: MarketKind = MarketKind.UNKNOWN
     """Standard market semantic, independent of its protocol spelling."""
@@ -752,11 +779,22 @@ class MarketEvent(Event):
         if self.currency is not None:
             self.currency = Currency.from_str(self.currency)
         Event.__post_init__(self)
+        self.altids = _market_altids(self.altids)
+
+    def name_altid(self, name: str, value: str | None) -> None:
+        """Record one folded lifecycle identifier, never an instrument reference."""
+        folded = column_name(name)
+        if folded and folded not in _INSTRUMENT_ALTID_NAMES:
+            Event.name_altid(self, folded, value)
+
+    def _keep_lifecycle_altids(self, previous: Event) -> None:
+        """Carry lifecycle identifiers without reintroducing reference codes."""
+        Event._keep_lifecycle_altids(self, previous)
+        self.altids = _market_altids(self.altids)
 
     def attach_instrument(self, instrument: Instrument) -> Self:
         """Use reference data while building without adding it to the event schema."""
         self.__instrument = instrument
-        self.instrumentxhash = self.instrumentxhash or instrument.xhash
         self.symbolticker = self.symbolticker or instrument.symbolticker
         if self.currency is None:
             self.currency = instrument.currency
@@ -780,8 +818,6 @@ class MarketEvent(Event):
             known = previous.into_instrument()
             if known is not None:
                 self.__instrument = known
-        if not self.instrumentxhash:
-            self.instrumentxhash = previous.instrumentxhash
         if not self.symbolticker:
             self.symbolticker = previous.symbolticker
         if self.side is Side.UNKNOWN:
@@ -866,16 +902,10 @@ class MarketEvent(Event):
         """
         return self.code or self.symbolticker
 
-    def _code_values(self) -> Iterator[tuple[str, str | None]]:
-        """Lifecycle and instrument codes carried by one market row."""
-        yield from Event._code_values(self)
-        yield "symbolticker", self.symbolticker
-
     def version_parts(self) -> tuple[Any, ...]:
         """Current non-clock market values in the framed hash domain."""
         return (
             *Event.version_parts(self),
-            hash_bytes_of(self.instrumentxhash),
             self.symbolticker,
             self.kind,
             self.side,

@@ -9,17 +9,14 @@ from collections.abc import Iterator
 from types import MappingProxyType
 from typing import Annotated, Any
 
-import pyarrow
-
-from rekep.enums import Currency, EventType, State, TimeInForce
+from rekep.enums import Currency, EventType, ManualIndicator, State, TimeInForce
 from rekep.fields import Field, column_name, scalar
 from rekep.market.event import Event, MarketEvent, _declared_value_parts, _local_timestamp
 from rekep.market.fields import fix_tag
 from rekep.market.identity import NIL
 
-# Exact source fields stay on Order/Execution. These two namespaces are only
-# the lookup meaning of those fields: equal text in OrderID and ClOrdID is not
-# evidence that two orders are the same lifecycle.
+# These namespaces preserve the meaning of each `altids` entry: equal text in
+# OrderID and ClOrdID is not evidence that two orders are the same lifecycle.
 VENUE_ORDER_CODE = "order"
 CLIENT_ORDER_CODE = "client_order"
 
@@ -33,12 +30,42 @@ _ORDER_CODE_FIELDS = MappingProxyType(
         "quoteid": (VENUE_ORDER_CODE, "QuoteID"),
         "mdentryid": (VENUE_ORDER_CODE, "MDEntryID"),
         "mdentryrefid": (VENUE_ORDER_CODE, "MDEntryRefID"),
+        "parentorderid": (VENUE_ORDER_CODE, "ParentOrderID"),
         "origclordid": (CLIENT_ORDER_CODE, "OrigClOrdID"),
         "clordid": (CLIENT_ORDER_CODE, "ClOrdID"),
+        "clordlinkid": (CLIENT_ORDER_CODE, "ClOrdLinkID"),
+        "parentclordid": (CLIENT_ORDER_CODE, "ParentClOrdID"),
         "rootoriginatororderid": (CLIENT_ORDER_CODE, "RootOriginatorOrderId"),
         "secondaryclordid": (CLIENT_ORDER_CODE, "SecondaryClOrdID"),
         "quotereqid": (CLIENT_ORDER_CODE, "QuoteReqID"),
     }
+)
+
+_ORDER_CODE_PRIORITY = (
+    "orderid",
+    "globalorderid",
+    "rootorderid",
+    "secondaryorderid",
+    "quoteentryid",
+    "quoteid",
+    "mdentryid",
+    "mdentryrefid",
+    "origclordid",
+    "clordid",
+    "rootoriginatororderid",
+    "secondaryclordid",
+    "quotereqid",
+    "clordlinkid",
+    "parentclordid",
+    "parentorderid",
+)
+
+_EXECUTION_CODE_PRIORITY = (
+    "execid",
+    "secondaryexecid",
+    "tradeid",
+    "trdmatchid",
+    "mdentryid",
 )
 
 
@@ -46,6 +73,18 @@ _ORDER_CODE_FIELDS = MappingProxyType(
 def _code_name(name: str) -> str:
     """One source identifier name in the spelling the lookup contract reads."""
     return column_name(name)
+
+
+def _altid(event: Event, name: str) -> str:
+    """One folded identifier from an event's only identifier store."""
+    value = event.altids.get(_code_name(name))
+    return str(value) if value else ""
+
+
+def _set_altid(event: Event, name: str, value: str | None) -> None:
+    """Store one non-empty identifier under its folded source name."""
+    if value:
+        event.altids[_code_name(name)] = str(value)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -170,31 +209,10 @@ class Order(MarketEvent):
     indicative: bool = False
     """Whether this interest is a quote rather than a firm order."""
 
-    orderid: Annotated[str | None, fix_tag("OrderID")] = None
-    """Identifier the venue gave the order."""
-
-    clordid: Annotated[str | None, fix_tag("ClOrdID")] = None
-    """Identifier the sender gave this version of the order."""
-
-    origclordid: Annotated[str | None, fix_tag("OrigClOrdID")] = None
-    """Identifier the sender gave the version this one replaced."""
-
-    clordlinkid: Annotated[str | None, fix_tag("ClOrdLinkID")] = None
-    """Identifier linking the order versions of one intent across replace chains."""
-
-    # Bridge-rendered identities FIX never numbered: the same registry
-    # annotation, resolved through a namespace record rather than a tag.
-    parentclordid: Annotated[str | None, fix_tag("ParentClOrdID")] = None
-    """Client order identity of the parent in a replace chain, where a bridge says it."""
-
-    parentorderid: Annotated[str | None, fix_tag("ParentOrderID")] = None
-    """Venue order identity of the parent in a replace chain, where a bridge says it."""
-
-    cxlrejreason: Annotated[int | None, fix_tag("CxlRejReason", dtype=pyarrow.int32())] = None
-    """Why a cancel or amend was refused, in FIX's own codes; null off a reject."""
-
-    cxlrejresponseto: Annotated[str | None, fix_tag("CxlRejResponseTo")] = None
-    """Which request a reject answers: a cancel, or a cancel/replace."""
+    manualindicator: Annotated[ManualIndicator, fix_tag("ManualOrderIndicator")] = (
+        ManualIndicator.UNKNOWN
+    )
+    """Whether a person entered the order; unknown when the source does not say."""
 
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means."""
@@ -208,7 +226,6 @@ class Order(MarketEvent):
             previous,
             "stoppx",
             "vwap",
-            "orderid",
         )
         if self.lastqty is None and isinstance(previous, Execution):
             self.lastqty = previous.leavesqty
@@ -220,12 +237,13 @@ class Order(MarketEvent):
             )
             if displayed is not None and self.lastqty is not None:
                 self.hiddenqty = max(self.lastqty - displayed, 0.0)
-        _carry_code(self, previous, "timeinforce")
-        named = getattr(previous, "clordid", None)
-        if self.clordid is None:
-            self.clordid = named
-        elif self.origclordid is None and named not in (None, self.clordid):
-            self.origclordid = named
+        _carry_code(self, previous, "timeinforce", "manualindicator")
+        named = _altid(previous, "clordid")
+        current = _altid(self, "clordid")
+        if not current:
+            _set_altid(self, "clordid", named)
+        elif not _altid(self, "origclordid") and named not in ("", current):
+            _set_altid(self, "origclordid", named)
         anchor = previous.code or previous.life_code() if same_named_life else linked_life
         if anchor:
             # A later acknowledgement may introduce the venue's OrderID. The
@@ -269,26 +287,12 @@ class Order(MarketEvent):
         """Reader-facing source name and strongest order identifier."""
         return next(((source, value) for _, source, value in self._code_fields_of(self)), ("", ""))
 
-    def _code_values(self) -> Iterator[tuple[str, str | None]]:
-        """Every dedicated order code, including the lifecycle anchor."""
-        yield from MarketEvent._code_values(self)
-        for name in (
-            "orderid",
-            "clordid",
-            "origclordid",
-            "clordlinkid",
-            "parentclordid",
-            "parentorderid",
-        ):
-            yield name, getattr(self, name)
-
     @classmethod
     def lookup_altids_of(cls, event: MarketEvent) -> Iterator[tuple[str, str]]:
         """Typed order identifiers on `event`, strongest first and once each.
 
-        Venue identifiers lead client identifiers; exact columns are inserted
-        at their strength within that order so hand-built rows remain indexed.
-        `altids` carries promoted and residual identifiers under one spelling.
+        Venue identifiers lead client identifiers. `altids` is the only
+        persisted store, so hand-built and parsed rows follow the same rule.
         """
         yield from ((namespace, value) for namespace, _, value in cls._code_fields_of(event))
 
@@ -296,20 +300,12 @@ class Order(MarketEvent):
     def _code_fields_of(cls, event: MarketEvent) -> Iterator[tuple[str, str, str]]:
         """Typed order identifiers with the exact field that supplied each value."""
         found: set[tuple[str, str]] = set()
-        parsed: list[tuple[str, str, str]] = []
-        for name, value in event.altids.items():
-            field = _ORDER_CODE_FIELDS.get(_code_name(name))
-            if field is not None and value:
-                namespace, source = field
-                parsed.append((namespace, source, str(value)))
-        candidates = [
-            (VENUE_ORDER_CODE, "OrderID", getattr(event, "orderid", None)),
-            *(key for key in parsed if key[0] == VENUE_ORDER_CODE),
-            (CLIENT_ORDER_CODE, "OrigClOrdID", getattr(event, "origclordid", None)),
-            (CLIENT_ORDER_CODE, "ClOrdID", getattr(event, "clordid", None)),
-            *(key for key in parsed if key[0] == CLIENT_ORDER_CODE),
-        ]
-        for namespace, source, value in candidates:
+        for name in _ORDER_CODE_PRIORITY:
+            value = _altid(event, name)
+            field = _ORDER_CODE_FIELDS.get(name)
+            if field is None or not value:
+                continue
+            namespace, source = field
             if value and (key := (namespace, str(value))) not in found:
                 found.add(key)
                 yield namespace, source, str(value)
@@ -318,17 +314,18 @@ class Order(MarketEvent):
         """Whether FIX identifiers link this row to the preceding Order."""
         if not isinstance(previous, Order):
             return False
-        moved_venue_id = bool(
-            self.orderid and previous.orderid and self.orderid != previous.orderid
-        )
-        amended = bool(
-            self.origclordid and self.origclordid in (previous.clordid, previous.origclordid)
-        )
+        orderid = _altid(self, "orderid")
+        previous_orderid = _altid(previous, "orderid")
+        clordid = _altid(self, "clordid")
+        previous_clordid = _altid(previous, "clordid")
+        origclordid = _altid(self, "origclordid")
+        previous_origclordid = _altid(previous, "origclordid")
+        moved_venue_id = bool(orderid and previous_orderid and orderid != previous_orderid)
+        amended = bool(origclordid and origclordid in (previous_clordid, previous_origclordid))
         if amended:
             return True
         if not moved_venue_id and (
-            (self.orderid and self.orderid == previous.orderid)
-            or (self.clordid and self.clordid == previous.clordid)
+            (orderid and orderid == previous_orderid) or (clordid and clordid == previous_clordid)
         ):
             return True
 
@@ -366,14 +363,7 @@ class Order(MarketEvent):
             self.hiddenqty,
             self.vwap,
             self.indicative,
-            self.orderid,
-            self.clordid,
-            self.origclordid,
-            self.clordlinkid,
-            self.parentclordid,
-            self.parentorderid,
-            self.cxlrejreason,
-            self.cxlrejresponseto,
+            self.manualindicator,
         )
 
 
@@ -401,24 +391,6 @@ class Execution(MarketEvent):
     lastqty: Annotated[float | None, fix_tag("LastQty")] = None
     """What traded on this report -- the fill's quantity, not the order's."""
 
-    execid: Annotated[str | None, fix_tag("ExecID")] = None
-    """Identifier the venue gave this report."""
-
-    execrefid: Annotated[str | None, fix_tag("ExecRefID")] = None
-    """Original execution amended or cancelled by this report."""
-
-    tradeid: Annotated[str | None, fix_tag("TradeID")] = None
-    """Identifier the venue gave the trade, which both sides of it share."""
-
-    orderid: Annotated[str | None, fix_tag("OrderID")] = None
-    """Identifier the venue gave that order."""
-
-    clordid: Annotated[str | None, fix_tag("ClOrdID")] = None
-    """Identifier the sender gave the version of the order that traded."""
-
-    origclordid: Annotated[str | None, fix_tag("OrigClOrdID")] = None
-    """Identifier the sender gave the preceding order version."""
-
     cumqty: Annotated[float | None, fix_tag("CumQty")] = None
     """Quantity done on the order as of this report, including this fill."""
 
@@ -430,6 +402,11 @@ class Execution(MarketEvent):
 
     aggressorindicator: Annotated[bool | None, fix_tag("AggressorIndicator")] = None
     """Whether this side took liquidity; null when the venue does not say."""
+
+    manualindicator: Annotated[ManualIndicator, fix_tag("ManualOrderIndicator")] = (
+        ManualIndicator.UNKNOWN
+    )
+    """Whether a person entered the reported trade; unknown when unstated."""
 
     # How the trade settles. Common on real TradeCaptureReports, and money is
     # wrong without them: a fill priced in one currency can settle in another,
@@ -466,16 +443,16 @@ class Execution(MarketEvent):
         _carry(
             self,
             previous,
-            "orderid",
-            "clordid",
-            "origclordid",
             "aggressorindicator",
         )
+        _carry_code(self, previous, "manualindicator")
+        execrefid = _altid(self, "execrefid")
         same_report_life = (
             isinstance(previous, Execution)
             and self.state in (State.REPLACED, State.CANCELLED)
-            and self.execrefid is not None
-            and self.execrefid in (previous.execid, previous.execrefid, previous.code)
+            and bool(execrefid)
+            and execrefid
+            in (_altid(previous, "execid"), _altid(previous, "execrefid"), previous.code)
         )
         if same_report_life and previous.code:
             self.code = previous.code
@@ -539,41 +516,24 @@ class Execution(MarketEvent):
 
     def _named_life_key(self) -> tuple[str, str]:
         """Reader-facing source name and strongest execution identifier."""
-        if self.state in (State.REPLACED, State.CANCELLED) and self.execrefid:
-            return "ExecRefID", self.execrefid
-        if self.execid:
-            return "ExecID", self.execid
-        if self.tradeid:
-            return "TradeID", self.tradeid
-        return "", ""
-
-    def _code_values(self) -> Iterator[tuple[str, str | None]]:
-        """Every dedicated execution code, including its order references."""
-        yield from MarketEvent._code_values(self)
-        for name in (
-            "execid",
-            "execrefid",
-            "tradeid",
-            "orderid",
-            "clordid",
-            "origclordid",
+        if self.state in (State.REPLACED, State.CANCELLED) and (
+            execrefid := _altid(self, "execrefid")
         ):
-            yield name, getattr(self, name)
+            return "ExecRefID", execrefid
+        for name in _EXECUTION_CODE_PRIORITY:
+            if value := _altid(self, name):
+                return name, value
+        return "", ""
 
     def version_parts(self) -> tuple[Any, ...]:
         """An execution's version moves when what it says about the trade does."""
         return (
             *MarketEvent.version_parts(self),
-            self.execid,
-            self.execrefid,
-            self.tradeid,
-            self.orderid,
-            self.clordid,
-            self.origclordid,
             self.cumqty,
             self.leavesqty,
             self.vwap,
             self.aggressorindicator,
+            self.manualindicator,
             *_declared_value_parts(self.settldate),
             self.settltype,
             self.settlcurrency,

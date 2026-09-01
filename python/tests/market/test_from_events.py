@@ -23,6 +23,44 @@ from rekep.market.book import _Side
 BTC = Instrument(symbol="BTC-USD", securityexchange="XCME", currency="USD")
 ETH = Instrument(symbol="ETH-USD", securityexchange="XCME", currency="USD")
 
+_IDENTIFIER_FIELDS = frozenset(
+    {
+        "clordid",
+        "execid",
+        "execrefid",
+        "globalorderid",
+        "mdentryid",
+        "mdentryrefid",
+        "orderid",
+        "origclordid",
+        "parentclordid",
+        "parentorderid",
+        "quoteentryid",
+        "quoteid",
+        "quotereqid",
+        "rootorderid",
+        "rootoriginatororderid",
+        "secondaryclordid",
+        "secondaryexecid",
+        "secondaryorderid",
+        "tradeid",
+        "trdmatchid",
+    }
+)
+
+
+def _with_altids(given: dict[str, object]) -> dict[str, object]:
+    """Move readable source identifiers into their only persisted store."""
+    values = dict(given)
+    altids = dict(values.pop("altids", {}) or {})
+    for name in _IDENTIFIER_FIELDS:
+        value = values.pop(name, None)
+        if value is not None:
+            altids[name] = str(value)
+    if altids:
+        values["altids"] = altids
+    return values
+
 
 def initial[EventT: MarketEvent](event: EventT, instrument: Instrument = BTC) -> EventT:
     """Attach transient reference data and require an initial version."""
@@ -41,7 +79,7 @@ def order(unix: int, side: Side, px: float, qty: float, named: str, **given: obj
         "state": State.NEW,
         "pxunit": "USD",
     }
-    return initial(Order(**{**declared, **given}))
+    return initial(Order(**_with_altids({**declared, **given})))
 
 
 def trade(unix: int, px: float, qty: float, **given: object) -> Execution:
@@ -52,7 +90,7 @@ def trade(unix: int, px: float, qty: float, **given: object) -> Execution:
         "state": State.FILLED,
         "execid": f"EX-{unix}",
     }
-    return initial(Execution(**{**declared, **given}))
+    return initial(Execution(**_with_altids({**declared, **given})))
 
 
 TWO_SIDED = [
@@ -181,7 +219,7 @@ def test_a_stream_carrying_two_instruments_folds_each_on_its_own() -> None:
     found = books([*TWO_SIDED, other])
     assert [one.code for one in found] == ["XCME:BTC-USD", "XCME:ETH-USD"]
     assert found[0].biddepth == 2 and found[1].biddepth == 1
-    assert found[0].instrumentxhash != found[1].instrumentxhash
+    assert found[0].symbolticker != found[1].symbolticker
 
 
 def test_one_instrument_s_book_never_sees_another_s_orders() -> None:
@@ -224,7 +262,7 @@ def test_a_market_order_rests_nowhere_and_moves_no_book() -> None:
 
 def test_a_book_knows_what_it_is_a_book_of() -> None:
     (only,) = books(TWO_SIDED)
-    assert only.code == "XCME:BTC-USD" and only.instrumentxhash == BTC.xhash
+    assert only.code == "XCME:BTC-USD" and only.symbolticker == BTC.symbolticker
     assert only.pxunit == "USD" and "instrument" not in Book.into_field().names
 
 
@@ -283,8 +321,12 @@ def test_orders_at_one_price_are_kept_largest_first() -> None:
     side = _Side(side=Side.BID)
     for named, qty in (("small", 1.0), ("big", 9.0), ("middling", 4.0)):
         side.apply(order(10, Side.BID, 100.0, qty, named))
-    assert [one.orderid for one in side.sorted_orders] == ["big", "middling", "small"]
-    assert side.best.orderid == "big"
+    assert [one.altids["orderid"] for one in side.sorted_orders] == [
+        "big",
+        "middling",
+        "small",
+    ]
+    assert side.best.altids["orderid"] == "big"
 
 
 def test_a_side_with_nothing_on_it_has_no_best() -> None:
@@ -324,7 +366,7 @@ def test_a_partial_restatement_still_copies_and_completes(
         code="BTC-USD",
         side=Side.BID,
         lastqty=4.0,
-        orderid="B1",
+        altids={"orderid": "B1"},
         state=State.NEW,
     ).attach_instrument(BTC)
     copied = book_module.copy.copy
@@ -420,7 +462,7 @@ def test_an_order_completed_from_the_one_it_replaces_keeps_current_quantity() ->
         unix=20,
         code="BTC-USD",
         side=Side.BID,
-        orderid="B1",
+        altids={"orderid": "B1"},
         lastqty=1.0,
         state=State.PARTIALLY_FILLED,
     ).attach_instrument(BTC)
@@ -434,7 +476,7 @@ def test_a_terminal_order_leaves_the_book_entirely() -> None:
         unix=20,
         code="BTC-USD",
         side=Side.BID,
-        orderid="B1",
+        altids={"orderid": "B1"},
         state=State.CANCELLED,
     ).attach_instrument(BTC)
     _, second = books([*TWO_SIDED, gone])
@@ -640,7 +682,7 @@ def test_a_book_whose_side_emptied_has_no_mid_rather_than_the_last_one() -> None
         unix=20,
         code="BTC-USD",
         side=Side.ASK,
-        orderid="A1",
+        altids={"orderid": "A1"},
         state=State.CANCELLED,
     ).attach_instrument(BTC)
     first, second = books([*TWO_SIDED, gone])
@@ -826,7 +868,8 @@ def test_order_xhash_precedes_conflicting_identifier_altids() -> None:
     side.apply(first)
     side.apply(second)
 
-    probe = Order(xhash=first.xhash, altids=UnreadableAltids(orderid="B"))
+    probe = Order(xhash=first.xhash, altids={"orderid": "B"})
+    probe.altids = UnreadableAltids(probe.altids)
 
     assert side.standing(probe) is side.orders[first.xhash]
 
@@ -840,7 +883,6 @@ def test_an_execution_xhash_is_not_mistaken_for_its_order_lifecycle() -> None:
 
     probe = Execution(
         xhash=first.xhash,
-        orderid="B",
         altids={"orderid": "B"},
     )
 
@@ -856,7 +898,6 @@ def test_a_linked_order_event_precedes_conflicting_identifier_altids() -> None:
 
     probe = Execution(
         linkhashes=[first.hash],
-        orderid="B",
         altids={"orderid": "B"},
     )
 
@@ -974,7 +1015,6 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             side=Side.BID,
             lastpx=100.0,
             lastqty=5.0,
-            clordid="42",
             altids={"clordid": "42"},
             state=State.NEW,
         )
@@ -986,7 +1026,6 @@ def test_order_and_client_identifier_namespaces_do_not_cross() -> None:
             side=Side.BID,
             lastpx=99.0,
             lastqty=4.0,
-            orderid="42",
             altids={"orderid": "42"},
             state=State.NEW,
         )
@@ -1014,7 +1053,6 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
             side=Side.BID,
             lastpx=99.0,
             lastqty=4.0,
-            clordid="CLIENT",
             altids={"clordid": "CLIENT"},
             state=State.NEW,
         )
@@ -1024,7 +1062,6 @@ def test_all_venue_identifiers_precede_every_client_identifier() -> None:
 
     found = side.standing(
         Order(
-            origclordid="CLIENT",
             altids={"secondaryorderid": "VENUE"},
         )
     )
@@ -1076,7 +1113,6 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
                 side=Side.BID,
                 lastpx=100.0,
                 lastqty=5.0,
-                clordid="CL-1",
                 altids={"clordid": "CL-1"},
                 state=State.NEW,
             )
@@ -1087,8 +1123,6 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
                 side=Side.BID,
                 lastpx=100.0,
                 lastqty=4.0,
-                clordid="CL-2",
-                origclordid="CL-1",
                 altids={"origclordid": "CL-1", "clordid": "CL-2"},
                 state=State.OPEN,
             )
@@ -1099,8 +1133,6 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
                 side=Side.BID,
                 lastpx=100.0,
                 lastqty=3.0,
-                clordid="CL-3",
-                origclordid="CL-2",
                 altids={"origclordid": "CL-2", "clordid": "CL-3"},
                 state=State.OPEN,
             )
@@ -1111,9 +1143,6 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
                 side=Side.BID,
                 lastpx=100.0,
                 lastqty=2.0,
-                orderid="ORD-1",
-                clordid="CL-3",
-                origclordid="CL-2",
                 altids={
                     "orderid": "ORD-1",
                     "origclordid": "CL-2",
@@ -1143,8 +1172,6 @@ def test_mutating_order_altids_keep_one_lifecycle_and_a_bounded_alias_cache() ->
             Order(
                 unix=50,
                 side=Side.BID,
-                orderid="ORD-1",
-                clordid="CL-3",
                 altids={"orderid": "ORD-1", "clordid": "CL-3"},
                 state=State.CANCELLED,
             )
@@ -1165,8 +1192,7 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
                 side=Side.BID,
                 lastpx=100.0,
                 lastqty=5.0,
-                clordid=root,
-                altids={"secondaryclordid": f"S{version}"},
+                altids={"clordid": root, "secondaryclordid": f"S{version}"},
                 state=State.NEW if version == 0 else State.OPEN,
             )
         )
@@ -1178,7 +1204,7 @@ def test_code_only_identifier_revisions_remain_current_and_indexed() -> None:
     assert standing.altids["secondaryclordid"] == "S99"
     assert side.standing(Order(altids={"secondaryclordid": "S99"})).xhash == lifecycle
     assert side.standing(Order(altids={"secondaryclordid": "S98"})).xhash == lifecycle
-    assert side.standing(Order(clordid=root)).xhash == lifecycle
+    assert side.standing(Order(altids={"clordid": root})).xhash == lifecycle
     assert len(side.aliases[lifecycle]) <= book_module._ORDER_ALIAS_LIMIT
 
 
@@ -1197,7 +1223,8 @@ def test_expiry_without_a_max_age_reads_only_the_explicit_index() -> None:
 
     (expired,) = side.expire(20)
 
-    assert expired.orderid == "expiring" and expired.state is State.INTERNAL_EXPIRED
+    assert expired.altids["orderid"] == "expiring"
+    assert expired.state is State.INTERNAL_EXPIRED
     assert list(side.orders) == [standing.xhash]
 
 
@@ -1249,8 +1276,8 @@ def test_a_side_bound_keeps_best_price_then_earliest_time(side: Side, prices: li
 
     expired = resting.bound(2, 20)
 
-    assert [one.orderid for one in resting.sorted_orders] == ["O1", "O2"]
-    assert [one.orderid for one in expired] == ["O0", "O3"]
+    assert [one.altids["orderid"] for one in resting.sorted_orders] == ["O1", "O2"]
+    assert [one.altids["orderid"] for one in expired] == ["O0", "O3"]
     assert all(one.state is State.INTERNAL_EXPIRED and one.version == 1 for one in expired)
     assert all(one.reason and "max_side_alive=2" in one.reason for one in expired)
     assert all(one.state is State.INTERNAL_EXPIRED for one in expired)
@@ -1292,7 +1319,7 @@ def test_a_tight_large_side_bound_never_scans_every_order() -> None:
 
     (expired,) = resting.bound(count - 1, count + 1)
 
-    assert expired.orderid == f"O{count - 1}"
+    assert expired.altids["orderid"] == f"O{count - 1}"
     assert len(resting.orders) == count - 1
 
 
@@ -1309,10 +1336,12 @@ def test_bounded_evictions_are_auditable_and_never_enter_the_book_again() -> Non
         event for book in found for event in book.deltas if event.state is State.INTERNAL_EXPIRED
     ]
 
-    assert [one.orderid for one in expired] == ["B2"]
+    assert [one.altids["orderid"] for one in expired] == ["B2"]
     assert found[-1].biddepth == 2
     assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 2.0
-    assert {one.orderid for one in iterator.folding[BTC.symbolticker].bid.orders.values()} == {
+    assert {
+        one.altids["orderid"] for one in iterator.folding[BTC.symbolticker].bid.orders.values()
+    } == {
         "B1",
         "B3",
     }
@@ -1327,7 +1356,7 @@ def test_a_new_order_evicted_immediately_keeps_both_versions_in_order() -> None:
     latest = list(BookIterator.from_events(events, snapshot_every=0, max_side_alive=1))[-1]
 
     placed, expired = latest.deltas
-    assert placed.orderid == expired.orderid == "B2"
+    assert placed.altids["orderid"] == expired.altids["orderid"] == "B2"
     assert expired.state is State.INTERNAL_EXPIRED and expired.prevunix == placed.unix
     assert expired.prevhash == placed.hash
     assert expired.version == placed.version + 1
@@ -1371,7 +1400,7 @@ def test_a_report_that_omits_the_mic_still_finds_the_order_it_continues() -> Non
         unix=20,
         code="BTC-USD",
         side=Side.BID,
-        orderid="B1",
+        altids={"orderid": "B1"},
         lastqty=2.0,
         state=State.OPEN,
     ).attach_instrument(BTC)

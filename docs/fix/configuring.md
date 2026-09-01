@@ -23,14 +23,15 @@ flowchart LR
 
 `header_pattern` takes the source of a pattern as well as a compiled one, so a
 capture whose header this package has never seen is a `header:` in the task
-document. It must name the same four groups.
+document. It must name four groups; an optional `level` group persists logger
+severity beside the payload.
 
 ```python
 from rekep import TextFile
 
 VENDOR = (
     r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
-    r"(?P<plugin>[^|]*)\|(?P<body>.*)$"
+    r"(?P<plugin>[^|]*)\|(?P<level>[^|]*)\|(?P<body>.*)$"
 )
 
 with TextFile.from_path("vendor.log", header_pattern=VENDOR) as log:

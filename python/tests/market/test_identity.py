@@ -513,7 +513,7 @@ def test_a_sliced_identity_column_keeps_its_sign_and_nulls() -> None:
 
 def test_wide_hash_members_change_spelling_in_a_stored_row() -> None:
     version = (17 << 64) | ((-9) & ((1 << 64) - 1))
-    for name in ("hash", "xhash", "prevhash", "instrumentxhash"):
+    for name in ("hash", "xhash", "prevhash"):
         assert stored_member(name, version) == hash_bytes_of(version)
         assert read_member(name, hash_bytes_of(version)) == version
     assert stored_member("parenthash", [version]) == [hash_bytes_of(version)]

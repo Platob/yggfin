@@ -17,8 +17,8 @@ print(shape.cast_arrow(empty).num_columns)
 ```
 
 ```text
-56 56
-56
+55 55
+55
 ```
 
 Shape changes use Arrow kernels. Data-sized Python collections or row loops do

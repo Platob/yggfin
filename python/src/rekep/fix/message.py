@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.fields import column_name, column_names
-from rekep.fields.arrays import sequence
+from rekep.fields.arrays import dense_counts, sequence
 
 #: The delimiter the standard writes between fields: ASCII 0x01, Start of
 #: Heading. Unprintable, which is why logs substitute something visible.
@@ -174,13 +174,25 @@ _BRACKET = rf"\[(?:\d+|{_SELECTOR})\]"
 #: where it was the trailer, a discriminator written behind it was promoted.
 _MARKED_TOKEN = rf"#(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
 
-#: A marked document's own start, with the document after it captured: where a
-#: bridge message starts inside a log line, exactly as `BEGIN_VECTOR` says
-#: where a wire message does. `toBridge #ISINCODE=x|#SIDE=1` carries the
-#: plugin's own prefix, and without a start marker the first key would be
-#: `toBridge #ISINCODE`. Two tokens and not one, because a lone `#FOO=bar` in
-#: prose is a sentence.
-MARKED_VECTOR = rf"(?s)(?P<msg>{_MARKED_TOKEN}.*{_MARKED_TOKEN}.*)"
+#: One rendered assignment without its bridge marker. This is also the start
+#: of a bridge's post-enrichment payload, where the writer omits every `#`.
+_BARE_TOKEN = rf"(?:\d+|{_NAME})(?:{_BRACKET})?(?:\.[A-Za-z0-9_.\-]+)?{_WS}*="
+_RENDERED_TOKEN = rf"#?{_BARE_TOKEN}"
+
+#: Evidence that a marked assignment is data rather than a hashtag in prose.
+#: Whitespace is included because some bridges render `A=1 B=2` with no
+#: punctuation; a bare assignment needs no marker evidence of its own.
+_RENDERED_SEPARATOR = r"(?:\x04\x03|\^A|[\x01|^;#]|[ \t]+)"
+
+#: A rendered document's own start. A marked key needs a following assignment
+#: boundary; an unmarked key is the bridge's declaration that its prose ended.
+#: The guard stays outside `msg` so RE2 captures the field rather than the
+#: punctuation in front of it.
+MARKED_VECTOR = (
+    rf"(?s)(?P<msg>{_MARKED_TOKEN}.*?"
+    rf"{_RENDERED_SEPARATOR}{_WS}*{_RENDERED_TOKEN}.*)"
+)
+BARE_VECTOR = rf"(?s)(?:^|[^#A-Za-z0-9_.\-\]])(?P<msg>{_BARE_TOKEN}.*)"
 
 #: A **named key** token -- a key that is not a FIX tag -- wherever a key may
 #: start. What tells a rendered field from a numbered one, so what decides
@@ -208,9 +220,13 @@ NAMED_MSG_TYPE_PATTERN = (
     rf"{_WS}*(?P<value>[A-Za-z0-9]+){TOKEN_END}"
 )
 
-#: The scalar reading of `MARKED_VECTOR`: the first `#NAME=` that has another
-#: after it. A lookahead rather than a capture, because the scalar path wants
-#: the *position* and RE2 -- which has neither -- reads it off the capture.
+#: The scalar reading of `MARKED_VECTOR`; the capture gives the exact byte at
+#: which the log writer's prose stops.
+_PREFIX_MARKED = re.compile(MARKED_VECTOR, re.DOTALL | re.ASCII)
+_PREFIX_BARE = re.compile(BARE_VECTOR, re.DOTALL | re.ASCII)
+
+#: Two marked keys still own marker-separator inference. Prefix detection is
+#: wider, but a lone marker cannot say that `#` separates fields.
 _MARKED = re.compile(rf"{_MARKED_TOKEN}(?=.*{_MARKED_TOKEN})", re.DOTALL | re.ASCII)
 
 #: One `#NAME=` on its own, for finding the *second* one -- whatever sits in
@@ -253,6 +269,14 @@ NAMED_SEPARATOR_VECTOR = (
     rf"[Ff][Ii][Xx][Tt]?{NOT_SEPARATOR}*(?P<sep>\x04\x03|\^A|.)"
 )
 MARKED_SEPARATOR_VECTOR = rf"(?s){_MARKED_TOKEN}.*?(?P<sep>\x04\x03|\^A|.){_MARKED_TOKEN}"
+RENDERED_SEPARATOR_VECTOR = (
+    rf"(?s){_RENDERED_TOKEN}.*?"
+    rf"(?P<sep>\x04\x03|\^A|[\x01|^;#]|[ \t]+){_WS}*{_RENDERED_TOKEN}"
+)
+
+_WHITESPACE_SEPARATOR = re.compile(
+    rf"(?s){_RENDERED_TOKEN}.*?(?P<sep>[ \t]+){_RENDERED_TOKEN}", re.ASCII
+)
 
 #: One token of a message, in every spelling the logs use. Five shapes come
 #: out of the same regex::
@@ -362,6 +386,9 @@ def detect_separator(text: str) -> str:
     for candidate in SEPARATORS:
         if candidate in text:
             return candidate
+    spaced = _WHITESPACE_SEPARATOR.search(text)
+    if spaced is not None:
+        return spaced.group("sep")
     return SOH
 
 
@@ -415,6 +442,12 @@ def _named_payload(text: str, begin: re.Match[str] | None) -> bool:
     return begin is None or _NAMED_KEY.search(text) is not None
 
 
+def _rendered_start(text: str) -> re.Match[str] | None:
+    """A marked rendered payload start, or a bare one where none is marked."""
+    marked = _PREFIX_MARKED.search(text)
+    return marked if marked is not None else _PREFIX_BARE.search(text)
+
+
 def parse_pairs(
     text: str | bytes,
     separator: str | None = None,
@@ -422,6 +455,7 @@ def parse_pairs(
     named: bool | None = None,
     entry_separator: str | None = None,
     extra_entry_separators: Iterable[str] = (),
+    diagnostics: list[str] | None = None,
 ) -> list[tuple[str, str]]:
     """Parse one ordered FIX payload without creating a second message model."""
     if isinstance(text, bytes):
@@ -432,16 +466,19 @@ def parse_pairs(
     if named is None:
         named = _named_payload(text, begin)
     if named and begin is None:
-        marked = _MARKED.search(text)
-        if marked is not None:
-            text = text[marked.start() :]
+        rendered = _rendered_start(text)
+        if rendered is not None:
+            text = text[rendered.start("msg") :]
     separator = separator or detect_separator(text)
     if named and entry_separator is None:
         entry_separator = detect_entry_separator(text, separator, extra_entry_separators)
     pairs: list[tuple[str, str]] = []
+    unmatched = 0
     for token in split_payload(text, separator):
         parsed = _parse_token(token, named)
         if parsed is None:
+            if "=" in token and token.strip(_STRIPPED):
+                unmatched += 1
             continue
         key, value = parsed
         if entry_separator and "[" in key and entry_separator in value:
@@ -450,6 +487,8 @@ def parse_pairs(
             pairs.append(parsed)
         if _is_checksum(key):
             break
+    if diagnostics is not None and unmatched:
+        diagnostics.append(_unmatched_text(unmatched))
     return pairs
 
 
@@ -590,18 +629,67 @@ def message_bodies(column: Any, named: bool) -> tuple[Any, Any]:
         # the header, or the tags that say what it is are cut off with the
         # log's prefix. The scalar parser applies the same guard, so the two
         # agree by construction.
-        # A valid marked key at byte zero has no prefix to cut. Bridge batches
+        # A valid rendered key at byte zero has no prefix to cut. Bridge batches
         # normally have that shape, so they skip the greedy whole-line search.
         rooted = compute.fill_null(
-            compute.match_substring_regex(values, rf"^{_MARKED_TOKEN}"), False
+            compute.match_substring_regex(values, rf"^{_WS}*{_RENDERED_TOKEN}"), False
         )
         needs_cut = compute.and_(compute.invert(wire), compute.invert(rooted))
         if compute.any(needs_cut, min_count=0).as_py():
-            bridged = compute.struct_field(compute.extract_regex(values, MARKED_VECTOR), "msg")
+            marked = compute.struct_field(compute.extract_regex(values, MARKED_VECTOR), "msg")
+            bare = compute.struct_field(compute.extract_regex(values, BARE_VECTOR), "msg")
+            bridged = compute.coalesce(marked, bare)
             values = compute.if_else(
                 compute.and_(needs_cut, compute.is_valid(bridged)), bridged, values
             )
     return values, wire
+
+
+def _unmatched_text(count: int) -> str:
+    """One row-local diagnostic for assignment-shaped tokens not parsed."""
+    return f"FIX parse skipped unmatched tokens: {count}"
+
+
+def unmatched_token_diagnostics(tokens: Any, matched: Any) -> pyarrow.Array:
+    """Count rejected assignment-shaped tokens before each first checksum.
+
+    The input is already split for parsing. Reusing its offsets and match mask
+    keeps diagnostics in the same vector pass and makes post-checksum log prose
+    irrelevant, exactly as the scalar parser's early stop does.
+    """
+    rows = len(tokens)
+    flat = tokens.values
+    if not len(flat) or pyarrow.compute.all(matched, min_count=0).as_py() is True:
+        return pyarrow.nulls(rows, pyarrow.string())
+    compute = pyarrow.compute
+    parents = compute.list_parent_indices(tokens)
+    assignment = compute.greater_equal(compute.find_substring(flat, "="), 0)
+    bad = compute.and_(assignment, compute.invert(matched))
+
+    checksum = compute.and_(
+        matched,
+        compute.fill_null(
+            compute.match_substring_regex(
+                flat,
+                rf"(?is)^{_WS}*#?(?:10|{rendered_name('CheckSum')}){_WS}*=",
+            ),
+            False,
+        ),
+    )
+    if compute.any(checksum, min_count=0).as_py():
+        counted = compute.cumulative_sum(checksum.cast(pyarrow.int32()))
+        prefix = pyarrow.concat_arrays([pyarrow.array([0], pyarrow.int32()), counted])
+        before_token = prefix.slice(0, len(flat))
+        row_starts = compute.take(prefix, _boundaries(tokens).slice(0, rows))
+        before_row = compute.take(row_starts, parents)
+        bad = compute.and_(bad, compute.equal(compute.subtract(before_token, before_row), 0))
+
+    counts = dense_counts(compute.filter(parents, bad), rows)
+    present = compute.greater(counts, 0)
+    rendered = compute.binary_join_element_wise(
+        "FIX parse skipped unmatched tokens: ", counts.cast(pyarrow.string()), ""
+    )
+    return compute.if_else(present, rendered, pyarrow.scalar(None, pyarrow.string()))
 
 
 #: One token's marker and key, for counting what a capture spells rather than
@@ -671,8 +759,12 @@ def parse_arrow_array(
     named: bool | None = None,
     entry_separator: str | None = None,
     extra_entry_separators: Iterable[str] = (),
+    with_diagnostics: bool = False,
 ) -> Any:
-    """A column of FIX log lines as one `map<string, string>` per row."""
+    """A column of FIX log lines as one `map<string, string>` per row.
+
+    `with_diagnostics` also returns nullable row-local unmatched-token counts.
+    """
     if separator is None or named is None or entry_separator is None:
         # Sampled from the column as handed over -- once, even for a chunked
         # column, so where a chunk boundary falls can never change what a row
@@ -694,9 +786,18 @@ def parse_arrow_array(
                 named=named,
                 entry_separator=entry_separator,
                 extra_entry_separators=extra_entry_separators,
+                with_diagnostics=with_diagnostics,
             )
             for chunk in column.chunks
         ]
+        if with_diagnostics:
+            return (
+                pyarrow.chunked_array(
+                    [part[0] for part in parsed],
+                    type=pyarrow.map_(pyarrow.string(), pyarrow.string()),
+                ),
+                pyarrow.chunked_array([part[1] for part in parsed], pyarrow.string()),
+            )
         # The explicit type is for the zero-chunk column, which is legal and
         # has nothing to infer from.
         return pyarrow.chunked_array(parsed, type=pyarrow.map_(pyarrow.string(), pyarrow.string()))
@@ -723,6 +824,7 @@ def parse_arrow_array(
             else compute.match_substring_regex(flat, _PAIR_TOKEN)
         )
         matched = compute.fill_null(matched, False)
+    diagnostics = unmatched_token_diagnostics(tokens, matched) if with_diagnostics else None
     expansion = None
     if named:
         assert parsed is not None
@@ -758,7 +860,8 @@ def parse_arrow_array(
             offsets.slice(0, len(values)),
         )
         offsets = pyarrow.concat_arrays([head, offsets.slice(len(values))])
-    return pyarrow.MapArray.from_arrays(offsets, tags, entries)
+    result = pyarrow.MapArray.from_arrays(offsets, tags, entries)
+    return (result, diagnostics) if with_diagnostics else result
 
 
 def parse_entries_array(
@@ -1201,9 +1304,9 @@ def _column_style(
                 text = text[begin.start() :]
             reading = _named_payload(text, begin) if named is None else named
             if begin is None and reading:
-                marked = _MARKED.search(text)
-                if marked is not None:
-                    text = text[marked.start() :]
+                rendered = _rendered_start(text)
+                if rendered is not None:
+                    text = text[rendered.start("msg") :]
             separator = detect_separator(text)
             entry = (
                 detect_entry_separator(text, separator, extra_entry_separators) if reading else None

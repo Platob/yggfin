@@ -157,6 +157,9 @@ class Message(Event):
     threadname: Annotated[str, Field.column("ThreadName")] = ""
     """Contents of the first bracketed header field."""
 
+    level: Annotated[str | None, Field.column("Level")] = None
+    """Severity in the parenthesized header token; null when omitted."""
+
     body: bytes = b""
     """Payload after the fixed log header, with continuation lines folded in."""
 
@@ -353,7 +356,12 @@ class Message(Event):
         )
         if Protocol.from_stored(protocol) in {Protocol.XML, Protocol.REFERENTIAL}:
             return cls(**declared)
-        pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
+        pairs = parse_pairs(
+            text,
+            separator,
+            named=named,
+            entry_separator=entry_separator,
+        )
         entries = list(pairs)
         return cls(entries=entries, **declared)
 
@@ -416,9 +424,8 @@ class Message(Event):
 
         compute = pyarrow.compute
         text = _body_text_arrow(bodies)
-        entries = Entry.normalized_arrow(
-            Entry.payload_arrow(text), plugins, plugin_keys, null_values
-        )
+        raw_entries, token_errors = Entry.payload_arrow_with_diagnostics(text)
+        entries = Entry.normalized_arrow(raw_entries, plugins, plugin_keys, null_values)
         # The pairs this stage just split are what a protocol is decided by, so
         # they are handed over rather than parsed a second time -- and before
         # the header is lifted out of them, because a frame whose every numbered
@@ -437,7 +444,8 @@ class Message(Event):
             referential_entries, plugins, plugin_keys, null_values
         )
         entries = compute.if_else(referential, referential_entries, entries)
-        parse_errors = compute.coalesce(parse_errors, referential_errors)
+        parse_errors = _merge_error_columns(token_errors, parse_errors)
+        parse_errors = _merge_error_columns(parse_errors, referential_errors)
         session, entries = _session_columns(entries)
         protocols = codec.into_versioned_protocols(
             entries,
@@ -534,6 +542,18 @@ def _body_text_arrow(bodies: Any) -> pyarrow.Array:
 def _merged_reason(current: str | None, added: str) -> str:
     """Append one parser diagnostic without hiding an earlier row reason."""
     return f"{current}; {added}" if current else added
+
+
+def _merge_error_columns(current: Any, added: Any) -> pyarrow.Array:
+    """Append nullable parser diagnostics without hiding an earlier one."""
+    compute = pyarrow.compute
+    left = compute.fill_null(current.cast(pyarrow.string(), safe=False), "")
+    right = compute.fill_null(added.cast(pyarrow.string(), safe=False), "")
+    both = compute.and_(compute.not_equal(left, ""), compute.not_equal(right, ""))
+    joined = compute.binary_join_element_wise(left, compute.if_else(both, "; ", ""), right, "")
+    return compute.if_else(
+        compute.equal(joined, ""), pyarrow.nulls(len(joined), pyarrow.string()), joined
+    )
 
 
 def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[Entry]]:

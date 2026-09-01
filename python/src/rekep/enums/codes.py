@@ -269,6 +269,42 @@ _MARKET_KIND_FIX: dict[int, dict[str, int]] = {
 }
 
 
+class ManualIndicator(Ascii32):
+    """Whether a person entered an order, quote or trade."""
+
+    FIX_FIELD = enum.nonmember("ManualOrderIndicator")
+
+    UNKNOWN = 0
+    AUTOMATIC = "AUTO"
+    MANUAL = "MANL"
+
+    @classmethod
+    def _built_in_aliases(cls) -> dict[str, str]:
+        return {
+            "0": "AUTOMATIC",
+            "N": "AUTOMATIC",
+            "NO": "AUTOMATIC",
+            "FALSE": "AUTOMATIC",
+            "ELECTRONIC": "AUTOMATIC",
+            "1": "MANUAL",
+            "Y": "MANUAL",
+            "YES": "MANUAL",
+            "TRUE": "MANUAL",
+        }
+
+    @classmethod
+    def fix_mapping(cls) -> dict[int, dict[str, ManualIndicator]]:
+        """FIX Boolean spellings for `ManualOrderIndicator <1028>`."""
+        return {1028: {"N": cls.AUTOMATIC, "Y": cls.MANUAL}}
+
+    def into_fix(self) -> str:
+        """Return the FIX Boolean spelling, or empty for `UNKNOWN`."""
+        for code, member in type(self).fix_mapping()[1028].items():
+            if member is self:
+                return code
+        return super().into_fix()
+
+
 class OptionKind(Ascii32):
     """Option direction read from FIX `PutOrCall <201>`."""
 

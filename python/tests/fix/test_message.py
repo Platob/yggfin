@@ -440,6 +440,60 @@ def test_the_plugin_s_own_prefix_never_glues_onto_the_first_key() -> None:
     assert parsed.pairs[0] == ("ISINCODE", "XX0000084733")
 
 
+def test_an_unmarked_route_prefix_keeps_the_first_field_in_both_parsers() -> None:
+    line = "RouteMessage : ALTEVENTTYPE=ORDER_CXCL|AVGPX=0|ACCOUNT=ACCT-TEST|"
+
+    scalar = parse_pairs(line)
+    vector = parse_arrow_array(pyarrow.array([line])).to_pylist()[0]
+
+    assert scalar == vector
+    assert scalar[0] == ("ALTEVENTTYPE", "ORDER_CXCL")
+
+
+def test_a_marked_payload_outranks_an_assignment_in_its_prose_prefix() -> None:
+    line = "queued seq=7 toBridge #ALTEVENTTYPE=ORDER_CXCL|#AVGPX=0|"
+
+    assert (
+        parse_arrow_array(pyarrow.array([line])).to_pylist()[0]
+        == parse_pairs(line)
+        == [
+            ("ALTEVENTTYPE", "ORDER_CXCL"),
+            ("AVGPX", "0"),
+        ]
+    )
+
+
+def test_whitespace_separated_prefix_fields_parse_identically() -> None:
+    line = "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR"
+
+    assert detect_separator(line) == " "
+    assert (
+        parse_arrow_array(pyarrow.array([line])).to_pylist()[0]
+        == parse_pairs(line)
+        == [
+            ("ACCOUNT", "ACCT-000117"),
+            ("CLIENTID", "MCFP2"),
+            ("VENUE", "XPAR"),
+        ]
+    )
+
+
+def test_unmatched_assignment_tokens_are_counted_without_failing_the_row() -> None:
+    line = "A=1|broken token=lost|B=2|"
+    scalar_diagnostics: list[str] = []
+
+    scalar = parse_pairs(line, diagnostics=scalar_diagnostics)
+    vector, vector_diagnostics = parse_arrow_array(pyarrow.array([line]), with_diagnostics=True)
+
+    assert scalar == vector.to_pylist()[0] == [("A", "1"), ("B", "2")]
+    assert (
+        scalar_diagnostics
+        == vector_diagnostics.to_pylist()
+        == ["FIX parse skipped unmatched tokens: 1"]
+    )
+    assert Message.from_text(line).reason == "FIX parse skipped unmatched tokens: 1"
+
+
 def test_one_marked_key_in_prose_is_not_a_message_start() -> None:
     """Two `#NAME=` or it is a sentence, which is what `MARKED_VECTOR` says."""
     assert _raw(FixMsg.from_text("Account=A|note=see #ref for details"), "Account") == "A"

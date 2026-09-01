@@ -44,7 +44,7 @@ def test_promoted_columns_precede_entries_and_explicit_values_precede_both() -> 
     assert promoted.plugin.code == "ULBRIDGE"
     assert (promoted.lastpx, promoted.stoppx) == (10.5, 9.5)
     assert promoted.side is Side.BUY and promoted.timeinforce is TimeInForce.GTD
-    assert promoted.orderid == "ORDER-1"
+    assert promoted.altids["orderid"] == "ORDER-1"
     assert (promoted.hash, promoted.vhash, promoted.xhash, promoted.linkhashes) == (0, 0, 0, [])
     assert promoted.code == "" and promoted.eventtype is EventType.ORDER
     assert overridden.lastpx == 30.0 and overridden.side is Side.SELL
@@ -61,7 +61,7 @@ def test_generic_dispatch_reads_numeric_entries_through_the_registry() -> None:
     built = Order.from_(entries, version="4.4", unix=23)
     overridden = Order.from_entries(entries, version="4.4", lastpx=13)
 
-    assert (built.unix, built.lastpx, built.orderid) == (23, 12.5, "ORDER-2")
+    assert (built.unix, built.lastpx, built.altids["orderid"]) == (23, 12.5, "ORDER-2")
     assert built.side is Side.BUY and built.timeinforce is TimeInForce.GTD
     assert overridden.lastpx == 13.0
 
@@ -81,7 +81,11 @@ def test_subclass_declarations_select_their_exact_fix_fields() -> None:
 
     assert order.lastpx == 99.0
     assert order.lastqty is None
-    assert (execution.lastpx, execution.lastqty, execution.execid) == (101.5, 2.0, "EXEC-1")
+    assert (execution.lastpx, execution.lastqty, execution.altids["execid"]) == (
+        101.5,
+        2.0,
+        "EXEC-1",
+    )
     assert execution.side is Side.SELL
 
 
@@ -175,7 +179,7 @@ def test_aware_local_settlement_matches_scalar_and_arrow_identity() -> None:
     east = datetime.timezone(datetime.timedelta(hours=2))
     execution = Execution(
         unix=1_700_000_000_000_000_000,
-        execid="EXEC-1",
+        altids={"execid": "EXEC-1"},
         settldate=datetime.datetime(2026, 8, 18, 16, 30, 0, 250000, tzinfo=east),
     ).identify()
 

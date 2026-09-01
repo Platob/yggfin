@@ -175,7 +175,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
     assert run("fields", "load", "--target", str(SCHEMAS / "rekep" / "fixmsg.yaml")) == 0
     printed = capsys.readouterr().out
     field = FixMsg.into_field()
-    assert len(field.names) == 124
+    assert len(field.names) == 125
     assert field.names[-2:] == ["instrument", "omsorders"]
     assert field.field("instrument").names == [
         "symbolticker",
@@ -199,7 +199,7 @@ def test_load_builds_what_the_document_declares(capsys: pytest.CaptureFixture) -
         "legs",
         "tickladder",
     ]
-    assert "FixMsg: 124 columns, builds" in printed
+    assert "FixMsg: 125 columns, builds" in printed
     assert "unix: int64  [primary key]" in printed
     assert "unixpartition: int32  [partition identity]" in printed
     assert (

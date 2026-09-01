@@ -64,8 +64,8 @@ def test_a_two_sided_quote_becomes_two_indicative_rows_for_one_quote_lifecycle()
     assert (bid.side, bid.lastpx, bid.lastqty) == (Side.BID, 100.0, 10.0)
     assert (ask.side, ask.lastpx, ask.lastqty) == (Side.ASK, 101.0, 12.0)
     assert bid.kind is ask.kind is MarketKind.LIMIT_ORDER
-    assert bid.orderid == ask.orderid == "Q-1"
-    assert bid.clordid == ask.clordid == "REQ-1"
+    assert bid.altids["quoteid"] == ask.altids["quoteid"] == "Q-1"
+    assert bid.altids["quotereqid"] == ask.altids["quotereqid"] == "REQ-1"
     assert bid.xhash == ask.xhash, "one QuoteID names one lifecycle"
     assert bid.altids["quoteid"] == ask.altids["quoteid"] == "Q-1"
     assert bid.expunix == ask.expunix == unix_of("20260821-10:05:00")
@@ -127,7 +127,7 @@ def test_a_mass_quote_emits_every_quote_entry_side() -> None:
         "299=ENTRY-2|55=MSFT|132=200|133=201|134=20|135=21|"
         "60=20260821-10:00:00"
     )
-    assert [(row.symbolticker, row.side, row.orderid) for row in rows] == [
+    assert [(row.symbolticker, row.side, row.altids["quoteentryid"]) for row in rows] == [
         ("AAPL", Side.BID, "ENTRY-1"),
         ("AAPL", Side.ASK, "ENTRY-1"),
         ("MSFT", Side.BID, "ENTRY-2"),
@@ -160,7 +160,13 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
     stored_events = list(stored.into_market_events(fix_version="4.4"))
 
     def project(event):
-        return event.symbolticker, event.side, event.lastpx, event.lastqty, event.orderid
+        return (
+            event.symbolticker,
+            event.side,
+            event.lastpx,
+            event.lastqty,
+            event.altids["quoteentryid"],
+        )
 
     assert [project(event) for event in stored_events] == [
         project(event) for event in direct_events
@@ -186,7 +192,10 @@ def test_nested_mass_quote_sets_emit_every_entry_in_wire_order() -> None:
     registry = FixRegistry(cache_dir=FIX_DATA)
     rows = list(FixEvents.from_text(mass_quote(registry), registry=registry, fix_version="4.4"))
 
-    assert [(row.symbolticker, row.side, row.orderid, row.lastpx, row.lastqty) for row in rows] == [
+    assert [
+        (row.symbolticker, row.side, row.altids["quoteentryid"], row.lastpx, row.lastqty)
+        for row in rows
+    ] == [
         ("AAPL", Side.BID, "ENTRY-1", 100.0, 10.0),
         ("AAPL", Side.ASK, "ENTRY-1", 101.0, 11.0),
         ("MSFT", Side.BID, "ENTRY-2", 200.0, 20.0),

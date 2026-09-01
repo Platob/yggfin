@@ -126,7 +126,8 @@ def test_oms_market_rows_keep_the_order_lifecycle_and_require_trade_evidence() -
     assert orders.column("vwap").to_pylist() == [None, None]
 
     assert executions.column("state").to_pylist() == [int(State.FILLED)]
-    assert executions.column("execid").to_pylist() == ["EVT-20260828-0001"]
+    assert dict(executions.column("altids")[0].as_py())["execid"] == "EVT-20260828-0001"
+    assert "execid" not in executions.schema.names
     assert executions.column("lastpx").to_pylist() == [20.7]
     assert executions.column("lastqty").to_pylist() == [71.0]
     assert executions.column("vwap").to_pylist() == [20.7]

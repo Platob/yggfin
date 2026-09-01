@@ -95,6 +95,7 @@ LINE = [
     "sourceurl",
     "sourcerownum",
     "threadname",
+    "level",
     "protocol",
     "beginstring",
     "bodylength",
@@ -240,7 +241,7 @@ ADDED_COLUMNS.insert(ADDED_COLUMNS.index("offerpx") + 1, "priceinferred")
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 50
 EXPECTED_FLAT_COLUMNS = 101
-EXPECTED_LOG_COLUMNS = 124
+EXPECTED_LOG_COLUMNS = 125
 
 
 @pytest.fixture(scope="module")
@@ -284,7 +285,7 @@ def test_every_column_a_line_adds_is_required_except_parsed_payload_fields() -> 
     """The parsed shape consumes the body and retains nullable parsed fields."""
     field = FixMsg.into_field()
     assert "body" not in field.names
-    payload = {"entries", *LIFTED_HEADER}
+    payload = {"entries", "level", *LIFTED_HEADER}
     for name in LINE:
         if name in payload:
             assert field.field(name).nullable, f"a row may leave {name} null"

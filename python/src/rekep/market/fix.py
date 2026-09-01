@@ -20,7 +20,7 @@ from rekep.enums import (
 )
 from rekep.fields import StructField, encoded_key
 from rekep.fix.access import Entry, FieldAccess
-from rekep.fix.columns import IDENTIFIER_FIELDS, UNKNOWN_SCHEME, id_scheme
+from rekep.fix.columns import IDENTIFIER_FIELDS, UNKNOWN_SCHEME, id_scheme, identifier_altids
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
 from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
 from rekep.fix.registry import FixRegistry
@@ -267,6 +267,9 @@ class MarketTags:
         """Tags selected by canonical name from the packaged registry."""
         registry = FixRegistry.from_builtin()
         found = {name: registry.scalar(name).fix.tag for name in CARRIED_FIELDS}
+        found.update(
+            {name: tag for _stored, name, tag in IDENTIFIER_FIELDS if tag and name not in found}
+        )
         for shape in (MarketEvent, Order, Execution, Instrument):
             cls._declared(shape.into_field(), found)
         return types.MappingProxyType(found)
@@ -446,7 +449,7 @@ class MarketTags:
         The tagless half of `standard()`: a shape member annotated with a
         namespace record carries the record's name and no tag.
         """
-        found: set[str] = set()
+        found = {name for _stored, name, tag in IDENTIFIER_FIELDS if not tag}
 
         def visit(struct: StructField) -> None:
             for member in struct.fields:
@@ -1046,9 +1049,6 @@ class FixEvents(Convertible):
     ) -> Order:
         """Map one quote side onto the generic Order declaration."""
         get = self.get
-        quote_entry_id = get("QuoteEntryID")
-        quote_id = get("QuoteID")
-        quote_request_id = get("QuoteReqID")
         return self._event(
             Order,
             expunix=unix_value(get("ValidUntilTime")),
@@ -1058,22 +1058,17 @@ class FixEvents(Convertible):
             lastqty=lastqty,
             kind=MarketKind.LIMIT_ORDER,
             indicative=True,
-            orderid=quote_entry_id or quote_id,
-            clordid=quote_request_id,
         )
 
     def _execution(self, order: Order | None = None) -> Execution:
         """Apply execution semantics and links to the declared FIX fields."""
         get = self.get
-        trade_id = get("TradeID")
-        match_id = get("TrdMatchID")
         state = self.execution_state()
         return self._event(
             Execution,
             order,
             state=state,
             kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
-            tradeid=trade_id or match_id,
             parenthash=[],
         )
 
@@ -1100,23 +1095,18 @@ class FixEvents(Convertible):
             # the price is what persists across its updates: that is what
             # `MDUpdateAction <279>` addresses when it says Change or Delete,
             # and it is what makes a level's own lifecycle findable.
-            orderid=entry_id or (f"{side.name}@{entry_px}" if entry_px else None),
+            code="" if entry_id or not entry_px else f"{side.name}@{entry_px}",
         )
 
     def _entry_execution(self) -> Execution:
         """One market-data entry of type Trade <2> as the execution it reports."""
         get = self.get
-        entry_id = get("MDEntryID")
-        trade_id = get("TradeID")
-        match_id = get("TrdMatchID")
         return self._event(
             Execution,
             state=State.FILLED,
             kind=MarketKind.TRADE,
             lastpx=_number(get("MDEntryPx")),
             lastqty=_number(get("MDEntrySize")),
-            execid=entry_id,
-            tradeid=trade_id or match_id,
         )
 
     @functools.cached_property
@@ -1379,7 +1369,6 @@ class FixEvents(Convertible):
             "plugin": self.message.plugin,
             "lastmkt": lastmkt,
             "reason": self._reason(),
-            "instrumentxhash": instrument.xhash,
             "symbolticker": instrument.symbolticker,
             "pxunit": instrument.currency.into_str() if instrument.currency else "",
             "currency": instrument.currency,
@@ -1388,14 +1377,7 @@ class FixEvents(Convertible):
     @functools.cached_property
     def _identifier_altids(self) -> dict[str, str]:
         """Every readable identifier this message carries, in lookup order."""
-        found: dict[str, str] = {}
-        for stored, field, tag in IDENTIFIER_FIELDS:
-            value = self.get(tag) if tag else None
-            if value is None:
-                value = self.get(field)
-            if value is not None and str(value):
-                found.setdefault(stored, str(value))
-        return found
+        return identifier_altids(self.get)
 
     def _reason(self) -> str | None:
         """The first structured reject/restatement reason, completed by FIX text.

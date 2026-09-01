@@ -62,7 +62,7 @@ def order(unix: int, about: Instrument, side: Side, px: float, qty: float, named
         "side": side,
         "lastpx": px,
         "lastqty": qty,
-        "orderid": named,
+        "altids": {"orderid": named},
         "state": State.NEW,
     }
     return initial(Order(**{**declared, **given}), about)
@@ -99,7 +99,8 @@ def test_sorted_logs_feed_books_without_a_task_adapter() -> None:
 
     assert book.code == book.symbolticker == "BTC-USD"
     assert book.plugin.code == "ORDERS-FEED"
-    assert book.instrumentxhash == Instrument(symbol="BTC-USD").xhash
+    assert not hasattr(book, "instrumentxhash")
+    assert book.symbolticker == Instrument(symbol="BTC-USD").symbolticker
     assert book.bidpx == 100.0 and book.bidqty == 2.0
 
 
@@ -793,9 +794,9 @@ def test_checkpoint_rows_are_globally_boundary_ordered_across_instruments() -> N
     snapshots = [row for row in BookIterator.from_events(events) if row.snapunix is not None]
     assert [row.unix for row in snapshots] == sorted(row.unix for row in snapshots)
     for boundary in (BASE + HOUR, BASE + 2 * HOUR, BASE + 3 * HOUR):
-        assert {row.instrumentxhash for row in snapshots if row.unix == boundary} == {
-            BTC.xhash,
-            ETH.xhash,
+        assert {row.symbolticker for row in snapshots if row.unix == boundary} == {
+            BTC.symbolticker,
+            ETH.symbolticker,
         }
 
 
@@ -949,44 +950,37 @@ def test_an_instrument_s_book_never_sees_another_s_liquidity() -> None:
     assert books["XCME:ETH-USD"].bidpx == 999.0
 
 
-def test_one_ticker_coalesces_even_when_supplied_instrument_hashes_disagree() -> None:
+def test_one_ticker_coalesces_by_its_only_market_key() -> None:
     first = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")
     second = order(BASE + 1, BTC, Side.BID, 99.0, 2.0, "B2")
-    first.instrumentxhash = 11
-    second.instrumentxhash = 22
     folding = BookIterator.from_events([first, second], snapshot_every=0)
 
     books = list(folding)
 
     assert list(folding.folding) == [BTC.symbolticker]
     assert books[-1].biddepth == 2
-    assert {book.instrumentxhash for book in books} == {BTC.xhash}
-    assert {delta.instrumentxhash for book in books for delta in book.deltas} == {BTC.xhash}
+    assert {book.symbolticker for book in books} == {BTC.symbolticker}
+    assert {delta.symbolticker for book in books for delta in book.deltas} == {BTC.symbolticker}
 
 
-def test_distinct_tickers_stay_isolated_when_supplied_instrument_hashes_match() -> None:
+def test_distinct_tickers_stay_isolated() -> None:
     btc = order(BASE, BTC, Side.BID, 100.0, 5.0, "B1")
     eth = order(BASE + 1, ETH, Side.BID, 10.0, 3.0, "E1")
-    btc.instrumentxhash = eth.instrumentxhash = 11
     folding = BookIterator.from_events([btc, eth], snapshot_every=0)
 
     books = list(folding)
 
     assert set(folding.folding) == {BTC.symbolticker, ETH.symbolticker}
-    assert {book.symbolticker: book.instrumentxhash for book in books} == {
-        BTC.symbolticker: BTC.xhash,
-        ETH.symbolticker: ETH.xhash,
-    }
+    assert {book.symbolticker for book in books} == {BTC.symbolticker, ETH.symbolticker}
 
 
-def test_a_blank_ticker_is_not_replaced_by_an_instrument_hash() -> None:
+def test_a_blank_ticker_is_refused() -> None:
     event = Order(
         unix=BASE,
-        instrumentxhash=BTC.xhash,
         side=Side.BID,
         lastpx=100.0,
         lastqty=5.0,
-        orderid="B1",
+        altids={"orderid": "B1"},
         state=State.NEW,
     )
 
@@ -1267,7 +1261,7 @@ def test_a_trade_counts_as_the_side_moving() -> None:
                 lastpx=100.0,
                 lastqty=2.0,
                 state=State.FILLED,
-                execid="EX-1",
+                altids={"execid": "EX-1"},
             )
         ),
     ]
@@ -1287,7 +1281,7 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
                 lastpx=100.0,
                 lastqty=2.0,
                 state=State.FILLED,
-                execid="EX-1",
+                altids={"execid": "EX-1"},
             )
         ),
         initial(
@@ -1297,8 +1291,7 @@ def test_a_trade_amendment_is_not_folded_as_a_fresh_fill() -> None:
                 lastpx=100.0,
                 lastqty=2.0,
                 state=State.CANCELLED,
-                execid="EX-2",
-                execrefid="EX-1",
+                altids={"execid": "EX-2", "execrefid": "EX-1"},
             )
         ),
     ]
@@ -1333,7 +1326,7 @@ def test_a_snapshot_shows_the_book_and_not_what_changed_to_produce_it() -> None:
             one.prevaskqty,
             one.prevexecpx,
         ) == (None, None, None, None, None)
-        assert [order.orderid for order in one.bidalive] == ["B1"]
+        assert [order.altids["orderid"] for order in one.bidalive] == ["B1"]
         assert one.linkhashes == [order.hash for order in one.bidalive]
 
 
@@ -1362,7 +1355,7 @@ def test_only_snapshots_carry_the_full_state_needed_to_resume() -> None:
 
     assert changed.bidlevels and latest.bidlevels == []
     assert snapshot.deltas == [] and snapshot.executions == []
-    assert [one.orderid for one in snapshot.bidalive] == ["B1"]
+    assert [one.altids["orderid"] for one in snapshot.bidalive] == ["B1"]
 
 
 def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
@@ -1378,7 +1371,7 @@ def test_a_snapshot_restores_names_levels_and_live_quantities() -> None:
 
     assert resumed.biddepth == 2
     assert resumed.bidpx == 100.0 and resumed.askpx is None
-    assert [one.orderid for one in resumed.deltas] == ["B2"]
+    assert [one.altids["orderid"] for one in resumed.deltas] == ["B2"]
     assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 8.0
 
 
@@ -1396,14 +1389,11 @@ def test_book_recovery_deduplicates_each_ticker_by_unix_version_and_hash() -> No
     old = first[0]
     low, high = sorted((first[-1], second[-1]), key=lambda row: row.hash)
     assert (low.unix, low.version) == (high.unix, high.version)
-    low = dataclasses.replace(low, instrumentxhash=11)
-    high = dataclasses.replace(high, instrumentxhash=22)
-
     restored = BookIterator(snapshots=[high, old, low], snapshot_every=0)
 
     assert restored.snapshots == (high,)
     assert restored.folding[BTC.symbolticker].previous is high
-    assert high.instrumentxhash == BTC.xhash
+    assert high.symbolticker == BTC.symbolticker
 
 
 def test_recovery_rebuilds_the_same_order_framed_vhash_as_an_uninterrupted_fold() -> None:
@@ -1480,7 +1470,7 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
             side=Side.BID,
             lastpx=100.0,
             lastqty=5.0,
-            clordid="client-1",
+            altids={"clordid": "client-1"},
             state=State.NEW,
         ),
         BTC,
@@ -1490,7 +1480,7 @@ def test_order_lookup_falls_back_to_a_live_client_id_without_an_order_id() -> No
     # There is deliberately no linear fallback when the required index is corrupt.
     side.named.clear()
 
-    found = side.standing(Order(clordid="client-1"))
+    found = side.standing(Order(altids={"clordid": "client-1"}))
 
     assert found is None
 
@@ -1502,8 +1492,7 @@ def test_explicit_amendment_matches_when_venue_and_client_ids_both_move() -> Non
             side=Side.BID,
             lastpx=100.0,
             lastqty=5.0,
-            orderid="ORD-A",
-            clordid="CL-A",
+            altids={"orderid": "ORD-A", "clordid": "CL-A"},
             state=State.NEW,
         ),
         BTC,
@@ -1514,9 +1503,7 @@ def test_explicit_amendment_matches_when_venue_and_client_ids_both_move() -> Non
             side=Side.BID,
             lastpx=99.0,
             lastqty=4.0,
-            orderid="ORD-B",
-            clordid="CL-B",
-            origclordid="CL-A",
+            altids={"orderid": "ORD-B", "clordid": "CL-B", "origclordid": "CL-A"},
             state=State.OPEN,
         ),
         BTC,
@@ -1526,7 +1513,8 @@ def test_explicit_amendment_matches_when_venue_and_client_ids_both_move() -> Non
 
     (revision,) = latest.deltas
     assert latest.biddepth == 1 and latest.bidpx == 99.0 and latest.bidqty == 4.0
-    assert revision.orderid == "ORD-B" and revision.clordid == "CL-B"
+    assert revision.altids["orderid"] == "ORD-B"
+    assert revision.altids["clordid"] == "CL-B"
     assert revision.code == placed.code == "ORD-A"
     assert revision.xhash == placed.xhash and revision.version == 1
     assert revision.prevhash == placed.hash
@@ -1539,8 +1527,7 @@ def test_reused_client_id_does_not_match_a_contradictory_venue_order() -> None:
             side=Side.BID,
             lastpx=100.0,
             lastqty=5.0,
-            orderid="ORD-A",
-            clordid="CLIENT",
+            altids={"orderid": "ORD-A", "clordid": "CLIENT"},
             state=State.NEW,
         ),
         BTC,
@@ -1548,7 +1535,7 @@ def test_reused_client_id_does_not_match_a_contradictory_venue_order() -> None:
     side = _Side(side=Side.BID)
     assert side.apply(placed)
 
-    found = side.standing(Order(orderid="ORD-B", clordid="CLIENT"))
+    found = side.standing(Order(altids={"orderid": "ORD-B", "clordid": "CLIENT"}))
 
     assert found is None
 
@@ -1564,7 +1551,7 @@ def test_a_restored_order_continues_the_persisted_version_chain() -> None:
     (resumed,) = BookIterator.from_events([amended], snapshots=[seed], snapshot_every=0)
 
     (audited,) = resumed.deltas
-    seeded = next(one for one in seed.bidalive if one.orderid == "B1")
+    seeded = next(one for one in seed.bidalive if one.altids["orderid"] == "B1")
     assert audited.prevunix == seeded.unix == placed.unix
     assert audited.prevhash == seeded.hash
     assert audited.version == seeded.version + 1
@@ -1577,7 +1564,6 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             side=Side.BID,
             lastpx=100.0,
             lastqty=5.0,
-            clordid="CL-1",
             altids={"clordid": "CL-1"},
             state=State.NEW,
         ),
@@ -1589,9 +1575,6 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             side=Side.BID,
             lastpx=100.0,
             lastqty=4.0,
-            orderid="ORD-1",
-            clordid="CL-2",
-            origclordid="CL-1",
             altids={
                 "orderid": "ORD-1",
                 "origclordid": "CL-1",
@@ -1625,7 +1608,6 @@ def test_recovery_rebuilds_every_typed_alias_of_a_mutating_order() -> None:
             Order(
                 unix=BASE + HOUR + 40,
                 side=Side.BID,
-                orderid="ORD-1",
                 altids={"orderid": "ORD-1"},
                 state=State.CANCELLED,
             ),
@@ -1730,7 +1712,7 @@ def test_recovery_applies_the_side_bound_as_an_auditable_delta() -> None:
     (bounded,) = iterator.books
 
     expired = [one for one in bounded.deltas if one.state is State.INTERNAL_EXPIRED]
-    assert [one.orderid for one in expired] == ["B3"]
+    assert [one.altids["orderid"] for one in expired] == ["B3"]
     assert bounded.biddepth == 2
     assert sum(level.qty for level in iterator.folding[BTC.symbolticker].bid.alive) == 2.0
 
@@ -1756,7 +1738,7 @@ def test_two_symbol_spellings_of_one_security_id_name_two_books() -> None:
 
     books = list(folding.books)
     assert len(folding.folding) == 2
-    assert {book.instrumentxhash for book in books} == {first.xhash, second.xhash}
+    assert {book.symbolticker for book in books} == {first.symbolticker, second.symbolticker}
     assert first.xhash != second.xhash
 
 
@@ -1775,8 +1757,8 @@ def test_an_identifier_beside_the_symbol_keeps_one_book() -> None:
 
     (book,) = folding
     (nested,) = book.deltas
-    assert book.instrumentxhash == nested.instrumentxhash == richer.xhash
-    assert book.instrumentxhash == canonical.xhash
+    assert book.symbolticker == nested.symbolticker == richer.symbolticker
+    assert book.symbolticker == canonical.symbolticker
     assert nested.xhash == Book.xhash_of("B1")
 
 
@@ -1795,7 +1777,7 @@ def test_a_same_symbol_reference_preserves_execution_links_and_parent_versions()
             side=Side.BID,
             lastpx=100.0,
             lastqty=1.0,
-            execid="X1",
+            altids={"execid": "X1"},
             linkhashes=[placed.hash],
             parenthash=[placed.hash],
         )
@@ -1830,7 +1812,7 @@ def test_stale_orders_expire_into_an_auditable_terminal_event(explicit: bool) ->
     )
 
     latest = list(iterator)[-1]
-    expired = [one for one in latest.deltas if one.orderid == "B1"]
+    expired = [one for one in latest.deltas if one.altids["orderid"] == "B1"]
     assert len(expired) == 1 and expired[0].state is State.INTERNAL_EXPIRED
     assert expired[0].expunix == BASE + 10
     assert expired[0].reason and latest.biddepth == 0
@@ -1910,7 +1892,7 @@ def test_expiry_is_applied_before_a_crossed_snapshot_boundary(
         event
         for book in found
         for event in book.deltas
-        if event.orderid == "B1" and event.state is State.INTERNAL_EXPIRED
+        if event.altids["orderid"] == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
     assert expired[0].expunix == deadline
@@ -1943,7 +1925,7 @@ def test_an_inactive_instrument_expires_before_its_crossed_snapshot() -> None:
         event
         for book in btc_books
         for event in book.deltas
-        if event.orderid == "B1" and event.state is State.INTERNAL_EXPIRED
+        if event.altids["orderid"] == "B1" and event.state is State.INTERNAL_EXPIRED
     ]
     assert len(expired) == 1
     assert all(one.biddepth == 0 for one in btc_books if one.unix >= BASE + HOUR)
@@ -2044,7 +2026,7 @@ def test_negative_prices_are_valid_but_nonpositive_quantities_are_not() -> None:
             lastpx=-37.0,
             lastqty=-1.0,
             state=State.FILLED,
-            execid="E1",
+            altids={"execid": "E1"},
         )
     )
 
@@ -2075,7 +2057,7 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
             leavesqty=800.0,
             cumqty=400.0,
             state=State.FILLED,
-            execid="E1",
+            altids={"execid": "E1"},
             linkhashes=[placed.hash],
         )
     )
@@ -2090,13 +2072,13 @@ def test_a_fill_with_authoritative_leaves_is_not_subtracted_twice() -> None:
     assert latest.executions[0].lastqty == 400.0
 
 
-def test_a_book_says_which_instrument_it_is_of_readably_and_by_hash() -> None:
-    """A hash joins and a person reads, so a book row carries both."""
+def test_a_book_uses_symbolticker_as_its_only_instrument_key() -> None:
     events = _resting_stream()
     assert [one.symbolticker for one in events] == [BTC.symbolticker, BTC.symbolticker]
     books = list(BookIterator.from_events(events, snapshot_every=0))
     assert {one.symbolticker for one in books} == {BTC.symbolticker}
-    assert {one.instrumentxhash for one in books} == {BTC.xhash}
+    assert {one.symbolticker for one in books} == {BTC.symbolticker}
+    assert all(not hasattr(one, "instrumentxhash") for one in books)
 
 
 # -- what happens to what is still resting when the stream ends ---------------
@@ -2204,12 +2186,12 @@ def test_resolved_instrument_components_send_a_row_to_the_scalar_translator() ->
         for event_type, translated in FixMsg.into_market_arrow_batches(batch, registry=registry)
         if event_type is Order
     ]
-    assert [order.clordid for order in expected] == ["C-1", "C-2", "C-3"]
+    assert [order.altids["clordid"] for order in expected] == ["C-1", "C-2", "C-3"]
     expected_table = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected)))
     assert pyarrow.Table.from_batches(found).equals(expected_table)
 
 
-def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> None:
+def test_flat_translation_reads_lifecycle_altids_and_settlement_columns() -> None:
     """A cancel-reject's OrdStatus, an intent link and settlement facts read
     identically flat and scalar -- and the batch is flat-eligible, so the
     equality is between two live paths and not one falling back."""
@@ -2264,9 +2246,10 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
     assert translated is not None, "every row here is flat-eligible"
     orders, executions = translated
 
-    assert orders.column("clordlinkid").to_pylist() == ["LINK-1", None]
-    assert orders.column("parentclordid").to_pylist() == ["P-1", None]
-    assert orders.column("parentorderid").to_pylist() == ["V-9", None]
+    order_altids = orders.column("altids").to_pylist(maps_as_pydicts="strict")
+    assert [row.get("clordlinkid") for row in order_altids] == ["LINK-1", None]
+    assert [row.get("parentclordid") for row in order_altids] == ["P-1", None]
+    assert [row.get("parentorderid") for row in order_altids] == ["V-9", None]
     assert orders.column("state").to_pylist()[1] == int(State.FILLED), (
         "the reject reads where the order stands from OrdStatus"
     )

@@ -25,7 +25,7 @@ print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
 ```
 
 ```text
-58 58
+59 59
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
@@ -70,20 +70,22 @@ The venue column uses `LastMkt` and the packed `MIC` enum.
 from rekep import Field
 
 order = Field.from_yaml("schemas/rekep/order.yaml")
-for name in ("clordid", "lastmkt", "lastpx", "unixpartition"):
+for name in ("timeinforce", "lastmkt", "lastpx", "unixpartition"):
     print(f"{name:16} {order.field(name).fix.canonical}")
 ```
 
 ```text
-clordid          ClOrdID
+timeinforce      TimeInForce
 lastmkt          LastMkt
 lastpx           Price
 unixpartition    UnixPartition
 ```
 
 A column that reads a FIX field is named after that field, so a reader who
-knows the dictionary knows the column: `ClOrdID <11>` is `clordid`,
-`MinPriceIncrement <969>` is `minpriceincrement`. A `MarketEvent` uses the
+knows the dictionary knows the column: `TimeInForce <59>` is `timeinforce`,
+`MinPriceIncrement <969>` is `minpriceincrement`. Lifecycle identifiers are
+the deliberate map-shaped exception: Order and Execution keep every source
+identifier under its folded name in `altids`. A `MarketEvent` uses the
 flat summary slots `lastpx` and `lastqty`: an Order holds limit price and
 remaining live quantity, an Execution holds `LastPx <31>` and `LastQty <32>`,
 and a Book holds midpoint and touch-size sum. A nested book `Level` keeps

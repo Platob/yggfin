@@ -27,16 +27,53 @@ from rekep.market.identity import NIL
 EQUITY = Instrument(symbol="AAPL", securityexchange="XNAS", kind=AssetKind.EQUITY)
 XNAS = MIC.from_str("XNAS")
 
+_IDENTIFIER_FIELDS = frozenset(
+    {
+        "clordid",
+        "execid",
+        "execrefid",
+        "globalorderid",
+        "mdentryid",
+        "mdentryrefid",
+        "orderid",
+        "origclordid",
+        "parentclordid",
+        "parentorderid",
+        "quoteentryid",
+        "quoteid",
+        "quotereqid",
+        "rootorderid",
+        "rootoriginatororderid",
+        "secondaryclordid",
+        "secondaryexecid",
+        "secondaryorderid",
+        "tradeid",
+        "trdmatchid",
+    }
+)
+
+
+def _with_altids(given: dict[str, object]) -> dict[str, object]:
+    """Move readable source identifiers into their only persisted store."""
+    values = dict(given)
+    altids = dict(values.pop("altids", {}) or {})
+    for name in _IDENTIFIER_FIELDS:
+        value = values.pop(name, None)
+        if value is not None:
+            altids[name] = str(value)
+    if altids:
+        values["altids"] = altids
+    return values
+
 
 def _order(_instrument: Instrument = EQUITY, **given: object) -> Order:
     """An order with its persisted instrument key and transient reference."""
-    return Order(**{"instrumentxhash": _instrument.xhash, **given}).attach_instrument(_instrument)
+    return Order(**_with_altids(given)).attach_instrument(_instrument)
 
 
 def _execution(_instrument: Instrument = EQUITY, **given: object) -> Execution:
     """An execution with its persisted instrument key and transient reference."""
-    values = {"instrumentxhash": _instrument.xhash, **given}
-    return Execution(**values).attach_instrument(_instrument)
+    return Execution(**_with_altids(given)).attach_instrument(_instrument)
 
 
 def changed(event: Event, previous: Event | None = None) -> Event:
@@ -122,7 +159,7 @@ def test_vhash_drives_change_detection_while_snapshots_remain_explicit() -> None
     observed.reason = "late declared field changed"
     assert observed.hash_of(*observed.version_parts()) != first.vhash
 
-    current = Book(unix=first.unix, instrumentxhash=EQUITY.xhash).identify()
+    current = Book(unix=first.unix, symbolticker=EQUITY.symbolticker).identify()
     snapshot = current.make_snapshot(current.unix + 1_000)
     assert snapshot is not None
     later_snapshot = snapshot.with_previous(current)
@@ -182,7 +219,7 @@ def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeatin
     assert later.lastpx == 100.0 and later.lastqty == 10.0
     assert later.side is Side.BUY and later.symbolticker == "XNAS:AAPL"
     assert later.into_instrument() is EQUITY
-    assert later.instrumentxhash == first.instrumentxhash, "and it stays in its partition"
+    assert later.symbolticker == first.symbolticker, "and it stays in its partition"
 
 
 def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
@@ -190,7 +227,7 @@ def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
     assert first.code == "ORD-1"
     assert first.altids["code"] == first.altids["orderid"] == "ORD-1"
     assert first.altids["clordid"] == "CL-1"
-    later = changed(Order(unix=20, orderid="ORD-1", state=State.OPEN), first)
+    later = changed(Order(unix=20, altids={"orderid": "ORD-1"}, state=State.OPEN), first)
     assert later.altids["code"] == later.altids["orderid"] == "ORD-1"
     assert later.altids["clordid"] == "CL-1"
     fill = changed(_execution(unix=30, execid="EX-1", state=State.FILLED, lastqty=4.0), first)
@@ -204,14 +241,13 @@ def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
 def test_an_identifier_already_recorded_is_never_displaced_by_a_later_one() -> None:
     """First spelling wins, so an `altids` entry is as stable as the lifecycle."""
     order = _order(unix=10, orderid="ORD-1")
-    order.name_altid("symbol", "RENAMED")
-    order.name_altid("symbol", "SECOND")
-    assert order.altids["symbol"] == "RENAMED"
-    order.name_altid("isin", "FAKE-ISIN-0001")
+    order.name_altid("SecondaryOrderID", "VENUE-2")
+    order.name_altid("secondaryorderid", "VENUE-3")
+    order.name_altid("Symbol", "RENAMED")
+    order.name_altid("ISIN", "XX0000000001")
     assert order.altids == {
         "orderid": "ORD-1",
-        "symbol": "RENAMED",
-        "isin": "FAKE-ISIN-0001",
+        "secondaryorderid": "VENUE-2",
     }
 
 
@@ -284,12 +320,12 @@ def test_the_identifier_that_was_replaced_is_the_one_the_version_before_had() ->
     """FIX requires a new `ClOrdID <11>` per version and calls the old one
     `OrigClOrdID <41>`; when this version did not say, the version before is it."""
     replaced = changed(_order(unix=20, clordid="CL-2", state=State.OPEN), resting())
-    assert replaced.origclordid == "CL-1"
+    assert replaced.altids["origclordid"] == "CL-1"
 
 
 def test_a_version_that_reuses_the_identifier_names_nothing_replaced() -> None:
     same = changed(_order(unix=20, clordid="CL-1", state=State.OPEN), resting())
-    assert same.origclordid is None
+    assert "origclordid" not in same.altids
 
 
 def test_the_order_kind_and_time_in_force_are_carried() -> None:
@@ -394,7 +430,7 @@ def test_a_correction_is_another_version_of_one_execution_not_a_second_one() -> 
         execrefid="EX-1",
         state=State.REPLACED,
     ).with_previous(one)
-    assert fixed.execid == "EX-2" and fixed.code == "EX-1"
+    assert fixed.altids["execid"] == "EX-2" and fixed.code == "EX-1"
     assert fixed.xhash == one.xhash and fixed.version == one.version + 1
 
 
@@ -628,7 +664,7 @@ def test_a_later_order_id_does_not_split_a_client_identified_lifecycle() -> None
     ).with_previous(None)
     assert later.code == "ORD-1", "the isolated parsed row prefers the stronger identifier"
     later.with_previous(first)
-    assert later.orderid == "ORD-1", "the stronger exact FIX field is retained"
+    assert later.altids["orderid"] == "ORD-1", "the stronger exact FIX field is retained"
     assert later.code == first.code == "CL-1", "the readable lifecycle anchor is immutable"
     assert later.xhash == first.xhash and later.version == 1
 
@@ -640,7 +676,7 @@ def test_a_preidentified_order_keeps_its_code_identity_across_completion() -> No
             unix=20,
             orderid="ORD-1",
             state=State.OPEN,
-            instrumentxhash=first.instrumentxhash,
+            symbolticker=first.symbolticker,
             lastmkt=XNAS,
         )
     )
@@ -716,7 +752,7 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
     assert after is not None
 
     assert amended.code == first.code == "CL-1"
-    assert done.origclordid == "CL-1"
+    assert done.altids["origclordid"] == "CL-1"
     assert done.linkhashes == [amended.hash]
     assert after.code == "CL-1" and after.xhash == first.xhash
     assert after.altids["code"] == "CL-1"
@@ -771,8 +807,16 @@ def test_explicit_amendments_keep_one_lifecycle_while_both_ids_move() -> None:
         second,
     )
 
-    assert [event.orderid for event in (first, second, third)] == ["ORD-A", "ORD-B", "ORD-C"]
-    assert [event.clordid for event in (first, second, third)] == ["CL-A", "CL-B", "CL-C"]
+    assert [event.altids["orderid"] for event in (first, second, third)] == [
+        "ORD-A",
+        "ORD-B",
+        "ORD-C",
+    ]
+    assert [event.altids["clordid"] for event in (first, second, third)] == [
+        "CL-A",
+        "CL-B",
+        "CL-C",
+    ]
     assert first.code == second.code == third.code == "ORD-A"
     assert first.xhash == second.xhash == third.xhash
     assert [event.version for event in (first, second, third)] == [0, 1, 2]
@@ -795,7 +839,7 @@ def test_a_stable_root_id_reconciles_changed_venue_and_client_ids() -> None:
         first,
     )
 
-    assert moved.orderid == "ORD-B" and moved.clordid == "CL-B"
+    assert moved.altids["orderid"] == "ORD-B" and moved.altids["clordid"] == "CL-B"
     assert moved.code == first.code == "ORD-A"
     assert moved.xhash == first.xhash
 
@@ -812,9 +856,10 @@ def test_equal_lifecycle_hashes_reconcile_to_the_existing_code() -> None:
 
 
 def test_the_same_code_ignores_shape_instrument_and_venue() -> None:
-    here = _order(instrumentxhash=1, lastmkt=XNAS, code="ORD-1").with_previous(None)
-    there = _order(instrumentxhash=2, lastmkt=XNAS, code="ORD-1").with_previous(None)
-    elsewhere = _execution(instrumentxhash=1, lastmkt=XNAS, code="ORD-1").with_previous(None)
+    other = Instrument(symbol="MSFT", securityexchange="BATS", kind=AssetKind.EQUITY)
+    here = _order(EQUITY, lastmkt=XNAS, code="ORD-1").with_previous(None)
+    there = _order(other, lastmkt=MIC.from_str("BATS"), code="ORD-1").with_previous(None)
+    elsewhere = _execution(EQUITY, lastmkt=XNAS, code="ORD-1").with_previous(None)
     assert here.xhash == there.xhash == elsewhere.xhash
 
 

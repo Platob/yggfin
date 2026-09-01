@@ -51,11 +51,9 @@ def test_identity_widths_are_preserved_in_every_engine() -> None:
     assert str(schema.find_field("hash").field_type) == "fixed[16]"
     assert str(schema.find_field("vhash").field_type) == "long"
     assert str(schema.find_field("xhash").field_type) == "fixed[16]"
-    assert str(schema.find_field("instrumentxhash").field_type) == "fixed[16]"
     back = StructField.from_iceberg_schema(schema)
     assert back.field("hash").dtype == HASH
     assert back.field("xhash").dtype == HASH
-    assert back.field("instrumentxhash").dtype == HASH
     assert back.field("vhash").dtype == pyarrow.int64()
     assert back.field("linkhashes").dtype.value_type == HASH
 
@@ -76,8 +74,7 @@ def test_a_nested_key_is_not_an_identifier_field(shape: type) -> None:
 
 
 def test_the_partition_is_the_hour_and_only_the_hour() -> None:
-    """An identity every engine reads alike. The instrument is not one: bucketing a
-    64-bit hash multiplies the files in each hour without pruning anything more."""
+    """The timestamp partition is portable and the ticker remains a plain key."""
     schema = Order.into_field().into_iceberg_schema()
     spec = Order.into_field().into_iceberg_partition_spec(schema)
     assert [partition.name for partition in spec.fields] == ["unixpartition"]
