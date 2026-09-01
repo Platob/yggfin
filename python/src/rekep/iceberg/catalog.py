@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Iterator
-from typing import Any
+from collections.abc import Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 from rekep.convert import Convertible
 from rekep.fields import Field, StructField
 from rekep.require import require
+
+if TYPE_CHECKING:
+    from pyiceberg.catalog import Catalog, PropertiesUpdateSummary
+    from pyiceberg.table import Table
+
+    from rekep.iceberg.dataset import IcebergDataset
 
 #: FileIO pyiceberg is pointed at unless the caller names another. Arrow is the
 #: hub here, so the store's reads and writes go through the same filesystem
@@ -23,19 +29,23 @@ PYARROW_FILE_IO = "rekep.arrow_file_io.ArrowFileIO"
 class IcebergCatalog(Convertible):
     """One pyiceberg catalog, with the verbs a stack needs."""
 
-    catalog_name: str = "default"
+    name: str = "default"
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Give location configuration one lock before this handle is shared."""
         import threading
 
+        if not isinstance(self.name, str):
+            raise TypeError("an Iceberg catalog name must be a string")
+        if not self.name:
+            raise ValueError("an Iceberg catalog name must be non-empty")
         self.__dict__["_location_guard"] = threading.RLock()
 
     # -- the catalog --------------------------------------------------------
 
     @property
-    def catalog(self) -> Any:
+    def catalog(self) -> Catalog:
         """The pyiceberg catalog, loaded once.
 
         Loading reads configuration and may open a connection, and every table
@@ -56,12 +66,12 @@ class IcebergCatalog(Convertible):
             from rekep.arrow_file_io import inferred_properties
 
             properties = self._tracked_file_io_properties(inferred_properties(self.properties))
-            loaded = load_catalog(self.catalog_name, **properties)
+            loaded = load_catalog(self.name, **properties)
             self.__dict__["catalog"] = loaded
             return loaded
 
     @staticmethod
-    def _tracked_file_io_properties(properties: Any) -> dict[str, str]:
+    def _tracked_file_io_properties(properties: Mapping[str, str]) -> dict[str, str]:
         """Catalog properties with custom FileIO routed through ownership tracking."""
         from rekep.arrow_file_io import DELEGATE_FILE_IO, TRACKED_FILE_IO
 
@@ -131,7 +141,7 @@ class IcebergCatalog(Convertible):
 
     def update_namespace_properties(
         self, name: str, updates: dict[str, str] | None = None, removals: set[str] | None = None
-    ) -> Any:
+    ) -> PropertiesUpdateSummary:
         return self.catalog.update_namespace_properties(name, removals or set(), updates or {})
 
     # -- tables -------------------------------------------------------------
@@ -154,7 +164,7 @@ class IcebergCatalog(Convertible):
     def table_exists(self, name: str) -> bool:
         return bool(self.catalog.table_exists(name))
 
-    def load_table(self, name: str) -> Any:
+    def load_table(self, name: str) -> Table:
         """The pyiceberg table, for what this package does not wrap."""
         return self.catalog.load_table(name)
 
@@ -167,7 +177,7 @@ class IcebergCatalog(Convertible):
         else:
             self.catalog.drop_table(name)
 
-    def rename_table(self, name: str, to: str) -> Any:
+    def rename_table(self, name: str, to: str) -> Table:
         return self.catalog.rename_table(name, to)
 
     def _configure_locations(self, locations: list[str]) -> None:
@@ -198,7 +208,7 @@ class IcebergCatalog(Convertible):
             if loaded is not None:
                 loaded.properties.update(self._tracked_file_io_properties(configured))
 
-    def dataset(self, name: str, *, namespace: str | None = None, **kwargs: Any) -> Any:
+    def dataset(self, name: str, *, namespace: str | None = None, **kwargs: Any) -> IcebergDataset:
         """A dataset on this catalog: the way to read and write a table here.
 
         A dotted `name` supplies its namespace. Passing `namespace` keeps the
@@ -242,7 +252,7 @@ class IcebergCatalog(Convertible):
             name=name,
             namespace=namespace,
             field=field,
-            catalog_name=self.catalog_name,
+            catalog_name=self.name,
             catalog_properties=self.properties,
             **kwargs,
         )
@@ -252,7 +262,7 @@ class IcebergCatalog(Convertible):
             built.__dict__["iceberg_table"] = table
         return built
 
-    def datasets(self, namespace: str | None = None) -> Iterator[Any]:
+    def datasets(self, namespace: str | None = None) -> Iterator[IcebergDataset]:
         """One dataset per table, for a sweep over a whole namespace."""
         for identifier in self.tables(namespace):
             yield self.dataset(identifier)
@@ -283,13 +293,13 @@ class IcebergNamespace(Convertible):
 
     def update_properties(
         self, updates: dict[str, str] | None = None, removals: set[str] | None = None
-    ) -> Any:
+    ) -> PropertiesUpdateSummary:
         return self.catalog.update_namespace_properties(self.name, updates, removals)
 
     def tables(self) -> list[str]:
         return self.catalog.tables(self.name)
 
-    def dataset(self, name: str, **kwargs: Any) -> Any:
+    def dataset(self, name: str, **kwargs: Any) -> IcebergDataset:
         """A dataset for a table in this namespace, named without the prefix."""
         return self.catalog.dataset(name, namespace=self.name, **kwargs)
 

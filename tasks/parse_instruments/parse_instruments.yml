@@ -16,7 +16,7 @@ parameters:
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog:
-  #   catalog_name: rekep-production
+  #   name: rekep-production
   #   properties:
   #     type: glue
   #     warehouse: s3://example-bucket/rekep/warehouse
@@ -25,7 +25,7 @@ parameters:
   #     glue.id: "123456789012"  # Optional cross-account catalog ID.
   #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
   catalog:
-    catalog_name: rekep
+    name: rekep
     properties:
       type: sql
       uri: sqlite:///data/catalog.db
@@ -41,6 +41,8 @@ parameters:
   # How many observations one stored-record lookup covers. The lookup is an
   # `IN` over the batch's stable top-level codes, so this bounds the predicate.
   batch_row_size: 65536
-  commit_row_size: 250000
+  # Commit after eight changed RecordBatches; an optional row cap may end sooner.
+  commit_batch_num: 8
+  commit_row_size: null
   # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
   log_level: INFO

@@ -14,10 +14,11 @@ line = (
 staged = Message.from_text(line)
 row = FixMsg.from_message_batch([staged]).to_pylist()[0]
 
-row["protocol"] = Protocol.from_int(row["protocol"]).code
+row["protocol"] = Protocol.from_stored(row["protocol"]).code
+row["altids"] = dict(row["altids"])
 for name in (
     "protocol", "side", "lastpx", "priceinferred", "ordstatus", "unix",
-    "unixsource", "code", "codesource"
+    "unixsource", "code", "altids"
 ):
     print(f"{name:17} {row[name]!r}")
 print(f"{'instrument.symbol':17} {row['instrument']['symbol']!r}")
@@ -32,7 +33,7 @@ ordstatus         '2'
 unix              1767261600000000000
 unixsource        'TransactTime'
 code              'O1'
-codesource        'OrderID'
+altids            {'orderid': 'O1', 'clordid': 'C1', 'execid': 'E1', 'code': 'O1', 'symbolticker': 'BTC-USD'}
 instrument.symbol 'BTC-USD'
 ```
 
@@ -52,8 +53,8 @@ instrument.symbol 'BTC-USD'
 time are never confused. The chain is in
 [market lifecycle](../market/index.md#when-it-happened).
 
-`codesource` names the promoted field that supplied `code`. The direct
-XXH3-128 digest of that UTF-8 code is the sixteen-byte lifecycle `xhash`.
+`altids` keeps every code under its folded FIX field name. The direct XXH3-128
+digest of `code` is the sixteen-byte lifecycle `xhash`.
 
 `priceinferred` names price slots derived from another FIX price field. An
 empty value means every stored price slot was explicit on the source message.

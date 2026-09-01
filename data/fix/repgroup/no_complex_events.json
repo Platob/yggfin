@@ -5,8 +5,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoComplexEvents",
@@ -140,64 +139,13 @@
      }
     },
     {
-     "name": "NoComplexEventDates",
-     "type": "list",
+     "name": "ComplexEventDates",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "1491"
+      "component": "ComplexEventDates"
      },
-     "item": {
-      "name": "ComplexEventDate",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "ComplexEventStartDate",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1492"
-        }
-       },
-       {
-        "name": "ComplexEventEndDate",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1493"
-        }
-       },
-       {
-        "name": "NoComplexEventTimes",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "1494"
-        },
-        "item": {
-         "name": "ComplexEventTime",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "ComplexEventStartTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1495"
-           }
-          },
-          {
-           "name": "ComplexEventEndTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1496"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "ComplexEventCurrencyOne",
@@ -304,50 +252,13 @@
      }
     },
     {
-     "name": "NoComplexEventRateSources",
-     "type": "list",
+     "name": "ComplexEventRateSourceGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41013"
+      "component": "ComplexEventRateSourceGrp"
      },
-     "item": {
-      "name": "ComplexEventRateSource",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "ComplexEventRateSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41014"
-        }
-       },
-       {
-        "name": "ComplexEventRateSourceType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41015"
-        }
-       },
-       {
-        "name": "ComplexEventReferencePage",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41016"
-        }
-       },
-       {
-        "name": "ComplexEventReferencePageHeading",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41017"
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "ComplexEventRelativeDate",
@@ -359,148 +270,13 @@
      "fields": []
     },
     {
-     "name": "NoComplexEventPeriods",
-     "type": "list",
+     "name": "ComplexEventPeriodGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41010"
+      "component": "ComplexEventPeriodGrp"
      },
-     "item": {
-      "name": "ComplexEventPeriod",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "ComplexEventPeriodType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41011"
-        }
-       },
-       {
-        "name": "ComplexEventBusinessCenter",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41012"
-        }
-       },
-       {
-        "name": "NoComplexEventSchedules",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41031"
-        },
-        "item": {
-         "name": "ComplexEventSchedule",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "ComplexEventScheduleStartDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41032"
-           }
-          },
-          {
-           "name": "ComplexEventScheduleEndDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41033"
-           }
-          },
-          {
-           "name": "ComplexEventScheduleFrequencyPeriod",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41034"
-           }
-          },
-          {
-           "name": "ComplexEventScheduleFrequencyUnit",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41035"
-           }
-          },
-          {
-           "name": "ComplexEventScheduleRollConvention",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41036"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoComplexEventPeriodDateTimes",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41007"
-        },
-        "item": {
-         "name": "ComplexEventPeriodDateTime",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "ComplexEventPeriodDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41008"
-           }
-          },
-          {
-           "name": "ComplexEventPeriodTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41009"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoComplexEventAveragingObservations",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "40994"
-        },
-        "item": {
-         "name": "ComplexEventAveragingObservation",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "ComplexEventAveragingObservationNumber",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "40995"
-           }
-          },
-          {
-           "name": "ComplexEventAveragingWeight",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "40996"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "ComplexEventCreditEventsXIDRef",
@@ -543,118 +319,22 @@
      }
     },
     {
-     "name": "NoComplexEventCreditEventSources",
-     "type": "list",
+     "name": "ComplexEventCreditEventSourceGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41029"
+      "component": "ComplexEventCreditEventSourceGrp"
      },
-     "item": {
-      "name": "ComplexEventCreditEventSource",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "ComplexEventCreditEventSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41030"
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
-     "name": "NoComplexEventCreditEvents",
-     "type": "list",
+     "name": "ComplexEventCreditEventGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "40997"
+      "component": "ComplexEventCreditEventGrp"
      },
-     "item": {
-      "name": "ComplexEventCreditEvent",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "ComplexEventCreditEventType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "40998"
-        }
-       },
-       {
-        "name": "ComplexEventCreditEventValue",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "40999"
-        }
-       },
-       {
-        "name": "ComplexEventCreditEventCurrency",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41000"
-        }
-       },
-       {
-        "name": "ComplexEventCreditEventPeriod",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41001"
-        }
-       },
-       {
-        "name": "ComplexEventCreditEventUnit",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41002"
-        }
-       },
-       {
-        "name": "ComplexEventCreditEventDayType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41003"
-        }
-       },
-       {
-        "name": "ComplexEventCreditEventRateSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41004"
-        }
-       },
-       {
-        "name": "NoComplexEventCreditEventQualifiers",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41005"
-        },
-        "item": {
-         "name": "ComplexEventCreditEventQualifier",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "ComplexEventCreditEventQualifier",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41006"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "ComplexEventFuturesPriceValuation",

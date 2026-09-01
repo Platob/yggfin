@@ -19,10 +19,11 @@ Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 source: fix.market
 target: market.instruments
 batch_row_size: 65536
-commit_row_size: 250000
+commit_batch_num: 8
+commit_row_size: null # Optional earlier row cap.
 ```
 
-`InstrumentUpdate.versioned` applies one rule:
+`InstUpdate.versioned` applies one rule:
 
 ```text
 same vhash                   -> no write
@@ -30,7 +31,7 @@ observation adds facts       -> enriched replacement under the same xhash
 observation is less complete -> no write
 ```
 
-`code` is the exact `symbolticker` and `codesource` is `SymbolTicker`.
+`code` is the exact `symbolticker`; `altids` retains it under both names.
 Later reference facts keep the same sixteen-byte `xhash`. Each batch finds
 the current row by its bounded set of codes, then overwrites by the declared
 `xhash` primary key. A replay that changes nothing commits no snapshot.

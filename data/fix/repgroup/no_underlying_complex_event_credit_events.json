@@ -5,8 +5,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoUnderlyingComplexEventCreditEvents",
@@ -76,26 +75,13 @@
      }
     },
     {
-     "name": "NoUnderlyingComplexEventCreditEventQualifiers",
-     "type": "list",
+     "name": "UnderlyingComplexEventCreditEventQualifierGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41724"
+      "component": "UnderlyingComplexEventCreditEventQualifierGrp"
      },
-     "item": {
-      "name": "UnderlyingComplexEventCreditEventQualifier",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventCreditEventQualifier",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41725"
-        }
-       }
-      ]
-     }
+     "fields": []
     }
    ]
   }

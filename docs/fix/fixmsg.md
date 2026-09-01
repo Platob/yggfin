@@ -224,11 +224,12 @@ indexed group members are never treated as duplicates.
 | `fix.misc` | non-technical `MISC`, and an unknown discriminator on a recognized transport |
 | `fix.unknown` | an unknown event on an unrecognized transport |
 
-Registry-declared technical MsgTypes and plugins enter no FIX table. Every
-resulting `FixMsg` schema excludes `body`.
+MsgTypes listed by `parse_fix.exclude_msgtypes` enter no FIX table, and
+technical plugins never reach its source. Every resulting `FixMsg` schema
+excludes `body`.
 
 Market readers consume only `fix.market`, ordered by
 `(unix, msgseqnum, hash)`. Each row carries its reference facts in the final
 `instrument` struct. `parse_instruments` turns those components into
-`InstrumentUpdate` events in `market.instruments`. Failed rows remain in their
+`InstUpdate` events in `market.instruments`. Failed rows remain in their
 original `fix.*` category for audit and are not translated downstream.

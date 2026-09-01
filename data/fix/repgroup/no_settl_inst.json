@@ -7,8 +7,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoSettlInst",
@@ -46,80 +45,13 @@
      }
     },
     {
-     "name": "NoPartyIDs",
-     "type": "list",
+     "name": "Parties",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "453"
+      "component": "Parties"
      },
-     "item": {
-      "name": "PartyID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "PartyID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "448"
-        }
-       },
-       {
-        "name": "PartyIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "447"
-        }
-       },
-       {
-        "name": "PartyRole",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "452"
-        }
-       },
-       {
-        "name": "PartyRoleQualifier",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2376"
-        }
-       },
-       {
-        "name": "NoPartySubIDs",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "802"
-        },
-        "item": {
-         "name": "PartySubID",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "PartySubID",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "523"
-           }
-          },
-          {
-           "name": "PartySubIDType",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "803"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "Side",

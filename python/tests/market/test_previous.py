@@ -187,12 +187,16 @@ def test_the_price_and_the_instrument_are_carried_because_a_venue_stops_repeatin
 
 def test_the_lifecycle_code_does_not_cross_from_an_order_to_its_fill() -> None:
     first = resting()
-    assert first.code == "ORD-1" and first.altids == {}
+    assert first.code == "ORD-1"
+    assert first.altids["code"] == first.altids["orderid"] == "ORD-1"
+    assert first.altids["clordid"] == "CL-1"
     later = changed(Order(unix=20, orderid="ORD-1", state=State.OPEN), first)
-    assert later.altids == {}
+    assert later.altids["code"] == later.altids["orderid"] == "ORD-1"
+    assert later.altids["clordid"] == "CL-1"
     fill = changed(_execution(unix=30, execid="EX-1", state=State.FILLED, lastqty=4.0), first)
     assert fill.code == "EX-1", "and never `ORD-1`: an execution is not a version of its order"
-    assert fill.altids == {}
+    assert fill.altids["code"] == fill.altids["execid"] == "EX-1"
+    assert fill.altids["orderid"] == "ORD-1"
     assert fill.linkhashes == [first.hash]
     assert fill.parenthash == [first.hash]
 
@@ -204,7 +208,11 @@ def test_an_identifier_already_recorded_is_never_displaced_by_a_later_one() -> N
     order.name_altid("symbol", "SECOND")
     assert order.altids["symbol"] == "RENAMED"
     order.name_altid("isin", "FAKE-ISIN-0001")
-    assert order.altids == {"symbol": "RENAMED", "isin": "FAKE-ISIN-0001"}
+    assert order.altids == {
+        "orderid": "ORD-1",
+        "symbol": "RENAMED",
+        "isin": "FAKE-ISIN-0001",
+    }
 
 
 def test_a_notional_is_a_product_of_three_and_absent_without_all_three() -> None:
@@ -605,7 +613,8 @@ def test_an_amendment_keeps_the_readable_lifecycle_code_while_its_code_moves() -
         origclordid="CL-1",
     ).with_previous(first)
     assert later.code == first.code == "CL-1"
-    assert later.codesource == first.codesource == "ClOrdID"
+    assert later.altids["code"] == "CL-1"
+    assert later.altids["origclordid"] == "CL-1" and later.altids["clordid"] == "CL-2"
     assert later.xhash == first.xhash
 
 
@@ -662,7 +671,7 @@ def test_an_order_recovers_its_lifecycle_across_an_execution() -> None:
 
     assert done.linkhashes == [first.hash]
     assert after.code == first.code == "CL-1"
-    assert after.codesource == "ClOrdID"
+    assert after.altids["code"] == "CL-1"
     assert after.xhash == first.xhash
 
 
@@ -710,7 +719,7 @@ def test_an_order_recovers_its_root_across_an_amendment_and_execution() -> None:
     assert done.origclordid == "CL-1"
     assert done.linkhashes == [amended.hash]
     assert after.code == "CL-1" and after.xhash == first.xhash
-    assert after.codesource == "ClOrdID"
+    assert after.altids["code"] == "CL-1"
 
 
 def test_order_and_client_identifier_namespaces_never_cross_match() -> None:

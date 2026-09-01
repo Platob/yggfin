@@ -158,6 +158,18 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
     assert unpacked.component("Parties", "4.4") == zipped.component("Parties", "4.4")
 
 
+def test_registry_validation_refuses_duplicate_component_versions(dumped: Path) -> None:
+    documents = FixRegistry(cache_dir=dumped)._documents
+    name = "components/parties.json"
+    document = documents.read(name)
+    assert document is not None
+    versions = document["versions"]
+    documents.write(name, {**document, "versions": [*versions, versions[0]]})
+
+    with pytest.raises(ValueError, match="component.*invalid metadata"):
+        FixRegistry._validate_registry_store(documents)
+
+
 def test_a_file_url_reads_the_original_archive_without_materializing() -> None:
     archive = (PUBLISHED / "fix.zip").resolve()
     registry = FixRegistry(cache_dir=archive.as_uri())
@@ -529,7 +541,7 @@ def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:
     registry = FixRegistry.from_builtin()
     assert registry is FixRegistry.from_builtin()
     assert registry.offline
-    assert registry.versions[:2] == ("FIX.Latest", "5.0.SP2")
+    assert registry.versions[0] == "5.0.SP2"
     assert registry.versions[-1] == "FIXT1.1"
 
 
@@ -647,7 +659,7 @@ def test_a_builtin_scalar_is_one_record_and_every_version_that_declares_it() -> 
     # One reading, from the newest application version. Older versions called
     # tag 8 `char`; that is the same stored string contract, not a conflict.
     assert begin.fix["type"] == "String"
-    assert begin.fix["version"] == "FIX.Latest"
+    assert begin.fix["version"] == "5.0.SP2"
 
     side = registry.scalar("Side")
     assert side.fix.value_of("1").meaning == "Buy"
@@ -889,7 +901,7 @@ def _definition(
 ) -> Field:
     """One attributed extension definition for namespace tests."""
     field = fix_field(name, tag, datatype)
-    field.fix.versions = ("FIX.Latest",)
+    field.fix.versions = ("5.0.SP2",)
     field.fix.source = source
     field.fix.sources = (source,)
     field.fix.named_aliases = aliases
@@ -903,7 +915,7 @@ def _source(source_id: str, namespace: str, priority: int) -> dict[str, object]:
         "source_id": source_id,
         "namespace": namespace,
         "url": f"https://example.test/{source_id}.xml",
-        "version": "FIX.Latest",
+        "version": "FIX.5.0SP2_EP309",
         "format": "orchestra",
         "checksum": f"sha256:{digest}",
         "license_url": "https://example.test/terms",
@@ -996,7 +1008,7 @@ def test_adapter_status_attributes_conflicts_created_during_reconciliation(
             source_id=source_id,
             namespace="fixtrading-udf",
             version="1.0",
-            protocol_version="FIX.Latest",
+            protocol_version="5.0.SP2",
         )
         field = SourceField(
             tag=9003,
@@ -1250,12 +1262,12 @@ def test_cached_orchestra_refresh_populates_fields_components_and_groups(
     assert str(manifest["definitions_checksum"]).startswith("sha256:")
     assert registry.source_status[0]["additions"] == 12
     assert registry.field(9001) is not None
-    assert registry.versions[0] == "FIX.Latest"
+    assert registry.versions[0] == "5.0.SP2"
     index = registry._documents.read(VERSIONS_FILE)
     assert index is not None
-    assert index["versions"] == ["FIX.Latest"]
-    assert index["stored"] == ["FIX.Latest"]
-    assert index["declared"] == ["FIX.Latest"]
+    assert index["versions"] == ["5.0.SP2"]
+    assert index["stored"] == ["5.0.SP2"]
+    assert index["declared"] == ["5.0.SP2"]
     first = {
         path.relative_to(tmp_path / "fix").as_posix(): path.read_bytes()
         for path in (tmp_path / "fix").rglob("*.json")
@@ -1315,9 +1327,9 @@ def test_cached_replay_repairs_standard_version_indexes(
     assert repaired.source_status[0]["updates"] == 0
     index = repaired._documents.read(VERSIONS_FILE)
     assert index is not None
-    assert index["versions"] == ["FIX.Latest"]
-    assert index["stored"] == ["FIX.Latest"]
-    assert index["declared"] == ["FIX.Latest"]
+    assert index["versions"] == ["5.0.SP2"]
+    assert index["stored"] == ["5.0.SP2"]
+    assert index["declared"] == ["5.0.SP2"]
 
 
 def test_cached_refresh_upgrades_a_manifest_without_projection_identity(

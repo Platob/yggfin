@@ -69,7 +69,7 @@ mkdir -p data/warehouse
 
 ```yaml
 catalog:
-  catalog_name: rekep
+  name: rekep
   properties:
     type: sql
     uri: sqlite:///data/catalog.db
@@ -163,7 +163,7 @@ under `tasks/`:
 source: s3://rekep-capture/2026-08-30
 fix_dictionary: null # Use the registry.zip bundled in the installed wheel.
 catalog:
-  catalog_name: rekep-production
+  name: rekep-production
   properties:
     type: glue
     warehouse: s3://rekep-warehouse/rekep
@@ -234,7 +234,7 @@ mc mb local/rekep-warehouse
 
 ```yaml
 catalog:
-  catalog_name: rekep
+  name: rekep
   properties:
     type: sql
     uri: sqlite:///data/catalog.db

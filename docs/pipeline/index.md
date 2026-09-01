@@ -41,7 +41,7 @@ stored `eventtype`.
 
 `parse_instruments` reads the rows `parse_fix` wrote to `fix.market` and
 versions `market.instruments` from their nested `Instrument` components. One
-current `InstrumentUpdate` is keyed by its sixteen-byte `xhash`, with
+current `InstUpdate` is keyed by its sixteen-byte `xhash`, with
 `instrument.symbolticker` as its readable identity. It is a second reader of
 that table rather than a second writer of it: the FIX stage owns translation
 and the clock, while the model owns ticker derivation and reference-data

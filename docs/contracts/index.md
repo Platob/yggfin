@@ -11,7 +11,7 @@ table](../assets/compatibility-tree-light.svg#only-light)
 | --- | ---: | --- |
 | `message.yaml` | 1 | Source records with an exact binary `body`, standard header columns, a promoted discriminator and ordered residual entries. |
 | `fixmsg.yaml` | 1 | Parsed FIX records, with reference facts in a nested `Instrument` component. |
-| `instrument.yaml` | 1 | Immutable `InstrumentUpdate` events carrying that component. |
+| `instrument.yaml` | 1 | Immutable `InstUpdate` events carrying that component. |
 | `book.yaml` | 1 | Book deltas, executions, and recovery state. |
 | `order.yaml` | 1 | Flattened auditable order events. |
 | `execution.yaml` | 1 | Flattened auditable executions. |
@@ -25,13 +25,13 @@ print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
 ```
 
 ```text
-59 59
+58 58
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
 nested kinds, keys, partition transforms, field ids, and protocol metadata.
 YAML and JSON use the same document model; the extension selects the codec.
-The reference nests — `FixMsg.instrument`, `InstrumentUpdate.instrument`, and
+The reference nests — `FixMsg.instrument`, `InstUpdate.instrument`, and
 `Instrument.legs` — remain last in their owners so Iceberg's default column
 bounds cover the flat leaves.
 
@@ -111,7 +111,7 @@ uv run rekep fields dump --pyclass rekep.text.message:Message \
   --target ../schemas/rekep/message.yaml
 uv run rekep fields dump --pyclass rekep.text.fixmsg:FixMsg \
   --target ../schemas/rekep/fixmsg.yaml
-uv run rekep fields dump --pyclass rekep.market.instrument:InstrumentUpdate \
+uv run rekep fields dump --pyclass rekep.market.instrument:InstUpdate \
   --target ../schemas/rekep/instrument.yaml
 uv run pytest tests/test_schemas.py
 ```

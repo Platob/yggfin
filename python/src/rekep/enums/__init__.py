@@ -1,6 +1,6 @@
 """Stable protocol and market codes."""
 
-from rekep.enums.ascii_codes import Ascii32, Ascii64
+from rekep.enums.ascii_codes import Ascii32, Ascii64, Ascii128
 from rekep.enums.codes import (
     MIC,
     AssetKind,
@@ -21,6 +21,7 @@ __all__ = [
     "MIC",
     "Ascii32",
     "Ascii64",
+    "Ascii128",
     "AssetKind",
     "Currency",
     "Direction",

@@ -971,7 +971,7 @@ def test_the_codec_reads_each_protocol_the_way_its_rule_says(codec: FixCodec) ->
     for line, expected in ((BRIDGE, Protocol.UL), ("8=FIX.4.2|35=D|10=203|", Protocol.FIX)):
         assert Rules.into_default().into_arrow_protocol_array(
             pyarrow.array([line])
-        ).to_pylist() == [int(expected)]
+        ).to_pylist() == [expected.into_stored()]
         assert codec.into_pairs(pyarrow.array([line]), expected).to_pylist()[0]
 
 
@@ -1623,7 +1623,6 @@ def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCod
         )
     ]
     assert declared == [
-        "FIX.Latest",
         "5.0.SP2",
         "5.0.SP1",
         "5.0",

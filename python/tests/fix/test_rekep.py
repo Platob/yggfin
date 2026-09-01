@@ -47,7 +47,6 @@ EXPECTED_FIELDS: tuple[tuple[str, str, int], ...] = (
     ("pxunit", "PxUnit", 30024),
     ("qtyunit", "QtyUnit", 30025),
     ("notional", "Notional", 30026),
-    ("codesource", "CodeSource", 30027),
     ("lastshares", "LastShares", 30028),
     ("marketmarker", "MarketMarker", 30029),
     ("globalorderid", "GlobalOrderId", 30030),
@@ -65,7 +64,6 @@ HEADER_FIELDS = (
     *EXPECTED_FIELDS[:18],
     ("lastmkt", "LastMkt", 30),
     EXPECTED_FIELDS[18],
-    EXPECTED_FIELDS[24],
 )
 MARKET_FIELDS = (
     ("lastpx", "LastPx", 31),

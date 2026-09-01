@@ -16,7 +16,7 @@ from typing import Any, Self
 
 import pyarrow
 
-from rekep.enums.ascii_codes import Ascii32, Ascii64
+from rekep.enums.ascii_codes import Ascii32, Ascii64, Ascii128
 
 #: ISO 10962's category letter -- the first character of a `CFICode <461>` --
 #: for each kind that has one.
@@ -269,7 +269,7 @@ _MARKET_KIND_FIX: dict[int, dict[str, int]] = {
 }
 
 
-class OptionKind(Ascii64):
+class OptionKind(Ascii32):
     """Option direction read from FIX `PutOrCall <201>`."""
 
     FIX_FIELD = enum.nonmember("PutOrCall")
@@ -279,26 +279,26 @@ class OptionKind(Ascii64):
     CALL = "CALL", 200
 
 
-class Plugin(Ascii64):
-    """Bounded source-plugin code for deployments that assign short names."""
+class Plugin(Ascii128):
+    """Bounded source-plugin code for deployments that assign names."""
 
     UNKNOWN = 0
 
 
-class Protocol(Ascii64):
-    """Protocol grammar and resolved version in one eight-byte ASCII name.
+class Protocol(Ascii128):
+    """Protocol grammar and resolved version in one sixteen-byte ASCII name.
 
     Open, because the vocabulary belongs to the logs and not to this package:
     `rekep.fix.rules` ships the grammars below, and a desk whose rule names its
-    own bridge stores that name as a code without a release here. FIX service
-    packs use the compact `FIX5SP2` spelling so the exact version still fits.
+    own bridge stores that name as a code without a release here. FIX versions
+    retain their complete application spelling in the persisted token.
     """
 
     #: The canonical shape, and so also what a stored code may read back as:
     #: `_canonical` upper-cases, so admitting a lower-case spelling here would
     #: let one name pack as two codes -- `from_str` folding to `FIX` while
     #: `from_int` registered `fix` beside it.
-    _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9._-]{1,8}$"))
+    _PATTERN = enum.nonmember(re.compile(r"^[A-Z0-9._-]{1,16}$"))
     _VERSIONED = enum.nonmember(
         re.compile(
             r"^(?P<family>FIXML|FXML|FIX|UL)[._-]?"
@@ -422,36 +422,40 @@ class Protocol(Ascii64):
         return family if combined is cls.UNKNOWN else combined
 
     @classmethod
-    def into_family_arrow(cls, protocols: Any) -> pyarrow.Array:
+    def into_family_arrow(cls, protocols: pyarrow.Array | pyarrow.ChunkedArray) -> pyarrow.Array:
         """Strip persisted FIX versions from a packed protocol column."""
         compute = pyarrow.compute
         column = (
             protocols.combine_chunks() if isinstance(protocols, pyarrow.ChunkedArray) else protocols
         )
-        stored = column.cast(cls.into_arrow_type().index_type, safe=False)
+        stored = column.cast(cls.into_storage_type(), safe=False)
         found = stored
         for code in compute.drop_null(compute.unique(stored)):
-            family = cls.from_int(code.as_py()).family
-            found = compute.if_else(compute.equal(stored, code), int(family), found)
-        return found.cast(cls.into_arrow_type().index_type, safe=False)
+            family = cls.from_stored(code.as_py()).family
+            found = compute.if_else(compute.equal(stored, code), family.into_stored(), found)
+        return found.cast(cls.into_storage_type(), safe=False)
 
     @classmethod
-    def into_versions_arrow(cls, protocols: Any) -> pyarrow.Array:
+    def into_versions_arrow(cls, protocols: pyarrow.Array | pyarrow.ChunkedArray) -> pyarrow.Array:
         """Decode exact registry versions from packed protocol tokens."""
         compute = pyarrow.compute
         column = (
             protocols.combine_chunks() if isinstance(protocols, pyarrow.ChunkedArray) else protocols
         )
-        stored = column.cast(cls.into_arrow_type().index_type, safe=False)
+        stored = column.cast(cls.into_storage_type(), safe=False)
         found = pyarrow.nulls(len(stored), pyarrow.string())
         for code in compute.drop_null(compute.unique(stored)):
-            version = cls.from_int(code.as_py()).version
+            version = cls.from_stored(code.as_py()).version
             if version is not None:
                 found = compute.if_else(compute.equal(stored, code), version, found)
         return found
 
     @classmethod
-    def with_versions_arrow(cls, protocols: Any, versions: Any) -> pyarrow.Array:
+    def with_versions_arrow(
+        cls,
+        protocols: pyarrow.Array | pyarrow.ChunkedArray,
+        versions: pyarrow.Array | pyarrow.ChunkedArray,
+    ) -> pyarrow.Array:
         """Combine grammar and exact version columns through Arrow kernels."""
         compute = pyarrow.compute
         base = cls.into_family_arrow(protocols)
@@ -462,14 +466,14 @@ class Protocol(Ascii64):
         column = (
             protocols.combine_chunks() if isinstance(protocols, pyarrow.ChunkedArray) else protocols
         )
-        found = column.cast(cls.into_arrow_type().index_type, safe=False)
+        found = column.cast(cls.into_storage_type(), safe=False)
         embedded = cls.into_versions_arrow(found)
         authoritative = compute.and_(
             compute.is_valid(embedded),
             compute.invert(compute.fill_null(compute.starts_with(embedded, "FIXT"), False)),
         )
         for code in compute.drop_null(compute.unique(base)):
-            protocol = cls.from_int(code.as_py())
+            protocol = cls.from_stored(code.as_py())
             selected = compute.equal(base, code)
             available = compute.filter(values, compute.fill_null(selected, False))
             for version in compute.drop_null(compute.unique(available)):
@@ -478,12 +482,12 @@ class Protocol(Ascii64):
                     compute.and_(selected, compute.equal(values, version)), False
                 )
                 where = compute.and_(where, compute.invert(authoritative))
-                found = compute.if_else(where, int(combined), found)
-        return found.cast(cls.into_arrow_type().index_type, safe=False)
+                found = compute.if_else(where, combined.into_stored(), found)
+        return found.cast(cls.into_storage_type(), safe=False)
 
     @classmethod
     def schema_metadata(cls) -> dict[str, str]:
-        return {**super().schema_metadata(), "pattern": "[A-Z0-9._-]{1,8}"}
+        return {**super().schema_metadata(), "pattern": "[A-Z0-9._-]{1,16}"}
 
 
 class State(Ascii64):

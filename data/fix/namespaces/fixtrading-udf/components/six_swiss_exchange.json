@@ -1,7 +1,7 @@
 {
  "name": "SIXSwissExchange",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "SIXSwissExchange",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "SIXSwissExchange",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

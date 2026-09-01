@@ -54,7 +54,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import best_of, identical, parser, report  # noqa: E402
 
 from rekep import FixMsg, txhash  # noqa: E402
-from rekep.enums import State  # noqa: E402
+from rekep.enums import Plugin, State  # noqa: E402
 from rekep.fix import parse_arrow_array  # noqa: E402
 from rekep.fix.message import parse_pairs  # noqa: E402
 from rekep.market import (  # noqa: E402
@@ -336,7 +336,7 @@ def envelope(rows: int) -> dict[str, object]:
         "unix": [UNIX] * rows,
         "unixpartition": [UNIX_PARTITION] * rows,
         "eventtype": [0] * rows,
-        "plugin": [""] * rows,
+        "plugin": [Plugin.UNKNOWN.into_stored()] * rows,
         "creaunix": [UNIX] * rows,
         "recunix": [UNIX] * rows,
         "hash": [txhash.wide_bytes(txhash.couple128(UNIX // 1_000, vhash)) for vhash in vhashes],
@@ -346,8 +346,9 @@ def envelope(rows: int) -> dict[str, object]:
         "version": [1] * rows,
         "state": [210] * rows,
         "code": codes,
-        "codesource": ["Code"] * rows,
-        "altids": [{"symbol": f"S{index % 5000}"} for index in range(rows)],
+        "altids": [
+            {"code": code, "symbol": f"S{index % 5000}"} for index, code in enumerate(codes)
+        ],
         "instrumentxhash": [
             txhash.wide_bytes(Event.xhash_of(f"S{index % 5000}")) for index in range(rows)
         ],

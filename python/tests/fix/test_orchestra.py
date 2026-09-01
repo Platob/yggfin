@@ -45,6 +45,27 @@ def test_repository_metadata_and_every_definition_family_are_retained() -> None:
     assert (len(parsed.messages), len(parsed.components), len(parsed.groups)) == (1, 1, 1)
 
 
+def test_latest_alias_is_published_as_the_real_application_version() -> None:
+    document = b"""<repository name='FIX.Latest' version='FIX.Latest_EP309'>
+      <fields>
+        <field id='42' name='OrigTime' type='UTCTimestamp' added='FIX.Latest'/>
+      </fields>
+    </repository>"""
+    source = SourceProvenance.for_bytes(
+        document,
+        source_id="fix-latest",
+        version="FIX.Latest_EP309",
+        protocol_version="FIX.Latest",
+    )
+
+    parsed = parse_orchestra(document, source)
+
+    assert parsed.repository_name == "FIX.5.0SP2"
+    assert parsed.repository_version == parsed.source.version == "FIX.5.0SP2_EP309"
+    assert parsed.declaration_version == parsed.source.protocol_version == "5.0.SP2"
+    assert parsed.fields[0].pedigree.added == "FIX.5.0SP2"
+
+
 def test_pedigree_covers_datatypes_codes_blocks_and_membership() -> None:
     parsed = fixture_registry()
     datatype = next(datatype for datatype in parsed.datatypes if datatype.name == "VendorMapped")

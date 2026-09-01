@@ -65,7 +65,10 @@ The adjacent task document owns estate-specific readings:
 ```yaml
 fix_dictionary: null # Packaged registry.zip; set a path or URL to override it.
 null_values: ["", "null", "<null>", "n/a", "none"]
+exclude_msgtypes: ["0", "1"] # Heartbeat and TestRequest stay in logs.messages.
 ul_default_version: "4.4" # Stored as UL4.4 when the row states no version.
+commit_batch_num: 8
+commit_row_size: null # Optional earlier row cap.
 fields:
   rules:
     - field: "9999"
@@ -77,6 +80,10 @@ fields:
 FIX dates, times and timestamps are stored as `timestamp[us]`; date-only
 values land at midnight. Keep `fix_dictionary` and custom protocol rules
 aligned with `parse_messages.yml`.
+
+The source scan excludes configured MsgTypes before transcription. Rows with
+no MsgType remain eligible for best-effort parsing. Routed categories buffer
+at most eight RecordBatches before each storage commit.
 
 Market event codes route to `fix.market`. Known non-market traffic routes to
 `fix.misc`; an unknown event on an unknown protocol routes to `fix.unknown`.

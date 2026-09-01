@@ -13,7 +13,7 @@ from fsspec.implementations.memory import MemoryFile, MemoryFileSystem
 import rekep.text.entries as entries
 import rekep.text.text_file as text_file_module
 from rekep import Dataset, Field, FixCodec, FixMsg, FixRegistry, Message, txhash
-from rekep.enums import Direction, EventType, Protocol
+from rekep.enums import Direction, EventType, Plugin, Protocol
 from rekep.filesystems import ArrowFile
 from rekep.market.event import HOUR, SECOND, unix_partition_arrow
 from rekep.market.identity import HASH
@@ -139,7 +139,7 @@ def test_xmlapi_header_classifies_receiving_xml_and_keeps_nested_entries(tmp_pat
     ) as log:
         table = log.read_arrow_table()
 
-    assert table.column("plugin").to_pylist() == ["XmlApi"]
+    assert table.column("plugin").to_pylist() == [Plugin.from_str("XmlApi").into_stored()]
     assert table.column("body").to_pylist() == [body.encode()]
     assert Protocol.from_int(table.column("protocol")[0].as_py()) is Protocol.XML
     assert Direction.from_int(table.column("direction")[0].as_py()) is Direction.RECV
@@ -657,7 +657,7 @@ def test_schema(plain: Path) -> None:
     assert schema.field("vhash").type == pyarrow.int64()
     assert schema.field("xhash").type == HASH
     assert schema.field("eventtype").type == pyarrow.int64()
-    assert schema.field("protocol").type == pyarrow.int64()
+    assert schema.field("protocol").type == Protocol.into_storage_type()
     assert schema.field("body").type == pyarrow.binary()
 
 
@@ -678,7 +678,7 @@ def test_fix_looking_payloads_keep_only_syntax_level_arguments(wire: Path) -> No
     ]
     assert table.column("lastmkt").to_pylist() == [None] * 3
     assert table.column("code").to_pylist() == [""] * 3
-    assert table.column("codesource").to_pylist() == [""] * 3
+    assert table.column("altids").to_pylist() == [[]] * 3
     assert table.column("xhash").to_pylist() == [txhash.wide_bytes(0)] * 3
     assert [txhash.vhash_of(one) for one in table.column("hash").to_pylist()] == table.column(
         "vhash"
@@ -971,6 +971,27 @@ def test_msgtype_filters_retain_administrative_messages_by_default(tmp_path: Pat
     assert log.read_arrow_table().column("msgtype").to_pylist() == ["0", "1"]
 
 
+def test_technical_plugins_bypass_entry_parsing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "plugins.txt"
+    path.write_text(
+        "2026-08-14 00:05:01.000 [t] [JoLoKiA] (INFO) "
+        + "Metric=1|" * 1_000
+        + "\n2026-08-14 00:05:02.000 [t] [Bridge] (INFO) 35=D|11=kept|\n",
+        encoding="utf-8",
+    )
+    parsed = _counting_splitter(monkeypatch)
+
+    table = TextFile.from_path(path).read_arrow_table(
+        batch_row_size=1, technical_plugins=("jolokia",)
+    )
+
+    assert table.column("plugin").to_pylist() == [Plugin.from_str("Bridge").into_stored()]
+    assert table.column("msgtype").to_pylist() == ["D"]
+    assert parsed == [1], "the technical payload never reaches the entry splitter"
+
+
 def test_time_filter_runs_before_payload_utf8_decoding(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1006,6 +1027,10 @@ def test_regex_arguments_are_lists_and_can_filter_every_message(tmp_path: Path) 
         log.into_arrow_reader(include_msgtypes="D").read_all()  # type: ignore[arg-type]
     with pytest.raises(TypeError, match="exclude_msgtypes must contain only MsgType strings"):
         log.into_arrow_reader(exclude_msgtypes=(1,)).read_all()  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="technical_plugins must be a sequence"):
+        log.into_arrow_reader(technical_plugins="plugin").read_all()  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="technical_plugins must contain only plugin strings"):
+        log.into_arrow_reader(technical_plugins=(1,)).read_all()  # type: ignore[arg-type]
 
 
 def test_start_is_inclusive_and_end_is_exclusive(tmp_path: Path) -> None:
@@ -1157,7 +1182,7 @@ def test_first_row(plain: Path) -> None:
     assert first["sourceurl"] == url
     assert first["unix"] == FIRST_UNIX
     assert first["threadname"] == "250-e7256476:9effef3e6a:72505"
-    assert first["plugin"] == "OMSSales_Enrichment"
+    assert first["plugin"] == Plugin.UNKNOWN.into_stored()
     assert first["body"].startswith(b"-> [5] {trade")
 
 
@@ -2042,7 +2067,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
             "unix": pyarrow.array([1_786_665_901_147_250_000], pyarrow.int64()),
             "body": ["hello"],
             "threadname": ["t"],
-            "plugin": ["d"],
+            "plugin": [Plugin.from_str("d").into_stored()],
             "noise": ["dropped"],
         }
     )
@@ -2050,7 +2075,7 @@ def test_a_write_casts_a_nearly_right_batch(tmp_path: Path) -> None:
     target.append_arrow(batch)
     parsed = target.read_arrow_table()
     assert parsed.column("body").cast(pyarrow.string()).to_pylist() == ["hello"]
-    assert parsed.column("plugin").to_pylist() == ["d"]
+    assert parsed.column("plugin").to_pylist() == [Plugin.from_str("d").into_stored()]
 
 
 def test_a_text_file_cannot_merge(tmp_path: Path) -> None:

@@ -1,8 +1,7 @@
 {
  "name": "NoLegPaymentStreamPricingBusinessCenters",
  "versions": [
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoLegPaymentStreamPricingBusinessCenters",

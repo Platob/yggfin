@@ -159,7 +159,7 @@ def test_registry_catalog_keeps_duplicate_tags_namespace_addressable(
     group = next(iter(registry.repeating_group_records().values()))
 
     class Registry:
-        versions = ("FIX.Latest_EP309",)
+        versions = ("5.0.SP2",)
 
         def __init__(self, **_kwargs: object) -> None:
             pass
@@ -309,7 +309,7 @@ def test_every_task_injects_one_catalog_document() -> None:
         document = yaml.safe_load((directory / f"{task_name}.yml").read_text(encoding="utf-8"))
         parameters = document["parameters"]
         assert "catalog_properties" not in parameters
-        assert set(parameters["catalog"]) == {"catalog_name", "properties"}
+        assert set(parameters["catalog"]) == {"name", "properties"}
 
         notebook = json.loads((directory / f"{task_name}.ipynb").read_text(encoding="utf-8"))
         source = "".join(
@@ -320,6 +320,35 @@ def test_every_task_injects_one_catalog_document() -> None:
         )
         assert "IcebergCatalog.from_dict(catalog)" in source
         assert "catalog_properties" not in source
+
+
+def test_workflow_tasks_commit_bounded_groups_of_batches() -> None:
+    """The six jobs expose one cadence and keep the row cap optional."""
+    for page_name, task_name in WORKFLOW_STEPS:
+        directory = DOCS.parent / "tasks" / task_name
+        document = yaml.safe_load((directory / f"{task_name}.yml").read_text(encoding="utf-8"))
+        parameters = document["parameters"]
+        assert parameters["commit_batch_num"] == 8
+        assert parameters["commit_row_size"] is None
+
+        notebook = json.loads((directory / f"{task_name}.ipynb").read_text(encoding="utf-8"))
+        parameter_cell = next(
+            cell for cell in notebook["cells"] if "parameters" in cell["metadata"].get("tags", ())
+        )
+        parameter_source = "".join(parameter_cell["source"])
+        source = "".join(
+            line
+            for cell in notebook["cells"]
+            if cell["cell_type"] == "code"
+            for line in cell["source"]
+        )
+        assert "commit_batch_num = 8\n" in parameter_source
+        assert "commit_row_size = None\n" in parameter_source
+        assert "commit_batch_num=commit_batch_num" in source
+
+        page = (DOCS / "pipeline" / "tasks" / f"{page_name}.md").read_text(encoding="utf-8")
+        assert "commit_batch_num: 8" in page
+        assert "commit_row_size: null" in page
 
 
 def test_deploying_the_tables_is_documented_where_a_deployment_is_read() -> None:

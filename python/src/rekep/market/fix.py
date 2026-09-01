@@ -1060,15 +1060,6 @@ class FixEvents(Convertible):
             indicative=True,
             orderid=quote_entry_id or quote_id,
             clordid=quote_request_id,
-            codesource=(
-                "QuoteEntryID"
-                if quote_entry_id
-                else "QuoteID"
-                if quote_id
-                else "QuoteReqID"
-                if quote_request_id
-                else ""
-            ),
         )
 
     def _execution(self, order: Order | None = None) -> Execution:
@@ -1083,17 +1074,6 @@ class FixEvents(Convertible):
             state=state,
             kind=_coded(self.dictionary.execution_kinds, get("ExecType"), MarketKind.UNKNOWN),
             tradeid=trade_id or match_id,
-            codesource=(
-                "ExecRefID"
-                if state in (State.REPLACED, State.CANCELLED) and get("ExecRefID")
-                else "ExecID"
-                if get("ExecID")
-                else "TradeID"
-                if trade_id
-                else "TrdMatchID"
-                if match_id
-                else ""
-            ),
             parenthash=[],
         )
 
@@ -1121,7 +1101,6 @@ class FixEvents(Convertible):
             # `MDUpdateAction <279>` addresses when it says Change or Delete,
             # and it is what makes a level's own lifecycle findable.
             orderid=entry_id or (f"{side.name}@{entry_px}" if entry_px else None),
-            codesource="MDEntryID" if entry_id else "MDEntryPx" if entry_px else "",
         )
 
     def _entry_execution(self) -> Execution:
@@ -1138,15 +1117,6 @@ class FixEvents(Convertible):
             lastqty=_number(get("MDEntrySize")),
             execid=entry_id,
             tradeid=trade_id or match_id,
-            codesource=(
-                "MDEntryID"
-                if entry_id
-                else "TradeID"
-                if trade_id
-                else "TrdMatchID"
-                if match_id
-                else ""
-            ),
         )
 
     @functools.cached_property

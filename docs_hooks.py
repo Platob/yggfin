@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from rekep import Execution, Field, FixMsg, InstrumentUpdate, Message, Order
+from rekep import Execution, Field, FixMsg, InstUpdate, Message, Order
 from rekep import enums as rekep_enums
 from rekep.enums.ascii_codes import Ascii32
 from rekep.fix import FixRegistry
@@ -22,7 +22,7 @@ from rekep.text.message import SESSION_FIELDS
 PRODUCTS: tuple[tuple[type, str, str, str | None], ...] = (
     (Message, "message", "text", None),
     (FixMsg, "fixmsg", "text", "message"),
-    (InstrumentUpdate, "instrument", "market", "fixmsg"),
+    (InstUpdate, "instrument", "market", "fixmsg"),
     (Order, "order", "market", "fixmsg"),
     (Execution, "execution", "market", "fixmsg"),
     (Book, "book", "market", "order"),
@@ -146,9 +146,8 @@ def _enum_catalog() -> dict[str, Any]:
     supposed to produce, so a page that disagreed with the package would say
     so on screen rather than in a comment nobody re-reads.
 
-    Stored values are strings. An eight-byte code packs past `2**53`, and a
-    JSON number that far out is a float by the time the browser sees it --
-    `PENDING_NEW` would come back as a different code.
+    Stored values are strings. Wide integers exceed JavaScript's exact number
+    range, while sixteen-byte codes are published as their physical hex bytes.
     """
     found = []
     for name in sorted(rekep_enums.__all__):
@@ -158,15 +157,27 @@ def _enum_catalog() -> dict[str, Any]:
         found.append(
             {
                 "name": name,
-                "base": "Ascii32" if enum.BYTE_WIDTH <= 4 else "Ascii64",
+                "base": (
+                    "Ascii32"
+                    if enum.BYTE_WIDTH <= 4
+                    else "Ascii64"
+                    if enum.BYTE_WIDTH <= 8
+                    else "Ascii128"
+                ),
                 "byte_width": enum.BYTE_WIDTH,
-                "stored": "int32" if enum.BYTE_WIDTH <= 4 else "int64",
+                "stored": (
+                    "int32"
+                    if enum.BYTE_WIDTH <= 4
+                    else "int64"
+                    if enum.BYTE_WIDTH <= 8
+                    else "fixed_size_binary[16]"
+                ),
                 "open": True,
                 "members": [
                     {
                         "key": key,
                         "code": member.code,
-                        "value": str(int(member)),
+                        "value": member.stored_key(),
                         "rank": member.rank,
                         "fix": member.into_fix(),
                         "alias_of": "" if key == member.name else member.name,

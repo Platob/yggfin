@@ -21,13 +21,12 @@ print([(entry.tag, entry.value) for entry in row.entries])
 
 ```text
 FIX 8 7 VENUE DESK
-VenueBridge True
+VENUEBRIDGE True
 [(11, 'C1'), (55, 'BTC-USD'), (54, '1'), (10, '000')]
 ```
 
-`plugin` names the source adapter that recorded the row and stays with the FIX
-and market rows derived from it. It is empty when the capture header names no
-plugin.
+`plugin` is the bounded recording-source code carried into derived FIX and
+market rows. Missing or overwide source names are `UNKNOWN`.
 
 !!! note "`body` keeps the exact bytes"
 

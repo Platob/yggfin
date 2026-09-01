@@ -16,7 +16,7 @@ import pyarrow.compute
 
 from rekep import txhash
 from rekep.annotations import SEQUENCE_ORIGINS, item_annotation, unwrap_annotated, unwrap_optional
-from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Side, State
+from rekep.enums import MIC, AssetKind, Currency, EventType, MarketKind, Plugin, Side, State
 from rekep.fields import Field, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -24,6 +24,7 @@ from rekep.market.identity import (
     HASH,
     NIL,
     NIL_BYTES,
+    framed_arrow,
     hash128_bytes,
     hash128_bytes_arrow,
     hash_arrow,
@@ -75,7 +76,6 @@ _SOURCE_IDENTITY_MEMBERS = frozenset(
         "version",
         "state",
         "code",
-        "codesource",
         "prevunix",
         "prevhash",
         "parenthash",
@@ -84,9 +84,9 @@ _SOURCE_IDENTITY_MEMBERS = frozenset(
 
 _MISSING = object()
 
-#: What `altids` holds: lifecycle aliases beside `code`, such as `clordid`
-#: and `execid`. Instrument identity has `instrumentxhash` and
-#: `symbolticker`; mixing it into this map lets unrelated events match.
+#: Every readable identity carried by a row, keyed by its folded field name.
+#: Lookup code decides which identities are comparable; storage does not drop
+#: a code merely because the row also promotes it into a dedicated column.
 ALTIDS_TYPE = pyarrow.map_(
     pyarrow.string(), pyarrow.field("value", pyarrow.string(), nullable=False)
 )
@@ -164,11 +164,8 @@ class Event(MarketConvertible):
     eventtype: Annotated[EventType, Field.column("EventType")] = EventType.UNKNOWN
     """Which kind of event this is -- the one column a union of the tables needs."""
 
-    # Recorded plugin identifiers in real captures exceed eight bytes, so the
-    # raw provenance stays exact rather than being forced into `Plugin`'s
-    # optional bounded deployment vocabulary.
-    plugin: Annotated[str, Field.column("Plugin")] = ""
-    """Source plugin that recorded the row; empty when the envelope did not name one."""
+    plugin: Annotated[Plugin, Field.column("Plugin")] = Plugin.UNKNOWN
+    """Source plugin; UNKNOWN when missing or longer than 16 ASCII bytes."""
 
     creaunix: Annotated[int, Field(metadata=UNIX), Field.column("CreaUnix")] = 0
     """When the event was created, upstream of anything that carried it."""
@@ -214,9 +211,6 @@ class Event(MarketConvertible):
     code: str = ""
     """Readable identifier of this lifecycle, shared by every version of it."""
 
-    codesource: Annotated[str, Field.column("CodeSource")] = ""
-    """Column whose value supplied `code`; empty when the lifecycle is unnamed."""
-
     altids: Annotated[dict[str, str], Field(dtype=ALTIDS_TYPE), Field.column("AltIDs")] = (
         dataclasses.field(default_factory=dict)
     )
@@ -248,6 +242,8 @@ class Event(MarketConvertible):
         # reader of `altids`.
         if not isinstance(self.altids, dict):
             self.altids = dict(self.altids or ())
+        self.plugin = Plugin.from_str(self.plugin)
+        self._name_codes()
         if self.lastmkt is not None:
             venue = MIC.from_str(self.lastmkt)
             self.lastmkt = None if venue is MIC.UNKNOWN else venue
@@ -443,8 +439,6 @@ class Event(MarketConvertible):
             # The readable code is the lifecycle identity. Keep its original
             # spelling when a later version names the same digest indirectly.
             self.code = previous.code or self.code
-            if previous.code:
-                self.codesource = previous.codesource or self.codesource
             self._keep_creation(previous)
             self.xhash = previous.xhash or self.life_hash()
         else:
@@ -456,9 +450,8 @@ class Event(MarketConvertible):
             # from. Never copy it before this comparison: completion crosses
             # shapes, and an execution is not named by its order's code.
             self.code = previous.code or self.code
-            if previous.code:
-                self.codesource = previous.codesource or self.codesource
             self._keep_lifecycle_altids(previous)
+            self._name_codes()
             self.version = previous.version + 1
             self.prevunix = previous.unix
             self._remember_previous(previous)
@@ -487,9 +480,8 @@ class Event(MarketConvertible):
         self.xhash = previous.xhash
         self._drop_self_link()
         self.code = previous.code or self.code
-        if previous.code:
-            self.codesource = previous.codesource or self.codesource
         self._keep_lifecycle_altids(previous)
+        self._name_codes()
         self.version = previous.version + 1
         self.prevunix = previous.unix
         self._remember_previous(previous)
@@ -634,16 +626,20 @@ class Event(MarketConvertible):
         """The readable part that names this lifecycle, without changing it."""
         return self.code
 
-    def life_code_source(self) -> str:
-        """Reader-facing column name that supplied `life_code`."""
-        return self.codesource or ("Code" if self.code else "")
-
     def _materialize_life_code(self) -> None:
         """Store the readable lifecycle part once, before mutable aliases move."""
-        code = self.life_code()
-        source = self.life_code_source()
-        self.code = self.code or code
-        self.codesource = self.codesource or source
+        self.code = self.code or self.life_code()
+        self._name_codes()
+
+    def _code_values(self) -> Iterator[tuple[str, str | None]]:
+        """Every dedicated code column this row carries."""
+        yield "code", self.code
+
+    def _name_codes(self) -> None:
+        """Keep every dedicated code in the persisted identifier map."""
+        for name, value in self._code_values():
+            if value:
+                self.altids[name] = str(value)
 
     def name_altid(self, name: str, value: str | None) -> None:
         """Record one identifier this row carried, without displacing one it has."""
@@ -664,7 +660,6 @@ class Event(MarketConvertible):
             self.state,
             self.lastmkt,
             self.code,
-            self.codesource,
             self.reason,
             *_mapping_parts(self.altids),
         )
@@ -871,11 +866,10 @@ class MarketEvent(Event):
         """
         return self.code or self.symbolticker
 
-    def life_code_source(self) -> str:
-        """The explicit code column, or the ticker used as its fallback."""
-        if self.code:
-            return self.codesource or "Code"
-        return "SymbolTicker" if self.symbolticker else ""
+    def _code_values(self) -> Iterator[tuple[str, str | None]]:
+        """Lifecycle and instrument codes carried by one market row."""
+        yield from Event._code_values(self)
+        yield "symbolticker", self.symbolticker
 
     def version_parts(self) -> tuple[Any, ...]:
         """Current non-clock market values in the framed hash domain."""
@@ -953,6 +947,41 @@ def _mapping_parts(values: Mapping[str, Any] | None) -> tuple[Any, ...]:
         return (False, 0)
     ordered = sorted(values.items(), key=lambda item: item[0].encode("utf-8"))
     return (True, len(ordered), *(part for pair in ordered for part in pair))
+
+
+def _mapping_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
+    """Optional map entries as deterministic identity-frame segments."""
+    item = pyarrow.struct(
+        [
+            pyarrow.field("key", values.type.key_type, nullable=False),
+            pyarrow.field("value", values.type.item_type, nullable=values.type.item_field.nullable),
+        ]
+    )
+    listed = values.cast(pyarrow.list_(item), safe=False)
+    counts = pyarrow.compute.fill_null(pyarrow.compute.list_value_length(listed), 0).cast(
+        pyarrow.int64()
+    )
+    entries = pyarrow.compute.list_flatten(listed)
+    parents = pyarrow.compute.list_parent_indices(listed).cast(pyarrow.int64())
+    keys = pyarrow.compute.struct_field(entries, "key")
+    items = pyarrow.compute.struct_field(entries, "value")
+    if len(entries):
+        order = pyarrow.compute.sort_indices(
+            pyarrow.record_batch([parents, keys], names=["parent", "key"]),
+            sort_keys=[("parent", "ascending"), ("key", "ascending")],
+        )
+        keys = pyarrow.compute.take(keys, order)
+        items = pyarrow.compute.take(items, order)
+    entry_frames = (
+        framed_arrow(keys, items) if len(entries) else pyarrow.array([], pyarrow.binary())
+    )
+    grouped = build_list(pyarrow.list_(pyarrow.binary()), counts, entry_frames)
+    payload = pyarrow.compute.binary_join(grouped, pyarrow.scalar(b"", pyarrow.binary()))
+    return pyarrow.compute.binary_join_element_wise(
+        framed_arrow(pyarrow.compute.is_valid(values), counts),
+        payload,
+        pyarrow.scalar(b"", pyarrow.binary()),
+    )
 
 
 @functools.cache

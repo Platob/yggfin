@@ -7,7 +7,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, FixCodec, FixMsg, Message, txhash
-from rekep.enums import Direction, Protocol, SecurityIDSource
+from rekep.enums import Direction, Plugin, Protocol, SecurityIDSource
 from rekep.fields import column_name
 from rekep.fix import ENTRIES, FixRegistry, Party
 from rekep.fix.columns import (
@@ -33,7 +33,7 @@ from rekep.market import (
     Event,
     EventType,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     OptionKind,
     Side,
     hash_of,
@@ -41,7 +41,7 @@ from rekep.market import (
 from rekep.market.event import HOUR, SECOND
 from rekep.market.fix import FixEvents
 from rekep.text import Entry
-from rekep.text.fixmsg import _UNDIGESTED
+from rekep.text.fixmsg import _UNDIGESTED, _digest_text
 
 #: The dictionary this repository publishes, beside `python/`, read offline:
 #: a contract that only holds while the site answers is not a contract.
@@ -64,7 +64,6 @@ ENVELOPE = [
     "version",
     "state",
     "code",
-    "codesource",
     "altids",
     "prevunix",
     "prevhash",
@@ -89,7 +88,7 @@ def _instrument_column(
 
 def _instruments(*messages: FixMsg) -> list[Instrument]:
     """Components carried by parsed messages through the class-owned API."""
-    return [update.instrument for update in InstrumentUpdate.from_fixmsgs(messages)]
+    return [update.instrument for update in InstUpdate.from_fixmsgs(messages)]
 
 
 LINE = [
@@ -241,7 +240,7 @@ ADDED_COLUMNS.insert(ADDED_COLUMNS.index("offerpx") + 1, "priceinferred")
 EXPECTED_SESSION_COLUMNS = 33
 EXPECTED_COMMON_COLUMNS = 50
 EXPECTED_FLAT_COLUMNS = 101
-EXPECTED_LOG_COLUMNS = 125
+EXPECTED_LOG_COLUMNS = 124
 
 
 @pytest.fixture(scope="module")
@@ -323,11 +322,11 @@ def test_a_line_always_says_which_protocol_it_carries() -> None:
     """`OTHER` is an answer and not a missing one -- it is most of a capture --
     so the column is NOT NULL and the fall-through is what a line starts as."""
     member = FixMsg.into_field().field("protocol")
-    assert not member.nullable and member.dtype == pyarrow.int64()
+    assert not member.nullable and member.dtype == pyarrow.binary(16)
     assert member.metadata["enum:name"] == "Protocol"
     assert member.metadata["enum:encoding"] == "ascii-big-endian"
-    assert member.metadata["enum:byte_width"] == "8"
-    assert member.metadata["enum:pattern"] == "[A-Z0-9._-]{1,8}"
+    assert member.metadata["enum:byte_width"] == "16"
+    assert member.metadata["enum:pattern"] == "[A-Z0-9._-]{1,16}"
     assert FixMsg().protocol is Protocol.OTHER
 
 
@@ -340,12 +339,12 @@ def test_a_parsed_row_takes_its_packed_codes_off_whatever_spelled_them() -> None
     assert row.protocol is Protocol.FIX
     assert row.direction is Direction.SENT
     assert FixMsg(protocol=int(Protocol.UL)).protocol is Protocol.UL
-    # Tolerant where `Rule` refuses: a declaration is read once and a bad one
-    # is a configuration error, while a row path has to survive its input.
-    assert FixMsg(protocol="VENUEBRIDGE").protocol is Protocol.UNKNOWN
+    # The open code retains a venue spelling within its 16-byte persisted bound.
+    assert FixMsg(protocol="VENUEBRIDGE").protocol.code == "VENUEBRIDGE"
+    assert FixMsg(protocol="VENUEBRIDGE-OVERWIDE").protocol is Protocol.UNKNOWN
     built = FixMsg.into_arrow_array([row])
     assert built.field("direction").to_pylist() == [int(Direction.SENT)]
-    assert built.field("protocol").to_pylist() == [int(Protocol.FIX)]
+    assert built.field("protocol").to_pylist() == [Protocol.FIX.into_stored()]
 
 
 def test_a_line_carrying_no_message_has_no_pairs_at_all() -> None:
@@ -465,7 +464,8 @@ def test_scalar_and_arrow_identification_share_the_registry_projection() -> None
     arrow = FixMsg.from_message_batch([Message(body=line, eventtype=scalar.eventtype, **declared)])
 
     assert scalar.code == arrow.column("code")[0].as_py() == "C1"
-    assert scalar.codesource == arrow.column("codesource")[0].as_py() == "ClOrdID"
+    assert scalar.altids == dict(arrow.column("altids")[0].as_py())
+    assert scalar.altids["clordid"] == scalar.altids["code"] == "C1"
     assert scalar.vhash == arrow.column("vhash")[0].as_py()
     assert scalar.into_row()["xhash"] == arrow.column("xhash")[0].as_py()
     assert scalar.xhash == Event.xhash_of(scalar.code)
@@ -511,7 +511,7 @@ def test_a_precomputed_named_row_still_fills_its_lifecycle_identity() -> None:
 
     assert (row.hash, row.vhash) == (event_hash, vhash)
     assert row.xhash == Event.xhash_of("C1")
-    assert row.codesource == "Code"
+    assert row.altids == {"code": "C1"}
 
 
 @pytest.mark.parametrize(
@@ -737,6 +737,28 @@ def test_the_digest_excludes_clocks_identities_and_recorder_provenance() -> None
     }
 
 
+@pytest.mark.parametrize(
+    "column",
+    [
+        pyarrow.nulls(3, pyarrow.string()),
+        pyarrow.nulls(3, pyarrow.int64()),
+        pyarrow.nulls(3, pyarrow.list_(pyarrow.string())),
+        pyarrow.nulls(3, pyarrow.map_(pyarrow.string(), pyarrow.string())),
+    ],
+    ids=("string", "integer", "list", "map"),
+)
+def test_all_null_digest_columns_broadcast_their_empty_text(column: pyarrow.Array) -> None:
+    assert _digest_text(column, len(column)).equals(pyarrow.repeat("", len(column)))
+    assert len(_digest_text(column.slice(0, 0), 0)) == 0
+
+
+def test_an_all_null_digest_struct_keeps_its_member_boundaries() -> None:
+    column = pyarrow.nulls(
+        2, pyarrow.struct([("name", pyarrow.string()), ("value", pyarrow.int64())])
+    )
+    assert _digest_text(column, len(column)).to_pylist() == ["\x1d", "\x1d"]
+
+
 def test_the_recorder_plugin_survives_without_changing_content_identity(
     codec: FixCodec,
 ) -> None:
@@ -746,7 +768,10 @@ def test_the_recorder_plugin_survives_without_changing_content_identity(
         codec,
     )
 
-    assert parsed.column("plugin").to_pylist() == ["one", "two"]
+    assert parsed.column("plugin").to_pylist() == [
+        Plugin.from_str("one").into_stored(),
+        Plugin.from_str("two").into_stored(),
+    ]
     assert parsed.column("vhash")[0].as_py() == parsed.column("vhash")[1].as_py()
 
 
@@ -933,7 +958,7 @@ def test_degraded_projected_rows_keep_distinct_raw_identities(codec: FixCodec) -
     ).identify()
     heartbeat = FixMsg.from_message_batch(_raw_batch(unlinked).drop_columns(["body"]), codec)
     assert heartbeat.column("code").to_pylist() == [""]
-    assert heartbeat.column("codesource").to_pylist() == [""]
+    assert heartbeat.column("altids").to_pylist() == [[]]
     assert heartbeat.column("vhash").to_pylist() == [unlinked.vhash]
     assert heartbeat.column("xhash").to_pylist() == [txhash.wide_bytes(0)]
 
@@ -1028,7 +1053,7 @@ def test_one_throwing_transcription_isolated_between_valid_rows(
 
     messages = list(FixMsg.from_arrow_reader([parsed]))
     assert list(messages[1].into_market_events(registry=registry)) == []
-    assert list(InstrumentUpdate.from_fixmsgs((messages[1],), registry=registry)) == []
+    assert list(InstUpdate.from_fixmsgs((messages[1],), registry=registry)) == []
     translated = list(FixMsg.into_market_arrow_batches(parsed, registry=registry))
     assert sum(batch.num_rows for _, batch in translated) == 2
 
@@ -1133,7 +1158,7 @@ def test_only_registry_fields_render_from_the_message_envelope() -> None:
         )
     )
 
-    assert row.plugin == "capture"
+    assert row.plugin.code == "CAPTURE"
     assert "body" not in FixMsg.into_field().names
     assert row.pairs == [
         ("ParentClOrdID", "PARENT"),
@@ -1213,7 +1238,7 @@ def test_scalar_parsing_resolves_the_fix_version_once_on_the_message() -> None:
 def test_fixt_dict_reconstruction_keeps_the_persisted_application_version() -> None:
     row = FixMsg.from_dict(
         {
-            "protocol": int(Protocol.from_str("FIX5SP2")),
+            "protocol": Protocol.from_str("FIX5SP2").into_stored(),
             "beginstring": "FIXT.1.1",
             "entries": [],
         }
@@ -1403,7 +1428,7 @@ def test_nested_instrument_does_not_absorb_lifecycle_altids() -> None:
     message = FixMsg(instrument=Instrument(symbol="AAPL"), altids={"clordid": "C1"})
 
     assert message.instrument.symbolticker == "AAPL"
-    assert message.altids == {"clordid": "C1"}
+    assert message.altids == {"clordid": "C1", "symbolticker": "AAPL"}
     assert "altids" not in Instrument.into_field().names
 
 
@@ -1414,7 +1439,7 @@ def test_instrument_projection_prefers_promoted_values_and_fills_from_entries() 
         instrument=Instrument(symbol="PROMOTED"),
         entries=[(55, "RESIDUAL"), (107, "reference facts")],
     )
-    (update,) = InstrumentUpdate.from_fixmsgs([message])
+    (update,) = InstUpdate.from_fixmsgs([message])
     instrument = update.instrument
 
     assert (update.unix, instrument.symbol, instrument.securitydesc) == (
@@ -1960,7 +1985,11 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         int(EventType.EXECUTION),
         int(EventType.MISC),
     ]
-    assert parsed.column("plugin").to_pylist() == ["fix", "ULBridge", "misc"]
+    assert parsed.column("plugin").to_pylist() == [
+        Plugin.from_str("fix").into_stored(),
+        Plugin.from_str("ULBridge").into_stored(),
+        Plugin.from_str("misc").into_stored(),
+    ]
     assert _protocols(parsed) == ["FIX4.4", "UL4.4", "OTHER"]
     assert parsed.column("msgtype").to_pylist() == ["D", "8", None]
     assert parsed.column("msgseqnum").to_pylist() == [7, None, None]
@@ -1976,7 +2005,11 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
             "partyrolequalifier": None,
         }
     ]
-    assert parsed.column("altids").to_pylist()[0] == [("origclordid", "ROOT")]
+    assert parsed.column("altids").to_pylist()[0] == [
+        ("origclordid", "ROOT"),
+        ("code", "ROOT"),
+        ("symbolticker", "IBM"),
+    ]
 
 
 def test_fixmsg_preserves_the_message_stage_type_and_event_code(
@@ -3073,7 +3106,7 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert lone.column("account").to_pylist() == ["59.1"]
     assert lone.column("clordid").to_pylist() == ["PL9"]
     assert lone.column("side").to_pylist() == ["2"]
-    assert lone.column("altids").to_pylist() == [[("clordid", "PL9")]]
+    assert lone.column("altids").to_pylist() == [[("clordid", "PL9"), ("code", "PL9")]]
 
 
 def test_a_custom_empty_rule_set_reclassifies_a_staged_message(
@@ -3096,7 +3129,7 @@ def test_a_stale_staged_protocol_never_overrides_the_payload(
 ) -> None:
     raw = _raw_batch(Message(body="8=FIX.4.4|35=D|11=SYNTH|10=000|"))
     at = raw.schema.get_field_index("protocol")
-    stale = pyarrow.array([int(Protocol.OTHER)], raw.schema.field(at).type)
+    stale = pyarrow.array([Protocol.OTHER.into_stored()], raw.schema.field(at).type)
     raw = raw.set_column(at, raw.schema.field(at), stale)
 
     parsed = FixMsg.from_message_batch(raw, codec)

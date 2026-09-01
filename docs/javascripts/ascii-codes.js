@@ -1,10 +1,7 @@
 // The packing every stable code in this package is stored as, run in the page.
 //
-// `Ascii32` and `Ascii64` are one rule at two widths: the printable ASCII of a
-// code, left-justified into four or eight bytes, padded right with NULs, read
-// big-endian as a signed integer. That is the whole of it -- so the encoder
-// here is the arithmetic itself rather than a table of answers, and a reader
-// can type a code the package has never seen and get the value it would store.
+// Every ASCII base uses the same bytes: four and eight are stored as signed
+// integers, while sixteen is stored as fixed binary and displayed as hex.
 //
 // BigInt throughout: an eight-byte code packs past 2^53, so a Number would
 // round `PENDING_NEW` into a different code on the way to the screen.
@@ -14,7 +11,7 @@
   const app = document.querySelector("[data-ascii-codes]");
   if (!app) return;
 
-  const WIDTHS = { 4: "Ascii32", 8: "Ascii64" };
+  const WIDTHS = { 4: "Ascii32", 8: "Ascii64", 16: "Ascii128" };
 
   const escape = (value) =>
     String(value ?? "").replace(
@@ -88,6 +85,7 @@
         <legend>Width</legend>
         <label><input type="radio" name="width" value="4"> <code>Ascii32</code> — 4 bytes, <code>int32</code></label>
         <label><input type="radio" name="width" value="8" checked> <code>Ascii64</code> — 8 bytes, <code>int64</code></label>
+        <label><input type="radio" name="width" value="16"> <code>Ascii128</code> — 16 bytes, <code>fixed_size_binary[16]</code></label>
       </fieldset>
       <div class="ascii-codes__pair">
         <label class="ascii-codes__field">
@@ -97,7 +95,7 @@
         </label>
         <label class="ascii-codes__field">
           <span>Stored value</span>
-          <input type="text" name="packed" inputmode="numeric" autocomplete="off"
+          <input type="text" name="packed" autocomplete="off"
                  spellcheck="false" placeholder="5715705941605744640">
         </label>
       </div>
@@ -148,12 +146,14 @@
         byte: character ? character.charCodeAt(0) : 0,
       });
     }
-    const claims = byValue.get(String(packed)) || [];
+    const stored = width === 16 ? hex(packed, width) : String(packed);
+    const catalogValue = width === 16 ? stored.slice(2).toLowerCase() : stored;
+    const claims = byValue.get(catalogValue) || [];
     result.innerHTML = `
       <dl class="fix-registry__facts ascii-codes__facts">
-        <dt>Stored</dt><dd><code>${escape(grouped(packed))}</code></dd>
+        <dt>Stored</dt><dd><code>${escape(width === 16 ? stored : grouped(stored))}</code></dd>
         <dt>Hex</dt><dd><code>${escape(hex(packed, width))}</code></dd>
-        <dt>Type</dt><dd><code>${escape(WIDTHS[width])}</code> → <code>${width === 4 ? "int32" : "int64"}</code></dd>
+        <dt>Type</dt><dd><code>${escape(WIDTHS[width])}</code> → <code>${width === 4 ? "int32" : width === 8 ? "int64" : "fixed_size_binary[16]"}</code></dd>
         ${claims.length ? `<dt>Compiled as</dt><dd>${claims.map((one) => `<code>${escape(one)}</code>`).join(" · ")}</dd>` : ""}
       </dl>
       <div class="fix-registry__table-wrap ascii-codes__table-wrap">
@@ -187,19 +187,21 @@
     }
     say("");
     const packed = pack(text, width);
-    form.elements.packed.value = String(packed);
+    form.elements.packed.value = width === 16 ? hex(packed, width) : String(packed);
     render(text, packed, width);
   }
 
   function fromPacked() {
     const width = widthOf();
     const raw = form.elements.packed.value.trim().replace(/[\s,_]/g, "");
-    if (!/^-?\d+$/.test(raw)) {
-      say(raw ? "a stored value is an integer" : "");
+    const valid = width === 16 ? /^(?:0x)?[0-9a-f]{32}$/i.test(raw) : /^-?\d+$/.test(raw);
+    if (!valid) {
+      say(raw ? (width === 16 ? "a stored value is 16 bytes of hex" : "a stored value is an integer") : "");
       result.innerHTML = "";
       return;
     }
-    const decoded = unpack(BigInt(raw), width);
+    const packed = BigInt(width === 16 && !/^0x/i.test(raw) ? `0x${raw}` : raw);
+    const decoded = unpack(packed, width);
     if (decoded.error) {
       say(decoded.error);
       form.elements.code.value = "";
@@ -208,7 +210,7 @@
     }
     say("");
     form.elements.code.value = decoded.text;
-    render(decoded.text, BigInt(raw), width);
+    render(decoded.text, packed, width);
   }
 
   form.elements.code.addEventListener("input", fromCode);
@@ -226,7 +228,7 @@
         (member) => `<tr>
           <td><code>${escape(member.key)}</code></td>
           <td>${member.code ? `<code>${escape(member.code)}</code>` : '<span class="fix-registry__muted">—</span>'}</td>
-          <td class="ascii-codes__number"><code>${escape(grouped(member.value))}</code></td>
+          <td class="ascii-codes__number"><code>${escape(chosen.byte_width === 16 ? `0x${member.value.toUpperCase()}` : grouped(member.value))}</code></td>
           <td>${member.fix ? `<code>${escape(member.fix)}</code>` : '<span class="fix-registry__muted">—</span>'}</td>
         </tr>`,
       )

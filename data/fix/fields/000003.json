@@ -6,21 +6,21 @@
   "description": "Time at which volatility was computed.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "288"
    },
    "tag": "3000",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -34,21 +34,21 @@
   "description": "Volatility based on bid prices.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "288"
    },
    "tag": "3001",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -62,21 +62,21 @@
   "description": "Volatility based on offer prices.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "288"
    },
    "tag": "3002",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -90,21 +90,21 @@
   "description": "Volatility based on mid prices.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "288"
    },
    "tag": "3003",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -118,21 +118,21 @@
   "description": "Timestamp at which the relative valuation metric or analytic is calculated or captured.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "288"
    },
    "tag": "3004",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -146,21 +146,21 @@
   "description": "Number of trade types in repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "289"
    },
    "tag": "3005",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -174,15 +174,15 @@
   "description": "Type of trade assigned to a trade.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TrdTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "289"
    },
    "tag": "3006",
@@ -673,7 +673,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -687,15 +687,15 @@
   "description": "Further qualification to the trade type defined in TradeType(3006).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TrdSubTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "289"
    },
    "tag": "3007",
@@ -1067,7 +1067,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1081,21 +1081,21 @@
   "description": "Number of allocation timestamps.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "291"
    },
    "tag": "3008",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1109,21 +1109,21 @@
   "description": "Same as TrdRegTimestamp(769). Used to provide relevant timestamp for the allocation account.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "291"
    },
    "tag": "3009",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1137,15 +1137,15 @@
   "description": "Same as TrdRegTimestampType(770). Used to indicate the timestamp type relevant for the allocation account.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TrdRegTimestampTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "291"
    },
    "tag": "3010",
@@ -1405,7 +1405,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1419,21 +1419,21 @@
   "description": "Same as TrdRegTimestampOrigin(771). Used to indicate the \"origin\" or source of the timestamp relevant for the allocation account.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "291"
    },
    "tag": "3011",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1447,21 +1447,21 @@
   "description": "Unique identifier for a certificate issued by an algorithmic trading firm.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3012",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1475,21 +1475,21 @@
   "description": "Description of a certificate issued by an algorithmic trading firm.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3013",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1503,21 +1503,21 @@
   "description": "Unique identifier of the AlgoCertificateRequest(35=EH).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3014",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1531,21 +1531,21 @@
   "description": "Reference identifier of the AlgoCertificateRequest(35=EH).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3015",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1559,15 +1559,15 @@
   "description": "Identifies the message transaction type.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateRequestTransTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3016",
@@ -1596,7 +1596,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1610,15 +1610,15 @@
   "description": "Status of the AlgoCertificateRequest(35=EH) message being responded to.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateRequestStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3017",
@@ -1647,7 +1647,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1661,21 +1661,21 @@
   "description": "Unique identifier of the AlgoCertificateReport(35=EJ).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3018",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1689,21 +1689,21 @@
   "description": "Reference identifier of the AlgoCertificateReport(35=EJ).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3019",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1717,15 +1717,15 @@
   "description": "Identifies the message transaction type.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateReportTransTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3020",
@@ -1754,7 +1754,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1768,15 +1768,15 @@
   "description": "Status of the report being responded to.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateReportStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3021",
@@ -1805,7 +1805,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1819,17 +1819,17 @@
   "description": "Identifies the current status of the certificate as established by the certificate issuer.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "303"
    },
    "tag": "3022",
@@ -1872,7 +1872,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1886,21 +1886,21 @@
   "description": "Date and time the details within the message have been approved.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3023",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1914,21 +1914,21 @@
   "description": "Description of means of testing for an algorithm.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3024",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1942,21 +1942,21 @@
   "description": "Number of components making up a system for algorithmic trading.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3025",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1970,21 +1970,21 @@
   "description": "Name of the component of a system for algorithmic trading.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3026",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -1998,21 +1998,21 @@
   "description": "Version (e.g. build or commit number) of the component of a system for algorithmic trading.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3027",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2026,21 +2026,21 @@
   "description": "Number of test scenarios for an algorithmic trading system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3028",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2054,21 +2054,21 @@
   "description": "Unique identifier of a test scenario for a software system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3029",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2082,15 +2082,15 @@
   "description": "Identifies the overall result of a test scenario identified by TestScenarioID(3029).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestSuiteStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3030",
@@ -2126,7 +2126,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2140,21 +2140,21 @@
   "description": "Starting date and time of test scenario execution for a software system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3031",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2168,21 +2168,21 @@
   "description": "Ending date and time of test scenario execution for a software system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3032",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2196,21 +2196,21 @@
   "description": "Description of the origin of the market data.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3033",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2224,21 +2224,21 @@
   "description": "Date and time of the market data.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3034",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2252,23 +2252,23 @@
   "description": "Unique identifier for the group of test steps constituting a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "295"
    },
    "tag": "3035",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2282,21 +2282,21 @@
   "description": "Number of test steps.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3036",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2310,21 +2310,21 @@
   "description": "Unique identifier of a test step.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3037",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2338,21 +2338,21 @@
   "description": "Description of a test step.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3038",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2366,21 +2366,21 @@
   "description": "Starting time of a test step.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3039",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2394,23 +2394,23 @@
   "description": "Time unit multiplier for the starting time of a test step relative to the starting time of a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "295"
    },
    "tag": "3040",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2424,17 +2424,17 @@
   "description": "Time unit associated with the starting time of a test step relative to the starting time of a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "OrderDelayUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "295"
    },
    "tag": "3041",
@@ -2526,7 +2526,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2540,21 +2540,21 @@
   "description": "Ending time of a test step.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3042",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2568,23 +2568,23 @@
   "description": "Time unit multiplier for the ending time of a test step relative to the starting time of a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "295"
    },
    "tag": "3043",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2598,17 +2598,17 @@
   "description": "Time unit associated with the starting time of a test step relative to the ending time of a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "OrderDelayUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "295"
    },
    "tag": "3044",
@@ -2700,7 +2700,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2714,21 +2714,21 @@
   "description": "Number of test step parameters.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3045",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2742,21 +2742,21 @@
   "description": "Name of the test step parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3046",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -2770,15 +2770,15 @@
   "description": "Datatype of the test step parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "StrategyParameterTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3047",
@@ -2989,7 +2989,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3003,21 +3003,21 @@
   "description": "Value of the test step parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3048",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3031,21 +3031,21 @@
   "description": "Number of components making up a testing system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3049",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3059,21 +3059,21 @@
   "description": "Name of the component of a testing system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3050",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3087,21 +3087,21 @@
   "description": "Version (e.g. build or commit number) of the component of a testing system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3051",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3115,21 +3115,21 @@
   "description": "Number of results for a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3052",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3143,21 +3143,21 @@
   "description": "Name of a test measure.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3053",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3171,21 +3171,21 @@
   "description": "Description of a test measure.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3054",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3199,15 +3199,15 @@
   "description": "Datatype of the metric being used for a test.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "StrategyParameterTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3055",
@@ -3418,7 +3418,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3432,21 +3432,21 @@
   "description": "Number of decimal places for TestMeasureType(3055).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3056",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3460,15 +3460,15 @@
   "description": "Identifies the result of an individual test based on a measure.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestSuiteStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3057",
@@ -3504,7 +3504,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3518,15 +3518,15 @@
   "description": "Identifies whether the value of a measure needs to be over or under a specific threshold to be successful.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestThresholdTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3058",
@@ -3548,7 +3548,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3562,21 +3562,21 @@
   "description": "Value of the measure upon which a warning is issued for the test.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3059",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3590,21 +3590,21 @@
   "description": "Value of the measure upon which the test is considered to have failed.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3060",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3618,21 +3618,21 @@
   "description": "Peak value of the measure achieved in testing.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3061",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3646,21 +3646,21 @@
   "description": "Unique identifier of the TestSuiteDefinitionRequest(35=EL).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3062",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3674,21 +3674,21 @@
   "description": "Reference identifier of the TestSuiteDefinitionRequest(35=EL).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3063",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3702,15 +3702,15 @@
   "description": "Identifies the message transaction type.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestSuiteRequestTransTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3064",
@@ -3732,7 +3732,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3746,15 +3746,15 @@
   "description": "Status of the TestSuiteDefinitionRequest(35=EL) message being responded to.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestSuiteRequestStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3065",
@@ -3783,7 +3783,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3797,21 +3797,21 @@
   "description": "Unique identifier of the TestActionRequest(35=EN).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3066",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3825,15 +3825,15 @@
   "description": "Specifies the type of action to take or that was taken for a given test suite.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestActionTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3067",
@@ -3862,7 +3862,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3876,15 +3876,15 @@
   "description": "Status of the TestActionRequest(35=EN) message being responded to.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestActionRequestStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3068",
@@ -3913,7 +3913,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3927,15 +3927,15 @@
   "description": "Specifies the activity state the test suite is in.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestSuiteActivityStateCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3069",
@@ -3971,7 +3971,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -3985,15 +3985,15 @@
   "description": "Identifies the overall test result of a group of individual test scenarios.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestSuiteStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3070",
@@ -4029,7 +4029,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4043,21 +4043,21 @@
   "description": "Identifier of the test action report.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "292"
    },
    "tag": "3071",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4071,21 +4071,21 @@
   "description": "Identifies the currency pair/symbol that the instance of the rate source information is applicable for the fixing.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "293"
    },
    "tag": "3072",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4099,15 +4099,15 @@
   "description": "The source of where to obtain the FX benchmark rate to use for fixing the rate.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "FXBenchmarkCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "293"
    },
    "tag": "3073",
@@ -4164,7 +4164,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4178,21 +4178,21 @@
   "description": "The local date of the FX rate fixing. The time applicable on the fixing date is specified in FXBenchmarkTime(3075).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "293"
    },
    "tag": "3074",
    "type": "LocalMktDate",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4206,21 +4206,21 @@
   "description": "The local time of the FX rate fixing. The date applicable for the fixing time is specified in FXBenchmarkDate(3074).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktTime",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "293"
    },
    "tag": "3075",
    "type": "LocalMktTime",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4234,21 +4234,21 @@
   "description": "A business center whose calendar is used for date/time adjustment. See https://www.fpml.org/coding-scheme/business-center to download the current (ISDA/FpML) standard 4-character code values for business center identification.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "293"
    },
    "tag": "3076",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4262,15 +4262,15 @@
   "description": "Specifies the type of business event related to an algo certification request.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateRequestTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3077",
@@ -4306,7 +4306,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4320,15 +4320,15 @@
   "description": "Specifies the type of business event related to an algo certification report.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AlgoCertificateReportTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3078",
@@ -4357,7 +4357,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4371,21 +4371,21 @@
   "description": "Unique identifier for the group of test scenarios constituting a test suite.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3079",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4399,21 +4399,21 @@
   "description": "Support Timestamp of last update to Algo System Module.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3080",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4427,21 +4427,21 @@
   "description": "Support Timestamp of last update to Algo Test System Module.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "UTCTimestamp",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3081",
    "type": "UTCTimestamp",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4455,21 +4455,21 @@
   "description": "Number of orders for testing.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3082",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4483,21 +4483,21 @@
   "description": "Identifier of a test order.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3083",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4511,21 +4511,21 @@
   "description": "Used for the security symbol of a test order.\nSee Symbol(55) field for description.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3084",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4539,21 +4539,21 @@
   "description": "Used for the security identifier of a test order.\nSee Security(48) field for description.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3085",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4567,21 +4567,21 @@
   "description": "Used for the source of the security identifier of a test order.\nSee SecurityIDSource(22) field for description.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3086",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4595,21 +4595,21 @@
   "description": "Used for the price of a test order.\nSee Price(44) field for description.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Price",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3087",
    "type": "Price",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4623,15 +4623,15 @@
   "description": "Type of price of TestOrderPrice(3087).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PriceTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3088",
@@ -4814,7 +4814,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4828,21 +4828,21 @@
   "description": "Used for the quantity of a test order.\nSee OrderQty(80) field for description.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Qty",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3089",
    "type": "Qty",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4856,21 +4856,21 @@
   "description": "Time unit multiplier for the effective time of an order relative to the starting time of a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3090",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4884,15 +4884,15 @@
   "description": "Time unit associated with the effective time of an order relative to the starting time of a test scenario.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "OrderDelayUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3091",
@@ -4984,7 +4984,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -4998,21 +4998,21 @@
   "description": "Number of test gateway details.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3092",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5026,21 +5026,21 @@
   "description": "Name of test gateway information.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3093",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5054,15 +5054,15 @@
   "description": "Type of test gateway information.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TestGatewayDetailTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3094",
@@ -5140,7 +5140,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5154,21 +5154,21 @@
   "description": "Value of test gateway information.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3095",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5182,21 +5182,21 @@
   "description": "Execution venue of test system.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Exchange",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "295"
    },
    "tag": "3096",
    "type": "Exchange",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5210,21 +5210,21 @@
   "description": "Identifies the behaviour or configuration that has been selected by the executing party for this order.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "297"
    },
    "tag": "3097",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5238,21 +5238,21 @@
   "description": "Identifies the algorithm a broker has opted to use when executing an order.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "297"
    },
    "tag": "3098",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5266,21 +5266,21 @@
   "description": "Indicates number of trade attributes used to define a subgroup in an allocation group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "298"
    },
    "tag": "3099",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5294,15 +5294,15 @@
   "description": "Type of trade attribute defining a subgroup in an allocation group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "AllocGroupSubQtyTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "298"
    },
    "tag": "3100",
@@ -5331,7 +5331,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5345,21 +5345,21 @@
   "description": "Value of the trade attribute defining a subgroup in an allocation group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "298"
    },
    "tag": "3101",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5373,21 +5373,21 @@
   "description": "Identifies the most liquid market for a given instrument.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Exchange",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3102",
    "type": "Exchange",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5401,21 +5401,21 @@
   "description": "Identifies whether a given market is the most liquid for a given instrument.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Boolean",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3103",
    "type": "Boolean",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5429,21 +5429,21 @@
   "description": "Number of trades or transactions included in an aggregated trade or transaction.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3104",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5457,15 +5457,15 @@
   "description": "Indicates the quality of the market data being provided.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "MDQualityIndicatorCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3105",
@@ -5487,7 +5487,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5501,15 +5501,15 @@
   "description": "Indicates the acceptance status of a market data entry.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "MDEntryStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3106",
@@ -5538,7 +5538,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5552,21 +5552,21 @@
   "description": "Free form text to specify information related to the status provided with MDEntryStatus(3106).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3107",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5580,21 +5580,21 @@
   "description": "Byte length of encoded (non-ASCII characters) EncodedMDEntryStatusText(3109) field.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Length",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3108",
    "type": "Length",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5608,21 +5608,21 @@
   "description": "Encoded (non-ASCII characters) representation of the MDEntryStatusText(3107) field in the encoded format specified via the MessageEncoding(347) field. If used, the ASCII (English) representation should also be specified in the MDEntryStatusText(3107) field.\nData length controlled by field EncodedMDEntryStatusTextLen(3108).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "data",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3109",
    "type": "data",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5636,21 +5636,21 @@
   "description": "Unique message identifier for MarketDataSnapshotFullRefresh(35=W) or MarketDataIncrementalRefresh(35=X) message.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3110",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5664,21 +5664,21 @@
   "description": "Unique identifier for a SecurityStatus(35=f) message.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3111",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5692,21 +5692,21 @@
   "description": "Unique identifier for a TradingSessionStatus(35=h) message.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3112",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5720,15 +5720,15 @@
   "description": "Indicates the status of a report.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReportStatusCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "300"
    },
    "tag": "3113",
@@ -5764,7 +5764,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5778,21 +5778,21 @@
   "description": "Specifies margined price of a security.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Price",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "301"
    },
    "tag": "3114",
    "type": "Price",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5806,21 +5806,21 @@
   "description": "Specifies the dividend payout ratio associated with an equity or a bond security.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "301"
    },
    "tag": "3115",
    "type": "float",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5834,21 +5834,21 @@
   "description": "Number of LegRateSource entries in the repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3116",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5862,15 +5862,15 @@
   "description": "Identifies the source of rate information.\nFor FX, the reference source to be used for the FX spot rate.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "RateSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3117",
@@ -5913,7 +5913,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5927,15 +5927,15 @@
   "description": "Indicates whether the rate source specified is a primary or secondary source.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "RateSourceTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3118",
@@ -5957,7 +5957,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5971,21 +5971,21 @@
   "description": "Identifies the reference \"page\" from the rate source.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3119",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -5999,21 +5999,21 @@
   "description": "Identifies the page heading from the rate source.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3120",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6027,21 +6027,21 @@
   "description": "Identifies the currency pair/symbol that the instance of the rate source information is applicable for the fixing.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3121",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6055,15 +6055,15 @@
   "description": "The source of where to obtain the FX benchmark rate to use for fixing the rate.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "FXBenchmarkCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3122",
@@ -6120,7 +6120,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6134,21 +6134,21 @@
   "description": "The local date of the FX rate fixing. The time applicable on the fixing date is specified in LegFXBenchmarkTime(3124).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3123",
    "type": "LocalMktDate",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6162,21 +6162,21 @@
   "description": "The local time of the FX rate fixing. The date applicable for the fixing time is specified in LegFXBenchmarkDate(3123).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktTime",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3124",
    "type": "LocalMktTime",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6190,21 +6190,21 @@
   "description": "A business center whose calendar is used for date/time adjustment. See https://www.fpml.org/coding-scheme/business-center to download the current (ISDA/FpML) standard 4-character code values for business center identification.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "302"
    },
    "tag": "3125",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6218,21 +6218,21 @@
   "description": "Number of test suite parameters.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3126",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6246,21 +6246,21 @@
   "description": "Name of the test suite parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3127",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6274,15 +6274,15 @@
   "description": "Datatype of the test suite parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "StrategyParameterTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3128",
@@ -6493,7 +6493,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6507,21 +6507,21 @@
   "description": "Value of the test scenario parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3129",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6535,21 +6535,21 @@
   "description": "Number of test scenario parameters.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3130",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6563,21 +6563,21 @@
   "description": "Name of the test scenario parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3131",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6591,15 +6591,15 @@
   "description": "Datatype of the test scenario parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "StrategyParameterTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3132",
@@ -6810,7 +6810,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6824,21 +6824,21 @@
   "description": "Value of the test scenario parameter.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "303"
    },
    "tag": "3133",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6852,21 +6852,21 @@
   "description": "Number of trading service entries.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "305"
    },
    "tag": "3134",
    "type": "NumInGroup",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6880,15 +6880,15 @@
   "description": "Identifies a type of service offered as part of a trading session.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "TradingServiceTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "305"
    },
    "tag": "3135",
@@ -6959,7 +6959,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -6973,21 +6973,21 @@
   "description": "Description of a trading service.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "305"
    },
    "tag": "3136",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -7001,15 +7001,15 @@
   "description": "Denotes the reason for an outage.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "OutageReasonCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "305"
    },
    "tag": "3137",
@@ -7066,7 +7066,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -7080,15 +7080,15 @@
   "description": "Specifies the type of action to be taken when trading is halted.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "HaltActionTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "305"
    },
    "tag": "3138",
@@ -7117,7 +7117,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"
@@ -7131,21 +7131,21 @@
   "description": "Identification of a specific trading environment.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "305"
    },
    "tag": "3139",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest"

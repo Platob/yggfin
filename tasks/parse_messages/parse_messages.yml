@@ -34,7 +34,7 @@ parameters:
   # Exact FIX MsgTypes retained or dropped before key/value parsing.
   include_msgtypes: []
   exclude_msgtypes: []
-  # Exact plugin codes excluded after parsing and before persistence.
+  # Exact recorder plugins bypass timestamp, payload and entry parsing.
   technical_plugins: [jolokia]
   # Plugin-owned keys become canonical before MsgType and session fields lift.
   # plugin_keys: {XmlApi: {clientid: ClOrdID, type: MsgType}}
@@ -49,7 +49,7 @@ parameters:
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog:
-  #   catalog_name: rekep-production
+  #   name: rekep-production
   #   properties:
   #     type: glue
   #     warehouse: s3://example-bucket/rekep/warehouse
@@ -58,7 +58,7 @@ parameters:
   #     glue.id: "123456789012"  # Optional cross-account catalog ID.
   #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
   catalog:
-    catalog_name: rekep
+    name: rekep
     properties:
       type: sql
       uri: sqlite:///data/catalog.db
@@ -81,7 +81,9 @@ parameters:
   # would hold the rest of the file. What is past it is dropped and counted in
   # `reason`.
   max_row_byte_size: 67108864
-  commit_row_size: 250000
+  # Commit after eight retained RecordBatches; an optional row cap may end sooner.
+  commit_batch_num: 8
+  commit_row_size: null
   limit: null
   # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
   log_level: INFO

@@ -11,7 +11,7 @@ from typing import Annotated, get_type_hints
 import pyarrow
 import pytest
 
-from rekep.enums import MarketKind, Side, State, TimeInForce
+from rekep.enums import MarketKind, Plugin, Side, State, TimeInForce
 from rekep.fields import (
     DESCRIPTION,
     PARTITION_KEY,
@@ -26,7 +26,7 @@ from rekep.market import (
     Event,
     Execution,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     Leg,
     MarketEvent,
     Order,
@@ -43,7 +43,7 @@ from rekep.market.fields import (
     unkeyed,
 )
 
-SHAPES = (InstrumentUpdate, MarketEvent, Order, Book)
+SHAPES = (InstUpdate, MarketEvent, Order, Book)
 
 #: Every list flavour, because a walk that spelled them all `list` would narrow
 #: a 64-bit offset and drop a width without saying so.
@@ -99,7 +99,7 @@ def test_hash_widths_match_their_roles() -> None:
     assert "xhash" not in Leg.into_field().names, "leg reference identity is derived, not stored"
     parenthash = pyarrow.list_(pyarrow.field("item", HASH, nullable=False))
     linkhashes = pyarrow.list_(pyarrow.field("item", pyarrow.binary(16), nullable=False))
-    for shape in (Event, InstrumentUpdate, MarketEvent, Order, Execution, Book):
+    for shape in (Event, InstUpdate, MarketEvent, Order, Execution, Book):
         field = shape.into_field()
         assert field.field("prevhash").dtype == HASH, shape.__name__
         assert field.field("parenthash").dtype == parenthash, shape.__name__
@@ -122,15 +122,13 @@ def test_every_market_code_column_of_every_shape_matches_its_enum() -> None:
             declared = enum_of(hints.get(member.name))
             if declared is None:
                 continue
-            assert member.dtype == declared.into_arrow_type().index_type, (
-                f"{shape.__name__}.{member.name}"
-            )
+            assert member.dtype == declared.into_storage_type(), f"{shape.__name__}.{member.name}"
 
 
 def test_the_instrument_component_is_nested_in_its_update_envelope() -> None:
     assert Instrument.into_field().primary_keys() == []
     assert Instrument.into_field().partition_keys() == {}
-    update = InstrumentUpdate.into_field()
+    update = InstUpdate.into_field()
     assert update.primary_keys() == ["xhash"]
     assert update.partition_keys() == {"unixpartition": "identity"}
     assert update.names[-1] == "instrument"
@@ -233,7 +231,7 @@ def test_every_enum_column_says_what_its_codes_mean() -> None:
             keys = member.protocol("enum")
             assert keys["name"] == declared.__name__, member.name
             assert json.loads(keys["values"]) == {
-                str(item.value): item.name for item in declared
+                item.stored_key(): item.name for item in declared
             }, member.name
 
 
@@ -257,6 +255,10 @@ def test_enum_key_and_value_types_are_explicit() -> None:
     assert currency["padding"] == "nul-right"
     assert currency["pattern"] == "[A-Z]{3}"
     assert "dynamic" not in currency
+
+    protocol = Event.into_field().field("plugin").protocol("enum")
+    assert protocol["key_type"] == "fixed_size_binary[16]"
+    assert json.loads(protocol["values"]) == {Plugin.UNKNOWN.stored_key(): "UNKNOWN"}
 
     for declared in (Side, TimeInForce):
         metadata = describe_enum_metadata(declared)

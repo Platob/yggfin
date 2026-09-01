@@ -1,8 +1,7 @@
 {
  "name": "StreamCommodity",
  "versions": [
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "StreamCommodity",
@@ -10,12 +9,12 @@
   "nullable": true,
   "fix": {
    "component": "StreamCommodity",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fix-latest",
    "sources": [
     "fix-latest"
    ],
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "msgtypes": [

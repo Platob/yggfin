@@ -5,7 +5,7 @@ parameters:
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog:
-  #   catalog_name: rekep-production
+  #   name: rekep-production
   #   properties:
   #     type: glue
   #     warehouse: s3://example-bucket/rekep/warehouse
@@ -14,7 +14,7 @@ parameters:
   #     glue.id: "123456789012"  # Optional cross-account catalog ID.
   #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
   catalog:
-    catalog_name: rekep
+    name: rekep
     properties:
       type: sql
       uri: sqlite:///data/catalog.db

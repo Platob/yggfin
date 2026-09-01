@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 980" role="img" aria-labelledby="title desc">
   <title id="title">End-to-end notebook and Iceberg workflow</title>
-  <desc id="desc">A GitHub repository supplies notebook and YAML configuration to Apache Airflow and Papermill. parse_fix writes three Apache Iceberg log tables. Only fix.market continues, through an Apache Arrow reader to two readers of it: parse_instruments, which versions InstrumentUpdate events, and parse_market, which folds the sorted stream into books.</desc>
+  <desc id="desc">A GitHub repository supplies notebook and YAML configuration to Apache Airflow and Papermill. parse_fix writes three Apache Iceberg log tables. Only fix.market continues, through an Apache Arrow reader to two readers of it: parse_instruments, which versions InstUpdate events, and parse_market, which folds the sorted stream into books.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>

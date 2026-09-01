@@ -32,7 +32,9 @@ def into_flat_fixmsg_batch(
         or entries.null_count
         or not _supports(codec)
         or protocols.null_count
-        or not compute.all(compute.equal(protocols, Protocol.FIX), min_count=0).as_py()
+        or not compute.all(
+            compute.equal(protocols, Protocol.FIX.into_stored()), min_count=0
+        ).as_py()
     ):
         return None
     items = compute.list_flatten(entries)

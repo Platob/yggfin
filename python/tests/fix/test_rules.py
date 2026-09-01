@@ -67,14 +67,14 @@ def protocols_of(*messages: str | None) -> list[str]:
 
 def spelled(protocols: pyarrow.Array) -> list[str]:
     """One protocol column read back as the names it packs."""
-    return [Protocol.from_int(code).code for code in protocols.to_pylist()]
+    return [Protocol.from_stored(code).code for code in protocols.to_pylist()]
 
 
 def packed(*protocols: str | None) -> pyarrow.Array:
     """One protocol column as the classifier writes it: packed codes, never names."""
     return pyarrow.array(
-        [None if name is None else int(Protocol.from_str(name)) for name in protocols],
-        pyarrow.int64(),
+        [None if name is None else Protocol.from_str(name).into_stored() for name in protocols],
+        Protocol.into_storage_type(),
     )
 
 
@@ -259,7 +259,10 @@ def test_a_null_message_is_other_rather_than_null() -> None:
     protocols = DEFAULT.into_arrow_protocol_array(
         pyarrow.array([None, "heartbeat"], pyarrow.string())
     )
-    assert protocols.to_pylist() == [int(Protocol.OTHER), int(Protocol.MISC)]
+    assert protocols.to_pylist() == [
+        Protocol.OTHER.into_stored(),
+        Protocol.MISC.into_stored(),
+    ]
     assert protocols.null_count == 0
 
 
@@ -272,7 +275,7 @@ def test_an_empty_pattern_matches_every_nonnull_message() -> None:
 def test_no_rows_is_no_rows() -> None:
     protocols = DEFAULT.into_arrow_protocol_array(pyarrow.array([], pyarrow.string()))
     assert len(protocols) == 0
-    assert protocols.type == pyarrow.int64()
+    assert protocols.type == Protocol.into_storage_type()
 
     directions = DEFAULT.into_arrow_direction_array(pyarrow.array([], pyarrow.string()), protocols)
     assert len(directions) == 0
@@ -479,15 +482,15 @@ def test_a_slice_is_read_back_by_the_code_its_column_stores() -> None:
     assert DEFAULT.rule(int(Protocol.from_str("SBE"))) is OTHER
 
 
-def test_a_protocol_is_an_open_vocabulary_of_eight_ascii_bytes() -> None:
+def test_a_protocol_is_an_open_vocabulary_of_sixteen_ascii_bytes() -> None:
     """A desk's own name is a code without a release here -- up to the width
     the column stores, and a rule that names a wider one is refused rather
     than quietly collapsing onto `UNKNOWN` beside every other over-long name."""
     own = Rule(protocol="venue", codec="ul")
     assert own.protocol is Protocol.from_str("VENUE")
-    assert int(own.protocol) == int.from_bytes(b"VENUE\0\0\0", "big", signed=True)
-    with pytest.raises(ValueError, match=r"eight bytes of \[A-Z0-9"):
-        Rule(protocol="VENUEBRIDGE")
+    assert own.protocol.into_stored() == b"VENUE".ljust(16, b"\0")
+    with pytest.raises(ValueError, match=r"sixteen bytes of \[A-Z0-9"):
+        Rule(protocol="VENUE-BRIDGE-LONG")
     with pytest.raises(ValueError, match="no protocol name"):
         Rule(protocol="")
 
@@ -545,4 +548,4 @@ def test_a_rule_is_a_field_class_like_every_other_declaration() -> None:
     assert Rule.into_field().names[:2] == ["protocol", "pattern"]
     assert Rule.into_field().field("plugin_pattern").nullable
     assert not Rule.into_field().field("protocol").nullable
-    assert Rule.into_field().field("protocol").dtype == Protocol.into_arrow_type().index_type
+    assert Rule.into_field().field("protocol").dtype == Protocol.into_storage_type()

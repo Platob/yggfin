@@ -199,9 +199,7 @@ class Order(MarketEvent):
     def complete_from(self, previous: Event) -> None:
         """An order completed from its last version, by what a market actually means."""
         same_named_life = self._continues_named_life(previous)
-        linked_life = (
-            previous._linked_order_life(self) if isinstance(previous, Execution) else ("", "")
-        )
+        linked_life = previous._linked_order_life(self) if isinstance(previous, Execution) else ""
         MarketEvent.complete_from(self, previous)
         # By name, for the reason `_carry` gives. `vwap` means the same thing
         # wherever it appears, unlike the abstract price and quantity slots.
@@ -228,18 +226,13 @@ class Order(MarketEvent):
             self.clordid = named
         elif self.origclordid is None and named not in (None, self.clordid):
             self.origclordid = named
-        anchor, source = (
-            (previous.code or previous.life_code(), previous.life_code_source())
-            if same_named_life
-            else linked_life
-        )
+        anchor = previous.code or previous.life_code() if same_named_life else linked_life
         if anchor:
             # A later acknowledgement may introduce the venue's OrderID. The
             # exact field keeps it, while the lifecycle stays on its first
             # readable anchor. Clear the incoming identity so the envelope
             # hashes that anchor again.
             self.code = anchor
-            self.codesource = source
             self.xhash = NIL
 
     def derive(self) -> None:
@@ -268,13 +261,6 @@ class Order(MarketEvent):
         """The order identifier that survives amendments, or nothing."""
         return self.code or self._named_life_code()
 
-    def life_code_source(self) -> str:
-        """The exact order field that supplied the readable identifier."""
-        if self.code:
-            return self.codesource or "Code"
-        source, _ = self._named_life_key()
-        return source
-
     def _named_life_code(self) -> str:
         """The strongest typed order identifier this version carries."""
         return self._named_life_key()[1]
@@ -283,13 +269,26 @@ class Order(MarketEvent):
         """Reader-facing source name and strongest order identifier."""
         return next(((source, value) for _, source, value in self._code_fields_of(self)), ("", ""))
 
+    def _code_values(self) -> Iterator[tuple[str, str | None]]:
+        """Every dedicated order code, including the lifecycle anchor."""
+        yield from MarketEvent._code_values(self)
+        for name in (
+            "orderid",
+            "clordid",
+            "origclordid",
+            "clordlinkid",
+            "parentclordid",
+            "parentorderid",
+        ):
+            yield name, getattr(self, name)
+
     @classmethod
     def lookup_altids_of(cls, event: MarketEvent) -> Iterator[tuple[str, str]]:
         """Typed order identifiers on `event`, strongest first and once each.
 
         Venue identifiers lead client identifiers; exact columns are inserted
         at their strength within that order so hand-built rows remain indexed.
-        Parsed `altids` retains identifiers not promoted to dedicated columns.
+        `altids` carries promoted and residual identifiers under one spelling.
         """
         yield from ((namespace, value) for namespace, _, value in cls._code_fields_of(event))
 
@@ -386,7 +385,6 @@ class Execution(MarketEvent):
     # code. Keep the order anchor only while an in-memory event chain crosses
     # this report; persisted folding resolves the exact hash through its index.
     __order_code: str = ""
-    __order_codesource: str = ""
 
     @classmethod
     @functools.cache
@@ -461,12 +459,8 @@ class Execution(MarketEvent):
         """A report completed from the one before it on the same order."""
         if isinstance(previous, Order):
             self.__order_code = previous.code or previous.life_code()
-            self.__order_codesource = previous.life_code_source()
         elif isinstance(previous, Execution):
-            self.__order_code, self.__order_codesource = (
-                previous.__order_code,
-                previous.__order_codesource,
-            )
+            self.__order_code = previous.__order_code
         MarketEvent.complete_from(self, previous)
         # By name, for the reason `_carry` gives.
         _carry(
@@ -485,7 +479,6 @@ class Execution(MarketEvent):
         )
         if same_report_life and previous.code:
             self.code = previous.code
-            self.codesource = previous.codesource
             self.xhash = NIL
         done, left, average = _totals_of(previous)
         known_done = done
@@ -528,23 +521,17 @@ class Execution(MarketEvent):
         if self.vwap is None:
             self.vwap = revised_average
 
-    def _linked_order_life(self, current: Order) -> tuple[str, str]:
+    def _linked_order_life(self, current: Order) -> str:
         """Transient order anchor retained while folding an in-memory report chain."""
         current_keys = set(Order.lookup_altids_of(current))
         report_keys = set(Order.lookup_altids_of(self))
         if not current_keys or current_keys.isdisjoint(report_keys):
-            return "", ""
-        return self.__order_code, self.__order_codesource
+            return ""
+        return self.__order_code
 
     def life_code(self) -> str:
         """The report identifier that survives corrections, or nothing."""
         return self.code or self._named_life_code()
-
-    def life_code_source(self) -> str:
-        """The exact execution field that supplied the readable identifier."""
-        if self.code:
-            return self.codesource or "Code"
-        return self._named_life_key()[0]
 
     def _named_life_code(self) -> str:
         """The strongest execution identifier this version carries itself."""
@@ -559,6 +546,19 @@ class Execution(MarketEvent):
         if self.tradeid:
             return "TradeID", self.tradeid
         return "", ""
+
+    def _code_values(self) -> Iterator[tuple[str, str | None]]:
+        """Every dedicated execution code, including its order references."""
+        yield from MarketEvent._code_values(self)
+        for name in (
+            "execid",
+            "execrefid",
+            "tradeid",
+            "orderid",
+            "clordid",
+            "origclordid",
+        ):
+            yield name, getattr(self, name)
 
     def version_parts(self) -> tuple[Any, ...]:
         """An execution's version moves when what it says about the trade does."""

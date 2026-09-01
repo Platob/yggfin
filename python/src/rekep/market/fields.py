@@ -11,10 +11,15 @@ from typing import Any, Self
 import pyarrow
 
 from rekep.convert import Convertible
-from rekep.enums import Ascii32
+from rekep.enums import Ascii32, Ascii128
 from rekep.fields import ENUM, PARTITION_KEY, PRIMARY_KEY, Field, FieldBuilder
 from rekep.fix.registry import FixRegistry
 from rekep.market.identity import ROW_SPELLED, read_member, stored_member
+
+
+def _stored_value(name: str, value: Any) -> Any:
+    """One scalar in the physical spelling declared by a market column."""
+    return value.into_stored() if isinstance(value, Ascii128) else stored_member(name, value)
 
 
 class MarketFieldBuilder(FieldBuilder):
@@ -29,7 +34,7 @@ class MarketFieldBuilder(FieldBuilder):
         `int64`.
         """
         if isinstance(annotation, type) and issubclass(annotation, Ascii32):
-            return annotation.into_arrow_type().index_type
+            return annotation.into_storage_type()
         return super().scalar(annotation)
 
     def arrow_type(self, annotation: Any) -> pyarrow.DataType:
@@ -105,10 +110,9 @@ class MarketConvertible(Convertible):
         return cls.from_dict(values)
 
     #: One member as its column holds it, for the builder that assembles a
-    #: batch member by member. Only the spelling is asked here: `stored_member`
-    #: answers for wide event hashes wherever they appear, and the builder
-    #: walks a nested shape itself rather than being handed a document of it.
-    into_column_value = staticmethod(stored_member)
+    #: batch member by member. Wide event hashes and sixteen-byte ASCII codes
+    #: both need a physical spelling that their Python scalar does not expose.
+    into_column_value = staticmethod(_stored_value)
 
     def into_row(self) -> dict[str, Any]:
         """This value as a stored row: every member as the column holds it.
@@ -136,7 +140,9 @@ class MarketConvertible(Convertible):
 def _row_value(name: str, value: Any) -> Any:
     """One member as a column holds it, recursing through declared shapes."""
     if value is None or name in ROW_SPELLED:
-        return stored_member(name, value)
+        return _stored_value(name, value)
+    if isinstance(value, Ascii128):
+        return value.into_stored()
     if isinstance(value, MarketConvertible):
         return value.into_row()
     if isinstance(value, Convertible):
@@ -260,15 +266,16 @@ def describe_enum(built: Field, declared: type[enum.Enum]) -> None:
     keys = built.enum
     keys.name = declared.__name__
     if isinstance(declared, type) and issubclass(declared, Ascii32):
-        keys.key_type = str(declared.into_arrow_type().index_type)
+        keys.key_type = str(declared.into_storage_type())
+        keys.members = {member.stored_key(): member.name for member in declared}
     else:
         keys.key_type = "int32" if kinds == {int} else "utf8" if kinds == {str} else "mixed"
+        keys.members = {str(value): name for name, value in values.items()}
     keys.value_type = "utf8"
-    keys.members = {str(value): name for name, value in values.items()}
     mapping = getattr(declared, "fix_mapping", None)
     if mapping is not None:
         keys.fix_values = {
-            str(tag): {wire: int(member) for wire, member in values.items()}
+            str(tag): {wire: member.into_stored() for wire, member in values.items()}
             for tag, values in mapping().items()
         }
 

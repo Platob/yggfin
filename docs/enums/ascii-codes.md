@@ -1,8 +1,8 @@
 # ASCII codes
 
-Every stable code in this package is its own readable spelling, packed into the
-integer a column stores. `Ascii32` takes four bytes into an `int32`, `Ascii64`
-takes eight into an `int64`, and nothing else differs between them.
+Every stable code in this package is its own readable spelling. `Ascii32`
+packs four bytes into an `int32`, `Ascii64` packs eight into an `int64`, and
+`Ascii128` stores sixteen bytes as `fixed_size_binary[16]`.
 
 ```python
 from rekep.enums import Side, State
@@ -17,9 +17,9 @@ print(int(State.PENDING_NEW), int.from_bytes(b"11PNDNEW", "big"))
 3544702678800942423 3544702678800942423
 ```
 
-The code sits **left-justified** and is padded right with NULs, so the integer
-orders exactly as the text does and a raw column dump reads back as its
-spelling. `from_int` is the only reader of a stored value.
+The code sits **left-justified** and is padded right with NULs, so its physical
+value orders exactly as the text does. `from_stored` reads either integer or
+fixed-binary storage.
 
 ```python
 assert int(Side.BUY) < int(Side.SELL) and "BUY" < "SELL"
@@ -96,9 +96,9 @@ so every code is its own band.
 | [State](state.md) | `Ascii64` | `int64` | open |
 | [AssetKind](asset-kind.md) | `Ascii64` | `int64` | open |
 | [MarketKind](market-kind.md) | `Ascii64` | `int64` | open |
-| [OptionKind](option-kind.md) | `Ascii64` | `int64` | open |
-| [Protocol](protocol.md) | `Ascii64` | `int64` | open |
-| [Plugin](plugin.md) | `Ascii64` | `int64` | open |
+| [Protocol](protocol.md) | `Ascii128` | `fixed_size_binary[16]` | open |
+| [Plugin](plugin.md) | `Ascii128` | `fixed_size_binary[16]` | open |
+| [OptionKind](option-kind.md) | `Ascii32` | `int32` | open |
 | [Direction](direction.md) | `Ascii32` | `int32` | open |
 | [MIC](mic.md) | `Ascii32` | `int32` | open |
 | [Currency](currency.md) | `Ascii32` | `int32` | open |

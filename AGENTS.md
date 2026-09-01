@@ -160,7 +160,8 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   `append_*` inserts, skipping stored keys when `merge_by` names them. Both
   create a missing table. `merge_by=True` means the declared primary key, and
   an overwrite has no keyless mode.
-- Accumulate `commit_row_size`; an input batch is not a storage commit.
+- Accumulate `commit_batch_num` input batches per commit; `commit_row_size` is
+  an optional earlier row cap. An input batch is not itself a storage commit.
 - Push filters, projections, limits, and ordering to the storage engine.
 - File sets open one naturally sorted path at a time and combine short batches.
 - Nothing names a source except caller-supplied `static_values`.
@@ -185,8 +186,8 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   `hash` anchors it to `unix`; `prevhash` names the preceding exact version
   and `parenthash` records exact construction provenance.
 - `xhash` identifies a lifecycle as the direct XXH3-128 digest of UTF-8 `code`.
-  `codesource` names the field that supplied `code`; `linkhashes` names exact
-  related event versions by their sixteen-byte `hash`.
+  `altids` retains every readable code under its folded field name;
+  `linkhashes` names exact related event versions by their sixteen-byte `hash`.
 - Composite identity is the cross-language `rekep-identity-v1` frame: signed
   little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
   `vhash` is signed `int64`; `hash`, `xhash`, and reference identities are
@@ -195,10 +196,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   and padded with trailing NULs, so the value orders as its text does. Ranks
   carry the band order, so live and terminal checks compare ranks and a storage
   scan pushes the finite code set `ranked_at_least` names.
-- Nest nothing a reader filters on. `InstrumentUpdate.xhash` keeps the event
+- Nest nothing a reader filters on. `InstUpdate.xhash` keeps the event
   lifecycle flat; book summary values stay flat too.
 - `Instrument` is the event-free FIX component of reference facts, nested in
-  `FixMsg` and `InstrumentUpdate`. `InstrumentUpdate` is the latest persisted
+  `FixMsg` and `InstUpdate`. `InstUpdate` is the latest persisted
   reference event, keyed by the direct XXH3-128 digest of `code`, where `code`
   is its `symbolticker`. Instrument, leg, and flat instrument identities are
   the same clock-free operation over their canonical ticker.
@@ -239,7 +240,7 @@ parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
 `parse_fix` owns FIX translation and the resolved `unix` clock. It nests the
 `Instrument` component, whose class owns ticker and ISIN derivation.
 `parse_instruments` reads the rows it wrote and versions
-`market.instruments` through `InstrumentUpdate.versioned`, so every caller
+`market.instruments` through `InstUpdate.versioned`, so every caller
 uses the same enrichment and versioning rule.
 
 With `parse_market.books: false`, the market task bypasses Book construction

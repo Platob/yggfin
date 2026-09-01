@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rekep import FixCodec, FixMsg, Message
 from rekep.fix import FixRegistry
-from rekep.market import BookIterator, EventType, InstrumentUpdate, MarketKind, Order, Side, State
+from rekep.market import BookIterator, EventType, InstUpdate, MarketKind, Order, Side, State
 from rekep.market.fix import FixEvents, unix_of
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -67,7 +67,7 @@ def test_a_two_sided_quote_becomes_two_indicative_rows_for_one_quote_lifecycle()
     assert bid.orderid == ask.orderid == "Q-1"
     assert bid.clordid == ask.clordid == "REQ-1"
     assert bid.xhash == ask.xhash, "one QuoteID names one lifecycle"
-    assert bid.codesource == ask.codesource == "QuoteID"
+    assert bid.altids["quoteid"] == ask.altids["quoteid"] == "Q-1"
     assert bid.expunix == ask.expunix == unix_of("20260821-10:05:00")
     assert bid.metadata["537"] == ask.metadata["537"] == "1"
 
@@ -134,7 +134,7 @@ def test_a_mass_quote_emits_every_quote_entry_side() -> None:
         ("MSFT", Side.ASK, "ENTRY-2"),
     ]
     assert len({row.xhash for row in rows}) == 2, "each QuoteEntryID names both sides"
-    assert {row.codesource for row in rows} == {"QuoteEntryID"}
+    assert {row.altids["quoteentryid"] for row in rows} == {"ENTRY-1", "ENTRY-2"}
 
 
 def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> None:
@@ -201,7 +201,7 @@ def test_nested_mass_quote_sets_project_each_instrument_once_in_wire_order() -> 
     registry = FixRegistry(cache_dir=FIX_DATA)
     found = [
         update.instrument
-        for update in InstrumentUpdate.from_fixmsgs(
+        for update in InstUpdate.from_fixmsgs(
             [FixMsg.from_text(mass_quote(registry))], registry=registry
         )
     ]

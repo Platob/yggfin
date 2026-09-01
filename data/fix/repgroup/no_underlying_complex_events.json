@@ -5,8 +5,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoUnderlyingComplexEvents",
@@ -140,64 +139,13 @@
      }
     },
     {
-     "name": "NoUnderlyingComplexEventDates",
-     "type": "list",
+     "name": "UnderlyingComplexEventDates",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "2053"
+      "component": "UnderlyingComplexEventDates"
      },
-     "item": {
-      "name": "UnderlyingComplexEventDate",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventStartDate",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2054"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventEndDate",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2055"
-        }
-       },
-       {
-        "name": "NoUnderlyingComplexEventTimes",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "2056"
-        },
-        "item": {
-         "name": "UnderlyingComplexEventTime",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "UnderlyingComplexEventStartTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "2057"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventEndTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "2058"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "UnderlyingComplexEventCurrencyOne",
@@ -304,50 +252,13 @@
      }
     },
     {
-     "name": "NoUnderlyingComplexEventRateSources",
-     "type": "list",
+     "name": "UnderlyingComplexEventRateSourceGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41732"
+      "component": "UnderlyingComplexEventRateSourceGrp"
      },
-     "item": {
-      "name": "UnderlyingComplexEventRateSource",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventRateSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41733"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventRateSourceType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41734"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventReferencePage",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41735"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventReferencePageHeading",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41736"
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "UnderlyingComplexEventRelativeDate",
@@ -359,148 +270,13 @@
      "fields": []
     },
     {
-     "name": "NoUnderlyingComplexEventPeriods",
-     "type": "list",
+     "name": "UnderlyingComplexEventPeriodGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41729"
+      "component": "UnderlyingComplexEventPeriodGrp"
      },
-     "item": {
-      "name": "UnderlyingComplexEventPeriod",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventPeriodType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41730"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventBusinessCenter",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41731"
-        }
-       },
-       {
-        "name": "NoUnderlyingComplexEventSchedules",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41750"
-        },
-        "item": {
-         "name": "UnderlyingComplexEventSchedule",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "UnderlyingComplexEventScheduleStartDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41751"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventScheduleEndDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41752"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41753"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventScheduleFrequencyUnit",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41754"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventScheduleRollConvention",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41755"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoUnderlyingComplexEventPeriodDateTimes",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41726"
-        },
-        "item": {
-         "name": "UnderlyingComplexEventPeriodDateTime",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "UnderlyingComplexEventPeriodDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41727"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventPeriodTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41728"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoUnderlyingComplexEventAveragingObservations",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41713"
-        },
-        "item": {
-         "name": "UnderlyingComplexEventAveragingObservation",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "UnderlyingComplexEventAveragingObservationNumber",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41714"
-           }
-          },
-          {
-           "name": "UnderlyingComplexEventAveragingWeight",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41715"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "UnderlyingComplexEventCreditEventsXIDRef",
@@ -543,118 +319,22 @@
      }
     },
     {
-     "name": "NoUnderlyingComplexEventCreditEventSources",
-     "type": "list",
+     "name": "UnderlyingComplexEventCreditEventSourceGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41748"
+      "component": "UnderlyingComplexEventCreditEventSourceGrp"
      },
-     "item": {
-      "name": "UnderlyingComplexEventCreditEventSource",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventCreditEventSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41749"
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
-     "name": "NoUnderlyingComplexEventCreditEvents",
-     "type": "list",
+     "name": "UnderlyingComplexEventCreditEventGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "41716"
+      "component": "UnderlyingComplexEventCreditEventGrp"
      },
-     "item": {
-      "name": "UnderlyingComplexEventCreditEvent",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventCreditEventType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41717"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventCreditEventValue",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41718"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventCreditEventCurrency",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41719"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventCreditEventPeriod",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41720"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventCreditEventUnit",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41721"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventCreditEventDayType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41722"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventCreditEventRateSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41723"
-        }
-       },
-       {
-        "name": "NoUnderlyingComplexEventCreditEventQualifiers",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41724"
-        },
-        "item": {
-         "name": "UnderlyingComplexEventCreditEventQualifier",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "UnderlyingComplexEventCreditEventQualifier",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41725"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "UnderlyingComplexEventFuturesPriceValuation",

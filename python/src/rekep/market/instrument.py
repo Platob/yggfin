@@ -20,6 +20,7 @@ from rekep.enums import (
     Currency,
     EventType,
     OptionKind,
+    Plugin,
     Protocol,
     SecurityIDSource,
     Side,
@@ -42,6 +43,7 @@ from rekep.market.event import (
     _declared_temporal_arrow,
     _declared_value_parts,
     _local_timestamp,
+    _mapping_frame_arrow,
     unix_partition_arrow,
 )
 from rekep.market.fields import MarketConvertible, fix_tag
@@ -203,7 +205,7 @@ class Instrument(MarketConvertible):
         return MappingProxyType(
             {
                 **MarketConvertible.into_redirects(),
-                InstrumentUpdate: "update",
+                InstUpdate: "update",
                 FixMsg: "fixmsg",
             }
         )
@@ -494,16 +496,16 @@ class Instrument(MarketConvertible):
         )
 
     @classmethod
-    def from_update(cls, source: InstrumentUpdate) -> Instrument:
+    def from_update(cls, source: InstUpdate) -> Instrument:
         """Extract the component carried by one reference-data update."""
-        if not isinstance(source, InstrumentUpdate):
-            raise TypeError(f"source must be InstrumentUpdate, got {type(source).__name__}")
+        if not isinstance(source, InstUpdate):
+            raise TypeError(f"source must be InstUpdate, got {type(source).__name__}")
         return source.instrument
 
     @classmethod
     def from_update_arrow_batch(cls, source: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
         """Project update rows back to the component schema without row materialization."""
-        batch = InstrumentUpdate.into_field().cast_arrow_batch(source)
+        batch = InstUpdate.into_field().cast_arrow_batch(source)
         component = batch.column("instrument")
         return pyarrow.RecordBatch.from_arrays(
             [component.field(index) for index in range(component.type.num_fields)],
@@ -518,7 +520,7 @@ class Instrument(MarketConvertible):
         registry: FixRegistry | None = None,
     ) -> Instrument | None:
         """Build the first component carried by one parsed FIX row."""
-        update = next(InstrumentUpdate.from_fixmsgs((source,), registry=registry), None)
+        update = next(InstUpdate.from_fixmsgs((source,), registry=registry), None)
         return None if update is None else update.instrument
 
     @classmethod
@@ -559,7 +561,7 @@ class Instrument(MarketConvertible):
 
 
 @scalar(slots=True)
-class InstrumentUpdate(Event):
+class InstUpdate(Event):
     """One observed version of an instrument component."""
 
     @classmethod
@@ -590,7 +592,6 @@ class InstrumentUpdate(Event):
         if not isinstance(self.instrument, Instrument):
             self.instrument = Instrument.from_dict(self.instrument)
         self.code = self.instrument.symbolticker
-        self.codesource = "SymbolTicker" if self.code else ""
         Event.__post_init__(self)
         self._materialize_life_code()
         self.xhash = self.life_hash()
@@ -611,7 +612,7 @@ class InstrumentUpdate(Event):
         creaunix: int | None = None,
         recunix: int | None = None,
         **event_values: Any,
-    ) -> InstrumentUpdate:
+    ) -> InstUpdate:
         """Wrap one component in its observation envelope."""
         if not isinstance(source, Instrument):
             source = Instrument.from_dict(source)
@@ -630,7 +631,7 @@ class InstrumentUpdate(Event):
         *,
         registry: FixRegistry | None = None,
         **overrides: Any,
-    ) -> InstrumentUpdate | None:
+    ) -> InstUpdate | None:
         """Build the first reference update carried by one parsed FIX row."""
         from rekep.text.fixmsg import FixMsg
 
@@ -653,7 +654,9 @@ class InstrumentUpdate(Event):
         unix: Any = 0,
         creaunix: Any | None = None,
         recunix: Any | None = None,
-        plugin: Any = "",
+        plugin: Plugin | str | bytes | pyarrow.Scalar | pyarrow.Array | pyarrow.ChunkedArray = (
+            Plugin.UNKNOWN
+        ),
     ) -> pyarrow.RecordBatch:
         """Wrap component columns in identified update envelopes with Arrow kernels."""
         if isinstance(source, pyarrow.RecordBatch):
@@ -690,13 +693,15 @@ class InstrumentUpdate(Event):
                 "eventtype": _broadcast(int(EventType.INSTRUMENT), rows, pyarrow.int64()),
                 "creaunix": creation,
                 "recunix": clock if recunix is None else _broadcast(recunix, rows, pyarrow.int64()),
-                "plugin": _broadcast(plugin, rows, pyarrow.string()),
+                "plugin": _plugin_arrow(plugin, rows),
                 "xhash": xhash,
                 "code": ticker,
-                "codesource": compute.if_else(compute.equal(ticker, ""), "", "SymbolTicker"),
                 "instrument": component,
             }
         )
+        from rekep.text.fixmsg import FixMsg
+
+        values["altids"] = FixMsg.altids_arrow(values, rows)
         values["vhash"] = _update_vhash_arrow(cls, values, component)
         values["hash"] = txhash.couple128_arrow(cls._clock_micros(clock), values["vhash"])
         return pyarrow.RecordBatch.from_arrays(
@@ -708,11 +713,16 @@ class InstrumentUpdate(Event):
         """The canonical ticker that names this reference lifecycle."""
         return self.instrument.symbolticker
 
+    def _code_values(self) -> Iterator[tuple[str, str | None]]:
+        """Envelope and canonical instrument codes carried by the update."""
+        yield from Event._code_values(self)
+        yield "symbolticker", self.instrument.symbolticker
+
     def version_parts(self) -> tuple[Any, ...]:
         """Envelope values followed by the complete component declaration."""
         return (*Event.version_parts(self), *_declared_value_parts(self.instrument))
 
-    def enriched_with(self, other: InstrumentUpdate) -> InstrumentUpdate | None:
+    def enriched_with(self, other: InstUpdate) -> InstUpdate | None:
         """This update plus facts only the other observation knows."""
         instrument = self.instrument.enriched_with(other.instrument)
         if instrument is None:
@@ -720,10 +730,10 @@ class InstrumentUpdate(Event):
         return dataclasses.replace(self, instrument=instrument, vhash=NIL, hash=NIL)
 
     @classmethod
-    def from_events(cls, events: Iterable[Any]) -> Iterator[InstrumentUpdate]:
+    def from_events(cls, events: Iterable[Any]) -> Iterator[InstUpdate]:
         """Reference updates merged from transient market-event facts."""
 
-        def observed() -> Iterator[InstrumentUpdate | None]:
+        def observed() -> Iterator[InstUpdate | None]:
             for event in events:
                 instrument = event.into_instrument()
                 yield (
@@ -746,10 +756,10 @@ class InstrumentUpdate(Event):
         logs: Iterable[Any],
         *,
         registry: FixRegistry | None = None,
-    ) -> Iterator[InstrumentUpdate]:
+    ) -> Iterator[InstUpdate]:
         """Reference updates merged from parsed FIX messages."""
 
-        def observed() -> Iterator[InstrumentUpdate]:
+        def observed() -> Iterator[InstUpdate]:
             for log in logs:
                 if getattr(log, "error", None) or log.protocol.family is Protocol.OTHER:
                     continue
@@ -768,12 +778,12 @@ class InstrumentUpdate(Event):
         return cls.enriched(observed())
 
     @classmethod
-    def enriched(cls, observed: Iterable[InstrumentUpdate | None]) -> Iterator[InstrumentUpdate]:
+    def enriched(cls, observed: Iterable[InstUpdate | None]) -> Iterator[InstUpdate]:
         """One deterministically enriched update per canonical ticker."""
         # Input order owns conflicts; later observations fill gaps but never
         # revise facts already stated by the first observation.
         order: list[str] = []
-        records: dict[str, InstrumentUpdate] = {}
+        records: dict[str, InstUpdate] = {}
         for update in observed:
             if update is None or not update.instrument.symbolticker:
                 continue
@@ -796,9 +806,9 @@ class InstrumentUpdate(Event):
     @classmethod
     def versioned(
         cls,
-        observed: Iterable[InstrumentUpdate],
-        stored: Mapping[str, InstrumentUpdate],
-    ) -> Iterator[InstrumentUpdate]:
+        observed: Iterable[InstUpdate],
+        stored: Mapping[str, InstUpdate],
+    ) -> Iterator[InstUpdate]:
         """Observations that add a fact to the stored lifecycle."""
         for row in observed:
             known = stored.get(row.instrument.symbolticker)
@@ -1084,8 +1094,8 @@ def _instrument_key_columns_arrow(keys: Any, rows: int) -> dict[str, pyarrow.Arr
     isin = compute.struct_field(parsed, "isin")
     security_source = compute.if_else(
         compute.is_valid(isin),
-        pyarrow.scalar(int(SecurityIDSource.ISIN), SecurityIDSource.into_arrow_type().index_type),
-        pyarrow.scalar(None, SecurityIDSource.into_arrow_type().index_type),
+        pyarrow.scalar(int(SecurityIDSource.ISIN), SecurityIDSource.into_storage_type()),
+        pyarrow.scalar(None, SecurityIDSource.into_storage_type()),
     )
     return {
         "securityid": isin,
@@ -1104,7 +1114,7 @@ def _instrument_key_columns_arrow(keys: Any, rows: int) -> dict[str, pyarrow.Arr
 
 def _asset_kind_arrow(source: Any, rows: int) -> pyarrow.Array:
     """Packed AssetKind values or their textual spellings."""
-    dtype = AssetKind.into_arrow_type().index_type
+    dtype = AssetKind.into_storage_type()
     if isinstance(source, pyarrow.ChunkedArray):
         source = source.combine_chunks()
     if isinstance(source, pyarrow.Array) and pyarrow.types.is_integer(source.type):
@@ -1277,6 +1287,27 @@ def _broadcast(value: Any, rows: int, dtype: pyarrow.DataType) -> pyarrow.Array:
     return pyarrow.repeat(scalar, rows)
 
 
+def _plugin_arrow(
+    value: Plugin | str | bytes | pyarrow.Scalar | pyarrow.Array | pyarrow.ChunkedArray,
+    rows: int,
+) -> pyarrow.Array:
+    """One plugin scalar or column at the enum's persisted width."""
+    dtype = Plugin.into_storage_type()
+    if isinstance(value, pyarrow.ChunkedArray):
+        value = value.combine_chunks()
+    if isinstance(value, pyarrow.Array):
+        if len(value) != rows:
+            raise ValueError(f"expected {rows} rows, got {len(value)}")
+        packed = value if value.type == dtype else Plugin.arrow_from_strings(value)
+        return compute.fill_null(packed, Plugin.UNKNOWN.into_stored())
+    if isinstance(value, pyarrow.Scalar):
+        if value.type == dtype:
+            return pyarrow.repeat(value, rows)
+        value = value.as_py()
+    member = Plugin.from_stored(value) if isinstance(value, bytes) else Plugin.from_str(value)
+    return pyarrow.repeat(pyarrow.scalar(member.into_stored(), dtype), rows)
+
+
 def _text(column: Any, rows: int) -> pyarrow.Array:
     """Trimmed UTF-8, with an absent input represented by nulls."""
     if column is None:
@@ -1319,7 +1350,7 @@ def _enum_arrow(
     integer_is_fix: bool = False,
 ) -> pyarrow.Array:
     """FIX spellings or already-packed codes as one enum storage column."""
-    dtype = enum_type.into_arrow_type().index_type
+    dtype = enum_type.into_storage_type()
     if column is None:
         return pyarrow.nulls(rows, dtype) if nullable else _broadcast(0, rows, dtype)
     if isinstance(column, pyarrow.ChunkedArray):
@@ -1337,7 +1368,7 @@ def _enum_arrow(
 
 def _classified_arrow(cfi: Any, securitytype: Any, rows: int) -> pyarrow.Array:
     """Vectorized CFI classification with `SecurityType` as its fallback."""
-    dtype = AssetKind.into_arrow_type().index_type
+    dtype = AssetKind.into_storage_type()
     cfi_kind = _mapped_arrow(
         cfi,
         rows,
@@ -1457,7 +1488,7 @@ def _default_columns(field: Any, rows: int) -> dict[str, pyarrow.Array]:
     """One update's declared defaults broadcast without constructing source rows."""
     if rows == 0:
         return {member.name: pyarrow.array([], type=member.dtype) for member in field.fields}
-    defaults = InstrumentUpdate().into_row()
+    defaults = InstUpdate().into_row()
     return {
         member.name: pyarrow.repeat(pyarrow.scalar(defaults[member.name], type=member.dtype), rows)
         for member in field.fields
@@ -1507,18 +1538,19 @@ def _declared_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
 
 
 def _update_vhash_arrow(
-    cls: type[InstrumentUpdate], values: Mapping[str, pyarrow.Array], component: pyarrow.Array
+    cls: type[InstUpdate], values: Mapping[str, pyarrow.Array], component: pyarrow.Array
 ) -> pyarrow.Array:
-    """`InstrumentUpdate.version_parts` over whole columns."""
+    """`InstUpdate.version_parts` over whole columns."""
     event = framed_arrow(
         cls.__name__,
         values["eventtype"],
         values["state"],
         values["lastmkt"],
         values["code"],
-        values["codesource"],
         values["reason"],
-        True,
-        0,
     )
-    return hash_bytes_arrow(_joined_frames(event, _declared_frame_arrow(component)))
+    return hash_bytes_arrow(
+        _joined_frames(
+            event, _mapping_frame_arrow(values["altids"]), _declared_frame_arrow(component)
+        )
+    )

@@ -15,7 +15,7 @@ from rekep.market import (
     Event,
     Execution,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     Level,
     MarketEvent,
     Order,
@@ -23,8 +23,8 @@ from rekep.market import (
 from rekep.text import FixMsg
 
 EVENTS = (Order, Execution, Book)
-SHAPES = (*EVENTS, Instrument, InstrumentUpdate, Level)
-HOT_ROWS = (Event, MarketEvent, FixMsg, InstrumentUpdate, Order, Execution, Book, Level)
+SHAPES = (*EVENTS, Instrument, InstUpdate, Level)
+HOT_ROWS = (Event, MarketEvent, FixMsg, InstUpdate, Order, Execution, Book, Level)
 
 #: The envelope every event carries, in the order it carries it. Pinned, because
 #: a column inserted in the middle moves every one after it -- and a reader that
@@ -45,7 +45,6 @@ ENVELOPE = [
     "version",
     "state",
     "code",
-    "codesource",
     "altids",
     "prevunix",
     "prevhash",
@@ -315,7 +314,7 @@ FILTERED = {
         "bidpx",
         "askpx",
     ),
-    InstrumentUpdate: ("hash", "xhash"),
+    InstUpdate: ("hash", "xhash"),
 }
 
 

@@ -1,7 +1,7 @@
 {
  "name": "FinancialModelsCompany",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "FinancialModelsCompany",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "FinancialModelsCompany",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

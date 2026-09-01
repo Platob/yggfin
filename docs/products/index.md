@@ -6,7 +6,7 @@ and a market product until a fold gives it state.
 ```mermaid
 flowchart LR
   T[log text] --> M[Message] --> F[FixMsg]
-  F --> I[InstrumentUpdate]
+  F --> I[InstUpdate]
   F --> O[Order]
   F --> E[Execution]
   O --> B[Book]
@@ -16,12 +16,12 @@ flowchart LR
 | --- | --- | --- |
 | [Message](message.md) | one log line, tokenized | `Message.from_text` |
 | [FixMsg](fixmsg.md) | one line transcribed under the registry | `FixMsg.from_message_batch` |
-| [Instrument update](instrument.md) | one current reference-data event | `InstrumentUpdate.from_fixmsgs` |
+| [Instrument update](instrument.md) | one current reference-data event | `InstUpdate.from_fixmsgs` |
 | [Order](order.md) | one version of one order | `FixMsg.into_market_events` |
 | [Execution](execution.md) | one fill, correction or cancellation | `FixMsg.into_market_events` |
 | [Book](book.md) | both sides of one book, flat | `BookIterator.from_events` |
 
-Every event product is keyed `(unix, hash)` except `InstrumentUpdate`, whose
+Every event product is keyed `(unix, hash)` except `InstUpdate`, whose
 current row is keyed by its sixteen-byte `xhash`. All lifecycle and reference
 identities are clock-free `int64` values. All six are partitioned on
 `unixpartition` alone. They declare no physical sort order; ordered readers

@@ -65,7 +65,7 @@ def encoded_key(text: Any) -> str:
 
 
 def version_rank(version: str) -> tuple[int, ...]:
-    """A sortable reading of FIX versions, with `FIX.Latest` newest.
+    """A sortable numeric reading of one FIX version.
 
     The transport (`FIXT1.1`) ranks *above* every application version here, so
     that sorting a record's versions gives `versions.json`'s declared order.
@@ -75,11 +75,7 @@ def version_rank(version: str) -> tuple[int, ...]:
     """
     upper = version.upper()
     transport = 1 if upper.startswith("FIXT") else 0
-    numbers = (
-        (2**31 - 1,)
-        if upper.startswith("FIX.LATEST")
-        else tuple(int(part) for part in re.findall(r"\d+", version))
-    )
+    numbers = tuple(int(part) for part in re.findall(r"\d+", version))
     return (transport, *numbers)
 
 

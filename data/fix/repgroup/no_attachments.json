@@ -9,7 +9,6 @@
   "5.0",
   "5.0.SP1",
   "5.0.SP2",
-  "FIX.Latest",
   "FIXT1.1"
  ],
  "declaration": {
@@ -88,26 +87,13 @@
      }
     },
     {
-     "name": "NoAttachmentKeywords",
-     "type": "list",
+     "name": "AttachmentKeywordGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "2113"
+      "component": "AttachmentKeywordGrp"
      },
-     "item": {
-      "name": "AttachmentKeyword",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "AttachmentKeyword",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2114"
-        }
-       }
-      ]
-     }
+     "fields": []
     }
    ]
   }

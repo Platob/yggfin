@@ -75,7 +75,7 @@ lists, and UUID-named metadata JSON. Set its budget inside the catalog:
 
 ```yaml
 catalog:
-  catalog_name: rekep
+  name: rekep
   properties:
     rekep.io.cache-bytes: "0"  # Disable this process's cache reads and writes.
 ```

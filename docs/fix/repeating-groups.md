@@ -45,7 +45,7 @@ payload = (
 )
 row = FixMsg.from_message_batch([Message.from_text(payload)]).to_pylist()[0]
 
-print(Protocol(row["protocol"]).version)
+print(Protocol.from_stored(row["protocol"]).version)
 print(row["parties"])
 ```
 

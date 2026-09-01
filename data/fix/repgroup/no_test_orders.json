@@ -1,7 +1,7 @@
 {
  "name": "NoTestOrders",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoTestOrders",

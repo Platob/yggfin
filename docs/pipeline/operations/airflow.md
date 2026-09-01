@@ -71,7 +71,7 @@ The active catalog configuration in every task YAML is deliberately local:
 
 ```yaml
 catalog:
-  catalog_name: rekep
+  name: rekep
   properties:
     type: sql
     uri: sqlite:///data/catalog.db
@@ -88,7 +88,7 @@ The shipped Glue/S3 example is:
 
 ```yaml
 catalog:
-  catalog_name: rekep-production
+  name: rekep-production
   properties:
     type: glue
     warehouse: s3://example-bucket/rekep/warehouse

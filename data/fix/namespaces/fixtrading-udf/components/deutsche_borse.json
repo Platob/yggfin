@@ -1,7 +1,7 @@
 {
  "name": "DeutscheBorse",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "DeutscheBorse",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "DeutscheBorse",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

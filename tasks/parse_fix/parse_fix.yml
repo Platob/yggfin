@@ -12,6 +12,8 @@ parameters:
   # only to pin a separately published dictionary.
   fix_dictionary: null
   null_values: ["", "null", "<null>", "n/a", "none"]
+  # Heartbeat and TestRequest remain in logs.messages; FIX tables carry facts.
+  exclude_msgtypes: ["0", "1"]
   # ULBridge rows without version evidence are read under this application
   # dictionary and persist it in `protocol`; null leaves them unresolved.
   ul_default_version: "4.4"
@@ -36,7 +38,7 @@ parameters:
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
   # catalog:
-  #   catalog_name: rekep-production
+  #   name: rekep-production
   #   properties:
   #     type: glue
   #     warehouse: s3://example-bucket/rekep/warehouse
@@ -45,7 +47,7 @@ parameters:
   #     glue.id: "123456789012"  # Optional cross-account catalog ID.
   #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
   catalog:
-    catalog_name: rekep
+    name: rekep
     properties:
       type: sql
       uri: sqlite:///data/catalog.db
@@ -59,7 +61,9 @@ parameters:
   branch: root
   target_pattern: "fix.{category}"
   merge_by: true
-  commit_row_size: 250000
+  # Commit after eight retained RecordBatches; an optional row cap may end sooner.
+  commit_batch_num: 8
+  commit_row_size: null
   limit: null
   # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
   log_level: INFO

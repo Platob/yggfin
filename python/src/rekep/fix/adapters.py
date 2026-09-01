@@ -239,8 +239,8 @@ class SourceExclusion:
 FIX_LATEST = OrchestraAdapter(
     source_id="fix-latest",
     namespace="standard",
-    version="FIX.Latest_EP309",
-    protocol_version="FIX.Latest",
+    version="FIX.5.0SP2_EP309",
+    protocol_version="5.0.SP2",
     url=(
         "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/"
         "099914dd0edd49a699326f0441776d6e21cfaf93/"
@@ -258,7 +258,7 @@ FIXTRADING_UDF = OrchestraAdapter(
     source_id="fixtrading-udf",
     namespace="fixtrading-udf",
     version="1.0",
-    protocol_version="FIX.Latest",
+    protocol_version="5.0.SP2",
     url=(
         "https://orchestrahub.org/api/v3/repos/community/fix-udf/"
         "revisions/2EewWYrfFXqxPgLF/download"

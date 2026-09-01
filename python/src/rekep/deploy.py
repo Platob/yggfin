@@ -22,7 +22,7 @@ from typing import Any
 from rekep.fields import StructField
 from rekep.fix.rules import MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY
 from rekep.iceberg import IcebergCatalog
-from rekep.market import Book, Execution, InstrumentUpdate, Order
+from rekep.market import Book, Execution, InstUpdate, Order
 from rekep.text import FixMsg, Message
 
 
@@ -54,7 +54,7 @@ TABLES: tuple[Deployed, ...] = (
     Deployed(f"fix.{MARKET_CATEGORY}", FixMsg),
     Deployed(f"fix.{MISC_CATEGORY}", FixMsg),
     Deployed(f"fix.{UNKNOWN_CATEGORY}", FixMsg),
-    Deployed("market.instruments", InstrumentUpdate),
+    Deployed("market.instruments", InstUpdate),
     Deployed("market.books", Book),
     Deployed("market.orders", Order),
     Deployed("market.executions", Execution),

@@ -39,9 +39,9 @@ def test_promoted_columns_precede_entries_and_explicit_values_precede_both() -> 
     assert (promoted.unix, promoted.recunix, promoted.altids) == (
         11,
         12,
-        {"clordid": "CLIENT-1"},
+        {"clordid": "CLIENT-1", "code": "source-row", "orderid": "ORDER-1"},
     )
-    assert promoted.plugin == "ULBridge"
+    assert promoted.plugin.code == "ULBRIDGE"
     assert (promoted.lastpx, promoted.stoppx) == (10.5, 9.5)
     assert promoted.side is Side.BUY and promoted.timeinforce is TimeInForce.GTD
     assert promoted.orderid == "ORDER-1"

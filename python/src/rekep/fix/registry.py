@@ -492,6 +492,7 @@ class FixRegistry(Convertible):
                 or type(document.get("name")) is not str
                 or not isinstance(component_versions, list)
                 or any(type(version) is not str for version in component_versions)
+                or len(set(component_versions)) != len(component_versions)
                 or (
                     not namespace
                     and not set(component_versions).issubset(known_versions | {ANY_VERSION})

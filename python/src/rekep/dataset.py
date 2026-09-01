@@ -425,20 +425,26 @@ def _needs_compatible_polars_arrow(dtype: pyarrow.DataType) -> bool:
 
 
 def arrow_chunks(
-    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], row_size: int | None
+    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+    row_size: int | None,
+    batch_num: int | None = None,
 ) -> Iterator[pyarrow.Table]:
-    """Group a stream into tables of at most `row_size` rows.
+    """Group a stream into tables bounded by rows, batches, or both.
 
     **A batch is not a unit of work downstream.** A store that commits per call
     -- Iceberg lands a file and a snapshot each time -- would turn a stream of
     64k-row batches into thousands of tiny files, so the writer accumulates
-    first and commits once per chunk. `None` means the whole stream is one
-    chunk, which is the atomic write and the one that costs the most memory.
+    first and commits once per chunk. With both bounds absent the whole stream
+    is one chunk, which is the atomic write and the one that costs the most
+    memory.
     """
-    if row_size is not None and row_size <= 0:
-        raise ValueError("row_size must be positive")
+    if row_size is not None:
+        row_size = _positive_int(row_size, "row_size")
+    if batch_num is not None:
+        batch_num = _positive_int(batch_num, "batch_num")
     batches: list[pyarrow.RecordBatch] = []
     rows = 0
+    batch_count = 0
     schema = source.schema if isinstance(source, pyarrow.RecordBatchReader) else None
     for batch in source:
         if not batch.num_rows:
@@ -446,16 +452,31 @@ def arrow_chunks(
         schema = schema or batch.schema
         offset = 0
         while offset < batch.num_rows:
+            if batch_num is not None and batch_count == batch_num:
+                yield pyarrow.Table.from_batches(batches, schema)
+                batches, rows, batch_count = [], 0, 0
             available = batch.num_rows - offset
             take = available if row_size is None else min(available, row_size - rows)
             batches.append(batch.slice(offset, take))
             rows += take
+            batch_count += 1
             offset += take
-            if row_size is not None and rows == row_size:
+            if (row_size is not None and rows == row_size) or (
+                batch_num is not None and batch_count == batch_num
+            ):
                 yield pyarrow.Table.from_batches(batches, schema)
-                batches, rows = [], 0
+                batches, rows, batch_count = [], 0, 0
     if batches:
         yield pyarrow.Table.from_batches(batches, schema)
+
+
+def _positive_int(value: Any, name: str) -> int:
+    """A positive integer boundary, excluding bool's integer subclass."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer")
+    if value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
 
 
 # -- key joins ---------------------------------------------------------------

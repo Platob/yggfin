@@ -3,7 +3,7 @@
 from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
-from rekep.enums import Ascii32, Ascii64, Currency, MarketKind
+from rekep.enums import Ascii32, Ascii64, Ascii128, Currency, MarketKind
 from rekep.fields import (
     Field,
     FieldBuilder,
@@ -24,7 +24,7 @@ from rekep.market import (
     Execution,
     FixEvents,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     MarketEvent,
     Order,
     SymbolTicker,
@@ -43,6 +43,7 @@ __all__ = [
     "Convertible",
     "Ascii32",
     "Ascii64",
+    "Ascii128",
     "Currency",
     "Dataset",
     "Event",
@@ -59,7 +60,7 @@ __all__ = [
     "Rules",
     "FixedSizeListField",
     "Instrument",
-    "InstrumentUpdate",
+    "InstUpdate",
     "LargeListField",
     "LargeListViewField",
     "ListField",

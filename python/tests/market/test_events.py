@@ -17,7 +17,7 @@ from rekep.market import (
     EventType,
     Execution,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     MarketEvent,
     Order,
     Side,
@@ -325,9 +325,7 @@ def test_the_code_is_the_lifecycle_and_every_other_identifier_is_beside_it() -> 
     assert MarketEvent.into_field().field("instrumentxhash").dtype == HASH
     assert declared.field("linkhashes").dtype.value_type == HASH
     assert declared.field("altids").dtype == ALTIDS_TYPE
-    assert declared.names.index("codesource") == declared.names.index("code") + 1
-    assert "fix:display" not in declared.field("codesource").metadata
-    assert declared.names.index("altids") == declared.names.index("codesource") + 1
+    assert declared.names.index("altids") == declared.names.index("code") + 1
     assert declared.field("prevhash").dtype == HASH
     assert declared.field("prevhash").nullable
     assert declared.names.index("prevhash") == declared.names.index("prevunix") + 1
@@ -361,12 +359,14 @@ def test_a_lifecycle_code_names_the_field_that_supplied_it(
     event: Event, code: str, source: str
 ) -> None:
     event.identify()
-    assert (event.code, event.codesource) == (code, source)
+    assert event.code == code
+    assert event.altids["code"] == event.altids[source.lower()] == code
 
 
-def test_an_instrument_update_names_the_nested_ticker_as_its_code_source() -> None:
-    update = InstrumentUpdate.from_instrument(Instrument(symbolticker="AAPL")).identify()
-    assert (update.code, update.codesource) == ("AAPL", "SymbolTicker")
+def test_an_instrument_update_keeps_the_nested_ticker_in_all_code_slots() -> None:
+    update = InstUpdate.from_instrument(Instrument(symbolticker="AAPL")).identify()
+    assert update.code == "AAPL"
+    assert update.altids == {"code": "AAPL", "symbolticker": "AAPL"}
 
 
 @pytest.mark.parametrize("shape", (Order, Execution, Book), ids=lambda cls: cls.__name__)
@@ -411,7 +411,8 @@ def test_the_market_fallback_stores_the_readable_part_its_xhash_uses() -> None:
     instrument = Instrument(symbol="BTC-USD")
     built = Book(side=Side.UNKNOWN).attach_instrument(instrument).with_previous(None)
     assert built is not None
-    assert (built.code, built.codesource) == (instrument.symbolticker, "SymbolTicker")
+    assert built.code == instrument.symbolticker
+    assert built.altids["code"] == built.altids["symbolticker"] == instrument.symbolticker
     assert built.xhash == Event.xhash_of(built.code)
 
 

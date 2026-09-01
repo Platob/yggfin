@@ -16,7 +16,7 @@ for event in events:
     print(type(event).__name__, event.state.name, event.lastqty, event.lastpx)
 
 order, execution = events
-print(order.codesource, execution.codesource)
+print(order.altids["orderid"], execution.altids["execid"])
 print(order.linkhashes == [execution.hash])
 print(execution.linkhashes == [order.hash])
 ```
@@ -24,7 +24,7 @@ print(execution.linkhashes == [order.hash])
 ```text
 Order FILLED 0.0 None
 Execution FILLED 10.0 100.25
-OrderID ExecID
+O1 E1
 True
 True
 ```

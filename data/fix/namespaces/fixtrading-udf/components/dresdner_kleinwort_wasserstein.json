@@ -1,7 +1,7 @@
 {
  "name": "DresdnerKleinwortWasserstein",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "DresdnerKleinwortWasserstein",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "DresdnerKleinwortWasserstein",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

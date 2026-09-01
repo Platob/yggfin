@@ -16,7 +16,7 @@ from rekep.market import (
     AssetKind,
     Currency,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     Leg,
     Order,
     Side,
@@ -47,14 +47,14 @@ def spread() -> Instrument:
 def test_scalar_component_and_update_conversion_is_bidirectional() -> None:
     component = spread()
 
-    update = InstrumentUpdate.from_instrument(component, unix=31).identify()
+    update = InstUpdate.from_instrument(component, unix=31).identify()
 
     assert update.instrument is component
     assert update.xhash == component.xhash
     assert (update.creaunix, update.recunix) == (31, 31)
     assert Instrument.from_update(update) is component
     assert Instrument.from_(update) is component
-    assert InstrumentUpdate.from_(component).instrument is component
+    assert InstUpdate.from_(component).instrument is component
 
 
 def test_the_component_contains_reference_facts_and_no_event_envelope() -> None:
@@ -114,7 +114,7 @@ def test_referential_key_and_tick_ladder_use_the_component_api() -> None:
     ]
 
     parsed = FixMsg.from_message(message, registry=registry)
-    (update,) = InstrumentUpdate.from_fixmsgs([parsed], registry=registry)
+    (update,) = InstUpdate.from_fixmsgs([parsed], registry=registry)
     assert update.instrument == scalar
     assert any(entry.key == "vendor-note" for entry in (*parsed.entries, *parsed.unmap))
 
@@ -122,7 +122,7 @@ def test_referential_key_and_tick_ladder_use_the_component_api() -> None:
     parsed_batch = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
     assert Instrument.from_dict(parsed_batch.column("instrument")[0].as_py()) == scalar
     (stored,) = FixMsg.from_arrow_reader([parsed_batch])
-    (stored_update,) = InstrumentUpdate.from_fixmsgs([stored], registry=registry)
+    (stored_update,) = InstUpdate.from_fixmsgs([stored], registry=registry)
     assert stored_update.instrument == scalar
 
 
@@ -155,8 +155,8 @@ def test_tick_ladder_versions_reference_facts_without_moving_the_lifecycle() -> 
         symbol="AAPL",
         tickladder=[TickRule(starttickpricerange=0, tickincrement=0.05)],
     )
-    first_update = InstrumentUpdate.from_instrument(first, unix=1).identify()
-    revised_update = InstrumentUpdate.from_instrument(revised, unix=1).identify()
+    first_update = InstUpdate.from_instrument(first, unix=1).identify()
+    revised_update = InstUpdate.from_instrument(revised, unix=1).identify()
 
     assert first_update.xhash == revised_update.xhash
     assert first_update.vhash != revised_update.vhash
@@ -165,7 +165,7 @@ def test_tick_ladder_versions_reference_facts_without_moving_the_lifecycle() -> 
 def test_other_protocol_cannot_publish_a_carried_instrument() -> None:
     message = FixMsg(protocol=Protocol.OTHER, instrument=Instrument(symbol="AAPL"))
 
-    assert list(InstrumentUpdate.from_fixmsgs([message])) == []
+    assert list(InstUpdate.from_fixmsgs([message])) == []
 
 
 def test_reference_updates_keep_the_plugin_that_recorded_their_source() -> None:
@@ -178,11 +178,11 @@ def test_reference_updates_keep_the_plugin_that_recorded_their_source() -> None:
         instrument=Instrument(symbol="MSFT"),
     )
 
-    (from_event,) = InstrumentUpdate.from_events([event])
-    (from_message,) = InstrumentUpdate.from_fixmsgs([message])
+    (from_event,) = InstUpdate.from_events([event])
+    (from_message,) = InstUpdate.from_fixmsgs([message])
 
-    assert from_event.plugin == "market-reader"
-    assert from_message.plugin == "fix-reader"
+    assert from_event.plugin.code == "MARKET-READER"
+    assert from_message.plugin.code == "FIX-READER"
 
 
 def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None:
@@ -193,17 +193,17 @@ def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None
     component_batch = Instrument.into_field().into_arrow_batch(components, owner=Instrument)
 
     plugins = pyarrow.array(["reference-a", "reference-b"])
-    update_batch = InstrumentUpdate.from_instrument_arrow_batch(
+    update_batch = InstUpdate.from_instrument_arrow_batch(
         component_batch,
         unix=pyarrow.array([31, 32], pyarrow.int64()),
         plugin=plugins,
     )
     scalar = [
-        InstrumentUpdate.from_instrument(component, unix=unix, plugin=plugin).identify()
+        InstUpdate.from_instrument(component, unix=unix, plugin=plugin).identify()
         for component, unix, plugin in zip(components, (31, 32), plugins.to_pylist(), strict=True)
     ]
 
-    assert update_batch.equals(InstrumentUpdate.into_arrow_batch(scalar), check_metadata=True)
+    assert update_batch.equals(InstUpdate.into_arrow_batch(scalar), check_metadata=True)
     assert update_batch.column("vhash").to_pylist() == [update.vhash for update in scalar]
     assert update_batch.column("hash").to_pylist() == [
         update.into_row()["hash"] for update in scalar
@@ -213,9 +213,7 @@ def test_arrow_component_and_update_conversion_matches_scalar_identity() -> None
     assert nested["legs"][0]["maturitydate"] == datetime.datetime(2027, 3, 19)
     assert nested["legs"][0]["ratio"] == 2.0
     assert components[0].legs is not None
-    assert components[0].legs[0].xhash == InstrumentUpdate.xhash_of(
-        components[0].legs[0].symbolticker
-    )
+    assert components[0].legs[0].xhash == InstUpdate.xhash_of(components[0].legs[0].symbolticker)
     assert update_batch.schema.field("xhash").type == HASH
 
     restored = Instrument.from_update_arrow_batch(update_batch)
@@ -240,8 +238,8 @@ def test_aware_local_maturities_match_scalar_and_arrow_identity() -> None:
     assert component.legs[0].maturitydate == datetime.datetime(2027, 3, 19, 7, 15)
 
     component_batch = Instrument.into_field().into_arrow_batch([component], owner=Instrument)
-    update_batch = InstrumentUpdate.from_instrument_arrow_batch(component_batch, unix=31)
-    scalar = InstrumentUpdate.from_instrument(component, unix=31).identify()
+    update_batch = InstUpdate.from_instrument_arrow_batch(component_batch, unix=31)
+    scalar = InstUpdate.from_instrument(component, unix=31).identify()
 
     assert update_batch.column("vhash").to_pylist() == [scalar.vhash]
     assert update_batch.column("instrument")[0].as_py()["maturitydate"] == component.maturitydate
@@ -256,12 +254,12 @@ def test_fix_identifiers_choose_one_canonical_ticker_and_identity() -> None:
     )
     assert [built.symbolticker for built in variants] == ["AAPL", "XNAS:AAPL", "AAPL", "AAPL"]
     assert [built.xhash for built in variants] == [
-        InstrumentUpdate.xhash_of(built.symbolticker) for built in variants
+        InstUpdate.xhash_of(built.symbolticker) for built in variants
     ]
 
-    updates = [InstrumentUpdate.from_instrument(built, xhash=7, code="wrong") for built in variants]
+    updates = [InstUpdate.from_instrument(built, xhash=7, code="wrong") for built in variants]
     assert [(update.xhash, update.code) for update in updates] == [
-        (InstrumentUpdate.xhash_of(built.symbolticker), built.symbolticker) for built in variants
+        (InstUpdate.xhash_of(built.symbolticker), built.symbolticker) for built in variants
     ]
 
 
@@ -290,7 +288,7 @@ def test_two_readable_symbols_for_one_identifier_are_two_instruments() -> None:
 
 
 def test_a_feed_that_names_no_venue_still_gets_one_stable_identity() -> None:
-    assert Instrument(symbol="BTC-USD").xhash == InstrumentUpdate.xhash_of("BTC-USD")
+    assert Instrument(symbol="BTC-USD").xhash == InstUpdate.xhash_of("BTC-USD")
     assert Instrument(symbol="BTC-USD").xhash == Instrument(symbol="BTC-USD").xhash
 
 
@@ -305,7 +303,7 @@ def test_symbol_tickers_trim_whitespace_and_preserve_case() -> None:
 def test_an_instrument_with_no_key_at_all_is_visibly_unidentified() -> None:
     """A hash of emptiness would silently merge every unnamed instrument into one."""
     assert Instrument().xhash == NIL
-    unidentified = InstrumentUpdate.from_instrument(
+    unidentified = InstUpdate.from_instrument(
         Instrument(
             securityexchange="XCME",
             currency="USD",
@@ -322,26 +320,26 @@ def test_currency_input_is_normalised_to_the_persisted_int32_enum() -> None:
 
 
 def test_reference_updates_are_not_snapshots() -> None:
-    known = InstrumentUpdate.from_instrument(Instrument(symbol="AAPL"), unix=1).identify()
+    known = InstUpdate.from_instrument(Instrument(symbol="AAPL"), unix=1).identify()
 
-    assert not InstrumentUpdate.is_snapshot()
+    assert not InstUpdate.is_snapshot()
     assert known.make_snapshot(2) is None
 
 
 def test_declared_reference_values_determine_the_value_hash() -> None:
-    known = InstrumentUpdate.from_instrument(
+    known = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", cficode="ESXXXX"), unix=1
     ).identify()
-    revised = InstrumentUpdate.from_instrument(
+    revised = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", cficode="EXXXXX"), unix=1
     ).identify()
-    observed_later = InstrumentUpdate.from_instrument(
+    observed_later = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", cficode="ESXXXX"), unix=1_000_001
     ).identify()
-    leg = InstrumentUpdate.from_instrument(
+    leg = InstUpdate.from_instrument(
         Instrument(symbol="SPREAD", legs=[Leg(symbol="A", ratio=1)]), unix=1
     ).identify()
-    revised_leg = InstrumentUpdate.from_instrument(
+    revised_leg = InstUpdate.from_instrument(
         Instrument(symbol="SPREAD", legs=[Leg(symbol="A", ratio=2)]), unix=1
     ).identify()
 
@@ -353,7 +351,7 @@ def test_declared_reference_values_determine_the_value_hash() -> None:
 
 def test_promoted_fallback_does_not_fabricate_unstated_clocks() -> None:
     message = FixMsg(unix=23, protocol="FIX4.4", instrument=Instrument(symbol="AAPL"))
-    update = InstrumentUpdate.from_(message)
+    update = InstUpdate.from_(message)
 
     assert update is not None
     assert update.unix == 23
@@ -412,7 +410,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry() ->
         (107, "FAKE-DESC"),
     ], "an Arrow round trip keeps every stored field, in wire order"
     registry = FixRegistry(cache_dir=FIX_DATA)
-    (update,) = InstrumentUpdate.from_fixmsgs(
+    (update,) = InstUpdate.from_fixmsgs(
         [log],
         registry=registry,
     )
@@ -427,7 +425,7 @@ def test_log_residual_tags_enrich_instruments_through_the_declared_registry() ->
 
 
 def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
-    first = InstrumentUpdate.from_instrument(
+    first = InstUpdate.from_instrument(
         Instrument(
             symbol="AAPL",
             securityid="US0378331005",
@@ -436,8 +434,8 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
         ),
         unix=1,
     )
-    other = InstrumentUpdate.from_instrument(Instrument(symbol="MSFT"), unix=1)
-    later = InstrumentUpdate.from_instrument(
+    other = InstUpdate.from_instrument(Instrument(symbol="MSFT"), unix=1)
+    later = InstUpdate.from_instrument(
         Instrument(
             symbol="AAPL",
             securityid="US0378331005",
@@ -449,7 +447,7 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
         unix=2,
     )
 
-    found = list(InstrumentUpdate.enriched([first, other, later]))
+    found = list(InstUpdate.enriched([first, other, later]))
 
     assert [row.instrument.symbolticker for row in found] == [
         "AAPL",
@@ -457,7 +455,7 @@ def test_repeated_tickers_merge_once_in_first_seen_order() -> None:
     ]
     merged = found[0]
     assert all(row.hash and row.vhash for row in found)
-    assert merged.xhash == InstrumentUpdate.xhash_of(merged.instrument.symbolticker)
+    assert merged.xhash == InstUpdate.xhash_of(merged.instrument.symbolticker)
     assert merged.instrument.securitydesc == "Apple"
     assert merged.instrument.kind is AssetKind.EQUITY
     assert merged.instrument.minpriceincrement == 0.01
@@ -473,9 +471,9 @@ def test_repeated_reference_values_are_detected_by_vhash(
 
     monkeypatch.setattr(Instrument, "enriched_with", unexpected)
 
-    first = InstrumentUpdate.from_instrument(Instrument(symbol="AAPL"), unix=1)
-    second = InstrumentUpdate.from_instrument(Instrument(symbol="AAPL"), unix=2)
-    (found,) = InstrumentUpdate.enriched([first, second])
+    first = InstUpdate.from_instrument(Instrument(symbol="AAPL"), unix=1)
+    second = InstUpdate.from_instrument(Instrument(symbol="AAPL"), unix=2)
+    (found,) = InstUpdate.enriched([first, second])
 
     assert found.unix == 1
     assert found.vhash == second.identify().vhash
@@ -502,26 +500,26 @@ def test_a_stored_record_only_gains_a_version_when_a_fact_is_added() -> None:
     the same ticker; observing *less* than is stored writes nothing either --
     a thinner observation must not overwrite a fuller record.
     """
-    stored = InstrumentUpdate.from_instrument(
+    stored = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD"), unix=10
     ).identify()
     by_ticker = {stored.instrument.symbolticker: stored}
 
-    restated = InstrumentUpdate.from_instrument(
+    restated = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD"), unix=20
     )
-    thinner = InstrumentUpdate.from_instrument(
+    thinner = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", securityexchange="XNAS"), unix=20
     )
-    fuller = InstrumentUpdate.from_instrument(
+    fuller = InstUpdate.from_instrument(
         Instrument(symbol="AAPL", securityexchange="XNAS", currency="USD", roundlot=100.0),
         unix=20,
     )
 
-    assert list(InstrumentUpdate.versioned([restated.identify()], by_ticker)) == []
-    assert list(InstrumentUpdate.versioned([thinner.identify()], by_ticker)) == []
+    assert list(InstUpdate.versioned([restated.identify()], by_ticker)) == []
+    assert list(InstUpdate.versioned([thinner.identify()], by_ticker)) == []
 
-    (written,) = InstrumentUpdate.versioned([fuller.identify()], by_ticker)
+    (written,) = InstUpdate.versioned([fuller.identify()], by_ticker)
     assert written.instrument.symbolticker == stored.instrument.symbolticker
     assert written.xhash == stored.xhash, "a version does not move the lifecycle"
     assert written.instrument.roundlot == 100.0
@@ -532,15 +530,11 @@ def test_a_stored_record_only_gains_a_version_when_a_fact_is_added() -> None:
 def test_an_unknown_ticker_is_its_own_first_version() -> None:
     """An empty lookup is a table that holds nothing yet, not a refusal."""
     observed = [
-        InstrumentUpdate.from_instrument(
-            Instrument(symbol="AAPL", securityexchange="XNAS")
-        ).identify(),
-        InstrumentUpdate.from_instrument(
-            Instrument(symbol="MSFT", securityexchange="XNAS")
-        ).identify(),
+        InstUpdate.from_instrument(Instrument(symbol="AAPL", securityexchange="XNAS")).identify(),
+        InstUpdate.from_instrument(Instrument(symbol="MSFT", securityexchange="XNAS")).identify(),
     ]
 
-    assert [row.instrument.symbolticker for row in InstrumentUpdate.versioned(observed, {})] == [
+    assert [row.instrument.symbolticker for row in InstUpdate.versioned(observed, {})] == [
         "XNAS:AAPL",
         "XNAS:MSFT",
     ]

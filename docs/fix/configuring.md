@@ -64,7 +64,7 @@ protocols:
   rules:
     - protocol: VENUE
       pattern: '(?s)^<venue>'
-      plugin_pattern: '^VenueBridge$'
+      plugin_pattern: '^VENUEBRIDGE$'
       separator: ';'
       extra_entry_separators: ["\u001e\u001f"]
       # `fix` is numbered tags alone, `ul` named keys alone, `fixml` both,
@@ -80,7 +80,7 @@ protocols:
 as `MISC`; then everything else as `OTHER`. `entry_separator` fixes one indexed-entry
 delimiter; `extra_entry_separators` extends literal auto-detection for that
 protocol. A rule's `protocol` is a [`Protocol`](../enums/protocol.md) code, so
-a name of its own is at most eight bytes of `[A-Z0-9._-]` and anything else is
+a name of its own is at most sixteen bytes of `[A-Z0-9._-]` and anything else is
 refused when the rule set is read.
 
 ## Which event a payload represents
@@ -121,8 +121,8 @@ The market layer owns which message shapes it implements, under the standard's
 own name for each, and asks the dictionary what this feed spells them as:
 `newordersingle` encodes to `D` here and to whatever a venue writes instead.
 The registry carries no second handler vocabulary and nothing converts a
-MsgType back into a name. Operational MsgTypes are source policy configured
-through `parse_messages.include_msgtypes` and `exclude_msgtypes`.
+MsgType back into a name. `parse_messages` controls what reaches
+`logs.messages`; `parse_fix.exclude_msgtypes` controls what enters FIX tables.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.
 Every consumer, including Order fallbacks, reads that map. Python declarations
@@ -214,7 +214,7 @@ folded comparison as the FIX registry.
 | `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
 | `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
 | `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
-| `technical_plugins` | parsed `plugin` filter before persistence | `parse_messages` |
+| `technical_plugins` | header plugin filter before payload parsing | `parse_messages` |
 | `plugin_keys` | `TextFile` entry-key normalization | `parse_messages` |
 | `null_values` | `TextFile` entry filter | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |

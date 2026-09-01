@@ -1,7 +1,7 @@
 {
  "name": "ABNAMRO",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "ABNAMRO",
@@ -9,11 +9,9 @@
   "nullable": true,
   "fix": {
    "component": "ABNAMRO",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
+   "sources": "['fixtrading-udf']",
    "namespace": "fixtrading-udf",
    "source-version": "1.0",
    "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",

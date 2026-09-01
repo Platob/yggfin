@@ -20,7 +20,7 @@ from rekep.market import (
     EventType,
     Execution,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     MarketEvent,
     MarketKind,
     Order,
@@ -98,7 +98,7 @@ def test_sorted_logs_feed_books_without_a_task_adapter() -> None:
     (book,) = BookIterator(logs=[log], snapshot_every=0)
 
     assert book.code == book.symbolticker == "BTC-USD"
-    assert book.plugin == "orders-feed"
+    assert book.plugin.code == "ORDERS-FEED"
     assert book.instrumentxhash == Instrument(symbol="BTC-USD").xhash
     assert book.bidpx == 100.0 and book.bidqty == 2.0
 
@@ -895,7 +895,7 @@ def test_two_symbol_spellings_of_one_security_id_are_two_tickers() -> None:
     )
 
     updates = list(
-        InstrumentUpdate.from_events(
+        InstUpdate.from_events(
             [
                 order(BASE, first, Side.BID, 100.0, 1.0, "B1"),
                 order(BASE + 1, second, Side.BID, 99.0, 1.0, "B2"),
@@ -1024,7 +1024,7 @@ def test_repeated_reference_facts_produce_one_flat_instrument() -> None:
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
         order(BASE + 20, BTC, Side.BID, 98.0, 5.0, "B3"),
     ]
-    (known,) = InstrumentUpdate.from_events(events)
+    (known,) = InstUpdate.from_events(events)
     assert known.unix == BASE
 
 
@@ -1033,7 +1033,7 @@ def test_later_reference_facts_fill_one_flat_instrument() -> None:
         order(BASE, BTC, Side.BID, 100.0, 5.0, "B1"),
         order(BASE + 10, BTC_RICH, Side.BID, 99.0, 5.0, "B2"),
     ]
-    (known,) = InstrumentUpdate.from_events(events)
+    (known,) = InstUpdate.from_events(events)
     assert known.unix == BASE
     assert known.instrument.cficode == "FFICSX"
     assert known.instrument.kind is AssetKind.FUTURE
@@ -1048,7 +1048,7 @@ def test_learning_never_retracts_what_was_already_known() -> None:
         order(BASE, BTC_RICH, Side.BID, 100.0, 5.0, "B1"),
         order(BASE + 10, BTC, Side.BID, 99.0, 5.0, "B2"),
     ]
-    (only,) = InstrumentUpdate.from_events(events)
+    (only,) = InstUpdate.from_events(events)
     assert only.instrument.cficode == "FFICSX"
 
 
@@ -2281,7 +2281,16 @@ def test_flat_translation_reads_the_new_lifecycle_and_settlement_columns() -> No
             if type(event) in expected:
                 expected[type(event)].append(event)
     expected_orders = pyarrow.Table.from_batches(list(Order.into_arrow_reader(expected[Order])))
-    assert pyarrow.Table.from_batches([orders]).equals(expected_orders)
+    actual_orders = pyarrow.Table.from_batches([orders])
+    different = [
+        name
+        for name in actual_orders.schema.names
+        if not actual_orders[name].equals(expected_orders[name])
+    ]
+    assert not different, {
+        name: (actual_orders[name].to_pylist(), expected_orders[name].to_pylist())
+        for name in different
+    }
     expected_executions = pyarrow.Table.from_batches(
         list(Execution.into_arrow_reader(expected[Execution]))
     )

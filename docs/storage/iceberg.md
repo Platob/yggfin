@@ -9,7 +9,7 @@ from rekep import FixMsg
 from rekep.iceberg import IcebergCatalog
 
 catalog = IcebergCatalog(
-    catalog_name="local",
+    name="local",
     properties={
         "type": "sql",
         "uri": "sqlite:///catalog.db",
@@ -68,8 +68,10 @@ nor a declared shape there is nothing to answer with, and the read raises.
 
 ```python
 # A reader is consumed by the write it is handed to, so each takes its own.
-logs.overwrite_arrow_reader(rows(), merge_by=True, commit_row_size=250_000)
-logs.append_arrow_reader(rows(), merge_by=True, commit_row_size=250_000)
+logs.overwrite_arrow_reader(rows(), merge_by=True, commit_batch_num=8)
+logs.append_arrow_reader(
+    rows(), merge_by=True, commit_batch_num=8, commit_row_size=250_000
+)
 ```
 
 `overwrite_*` replaces the rows whose keys match and inserts the rest. A false
@@ -129,10 +131,10 @@ The source must keep each partition contiguous, and a recurrence after another
 partition is rejected. Writes are incremental: complete groups committed
 before a later source or ordering error remain committed.
 
-Replacements accumulate toward `commit_row_size`; the default is 1,000,000
-rows and the value must be positive so every transaction remains bounded. The
-same setting caps each staged Parquet file, so an individual partition may
-exceed it without having to fit in memory.
+Writes commit after eight source batches by default. `commit_batch_num` and the
+optional `commit_row_size` are simultaneous bounds: the first one reached
+commits. Complete partition replacements spill to staged Parquet files, so one
+partition may cross either boundary without having to fit in memory.
 
 Renaming, retyping or narrowing a column is not an additive Iceberg
 evolution and no merge migrates one: recreate or rewrite the table, on every
@@ -172,7 +174,7 @@ from rekep import FixMsg
 from rekep.iceberg import IcebergCatalog
 
 catalog = IcebergCatalog(
-    catalog_name="local",
+    name="local",
     properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file://warehouse"},
 )
 logs = catalog.dataset("fix.market", field=FixMsg.into_field())
@@ -211,8 +213,8 @@ table_properties:
 ```
 
 The last two bound the metadata directory. A commit writes a new
-`*.metadata.json` and keeps every earlier one, so a pipeline committing every
-`commit_row_size` rows grows that directory for as long as it runs. Over 40
+`*.metadata.json` and keeps every earlier one, so a pipeline making bounded
+stream commits grows that directory for as long as it runs. Over 40
 appends to one table:
 
 | declared | `*.metadata.json` | `*.avro` |
@@ -333,7 +335,7 @@ through this FileIO. A production Glue catalog:
 
 ```yaml
 catalog:
-  catalog_name: rekep-production
+  name: rekep-production
   properties:
     type: glue
     warehouse: s3://example-bucket/rekep/warehouse

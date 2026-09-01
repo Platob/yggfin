@@ -5,8 +5,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoUnderlyingComplexEventDates",
@@ -36,34 +35,13 @@
      }
     },
     {
-     "name": "NoUnderlyingComplexEventTimes",
-     "type": "list",
+     "name": "UnderlyingComplexEventTimes",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "2056"
+      "component": "UnderlyingComplexEventTimes"
      },
-     "item": {
-      "name": "UnderlyingComplexEventTime",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingComplexEventStartTime",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2057"
-        }
-       },
-       {
-        "name": "UnderlyingComplexEventEndTime",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2058"
-        }
-       }
-      ]
-     }
+     "fields": []
     }
    ]
   }

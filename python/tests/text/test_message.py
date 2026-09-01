@@ -7,7 +7,7 @@ import pytest
 
 import rekep.text.entries as entries_module
 from rekep import Entry, FixRegistry, Message, TextFile, txhash
-from rekep.enums import Direction, EventType, Protocol
+from rekep.enums import Direction, EventType, Plugin, Protocol
 from rekep.market import Event, hash_bytes
 
 #: The standard header this stage lifts out of `entries` into columns of its
@@ -74,7 +74,7 @@ def test_a_message_adds_log_provenance_and_generic_arguments() -> None:
     body = Message.into_field().field("body")
     assert body.dtype == pyarrow.binary() and not body.nullable
     plugin = Message.into_field().field("plugin")
-    assert plugin.dtype == pyarrow.string() and not plugin.nullable
+    assert plugin.dtype == Plugin.into_storage_type() and not plugin.nullable
     # Protocol-neutral columns keep the text the payload spelled. The inherited
     # venue is the one exception: its LastMkt identity has to survive when the
     # raw body is projected away before FIX transcription.
@@ -678,6 +678,17 @@ def test_raw_identity_drops_its_own_exact_hash_from_scalar_and_arrow_links() -> 
     assert arrow.column("linkhashes").to_pylist() == [[txhash.wide_bytes(-1)]]
 
 
+def test_an_overwide_plugin_becomes_non_null_unknown_at_the_arrow_boundary() -> None:
+    source = Message.into_arrow_batch([Message(unix=1, body="payload")])
+    columns = {name: source.column(name) for name in source.schema.names}
+    columns["plugin"] = pyarrow.array(["ModuleMarketDataManager"])
+
+    identified = Message.identified(columns, source.schema, 1)
+
+    assert identified.column("plugin").null_count == 0
+    assert identified.column("plugin").to_pylist() == [Plugin.UNKNOWN.into_stored()]
+
+
 def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: Path) -> None:
     path = tmp_path / "capture.log"
     payload = "8=FIX.4.4|35=D|49=XPAR|56=BUY|55=IBM|10=000"
@@ -709,7 +720,7 @@ def test_a_text_file_promotes_the_standard_header_before_fix_parsing(tmp_path: P
     expected = hash_bytes(payload.encode("utf-8"))
     assert table.column("vhash").to_pylist() == [expected]
     assert table.column("xhash").to_pylist() == [txhash.wide_bytes(0)]
-    assert table.column("codesource").to_pylist() == [""]
+    assert table.column("altids").to_pylist() == [[]]
     assert txhash.vhash_of(table.column("hash")[0].as_py()) == expected
 
 

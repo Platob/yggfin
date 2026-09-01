@@ -141,6 +141,7 @@ def test_generic_batch_and_table_forms_agree_including_zero_rows() -> None:
 def test_book_arrow_reader_matches_nested_document_projection() -> None:
     bid = Order(
         unix=1,
+        plugin="bid-feed",
         hash=11,
         xhash=12,
         linkhashes=[10],
@@ -156,6 +157,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
     )
     ask = Order(
         unix=1,
+        plugin="ask-feed",
         hash=21,
         xhash=22,
         linkhashes=[20],
@@ -171,6 +173,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
     )
     execution = Execution(
         unix=2,
+        plugin="exec-feed",
         hash=31,
         xhash=32,
         linkhashes=[bid.hash],
@@ -187,6 +190,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
     rows = [
         Book(
             unix=2,
+            plugin="book-feed",
             linkhashes=[bid.hash, execution.hash],
             parenthash=[bid.hash, execution.hash],
             altids={"symbol": "BTC-USD"},
@@ -198,6 +202,7 @@ def test_book_arrow_reader_matches_nested_document_projection() -> None:
         ),
         Book(
             unix=3,
+            plugin="snap-feed",
             snapunix=3,
             linkhashes=[bid.hash, ask.hash],
             parenthash=[bid.hash, ask.hash],

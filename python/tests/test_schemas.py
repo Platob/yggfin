@@ -7,7 +7,7 @@ import pytest
 
 from rekep import Field, FixMsg, FixRegistry, Message
 from rekep.fields import column_name
-from rekep.market import Book, Execution, InstrumentUpdate, Order
+from rekep.market import Book, Execution, InstUpdate, Order
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 CONTRACTS = sorted(
@@ -26,7 +26,7 @@ VERSIONS = dict.fromkeys(
 PUBLISHED = {
     "fixmsg.yaml": FixMsg,
     "message.yaml": Message,
-    "instrument.yaml": InstrumentUpdate,
+    "instrument.yaml": InstUpdate,
     "book.yaml": Book,
     "order.yaml": Order,
     "execution.yaml": Execution,

@@ -67,7 +67,7 @@ from rekep.text.entries import xml_payload_arrow
 from rekep.text.message import SESSION_FIELDS, Message, _body_text_arrow, _event_types
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
-_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
+_PROTOCOL_CODE = Protocol.into_storage_type()
 
 #: What `vhash` cannot be taken over. The clocks and recorder provenance,
 #: because a version is what a row says and not when or through which plugin it
@@ -332,6 +332,14 @@ class FixMsg(Message):
             "quotereqid",
         )
 
+    def _code_values(self) -> Iterator[tuple[str, str | None]]:
+        """Every promoted FIX and instrument code carried by this row."""
+        yield from Event._code_values(self)
+        for stored, _field, _tag in IDENTIFIER_FIELDS:
+            yield stored, getattr(self, stored, None)
+        if isinstance(self.instrument, Instrument):
+            yield "symbolticker", self.instrument.symbolticker
+
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
@@ -352,6 +360,7 @@ class FixMsg(Message):
             self.unmap = None
         if not isinstance(self.instrument, Instrument):
             self.instrument = Instrument.from_dict(self.instrument)
+        self._name_codes()
         embedded_version = self.protocol.version
         if (embedded_version is None or embedded_version.startswith("FIXT")) and (
             evidence := self._version_evidence()
@@ -434,7 +443,7 @@ class FixMsg(Message):
             else columns["creaunix"]
         )
         columns[_LOCAL_RECORDED] = columns["recunix"]
-        columns["protocol"] = pyarrow.array([int(self.protocol)], _PROTOCOL_CODE)
+        columns["protocol"] = pyarrow.array([self.protocol.into_stored()], _PROTOCOL_CODE)
         columns["instrument"] = Instrument.into_arrow_batch((component,)).to_struct_array()
         parsed = type(self).identified(columns, parsed.schema, 1, self.registry)
 
@@ -448,7 +457,6 @@ class FixMsg(Message):
         self.expunix = value("expunix")
         self.unixsource = value("unixsource")
         self.code = value("code")
-        self.codesource = value("codesource")
         self.altids = dict(value("altids") or ())
         self.reason = value("reason")
         self.error = value("error")
@@ -1488,7 +1496,8 @@ class FixMsg(Message):
                     carries_text,
                     protocols,
                     pyarrow.compute.fill_null(
-                        stored_protocols.cast(_PROTOCOL_CODE, safe=False), Protocol.OTHER
+                        stored_protocols.cast(_PROTOCOL_CODE, safe=False),
+                        Protocol.OTHER.into_stored(),
                     ),
                 )
             if stored_direction is not None:
@@ -1528,7 +1537,7 @@ class FixMsg(Message):
         body_at = source.schema.get_field_index("body")
         if body_at >= 0:
             protocols = Protocol.into_family_arrow(parsed.column("protocol"))
-            selected = pyarrow.compute.equal(protocols, int(Protocol.XML))
+            selected = pyarrow.compute.equal(protocols, Protocol.XML.into_stored())
             _, xml_errors = xml_payload_arrow(source.column(body_at), selected)
             errors = _merge_error_columns(errors, xml_errors)
         declared = cls.into_field()
@@ -1679,7 +1688,7 @@ class FixMsg(Message):
         parts, positions = [], []
         for protocol, where in groups_of(protocols):
             rule = codec.rules.rule(protocol.as_py())
-            if Protocol.from_int(protocol.as_py()).family is Protocol.XML:
+            if Protocol.from_stored(protocol.as_py()).family is Protocol.XML:
                 # `xml_payload_arrow` already supplied indexed structured
                 # entries. Re-tokenizing them as delimiter text drops nested
                 # siblings before their component declaration can lift them.
@@ -1715,7 +1724,7 @@ class FixMsg(Message):
         # protocol it claimed; it must not reclaim a row one configured rule
         # rejected as OTHER.
         claimed = pyarrow.compute.not_equal(
-            Protocol.into_family_arrow(protocols), int(Protocol.OTHER)
+            Protocol.into_family_arrow(protocols), Protocol.OTHER.into_stored()
         )
         public_versions = pyarrow.compute.if_else(
             claimed, public_versions, pyarrow.scalar(None, pyarrow.string())
@@ -1816,7 +1825,9 @@ class FixMsg(Message):
             inferred,
         )
         return pyarrow.compute.if_else(
-            pyarrow.compute.equal(Protocol.into_family_arrow(protocols), int(Protocol.OTHER)),
+            pyarrow.compute.equal(
+                Protocol.into_family_arrow(protocols), Protocol.OTHER.into_stored()
+            ),
             pyarrow.scalar(None, pyarrow.string()),
             resolved,
         )
@@ -1876,7 +1887,7 @@ class FixMsg(Message):
             if protocols is None
             else pyarrow.compute.equal(
                 Protocol.into_family_arrow(protocols),
-                int(Protocol.UL),
+                Protocol.UL.into_stored(),
             )
         )
         entries, unmap = cls._partition_entries(
@@ -2149,7 +2160,7 @@ class FixMsg(Message):
                 compute.equal(eventtypes, int(EventType.UNKNOWN)), classified, eventtypes
             )
         columns["instrument"] = Instrument.from_fix_arrow(columns, rows, registry=registry)
-        columns["code"], columns["codesource"] = cls.code_and_source_arrow(columns, rows)
+        columns["code"] = cls.code_arrow(columns, rows)
         columns["altids"] = cls.altids_arrow(columns, rows)
         columns["reason"] = compute.coalesce(columns.get("text"), columns["reason"])
         columns["recunix"] = resolve_recorded_arrow(
@@ -2228,7 +2239,7 @@ class FixMsg(Message):
 
         side = found.get("side")
         packed_side = (
-            pyarrow.nulls(rows, Side.into_arrow_type().index_type)
+            pyarrow.nulls(rows, Side.into_storage_type())
             if side is None
             else Side.arrow_from_strings(side)
         )
@@ -2366,34 +2377,13 @@ class FixMsg(Message):
     @classmethod
     def code_arrow(cls, columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
         """Best readable lifecycle identifier available in parsed FIX columns."""
-        return cls.code_and_source_arrow(columns, rows)[0]
-
-    @classmethod
-    def code_and_source_arrow(
-        cls, columns: Mapping[str, Any], rows: int
-    ) -> tuple[pyarrow.Array, pyarrow.Array]:
-        """Readable lifecycle identifier and the field spelling that supplied it."""
-        found, source = _first_text_and_source(
-            columns,
-            tuple(
-                (name, cls.into_field().field(name).fix.canonical)
-                for name in cls.into_code_columns()
-            ),
-            rows,
-        )
+        found = _first_text(columns, cls.into_code_columns(), rows)
         instrument = columns.get("instrument")
         if instrument is None:
-            return found, source
+            return found
         ticker = pyarrow.compute.struct_field(instrument, "symbolticker")
         fallback = pyarrow.compute.equal(found, "")
-        return (
-            pyarrow.compute.if_else(fallback, ticker, found),
-            pyarrow.compute.if_else(
-                pyarrow.compute.and_(fallback, pyarrow.compute.not_equal(ticker, "")),
-                "SymbolTicker",
-                source,
-            ),
-        )
+        return pyarrow.compute.if_else(fallback, ticker, found)
 
     @classmethod
     def altids_arrow(
@@ -2432,6 +2422,19 @@ class FixMsg(Message):
                 if column is not None
             ]
             available.append((stored, compute.coalesce(*values)))
+        code = columns.get("code")
+        if code is not None:
+            available.append(("code", cast_arrow_fix(code, pyarrow.string())))
+        instrument = columns.get("instrument")
+        if instrument is not None:
+            available.append(
+                (
+                    "symbolticker",
+                    cast_arrow_fix(
+                        compute.struct_field(instrument, "symbolticker"), pyarrow.string()
+                    ),
+                )
+            )
         names, values = zip(*available, strict=True) if available else ((), ())
         if not rows or not names:
             return build_map(
@@ -3027,30 +3030,6 @@ def _first_text(columns: Mapping[str, Any], names: Sequence[str], rows: int) -> 
     return compute.fill_null(found, "")
 
 
-def _first_text_and_source(
-    columns: Mapping[str, Any], names: Sequence[tuple[str, str]], rows: int
-) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """First nonblank value and the reader-facing name of its column."""
-    compute = pyarrow.compute
-    found: Any = pyarrow.nulls(rows, pyarrow.string())
-    source: Any = pyarrow.repeat(pyarrow.scalar(""), rows)
-    for name, display in names:
-        value = columns.get(name)
-        if value is None or value.null_count == rows:
-            continue
-        value = value.cast(pyarrow.string(), safe=False)
-        present = compute.and_(
-            compute.is_valid(value),
-            compute.not_equal(compute.utf8_trim_whitespace(value), ""),
-        )
-        use = compute.and_(compute.is_null(found), compute.fill_null(present, False))
-        found = compute.if_else(use, value, found)
-        source = compute.if_else(use, display, source)
-        if found.null_count == 0:
-            break
-    return compute.fill_null(found, ""), source
-
-
 def _lastmkt_arrow(columns: Mapping[str, Any], rows: int) -> pyarrow.Array:
     """LastMkt, instrument venues, a stored value, then session endpoints."""
     compute = pyarrow.compute
@@ -3365,6 +3344,11 @@ def _digest_text(column: Any, rows: int) -> pyarrow.Array:
         return pyarrow.repeat("", rows)
     if isinstance(column, pyarrow.ChunkedArray):
         column = column.combine_chunks()
+    if rows and column.null_count == rows and not pyarrow.types.is_struct(column.type):
+        # Null scalar and list values all digest as empty text. Broadcasting
+        # that one value avoids casting or flattening dozens of empty lifted
+        # columns on sparse messages; structs retain their member separators.
+        return pyarrow.repeat("", rows)
     if pyarrow.types.is_struct(column.type):
         return _member_text(column)
     if pyarrow.types.is_list(column.type) or pyarrow.types.is_map(column.type):

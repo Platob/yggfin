@@ -26,7 +26,7 @@ from rekep.enums import (
 from rekep.fields import Field, scalar
 from rekep.market.event import DAY, HOUR, MarketEvent
 from rekep.market.fields import MarketConvertible, fix_tag
-from rekep.market.identity import HASH, NIL, frame, hash_bytes, stored_member
+from rekep.market.identity import HASH, NIL, frame, hash_bytes
 from rekep.market.instrument import Instrument
 from rekep.market.orders import CLIENT_ORDER_CODE, Execution, Order, _quantity_transition
 
@@ -293,8 +293,6 @@ class Book(MarketEvent):
             if self.execpx is None:
                 self.execpx = previous.execpx
             self.code = previous.code or self.code
-            if previous.code:
-                self.codesource = previous.codesource or self.codesource
             self.version = previous.version + 1
             self.prevunix = previous.unix
             self._remember_previous(previous)
@@ -526,7 +524,7 @@ def _book_arrow_batch(books: list[Book], schema: pyarrow.Schema) -> pyarrow.Reco
     columns = []
     for declared in schema:
         name = declared.name
-        values = [stored_member(name, getattr(book, name)) for book in books]
+        values = [Book.into_column_value(name, getattr(book, name)) for book in books]
         if name in _BOOK_STRUCT_LISTS:
             columns.append(_struct_list_arrow(values, declared.type))
         else:
@@ -541,7 +539,7 @@ def _struct_list_arrow(rows: list[list[Any]], declared: pyarrow.DataType) -> pya
     struct = declared.value_type
     children = [
         pyarrow.array(
-            [stored_member(member.name, getattr(value, member.name)) for value in values],
+            [Book.into_column_value(member.name, getattr(value, member.name)) for value in values],
             type=member.type,
         )
         for member in struct
@@ -1448,9 +1446,6 @@ class _Folding:
     code: str = ""
     """Readable code the book lifecycle was first identified by."""
 
-    codesource: str = ""
-    """Field that supplied the book lifecycle's readable code."""
-
     unix: int | None = None
     """The instant the events being folded belong to; None before the first."""
 
@@ -1918,7 +1913,6 @@ class BookIterator:
             xhash=xhash,
             creaunix=creation,
             code=lifecycle.life_code(),
-            codesource=lifecycle.life_code_source(),
             instrument=instrument,
         )
         return state
@@ -1961,7 +1955,6 @@ class BookIterator:
             xhash=snapshot.xhash,
             creaunix=snapshot.creaunix,
             code=snapshot.code,
-            codesource=snapshot.codesource,
             unix=snapshot.unix,
             previous=snapshot,
             about=snapshot,
@@ -2218,7 +2211,6 @@ def _settled(state: _Folding, unix: int) -> Book | None:
         instrumentxhash=state.instrument.xhash,
         symbolticker=state.symbolticker,
         code=state.code,
-        codesource=state.codesource,
         altids=dict(about.altids),
         pxunit=about.pxunit,
         currency=about.currency,

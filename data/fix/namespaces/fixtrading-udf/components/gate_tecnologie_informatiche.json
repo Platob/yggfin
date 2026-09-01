@@ -1,7 +1,7 @@
 {
  "name": "GATETecnologieInformatiche",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "GATETecnologieInformatiche",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "GATETecnologieInformatiche",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

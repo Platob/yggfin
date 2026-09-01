@@ -60,7 +60,7 @@ source, derivation, or null meaning; omit anything already obvious from the
 name and type.
 
 Hot row shapes use `@scalar(slots=True)`. `Event`, `MarketEvent`, `FixMsg`,
-`Instrument`, `InstrumentUpdate`, `Leg`, `Order`, `Execution`, `Book`, and
+`Instrument`, `InstUpdate`, `Leg`, `Order`, `Execution`, `Book`, and
 `Level` therefore have no per-instance `__dict__`; transient private slots
 stay out of Arrow and document conversion.
 

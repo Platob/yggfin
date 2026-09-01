@@ -59,9 +59,9 @@ xhash = Event.xhash_of("ORD-1")
 assert txhash.wide_bytes(xhash) == xxhash.xxh3_128_digest(b"ORD-1")
 ```
 
-`CodeSource <30027>` records the reader-facing field that supplied `code`, such
-as `OrderID`, `ExecID`, or `SymbolTicker`. It explains the lifecycle key but
-does not add another identity part.
+`altids` records every readable code under its folded field name, including
+the selected lifecycle `code`. Typed fields such as `orderid`, `execid`, and
+`symbolticker` remain present even when another one anchors the lifecycle.
 
 An event `hash` composes its epoch microseconds with its `vhash` without
 hashing the payload again. It is stored as sixteen big-endian two's-complement

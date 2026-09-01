@@ -68,6 +68,7 @@ def test_every_public_code_is_a_code_and_every_base_is_a_base() -> None:
         *(kind.__name__ for kind in codes),
         "Ascii32",
         "Ascii64",
+        "Ascii128",
         "ascii_codes",
         "codes",
     }
@@ -86,16 +87,17 @@ def test_a_valid_unlisted_mic_registers_once_and_round_trips_from_storage() -> N
     assert first.code == "21XX", "digits are valid ISO 10383 code characters"
 
 
-def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
+def test_a_protocol_is_sixteen_ascii_bytes_and_a_rule_may_name_its_own() -> None:
     """The vocabulary belongs to the logs: the shipped names are compiled, and
-    a desk's own rule name registers on the same eight bytes every one uses."""
-    assert int(Protocol.FIX) == int.from_bytes(b"FIX".ljust(8, b"\0"), "big")
+    a desk's own rule name registers on the same sixteen bytes every one uses."""
+    assert int(Protocol.FIX) == int.from_bytes(b"FIX".ljust(16, b"\0"), "big")
     assert Protocol.FIX.code == Protocol.FIX.into_fix() == str(Protocol.FIX) == "FIX"
     own = Protocol.from_str(" venue ")
     assert own is Protocol.from_str("VENUE")
     assert Protocol.from_int(int(own)) is own
     assert int(Protocol.FIX) < int(Protocol.FIXML), "and the codes order as the names do"
-    assert Protocol.from_str("VENUEBRIDGE") is Protocol.UNKNOWN, "eight bytes is the ceiling"
+    assert Protocol.from_str("VENUE-BRIDGE-01").code == "VENUE-BRIDGE-01"
+    assert Protocol.from_str("VENUE-BRIDGE-LONG") is Protocol.UNKNOWN
     assert Protocol.from_int(-1) is Protocol.UNKNOWN
     # `_canonical` upper-cases, so a stored lower-case spelling must not read
     # back as a second member beside the one `from_str` folds to.
@@ -103,7 +105,7 @@ def test_a_protocol_is_eight_ascii_bytes_and_a_rule_may_name_its_own() -> None:
     assert Protocol.from_str("FIX.4.2").code == "FIX4.2"
     assert Protocol.from_str("FIX.5.0.SP2").code == "FIX5SP2"
     assert Protocol.from_str("FIXML.5.0.SP2").code == "FXML5SP2"
-    assert Protocol.from_str("FIX5.1SP2") is Protocol.UNKNOWN
+    assert Protocol.from_str("FIX5.1SP2").version == "5.1.SP2"
     assert Protocol.from_str("UL5.1SP2").version == "5.1.SP2"
     assert Protocol.from_str("FIX5SP2").version == "5.0.SP2"
     assert Protocol.from_str("FXML5SP2").family is Protocol.FIXML
@@ -263,6 +265,16 @@ def test_mic_columns_pack_in_kernels_and_keep_invalid_values_null() -> None:
     ]
 
 
+def test_ascii128_columns_keep_invalid_and_missing_strings_null() -> None:
+    packed = Protocol.arrow_from_strings(pyarrow.array(["FIX", "", "PROTOCOL-NAME-TOO-LONG", None]))
+
+    assert packed.type == pyarrow.binary(16)
+    assert packed.to_pylist() == [Protocol.FIX.into_stored(), None, None, None]
+    assert Protocol.into_arrow_array(
+        pyarrow.array([Protocol.FIX.into_stored(), Protocol.UNKNOWN.into_stored()])
+    ).to_pylist() == ["FIX", ""]
+
+
 #: What `State` means on disk: each mnemonic as the integer of its own bytes.
 #: Written out rather than derived, so a recoding fails here instead of in a
 #: year's worth of stored orders.
@@ -420,13 +432,13 @@ DIRECTION_CODES = {
 #: feed's own name is pinned by the rule document that declares it.
 PROTOCOL_CODES = {
     "UNKNOWN": 0,
-    "FIX": int.from_bytes(b"FIX".ljust(8, b"\0"), "big"),
-    "FIXML": int.from_bytes(b"FIXML".ljust(8, b"\0"), "big"),
-    "XML": int.from_bytes(b"XML".ljust(8, b"\0"), "big"),
-    "REFERENTIAL": int.from_bytes(b"REFER".ljust(8, b"\0"), "big"),
-    "UL": int.from_bytes(b"UL".ljust(8, b"\0"), "big"),
-    "MISC": int.from_bytes(b"MISC".ljust(8, b"\0"), "big"),
-    "OTHER": int.from_bytes(b"OTHER".ljust(8, b"\0"), "big"),
+    "FIX": int.from_bytes(b"FIX".ljust(16, b"\0"), "big"),
+    "FIXML": int.from_bytes(b"FIXML".ljust(16, b"\0"), "big"),
+    "XML": int.from_bytes(b"XML".ljust(16, b"\0"), "big"),
+    "REFERENTIAL": int.from_bytes(b"REFER".ljust(16, b"\0"), "big"),
+    "UL": int.from_bytes(b"UL".ljust(16, b"\0"), "big"),
+    "MISC": int.from_bytes(b"MISC".ljust(16, b"\0"), "big"),
+    "OTHER": int.from_bytes(b"OTHER".ljust(16, b"\0"), "big"),
 }
 
 

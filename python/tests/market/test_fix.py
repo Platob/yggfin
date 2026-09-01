@@ -108,7 +108,7 @@ def tagged(shape: type) -> list[tuple[str, Field]]:
 
 
 # The archive is the last versioned baseline (FIX 5.0 SP2); these fields were
-# added by extension packs and are checked against FIX Latest independently.
+# added by extension packs and are checked against FIX 5.0 SP2 independently.
 LATEST_FIELDS = {
     "ExposureDuration": {
         "name": "ExposureDuration",
@@ -118,7 +118,7 @@ LATEST_FIELDS = {
         "metadata": {
             "fix:tag": "1629",
             "fix:type": "int",
-            "fix:version": "FIX.Latest",
+            "fix:version": "5.0.SP2",
         },
     },
     "ExposureDurationUnit": {
@@ -129,7 +129,7 @@ LATEST_FIELDS = {
         "metadata": {
             "fix:tag": "1916",
             "fix:type": "int",
-            "fix:version": "FIX.Latest",
+            "fix:version": "5.0.SP2",
         },
     },
 }

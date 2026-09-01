@@ -14,7 +14,7 @@ order.yaml
 Each file is one Arrow `Field` document with exact types, order, nullability,
 keys, partitioning, descriptions, enum members, FIX metadata, and Iceberg ids.
 `fixmsg.yaml` carries reference facts in its final `instrument` struct;
-`instrument.yaml` is the flat `InstrumentUpdate` event envelope followed by
+`instrument.yaml` is the flat `InstUpdate` event envelope followed by
 the same `Instrument` struct. Those two structs and `Instrument.legs` stay
 last in their owners so Iceberg's default column bounds still cover the flat
 leaves. `FixMsg.error` records row-local transcription degradation without
@@ -36,7 +36,7 @@ from rekep import Field
 order = Field.from_yaml("schemas/rekep/order.yaml")
 fixmsg = Field.from_yaml("schemas/rekep/fixmsg.yaml")
 for shape, name in (
-    (order, "codesource"),
+    (order, "altids"),
     (order, "lastmkt"),
     (order, "xhash"),
     (order, "linkhashes"),
@@ -47,7 +47,7 @@ for shape, name in (
 ```
 
 ```text
-codesource   string
+altids       map<string, string>
 lastmkt      int32
 xhash        fixed_size_binary[16]
 linkhashes   list<item: fixed_size_binary[16] not null>

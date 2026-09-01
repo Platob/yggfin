@@ -13,7 +13,7 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8000",
    "type": "int",
    "values": [
@@ -31,7 +31,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -52,7 +52,7 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8001",
    "type": "int",
    "values": [
@@ -98,7 +98,7 @@
     }
    ],
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -119,11 +119,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8002",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -144,11 +144,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8003",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -169,11 +169,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8004",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -194,11 +194,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "Amt",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8005",
    "type": "Amt",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -219,11 +219,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8006",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -244,11 +244,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "LocalMktDate",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8007",
    "type": "LocalMktDate",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -269,11 +269,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "Price",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8008",
    "type": "Price",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -294,11 +294,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "Amt",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8009",
    "type": "Amt",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -319,11 +319,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8010",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -344,11 +344,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8011",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -369,11 +369,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8012",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -394,11 +394,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8013",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -419,11 +419,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8014",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -444,11 +444,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8015",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -469,11 +469,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8016",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -494,11 +494,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8017",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -519,11 +519,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8018",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -544,11 +544,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8019",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -569,11 +569,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8020",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -594,11 +594,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8021",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -619,11 +619,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8022",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -644,11 +644,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8023",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -669,11 +669,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8024",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -694,11 +694,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8025",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -719,11 +719,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8026",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -744,11 +744,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8027",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -769,11 +769,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8028",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -794,11 +794,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "int",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8029",
    "type": "int",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -819,11 +819,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8030",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"
@@ -844,11 +844,11 @@
    "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
    "original-type": "String",
    "source-license": "https://orchestrahub.org/community/fix-udf",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "tag": "8031",
    "type": "String",
    "versions": [
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fixtrading-udf"

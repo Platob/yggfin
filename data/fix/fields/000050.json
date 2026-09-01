@@ -6,13 +6,13 @@
   "description": "Unique Identifier for a batch of messages.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "178"
@@ -20,8 +20,7 @@
    "tag": "50000",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -36,13 +35,13 @@
   "description": "Total # of messages contained within batch.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "178"
@@ -50,8 +49,7 @@
    "tag": "50001",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -66,13 +64,13 @@
   "description": "Indicates the processing mode for a batch of messages.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "BatchProcessModeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "178"
@@ -98,8 +96,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",

@@ -1,7 +1,7 @@
 {
  "name": "MEFF",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "MEFF",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "MEFF",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

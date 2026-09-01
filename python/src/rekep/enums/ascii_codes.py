@@ -116,6 +116,8 @@ class Ascii32(enum.IntEnum):
             return value
         if isinstance(value, int):
             return cls.from_int(value)
+        if isinstance(value, bytes | bytearray | memoryview):
+            return cls.from_stored(value)
         return cls._from_text(str(value) if value is not None else "")
 
     @classmethod
@@ -125,6 +127,8 @@ class Ascii32(enum.IntEnum):
         A well-formed unknown code reads back as a newly registered member --
         exactly the bytes stored, never a respelling.
         """
+        if isinstance(value, bytes | bytearray | memoryview):
+            return cls.from_stored(value, default)
         try:
             packed = int(value)
         except (TypeError, ValueError):
@@ -144,6 +148,32 @@ class Ascii32(enum.IntEnum):
         if not cls._valid(text) or cls._pack(text) != packed:
             return default if default is not None else cls.UNKNOWN
         return cls._register(packed, text)
+
+    @classmethod
+    def from_stored(
+        cls,
+        value: int | bytes | bytearray | memoryview | None,
+        default: Self | None = None,
+    ) -> Self:
+        """Decode one physical Arrow value into its enum member."""
+        if isinstance(value, bytes | bytearray | memoryview):
+            raw = bytes(value)
+            if len(raw) != cls.BYTE_WIDTH:
+                return default if default is not None else cls.UNKNOWN
+            return cls.from_int(int.from_bytes(raw, "big", signed=True), default)
+        return cls.from_int(value, default)
+
+    def into_stored(self) -> int | bytes:
+        """Return the physical Arrow value for this member."""
+        dtype = type(self).into_storage_type()
+        if pyarrow.types.is_fixed_size_binary(dtype):
+            return (int(self) & ((1 << (8 * self.BYTE_WIDTH)) - 1)).to_bytes(self.BYTE_WIDTH, "big")
+        return int(self)
+
+    def stored_key(self) -> str:
+        """Return the schema-metadata spelling of this member's physical value."""
+        value = self.into_stored()
+        return value.hex() if isinstance(value, bytes) else str(value)
 
     @classmethod
     def from_fix(cls, value: Any, default: Self | None = None) -> Self:
@@ -281,11 +311,24 @@ class Ascii32(enum.IntEnum):
         """This enum's Arrow type: a dictionary of its codes, indexed as wide
         as the packed value a column stores, so the index type is also the
         storage a builder declares."""
-        index = pyarrow.int32() if cls.BYTE_WIDTH <= 4 else pyarrow.int64()
+        storage = cls.into_storage_type()
+        index = storage if pyarrow.types.is_integer(storage) else pyarrow.int32()
         return pyarrow.dictionary(index, pyarrow.utf8())
 
     @classmethod
-    def into_arrow_array(cls, values: Any) -> pyarrow.DictionaryArray:
+    @functools.cache
+    def into_storage_type(cls) -> pyarrow.DataType:
+        """Physical Arrow type carrying one packed code."""
+        if cls.BYTE_WIDTH <= 4:
+            return pyarrow.int32()
+        if cls.BYTE_WIDTH <= 8:
+            return pyarrow.int64()
+        return pyarrow.binary(cls.BYTE_WIDTH)
+
+    @classmethod
+    def into_arrow_array(
+        cls, values: pyarrow.Array | pyarrow.ChunkedArray
+    ) -> pyarrow.DictionaryArray:
         """A stored code column rendered as this enum spelled out.
 
         Arrow indexes a dictionary by position, not by the stored value, so
@@ -294,24 +337,36 @@ class Ascii32(enum.IntEnum):
         """
         compute = pyarrow.compute
         column = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
-        index = cls.into_arrow_type().index_type
-        stored = column.cast(index, safe=False)
+        storage = cls.into_storage_type()
+        stored = column.cast(storage, safe=False)
         distinct = compute.drop_null(compute.unique(stored))
-        resolved = [cls.from_int(value.as_py()) for value in distinct]
+        resolved = [cls.from_stored(value.as_py()) for value in distinct]
         pairs = [
             (value.as_py(), member.code)
             for value, member in zip(distinct, resolved, strict=True)
-            if member is not cls.UNKNOWN or value.as_py() == int(cls.UNKNOWN)
+            if member is not cls.UNKNOWN or value.as_py() == cls.UNKNOWN.into_stored()
         ]
-        codes = pyarrow.array([value for value, _code in pairs], index)
+        codes = pyarrow.array([value for value, _code in pairs], storage)
         spellings = [code for _value, code in pairs]
-        positions = compute.index_in(stored, value_set=codes).cast(index, safe=False)
+        positions = compute.index_in(stored, value_set=codes).cast(
+            cls.into_arrow_type().index_type, safe=False
+        )
         return pyarrow.DictionaryArray.from_arrays(
             positions, pyarrow.array(spellings, pyarrow.utf8())
         )
 
     @classmethod
-    def arrow_from_strings(cls, *values: Any) -> Any:
+    def into_strings_arrow(cls, values: pyarrow.Array | pyarrow.ChunkedArray) -> pyarrow.Array:
+        """Render stored codes as their protocol spellings."""
+        column = values.combine_chunks() if isinstance(values, pyarrow.ChunkedArray) else values
+        if pyarrow.types.is_string(column.type) or pyarrow.types.is_large_string(column.type):
+            return column.cast(pyarrow.string(), safe=False)
+        return cls.into_arrow_array(column).dictionary_decode()
+
+    @classmethod
+    def arrow_from_strings(
+        cls, *values: pyarrow.Array | pyarrow.ChunkedArray
+    ) -> pyarrow.Array | pyarrow.ChunkedArray:
         """Pack the first valid protocol spelling across string columns."""
         if not values:
             raise ValueError("at least one source column is required")
@@ -322,12 +377,13 @@ class Ascii32(enum.IntEnum):
         ]
         source = compute.coalesce(*sources)
         unique = compute.drop_null(compute.unique(source))
-        dtype = cls.into_arrow_type().index_type
+        dtype = cls.into_storage_type()
         if not len(unique):
             return pyarrow.nulls(len(source), dtype)
         members = [cls.from_fix(value.as_py()) for value in unique]
         packed = pyarrow.array(
-            [None if member is cls.UNKNOWN else int(member) for member in members], dtype
+            [None if member is cls.UNKNOWN else member.into_stored() for member in members],
+            dtype,
         )
         return compute.take(packed, compute.index_in(source, value_set=unique))
 
@@ -594,3 +650,9 @@ class Ascii64(Ascii32):
     """
 
     BYTE_WIDTH = enum.nonmember(8)
+
+
+class Ascii128(Ascii32):
+    """An ASCII code of up to sixteen bytes stored as fixed binary."""
+
+    BYTE_WIDTH = enum.nonmember(16)

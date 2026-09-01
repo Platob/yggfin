@@ -378,7 +378,10 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
             self.seen.extend(messages.to_pylist())
             assert plugins.to_pylist() == ["bridge", "fix"]
             assert len(entries) == len(messages)
-            return pyarrow.array([int(Protocol.FIX)] * len(messages), pyarrow.int64())
+            return pyarrow.array(
+                [Protocol.FIX.into_stored()] * len(messages),
+                Protocol.into_storage_type(),
+            )
 
         def into_arrow_direction_array(self, messages, protocols):
             return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(messages))
@@ -421,7 +424,7 @@ def test_empty_input_keeps_the_declared_column_types() -> None:
     found = Message.parse_arrow(pyarrow.array([], pyarrow.string()), EVENT_TYPES)
 
     assert found["eventtype"].type == pyarrow.int64()
-    assert found["protocol"].type == Protocol.into_arrow_type().index_type
+    assert found["protocol"].type == Protocol.into_storage_type()
     for name in SESSION_COLUMNS:
         assert found[name].type == pyarrow.string(), name
     assert found["entries"].type == Message.into_field().field("entries").dtype

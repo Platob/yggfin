@@ -1,7 +1,7 @@
 {
  "name": "Tradeweb",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "Tradeweb",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "Tradeweb",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

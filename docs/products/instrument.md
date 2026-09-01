@@ -1,20 +1,20 @@
-# InstrumentUpdate
+# InstUpdate
 
 One current reference-data event for a tradable instrument. `Instrument` is
-the nested FIX component of reference facts; `InstrumentUpdate` adds the event
+the nested FIX component of reference facts; `InstUpdate` adds the event
 envelope that `market.instruments` stores. Its `fixed_size_binary[16]` `xhash`
 is the table key: the direct XXH3-128 digest of UTF-8 `code`.
 
 ```python
-from rekep import FixMsg, Instrument, InstrumentUpdate
+from rekep import FixMsg, Instrument, InstUpdate
 
 line = (
     "8=FIX.4.4|35=d|49=VENUE|56=DESK|34=2|52=20260101-09:00:00.000|"
     "55=BTC-USD|48=BTCUSD|22=8|167=FXSPOT|15=USD|207=XCME|60=20260101-09:00:00.000|10=000"
 )
-update = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)]))
+update = next(InstUpdate.from_fixmsgs([FixMsg.from_text(line)]))
 instrument = Instrument.from_update(update)
-print(update.codesource, update.xhash == instrument.xhash)
+print(update.altids, update.xhash == instrument.xhash)
 print(
     instrument.symbolticker,
     instrument.symbol,
@@ -25,13 +25,13 @@ print(
 ```
 
 ```text
-SymbolTicker True
+{'code': 'XCME:BTC-USD', 'symbolticker': 'XCME:BTC-USD'} True
 XCME:BTC-USD BTC-USD CURRENCY USD XCME
 ```
 
-`InstrumentUpdate.from_instrument` is the inverse for one row. Arrow batches
+`InstUpdate.from_instrument` is the inverse for one row. Arrow batches
 use `Instrument.from_update_arrow_batch` and
-`InstrumentUpdate.from_instrument_arrow_batch`; both stay columnar.
+`InstUpdate.from_instrument_arrow_batch`; both stay columnar.
 
 `Symbol <55>` leads, under the `SecurityExchange <207>` that named it. A line
 carrying no symbol falls to `SecurityID <48>` with its `SecurityIDSource <22>`
@@ -73,7 +73,7 @@ so ticker and ISIN derivation do not depend on a feed's preferred spelling.
 classifies the instrument as currency and supplies `NOK` as its quote currency
 when those facts are otherwise absent.
 
-`InstrumentUpdate.xhash`, `Instrument.xhash`, each `Leg.xhash`, and flat
+`InstUpdate.xhash`, `Instrument.xhash`, each `Leg.xhash`, and flat
 `instrumentxhash` joins are the same sixteen-byte XXH3-128 identity derived
 directly from UTF-8 `symbolticker`. They carry no event clock.
 
@@ -84,7 +84,7 @@ directly from UTF-8 `symbolticker`. They carry no event clock.
      data-registry-source="../../assets/fix-registry.json"
      data-sample="8=FIX.4.4|35=d|49=VENUE|56=DESK|34=2|52=20260101-09:00:00.000|55=BTC-USD|48=BTCUSD|22=8|167=FXSPOT|15=USD|207=XCME|60=20260101-09:00:00.000|10=000"></div>
 
-`InstrumentUpdate.versioned` enriches observations without revising known
+`InstUpdate.versioned` enriches observations without revising known
 facts. [Parse instruments](../pipeline/tasks/parse-instruments.md) overwrites
 the current row for the same event `xhash`; the nested component remains the
 readable reference record.

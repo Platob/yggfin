@@ -40,7 +40,9 @@ snapshot_every: 3600000000000
 max_lateness_ns: 900000000000
 max_order_age_ns: 86400000000000
 max_side_alive: 10000
-commit_row_size: 250000
+batch_row_size: 65536
+commit_batch_num: 8
+commit_row_size: null # Optional earlier row cap.
 ```
 
 The FIX registry supplies message dispatch and lifecycle mappings. Flat rows

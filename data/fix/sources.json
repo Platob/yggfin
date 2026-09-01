@@ -2,7 +2,7 @@
  "sources": [
   {
    "checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "definitions_checksum": "sha256:74be6ccd7051a8b0f411d2abf1764ab14fe45fff3648ac9ac5cdad8f283cf035",
+   "definitions_checksum": "sha256:3c220dc76e5d90732c9c7c7dbc73cb5d80be2908a5f03ef1f06287482d5cc605",
    "format": "orchestra",
    "license_url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
    "lookup_order": 0,
@@ -11,14 +11,14 @@
    "projection": "rekep-fix-registry-v1",
    "source_id": "fix-latest",
    "url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "version": "FIX.Latest_EP309"
+   "version": "FIX.5.0SP2_EP309"
   },
   {
    "checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
-   "definitions_checksum": "sha256:ca277aa72ae6b1aba651a2da6fe894c92a354f3f8ecea3f2b5854c0b252560f3",
+   "definitions_checksum": "sha256:2b25d5341a063e30bdb9cd4af50b31a95dd64965f0775266212d34e7612da9ca",
    "format": "orchestra",
    "license_url": "https://orchestrahub.org/community/fix-udf",
-   "lookup_order": 2,
+   "lookup_order": 1,
    "namespace": "fixtrading-udf",
    "priority": 100,
    "projection": "rekep-fix-registry-v1",
@@ -31,7 +31,7 @@
    "definitions_checksum": "sha256:7f7ebd6a21051d996d15b44eea131c13859b0274595ad7f52eb1cc525b66deac",
    "format": "quickfix",
    "license_url": "https://github.com/quickfix/quickfix/blob/master/LICENSE",
-   "lookup_order": 1,
+   "lookup_order": 2,
    "namespace": "standard",
    "priority": 200,
    "projection": "rekep-fix-registry-v1",

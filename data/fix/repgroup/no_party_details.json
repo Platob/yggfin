@@ -5,8 +5,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoPartyDetails",
@@ -52,252 +51,31 @@
      }
     },
     {
-     "name": "NoPartyDetailSubIDs",
-     "type": "list",
+     "name": "PartyDetailSubGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "1694"
+      "component": "PartyDetailSubGrp"
      },
-     "item": {
-      "name": "PartyDetailSubID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "PartyDetailSubID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1695"
-        }
-       },
-       {
-        "name": "PartyDetailSubIDType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1696"
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
-     "name": "NoPartyDetailAltID",
-     "type": "list",
+     "name": "PartyDetailAltIDGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "1516"
+      "component": "PartyDetailAltIDGrp"
      },
-     "item": {
-      "name": "PartyDetailAltID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "PartyDetailAltID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1517"
-        }
-       },
-       {
-        "name": "PartyDetailAltIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1518"
-        }
-       },
-       {
-        "name": "NoPartyDetailAltSubIDs",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "1519"
-        },
-        "item": {
-         "name": "PartyDetailAltSubID",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "PartyDetailAltSubID",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1520"
-           }
-          },
-          {
-           "name": "PartyDetailAltSubIDType",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1521"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
-     "name": "NoRelatedPartyDetailID",
-     "type": "list",
+     "name": "RelatedPartyDetailGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "1562"
+      "component": "RelatedPartyDetailGrp"
      },
-     "item": {
-      "name": "RelatedPartyDetailID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "RelatedPartyDetailID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1563"
-        }
-       },
-       {
-        "name": "RelatedPartyDetailIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1564"
-        }
-       },
-       {
-        "name": "RelatedPartyDetailRole",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1565"
-        }
-       },
-       {
-        "name": "RelatedPartyDetailRoleQualifier",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1675"
-        }
-       },
-       {
-        "name": "NoRelatedPartyDetailSubIDs",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "1566"
-        },
-        "item": {
-         "name": "RelatedPartyDetailSubID",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "RelatedPartyDetailSubID",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1567"
-           }
-          },
-          {
-           "name": "RelatedPartyDetailSubIDType",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1568"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoRelatedPartyDetailAltID",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "1569"
-        },
-        "item": {
-         "name": "RelatedPartyDetailAltID",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "RelatedPartyDetailAltID",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1570"
-           }
-          },
-          {
-           "name": "RelatedPartyDetailAltIDSource",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1571"
-           }
-          },
-          {
-           "name": "NoRelatedPartyDetailAltSubIDs",
-           "type": "list",
-           "nullable": true,
-           "fix": {
-            "tag": "1572"
-           },
-           "item": {
-            "name": "RelatedPartyDetailAltSubID",
-            "type": "struct",
-            "fields": [
-             {
-              "name": "RelatedPartyDetailAltSubID",
-              "type": "string",
-              "nullable": true,
-              "fix": {
-               "tag": "1573"
-              }
-             },
-             {
-              "name": "RelatedPartyDetailAltSubIDType",
-              "type": "string",
-              "nullable": true,
-              "fix": {
-               "tag": "1574"
-              }
-             }
-            ]
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoPartyRelationships",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "1514"
-        },
-        "item": {
-         "name": "PartyRelationship",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "PartyRelationship",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "1515"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
      "name": "PartyDetailStatus",

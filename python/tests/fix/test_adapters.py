@@ -260,12 +260,12 @@ def test_adapter_catalog_separates_defaults_vendors_and_restricted_sources() -> 
 
 def test_source_revision_and_protocol_version_are_distinct_catalog_facts() -> None:
     assert (FIX_LATEST.version, FIX_LATEST.protocol_version) == (
-        "FIX.Latest_EP309",
-        "FIX.Latest",
+        "FIX.5.0SP2_EP309",
+        "5.0.SP2",
     )
     assert (FIXTRADING_UDF.version, FIXTRADING_UDF.protocol_version) == (
         "1.0",
-        "FIX.Latest",
+        "5.0.SP2",
     )
     assert (QUICKFIX.version, QUICKFIX.protocol_version) == (
         "FIX.5.0SP2_EP280",

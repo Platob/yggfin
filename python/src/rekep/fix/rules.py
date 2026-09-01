@@ -7,15 +7,15 @@ import functools
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any
+from typing import Annotated, Any
 
 import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
 from rekep.entries import Entry
-from rekep.enums import Direction, EventType, Protocol
-from rekep.fields import column_name, scalar
+from rekep.enums import Direction, EventType, Plugin, Protocol
+from rekep.fields import Field, column_name, scalar
 from rekep.fields.arrays import sequence
 from rekep.fix.message import (
     BEGIN_STRING,
@@ -56,7 +56,7 @@ CODEC_KEYS: dict[str, bool | None] = {
 
 #: What the `protocol` column stores, and so what every kernel here builds: a
 #: packed code and never the name it spells.
-_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
+_PROTOCOL_CODE = Protocol.into_storage_type()
 
 #: How a bridge says which way a payload moved -- `Receiving : 8=FIX...`,
 #: `Sending : ...`, `Message received:`, `IN 8=FIX...`, `[OUT] ...` -- counted
@@ -155,7 +155,7 @@ XML_PAYLOAD_PATTERN = joined_pattern(
 class Rule(Convertible):
     """A protocol rule whose regex must work in Python `re` and Arrow RE2."""
 
-    protocol: Protocol = Protocol.OTHER
+    protocol: Annotated[Protocol, Field(dtype=Protocol.into_storage_type())] = Protocol.OTHER
     """What a line matching this rule carries, as the `protocol` column holds it."""
 
     pattern: str = ""
@@ -188,7 +188,7 @@ class Rule(Convertible):
         declared = Protocol.from_str(self.protocol)
         if declared is Protocol.UNKNOWN:
             raise ValueError(
-                f"{self.protocol!r} is no protocol name: at most eight bytes of [A-Z0-9._-]"
+                f"{self.protocol!r} is no protocol name: at most sixteen bytes of [A-Z0-9._-]"
             )
         self.protocol = declared.family
         if isinstance(self.extra_entry_separators, str):
@@ -335,11 +335,13 @@ class Rules(Convertible):
         """
         compute = pyarrow.compute
         rows = len(messages)
-        found: Any = pyarrow.repeat(pyarrow.scalar(OTHER.protocol, _PROTOCOL_CODE), rows)
+        found: Any = pyarrow.repeat(
+            pyarrow.scalar(OTHER.protocol.into_stored(), _PROTOCOL_CODE), rows
+        )
         if not rows:
             return found
         text = messages.cast(pyarrow.string(), safe=False)
-        plugin_text = None if plugins is None else plugins.cast(pyarrow.string(), safe=False)
+        plugin_text = None if plugins is None else Plugin.into_strings_arrow(plugins)
         shapes = (
             payload_shapes(Entry.payload_arrow(messages) if entries is None else entries)
             if any(rule.codec in SHAPES for rule in self.rules)
@@ -347,7 +349,9 @@ class Rules(Convertible):
         )
         for rule in reversed(self.rules):
             hit = _hit(rule, text, plugin_text, shapes)
-            found = compute.if_else(hit, pyarrow.scalar(rule.protocol, _PROTOCOL_CODE), found)
+            found = compute.if_else(
+                hit, pyarrow.scalar(rule.protocol.into_stored(), _PROTOCOL_CODE), found
+            )
         # No cast: the seed above and every branch here are already the code the
         # column stores, so there is no width for the loop to have widened.
         return found
@@ -370,7 +374,7 @@ class Rules(Convertible):
         text = compute.fill_null(messages.cast(pyarrow.string(), safe=False), "")
         codes = Protocol.into_family_arrow(protocols)
         for protocol, anchor in self._anchors().items():
-            selected = compute.fill_null(compute.equal(codes, protocol), False)
+            selected = compute.fill_null(compute.equal(codes, protocol.into_stored()), False)
             if not compute.any(selected, min_count=0).as_py():
                 continue
             payload_at = compute.find_substring_regex(text, pattern=anchor)
@@ -428,7 +432,10 @@ class Rules(Convertible):
         known = compute.fill_null(
             compute.is_in(
                 Protocol.into_family_arrow(protocols),
-                value_set=pyarrow.array(sorted(self.protocols), _PROTOCOL_CODE),
+                value_set=pyarrow.array(
+                    [protocol.into_stored() for protocol in sorted(self.protocols)],
+                    _PROTOCOL_CODE,
+                ),
             ),
             False,
         )

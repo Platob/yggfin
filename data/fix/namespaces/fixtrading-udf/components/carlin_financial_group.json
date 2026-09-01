@@ -1,7 +1,7 @@
 {
  "name": "CarlinFinancialGroup",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "CarlinFinancialGroup",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "CarlinFinancialGroup",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

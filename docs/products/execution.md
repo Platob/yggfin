@@ -21,13 +21,13 @@ print(
     execution.lastpx,
     execution.execid,
     execution.orderid,
-    execution.codesource,
+    sorted(execution.altids),
     execution.state.name,
 )
 ```
 
 ```text
-10.0 100.25 E1 O1 ExecID FILLED
+10.0 100.25 E1 O1 ['clordid', 'code', 'execid', 'orderid', 'symbolticker'] FILLED
 ```
 
 Missing identifiers may resolve against indexed live order names. Venue

@@ -127,7 +127,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
 EXPECTED_FIELD_DOCUMENTS = 11
-EXPECTED_FIELD_RECORDS = 6285
+EXPECTED_FIELD_RECORDS = 6284
 EXPECTED_COMPONENT_FILES = 927
 EXPECTED_REPEATING_GROUP_FILES = 525
 #: Of which these are messages: a message is a component that arrives under a MsgType.
@@ -144,7 +144,7 @@ CONFLICTS = DATA.parent / "fix-conflicts.json"
 
 #: Pinned so a moved or half-written directory fails here rather than passing
 #: every test below by iterating over nothing.
-EXPECTED_VERSIONS = 10
+EXPECTED_VERSIONS = 9
 
 
 class OfflineRegistry(FixRegistry):
@@ -182,7 +182,7 @@ def test_the_archive_holds_one_file_per_registry_identity() -> None:
     assert len(records()) == EXPECTED_FIELD_RECORDS
     assert len(members("components")) == EXPECTED_COMPONENT_FILES
     assert len(members("repgroup")) == EXPECTED_REPEATING_GROUP_FILES
-    assert VERSIONS[0] == "FIX.Latest", "newest first"
+    assert VERSIONS[0] == "5.0.SP2", "newest first"
     assert VERSIONS[-1] == "FIXT1.1", "and the transport last"
     assert set(INDEX["sessions"]) <= set(VERSIONS)
     assert set(INDEX["declared"]) == set(VERSIONS), "every version's spec was read"
@@ -230,7 +230,6 @@ def test_a_field_record_is_one_reading_and_the_versions_that_declare_it() -> Non
         "5.0",
         "5.0.SP1",
         "5.0.SP2",
-        "FIX.Latest",
     ]
     assert [alias["name"] for alias in settl["aliases"]] == ["FutSettDate"]
 
@@ -398,7 +397,6 @@ def test_the_collapse_report_is_committed_and_is_what_the_build_makes() -> None:
 #: arriving typed and undocumented. A ratio over that set would say the
 #: dictionary got worse for having grown.
 EXPECTED_DESCRIBED: dict[str, int] = {
-    "FIX.Latest": 6205,
     "4.0": 142,
     "4.1": 213,
     "4.2": 408,
@@ -406,7 +404,7 @@ EXPECTED_DESCRIBED: dict[str, int] = {
     "4.4": 956,
     "5.0": 1133,
     "5.0.SP1": 1418,
-    "5.0.SP2": 6073,
+    "5.0.SP2": 6248,
     "FIXT1.1": 77,
 }
 
@@ -433,7 +431,7 @@ def test_the_dump_answers_a_lookup_offline(registry: FixRegistry) -> None:
     """What the directory is for: a registry that never fetches anything."""
     side = registry.field("Side")
     assert side.fix["tag"] == "54"
-    assert side.fix["version"] == "FIX.Latest", "the newest version that has it"
+    assert side.fix["version"] == "5.0.SP2", "the newest version that has it"
     assert side.description == 'Side of order (see Volume : "Glossary" for value definitions)'
     assert side.fix.value_of("1").meaning == "Buy"
     assert registry.field(35).name == "MsgType"
@@ -611,7 +609,6 @@ def test_the_bundled_registry_carries_the_component_declarations(
         "5.0",
         "5.0.SP1",
         "5.0.SP2",
-        "FIX.Latest",
         "FIXT1.1",
     }
     assert {"4.0", "4.1", "4.2"}.isdisjoint(declared), "no standard component existed before 4.3"
@@ -779,7 +776,7 @@ def test_the_published_dictionary_pins_complete_source_artifacts(
     } == {
         "fix-latest": (
             "standard",
-            "FIX.Latest_EP309",
+            "FIX.5.0SP2_EP309",
             "orchestra",
             "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
         ),
@@ -876,7 +873,6 @@ def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry)
         for version in registry.versions
     }
     assert counted == {
-        "FIX.Latest": 2018,
         "4.0": 43,
         "4.1": 59,
         "4.2": 122,
@@ -884,7 +880,7 @@ def test_every_version_published_here_has_its_symbols(registry: OfflineRegistry)
         "4.4": 308,
         "5.0": 373,
         "5.0.SP1": 446,
-        "5.0.SP2": 1979,
+        "5.0.SP2": 2026,
         "FIXT1.1": 16,
     }
 

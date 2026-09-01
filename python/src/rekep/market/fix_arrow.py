@@ -11,12 +11,25 @@ import pyarrow.compute as compute
 from rekep import txhash
 from rekep.enums import MIC, Currency, EventType, MarketKind, Side, State, TimeInForce
 from rekep.fields import TimestampField, column_names, encoded_key
-from rekep.fields.arrays import build_list, build_map, dense_counts, interleave, sequence
+from rekep.fields.arrays import (
+    as_entry_list,
+    build_list,
+    build_map,
+    dense_counts,
+    interleave,
+    map_column,
+    sequence,
+)
 from rekep.fields.names import column_name
 from rekep.fix.access import FieldAccess
 from rekep.fix.fields import cast_arrow_field, cast_arrow_fix
 from rekep.fix.oms import OMS_FIX_VERSION
-from rekep.market.event import Event, _declared_temporal_arrow, unix_partition_arrow
+from rekep.market.event import (
+    Event,
+    _declared_temporal_arrow,
+    _mapping_frame_arrow,
+    unix_partition_arrow,
+)
 from rekep.market.fix import (
     _TRADE_EVIDENCE_FIELDS,
     CANCEL_REJECT_HANDLER,
@@ -438,7 +451,7 @@ def _mic_arrow(column: pyarrow.Array) -> pyarrow.Array:
     values = compute.unique(column)
     packed = pyarrow.array(
         [None if value is None else int(MIC.from_str(value)) for value in values.to_pylist()],
-        MIC.into_arrow_type().index_type,
+        MIC.into_storage_type(),
     )
     found = compute.take(packed, compute.index_in(column, value_set=values))
     return compute.fill_null(found, 0)
@@ -636,7 +649,7 @@ class _Values:
         entries: pyarrow.Array,
         tags: MarketTags,
         rows: int,
-    ):
+    ) -> None:
         self.columns = _with_instrument_columns(columns)
         self.rows = rows
         requested = tuple((tags.tags[name], name) for name in _READ_FIELDS if name in tags.tags)
@@ -683,7 +696,7 @@ class _Values:
 class _Shared:
     """Market envelope columns shared by orders and executions."""
 
-    def __init__(self, values: _Values, tags: MarketTags):
+    def __init__(self, values: _Values, tags: MarketTags) -> None:
         from rekep.text.fixmsg import FixMsg
 
         columns = values.columns
@@ -691,7 +704,7 @@ class _Shared:
         self.rows = rows
         self.unix = columns["unix"].cast(pyarrow.int64(), safe=False)
         self.unixpartition = columns["unixpartition"].cast(pyarrow.int32(), safe=False)
-        self.plugin = columns["plugin"].cast(pyarrow.string(), safe=False)
+        self.plugin = columns["plugin"].cast(Event.into_field().field("plugin").dtype, safe=False)
         self.creaunix = columns["creaunix"].cast(pyarrow.int64(), safe=False)
         self.recunix = columns["recunix"].cast(pyarrow.int64(), safe=False)
         self.expunix = columns["expunix"].cast(pyarrow.int64(), safe=False)
@@ -801,14 +814,9 @@ def _orders(
     orderid = shared.take(values.text("OrderID"), where)
     client_id = shared.take(values.text("ClOrdID"), where)
     previous_client_id = shared.take(values.text("OrigClOrdID"), where)
-    named, codesource = _first_nonempty_and_source(
-        (orderid, "OrderID"),
-        (previous_client_id, "OrigClOrdID"),
-        (client_id, "ClOrdID"),
-        fallback="",
-    )
+    named = _first_nonempty(orderid, previous_client_id, client_id, fallback="")
     symbolticker = shared.take(shared.symbolticker, where)
-    code = named
+    code = _first_nonempty(named, symbolticker, fallback="")
     instrumentxhash = shared.take(shared.instrumentxhash, where)
     lastmkt = shared.take(shared.lastmkt, where)
     creaunix = shared.take(shared.creaunix, where)
@@ -819,17 +827,23 @@ def _orders(
     vwap = pyarrow.nulls(len(where), pyarrow.float64())
     null_float = pyarrow.nulls(len(where), pyarrow.float64())
     eventtype = _constant(len(where), int(EventType.ORDER), pyarrow.int64())
-    altids = shared.take(shared.altids, where)
     pxunit = shared.take(shared.pxunit, where)
     qtyunit = _constant(len(where), "", pyarrow.string())
     metadata = shared.take(shared.metadata, where)
     clordlinkid = shared.take(values.text("ClOrdLinkID"), where)
     parentclordid = shared.take(values.text("ParentClOrdID"), where)
     parentorderid = shared.take(values.text("ParentOrderID"), where)
+    altids = _event_altids(
+        shared.take(shared.altids, where),
+        ("symbolticker", symbolticker),
+        ("parentclordid", parentclordid),
+        ("parentorderid", parentorderid),
+        ("code", code),
+    )
     null_text = pyarrow.nulls(len(where), pyarrow.string())
     vhash = _value_hash_arrow(
         Order,
-        (eventtype, state, lastmkt, code, codesource, reason),
+        (eventtype, state, lastmkt, code, reason),
         altids,
         (
             arrow_of(instrumentxhash),
@@ -876,7 +890,6 @@ def _orders(
         "version": _constant(len(where), 0, pyarrow.int64()),
         "state": state,
         "code": code,
-        "codesource": codesource,
         "altids": altids,
         "prevhash": pyarrow.nulls(len(where), HASH),
         "lastmkt": lastmkt,
@@ -928,12 +941,8 @@ def _executions(
     kind = shared.take(values.mapped("ExecType", tags.execution_kinds, MarketKind.UNKNOWN), where)
     execid = shared.take(values.text("ExecID"), where)
     execrefid = shared.take(values.text("ExecRefID"), where)
-    all_tradeid, all_trade_source = _first_nonempty_and_source(
-        (values.text("TradeID"), "TradeID"),
-        (values.text("TrdMatchID"), "TrdMatchID"),
-    )
+    all_tradeid = _first_nonempty(values.text("TradeID"), values.text("TrdMatchID"))
     tradeid = shared.take(all_tradeid, where)
-    trade_source = shared.take(all_trade_source, where)
     corrected = compute.and_(
         compute.is_in(
             state,
@@ -943,20 +952,10 @@ def _executions(
         ),
         compute.fill_null(compute.not_equal(execrefid, ""), False),
     )
-    ordinary, ordinary_source = _first_nonempty_and_source((execid, "ExecID"), (tradeid, "TradeID"))
-    # `tradeid` is the normalized slot; retain the exact field that supplied it.
-    ordinary_source = compute.if_else(
-        compute.fill_null(
-            compute.and_(compute.equal(ordinary_source, "TradeID"), compute.not_equal(tradeid, "")),
-            False,
-        ),
-        trade_source,
-        ordinary_source,
-    )
+    ordinary = _first_nonempty(execid, tradeid)
     named = compute.fill_null(compute.if_else(corrected, execrefid, ordinary), "")
-    codesource = compute.if_else(compute.fill_null(corrected, False), "ExecRefID", ordinary_source)
     symbolticker = shared.take(shared.symbolticker, where)
-    code = named
+    code = _first_nonempty(named, symbolticker, fallback="")
     instrumentxhash = shared.take(shared.instrumentxhash, where)
     lastmkt = shared.take(shared.lastmkt, where)
     creaunix = shared.take(shared.creaunix, where)
@@ -1012,7 +1011,11 @@ def _executions(
     reason = shared.take(shared.reason, where)
     null_float = pyarrow.nulls(rows, pyarrow.float64())
     eventtype = _constant(rows, int(EventType.EXECUTION), pyarrow.int64())
-    altids = shared.take(shared.altids, where)
+    altids = _event_altids(
+        shared.take(shared.altids, where),
+        ("symbolticker", symbolticker),
+        ("code", code),
+    )
     pxunit = shared.take(shared.pxunit, where)
     qtyunit = _constant(rows, "", pyarrow.string())
     metadata = shared.take(shared.metadata, where)
@@ -1054,7 +1057,7 @@ def _executions(
     )
     vhash = _value_hash_arrow(
         Execution,
-        (eventtype, state, lastmkt, code, codesource, reason),
+        (eventtype, state, lastmkt, code, reason),
         altids,
         market_values,
         metadata,
@@ -1076,7 +1079,6 @@ def _executions(
         "version": _constant(rows, 0, pyarrow.int64()),
         "state": state,
         "code": code,
-        "codesource": codesource,
         "altids": altids,
         "prevhash": pyarrow.nulls(rows, HASH),
         "parenthash": parent,
@@ -1137,15 +1139,10 @@ def _order_lookup(
     if orders is None:
         return {
             "hash": pyarrow.nulls(rows, HASH),
-            "code": pyarrow.nulls(rows, pyarrow.string()),
-            "codesource": pyarrow.nulls(rows, pyarrow.string()),
             "expunix": pyarrow.nulls(rows, pyarrow.int64()),
         }
     locations = compute.index_in(execution_at, value_set=order_at)
-    return {
-        name: compute.take(orders.column(name), locations)
-        for name in ("hash", "code", "codesource", "expunix")
-    }
+    return {name: compute.take(orders.column(name), locations) for name in ("hash", "expunix")}
 
 
 def _quantity_transition(
@@ -1393,36 +1390,57 @@ def _value_hash_arrow(
     return hash_bytes_arrow(joined)
 
 
-def _mapping_frame_arrow(values: pyarrow.Array) -> pyarrow.Array:
-    """Optional map entries as deterministic identity-frame segments."""
-    item = pyarrow.struct(
-        [
-            pyarrow.field("key", values.type.key_type, nullable=False),
-            pyarrow.field("value", values.type.item_type, nullable=values.type.item_field.nullable),
-        ]
-    )
-    listed = values.cast(pyarrow.list_(item), safe=False)
-    counts = compute.fill_null(compute.list_value_length(listed), 0).cast(pyarrow.int64())
+def _event_altids(altids: pyarrow.Array, *codes: tuple[str, pyarrow.Array]) -> pyarrow.Array:
+    """One identifier map with its shape-derived codes last and exact."""
+    listed = as_entry_list(altids)
     entries = compute.list_flatten(listed)
-    parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
     keys = compute.struct_field(entries, "key")
-    items = compute.struct_field(entries, "value")
-    if len(entries):
-        order = compute.sort_indices(
-            pyarrow.record_batch([parents, keys], names=["parent", "key"]),
-            sort_keys=[("parent", "ascending"), ("key", "ascending")],
-        )
-        keys = compute.take(keys, order)
-        items = compute.take(items, order)
-    entry_frames = (
-        framed_arrow(keys, items) if len(entries) else pyarrow.array([], pyarrow.binary())
+    values = compute.struct_field(entries, "value")
+    parents = compute.list_parent_indices(listed).cast(pyarrow.int64())
+    rows = len(altids)
+    special_names = tuple(name for name, _ in codes)
+    ordinary = compute.invert(
+        compute.is_in(keys, value_set=pyarrow.array(special_names, keys.type))
     )
-    grouped = build_list(pyarrow.list_(pyarrow.binary()), counts, entry_frames)
-    payload = compute.binary_join(grouped, pyarrow.scalar(b"", pyarrow.binary()))
-    return compute.binary_join_element_wise(
-        framed_arrow(compute.is_valid(values), counts),
-        payload,
-        pyarrow.scalar(b"", pyarrow.binary()),
+    parents = compute.filter(parents, ordinary)
+    keys = compute.filter(keys, ordinary)
+    values = compute.filter(values, ordinary)
+
+    exact = []
+    for name, derived in codes:
+        stored = map_column(altids, name)
+        present = compute.fill_null(compute.greater(compute.binary_length(derived), 0), False)
+        exact.append(compute.if_else(present, derived, stored))
+    added_values, members = interleave(exact, rows)
+    present = compute.fill_null(
+        compute.and_(
+            compute.is_valid(added_values),
+            compute.greater(compute.binary_length(added_values), 0),
+        ),
+        False,
+    )
+    positions = sequence(rows * len(special_names))
+    added_parents = compute.divide(positions, len(special_names))
+    added_parents = compute.filter(added_parents, present)
+    added_keys = compute.filter(
+        compute.take(pyarrow.array(special_names, keys.type), members), present
+    )
+    added_values = compute.filter(added_values, present)
+    ordinary_count = len(keys)
+    added = len(added_keys)
+    parents = pyarrow.concat_arrays([parents, added_parents])
+    keys = pyarrow.concat_arrays([keys, added_keys])
+    values = pyarrow.concat_arrays([values, added_values])
+    ranks = pyarrow.concat_arrays(
+        [sequence(ordinary_count), compute.add(sequence(added), ordinary_count)]
+    )
+    stride = ordinary_count + added + 1
+    order = compute.array_sort_indices(compute.add(compute.multiply(parents, stride), ranks))
+    return build_map(
+        altids.type,
+        dense_counts(parents, rows),
+        compute.take(keys, order),
+        compute.take(values, order),
     )
 
 
@@ -1464,8 +1482,8 @@ def _ranked_at_least(codes: pyarrow.Array, floor: Any) -> pyarrow.Array:
 def _code_type(default: Any) -> pyarrow.DataType:
     """The Arrow width one stable code's column stores, off the code itself."""
     declared = type(default)
-    into_arrow_type = getattr(declared, "into_arrow_type", None)
-    return pyarrow.int32() if into_arrow_type is None else into_arrow_type().index_type
+    into_storage_type = getattr(declared, "into_storage_type", None)
+    return pyarrow.int32() if into_storage_type is None else into_storage_type()
 
 
 def _mapped(source: pyarrow.Array, mapping: Mapping[str, Any], default: Any) -> pyarrow.Array:
@@ -1516,23 +1534,6 @@ def _first_nonempty(*columns: pyarrow.Array, fallback: str | None = None) -> pya
         )
         found = compute.if_else(compute.and_(compute.is_null(found), present), column, found)
     return compute.fill_null(found, fallback) if fallback is not None else found
-
-
-def _first_nonempty_and_source(
-    *columns: tuple[pyarrow.Array, str], fallback: str | None = None
-) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """First nonblank value and the reader-facing name of its source field."""
-    rows = len(columns[0][0])
-    found = pyarrow.nulls(rows, pyarrow.string())
-    source = pyarrow.repeat(pyarrow.scalar(""), rows)
-    for column, display in columns:
-        present = compute.fill_null(
-            compute.and_(compute.is_valid(column), compute.not_equal(column, "")), False
-        )
-        use = compute.and_(compute.is_null(found), present)
-        found = compute.if_else(use, column, found)
-        source = compute.if_else(use, display, source)
-    return (compute.fill_null(found, fallback) if fallback is not None else found), source
 
 
 def _nonnegative(column: pyarrow.Array) -> pyarrow.Array:

@@ -15,7 +15,8 @@ uv run --project python --group runner rekep task run \
 source: market.books
 target: market.executions
 merge_by: true
-commit_row_size: 250000
+commit_batch_num: 8
+commit_row_size: null # Optional earlier row cap.
 ```
 
 Airflow runs this only when book mode reports `flatten.executions`. Direct

@@ -450,8 +450,8 @@ def parse_orchestra(
     root = _xml_root(content, "Orchestra")
     if _local(root.tag) != "repository":
         raise ValueError("an Orchestra document must have a repository root")
-    repository_name = str(root.get("name") or "").strip()
-    repository_version = str(root.get("version") or "").strip()
+    repository_name = _real_fix_version(str(root.get("name") or "").strip())
+    repository_version = _orchestra_source_version(str(root.get("version") or "").strip())
     source = provenance or SourceProvenance.for_bytes(
         content,
         version=repository_version,
@@ -459,9 +459,15 @@ def parse_orchestra(
     )
     if repository_version and not source.version:
         source = dataclasses.replace(source, version=repository_version)
+    elif source.version:
+        source = dataclasses.replace(source, version=_orchestra_source_version(source.version))
     if not source.protocol_version:
         source = dataclasses.replace(
             source, protocol_version=_orchestra_protocol_version(repository_version)
+        )
+    else:
+        source = dataclasses.replace(
+            source, protocol_version=_orchestra_protocol_version(source.protocol_version)
         )
     datatypes = tuple(
         _datatype(element)
@@ -1016,13 +1022,13 @@ def _unique_field_names(fields: Sequence[SourceField]) -> tuple[SourceField, ...
 def _pedigree(element: ElementTree.Element) -> Pedigree:
     replaced_by = str(element.get("replacedByField") or "")
     return Pedigree(
-        added=str(element.get("added") or ""),
+        added=_real_fix_version(str(element.get("added") or "")),
         added_ep=str(element.get("addedEP") or ""),
-        updated=str(element.get("updated") or ""),
+        updated=_real_fix_version(str(element.get("updated") or "")),
         updated_ep=str(element.get("updatedEP") or ""),
-        deprecated=str(element.get("deprecated") or ""),
+        deprecated=_real_fix_version(str(element.get("deprecated") or "")),
         deprecated_ep=str(element.get("deprecatedEP") or ""),
-        replaced=str(element.get("replaced") or ""),
+        replaced=_real_fix_version(str(element.get("replaced") or "")),
         replaced_ep=str(element.get("replacedEP") or ""),
         replaced_by_field=int(replaced_by) if replaced_by.isdigit() else None,
         issue=str(element.get("issue") or ""),
@@ -1098,4 +1104,25 @@ def _quickfix_version(root: ElementTree.Element) -> str:
 
 def _orchestra_protocol_version(repository_version: str) -> str:
     """Remove an Orchestra extension-pack revision from its protocol version."""
-    return re.sub(r"_EP\d+$", "", repository_version, flags=re.IGNORECASE)
+    version = re.sub(r"_EP\d+$", "", repository_version, flags=re.IGNORECASE)
+    version = _real_fix_version(version)
+    matched = re.fullmatch(
+        r"FIX\.(?P<base>\d+\.\d+)(?:\.?SP(?P<service_pack>\d+))?",
+        version,
+        re.IGNORECASE,
+    )
+    if matched is None:
+        return version
+    service_pack = matched["service_pack"]
+    return f"{matched['base']}.SP{service_pack}" if service_pack is not None else matched["base"]
+
+
+def _orchestra_source_version(repository_version: str) -> str:
+    """Canonical source revision with its extension-pack number retained."""
+    matched = re.fullmatch(r"FIX\.LATEST(?P<ep>_EP\d+)?", repository_version, re.IGNORECASE)
+    return f"FIX.5.0SP2{matched['ep'] or ''}" if matched is not None else repository_version
+
+
+def _real_fix_version(version: str) -> str:
+    """Canonical application version for the Orchestra Latest alias."""
+    return "FIX.5.0SP2" if version.casefold() == "fix.latest" else version

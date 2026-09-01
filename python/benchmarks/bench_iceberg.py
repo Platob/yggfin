@@ -23,6 +23,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import parser, timed  # noqa: E402
 
 from rekep import Convertible, Field, Message, TextFile, scalar  # noqa: E402
+from rekep.enums import Plugin  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
 from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 
@@ -124,7 +125,7 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
     warehouse = root / "warehouse"
     warehouse.mkdir(parents=True, exist_ok=True)
     return IcebergCatalog(
-        catalog_name="bench",
+        name="bench",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(root / 'catalog.db').as_posix()}",
@@ -431,6 +432,9 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             )
             * 10**9
         )
+        from pyiceberg.expressions import EqualTo
+
+        plugin_filter = EqualTo("plugin", Plugin.from_str("ULBridge").into_stored())
         print(f"\n== read: {table.num_rows:,} rows, {stats(target)['files']} files ==")
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
@@ -444,7 +448,7 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
             ),
             ("3 columns, no filter", None, ["unix", "plugin", "body"], None),
             ("correlated column", f"unix < {third_day}", None, None),
-            ("no stats to prune on", "plugin = 'ULBridge'", None, None),
+            ("no stats to prune on", plugin_filter, None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
@@ -547,7 +551,7 @@ def sweep_fs(rows: int, days: int) -> None:
             "warehouse": warehouse.as_uri(),
             **({} if cached else {"rekep.io.cache-bytes": "0"}),
         }
-        catalog = IcebergCatalog(catalog_name=f"fs{name}", properties=properties)
+        catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
         return catalog.dataset(
             "bench.logs", field=Message.into_field(), table_properties=OPTIMISED
         ).create_with()

@@ -130,12 +130,6 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str], ...] = (
         "Producer-computed `lastpx * lastqty * multiplier`.",
     ),
     (
-        "codesource",
-        "CodeSource",
-        "String",
-        "Field whose value supplied the readable lifecycle identifier.",
-    ),
-    (
         "lastshares",
         "LastShares",
         "double",
@@ -227,7 +221,6 @@ REKEP_TAGS: Mapping[str, int] = MappingProxyType(
         "pxunit": 30024,
         "qtyunit": 30025,
         "notional": 30026,
-        "codesource": 30027,
         "lastshares": 30028,
         "marketmarker": 30029,
         "globalorderid": 30030,
@@ -274,7 +267,6 @@ _HEADER_COLUMNS = (
     *(column for column, *_ in REKEP_FIELD_DECLARATIONS[:18]),
     "lastmkt",
     "reason",
-    "codesource",
 )
 _MARKET_COLUMNS = ("pxunit", "qtyunit", "notional")
 _OPTIONAL_HEADER_COLUMNS = frozenset(

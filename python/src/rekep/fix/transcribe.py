@@ -719,7 +719,7 @@ class FixCodec(Convertible):
             families = Protocol.into_family_arrow(_as_array(protocols, rows))
             unstated = _all_absent(begins, application, default)
             selected = compute.and_(
-                compute.equal(families, int(Protocol.UL)),
+                compute.equal(families, Protocol.UL.into_stored()),
                 compute.and_(compute.is_null(versions), unstated),
             )
             versions = compute.if_else(selected, default_version, versions)

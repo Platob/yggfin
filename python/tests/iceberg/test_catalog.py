@@ -34,7 +34,7 @@ def catalog(tmp_path: Path) -> IcebergCatalog:
     warehouse = tmp_path / "warehouse"
     warehouse.mkdir()
     return IcebergCatalog(
-        catalog_name="test",
+        name="test",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
@@ -203,7 +203,7 @@ def test_an_open_catalog_receives_explicit_table_location_settings_before_load(
         lambda _name, **properties: Loaded(properties),
     )
     catalog = IcebergCatalog(
-        catalog_name="already-open",
+        name="already-open",
         properties={"warehouse": "file:///local/warehouse"},
     )
     _ = catalog.catalog
@@ -302,9 +302,7 @@ def test_explicit_create_location_stages_distinct_objects_without_network(
 
 
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
-    named = IcebergCatalog(
-        catalog_name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"}
-    )
+    named = IcebergCatalog(name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"})
     assert named.properties["py-io-impl"] == "x.Y"
 
 
@@ -314,7 +312,7 @@ def test_a_named_file_io_is_wrapped_with_output_ownership(tmp_path: Path) -> Non
     warehouse = tmp_path / "custom-warehouse"
     warehouse.mkdir()
     catalog = IcebergCatalog(
-        catalog_name="custom",
+        name="custom",
         properties={
             "type": "sql",
             "uri": f"sqlite:///{(tmp_path / 'custom.db').as_posix()}",
@@ -584,11 +582,19 @@ def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
 
 
 def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:
+    assert set(catalog.into_dict()) == {"name", "properties"}
     rebuilt = IcebergCatalog.from_yaml(catalog.into_yaml())
-    assert (rebuilt.catalog_name, rebuilt.properties) == (
-        catalog.catalog_name,
+    assert (rebuilt.name, rebuilt.properties) == (
+        catalog.name,
         catalog.properties,
     )
+
+
+def test_a_catalog_name_is_explicit_and_nonempty() -> None:
+    with pytest.raises(TypeError, match="must be a string"):
+        IcebergCatalog(name=1)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="non-empty"):
+        IcebergCatalog(name="")
 
 
 def test_maintenance_reaches_the_store_the_catalog_was_configured_with() -> None:

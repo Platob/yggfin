@@ -126,7 +126,7 @@ The registry is also the source of the package fields and per-field timezone
 refinements:
 
 ```python
-for name in ("OrigTime", "MarketEventType", "XHash", "LinkHashes", "CodeSource"):
+for name in ("OrigTime", "MarketEventType", "XHash", "LinkHashes", "AltIDs"):
     field = registry.field(name, "5.0.SP2")
     print(f"{name:18} {field.dtype}")
 ```
@@ -136,7 +136,7 @@ OrigTime           timestamp[us, tz=UTC]
 MarketEventType    int64
 XHash              fixed_size_binary[16]
 LinkHashes         list<item: fixed_size_binary[16] not null>
-CodeSource         string
+AltIDs             map<string, string>
 ```
 
 Package fields use bare names. `MarketEventType <30002>` distinguishes the

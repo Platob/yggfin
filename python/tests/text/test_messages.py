@@ -818,7 +818,7 @@ def test_a_rule_set_from_a_document_reclassifies_a_line(tmp_path: Path, codec: F
     path = tmp_path / "rules.yml"
     Rules(
         rules=[
-            Rule(protocol="BRIDGE", plugin_pattern="^ULBridge$", codec="ul"),
+            Rule(protocol="BRIDGE", plugin_pattern="^ULBRIDGE$", codec="ul"),
             Rules.into_default().rule(Protocol.OTHER),
         ]
     ).into_yaml(path)

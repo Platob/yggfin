@@ -45,6 +45,7 @@ def _trusted_push_branch(workflow: dict) -> str:
 
 def test_pull_request_ci_selects_the_fast_suite() -> None:
     workflow = _workflow("ci.yml")
+    assert set(workflow["on"]) == {"pull_request"}
     steps = workflow["jobs"]["test"]["steps"]
     test = next(step for step in steps if step.get("name") == "Test")
     assert '-m "not integration"' in test["run"]
@@ -53,7 +54,8 @@ def test_pull_request_ci_selects_the_fast_suite() -> None:
 def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:
     workflow = _workflow("integration.yml")
     assert workflow["permissions"] == {"contents": "read"}
-    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("ci.yml"))
+    assert set(workflow["on"]) == {"push", "issue_comment"}
+    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("pages.yml"))
     assert workflow["on"]["issue_comment"]["types"] == ["created"]
 
     job = workflow["jobs"]["test"]
@@ -84,7 +86,7 @@ def test_the_release_attaches_the_wheel_and_optionally_publishes_it() -> None:
     assert workflow["on"]["release"]["types"] == ["published"]
     assert "workflow_dispatch" in workflow["on"]
     assert set(workflow["on"]) == {"push", "release", "workflow_dispatch"}
-    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("ci.yml"))
+    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("pages.yml"))
 
     job = workflow["jobs"]["publish"]
     assert "environment" in job
@@ -134,7 +136,7 @@ def test_the_release_attaches_the_wheel_and_optionally_publishes_it() -> None:
 
 def test_pages_builds_the_strict_docs_and_deploys_only_trusted_code() -> None:
     workflow = _workflow("pages.yml")
-    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("ci.yml"))
+    assert _trusted_push_branch(workflow) == _trusted_push_branch(_workflow("release.yml"))
     assert set(workflow["on"]) == {"push", "workflow_dispatch"}
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["concurrency"] == {

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows with a nested Instrument component at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions InstrumentUpdate events. Book order and execution lists flatten into their own tables. Orders and Executions link exact event hashes; parenthash carries exact construction provenance.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows with a nested Instrument component at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions InstUpdate events. Book order and execution lists flatten into their own tables. Orders and Executions link exact event hashes; parenthash carries exact construction provenance.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
@@ -41,7 +41,7 @@
   <rect class="origin" x="1135" y="30" width="420" height="90" rx="14"/>
   <text class="label" x="1345" y="63">Shared Event envelope</text>
   <text class="small" x="1345" y="88">hash | vhash | xhash | prevhash | linkhashes</text>
-  <text class="small" x="1345" y="108">code | codesource | state | reason | parenthash</text>
+  <text class="small" x="1345" y="108">code | altids | state | reason | parenthash</text>
   <path class="inherit" d="M1050 75 H1135"/>
 
   <rect class="contract" x="45" y="150" width="355" height="72" rx="15"/>
@@ -64,7 +64,7 @@
   <text class="edge-label" x="282" y="247">parse FIX</text>
 
   <rect class="market" x="525" y="175" width="345" height="175" rx="15"/>
-  <text class="label" x="698" y="208">InstrumentUpdate contract</text>
+  <text class="label" x="698" y="208">InstUpdate contract</text>
   <text class="small" x="698" y="236">event envelope + nested Instrument</text>
   <text class="small" x="698" y="258">one current event per 128-bit xhash</text>
   <image href="logos/apache-iceberg.svg" x="565" y="285" width="102" height="28"/>

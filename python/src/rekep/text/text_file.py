@@ -360,6 +360,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
         exclude_msgtypes: Sequence[str] = (),
+        technical_plugins: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -375,6 +376,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             exclude_regexes=exclude_regexes,
             include_msgtypes=include_msgtypes,
             exclude_msgtypes=exclude_msgtypes,
+            technical_plugins=technical_plugins,
             start_unix=start_unix,
             end_unix=end_unix,
             duration_ns=duration_ns,
@@ -470,6 +472,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
         exclude_msgtypes: Sequence[str] = (),
+        technical_plugins: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -490,6 +493,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             exclude_regexes=exclude_regexes,
             include_msgtypes=include_msgtypes,
             exclude_msgtypes=exclude_msgtypes,
+            technical_plugins=technical_plugins,
             start_unix=start_unix,
             end_unix=end_unix,
             duration_ns=duration_ns,
@@ -512,6 +516,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
         exclude_msgtypes: Sequence[str] = (),
+        technical_plugins: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
         duration_ns: int | None = None,
@@ -529,6 +534,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         excludes = _regexes("exclude_regexes", exclude_regexes)
         included_msgtypes = _msgtypes("include_msgtypes", include_msgtypes)
         excluded_msgtypes = _msgtypes("exclude_msgtypes", exclude_msgtypes)
+        technical_plugin_codes = _plugins(technical_plugins)
         _validate_read_sizes(batch_row_size, read_byte_size, batch_byte_size, max_row_byte_size)
         _validate_window(start_unix, end_unix, duration_ns)
         batches = self._filtered_batches(
@@ -541,6 +547,7 @@ class TextFile(Dataset, io.BufferedIOBase):
             excludes,
             included_msgtypes,
             excluded_msgtypes,
+            technical_plugin_codes,
             start_unix,
             end_unix,
         )
@@ -565,6 +572,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         exclude_regexes: Sequence[str],
         include_msgtypes: Sequence[str],
         exclude_msgtypes: Sequence[str],
+        technical_plugins: Sequence[str],
         start_unix: int | None,
         end_unix: int | None,
     ) -> Iterator[pyarrow.RecordBatch]:
@@ -639,6 +647,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                     exclude_regexes,
                     include_msgtypes,
                     exclude_msgtypes,
+                    technical_plugins,
                     start_unix,
                     end_unix,
                 )
@@ -655,6 +664,7 @@ class TextFile(Dataset, io.BufferedIOBase):
                 exclude_regexes,
                 include_msgtypes,
                 exclude_msgtypes,
+                technical_plugins,
                 start_unix,
                 end_unix,
             )
@@ -670,6 +680,7 @@ class TextFile(Dataset, io.BufferedIOBase):
         exclude_regexes: Sequence[str] = (),
         include_msgtypes: Sequence[str] = (),
         exclude_msgtypes: Sequence[str] = (),
+        technical_plugins: Sequence[str] = (),
         start_unix: int | None = None,
         end_unix: int | None = None,
     ) -> pyarrow.RecordBatch:
@@ -686,6 +697,15 @@ class TextFile(Dataset, io.BufferedIOBase):
         )
         rownums_array = pyarrow.array(rownums, type=pyarrow.int64())
         reasons = _truncated_reasons(dropped_byte_sizes, len(rows))
+
+        selected = _plugin_mask(plugins, technical_plugins)
+        if selected is not None:
+            timestamps, threads, plugins, bodies, rownums_array, reasons = (
+                pyarrow.compute.filter(values, selected)
+                for values in (timestamps, threads, plugins, bodies, rownums_array, reasons)
+            )
+        if not len(timestamps):
+            return _empty_batch(schema)
 
         local = _local_micros(timestamps)
         unix = _unix_nanos(local, self.timezone)
@@ -731,7 +751,6 @@ class TextFile(Dataset, io.BufferedIOBase):
             "version": _zeros(count, pyarrow.int64()),
             "state": _zeros(count, pyarrow.int64()),
             "code": pyarrow.repeat("", count),
-            "codesource": pyarrow.repeat("", count),
             "altids": pyarrow.repeat(pyarrow.scalar({}, ALTIDS_TYPE), count),
             "prevunix": pyarrow.nulls(count, pyarrow.int64()),
             "parenthash": pyarrow.nulls(count, PARENTS),
@@ -1030,6 +1049,28 @@ def _msgtypes(name: str, values: Sequence[str]) -> tuple[str, ...]:
     if invalid is not None:
         raise TypeError(f"{name} must contain only MsgType strings, got {invalid}")
     return tuple(dict.fromkeys(found))
+
+
+def _plugins(values: Sequence[str]) -> tuple[str, ...]:
+    """Case-folded technical plugin codes, never one code split into characters."""
+    if isinstance(values, str):
+        raise TypeError("technical_plugins must be a sequence of plugin strings, not one string")
+    found = tuple(values)
+    invalid = next((type(value).__name__ for value in found if not isinstance(value, str)), None)
+    if invalid is not None:
+        raise TypeError(f"technical_plugins must contain only plugin strings, got {invalid}")
+    return tuple(dict.fromkeys(value.lower() for value in found))
+
+
+def _plugin_mask(plugins: pyarrow.Array, technical_plugins: Sequence[str]) -> pyarrow.Array | None:
+    """Rows whose recorder plugin is not declared technical."""
+    if not technical_plugins:
+        return None
+    codes = pyarrow.compute.utf8_lower(_utf8(plugins))
+    technical = pyarrow.compute.fill_null(
+        pyarrow.compute.is_in(codes, value_set=pyarrow.array(technical_plugins)), False
+    )
+    return pyarrow.compute.invert(technical)
 
 
 def _msgtype_mask(

@@ -6,13 +6,13 @@
   "description": "Number of business centers in the repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -20,8 +20,7 @@
    "tag": "43000",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -138,24 +137,23 @@
   "description": "The business center calendar used for date adjustment of the payment stub start date, e.g. \"GBLO\".\nSee https://fpml.org/coding-scheme/business-center for standard 4-character code values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43001",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -272,13 +270,13 @@
   "description": "Type of fee elected for the break provision.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ProvisionBreakFeeElectionCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -323,8 +321,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -438,13 +435,13 @@
   "description": "Break fee election rate when the break fee is proportional to the notional. A fee rate of 5% would be represented as \"0.05\".",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Percentage",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -452,8 +449,7 @@
    "tag": "43003",
    "type": "Percentage",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -567,13 +563,13 @@
   "description": "Specifies the initial rate spread for a basket underlier.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -581,8 +577,7 @@
    "tag": "43004",
    "type": "float",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -696,13 +691,13 @@
   "description": "Number of entries in the repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -710,8 +705,7 @@
    "tag": "43005",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -826,13 +820,13 @@
   "description": "The date that the rate spread step takes affect.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -840,8 +834,7 @@
    "tag": "43006",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -956,13 +949,13 @@
   "description": "The the value of the new rate spread as of the UnderlyingRateSpreadStepDate(43006).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -970,8 +963,7 @@
    "tag": "43007",
    "type": "float",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1086,13 +1078,13 @@
   "description": "Number of iterations in the return rate date repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -1100,8 +1092,7 @@
    "tag": "43008",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1219,13 +1210,13 @@
   "description": "Specifies the valuation type applicable to the return rate date.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRateDateModeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -1249,8 +1240,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1368,24 +1358,23 @@
   "description": "Specifies the anchor date when the return rate valuation dates are relative to an anchor date.\nSee https://fixtrading.org/packages/relative-to-date for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43010",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1503,13 +1492,13 @@
   "description": "Time unit multiplier for the relative return rate valuation date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -1517,8 +1506,7 @@
    "tag": "43011",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1636,13 +1624,13 @@
   "description": "Time unit associated with the relative return rate valuation date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -1680,8 +1668,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1799,13 +1786,13 @@
   "description": "Specifies the day type of the relative return rate valuation date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetDayTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -1857,8 +1844,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -1976,13 +1962,13 @@
   "description": "The unadjusted start date for return rate valuation. This can be used to restrict the range of dates when they are relative.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -1990,8 +1976,7 @@
    "tag": "43014",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2109,24 +2094,23 @@
   "description": "Specifies the anchor date when the return rate valuation start date is relative to an anchor date.\nSee https://fixtrading.org/packages/relative-to-date for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43015",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2244,13 +2228,13 @@
   "description": "Time unit multiplier for the relative return rate valuation start date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -2258,8 +2242,7 @@
    "tag": "43016",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2377,13 +2360,13 @@
   "description": "Time unit associated with the relative return rate valuation start date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -2421,8 +2404,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2540,13 +2522,13 @@
   "description": "Specifies the day type of the relative return rate valuation start date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetDayTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -2598,8 +2580,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2717,13 +2698,13 @@
   "description": "The adjusted start date for return rate valuation. This can be used to restrict the range of dates when they are relative.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -2731,8 +2712,7 @@
    "tag": "43019",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2850,13 +2830,13 @@
   "description": "The unadjusted end date for return rate valuation. This can be used to restrict the range of dates when they are relative.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -2864,8 +2844,7 @@
    "tag": "43020",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -2983,24 +2962,23 @@
   "description": "Specifies the anchor date when the return rate valuation end date is relative to an anchor date.\nSee https://fixtrading.org/packages/relative-to-date for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43021",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -3118,13 +3096,13 @@
   "description": "Time unit multiplier for the relative return rate valuation end date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -3132,8 +3110,7 @@
    "tag": "43022",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -3251,13 +3228,13 @@
   "description": "Time unit associated with the relative return rate valuation end date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -3295,8 +3272,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -3414,13 +3390,13 @@
   "description": "Specifies the day type of the relative return rate valuation end date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetDayTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -3472,8 +3448,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -3591,13 +3566,13 @@
   "description": "The adjusted end date for return rate valuation. This can be used to restrict the range of dates when they are relative.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -3605,8 +3580,7 @@
    "tag": "43025",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -3724,13 +3698,13 @@
   "description": "Time unit multiplier for the frequency at which return rate valuation dates occur.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -3738,8 +3712,7 @@
    "tag": "43026",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -3857,13 +3830,13 @@
   "description": "Time unit associated with the frequency at which return rate valuation dates occur.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "CouponFrequencyUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -3929,8 +3902,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -4048,13 +4020,13 @@
   "description": "The convention for determining the sequence of return rate valuation dates. It is used in conjunction with a specified frequency.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "DateRollConventionCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -4338,8 +4310,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -4457,13 +4428,13 @@
   "description": "The return rate valuation dates business day convention.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "BusinessDayConventionCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -4529,8 +4500,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -4648,13 +4618,13 @@
   "description": "Number of iterations in the return rate FX conversion repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -4662,8 +4632,7 @@
    "tag": "43030",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -4781,13 +4750,13 @@
   "description": "Specifies the currency pair for the FX conversion expressed using the CCY1/CCY2 convention. Uses ISO 4217 currency codes.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -4795,8 +4764,7 @@
    "tag": "43031",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -4914,13 +4882,13 @@
   "description": "The rate of exchange between the two currencies specified in UnderlyingReturnRateFXCurrencySymbol(43031).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "float",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -4928,8 +4896,7 @@
    "tag": "43032",
    "type": "float",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5047,13 +5014,13 @@
   "description": "Specifies whether UnderlyingReturnRateFXRate(43032) should be multiplied or divided.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SettlCurrFxRateCalcCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5077,8 +5044,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5196,13 +5162,13 @@
   "description": "Number of iterations in the return rate repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5210,8 +5176,7 @@
    "tag": "43034",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5328,13 +5293,13 @@
   "description": "Specifies the type of price sequence of the return rate.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRatePriceSequenceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5365,8 +5330,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5483,13 +5447,13 @@
   "description": "Specifies the basis or unit used to calculate the commission.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "CommTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5555,8 +5519,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5673,13 +5636,13 @@
   "description": "The commission amount.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Amt",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5687,8 +5650,7 @@
    "tag": "43037",
    "type": "Amt",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5805,13 +5767,13 @@
   "description": "Specifies the currency the commission amount is denominated in. Uses ISO 4217 currency codes.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Currency",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5819,8 +5781,7 @@
    "tag": "43038",
    "type": "Currency",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -5937,13 +5898,13 @@
   "description": "The total commission per trade.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Amt",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -5951,8 +5912,7 @@
    "tag": "43039",
    "type": "Amt",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6069,24 +6029,23 @@
   "description": "Specifies the method by which the underlier prices are determined.\nSee https://fpml.org/coding-scheme/determination-method for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43040",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6203,24 +6162,23 @@
   "description": "Specifies the reference amount when the return rate amount is relative to another amount in the trade.\nSee https://fixtrading.org/packages/payment-amount-relative-to for code list of relative amounts.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43041",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6337,24 +6295,23 @@
   "description": "Specifies the type of the measure applied to the return rate's asset, e.g. valuation, sensitivity risk. This could be an NPV, a cash flow, a clean price, etc.\nSee https://fpml.org/coding-scheme/asset-measure for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43042",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6471,24 +6428,23 @@
   "description": "Specifies the units that the measure is expressed in. If not specified, the default is a price/value in currency units.\nSee https://fpml.org/coding-scheme/price-quote-units for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43043",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6605,13 +6561,13 @@
   "description": "Specifies the type of quote used to determine the return rate of the swap.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "CashSettlQuoteMethodCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -6642,8 +6598,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6760,13 +6715,13 @@
   "description": "Specifies the currency the return rate quote is denominated in. Uses ISO 4217 Currency Code.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Currency",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -6774,8 +6729,7 @@
    "tag": "43045",
    "type": "Currency",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -6892,24 +6846,23 @@
   "description": "Specifies the type of currency, e.g. settlement currency, base currency, etc., that the quote is reported in.\nSee https://fpml.org/coding-scheme/reporting-currency-type for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43046",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7026,13 +6979,13 @@
   "description": "Specifies how or the timing when the quote is to be obtained.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRateQuoteTimeTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -7098,8 +7051,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7216,13 +7168,13 @@
   "description": "The time when the quote is to be generated.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -7230,8 +7182,7 @@
    "tag": "43048",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7348,13 +7299,13 @@
   "description": "The date when the quote is to be generated.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -7362,8 +7313,7 @@
    "tag": "43049",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7480,13 +7430,13 @@
   "description": "The time when the quote ceases to be valid.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktTime",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -7494,8 +7444,7 @@
    "tag": "43050",
    "type": "LocalMktTime",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7612,24 +7561,23 @@
   "description": "The business center calendar used for adjustments associated with UnderlyingReturnRateQuoteTimeType(43047) or UnderlyingReturnRateQuoteTime(43048) and UnderlyingReturnRateQuoteDate(43049), e.g. \"GBLO\".\nSee https://fpml.org/coding-scheme/business-center for standard 4-character code values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43051",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7746,13 +7694,13 @@
   "description": "Specifies the exchange (e.g. stock or listed futures/options exchange) from which the quote is obtained.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Exchange",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -7760,8 +7708,7 @@
    "tag": "43052",
    "type": "Exchange",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -7878,24 +7825,23 @@
   "description": "Specifies the pricing model used to evaluate the underlying asset price.\nSee https://fpml.org/coding-scheme/pricing-model for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43053",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8012,24 +7958,23 @@
   "description": "Specifies the type of cash flows, e.g. coupon payment, premium fee, settlement fee, etc.\nSee https://fpml.org/coding-scheme/cashflow-type for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43054",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8146,13 +8091,13 @@
   "description": "Specifies the timing at which the calculation agent values the underlying.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRateQuoteTimeTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -8218,8 +8163,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8336,13 +8280,13 @@
   "description": "The time at which the calculation agent values the underlying asset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktTime",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -8350,8 +8294,7 @@
    "tag": "43056",
    "type": "LocalMktTime",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8468,24 +8411,23 @@
   "description": "The business center calendar used for adjustments associated with UnderlyingReturnRateValuationTimeType(43055) or UnderlyingReturnRateValuationTime(43056) , e.g. \"GBLO\".\nSee https://fpml.org/coding-scheme/business-center for standard 4-character code values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43057",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8602,13 +8544,13 @@
   "description": "Indicates whether an ISDA price option applies, and if applicable which type of price.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRateValuationPriceOptionCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -8639,8 +8581,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8757,13 +8698,13 @@
   "description": "Specifies the fallback provision for the hedging party in the determination of the final price.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ComplexEventPVFinalPriceElectionFallbackCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -8787,8 +8728,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -8905,13 +8845,13 @@
   "description": "Number of iterations in the return rate information source repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -8919,8 +8859,7 @@
    "tag": "43060",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9038,13 +8977,13 @@
   "description": "Identifies the source of rate information. For FX the references source to be used for the FX spot rate.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "RateSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -9089,8 +9028,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9208,24 +9146,23 @@
   "description": "Identifies the reference \"page\" from the rate source.\nFor FX, the reference page to the spot rate to be used for the reference FX spot rate.\nWhen UnderlyingReturnRateInformationSource(43061) = 3 (ISDA Settlement Rate Option) this contains the value from the scheme that reflects the terms of the Annex A to the ISDA 1998 FX and Currency Option Definitions.\nSee: https://fpml.org/coding-scheme/settlement-rate-option",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43062",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9343,13 +9280,13 @@
   "description": "Identifies the page heading from the rate source.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -9357,8 +9294,7 @@
    "tag": "43063",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9476,13 +9412,13 @@
   "description": "Number of iterations in the return rate price repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -9490,8 +9426,7 @@
    "tag": "43064",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9609,13 +9544,13 @@
   "description": "The basis of the return price.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRatePriceBasisCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -9653,8 +9588,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9772,13 +9706,13 @@
   "description": "Specifies the price of the underlying swap asset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Price",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -9786,8 +9720,7 @@
    "tag": "43066",
    "type": "Price",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -9905,13 +9838,13 @@
   "description": "Specifies the currency of the price of the underlying swap asset. Uses ISO 4217 currency codes.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Currency",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -9919,8 +9852,7 @@
    "tag": "43067",
    "type": "Currency",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10038,13 +9970,13 @@
   "description": "Specifies whether the UnderlyingReturnRatePrice(43066) is expressed in absolute or relative terms.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "ReturnRatePriceTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -10068,8 +10000,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10187,13 +10118,13 @@
   "description": "Number of iterations in the return rate valuation date business center repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -10201,8 +10132,7 @@
    "tag": "43069",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10321,24 +10251,23 @@
   "description": "The business center calendar used for date adjustment of the return rate valuation unadjusted or relative dates, e.g. \"GBLO\".\nSee https://fpml.org/coding-scheme/business-center for standard 4-character code values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43070",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10457,13 +10386,13 @@
   "description": "Number of iterations in the return rate valuation date repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -10471,8 +10400,7 @@
    "tag": "43071",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10591,13 +10519,13 @@
   "description": "The return rate valuation date. Type of date is specified in UnderlyingReturnRateValuationDateType(43073).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -10605,8 +10533,7 @@
    "tag": "43072",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10725,13 +10652,13 @@
   "description": "Specifies the type of return rate valuation date (e.g. adjusted for holidays).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NonDeliverableFixingDateTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -10755,8 +10682,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -10875,13 +10801,13 @@
   "description": "Number of business centers in the repeating group.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "NumInGroup",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -10889,8 +10815,7 @@
    "tag": "43074",
    "type": "NumInGroup",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11006,24 +10931,23 @@
   "description": "The business center calendar used for date adjustment of the settlement method election unadjusted or relative date, e.g. \"GBLO\".\nSee https://fpml.org/coding-scheme/business-center for standard 4-character code values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43075",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11139,13 +11063,13 @@
   "description": "The unadjusted settlement method election date.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -11153,8 +11077,7 @@
    "tag": "43076",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11269,13 +11192,13 @@
   "description": "The settlement method election date adjustment business day convention.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "BusinessDayConventionCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -11341,8 +11264,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11457,24 +11379,23 @@
   "description": "Specifies the anchor date when the settlement method election date is relative to an anchor date.\nSee https://fixtrading.org/packages/relative-to-date for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43078",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11589,13 +11510,13 @@
   "description": "Time unit multiplier for the relative settlement method election date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -11603,8 +11524,7 @@
    "tag": "43079",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11719,13 +11639,13 @@
   "description": "Time unit associated with the relative settlement method election date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -11763,8 +11683,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -11879,13 +11798,13 @@
   "description": "Specifies the day type of the relative settlement method election date offset.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamPaymentDateOffsetDayTypeCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -11937,8 +11856,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12053,13 +11971,13 @@
   "description": "The adjusted settlement method election date.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -12067,8 +11985,7 @@
    "tag": "43082",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12183,13 +12100,13 @@
   "description": "The stream version identifier when there have been modifications to the contract over time. Helps signal when there are embedded changes.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -12197,8 +12114,7 @@
    "tag": "43083",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12312,13 +12228,13 @@
   "description": "The effective date of the UnderlyingStreamVersion(43083).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "LocalMktDate",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -12326,8 +12242,7 @@
    "tag": "43084",
    "type": "LocalMktDate",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12441,24 +12356,23 @@
   "description": "Specifies the method for determining the floating notional value for equity swaps.\nSee https://fpml.org/coding-scheme/determination-method for values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "306"
    },
    "tag": "43085",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12572,13 +12486,13 @@
   "description": "For equity swaps this specifies the conditions that govern the adjustment to the number of units of the swap.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "StreamNotionalAdjustmentsCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "208"
@@ -12609,8 +12523,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12724,13 +12637,13 @@
   "description": "A short descriptive name given to the payment, e.g. Premium, Upfront, etc. The description has no intrinsic meaning but should be arbitrarily chosen by the remitter as reference.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "203"
@@ -12738,8 +12651,7 @@
    "tag": "43087",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12763,13 +12675,13 @@
   "description": "Security identifier of the floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235"
@@ -12777,8 +12689,7 @@
    "tag": "43088",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -12888,17 +12799,17 @@
   "description": "Source for the floating rate index identified in LegPaymentStreamRateIndexID(43088).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SecurityIDSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "294"
    },
    "tag": "43089",
@@ -13137,8 +13048,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -13248,13 +13158,13 @@
   "description": "Security identifier of the floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235"
@@ -13262,8 +13172,7 @@
    "tag": "43090",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -13405,17 +13314,17 @@
   "description": "Source for the floating rate index identified in PaymentStreamRateIndexID(43090).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SecurityIDSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "294"
    },
    "tag": "43091",
@@ -13654,8 +13563,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -13797,13 +13705,13 @@
   "description": "Security identifier of the floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235"
@@ -13811,8 +13719,7 @@
    "tag": "43092",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -13928,17 +13835,17 @@
   "description": "Source for the floating rate index identified in UnderlyingPaymentStreamRateIndexID(43092).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SecurityIDSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "294"
    },
    "tag": "43093",
@@ -14177,8 +14084,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14294,13 +14200,13 @@
   "description": "Specific delivery route or time charter average. Applicable to commodity freight swaps.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235"
@@ -14308,8 +14214,7 @@
    "tag": "43094",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14450,13 +14355,13 @@
   "description": "Specific delivery route or time charter average. Applicable to commodity freight swaps.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235"
@@ -14464,8 +14369,7 @@
    "tag": "43095",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14574,13 +14478,13 @@
   "description": "Specific delivery route or time charter average. Applicable to commodity freight swaps.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "235"
@@ -14588,8 +14492,7 @@
    "tag": "43096",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14704,13 +14607,13 @@
   "description": "The rate applicable to the fixed rate payment.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Percentage",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -14718,8 +14621,7 @@
    "tag": "43097",
    "type": "Percentage",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14743,13 +14645,13 @@
   "description": "The payment floating rate index. See SpreadOrBenchmarkCurveData(221) for suggested values.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -14757,8 +14659,7 @@
    "tag": "43098",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14782,13 +14683,13 @@
   "description": "Time unit multiplier for the floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -14796,8 +14697,7 @@
    "tag": "43099",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14821,13 +14721,13 @@
   "description": "Time unit associated with the floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamRateIndexCurveUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -14865,8 +14765,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14890,13 +14789,13 @@
   "description": "Spread from floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PriceOffset",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -14904,8 +14803,7 @@
    "tag": "43101",
    "type": "PriceOffset",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14929,13 +14827,13 @@
   "description": "Time unit multiplier for the payment frequency.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -14943,8 +14841,7 @@
    "tag": "43102",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -14968,13 +14865,13 @@
   "description": "Time unit associated with the payment frequency.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamRateIndexCurveUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -15012,8 +14909,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15037,13 +14933,13 @@
   "description": "Time unit multiplier for the floating rate reset frequency.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "int",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -15051,8 +14947,7 @@
    "tag": "43104",
    "type": "int",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15076,13 +14971,13 @@
   "description": "Time unit associated with the floating rate reset frequency.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamRateIndexCurveUnitCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -15120,8 +15015,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15145,13 +15039,13 @@
   "description": "The industry name of the day count convention not listed in PaymentStreamDayCount(40742).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -15159,8 +15053,7 @@
    "tag": "43106",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15301,13 +15194,13 @@
   "description": "The industry name of the day count convention not listed in UnderlyingPaymentStreamDayCount(40572).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -15315,8 +15208,7 @@
    "tag": "43107",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15431,13 +15323,13 @@
   "description": "The industry name of the day count convention not listed in LegPaymentStreamDayCount(40283).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "254"
@@ -15445,8 +15337,7 @@
    "tag": "43108",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15555,24 +15446,23 @@
   "description": "Byte length of encoded (non-ASCII characters) PaymentStreamFormula(42648) field.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Length",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "257",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "275"
    },
    "tag": "43109",
    "type": "Length",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15716,24 +15606,23 @@
   "description": "Byte length of encoded (non-ASCII characters) LegPaymentStreamFormula(42486) field.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Length",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "257",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "275"
    },
    "tag": "43110",
    "type": "Length",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15845,24 +15734,23 @@
   "description": "Byte length of encoded (non-ASCII characters) UnderlyingPaymentStreamFormula(42982) field.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "Length",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
     "added": "FIX.5.0SP2",
     "added_ep": "257",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "275"
    },
    "tag": "43111",
    "type": "Length",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -15980,22 +15868,21 @@
   "description": "The payment stream's second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43112",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -16137,15 +16024,15 @@
   "description": "The source of the payment stream's second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamRateIndexSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43113",
@@ -16181,8 +16068,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -16324,22 +16210,21 @@
   "description": "Security identifier of the second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43114",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -16481,17 +16366,17 @@
   "description": "Source for the second floating rate index identified in PaymentStreamRateIndex2ID(43114).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SecurityIDSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "294"
    },
    "tag": "43115",
@@ -16730,8 +16615,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -16873,22 +16757,21 @@
   "description": "The payment stream's second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43116",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -16998,15 +16881,15 @@
   "description": "The source of the payment stream's second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamRateIndexSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43117",
@@ -17042,8 +16925,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -17153,22 +17035,21 @@
   "description": "Security identifier of the second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43118",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -17278,17 +17159,17 @@
   "description": "Source for the second floating rate index identified in LegPaymentStreamRateIndex2ID(43118).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SecurityIDSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "294"
    },
    "tag": "43119",
@@ -17527,8 +17408,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -17638,22 +17518,21 @@
   "description": "The payment stream's second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43120",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -17769,15 +17648,15 @@
   "description": "The source of the payment stream's second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "PaymentStreamRateIndexSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43121",
@@ -17813,8 +17692,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -17930,22 +17808,21 @@
   "description": "Security identifier of the second floating rate index.",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "String",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271"
    },
    "tag": "43122",
    "type": "String",
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",
@@ -18061,17 +17938,17 @@
   "description": "Source for the second floating rate index identified in UnderlyingPaymentStreamRateIndex2ID(43122).",
   "fix": {
    "source": "fix-latest",
-   "source-version": "FIX.Latest_EP309",
+   "source-version": "FIX.5.0SP2_EP309",
    "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
    "source-format": "orchestra",
    "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
    "original-type": "SecurityIDSourceCodeSet",
    "source-license": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/master/LICENSE",
-   "protocol-version": "FIX.Latest",
+   "protocol-version": "5.0.SP2",
    "pedigree": {
-    "added": "FIX.Latest",
+    "added": "5.0.SP2",
     "added_ep": "271",
-    "updated": "FIX.Latest",
+    "updated": "5.0.SP2",
     "updated_ep": "294"
    },
    "tag": "43123",
@@ -18310,8 +18187,7 @@
     }
    ],
    "versions": [
-    "5.0.SP2",
-    "FIX.Latest"
+    "5.0.SP2"
    ],
    "sources": [
     "fix-latest",

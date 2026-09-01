@@ -1,6 +1,7 @@
 # OptionKind
 
-[`Ascii64`](ascii-codes.md){ .enum-base } — eight bytes of printable ASCII packed left-justified into one `int64`, an open vocabulary, so a valid code registers when first read.
+[`Ascii32`](ascii-codes.md){ .enum-base } — four bytes of printable ASCII
+packed left-justified into one `int32`.
 
 ```python
 from rekep.enums import OptionKind
@@ -15,5 +16,5 @@ readable mnemonic.
 | Key | Mnemonic | Stored value | Rank | FIX code |
 | --- | --- | ---: | ---: | --- |
 | `UNKNOWN` |  | 0 | 0 |  |
-| `PUT` | `PUT` | 5788625255031373824 | 100 | `0` |
-| `CALL` | `CALL` | 4846238563328589824 | 200 | `1` |
+| `PUT` | `PUT` | 1347769344 | 100 | `0` |
+| `CALL` | `CALL` | 1128352844 | 200 | `1` |

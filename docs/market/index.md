@@ -2,8 +2,8 @@
 
 Market tables store immutable event versions. `vhash` identifies its value,
 `hash` anchors that value to the event time, `prevhash` names its predecessor,
-and `xhash` identifies its lifecycle from `code`. `codesource` names the field
-that supplied the code. `linkhashes` holds ordered exact event `hash` values;
+and `xhash` identifies its lifecycle from `code`. `altids` retains every code
+under its folded field name. `linkhashes` holds ordered exact event `hash` values;
 `parenthash` separately records exact construction provenance.
 
 Each product has its own page: [Instrument update](../products/instrument.md),
@@ -19,7 +19,7 @@ for event in events:
     print(type(event).__name__, event.state.name, event.lastpx, event.lastqty)
 
 order, execution = events
-print(order.codesource, execution.codesource)
+print(order.altids["orderid"], execution.altids["execid"])
 print(order.linkhashes == [execution.hash])
 print(execution.linkhashes == [order.hash])
 ```
@@ -27,7 +27,7 @@ print(execution.linkhashes == [order.hash])
 ```text
 Order FILLED None 0.0
 Execution FILLED 100.25 10.0
-OrderID ExecID
+O1 E1
 True
 True
 ```
@@ -184,7 +184,7 @@ changing hourly cardinality, and covers 1901-12-13 21:00 UTC inclusive to
 Reference-data nested members stay declared last. Iceberg counts leaf columns
 in declaration order for the bounds it collects, so an earlier struct could
 push a flat filter column past the cutoff. `FixMsg.instrument`,
-`InstrumentUpdate.instrument`, and the component's `legs` therefore follow
+`InstUpdate.instrument`, and the component's `legs` therefore follow
 their flat siblings.
 
 `symbolticker` is deliberately not a second partition. The case for

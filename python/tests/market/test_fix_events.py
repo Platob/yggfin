@@ -18,7 +18,7 @@ from rekep.market import (
     Currency,
     Execution,
     Instrument,
-    InstrumentUpdate,
+    InstUpdate,
     Leg,
     MarketKind,
     OptionKind,
@@ -771,7 +771,7 @@ def test_independently_parsed_level_updates_share_their_code_digest() -> None:
     later = "35=X|55=AAPL|268=1|279=1|269=0|270=10.0|271=9|52=20260821-10:00:01"
     first_event, later_event = events(first)[0], events(later)[0]
     assert first_event.xhash == later_event.xhash == first_event.xhash_of(first_event.code)
-    assert first_event.codesource == later_event.codesource == "MDEntryPx"
+    assert first_event.altids["code"] == later_event.altids["code"] == first_event.code
 
 
 def test_independently_parsed_entry_ids_share_their_code_digest() -> None:
@@ -779,7 +779,7 @@ def test_independently_parsed_entry_ids_share_their_code_digest() -> None:
     moved = "35=X|55=AAPL|268=1|279=1|269=0|270=11.0|271=5|278=E-1|52=20260821-10:00:01"
     first_event, moved_event = events(with_id)[0], events(moved)[0]
     assert first_event.xhash == moved_event.xhash == first_event.xhash_of("E-1")
-    assert first_event.codesource == moved_event.codesource == "MDEntryID"
+    assert first_event.altids["mdentryid"] == moved_event.altids["mdentryid"] == "E-1"
 
 
 # -- what a message says about the instrument --------------------------------
@@ -790,10 +790,9 @@ def test_instrument_update_keeps_only_declared_reference_facts() -> None:
         "8=FIX.4.4|35=8|37=ORD-9|11=CL-7|55=AAPL|"
         "454=1|455=US0378331005|456=4|60=20260821-10:00:00|10=000"
     )
-    update = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)]))
+    update = next(InstUpdate.from_fixmsgs([FixMsg.from_text(line)]))
     assert update.instrument.isincode == "US0378331005"
-    assert update.codesource == "SymbolTicker"
-    assert update.altids == {}
+    assert update.altids == {"code": "AAPL", "symbolticker": "AAPL"}
     assert "altids" not in Instrument.into_field().names
 
 
@@ -806,7 +805,8 @@ def test_the_instrument_is_read_and_flattened_onto_the_partition_column() -> Non
     assert instrument.securityexchange == "XCME" and instrument.currency is Currency.USD
     assert order.instrumentxhash == instrument.xhash != 0
     assert fill.instrumentxhash == order.instrumentxhash
-    assert (order.codesource, fill.codesource) == ("OrderID", "ExecID")
+    assert order.altids["orderid"] == order.code
+    assert fill.altids["execid"] == fill.code
 
 
 def test_the_price_unit_is_the_instruments_currency() -> None:
@@ -1291,7 +1291,7 @@ def test_a_fragment_with_no_version_remains_raw() -> None:
     reader = FixEvents(message=FixMsg.from_pairs([("11", "CL-1"), ("54", "1")]))
     assert reader.version is None
     assert list(reader) == []
-    assert list(InstrumentUpdate.from_fixmsgs([reader.message])) == []
+    assert list(InstUpdate.from_fixmsgs([reader.message])) == []
 
 
 # -- the instrument an entry is about ----------------------------------------
@@ -1313,7 +1313,7 @@ def test_an_entry_that_names_no_instrument_takes_the_headers() -> None:
     which are read off the pairs and never reached an entry before."""
     reader = FixEvents.from_text(IDENTIFIED, venue="XCME")
     found = list(reader)
-    header = next(InstrumentUpdate.from_fixmsgs([reader.message])).instrument
+    header = next(InstUpdate.from_fixmsgs([reader.message])).instrument
     assert len(found) == 2
     for one in found:
         instrument = one.into_instrument()
@@ -1348,9 +1348,7 @@ def test_instrument_projection_reads_every_md_entry_without_building_events(
         raise AssertionError("reference extraction must not construct market events")
 
     monkeypatch.setattr(FixEvents, "_event", refused)
-    found = [
-        update.instrument for update in InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)])
-    ]
+    found = [update.instrument for update in InstUpdate.from_fixmsgs([FixMsg.from_text(line)])]
 
     assert [instrument.symbol for instrument in found] == ["BTC-USD", "ETH-USD"]
     assert len({instrument.xhash for instrument in found}) == 2
@@ -1389,7 +1387,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
             ],
         ),
     )
-    instrument = next(InstrumentUpdate.from_fixmsgs([stored])).instrument
+    instrument = next(InstUpdate.from_fixmsgs([stored])).instrument
 
     assert instrument.isincode == "US0378331005"
     assert [(leg.symbol, leg.side, leg.ratio) for leg in instrument.legs] == [
@@ -1405,7 +1403,7 @@ def test_resolved_component_columns_feed_alt_ids_and_legs() -> None:
         "555=2|600=AAPL|624=1|623=1|611=20270115|612=150.5|"
         "600=MSFT|624=2|623=2|556=USD"
     )
-    assert instrument == next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(wire)])).instrument
+    assert instrument == next(InstUpdate.from_fixmsgs([FixMsg.from_text(wire)])).instrument
 
 
 def test_a_two_sided_trade_capture_report_is_one_row_per_side_of_one_trade_lifecycle() -> None:
@@ -1466,7 +1464,7 @@ def test_a_rendered_indexed_report_splits_sides_the_same_way() -> None:
         (Side.SELL, "O-SELL"),
     ]
     assert {one.tradeid for one in events} == {"M-9"}
-    instrument = next(InstrumentUpdate.from_fixmsgs([FixMsg.from_text(line)])).instrument
+    instrument = next(InstUpdate.from_fixmsgs([FixMsg.from_text(line)])).instrument
     assert [leg.symbol for leg in instrument.legs] == ["EUR/USD-NEAR", "EUR/USD-FAR"]
 
 

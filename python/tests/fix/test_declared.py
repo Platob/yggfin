@@ -9,6 +9,7 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
+from rekep.enums import Plugin
 from rekep.fix import FieldRule, FieldRules, FixCodec, FixRegistry
 from rekep.fix.fields import fix_field
 from rekep.text import FixMsg, TextFile
@@ -190,7 +191,7 @@ def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: Fix
         [FixMsg.from_message_batch(batch, codec_of(registry)) for batch in messages.to_batches()]
     )
     assert messages.num_rows == 1
-    assert messages.column("plugin").to_pylist() == ["VendorBridge"]
+    assert messages.column("plugin").to_pylist() == [Plugin.from_str("VendorBridge").into_stored()]
     assert messages.column("msgtype").to_pylist() == ["D"]
     assert rows.column("msgtype").to_pylist() == ["D"]
 

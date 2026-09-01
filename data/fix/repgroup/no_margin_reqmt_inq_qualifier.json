@@ -1,12 +1,12 @@
 {
  "name": "NoMarginReqmtInqQualifier",
  "versions": [
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoMarginReqmtInqQualifier",
   "type": "list",
+  "nullable": true,
   "fix": {
    "tag": "1636"
   },

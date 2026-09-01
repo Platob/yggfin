@@ -40,20 +40,21 @@ entries:
   - {tag: 10, key: "10", value: "001"}
 unix: 1787306400123000000       # recording clock
 code: ""                       # FIX has not selected a lifecycle field yet
-codesource: ""
+altids: {}
 sourceurl: file:///capture.log
 sourcerownum: 1
 ```
 
 Repeated tags remain repeated list items in wire order. `vhash` identifies the
 payload bytes and `hash` adds `unix`. The raw stage has no lifecycle code, so
-its `xhash` is zero; `parse_fix` fills `code`, `codesource`, and
+its `xhash` is zero; `parse_fix` fills `code`, every code in `altids`, and
 `xhash = XXH3-128(UTF-8(code))`.
 
 ## Filters and bounds
 
 Payload and MsgType filters run before entry splitting. `technical_plugins`
-runs after header parsing and before persistence:
+uses the parsed header to reject operational rows before timestamp, payload or
+entry parsing:
 
 ```yaml
 include_regexes: []
@@ -70,6 +71,8 @@ batch_row_size: 65536
 batch_byte_size: 67108864
 max_row_byte_size: 67108864
 duration_ns: null
+commit_batch_num: 8
+commit_row_size: null # Optional earlier row cap.
 ```
 
 `plugin_keys` renames only rows recorded by that plugin, before fields such as

@@ -645,10 +645,15 @@ def _catalog_settings(arguments: argparse.Namespace) -> dict[str, Any]:
         parameters = dict(Task.from_yaml(str(document)).parameters)
     configured = parameters.get("catalog") or {}
     if not isinstance(configured, Mapping):
-        raise TypeError("task catalog must be a mapping with catalog_name and properties")
+        raise TypeError("task catalog must be a mapping with name and properties")
+    unexpected = sorted(set(configured) - {"name", "properties"})
+    if unexpected:
+        raise TypeError(
+            "task catalog accepts only name and properties; unexpected " + ", ".join(unexpected)
+        )
     catalog = IcebergCatalog.from_dict(configured)
     if arguments.catalog:
-        catalog.catalog_name = arguments.catalog
+        catalog.name = arguments.catalog
     catalog.properties.update(_settings(arguments.property))
     settings = {
         "catalog": catalog,

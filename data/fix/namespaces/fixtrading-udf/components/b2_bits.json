@@ -1,7 +1,7 @@
 {
  "name": "B2BITS",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "B2BITS",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "B2BITS",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"

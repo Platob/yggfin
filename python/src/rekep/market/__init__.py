@@ -33,7 +33,7 @@ from rekep.market.identity import (
     hash_of,
     part_bytes,
 )
-from rekep.market.instrument import Instrument, InstrumentUpdate, Leg, TickRule
+from rekep.market.instrument import Instrument, InstUpdate, Leg, TickRule
 from rekep.market.orders import Execution, Order
 from rekep.market.ticker import SymbolTicker
 from rekep.market.transacted import PREFERRED, TRANSACTED, Stamped, Transacted
@@ -57,7 +57,7 @@ __all__ = [
     "Execution",
     "FixEvents",
     "Instrument",
-    "InstrumentUpdate",
+    "InstUpdate",
     "Leg",
     "Level",
     "MarketEvent",

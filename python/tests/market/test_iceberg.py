@@ -14,7 +14,7 @@ import pyarrow
 import pytest
 
 from rekep.fields import StructField
-from rekep.market import HASH, Book, Execution, Instrument, InstrumentUpdate, MarketEvent, Order
+from rekep.market import HASH, Book, Execution, Instrument, InstUpdate, MarketEvent, Order
 from rekep.market.event import SECOND
 
 from ..conftest import catalog_properties
@@ -22,7 +22,7 @@ from .conftest import UNIX, batch
 
 pytest.importorskip("pyiceberg")
 
-SHAPES = (MarketEvent, Order, Execution, Book, Instrument, InstrumentUpdate)
+SHAPES = (MarketEvent, Order, Execution, Book, Instrument, InstUpdate)
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda cls: cls.__name__)

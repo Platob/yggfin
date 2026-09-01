@@ -12,7 +12,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import Direction, EventType, Protocol
+from rekep.enums import Direction, EventType, Plugin, Protocol
 from rekep.fields import Field, column_name, column_names, scalar
 from rekep.fields.arrays import build_list, dense_counts, null_mask, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
@@ -31,9 +31,9 @@ from rekep.text.entries import ENTRIES, Entry, referential_payload_arrow, xml_pa
 #: and a lifted column is read back out of the list wherever it is empty --
 #: a null column and a column a projection dropped being the same absence.
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
-_DIRECTION_CODE = Direction.into_arrow_type().index_type
+_DIRECTION_CODE = Direction.into_storage_type()
 _EVENT_CODE = pyarrow.int64()
-_PROTOCOL_CODE = Protocol.into_arrow_type().index_type
+_PROTOCOL_CODE = Protocol.into_storage_type()
 _WS = r"[ \t\r\n\f\x0b]"
 _MSG_TYPE_VALUE = r"^[A-Za-z0-9]+$"
 _MSG_TYPE_VALUE_RE = re.compile(_MSG_TYPE_VALUE, re.ASCII)
@@ -282,10 +282,10 @@ class Message(Event):
         if self.body and (implicit_entries or self.protocol is Protocol.OTHER):
             parsed = self.parse_arrow(
                 pyarrow.array([self.body], pyarrow.binary()),
-                plugins=pyarrow.array([self.plugin], pyarrow.string()),
+                plugins=pyarrow.array([self.plugin.code], pyarrow.string()),
             )
             if self.protocol is Protocol.OTHER:
-                self.protocol = Protocol.from_int(parsed["protocol"][0].as_py())
+                self.protocol = Protocol.from_stored(parsed["protocol"][0].as_py())
             if self.direction is Direction.UNKNOWN:
                 self.direction = Direction.from_int(parsed["direction"][0].as_py())
             if (error := parsed["parseerror"][0].as_py()) is not None:
@@ -339,7 +339,7 @@ class Message(Event):
             .into_arrow_protocol_array(pyarrow.array([raw], pyarrow.binary()))[0]
             .as_py()
         )
-        if Protocol.from_int(protocol) in {Protocol.XML, Protocol.REFERENTIAL}:
+        if Protocol.from_stored(protocol) in {Protocol.XML, Protocol.REFERENTIAL}:
             return cls(**declared)
         pairs = parse_pairs(text, separator, named=named, entry_separator=entry_separator)
         entries = list(pairs)
@@ -416,8 +416,8 @@ class Message(Event):
         rules = Rules.into_default() if protocol_rules is None else protocol_rules
         protocols = rules.into_arrow_protocol_array(text, plugins, entries)
         families = Protocol.into_family_arrow(protocols)
-        xml = compute.equal(families, int(Protocol.XML))
-        referential = compute.equal(families, int(Protocol.REFERENTIAL))
+        xml = compute.equal(families, Protocol.XML.into_stored())
+        referential = compute.equal(families, Protocol.REFERENTIAL.into_stored())
         xml_entries, parse_errors = xml_payload_arrow(bodies, xml)
         xml_entries = Entry.normalized_arrow(xml_entries, plugins, plugin_keys, null_values)
         entries = compute.if_else(xml, xml_entries, entries)
@@ -477,6 +477,11 @@ class Message(Event):
         cls, columns: dict[str, Any], schema: pyarrow.Schema, rows: int
     ) -> pyarrow.RecordBatch:
         """Build a batch after assigning raw row identities in Arrow kernels."""
+        plugin = columns.get("plugin")
+        if plugin is not None:
+            if plugin.type != Plugin.into_storage_type():
+                plugin = Plugin.arrow_from_strings(plugin)
+            columns["plugin"] = pyarrow.compute.fill_null(plugin, Plugin.UNKNOWN.into_stored())
         columns["vhash"] = hash_bytes_arrow(columns["body"])
         columns["hash"] = txhash.couple128_arrow(
             cls._clock_micros(columns["unix"]), columns["vhash"]

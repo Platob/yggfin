@@ -33,7 +33,7 @@ than on a range of the stored value.
 | `SETTLEMENT` | `SETTLE` | 6000294799574630400 | 150 | A settlement instruction or response. |
 | `FACT` | `FACT` | 5062401484197462016 | 200 | Band floor for occurrences. |
 | `EXECUTION` | `EXECUTED` | 4996819942064276804 | 210 | A trade or execution fact. |
-| `INSTRUMENT` | `INSTRMT` | 5282251034575328256 | 220 | An observed InstrumentUpdate reference event. |
+| `INSTRUMENT` | `INSTRMT` | 5282251034575328256 | 220 | An observed InstUpdate reference event. |
 | `CONFIRMATION` | `CONFIRM` | 4850181387486121216 | 230 | A confirmation or affirmation fact. |
 | `NEWS` | `NEWS` | 5640010122345316352 | 240 | News or event communication. |
 | `STATE` | `STATE` | 6004496033382400000 | 300 | Band floor for state snapshots. |

@@ -12,9 +12,9 @@ assert int(side) == int.from_bytes(b"BUY\0", "big")
 assert int(state) == int.from_bytes(b"20OPEN\0\0", "big")
 ```
 
-A code enum persists as the integer its own code packs into -- `int32` for
-a four-byte code, `int64` for an eight-byte one. Its Arrow field carries the
-enum name and the complete stored-value lookup under `enum:*` metadata.
+A code enum persists as the value its own bytes produce: `int32` for four
+bytes, `int64` for eight, and `fixed_size_binary[16]` for sixteen. Its Arrow
+field carries the enum name and complete lookup under `enum:*` metadata.
 
 ## Message codes
 
@@ -52,9 +52,9 @@ a market kind exactly as the order that caused it does.
 | [MarketKind](market-kind.md) | Pricing and execution semantics. |
 | [TimeInForce](time-in-force.md) | Order lifetime. |
 
-Every code is built on one base -- the public `Ascii32` and its eight-byte
-`Ascii64` -- which packs the readable spelling left-justified into the stored
-integer. [ASCII codes](ascii-codes.md) is that rule, with an encoder on it.
+Every code is built on `Ascii32`, `Ascii64`, or `Ascii128`, which stores the
+readable spelling left-justified at its declared width. [ASCII codes](ascii-codes.md)
+is that rule, with an encoder on it.
 
 A vocabulary that is one FIX field read as a code -- `Side`, `TimeInForce`,
 `OptionKind` -- declares which field, and takes the wire codes from the
@@ -67,10 +67,8 @@ through `band` and "which codes rank at least this far" through
 `ranked_at_least` and `ranked_below` -- finite code sets a storage scan
 pushes down.
 
-An enum's Arrow shape, `EnumName.into_arrow_type()`, is one cached dictionary
-type -- its codes as values, indexed as wide as the packed integer a column
-stores, though the indices themselves are positions -- while columns store the
-bare integer every engine reads.
+`EnumName.into_storage_type()` is the persisted Arrow type. The cached
+`into_arrow_type()` dictionary is the decoded display view.
 
 An open vocabulary remembers a code it learnt at runtime, so the next read of
 the same value is the same member. That memory is bounded at 4,096 codes per

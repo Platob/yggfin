@@ -5,8 +5,7 @@
   "4.4",
   "5.0",
   "5.0.SP1",
-  "5.0.SP2",
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "NoPriceMovements",
@@ -20,64 +19,22 @@
    "type": "struct",
    "fields": [
     {
-     "name": "NoPriceMovementValues",
-     "type": "list",
+     "name": "PriceMovementValueGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "1920"
+      "component": "PriceMovementValueGrp"
      },
-     "item": {
-      "name": "PriceMovementValue",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "PriceMovementValue",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1921"
-        }
-       },
-       {
-        "name": "PriceMovementPoint",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1922"
-        }
-       },
-       {
-        "name": "PriceMovementType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1923"
-        }
-       }
-      ]
-     }
+     "fields": []
     },
     {
-     "name": "NoClearingAccountTypes",
-     "type": "list",
+     "name": "ClearingAccountTypeGrp",
+     "type": "struct",
      "nullable": true,
      "fix": {
-      "tag": "1918"
+      "component": "ClearingAccountTypeGrp"
      },
-     "item": {
-      "name": "ClearingAccountType",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "ClearingAccountType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1816"
-        }
-       }
-      ]
-     }
+     "fields": []
     }
    ]
   }

@@ -6,6 +6,7 @@ import pyarrow.fs
 import pytest
 
 from rekep import ArrowPath, Dataset, Field, FixRegistry, Message, TextFile, TextFiles, Url
+from rekep.enums import Plugin
 from rekep.filesystems import ArrowFile
 from rekep.text import HEADER_PATTERN
 from rekep.text.text_files import _natural
@@ -426,6 +427,27 @@ def test_msgtype_filters_are_forwarded_to_every_file(tmp_path: Path) -> None:
 
     table = files.read_arrow_table(exclude_msgtypes=("0", "1"))
 
+    assert table.column("msgtype").to_pylist() == ["D", "8"]
+
+
+def test_technical_plugins_are_forwarded_to_every_file(tmp_path: Path) -> None:
+    (tmp_path / "a.txt").write_text(
+        "2026-08-14 00:05:01.000 [t] [Jolokia] (INFO) Metric=1|\n"
+        "2026-08-14 00:05:02.000 [t] [Bridge] (INFO) 35=D|11=A|\n"
+    )
+    (tmp_path / "b.txt").write_text(
+        "2026-08-14 00:05:03.000 [t] [JOLOKIA] (INFO) Metric=2|\n"
+        "2026-08-14 00:05:04.000 [t] [Other] (INFO) 35=8|17=B|\n"
+    )
+
+    table = TextFiles.from_folder(tmp_path).read_arrow_table(
+        batch_row_size=1, technical_plugins=("jolokia",)
+    )
+
+    assert table.column("plugin").to_pylist() == [
+        Plugin.from_str("Bridge").into_stored(),
+        Plugin.from_str("Other").into_stored(),
+    ]
     assert table.column("msgtype").to_pylist() == ["D", "8"]
 
 

@@ -483,9 +483,32 @@ def test_chunks_group_a_stream_by_row_count() -> None:
     assert [chunk.num_rows for chunk in chunks] == [4, 4, 1]
 
 
+def test_chunks_flush_at_the_first_row_or_batch_bound() -> None:
+    chunks = list(arrow_chunks(iter([rows(3), rows(3), rows(3)]), 5, 2))
+    assert [chunk.num_rows for chunk in chunks] == [5, 4]
+
+
+def test_chunks_group_a_stream_by_batch_count() -> None:
+    chunks = list(arrow_chunks(iter([rows(1) for _ in range(10)]), None, 8))
+    assert [chunk.num_rows for chunk in chunks] == [8, 2]
+
+
 def test_chunks_refuse_an_unbounded_row_size() -> None:
     with pytest.raises(ValueError, match="row_size must be positive"):
         list(arrow_chunks(iter([rows(1)]), 0))
+
+
+def test_chunks_refuse_an_unbounded_batch_count() -> None:
+    with pytest.raises(ValueError, match="batch_num must be positive"):
+        list(arrow_chunks(iter([rows(1)]), None, 0))
+
+
+@pytest.mark.parametrize("name", ["row_size", "batch_num"])
+@pytest.mark.parametrize("value", [True, 1.5, "2"])
+def test_chunk_bounds_have_strict_integer_types(name: str, value: Any) -> None:
+    arguments = {"row_size": None, "batch_num": None, name: value}
+    with pytest.raises(TypeError, match=rf"{name} must be an integer"):
+        list(arrow_chunks(iter([rows(1)]), **arguments))
 
 
 def test_chunks_take_the_schema_from_a_reader() -> None:

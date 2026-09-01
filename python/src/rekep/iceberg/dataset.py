@@ -11,6 +11,7 @@ import logging
 import math
 import os
 import random
+import sqlite3
 import tempfile
 import time
 import uuid
@@ -28,6 +29,7 @@ from rekep.dataset import (
     SOURCE_INDEX,
     TARGET_INDEX,
     Dataset,
+    _positive_int,
     arrow_chunks,
     first_rows,
     keys_of,
@@ -62,8 +64,9 @@ _NO_GRACE = datetime.timedelta(0)
 #: How big one commit's output files get. Narrower than it sounds: pyiceberg
 #: derives rows-per-file from the *in-memory* size of the table being written
 #: and only ever splits a single commit -- it has no cross-commit state, so it
-#: cannot fill a file across commits. `commit_row_size` and `compact` are the
-#: levers on file count; this one decides how a large commit is sliced.
+#: cannot fill a file across commits. `commit_batch_num`, the optional
+#: `commit_row_size`, and `compact` are the levers on file count; this one
+#: decides how a large commit is sliced.
 TARGET_FILE_SIZE = "write.target-file-size-bytes"
 
 #: Lets Iceberg merge small manifests as it commits. **Inert on its own**:
@@ -108,12 +111,16 @@ MERGE_GROUP_GAIN = 8
 #: of how many row groups or files a partition holds.
 SORT_MERGE_FAN_IN = 16
 
-#: Rows a commit carries when nothing says otherwise. A stream that commits per
-#: batch lands a file and a snapshot per batch, and every later scan pays for
-#: both; one that never commits until the end holds the whole stream in memory.
-#: Measured on the log pipeline (`benchmarks/bench_iceberg.py`), this is where
-#: throughput stops improving and file count starts mattering.
-DEFAULT_COMMIT_ROW_SIZE = 1_000_000
+#: Source batches a commit carries when nothing says otherwise. Eight amortizes
+#: snapshot and file overhead while bounding memory in the units the producer
+#: actually controls; a row cap remains available for unusually large batches.
+DEFAULT_COMMIT_BATCH_NUM = 8
+
+#: Row target for locally staged partition files when no write row cap is set.
+#: This is a file boundary, not a commit boundary: complete partitions remain
+#: atomic while their batches spill to disk.
+DEFAULT_STAGED_FILE_ROW_SIZE = 1_000_000
+
 
 #: Snapshot summary key that settles an ambiguous remote acknowledgement.
 #: The value stays stable across retries of one bounded operation, so a reload
@@ -214,11 +221,13 @@ class IcebergDataset(Dataset):
     #: `main`, and `master` all mean the table's root state.
     branch: str | None = None
 
-    #: Rows one commit carries when a write does not name a size. Iceberg lands
-    #: a file and a snapshot per commit, so this is the knob that decides how
-    #: much a later scan has to plan. It stays positive because an unbounded
-    #: commit would retain the whole input stream before writing anything.
-    commit_row_size: int = DEFAULT_COMMIT_ROW_SIZE
+    #: Source batches one commit carries; the producer's batch size bounds the
+    #: retained bytes without guessing how wide a row is.
+    commit_batch_num: int = DEFAULT_COMMIT_BATCH_NUM
+
+    #: Optional row cap applied with `commit_batch_num`; the first bound reached
+    #: commits. None leaves batch count as the default boundary.
+    commit_row_size: int | None = None
 
     #: Columns each chunk is sorted by before it is written. None means the
     #: shape's own `sort_key()` declarations, because a table that records a
@@ -268,8 +277,9 @@ class IcebergDataset(Dataset):
         if not isinstance(field, StructField):
             raise TypeError("an Iceberg dataset field must be a struct")
         self.field = field.with_name(self.name)
-        if self.commit_row_size is None or self.commit_row_size <= 0:
-            raise ValueError("commit_row_size must be positive")
+        self.commit_batch_num = _positive_int(self.commit_batch_num, "commit_batch_num")
+        if self.commit_row_size is not None:
+            self.commit_row_size = _positive_int(self.commit_row_size, "commit_row_size")
         if self.commit_retries < 0:
             raise ValueError("commit_retries cannot be negative")
         if self.rewrite_file_count <= 0:
@@ -310,7 +320,7 @@ class IcebergDataset(Dataset):
     def store(self) -> IcebergCatalog:
         """The Rekep catalog wrapper that owns the shared live connection."""
         store = IcebergCatalog(
-            catalog_name=self.catalog_name,
+            name=self.catalog_name,
             properties=self.catalog_properties,
         )
         self.__dict__["_owns_store"] = True
@@ -659,6 +669,7 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
         *,
+        commit_batch_num: int | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
@@ -670,6 +681,7 @@ class IcebergDataset(Dataset):
                 schema,
                 merge_by,
                 commit_row_size,
+                commit_batch_num=commit_batch_num,
                 branch=branch,
                 properties=properties,
             )
@@ -681,6 +693,7 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
         *,
+        commit_batch_num: int | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
@@ -691,7 +704,7 @@ class IcebergDataset(Dataset):
             # An upsert or an unconditional append can put a key beyond an
             # insert-only writer's known maximum. Its cheap monotonic proof is no
             # longer complete after either operation.
-            rows = self._commit_rows(commit_row_size)
+            rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
@@ -706,7 +719,8 @@ class IcebergDataset(Dataset):
                     source,
                     schema,
                     merge_by,
-                    rows,
+                    commit_row_size=rows,
+                    commit_batch_num=batches,
                     branch=branch,
                     properties=properties,
                 )
@@ -720,7 +734,7 @@ class IcebergDataset(Dataset):
             reader = self.target_field(schema).cast_arrow_reader(source)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
-            for chunk in arrow_chunks(reader, rows):
+            for chunk in arrow_chunks(reader, rows, batches):
                 if self.plan_merges or partitions:
                     self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
                 else:
@@ -747,6 +761,7 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
+        commit_batch_num: int | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
@@ -758,6 +773,7 @@ class IcebergDataset(Dataset):
                 schema,
                 merge_by,
                 commit_row_size,
+                commit_batch_num=commit_batch_num,
                 branch=branch,
                 properties=properties,
             )
@@ -769,6 +785,7 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
+        commit_batch_num: int | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
@@ -777,7 +794,7 @@ class IcebergDataset(Dataset):
         reader: pyarrow.RecordBatchReader | None = None
         delegated = False
         try:
-            rows = self._commit_rows(commit_row_size)
+            rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
@@ -787,7 +804,8 @@ class IcebergDataset(Dataset):
                     source,
                     schema,
                     merge_by,
-                    rows,
+                    commit_row_size=rows,
+                    commit_batch_num=batches,
                     branch=branch,
                     properties=properties,
                 )
@@ -801,20 +819,29 @@ class IcebergDataset(Dataset):
             self._branch_head(table, reference)
             snapshot = properties or {}
             pending: list[_StagedPartition] = []
-            pending_rows = 0
+            consumed_rows = 0
+            pending_batches = 0
 
             def commit(stager: _PartitionStager) -> None:
-                nonlocal pending, pending_rows, table
+                nonlocal pending, consumed_rows, pending_batches, table
                 if not pending:
+                    consumed_rows = 0
+                    pending_batches = 0
                     return
                 table = self._overwrite_partitions(table, pending, reference, snapshot, stager)
-                pending, pending_rows = [], 0
+                pending, consumed_rows, pending_batches = [], 0, 0
 
-            with _PartitionStager(table, self.sort_fields(), rows) as stager:
-                for staged in _staged_partition_stream(reader, partitions, stager):
-                    pending.append(staged)
-                    pending_rows += staged.rows
-                    if rows and pending_rows >= rows:
+            file_rows = rows or DEFAULT_STAGED_FILE_ROW_SIZE
+            with _PartitionStager(table, self.sort_fields(), file_rows) as stager:
+                for staged in _staged_partition_stream(reader, partitions, stager, rows):
+                    if isinstance(staged, _StagedBatch):
+                        consumed_rows += staged.rows
+                        pending_batches += staged.count
+                    else:
+                        pending.append(staged)
+                    if (rows is not None and consumed_rows >= rows) or (
+                        batches is not None and pending_batches >= batches
+                    ):
                         commit(stager)
                 commit(stager)
         finally:
@@ -1039,8 +1066,33 @@ class IcebergDataset(Dataset):
         # it writes.
         shape = Field.from_(chunk.schema)
         derived = self.derived_columns()
+        delete_columns = list(
+            dict.fromkeys([*(column.source for column in partitions or ()), *join])
+        )
+        key_shape = Field.from_(
+            pyarrow.schema([chunk.schema.field(name) for name in delete_columns])
+        )
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         scan = self._branch_scan(table, scan, reference)
+        # Range filters are safe supersets. Decode only the keys needed to turn
+        # that broad candidate set into exact matches; payload is read in the
+        # second phase only when at least one exact key exists.
+        selected = self._selected(key_shape, scan)
+        if not set(join).issubset(selected.values()):
+            # A branch can point at a snapshot from before a merge key was
+            # added. No row under that snapshot can carry the key, so every
+            # incoming row is new; projecting an arbitrary fallback column
+            # would only turn that append into a schema error.
+            table = self._append_chunk(
+                table,
+                chunk,
+                reference,
+                properties or {},
+                rebuild=False,
+            )
+            return 0, chunk.num_rows
+        delete_columns = [name for name in delete_columns if name in selected.values()]
+        scan = scan.select(*selected)
         scan = _scoped_partition_scan(scan, table, partition)
         # Planned once and read from that plan: `to_arrow_batch_reader` plans
         # again on its own, and a streaming merge pays planning per chunk. Keep
@@ -1062,15 +1114,10 @@ class IcebergDataset(Dataset):
                 rebuild=False,
             )
             return 0, chunk.num_rows
-        # The scan filter is a superset, so consume one planned file at a time.
-        # Keep only compact positions into the source chunk: neither the ranged
-        # rows nor even their exact stored matches collect.
+        # The range scan stays one planned file at a time. Its retained positions
+        # and exact key rows are bounded by this source chunk, never by the table.
         matched_positions: list[pyarrow.Array] = []
-        changed_positions: list[pyarrow.Array] = []
-        delete_rows: list[pyarrow.Table] = []
-        delete_columns = list(
-            dict.fromkeys([*(column.source for column in partitions or ()), *join])
-        )
+        matched_rows: list[pyarrow.Table] = []
         matched_count = 0
         with _unordered_reader(
             scan, itertools.chain((first_task,), tasks), group_size=1
@@ -1081,7 +1128,6 @@ class IcebergDataset(Dataset):
                 candidate = semi_join(candidate, chunk, join)
                 if not candidate.num_rows:
                     continue
-                candidate = shape.cast_arrow_table(candidate)
                 positions = _matching_positions(chunk, candidate, join)
                 if len(positions) != candidate.num_rows:
                     raise ValueError("Target table has duplicate rows, aborting upsert")
@@ -1089,12 +1135,7 @@ class IcebergDataset(Dataset):
                 if matched_count > chunk.num_rows:
                     raise ValueError("Target table has duplicate rows, aborting upsert")
                 matched_positions.append(positions)
-                source = chunk.take(positions)
-                changed = _changed(source, candidate, join)
-                if changed.num_rows:
-                    local = _matching_positions(source, changed, join)
-                    changed_positions.append(positions.take(local))
-                    delete_rows.append(semi_join(candidate, changed, join).select(delete_columns))
+                matched_rows.append(candidate.select(delete_columns))
         if not matched_positions:
             # The range overlapped stored rows, but the exact keys did not.
             # There is nothing left to compare or anti-join: this is an append.
@@ -1114,6 +1155,36 @@ class IcebergDataset(Dataset):
             pyarrow.compute.is_in(arrays.sequence(chunk.num_rows), value_set=matched)
         )
         inserts = chunk.filter(keep)
+
+        exact_rows = pyarrow.concat_tables(matched_rows, promote_options="none")
+        exact_scan = table.scan(row_filter=_stored_match_filter(exact_rows, delete_columns))
+        exact_scan = self._branch_scan(table, exact_scan, reference)
+        exact_scan = exact_scan.select(*self._selected(shape, exact_scan))
+        exact_scan = _scoped_partition_scan(exact_scan, table, partition)
+        changed_positions: list[pyarrow.Array] = []
+        delete_rows: list[pyarrow.Table] = []
+        exact_count = 0
+        exact_tasks = iter(_tasks_in_partition(table, exact_scan.plan_files(), partition))
+        with _unordered_reader(exact_scan, exact_tasks, group_size=1) as planned:
+            for batch in _under_current_names(table, planned):
+                candidate = pyarrow.Table.from_batches([batch])
+                candidate = _align_keys(candidate, chunk, join)
+                candidate = semi_join(candidate, chunk, join)
+                if not candidate.num_rows:
+                    continue
+                candidate = shape.cast_arrow_table(candidate)
+                positions = _matching_positions(chunk, candidate, join)
+                if len(positions) != candidate.num_rows:
+                    raise ValueError("Target table has duplicate rows, aborting upsert")
+                exact_count += len(positions)
+                source = chunk.take(positions)
+                changed = _changed(source, candidate, join)
+                if changed.num_rows:
+                    local = _matching_positions(source, changed, join)
+                    changed_positions.append(positions.take(local))
+                    delete_rows.append(semi_join(candidate, changed, join).select(delete_columns))
+        if exact_count != len(matched):
+            raise RuntimeError("exact merge scan disagreed with its key scan")
         updates = (
             chunk.take(pyarrow.compute.sort_indices(pyarrow.concat_arrays(changed_positions)))
             if changed_positions
@@ -1162,6 +1233,7 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         *,
+        commit_batch_num: int | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
@@ -1173,6 +1245,7 @@ class IcebergDataset(Dataset):
                 schema,
                 merge_by,
                 commit_row_size,
+                commit_batch_num=commit_batch_num,
                 branch=branch,
                 properties=properties,
             )
@@ -1184,13 +1257,14 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         *,
+        commit_batch_num: int | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> int:
         """Append a stream, inserting only the keys the table does not hold yet."""
         reader: pyarrow.RecordBatchReader | None = None
         try:
-            rows = self._commit_rows(commit_row_size)
+            rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
             reader = self.target_field(schema).cast_arrow_reader(source)
@@ -1200,12 +1274,12 @@ class IcebergDataset(Dataset):
             if not join:
                 self.__dict__.pop("_insert_upper", None)
                 inserted = 0
-                for chunk in arrow_chunks(reader, rows):
+                for chunk in arrow_chunks(reader, rows, batches):
                     table = self._append_chunk(table, chunk, reference, snapshot)
                     inserted += chunk.num_rows
                 return inserted
             inserted = 0
-            for chunk in arrow_chunks(reader, rows):
+            for chunk in arrow_chunks(reader, rows, batches):
                 inserted += self.insert_arrow_table(
                     chunk, join, branch=reference, properties=properties
                 )
@@ -1441,12 +1515,17 @@ class IcebergDataset(Dataset):
             return chunk
         return chunk.sort_by(fields)
 
-    def _commit_rows(self, requested: int | None) -> int:
-        """The positive row bound one streaming commit may retain."""
-        rows = self.commit_row_size if requested is None else requested
-        if rows is None or rows <= 0:
-            raise ValueError("commit_row_size must be positive")
-        return rows
+    def _commit_limits(
+        self,
+        requested_rows: int | None,
+        requested_batches: int | None,
+    ) -> tuple[int | None, int]:
+        """The row and batch bounds one streaming commit may retain."""
+        rows = self.commit_row_size if requested_rows is None else requested_rows
+        batches = self.commit_batch_num if requested_batches is None else requested_batches
+        if rows is not None:
+            rows = _positive_int(rows, "commit_row_size")
+        return rows, _positive_int(batches, "commit_batch_num")
 
     def sort_fields(self) -> list[tuple[str, str]]:
         """Physical Arrow sort fields, with normalized directions."""
@@ -3721,6 +3800,48 @@ class _StagedPartition:
     rows: int
 
 
+@dataclasses.dataclass(frozen=True)
+class _StagedBatch:
+    """Consumed rows and completed source batches while a trailing partition stays open."""
+
+    rows: int
+    count: int = 1
+
+
+class _PartitionHistory:
+    """Exact disk-backed identities for partitions whose runs already closed."""
+
+    def __init__(self) -> None:
+        self.directory = tempfile.TemporaryDirectory(prefix="rekep-iceberg-partitions-")
+        self.database = sqlite3.connect(os.path.join(self.directory.name, "closed.sqlite3"))
+        self.database.execute("PRAGMA journal_mode=OFF")
+        self.database.execute("PRAGMA synchronous=OFF")
+        self.database.execute("PRAGMA cache_size=-1024")
+        self.database.execute("CREATE TABLE closed (identity TEXT PRIMARY KEY)")
+
+    @staticmethod
+    def _key(identity: tuple[Any, ...]) -> str:
+        """One typed partition identity in SQLite's scalar key space."""
+        return json.dumps(identity, separators=(",", ":"))
+
+    def __contains__(self, identity: tuple[Any, ...]) -> bool:
+        return (
+            self.database.execute(
+                "SELECT 1 FROM closed WHERE identity = ?", (self._key(identity),)
+            ).fetchone()
+            is not None
+        )
+
+    def add(self, identity: tuple[Any, ...]) -> None:
+        """Remember one closed run without retaining its identity in memory."""
+        self.database.execute("INSERT INTO closed VALUES (?)", (self._key(identity),))
+
+    def close(self) -> None:
+        """Close and remove the temporary exact-set database."""
+        self.database.close()
+        self.directory.cleanup()
+
+
 class _PartitionStager:
     """Bounded local Parquet staging for complete partitions."""
 
@@ -4158,28 +4279,74 @@ def _staged_partition_stream(
     source: pyarrow.RecordBatchReader,
     partitions: Sequence[_PartitionColumn],
     stager: _PartitionStager,
-) -> Iterator[_StagedPartition]:
-    """Stage adjacent partition runs while keeping only one input batch in memory."""
+    row_size: int | None = None,
+) -> Iterator[_StagedPartition | _StagedBatch]:
+    """Stage adjacent partition runs with one-batch lookahead and bounded metadata."""
     current: tuple[Any, ...] | None = None
-    closed: set[tuple[Any, ...]] = set()
-    for batch in source:
-        chunk = pyarrow.Table.from_batches([batch])
-        for identity, partition, run in _partition_runs(chunk, partitions):
+    ready: list[_StagedPartition] = []
+    columns = [column.source for column in partitions]
+    closed = _PartitionHistory()
+
+    def refuse_recurrence(identity: tuple[Any, ...], partition: Mapping[str, Any]) -> None:
+        if identity in closed:
+            raise ValueError(
+                f"partition {partition} recurs after another partition; keep each transformed "
+                f"partition contiguous before overwriting source columns {columns}"
+            )
+
+    def completed() -> Iterator[_StagedPartition]:
+        nonlocal ready
+        yield from ready
+        ready = []
+
+    def stage(batch: pyarrow.RecordBatch) -> None:
+        nonlocal current
+        runs = iter(_partition_runs(pyarrow.Table.from_batches([batch]), partitions))
+        first = next(runs, None)
+        if first is None:
+            return
+        for identity, partition, run in itertools.chain((first,), runs):
             if identity != current:
-                if identity in closed:
-                    columns = [column.source for column in partitions]
-                    raise ValueError(
-                        f"partition {partition} recurs after another partition; "
-                        f"order the source by {columns} before partition overwrite"
-                    )
+                refuse_recurrence(identity, partition)
                 if current is not None:
                     closed.add(current)
-                    yield stager.finish()
+                    ready.append(stager.finish())
                 current = identity
                 stager.start(partition)
             stager.write(run)
-    if current is not None:
-        yield stager.finish()
+
+    def pieces() -> Iterator[tuple[pyarrow.RecordBatch, bool]]:
+        """Row-bounded pieces and whether each completes its original source batch."""
+        for batch in source:
+            if not batch.num_rows:
+                continue
+            size = batch.num_rows if row_size is None else row_size
+            for offset in range(0, batch.num_rows, size):
+                length = min(size, batch.num_rows - offset)
+                yield batch.slice(offset, length), offset + length == batch.num_rows
+
+    # Keep one row-bounded piece as lookahead. Once another piece exists, every
+    # completed partition from the held piece can be released on the commit
+    # cadence while only its trailing partition remains open in the stager.
+    try:
+        incoming = pieces()
+        held = next(incoming, None)
+        if held is None:
+            return
+        for following in incoming:
+            batch, completes_batch = held
+            stage(batch)
+            yield from completed()
+            yield _StagedBatch(batch.num_rows, int(completes_batch))
+            held = following
+        batch, completes_batch = held
+        stage(batch)
+        if current is not None:
+            ready.append(stager.finish())
+        yield from completed()
+        yield _StagedBatch(batch.num_rows, int(completes_batch))
+    finally:
+        closed.close()
 
 
 def _staged_partition_chunk(

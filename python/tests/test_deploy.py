@@ -44,14 +44,14 @@ def test_pipeline_tables_do_not_prescribe_a_physical_sort() -> None:
 
 def test_deploying_a_table_the_pipeline_does_not_write_is_refused() -> None:
     with pytest.raises(ValueError, match="no such table"):
-        deploy(IcebergCatalog(catalog_name="rekep"), tables=["market.quotes"])
+        deploy(IcebergCatalog(name="rekep"), tables=["market.quotes"])
 
 
 @pytest.mark.integration
 def test_a_deployment_creates_every_table_once(tmp_path: Path) -> None:
     """Idempotent: the second pass finds them and changes nothing."""
     properties = catalog_properties(tmp_path)
-    store = IcebergCatalog(catalog_name="rekep", properties=properties)
+    store = IcebergCatalog(name="rekep", properties=properties)
     try:
         missing = deploy(store, dry_run=True)
         assert set(missing.values()) == {"missing"}
@@ -69,7 +69,7 @@ def test_a_deployment_creates_every_table_once(tmp_path: Path) -> None:
 @pytest.mark.integration
 def test_deployed_pipeline_tables_have_no_implicit_sort_order(tmp_path: Path) -> None:
     properties = catalog_properties(tmp_path)
-    store = IcebergCatalog(catalog_name="rekep", properties=properties)
+    store = IcebergCatalog(name="rekep", properties=properties)
     try:
         deploy(store, tables=["fix.market", "market.instruments"])
         assert not store.load_table("fix.market").sort_order().fields
@@ -101,11 +101,11 @@ def test_the_command_reads_the_catalog_a_task_document_names(
     )
     reported = json.loads(capsys.readouterr().out)
     assert reported == {
-        "catalog": {"catalog_name": "rekep", "properties": properties},
+        "catalog": {"name": "rekep", "properties": properties},
         "tables": {"logs.messages": "created"},
     }
 
-    store = IcebergCatalog(catalog_name="rekep", properties=properties)
+    store = IcebergCatalog(name="rekep", properties=properties)
     try:
         assert store.tables("logs") == ["logs.messages"]
     finally:
@@ -116,3 +116,23 @@ def test_a_property_option_is_a_pair(capsys: pytest.CaptureFixture) -> None:
     """A property with no value is a typo, and it is said rather than guessed at."""
     assert run("iceberg", "deploy", "--property", "warehouse") == 1
     assert "a property is name=value" in capsys.readouterr().err
+
+
+def test_a_task_catalog_refuses_legacy_or_misspelled_keys(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    document = tmp_path / "task.yml"
+    document.write_text(
+        "name: invalid\n"
+        "notebook: task.ipynb\n"
+        "parameters:\n"
+        "  catalog:\n"
+        "    catalog_name: legacy\n"
+        "    properties: {}\n",
+        encoding="utf-8",
+    )
+
+    assert run("iceberg", "deploy", str(document), "--dry-run") == 1
+    error = capsys.readouterr().err
+    assert "accepts only name and properties" in error
+    assert "catalog_name" in error

@@ -373,20 +373,6 @@
    "column": "notional"
   }
  },
- "30027": {
-  "name": "CodeSource",
-  "type": "string",
-  "nullable": true,
-  "description": "Field whose value supplied the readable lifecycle identifier.",
-  "fix": {
-   "tag": "30027",
-   "type": "String",
-   "versions": [
-    "*"
-   ],
-   "column": "codesource"
-  }
- },
  "30028": {
   "name": "LastShares",
   "type": "double",

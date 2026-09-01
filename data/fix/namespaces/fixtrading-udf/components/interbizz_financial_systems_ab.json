@@ -1,7 +1,7 @@
 {
  "name": "InterbizzFinancialSystemsAB",
  "versions": [
-  "FIX.Latest"
+  "5.0.SP2"
  ],
  "declaration": {
   "name": "InterbizzFinancialSystemsAB",
@@ -9,7 +9,7 @@
   "nullable": true,
   "fix": {
    "component": "InterbizzFinancialSystemsAB",
-   "version": "FIX.Latest",
+   "version": "5.0.SP2",
    "source": "fixtrading-udf",
    "sources": [
     "fixtrading-udf"
