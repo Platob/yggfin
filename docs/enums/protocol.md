@@ -21,9 +21,10 @@ The vocabulary belongs to the logs rather than to this package. A rule naming
 its own bridge stores that name without a release here. Up to sixteen bytes of
 `[A-Z0-9._-]` is the stored shape.
 
-`Message.protocol` carries the grammar found without a registry. `FixMsg.protocol`
-adds the version resolved from `BeginString` and application-version fields. A
-line no rule recognised is `OTHER`, so the column is NOT NULL.
+`Message.protocol` and `FixMsg.protocol` carry the same grammar and resolved
+registry version. `BeginString` and application-version fields lead; a bare UL
+row uses the registry's newest application version. A line no rule recognised
+is `OTHER`, so the column is NOT NULL.
 
 | Key | Code | Stored hex | Meaning |
 | --- | --- | --- | --- |

@@ -57,34 +57,40 @@ SQLite catalog and local warehouse are suitable only for a single-host test.
 branch must already exist on every relevant table.
 
 ```text
-parse_messages -> route_messages -> parse_fix -> route_fix
-                                                +-> parse_instruments
-                                                `-> parse_market -> route_market
-                                                                    +-> flatten_orders
-                                                                    `-> flatten_executions
+parse_messages -> route_messages -+-> parse_fix_market -> route_fix_market
+                                  |                       +-> parse_instruments
+                                  |                       `-> parse_market -> route_market
+                                  |                                           +-> flatten_orders
+                                  |                                           `-> flatten_executions
+                                  +-> parse_fix_misc
+                                  `-> parse_fix_unknown
 ```
 
 Every task returns the same result mapping, which the operator pushes to XCom
 under `return_value`. Each route reads one named count out of it —
-`parse_messages.read`, `parse_fix.routed.market`, `parse_market.flatten.orders`
-and `parse_market.flatten.executions` — and skips the consumers whose count is
-zero. Routes read attempted counts rather than new writes, so retries and
-intentional replays still reach their consumers. Empty intervals are skipped.
-In direct mode `parse_market` writes orders and executions itself and returns
-zero `flatten` counts, so both flatteners are skipped. In book mode each
-flattener is routed from its own nested row count; an interval with only orders
-does not run the execution flattener, or vice versa.
+`parse_messages.read` for all three `parse_fix_*` tasks,
+`parse_fix_market.read` for both readers of `fix.market`, and
+`parse_market.flatten.orders` and `parse_market.flatten.executions` for the two
+flatteners — and skips the consumers whose count is zero. The three FIX tasks
+reuse `parse_fix.yml` and receive their category from the DAG; the misc and
+unknown instances are terminal. Routes read attempted counts rather than new
+writes, so retries and intentional replays still reach their consumers. Empty
+intervals are skipped. In direct mode `parse_market` writes orders and
+executions itself and returns zero `flatten` counts, so both flatteners are
+skipped. In book mode each flattener is routed from its own nested row count;
+an interval with only orders does not run the execution flattener, or vice
+versa.
 
 Set the DAG's boolean `books` parameter to `false` for direct mode without
 editing the deployed YAML. A DAG Param replaces a same-name parameter the task
 document already declares and keeps its native type, so `books` arrives as the
 boolean.
 
-Five tasks declare one Airflow `Asset` outlet for the table they write on every
-run — `logs.messages`, `fix.market`, `market.instruments`, `market.orders` and
-`market.executions` — and the operator attaches that run's `task`, `read`,
-`written` and `skipped` counts to the asset event. Nothing is scheduled on
-them.
+Seven tasks declare one Airflow `Asset` outlet for the table they write on
+every run — `logs.messages`, `fix.market`, `fix.misc`, `fix.unknown`,
+`market.instruments`, `market.orders` and `market.executions` — and the
+operator attaches that run's `task`, `read`, `written` and `skipped` counts to
+the asset event. Nothing is scheduled on them.
 
 `rekep_iceberg_maintenance` runs daily at 02:30 UTC with catch-up disabled. It
 runs `tasks/optimize_iceberg/optimize_iceberg.yml`, keeping at least 24

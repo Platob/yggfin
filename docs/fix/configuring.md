@@ -122,7 +122,8 @@ own name for each, and asks the dictionary what this feed spells them as:
 `newordersingle` encodes to `D` here and to whatever a venue writes instead.
 The registry carries no second handler vocabulary and nothing converts a
 MsgType back into a name. `parse_messages` controls what reaches
-`logs.messages`; `parse_fix.exclude_msgtypes` controls what enters FIX tables.
+`logs.messages`; the shared `parse_fix.yml` `exclude_msgtypes` parameter
+controls what enters FIX tables.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.
 Every consumer, including Order fallbacks, reads that map. Python declarations
@@ -219,20 +220,22 @@ folded comparison as the FIX registry.
 | `null_values` | `TextFile` entry filter | `parse_messages` |
 | `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
 | `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
-| `protocols` | `Message.protocol`, then `FixCodec.rules` | both parse stages |
-| `fields` | `FixCodec.fields` | `parse_fix` |
+| `protocols` | `FixCodec.rules`, then `Message.protocol` | both parse stages |
+| `fields` | `FixCodec.fields` | all `parse_fix_*` tasks |
 | `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |
 
 `parse_messages` retains both the unsplit payload and its ordered generic
 arguments. A change to `fields`, protocol classification or the dictionary
-reruns `parse_fix` without reopening the source logs or tokenizing the payload
-again. Changing MsgType event metadata requires rebuilding `logs.messages`;
-changing field boundaries only reruns `parse_fix`.
+reruns the three `parse_fix_*` tasks without reopening the source logs or
+tokenizing the payload again. Changing MsgType event metadata requires
+rebuilding `logs.messages`; changing field boundaries only reruns the three
+category executions.
 
-A custom `protocols` document must be identical in both task YAML files.
-`parse_messages` stores the selected protocol before the raw payload is
-projected away; `parse_fix` uses the same rule to interpret those stored
-arguments.
+A custom `protocols` document and `fix_dictionary` must be identical in
+`parse_messages.yml` and `parse_fix.yml`.
+`parse_messages` stores the selected grammar and registry version before the
+raw payload is projected away; each FIX run uses the same codec to interpret
+those stored arguments.
 
 The shipped UL rule prefers the bridge's detailed instrument classification:
 

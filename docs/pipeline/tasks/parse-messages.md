@@ -1,7 +1,8 @@
 # Parse messages
 
 `parse_messages` streams text captures into `logs.messages`. It splits the
-wire shape but leaves FIX names, components and typed values to `parse_fix`.
+wire shape but leaves FIX names, components and typed values to the three
+`parse_fix_*` tasks.
 
 ## Run this step
 
@@ -32,7 +33,7 @@ Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 One retained payload becomes one [`Message`](../../products/message.md):
 
 ```yaml
-protocol: FIX
+protocol: FIX4.4
 msgtype: D
 eventtype: ORDER
 plugin: ""
@@ -49,8 +50,12 @@ sourcerownum: 1
 
 Repeated tags remain repeated list items in wire order. `vhash` identifies the
 payload bytes and `hash` adds `unix`. The raw stage has no lifecycle code, so
-its `xhash` is zero; `parse_fix` fills `code`, every code in `altids`, and
-`xhash = XXH3-128(UTF-8(code))`.
+its `xhash` is zero; the selected `parse_fix_*` task fills `code`, every code
+in `altids`, and `xhash = XXH3-128(UTF-8(code))`.
+
+`protocol` already includes the version resolved by the selected FIX
+dictionary. Evidence-free UL rows use that dictionary's newest application
+version, so stored messages and later FIX transcription agree.
 
 ## Filters and bounds
 

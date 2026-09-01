@@ -24,9 +24,11 @@ DAGS = ROOT / "tasks" / "airflow"
 #: The graph this repository supports, producer to consumer.
 EDGES = {
     "parse_messages": {"route_messages"},
-    "route_messages": {"parse_fix"},
-    "parse_fix": {"route_fix"},
-    "route_fix": {"parse_instruments", "parse_market"},
+    "route_messages": {"parse_fix_market", "parse_fix_misc", "parse_fix_unknown"},
+    "parse_fix_market": {"route_fix_market"},
+    "parse_fix_misc": set(),
+    "parse_fix_unknown": set(),
+    "route_fix_market": {"parse_instruments", "parse_market"},
     "parse_instruments": set(),
     "parse_market": {"route_market"},
     "route_market": {"flatten_orders", "flatten_executions"},
@@ -37,13 +39,15 @@ EDGES = {
 #: The table each task claims on every run, as an Airflow asset name.
 OUTLETS = {
     "parse_messages": ["logs.messages"],
-    "parse_fix": ["fix.market"],
+    "parse_fix_market": ["fix.market"],
+    "parse_fix_misc": ["fix.misc"],
+    "parse_fix_unknown": ["fix.unknown"],
     "parse_instruments": ["market.instruments"],
     "parse_market": [],
     "flatten_orders": ["market.orders"],
     "flatten_executions": ["market.executions"],
     "route_messages": [],
-    "route_fix": [],
+    "route_fix_market": [],
     "route_market": [],
 }
 
@@ -125,14 +129,31 @@ def test_the_graph_is_the_one_the_workflow_supports(pipeline: Any) -> None:
 
 
 def test_every_task_runs_its_own_document_through_the_one_operator(pipeline: Any) -> None:
-    applications = [task for task in pipeline.tasks if type(task).__name__ == "MarimoOperator"]
+    """Eight task instances out of six documents: `parse_fix` runs three times,
+    with the category the only value that differs between them."""
+    applications = {
+        task.task_id: task for task in pipeline.tasks if type(task).__name__ == "MarimoOperator"
+    }
 
-    assert len(applications) == 6
-    for task in applications:
-        assert task.document == f"tasks/{task.task_id}/{task.task_id}.yml"
+    assert len(applications) == 8
+    assert len({task.document for task in applications.values()}) == 6
+    for task_id, task in applications.items():
         assert (ROOT / task.document).is_file()
         assert task.repository == str(ROOT)
-        assert task.parameters == {}, "Params and the interval are merged at execution time"
+        if task_id.startswith("parse_fix_"):
+            assert task.document == "tasks/parse_fix/parse_fix.yml"
+            assert task.parameters == {"category": task_id.removeprefix("parse_fix_")}
+        else:
+            assert task.document == f"tasks/{task_id}/{task_id}.yml"
+            assert task.parameters == {}, "Params and the interval merge at execution time"
+
+
+def test_the_three_fix_runs_are_the_categories_the_package_declares() -> None:
+    """The DAG names them so it can parse without importing the package; this
+    is what keeps the two spellings from drifting."""
+    from rekep.fix.rules import MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY
+
+    assert module().CATEGORIES == (MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY)
 
 
 def test_a_task_claims_only_a_table_it_writes_on_every_run(pipeline: Any) -> None:
@@ -196,28 +217,29 @@ def routed(produced: dict[str, Any], then: dict[str, str]) -> list[str] | None:
 
 
 def test_a_positive_count_routes_its_consumer() -> None:
-    assert routed(result(read=11), {"parse_fix": "read"}) == ["parse_fix"]
+    assert routed(result(read=11), {"parse_fix_market": "read"}) == ["parse_fix_market"]
 
 
 def test_a_zero_count_skips_every_consumer() -> None:
     """`None` is how a branch says "none of them", which Airflow skips."""
-    assert routed(result(read=0), {"parse_fix": "read"}) is None
+    assert routed(result(read=0), {"parse_fix_market": "read"}) is None
 
 
 def test_a_replay_that_wrote_nothing_still_reaches_its_consumer() -> None:
     """`merge_by` skips stored keys, so `written` is zero on a replay and the
     consumer still has rows to read."""
-    assert routed(result(read=11, written=0, skipped=11), {"parse_fix": "read"}) == ["parse_fix"]
+    then = {f"parse_fix_{category}": "read" for category in module().CATEGORIES}
+    assert routed(result(read=11, written=0, skipped=11), then) == list(then)
 
 
 @pytest.mark.parametrize(
     "produced",
-    [result(), result(routed={}), result(routed={"misc": 8})],
-    ids=["absent", "empty", "another-category"],
+    [result(), result(flatten={}), result(flatten={"executions": 1})],
+    ids=["absent", "empty", "another-product"],
 )
 def test_a_count_the_result_does_not_carry_is_refused(produced: dict[str, Any]) -> None:
-    with pytest.raises(ValueError, match="has no 'routed.market'"):
-        routed(produced, {"parse_market": "routed.market"})
+    with pytest.raises(ValueError, match="has no 'flatten.orders'"):
+        routed(produced, {"flatten_orders": "flatten.orders"})
 
 
 @pytest.mark.parametrize(
@@ -228,17 +250,17 @@ def test_a_count_the_result_does_not_carry_is_refused(produced: dict[str, Any]) 
 def test_a_count_that_is_not_a_count_is_refused(value: Any) -> None:
     """A boolean is an `int` in Python and is not a count here."""
     with pytest.raises(ValueError, match="not a non-negative count"):
-        routed(result(read=value), {"parse_fix": "read"})
+        routed(result(read=value), {"parse_fix_market": "read"})
 
 
 def test_the_two_readers_of_fix_market_are_routed_together() -> None:
-    then = {"parse_instruments": "routed.market", "parse_market": "routed.market"}
+    then = {"parse_instruments": "read", "parse_market": "read"}
 
-    assert routed(result(routed={"market": 2, "misc": 8}), then) == [
+    assert routed(result(task="parse_fix_market", read=2), then) == [
         "parse_instruments",
         "parse_market",
     ]
-    assert routed(result(routed={"market": 0, "misc": 8}), then) is None
+    assert routed(result(task="parse_fix_market", read=0), then) is None
 
 
 def test_book_mode_routes_each_flattener_on_its_own_count() -> None:

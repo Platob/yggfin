@@ -9,7 +9,7 @@ with app.setup:
     import marimo as mo
 
     from rekep import ArrowPath
-    from rekep.fix import FixRegistry
+    from rekep.fix import FixCodec, FixRegistry
     from rekep.fix.rules import Rules
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
@@ -130,6 +130,7 @@ def _(fix_dictionary, project_root, records):
 
 @app.cell
 def _(
+    end,
     header,
     null_values,
     pattern,
@@ -140,13 +141,19 @@ def _(
     registry,
     source,
     spill,
-    timezone,
-    end,
     start,
+    timezone,
 ):
+    _protocol_rules = (
+        Rules.into_default() if protocols is None else Rules.from_dict(protocols)
+    )
     declared = {
         "timezone": timezone,
-        "protocol_rules": Rules.into_default() if protocols is None else Rules.from_dict(protocols),
+        "protocol_codec": FixCodec(
+            registry=registry,
+            rules=_protocol_rules,
+            null_values=frozenset(null_values),
+        ),
         "msg_type_event_types": registry.msg_type_event_types(),
         "plugin_keys": plugin_keys,
         "null_values": null_values,

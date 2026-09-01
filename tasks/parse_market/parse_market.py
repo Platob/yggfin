@@ -283,8 +283,9 @@ def _(
         if book_table is None:
             market_events = NotEqualTo("eventtype", int(EventType.INSTRUMENT))
             row_filter = market_events if row_filter is None else And(row_filter, market_events)
-        # parse_fix retains failed rows in their source category for audit. They
-        # cannot mutate a book or emit a partial order from an incomplete reading.
+        # parse_fix_market retains failed rows in its source category for
+        # audit. They cannot mutate a book or emit a partial order from an
+        # incomplete reading.
         clean = IsNull("error")
         row_filter = clean if row_filter is None else And(row_filter, clean)
         reader = logs_table.read_arrow_reader(

@@ -1,6 +1,6 @@
 # Deploy and operate with Airflow
 
-Airflow runs the repository's six publishing applications as the
+Airflow runs eight publishing task instances from six task documents as the
 `rekep_market_pipeline` DAG and the catalog-wide maintenance application as
 `rekep_iceberg_maintenance`. This page covers a local first run and the
 additional requirements for a distributed deployment.
@@ -26,13 +26,15 @@ containers.
 ```mermaid
 flowchart TD
     PM[parse_messages] --> RM{route_messages}
-    RM -->|read > 0| PF[parse_fix]
-    PF --> XM[(fix.misc)]
-    PF --> XU[(fix.unknown)]
-    PF --> FM[(fix.market)]
-    PF --> RF{route_fix}
-    RF -->|routed.market > 0| PI[parse_instruments]
-    RF -->|routed.market > 0| PK[parse_market]
+    RM -->|read > 0| PFM[parse_fix_market]
+    RM -->|read > 0| PFX[parse_fix_misc]
+    RM -->|read > 0| PFU[parse_fix_unknown]
+    PFX --> XM[(fix.misc)]
+    PFU --> XU[(fix.unknown)]
+    PFM --> FM[(fix.market)]
+    PFM --> RF{route_fix_market}
+    RF -->|read > 0| PI[parse_instruments]
+    RF -->|read > 0| PK[parse_market]
     FM --> PI
     FM --> PK
     PI --> IM[(market.instruments)]
@@ -74,9 +76,9 @@ reaches an index, or writes to the environment it runs in. That environment is
 the deployment's, made once from the lock.
 
 Parameters merge once per task, later winning: the task document's defaults,
-then the operator's own `parameters`, then same-name DAG Params, then
-`data_interval_start` and `data_interval_end` into a declared `start` and
-`end`. Only a name the document already declares is set, so a task that does
+then the operator's own `parameters` -- which is where each FIX task's
+`category` comes from -- then same-name DAG Params, then `data_interval_start`
+and `data_interval_end` into a declared `start` and `end`. Only a name the document already declares is set, so a task that does
 not take `books` is never handed the scheduler's, and `optimize_iceberg`, which
 declares no interval, is handed none. Values keep their native types: `books:
 false` is the boolean.
@@ -88,12 +90,13 @@ XCom under `return_value`. Nothing else is pushed: no Arrow data, no tables, no
 reports.
 
 A `@task.branch` route reads named counts out of the producer's result and
-skips downstream work whose input count is zero: `parse_messages.read` for
-`parse_fix`, `parse_fix.routed.market` for both readers of `fix.market`, and
-`parse_market.flatten.orders` and `parse_market.flatten.executions` for the two
-flatteners. Routes read attempted counts rather than `written`, so an
-idempotent replay still reaches consumers even when the producer inserts no new
-rows.
+skips downstream work whose input count is zero: `parse_messages.read` starts
+all three `parse_fix_*` tasks, `parse_fix_market.read` starts both readers of
+`fix.market`, and `parse_market.flatten.orders` and
+`parse_market.flatten.executions` start the two flatteners. Routes read
+attempted counts rather than `written`, so an idempotent replay still reaches
+consumers even when the producer inserts no new rows. The misc and unknown FIX
+tasks are terminal and run beside the market task.
 
 Nothing is read at DAG-import time: no YAML, no application, no catalog, no
 Connection and no Variable. Parsing and serializing both DAGs takes 41-45 ms
@@ -142,8 +145,9 @@ repository. Before the first run, edit
 worker-visible directory or object-store prefix, and adjust `pattern`,
 `timezone`, header rules, payload filters, and `fix_dictionary` for it.
 
-Set the same `fix_dictionary` in `tasks/parse_fix/parse_fix.yml`; the first
-stage reads MsgType metadata and the second performs full transcription.
+Set the same `fix_dictionary` in `parse_messages.yml` and `parse_fix.yml`; the
+first stage reads MsgType metadata and the
+parallel FIX tasks perform full transcription.
 
 The active catalog configuration in every task YAML is deliberately local:
 
@@ -203,8 +207,10 @@ Keep the table wiring aligned across the documents:
 
 | Producer | Target | Consumer source |
 | --- | --- | --- |
-| `parse_messages` | `logs.messages` | `parse_fix` |
-| `parse_fix` | `fix.market` | `parse_market` |
+| `parse_messages` | `logs.messages` | all three `parse_fix_*` tasks |
+| `parse_fix_market` | `fix.market` | `parse_instruments`, `parse_market` |
+| `parse_fix_misc` | `fix.misc` | terminal audit table |
+| `parse_fix_unknown` | `fix.unknown` | terminal audit table |
 | `parse_instruments` | `market.instruments` | terminal reference table |
 | `parse_market` in book mode | `market.books` | both flatteners |
 | `parse_market` in direct mode | `market.orders`, `market.executions` | terminal tables |
@@ -456,8 +462,8 @@ An Airflow `skipped` state is expected when a route count is zero:
 
 | Result | Expected downstream state |
 | --- | --- |
-| `parse_messages.result.read == 0` | `parse_fix` and all consumers skipped |
-| no routed market messages | `parse_market` and both flatteners skipped |
+| `parse_messages.result.read == 0` | all three `parse_fix_*` tasks and all consumers skipped |
+| `parse_fix_market.result.read == 0` | both market readers and both flatteners skipped |
 | book mode with only Orders | `flatten_orders` runs; `flatten_executions` skipped |
 | book mode with only Executions | `flatten_executions` runs; `flatten_orders` skipped |
 | direct mode | both flatteners skipped; `parse_market` wrote terminal tables |
@@ -469,13 +475,15 @@ parsing and schema logic.
 
 ## Follow a table through the asset outlets
 
-Five tasks declare one Airflow `Asset` outlet, named for the table they write
-on every run:
+Seven tasks declare one Airflow `Asset` outlet, named for the table they
+write on every run:
 
 | Task | Asset |
 | --- | --- |
 | `parse_messages` | `logs.messages` |
-| `parse_fix` | `fix.market` |
+| `parse_fix_market` | `fix.market` |
+| `parse_fix_misc` | `fix.misc` |
+| `parse_fix_unknown` | `fix.unknown` |
 | `parse_instruments` | `market.instruments` |
 | `flatten_orders` | `market.orders` |
 | `flatten_executions` | `market.executions` |

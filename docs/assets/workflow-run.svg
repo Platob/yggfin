@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 980" role="img" aria-labelledby="title desc">
   <title id="title">End-to-end task and Iceberg workflow</title>
-  <desc id="desc">A GitHub repository supplies Marimo applications and YAML configuration to Apache Airflow. parse_fix writes three Apache Iceberg log tables. Only fix.market continues, through an Apache Arrow reader to two readers of it: parse_instruments, which versions InstUpdate events, and parse_market, which folds the sorted stream into books.</desc>
+  <desc id="desc">A GitHub repository supplies Marimo applications and YAML configuration to Apache Airflow. parse_fix_market, parse_fix_misc and parse_fix_unknown run in parallel and each writes one Apache Iceberg log table. Only fix.market continues, through an Apache Arrow reader to two readers of it: parse_instruments, which versions InstUpdate events, and parse_market, which folds the sorted stream into books.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
@@ -37,7 +37,7 @@
   <rect class="control" x="520" y="55" width="420" height="112" rx="15"/>
   <image href="logos/apache-airflow.svg" x="548" y="75" width="72" height="72"/>
   <text class="label" x="775" y="92">Apache Airflow + Marimo</text>
-  <text class="small" x="775" y="119">runs the six task applications</text>
+  <text class="small" x="775" y="119">runs the eight task applications</text>
   <text class="small" x="775" y="141">passes one half-open data interval</text>
   <path class="control-flow" d="M380 111 H520"/>
 
@@ -47,9 +47,9 @@
   <text class="small" x="110" y="330">local | S3 | MinIO</text>
 
   <rect class="task" x="235" y="270" width="205" height="94" rx="14"/>
-  <text class="label" x="338" y="299">parse_fix</text>
-  <text class="small" x="338" y="324">parse + route raw rows</text>
-  <text class="small" x="338" y="345">resolve unix + Instrument</text>
+  <text class="label" x="338" y="299">parse_fix_* &#215; 3</text>
+  <text class="small" x="338" y="324">market | misc | unknown</text>
+  <text class="small" x="338" y="345">parallel filtered scans</text>
   <path class="flow" d="M190 317 H235"/>
   <path class="control-flow" d="M730 167 V205 H338 V270"/>
   <text class="edge-label" x="535" y="196">DAG dependencies follow the data edges</text>

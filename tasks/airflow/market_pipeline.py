@@ -23,28 +23,36 @@ HOURLY = CronDataIntervalTimetable("0 * * * *", timezone="UTC")
 #: keeps the DAG somewhere else.
 ROOT = str(Path(__file__).resolve().parents[2])
 
-#: The tables a task writes on every run, named by the identifier the catalog
-#: knows them by. `parse_market` writes books or events depending on its
-#: `books` parameter, so it declares none: an asset event is a claim that the
-#: table was written, and only these five are unconditional.
+#: The message categories `parse_fix` runs once each, in the spelling
+#: `rekep.fix.rules` gives them. Named here rather than imported, so the DAG
+#: parses without the package a worker runs the task under.
+CATEGORIES = ("market", "misc", "unknown")
+
+#: The table a task writes on every run, keyed by its Airflow task id and named
+#: by the identifier the catalog knows it as. `parse_market` writes books or
+#: events depending on its `books` parameter, so it declares none: an asset
+#: event is a claim that one named table was written.
 WRITES = {
     "parse_messages": "logs.messages",
-    "parse_fix": "fix.market",
+    **{f"parse_fix_{category}": f"fix.{category}" for category in CATEGORIES},
     "parse_instruments": "market.instruments",
     "flatten_orders": "market.orders",
     "flatten_executions": "market.executions",
 }
 
 
-def marimo_task(name: str, **kwargs: Any) -> MarimoOperator:
+def marimo_task(name: str, task_id: str | None = None, **kwargs: Any) -> MarimoOperator:
     """One task application, named once.
 
-    Everything else is a `BaseOperator` argument -- retries, pools, queue,
-    execution timeout, callbacks -- and reaches Airflow unchanged.
+    `task_id` names the Airflow task when one document runs more than once --
+    `parse_fix` is three, one per message category. Everything else is a
+    `BaseOperator` argument -- retries, pools, queue, execution timeout,
+    callbacks -- and reaches Airflow unchanged.
     """
-    written = WRITES.get(name)
+    task_id = task_id or name
+    written = WRITES.get(task_id)
     return MarimoOperator(
-        task_id=name,
+        task_id=task_id,
         repository=ROOT,
         document=f"tasks/{name}/{name}.yml",
         doc_md=f"`tasks/{name}/{name}.py`, configured by `tasks/{name}/{name}.yml`.",
@@ -88,22 +96,31 @@ def route(result: Any, then: dict[str, str]) -> list[str] | None:
 )
 def market_pipeline() -> None:
     messages = marimo_task("parse_messages")
-    parsed = marimo_task("parse_fix")
+    # Category is the only per-run input; the application derives its table and
+    # the task name it reports from it, so neither can drift from the rows it
+    # selected.
+    parsed = {
+        category: marimo_task(
+            "parse_fix", f"parse_fix_{category}", parameters={"category": category}
+        )
+        for category in CATEGORIES
+    }
     instrument_updates = marimo_task("parse_instruments")
     market = marimo_task("parse_market")
     orders = marimo_task("flatten_orders")
     executions = marimo_task("flatten_executions")
 
     messages_route = route.override(task_id="route_messages")(
-        result=messages.output, then={"parse_fix": "read"}
+        result=messages.output,
+        then={f"parse_fix_{category}": "read" for category in CATEGORIES},
     )
-    messages_route >> parsed
+    messages_route >> list(parsed.values())
 
-    # Both read `fix.market`, neither writes what the other reads, so they run
-    # side by side on the one count that says the table gained rows.
-    fix_route = route.override(task_id="route_fix")(
-        result=parsed.output,
-        then={"parse_instruments": "routed.market", "parse_market": "routed.market"},
+    # Both consumers read `fix.market`; the two terminal FIX tasks have no
+    # downstream work and never hold this branch open.
+    fix_route = route.override(task_id="route_fix_market")(
+        result=parsed["market"].output,
+        then={"parse_instruments": "read", "parse_market": "read"},
     )
     fix_route >> [instrument_updates, market]
 

@@ -1292,7 +1292,17 @@ def test_a_result_naming_another_task_is_refused(
     application = APPLICATION.replace('Stage("sample"', 'Stage("other"')
 
     assert run("task", "run", task(tmp_path, application=application)) == 1
-    assert "returned 'other', not 'sample'" in capsys.readouterr().err
+    assert "returned 'other', not a sample run" in capsys.readouterr().err
+
+
+def test_one_document_may_run_under_a_discriminated_name(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """`parse_fix` is one document and three runs, one per message category."""
+    application = APPLICATION.replace('Stage("sample"', 'Stage("sample_market"')
+
+    assert run("task", "run", task(tmp_path, application=application)) == 0
+    assert json.loads(capsys.readouterr().out)["task"] == "sample_market"
 
 
 def test_a_failing_cell_leaves_no_result_and_says_where_it_raised(

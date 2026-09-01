@@ -1101,7 +1101,7 @@ def _widened(batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
 
 
 def test_a_batch_scanned_back_out_of_storage_transcribes_the_same() -> None:
-    """The whole `parse_fix` stage reads its rows back through a scan, which
+    """Each `parse_fix_*` stage reads its rows back through a scan, which
     hands `large_string` back where the raw contract says `string` -- and the
     kernels this path builds its own constants for refuse the mix."""
     rows = [
@@ -1115,7 +1115,7 @@ def test_a_batch_scanned_back_out_of_storage_transcribes_the_same() -> None:
 
 
 def test_a_projected_batch_keeps_the_column_the_reader_left_behind() -> None:
-    """`parse_fix` projects `body` away and parses the stored entries. The
+    """`parse_fix_*` projects `body` away and parses the stored entries. The
     declaration must not fill it back in: an all-null text column would send
     the classifier down the path that reads text, over rows that have none."""
     rows = [Message(body="8=FIX.4.4\x0135=D\x0111=C1\x0110=000\x01", recunix=1)]
@@ -1975,7 +1975,7 @@ def test_fixmsg_conversion_is_the_layer_that_parses_fix(
         "ISINCODE",
     ], "only the discriminator answers to a rendered header name"
     assert raw.column("msgseqnum").to_pylist() == ["7", None, None], "text, until this stage"
-    assert _protocols(raw) == ["FIX", "UL", "OTHER"]
+    assert _protocols(raw) == ["FIX4.4", "UL4.4", "OTHER"]
     assert "OrigClOrdID" not in raw.schema.names
 
     parsed = FixMsg.from_message_batch(raw, codec)
@@ -2048,7 +2048,7 @@ def test_fixmsg_projection_does_not_need_the_raw_message(
     assert projected.column("entries").equals(whole.column("entries"))
     assert projected.column("hash").equals(whole.column("hash"))
     assert "body" not in projected.schema.names
-    # The production shape: `parse_fix` reads with `body` projected out,
+    # The production shape: `parse_fix_*` reads with `body` projected out,
     # so the direction the message stage stored is the one the parsed row
     # carries -- identical to what the text would have answered.
     assert whole.column("direction").to_pylist() == [
@@ -3034,7 +3034,7 @@ def test_ul_glued_explicit_groups_are_partial_lossless_and_row_isolated(
 
     parsed = FixMsg.from_message_batch(_raw_batch(clean, mismatched), codec)
 
-    assert _protocols(parsed) == ["UL4.4", "UL4.4"]
+    assert _protocols(parsed) == ["UL5SP2", "UL5SP2"]
     expected = [
         {
             "partyid": None,
@@ -3077,11 +3077,11 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
         body="RouteMessage : BEGINSTRING=FIX.4.4|ACCOUNT=807768.001"
         "|MSGTYPE=D|CLORDID=PL024819|SIDE=1"
     )
-    assert echo.protocol is Protocol.UL
+    assert echo.protocol is Protocol.from_str("UL4.4")
     heartbeat = Message(body="heartbeat emitted seq=7")
     assert heartbeat.protocol is Protocol.MISC
     wrapped = Message(body="sending >> 8=FIX.4.2|35=UL|#SYMBOL=TTF|#SIDE=1|10=044|")
-    assert wrapped.protocol is Protocol.FIXML
+    assert wrapped.protocol is Protocol.from_str("FIXML4.2")
 
     batch = FixMsg.from_message_batch(_raw_batch(echo, heartbeat, wrapped), codec)
     assert _protocols(batch) == ["UL4.4", "MISC", "FIXML4.2"]
@@ -3090,14 +3090,14 @@ def test_the_two_stages_classify_a_row_the_same_way(codec: FixCodec, registry: F
     assert batch.column("msgtype").to_pylist()[0] == "D"
     assert batch.column("entries").to_pylist()[1] is None, "operational rows stay unread"
 
-    # The task's UL default supplies a reproducible dictionary version where
-    # the bridge states none, and the resolved token persists that choice.
+    # Registry latest supplies a reproducible dictionary version where the
+    # bridge states none, and the resolved token persists that choice.
     bare = Message(
         body="After Enrichment -> ACCOUNT=59.1|MSGTYPE=NewOrderSingle|CLORDID=PL9|SIDE=2"
     )
-    assert bare.protocol is Protocol.UL
+    assert bare.protocol is Protocol.from_str("UL5SP2")
     lone = FixMsg.from_message_batch(_raw_batch(bare), codec)
-    assert _protocols(lone) == ["UL4.4"]
+    assert _protocols(lone) == ["UL5SP2"]
     assert "protocolversion" not in lone.schema.names
     assert lone.column("msgtype").to_pylist() == ["D"]
     assert lone.column("eventtype").to_pylist() == [int(EventType.ORDER)]
@@ -3113,7 +3113,7 @@ def test_a_custom_empty_rule_set_reclassifies_a_staged_message(
     registry: FixRegistry,
 ) -> None:
     raw = _raw_batch(Message(body="#MSGTYPE=D|#CLORDID=SYNTH|"))
-    assert _protocols(raw) == ["UL"]
+    assert _protocols(raw) == ["UL5SP2"]
 
     parsed = FixMsg.from_message_batch(
         raw,
@@ -3184,9 +3184,9 @@ def test_direction_reads_the_verb_before_the_payload(
     # A named document has an anchor of its own, so a verb in front of one
     # answers exactly as it does in front of a frame.
     named = Message(body="Sending : ACCOUNT=A1|MSGTYPE=D|PRICE=9.5")
-    assert named.protocol is Protocol.UL
+    assert named.protocol is Protocol.from_str("UL5SP2")
     document = FixMsg.from_message_batch(_raw_batch(named), codec)
-    assert _protocols(document) == ["UL4.4"]
+    assert _protocols(document) == ["UL5SP2"]
     assert document.column("direction").to_pylist() == [int(Direction.SENT)]
 
     # A projected row reparsed without its raw message keeps the resolved
@@ -3491,12 +3491,14 @@ def test_unknown_versions_and_tags_remain_forward_compatible_non_errors(
 
     assert _protocols(parsed) == ["FIX9.9"]
     assert parsed.column("error").to_pylist() == [None]
+    assert parsed.column("clordid").to_pylist() == ["C1"]
+    assert parsed.column("checksum").to_pylist() == ["000"]
     retained = [
         entry["value"]
         for name in ("entries", "unmap")
         for entry in (parsed.column(name)[0].as_py() or ())
     ]
-    assert set(retained) == {"C1", "future", "abc", "000"}
+    assert set(retained) == {"future", "abc"}
 
 
 def test_the_scalar_row_and_the_batch_lift_the_same_instrument(codec: FixCodec) -> None:

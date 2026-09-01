@@ -22,7 +22,7 @@ from rekep.arrow_path import ArrowPath
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import Dataset
 from rekep.fields import StructField
-from rekep.filesystems import resolve
+from rekep.filesystems import ArrowFile
 from rekep.text.text_file import (
     DEFAULT_BATCH_BYTE_SIZE,
     DEFAULT_BATCH_ROW_SIZE,
@@ -118,8 +118,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
     #: Registry-owned MsgType values shared by every file in the stream.
     msg_type_event_types: Mapping[str, int | str] = dataclass_field(default_factory=dict)
 
-    #: Syntax-only protocol classifier shared by every file in the stream.
-    protocol_rules: Any | None = None
+    #: Protocol classifier and registry-version authority shared by every file.
+    protocol_codec: Any | None = None
 
     #: Raw key replacements selected by each row's source plugin.
     plugin_keys: Mapping[str, Mapping[str, str]] = dataclass_field(default_factory=dict)
@@ -137,28 +137,30 @@ class TextFiles(Dataset, io.BufferedIOBase):
     static_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Resolve one filesystem for every root, and rewrite the roots as paths on it."""
+        """Normalize every root URI and retain its path on the shared filesystem."""
         self.header_pattern = compiled_header(self.header_pattern)
         self.plugin_keys = {
             str(plugin): dict(replacements) for plugin, replacements in self.plugin_keys.items()
         }
         self.null_values = tuple(str(value) for value in self.null_values)
-        self.roots = tuple(self.roots)
-        if self.filesystem is not None or not self.roots:
-            return
-        resolved: list[str] = []
+        declared_filesystem = self.filesystem
+        roots: list[str] = []
+        paths: list[str] = []
         for root in self.roots:
-            filesystem, path = resolve(root)
+            source = ArrowPath.from_url(root, declared_filesystem)
+            filesystem = source.filesystem
             if self.filesystem is None:
                 self.filesystem = filesystem
             elif not self.filesystem.equals(filesystem):
                 raise ValueError(
-                    f"{root!r} is on {filesystem.type_name}, and this set is already reading "
+                    f"{source.uri!r} is on {filesystem.type_name}, and this set is already reading "
                     f"{self.filesystem.type_name}; one set is one stream off one store, so read "
                     "each store with its own TextFiles"
                 )
-            resolved.append(path)
-        self.roots = tuple(resolved)
+            roots.append(source.uri)
+            paths.append(source.path)
+        self.roots = tuple(roots)
+        self.__dict__["_root_paths"] = tuple(paths)
 
     # -- building -----------------------------------------------------------
 
@@ -215,7 +217,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         builder that would only do the same thing under another name.
         """
         return cls(
-            roots=tuple(_root(source, filesystem) for source in sources),
+            roots=tuple(_root(source) for source in sources),
             filesystem=filesystem,
             **declared,
         )
@@ -354,7 +356,7 @@ class TextFiles(Dataset, io.BufferedIOBase):
         filesystem = self.filesystem
         if filesystem is None:
             return
-        for root in self.roots:
+        for root in self.__dict__["_root_paths"]:
             info = ArrowPath(root, filesystem).info()
             if info.type == pyarrow.fs.FileType.Directory:
                 yield from self._walk(root)
@@ -367,8 +369,8 @@ class TextFiles(Dataset, io.BufferedIOBase):
                 )
 
     def into_urls(self) -> Iterator[str]:
-        """The path of every log in the set, in the order it is read."""
-        return (info.path for info in self.into_file_infos())
+        """The normalized URI of every log in the order it is read."""
+        return (self._url_of(info.path) for info in self.into_file_infos())
 
     def into_files(self) -> Iterator[TextFile]:
         """Every log as a `TextFile`, carrying this set's declaration.
@@ -379,18 +381,42 @@ class TextFiles(Dataset, io.BufferedIOBase):
         """
         for info in self.into_file_infos():
             yield self.into_file()(
-                url=info.path,
+                url=self._url_of(info.path),
                 filesystem=self.filesystem,
+                fileio=ArrowFile.from_location(info.path, self.filesystem),
                 header_pattern=self.header_pattern,
                 row=self.row,
                 timezone=self.timezone,
                 msg_type_event_types=self.msg_type_event_types,
-                protocol_rules=self.protocol_rules,
+                protocol_codec=self.protocol_codec,
                 plugin_keys=self.plugin_keys,
                 null_values=self.null_values,
                 spill=self.spill,
                 static_values=self.static_values,
             )
+
+    def _url_of(self, path: str) -> str:
+        """The normalized root URI extended to one listed filesystem path."""
+        normalized = path.replace("\\", "/")
+        for root_path, root_url in self._url_roots:
+            prefix = root_path.replace("\\", "/").rstrip("/")
+            if normalized == prefix:
+                return root_url
+            if normalized.startswith(f"{prefix}/"):
+                relative = normalized[len(prefix) + 1 :]
+                return Url.from_string(root_url).join(relative).into_string()
+        raise ValueError(f"listed path {path!r} is outside the declared roots")
+
+    @cached_property
+    def _url_roots(self) -> tuple[tuple[str, str], ...]:
+        """Filesystem roots paired with URIs, longest path first."""
+        return tuple(
+            sorted(
+                zip(self.__dict__["_root_paths"], self.roots, strict=True),
+                key=lambda pair: len(pair[0]),
+                reverse=True,
+            )
+        )
 
     def _walk(self, directory: str, seen: set[str] | None = None) -> Iterator[pyarrow.fs.FileInfo]:
         """One directory, in path order, descending as the names come up."""
@@ -722,11 +748,6 @@ def _natural(info: pyarrow.fs.FileInfo) -> tuple[tuple[int, int | str, str], ...
     )
 
 
-def _root(source: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None) -> str:
-    """A source as this set addresses it: a URI, whatever it arrived as."""
-    text = os.fspath(source)
-    if filesystem is None:
-        return Url.from_string(text).into_string()
-    if isinstance(filesystem, pyarrow.fs.LocalFileSystem):
-        return Url.from_string(text).path
-    return text
+def _root(source: str | os.PathLike[str]) -> str:
+    """A source in the spelling the caller supplied for normalization once."""
+    return source.uri if isinstance(source, ArrowPath) else os.fspath(source)

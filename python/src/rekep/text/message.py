@@ -41,6 +41,15 @@ _CHECKSUM_KEYS = tuple(
     column_name(name) for name in ("10", "CheckSum", "Trailer.10", "Trailer.CheckSum")
 )
 
+
+@functools.cache
+def _default_protocol_codec() -> Any:
+    """Packaged registry and rules for direct Message construction."""
+    from rekep.fix.transcribe import FixCodec
+
+    return FixCodec()
+
+
 #: The standard header and trailer a raw row lifts out of `entries`, by the FIX
 #: tag each of them is written under. They are lifted here because they are
 #: *parsed* here -- on a fifteen-field NewOrderSingle they are nearly half of
@@ -140,7 +149,7 @@ class Message(Event):
         return _CONTRACT_METADATA
 
     sourceurl: Annotated[str, Field.column("SourceURL")] = ""
-    """Path of the log the row came from, as its filesystem addresses it."""
+    """Normalized absolute URI of the log the row came from."""
 
     sourcerownum: Annotated[int, Field.column("SourceRownum")] = 0
     """1-based physical line number of the header; 0 when not read from a file."""
@@ -152,7 +161,7 @@ class Message(Event):
     """Payload after the fixed log header, with continuation lines folded in."""
 
     protocol: Protocol = Protocol.OTHER
-    """Protocol syntax detected without interpreting its fields."""
+    """Protocol grammar and resolved registry version; OTHER carries neither."""
 
     # The whole standard header and trailer, in `SESSION_NAMES` order, which
     # is the FIX stage's own -- so the two stages carry the header in the same
@@ -256,7 +265,7 @@ class Message(Event):
     # Resolved by `parse_arrow`, where the raw line and its protocol reading
     # coexist -- the verb before the payload's own first token is the
     # direction, and prose inside the payload never answers. Resolved *here*
-    # because `parse_fix` may read these rows back with `body` projected out:
+    # because `parse_fix_*` may read these rows back with `body` projected out:
     # the FIX stage re-answers any row still carrying its body and preserves
     # this answer where the body is gone. UNKNOWN marks rows no directed
     # protocol claims and bridge re-log lines that repeat a payload without
@@ -284,8 +293,11 @@ class Message(Event):
                 pyarrow.array([self.body], pyarrow.binary()),
                 plugins=pyarrow.array([self.plugin.code], pyarrow.string()),
             )
+            parsed_protocol = Protocol.from_stored(parsed["protocol"][0].as_py())
             if self.protocol is Protocol.OTHER:
-                self.protocol = Protocol.from_stored(parsed["protocol"][0].as_py())
+                self.protocol = parsed_protocol
+            elif parsed_protocol.version is not None:
+                self.protocol = Protocol.with_version(self.protocol, parsed_protocol.version)
             if self.direction is Direction.UNKNOWN:
                 self.direction = Direction.from_int(parsed["direction"][0].as_py())
             if (error := parsed["parseerror"][0].as_py()) is not None:
@@ -351,7 +363,7 @@ class Message(Event):
         bodies: Any,
         msg_type_event_types: Mapping[str, EventType | int | str] | None = None,
         plugins: Any | None = None,
-        protocol_rules: Any | None = None,
+        protocol_codec: Any | None = None,
         plugin_keys: Mapping[str, Mapping[str, str]] | None = None,
         null_values: Any = (),
     ) -> dict[str, Any]:
@@ -365,7 +377,7 @@ class Message(Event):
                         chunk,
                         msg_type_event_types,
                         plugin_chunk,
-                        protocol_rules,
+                        protocol_codec,
                         plugin_keys,
                         null_values,
                     )
@@ -402,8 +414,6 @@ class Message(Event):
                 "direction": pyarrow.array([], _DIRECTION_CODE),
             }
 
-        from rekep.fix.rules import Rules
-
         compute = pyarrow.compute
         text = _body_text_arrow(bodies)
         entries = Entry.normalized_arrow(
@@ -413,7 +423,8 @@ class Message(Event):
         # they are handed over rather than parsed a second time -- and before
         # the header is lifted out of them, because a frame whose every numbered
         # tag is a session field is still a frame.
-        rules = Rules.into_default() if protocol_rules is None else protocol_rules
+        codec = _default_protocol_codec() if protocol_codec is None else protocol_codec
+        rules = codec.rules
         protocols = rules.into_arrow_protocol_array(text, plugins, entries)
         families = Protocol.into_family_arrow(protocols)
         xml = compute.equal(families, Protocol.XML.into_stored())
@@ -428,6 +439,12 @@ class Message(Event):
         entries = compute.if_else(referential, referential_entries, entries)
         parse_errors = compute.coalesce(parse_errors, referential_errors)
         session, entries = _session_columns(entries)
+        protocols = codec.into_versioned_protocols(
+            entries,
+            session.get("beginstring"),
+            session.get("applverid"),
+            protocols,
+        )
         msg_types = compute.coalesce(session[_MSG_TYPE], _msg_type_probe(text))
         event_types = _event_types(msg_types, msg_type_event_types)
         event_types = compute.if_else(
@@ -436,7 +453,7 @@ class Message(Event):
             event_types,
         )
         # Direction is resolved here, where the raw line and its protocol
-        # last coexist: `parse_fix` may read the stored rows with `body`
+        # last coexist: `parse_fix_*` may read the stored rows with `body`
         # projected out, so an answer not stored now is an answer lost. The
         # FIX stage re-resolves any row still carrying its text -- the same
         # computation -- and preserves this one where the text is gone.

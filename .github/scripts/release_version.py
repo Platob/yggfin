@@ -59,7 +59,13 @@ def project_version(pyproject: Path) -> str:
     declared = project.get("version")
     if not declared:
         raise ValueError(f"{pyproject} declares no version")
-    return str(declared)
+    version = str(declared)
+    parsed = Version(version)
+    if len(parsed.release) != 3 or str(parsed) != version:
+        raise ValueError(
+            f"{pyproject} version must be canonical MAJOR.MINOR.PATCH, got {version!r}"
+        )
+    return version
 
 
 def released(directory: Path) -> list[Version]:

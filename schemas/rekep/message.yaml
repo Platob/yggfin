@@ -112,7 +112,7 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
 - name: sourceurl
   type: string
-  description: Path of the log the row came from, as its filesystem addresses it.
+  description: Normalized absolute URI of the log the row came from.
   fix: {name: SourceURL}
 - name: sourcerownum
   type: int64
@@ -127,7 +127,7 @@ fields:
   description: Payload after the fixed log header, with continuation lines folded in.
 - name: protocol
   type: fixed_size_binary[16]
-  description: Protocol syntax detected without interpreting its fields.
+  description: Protocol grammar and resolved registry version; OTHER carries neither.
   enum: {name: Protocol, key_type: 'fixed_size_binary[16]', values: '{"00000000000000000000000000000000":"UNKNOWN","46495800000000000000000000000000":"FIX","4649584d4c0000000000000000000000":"FIXML","584d4c00000000000000000000000000":"XML","554c0000000000000000000000000000":"UL","52454645520000000000000000000000":"REFERENTIAL","4d495343000000000000000000000000":"MISC","4f544845520000000000000000000000":"OTHER"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '16', padding: nul-right, aliases: '{"REFERENTIAL":"REFER"}', pattern: '[A-Z0-9._-]{1,16}'}
 - name: beginstring
   type: string

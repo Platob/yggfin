@@ -184,7 +184,7 @@ def _structured_protocol(source: Message, registry: FixRegistry | None) -> Proto
         evidence.append(("1128", source.applverid))
     evidence.extend(_stored_pairs(source.entries))
     version, _ = infer_version_from_pairs(evidence, registry or FixMsg.into_registry())
-    return Protocol.FIX if version is not None else declared
+    return Protocol.with_version(Protocol.FIX, version) if version is not None else declared
 
 
 @functools.lru_cache(maxsize=8)
@@ -1490,16 +1490,22 @@ class FixMsg(Message):
                 pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
             )
             protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugin"))
-            direction = codec.rules.into_arrow_direction_array(messages, protocols)
             if stored_protocols is not None:
+                stored_protocols = pyarrow.compute.fill_null(
+                    stored_protocols.cast(_PROTOCOL_CODE, safe=False),
+                    Protocol.OTHER.into_stored(),
+                )
+                same_family = pyarrow.compute.equal(
+                    Protocol.into_family_arrow(protocols),
+                    Protocol.into_family_arrow(stored_protocols),
+                )
+                classified = pyarrow.compute.if_else(same_family, stored_protocols, protocols)
                 protocols = pyarrow.compute.if_else(
                     carries_text,
-                    protocols,
-                    pyarrow.compute.fill_null(
-                        stored_protocols.cast(_PROTOCOL_CODE, safe=False),
-                        Protocol.OTHER.into_stored(),
-                    ),
+                    classified,
+                    stored_protocols,
                 )
+            direction = codec.rules.into_arrow_direction_array(messages, protocols)
             if stored_direction is not None:
                 direction = pyarrow.compute.if_else(carries_text, direction, stored_direction)
             columns["direction"] = direction
@@ -1713,25 +1719,15 @@ class FixMsg(Message):
             positions.append(where)
         entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
         begin_strings = cls._begin_strings_arrow(columns, rows)
-        versions, _ = codec.versions_of_entries(
+        protocols = codec.into_versioned_protocols(
             entries,
             begin_strings,
             columns.get("applverid"),
             protocols,
         )
-        public_versions = pyarrow.compute.coalesce(versions, begin_strings)
-        # The raw classifier owns the grammar. Version evidence decorates a
-        # protocol it claimed; it must not reclaim a row one configured rule
-        # rejected as OTHER.
-        claimed = pyarrow.compute.not_equal(
-            Protocol.into_family_arrow(protocols), Protocol.OTHER.into_stored()
-        )
-        public_versions = pyarrow.compute.if_else(
-            claimed, public_versions, pyarrow.scalar(None, pyarrow.string())
-        )
         columns.update(
             {
-                "protocol": Protocol.with_versions_arrow(protocols, public_versions),
+                "protocol": protocols,
                 "entries": entries,
             }
         )

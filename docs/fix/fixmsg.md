@@ -215,17 +215,17 @@ indexed group members are never treated as duplicates.
 
 ## Stored categories
 
-`parse_fix` partitions the table with two pushed scans — the market code set
-(kinds ranked at least `INTENT`) and its complement:
+The one `parse_fix` definition receives a category for three independent,
+mutually exclusive Iceberg scans:
 
-| table | what lands there |
-| --- | --- |
-| `fix.market` | the market code set |
-| `fix.misc` | non-technical `MISC`, and an unknown discriminator on a recognized transport |
-| `fix.unknown` | an unknown event on an unrecognized transport |
+| task | table | pushed selection |
+| --- | --- | --- |
+| `parse_fix_market` | `fix.market` | kinds ranked at least `INTENT` |
+| `parse_fix_misc` | `fix.misc` | not market, and either `MISC` or a recognized protocol |
+| `parse_fix_unknown` | `fix.unknown` | not market, not `MISC`, and an unrecognized protocol |
 
-MsgTypes listed by `parse_fix.exclude_msgtypes` enter no FIX table, and
-technical plugins never reach its source. Every resulting `FixMsg` schema
+MsgTypes listed by the shared `exclude_msgtypes` parameter enter no FIX table,
+and technical plugins never reach the source. Every resulting `FixMsg` schema
 excludes `body`.
 
 Market readers consume only `fix.market`, ordered by

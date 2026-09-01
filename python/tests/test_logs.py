@@ -192,12 +192,12 @@ def test_every_task_returns_the_same_keys(caplog: pytest.LogCaptureFixture) -> N
     sixth."""
     with caplog.at_level(logging.INFO, logger=ROOT):
         stage = Stage(
-            "parse_fix",
+            "parse_fix_market",
             sources={"messages": "logs.messages"},
             targets={"market": "fix.market"},
             window=(1_755_000_000_000_000_000, 1_755_003_600_000_000_000),
         )
-        result = stage.finished(read=11, written=9, routed={"market": 2})
+        result = stage.finished(read=11, written=9, category="market")
 
     assert set(result) == {
         "task",
@@ -208,16 +208,16 @@ def test_every_task_returns_the_same_keys(caplog: pytest.LogCaptureFixture) -> N
         "targets",
         "window",
         "elapsed_ms",
-        "routed",
+        "category",
     }
-    assert result["task"] == "parse_fix"
+    assert result["task"] == "parse_fix_market"
     assert result["skipped"] == 2, "what was read and not written, unless a task says otherwise"
     assert result["window"] == {
         "start": 1_755_000_000_000_000_000,
         "end": 1_755_003_600_000_000_000,
     }
     assert isinstance(result["elapsed_ms"], int)
-    assert result["routed"] == {"market": 2}, "what a task alone knows keeps its own name"
+    assert result["category"] == "market", "what a task alone knows keeps its own name"
 
 
 def test_a_stage_records_the_numbers_it_returns(caplog: pytest.LogCaptureFixture) -> None:

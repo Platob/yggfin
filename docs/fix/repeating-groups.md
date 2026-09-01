@@ -24,10 +24,11 @@ entry index:
 #NoPartyIDs=1|#NoPartyIDs[0]=PartyID=P-1PartyIDSource=DPartyRole=3
 ```
 
-`parse_fix` splits only names declared by that group's registry component. It
-uses the longest declared match, extracts partial or out-of-order indices, and
-leaves unknown members in `entries`. A disputed split or a count that differs
-from the indexed members is kept in the row's `error`; the row still parses.
+Each `parse_fix_*` task splits only names declared by that group's registry
+component. It uses the longest declared match, extracts partial or
+out-of-order indices, and leaves unknown members in `entries`. A disputed
+split or a count that differs from the indexed members is kept in the row's
+`error`; the row still parses.
 
 ## Control-separated members
 
@@ -50,14 +51,14 @@ print(row["parties"])
 ```
 
 ```text
-4.4
+5.0.SP2
 [{'partyid': 'SYNTH-01', 'partyidsource': 'P', 'partyrole': 16, 'partyrolequalifier': 30}]
 ```
 
 The outer `|` keeps the indexed entry together; EOT/ETX separates members
 inside it. The registry supplies member boundaries and turns unambiguous value
-meanings into FIX codes. The recorded UL default remains `4.4`; current
-standard metadata may fill a member that a venue backported to that version.
+meanings into FIX codes. This evidence-free UL row records the packaged
+registry's newest application version, currently `5.0.SP2`.
 
 Unknown venue meanings stay lossless:
 

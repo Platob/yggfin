@@ -13,7 +13,7 @@ from rekep.enums import Protocol
 from rekep.fields.arrays import build_list, dense_counts, sequence
 from rekep.fix.columns import COLUMNS, TYPES
 from rekep.fix.fields import cast_arrow_field
-from rekep.fix.transcribe import BEGIN_STRING_SOURCE, _raw_spelling_changed, _version_key
+from rekep.fix.transcribe import _raw_spelling_changed
 
 
 def into_flat_fixmsg_batch(
@@ -33,7 +33,8 @@ def into_flat_fixmsg_batch(
         or not _supports(codec)
         or protocols.null_count
         or not compute.all(
-            compute.equal(protocols, Protocol.FIX.into_stored()), min_count=0
+            compute.equal(Protocol.into_family_arrow(protocols), Protocol.FIX.into_stored()),
+            min_count=0,
         ).as_py()
     ):
         return None
@@ -76,9 +77,13 @@ def into_flat_fixmsg_batch(
     ):
         return None
 
-    versions, _ = _versions(
-        codec, entries, tags, values, rows, columns.get("beginstring"), columns.get("applverid")
+    versioned_protocols = codec.into_versioned_protocols(
+        entries,
+        shape._begin_strings_arrow(columns, rows),
+        columns.get("applverid"),
+        protocols,
     )
+    versions = Protocol.into_versions_arrow(versioned_protocols)
     distinct_versions = compute.drop_null(compute.unique(versions))
     if versions.null_count or len(distinct_versions) != 1:
         return None
@@ -104,7 +109,7 @@ def into_flat_fixmsg_batch(
     output = dict(columns)
     output.update(
         {
-            "protocol": Protocol.with_versions_arrow(protocols, versions),
+            "protocol": versioned_protocols,
             "entries": residual,
             "unmap": unmap,
             **promoted,
@@ -145,58 +150,6 @@ def _namespaced_column_tags(codec: Any, dtype: pyarrow.DataType) -> pyarrow.Arra
         ),
         dtype,
     )
-
-
-def _versions(
-    codec: Any,
-    entries: pyarrow.Array,
-    tags: pyarrow.Array,
-    values: pyarrow.Array,
-    rows: int,
-    begin_strings: pyarrow.Array | None,
-    application_versions: pyarrow.Array | None = None,
-) -> tuple[pyarrow.Array, pyarrow.Array]:
-    """Resolve one common non-transport BeginString once for the whole batch.
-
-    `begin_strings` and `application_versions` are the columns the raw stage
-    lifted those two tags into. Each leads and `entries` fills it, which is
-    the one rule every lifted column is read under: a column that is null and
-    a column a projection dropped are the same absence, and the tag is still
-    in the list either way. Stated rather than defaulted, so a caller says
-    which of the two it is handing over.
-    """
-    spelled = _begin_strings(entries, tags, values, rows, begin_strings)
-    if spelled is not None and spelled.null_count == 0:
-        distinct = compute.unique(spelled)
-        if len(distinct) == 1:
-            spelling = distinct[0].as_py()
-            if not _version_key(spelling).startswith("FIXT"):
-                version = codec.version_named(spelling)
-                if version is not None:
-                    return (
-                        pyarrow.repeat(pyarrow.scalar(version), rows),
-                        pyarrow.repeat(pyarrow.scalar(BEGIN_STRING_SOURCE), rows),
-                    )
-    return codec.versions_of_entries(entries, begin_strings, application_versions)
-
-
-def _begin_strings(
-    entries: pyarrow.Array,
-    tags: pyarrow.Array,
-    values: pyarrow.Array,
-    rows: int,
-    lifted: pyarrow.Array | None,
-) -> pyarrow.Array | None:
-    """One `BeginString` per row, from the column first and the tag second."""
-    begins = compute.equal(tags, 8)
-    inline = None
-    if compute.sum(begins, min_count=0).as_py() == rows:
-        inline = compute.filter(values, begins)
-    if lifted is None:
-        return inline
-    column = lifted.combine_chunks() if isinstance(lifted, pyarrow.ChunkedArray) else lifted
-    column = column.cast(pyarrow.string(), safe=False)
-    return column if inline is None else compute.coalesce(column, inline)
 
 
 def _complete_tagged(codec: Any, entries: pyarrow.Array, version: str) -> pyarrow.Array:

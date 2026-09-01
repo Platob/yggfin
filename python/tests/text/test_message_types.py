@@ -7,6 +7,7 @@ import pytest
 
 import rekep.text.entries as entries
 from rekep.enums import EventType, Protocol
+from rekep.fix import FixCodec
 from rekep.text import Entry, Message
 
 
@@ -123,7 +124,7 @@ def test_named_message_types_use_the_same_registry_mapping() -> None:
     found = parsed("MsgType=8|Text=rendered|", "#MSGTYPE=W|#Text=marked|")
 
     assert found["msgtype"].to_pylist() == ["8", "W"]
-    assert _protocols(found) == ["UL", "UL"]
+    assert _protocols(found) == ["UL5SP2", "UL5SP2"]
     assert found["eventtype"].to_pylist() == [
         int(EventType.EXECUTION),
         int(EventType.BOOK),
@@ -134,7 +135,7 @@ def test_user_defined_wire_wrapper_falls_back_to_named_kind() -> None:
     found = parsed("8=FIX.4.4|35=UL|#MSGTYPE=D|#SIDE=1|")
 
     assert found["msgtype"].to_pylist() == ["D"]
-    assert _protocols(found) == ["FIXML"], "tags and names together"
+    assert _protocols(found) == ["FIXML4.4"], "tags and names together"
     assert found["beginstring"].to_pylist() == ["FIX.4.4"]
     residual = found["entries"].to_pylist()[0]
     assert [entry["key"] for entry in residual] == ["SIDE"]
@@ -319,7 +320,7 @@ def test_null_values_do_not_define_the_retained_protocol_shape() -> None:
         null_values=["none"],
     )
 
-    assert _protocols(found) == ["FIX"]
+    assert _protocols(found) == ["FIX4.4"]
     assert [(entry["key"], entry["value"]) for entry in found["entries"][0].as_py()] == [
         ("11", "A-1"),
         ("10", "000"),
@@ -364,7 +365,7 @@ def test_complete_event_xml_inside_fix_text_stays_with_its_envelope() -> None:
     body = "8=FIX.4.4|35=0|58=<event id='one'></event>|10=000|"
     found = Message.parse_arrow(pyarrow.array([body]))
 
-    assert _protocols(found) == ["FIX"]
+    assert _protocols(found) == ["FIX4.4"]
 
 
 def test_custom_protocol_classifier_reads_every_retained_row() -> None:
@@ -387,15 +388,16 @@ def test_custom_protocol_classifier_reads_every_retained_row() -> None:
             return pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), len(messages))
 
     classifier = Classifier()
+    codec = FixCodec(rules=classifier)
     found = Message.parse_arrow(
         pyarrow.array([heartbeat, market]),
         EVENT_TYPES,
         pyarrow.array(["bridge", "fix"]),
-        protocol_rules=classifier,
+        protocol_codec=codec,
     )
 
     assert classifier.seen == [heartbeat, market]
-    assert _protocols(found) == ["FIX", "FIX"]
+    assert _protocols(found) == ["FIX", "FIX4.4"]
 
 
 def test_a_stored_technical_message_keeps_empty_arguments(monkeypatch) -> None:

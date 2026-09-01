@@ -100,8 +100,9 @@ generated contract together. Data written to another shape is rebuilt.
 The version is not part of a table's identity either: PyIceberg carries no
 schema-level metadata, so it never survives the round trip and no write is
 refused over it. What a reader actually depends on is the columns, and
-`parse_fix` says so directly -- it refuses a source missing `msgtype`,
-`entries` or `protocol` rather than reporting an empty successful run.
+each `parse_fix_*` task says so directly -- it refuses a source missing
+`msgtype`, `entries` or `protocol` rather than reporting an empty successful
+run.
 
 ## Publishing
 

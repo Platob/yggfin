@@ -33,17 +33,20 @@ zero-copy.
 The project workflow is intentionally outside the package:
 
 ```text
-parse_messages -> parse_fix -+-> parse_instruments -> market.instruments
-                             `-> parse_market -+-> flatten_orders
-                                               `-> flatten_executions
+                  +-> parse_fix_market  -> fix.market -+-> parse_instruments -> market.instruments
+                  |                                    `-> parse_market -+-> flatten_orders
+parse_messages --+                                                     `-> flatten_executions
+                  +-> parse_fix_misc    -> fix.misc
+                  `-> parse_fix_unknown -> fix.unknown
 ```
 
 `parse_market` can instead set `books: false` and write FIX-carried orders and
 executions directly, without a book table or the two flattening stages.
 
 Each step is a Marimo application under `tasks/<step>/` with an adjacent YAML
-config. Airflow runs the same applications through `MarimoOperator`; package
-`Task` only reads and writes their configuration.
+config. Airflow reuses the one `parse_fix` definition for three category runs
+with pushed filters, and runs every application through `MarimoOperator`;
+package `Task` only reads and writes their configuration.
 
 Core properties:
 

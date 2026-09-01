@@ -14,7 +14,7 @@ from typing import Any, Self
 import pyarrow
 import pyarrow.fs
 
-from rekep.urls import LOCAL, S3, Url
+from rekep.urls import LOCAL, S3, SCHEME, Url
 
 _TIME_PATTERN = re.compile(r"(?:\{(?:year|month|day)\}|%7[bB](?:year|month|day)%7[dD])")
 
@@ -52,6 +52,29 @@ class ArrowPath(os.PathLike[str]):
         self._filesystem = filesystem
         self._path = str(resolved).replace("\\", "/")
         self._uri = uri
+
+    @classmethod
+    def from_url(
+        cls,
+        location: str | os.PathLike[str],
+        filesystem: pyarrow.fs.FileSystem | None = None,
+    ) -> Self:
+        """Build from a normalized URI while retaining its filesystem path.
+
+        A bare name supplied with a filesystem is already a path on that
+        filesystem. A URI is resolved through its parsed store path instead.
+        """
+        spelled = os.fspath(location)
+        url = Url.from_string(spelled)
+        if filesystem is None:
+            filesystem, path = url.into_filesystem()
+        elif SCHEME.match(spelled):
+            path = url.store_path
+        elif isinstance(filesystem, pyarrow.fs.LocalFileSystem):
+            path = url.path
+        else:
+            path = spelled
+        return cls.from_parts(url, filesystem, path, uri=url.into_string())
 
     @classmethod
     def from_parts(

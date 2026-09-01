@@ -542,7 +542,28 @@ def test_the_builtin_registry_is_cached_offline_and_versioned() -> None:
     assert registry is FixRegistry.from_builtin()
     assert registry.offline
     assert registry.versions[0] == "5.0.SP2"
+    assert registry.latest_application_version == "5.0.SP2"
     assert registry.versions[-1] == "FIXT1.1"
+
+
+@pytest.mark.parametrize(
+    ("versions", "expected"),
+    [
+        ((), None),
+        (("FIXT1.1",), None),
+        (("9.1", "9.0", "FIXT1.1"), "9.1"),
+    ],
+    ids=("empty", "transport-only", "application-before-transport"),
+)
+def test_latest_application_version_excludes_transport(
+    tmp_path: Path,
+    versions: tuple[str, ...],
+    expected: str | None,
+) -> None:
+    registry = OfflineRegistry(cache_dir=tmp_path / "fix")
+    registry._store_versions(versions)
+
+    assert registry.latest_application_version == expected
 
 
 def test_the_builtin_registry_carries_quote_and_translation_controls() -> None:

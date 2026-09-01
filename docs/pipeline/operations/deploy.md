@@ -203,7 +203,7 @@ uv run --project python rekep iceberg deploy tasks/parse_fix/parse_fix.yml --dry
 uv run --project python rekep iceberg deploy tasks/parse_fix/parse_fix.yml
 ```
 
-The six task commands in [End-to-end run](run.md) are unchanged — only the
+The eight task commands in [End-to-end run](run.md) are unchanged — only the
 values in the YAML moved.
 
 **6. Verify the warehouse filled.**
@@ -258,10 +258,13 @@ rekep fields load --target schemas/rekep/message.yaml | tail -2
 
 ## 4. Run
 
-[End-to-end run](run.md) has the six commands in dependency order.
+[End-to-end run](run.md) has the eight task commands in dependency order.
 [Airflow](airflow.md) has the scheduled deployment.
 
 ## Build and publish
+
+`python/pyproject.toml` declares a canonical `MAJOR.MINOR.PATCH` version; the
+release tag and both artifact names use that spelling.
 
 ```bash
 cd python
@@ -269,8 +272,8 @@ uv build --no-sources
 ```
 
 ```text
-Successfully built dist/rekep-1.tar.gz
-Successfully built dist/rekep-1-py3-none-any.whl
+Successfully built dist/rekep-1.0.0.tar.gz
+Successfully built dist/rekep-1.0.0-py3-none-any.whl
 ```
 
 A pure-Python universal wheel, plus the bundled registry as its one non-Python

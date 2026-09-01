@@ -23,20 +23,25 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "python" / "tests" / "data" / "app_messages_sample.txt"
 
-#: The workflow, in dependency order.
+#: The message categories `parse_fix` runs once each.
+CATEGORIES = ("market", "misc", "unknown")
+
+#: The workflow, in dependency order. One document runs three times.
 WORKFLOW = (
-    "parse_messages",
-    "parse_fix",
-    "parse_instruments",
-    "parse_market",
-    "flatten_orders",
-    "flatten_executions",
+    ("parse_messages", {}),
+    *(("parse_fix", {"category": category}) for category in CATEGORIES),
+    ("parse_instruments", {}),
+    ("parse_market", {}),
+    ("flatten_orders", {}),
+    ("flatten_executions", {}),
 )
 
 #: What the fixture's eleven records produce, first run.
 FIRST = {
     "parse_messages": {"read": 11, "written": 11, "skipped": 0},
-    "parse_fix": {"read": 10, "written": 10, "skipped": 0},
+    "parse_fix_market": {"read": 2, "written": 2, "skipped": 0},
+    "parse_fix_misc": {"read": 8, "written": 8, "skipped": 0},
+    "parse_fix_unknown": {"read": 0, "written": 0, "skipped": 0},
     "parse_instruments": {"read": 1, "written": 1, "skipped": 0},
     "parse_market": {"read": 2, "written": 2, "skipped": 0},
     "flatten_orders": {"read": 2, "written": 2, "skipped": 0},
@@ -54,6 +59,7 @@ STORED = {
     "logs.messages": 11,
     "fix.market": 2,
     "fix.misc": 8,
+    "fix.unknown": 0,
     "market.instruments": 1,
     "market.books": 2,
     "market.orders": 2,
@@ -91,12 +97,13 @@ class Ran:
         return json.loads(self._capsys.readouterr().out)
 
     def workflow(self, **overrides: Any) -> dict[str, dict[str, Any]]:
-        """The six publishing tasks, in dependency order."""
-        first = {"source": str(FIXTURE)}
-        return {
-            name: self.task(name, **(first if name == "parse_messages" else {}), **overrides)
-            for name in WORKFLOW
-        }
+        """Every publishing task instance, in dependency order, by stage name."""
+        results = {}
+        for name, held in WORKFLOW:
+            first = {"source": str(FIXTURE)} if name == "parse_messages" else {}
+            result = self.task(name, **first, **held, **overrides)
+            results[result["task"]] = result
+        return results
 
     def rows(self) -> dict[str, int]:
         store = IcebergCatalog.from_dict(self.catalog)
@@ -134,9 +141,14 @@ def test_the_workflow_publishes_the_fixture_and_a_replay_writes_nothing(ran: Ran
     first = ran.workflow()
     assert {name: counted(result) for name, result in first.items()} == FIRST
 
-    assert first["parse_fix"]["routed"] == {"market": 2, "misc": 8}
-    assert first["parse_fix"]["unixsource"] == {"SendingTime": 1, "TransactTime": 1, "recorded": 8}
-    assert (first["parse_fix"]["tickered"], first["parse_fix"]["errors"]) == (5, 0)
+    assert [first[f"parse_fix_{one}"]["category"] for one in CATEGORIES] == list(CATEGORIES)
+    assert sum(first[f"parse_fix_{one}"]["errors"] for one in CATEGORIES) == 0
+    assert sum(first[f"parse_fix_{one}"]["tickered"] for one in CATEGORIES) == 5
+    resolved: dict[str, int] = {}
+    for one in CATEGORIES:
+        for rung, count in first[f"parse_fix_{one}"]["unixsource"].items():
+            resolved[rung] = resolved.get(rung, 0) + count
+    assert resolved == {"SendingTime": 1, "TransactTime": 1, "recorded": 8}
     assert first["parse_market"]["mode"] == "books"
     assert first["parse_market"]["products"]["read"] == {"books": 2, "orders": 2, "executions": 1}
     assert first["parse_market"]["flatten"] == {"orders": 2, "executions": 1}
@@ -144,9 +156,11 @@ def test_the_workflow_publishes_the_fixture_and_a_replay_writes_nothing(ran: Ran
 
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY
-    assert replay["parse_fix"]["routed"] == first["parse_fix"]["routed"], "and it still routes"
+    assert replay["parse_fix_market"]["read"] == 2, "and it still routes its consumers"
     assert ran.rows() == STORED, "an idempotent replay adds no row"
-    assert set(ran.snapshots().values()) == {1}, "and commits no snapshot"
+    # One commit each, the first run's -- and none at all for the category no
+    # row fell in, whose table is created empty.
+    assert ran.snapshots() == {name: int(bool(rows)) for name, rows in STORED.items()}
 
 
 def test_every_result_is_the_shape_a_route_reads(ran: Ran) -> None:
@@ -214,7 +228,7 @@ def test_a_limit_stops_the_read_where_it_says(ran: Ran) -> None:
 def test_direct_market_mode_writes_the_events_and_leaves_nothing_to_flatten(ran: Ran) -> None:
     """`books: false` bypasses the fold and writes the FIX-carried events."""
     ran.task("parse_messages", source=str(FIXTURE))
-    ran.task("parse_fix")
+    ran.task("parse_fix", category="market")
     result = ran.task("parse_market", books=False)
 
     assert result["mode"] == "events"
@@ -224,7 +238,6 @@ def test_direct_market_mode_writes_the_events_and_leaves_nothing_to_flatten(ran:
     assert ran.rows() == {
         "logs.messages": 11,
         "fix.market": 2,
-        "fix.misc": 8,
         "market.orders": 2,
         "market.executions": 1,
     }
@@ -237,7 +250,7 @@ def test_maintenance_visits_every_table_and_reports_what_it_changed(ran: Ran) ->
 
     assert result["task"] == "optimize_iceberg"
     assert result["tables"] == len(STORED)
-    assert counted(result) == {"read": 7, "written": 0, "skipped": 7}
+    assert counted(result) == {"read": len(STORED), "written": 0, "skipped": len(STORED)}
     assert (result["expired"], result["deleted"], result["byte_size"]) == (0, 0, 0)
     assert set(result["reports"]) == {name.split(".", 1)[1] for name in STORED}
     assert ran.rows() == STORED, "a settled catalog is left as it was"

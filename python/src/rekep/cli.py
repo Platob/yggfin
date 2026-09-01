@@ -597,8 +597,12 @@ def run_task(arguments: argparse.Namespace) -> int:
     if "result" not in definitions:
         raise ValueError(f"{application} defines no result")
     result = Stage.validated(definitions["result"])
-    if result["task"] != task.name:
-        raise ValueError(f"{application} returned {result['task']!r}, not {task.name!r}")
+    # A document names the job; a result names the stage that ran. One document
+    # may run more than once -- `parse_fix` is one per message category -- and
+    # each run reports `<name>_<discriminator>`.
+    named = result["task"]
+    if named != task.name and not named.startswith(f"{task.name}_"):
+        raise ValueError(f"{application} returned {named!r}, not a {task.name} run")
     payload = json.dumps(result, ensure_ascii=False, separators=(",", ":"))
     if arguments.result_file:
         _publish(pathlib.Path(arguments.result_file), payload)

@@ -869,6 +869,14 @@ class FixRegistry(Convertible):
         """Every FIX version the dictionary carries, newest first."""
         return self._stored_versions() or self._known_versions()
 
+    @property
+    def latest_application_version(self) -> str | None:
+        """Newest application version this dictionary can resolve."""
+        return next(
+            (version for version in self.versions if not version.upper().startswith("FIXT")),
+            None,
+        )
+
     def _versions(self, version: str | None) -> tuple[str, ...]:
         """The versions a call walks: all of them, or the one it named.
 

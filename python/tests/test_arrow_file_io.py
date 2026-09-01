@@ -62,6 +62,15 @@ def test_arrow_path_owns_one_injected_filesystem_and_python_path_operations() ->
     assert child.url.path == "bucket/root/day=1/ticks.parquet"
 
 
+def test_arrow_path_from_url_separates_a_normalized_uri_from_its_store_path() -> None:
+    filesystem = pyarrow.fs._MockFileSystem()
+    path = ArrowPath.from_url("s3://bucket/logs/a%20b.txt", filesystem)
+
+    assert path.uri == "s3://bucket/logs/a%20b.txt"
+    assert path.path == "bucket/logs/a b.txt"
+    assert path.filesystem is filesystem
+
+
 def test_arrow_path_glob_reserves_recursive_descent_for_globstar() -> None:
     filesystem = pyarrow.fs._MockFileSystem()
     root = ArrowPath("bucket/root", filesystem)
