@@ -1,7 +1,7 @@
 name: FixMsg
 type: struct
 description: One raw message transcribed under the FIX registry.
-metadata: {namespace: rekep.text.fixmsg, version: '1'}
+metadata: {namespace: rekep.text.fixmsg, version: '2'}
 fields:
 - name: unix
   type: int64
@@ -62,8 +62,8 @@ fields:
   type: list
   description: Related exact event `hash` values, with the primary match first.
   fix: {name: LinkHashes}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -78,10 +78,11 @@ fields:
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
   fix: {name: AltIDs}
-  key:
-    type: string
-  value:
-    type: string
+  fields:
+  - type: struct
+    fields:
+    - type: string
+    - type: string
 - name: prevunix
   type: int64
   nullable: true
@@ -98,8 +99,8 @@ fields:
   nullable: true
   description: Every event this one was built from, in the order they were combined.
   fix: {name: ParentHash}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: lastmkt
   type: int32
   nullable: true
@@ -285,8 +286,8 @@ fields:
   type: list
   nullable: true
   description: Unlifted fields and lossless raw audit sidecars for typed columns.
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: tag
       type: int32
@@ -314,8 +315,8 @@ fields:
   nullable: true
   description: Registry-unresolved entries partition payload with `entries`; null means all resolved.
   fix: {name: Unmapped}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: tag
       type: int32
@@ -335,8 +336,8 @@ fields:
   nullable: true
   description: FIX Parties entries; null when the component is absent.
   fix: {component: Parties}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: partyid
       type: string
@@ -363,8 +364,8 @@ fields:
   nullable: true
   description: FIX TrdRegTimestamps entries; null when the component is absent.
   fix: {component: TrdRegTimestamps}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: trdregtimestamp
       type: timestamp[us, tz=UTC]
@@ -431,8 +432,8 @@ fields:
   nullable: true
   description: FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent.
   fix: {component: SideTrdRegTS}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: sidetrdregtimestamp
       type: timestamp[us, tz=UTC]
@@ -743,8 +744,8 @@ fields:
   nullable: true
   description: FIX SecAltIDGrp entries -- every other identifier; null when absent.
   fix: {component: SecurityAltID}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: securityaltid
       type: string
@@ -859,8 +860,8 @@ fields:
     type: list
     nullable: true
     description: The legs of a multileg instrument, in the order the venue sent them.
-    item:
-      type: struct
+    fields:
+    - type: struct
       fields:
       - name: symbolticker
         type: string
@@ -939,8 +940,8 @@ fields:
     type: list
     nullable: true
     description: Price bands in ascending source order, each carrying its active increment.
-    item:
-      type: struct
+    fields:
+    - type: struct
       fields:
       - name: starttickpricerange
         type: double
@@ -955,8 +956,8 @@ fields:
   type: list
   nullable: true
   description: Indexed OMS XML orders with their event and action provenance.
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: orderpath
       type: string
@@ -1101,8 +1102,8 @@ fields:
       type: list
       nullable: true
       description: Declared values from visible, invisible, and persisted ULLINK blocks.
-      item:
-        type: struct
+      fields:
+      - type: struct
         fields:
         - name: source
           type: string

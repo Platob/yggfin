@@ -1,7 +1,7 @@
 name: InstUpdate
 type: struct
 description: One observed version of an instrument component.
-metadata: {namespace: rekep.market.instrument, version: '1'}
+metadata: {namespace: rekep.market.instrument, version: '2'}
 fields:
 - name: unix
   type: int64
@@ -61,8 +61,8 @@ fields:
   type: list
   description: Related exact event `hash` values, with the primary match first.
   fix: {name: LinkHashes}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -77,10 +77,11 @@ fields:
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
   fix: {name: AltIDs}
-  key:
-    type: string
-  value:
-    type: string
+  fields:
+  - type: struct
+    fields:
+    - type: string
+    - type: string
 - name: prevunix
   type: int64
   nullable: true
@@ -97,8 +98,8 @@ fields:
   nullable: true
   description: Every event this one was built from, in the order they were combined.
   fix: {name: ParentHash}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: lastmkt
   type: int32
   nullable: true
@@ -207,8 +208,8 @@ fields:
     type: list
     nullable: true
     description: The legs of a multileg instrument, in the order the venue sent them.
-    item:
-      type: struct
+    fields:
+    - type: struct
       fields:
       - name: symbolticker
         type: string
@@ -287,8 +288,8 @@ fields:
     type: list
     nullable: true
     description: Price bands in ascending source order, each carrying its active increment.
-    item:
-      type: struct
+    fields:
+    - type: struct
       fields:
       - name: starttickpricerange
         type: double

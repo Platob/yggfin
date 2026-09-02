@@ -6,6 +6,7 @@ import dataclasses
 import datetime
 import decimal
 import functools
+import itertools
 import json
 import logging
 import re
@@ -556,27 +557,94 @@ class Field(Convertible):
             )
         kind = str(kind)
         if kind == "struct":
-            return pyarrow.struct(
-                [cls.from_dict(member).into_arrow_field() for member in mapping.get("fields", [])]
-            )
+            return pyarrow.struct(cls._members(mapping))
         if kind == "map":
-            key = cls._member(mapping, "key").into_arrow_field()
-            value = cls._member(mapping, "value").into_arrow_field()
-            return pyarrow.map_(key, value, keys_sorted=_flag(mapping, "keys_sorted"))
+            return cls._map_type(mapping)
         if kind == "fixed_size_list":
-            return pyarrow.list_(
-                cls._member(mapping, "item").into_arrow_field(),
-                _list_size(mapping),
-            )
+            return pyarrow.list_(cls._item(mapping), _list_size(mapping))
         build = _LIST_KINDS.get(kind)
         if build is not None:
-            return build(cls._member(mapping, "item").into_arrow_field())
+            return build(cls._item(mapping))
         return arrow_type_for(kind)
 
     @classmethod
-    def _member(cls, mapping: Mapping[str, Any], key: str) -> Field:
-        """A nested `item`/`key`/`value` block, whose name Arrow owns."""
-        return cls.from_dict({NAME: key, **(mapping.get(key) or {})})
+    def _held(cls, mapping: Mapping[str, Any], *named: str) -> list[Mapping[str, Any]]:
+        """One container's member blocks, in either form a store may hold them.
+
+        Every container writes `fields` now. A store written before that wrote
+        `item`, or `key` and `value`, and `data/fix` is read at import -- so a
+        reader that only knew the new spelling would make the package
+        unimportable against the documents it already has. Each store migrates
+        when it is next written.
+        """
+        blocks = mapping.get("fields")
+        if blocks is not None:
+            return [dict(block) for block in blocks]
+        return [dict(mapping[name]) for name in named if mapping.get(name) is not None]
+
+    @classmethod
+    def _members(cls, mapping: Mapping[str, Any], *named: str) -> list[pyarrow.Field]:
+        """Each member block as an Arrow field, `named` naming them positionally.
+
+        `named` supplies only the names Arrow owns and the document therefore
+        leaves out; a name the document does write always wins.
+        """
+        return [
+            cls.from_dict({NAME: default, **block}).into_arrow_field()
+            for block, default in itertools.zip_longest(
+                cls._held(mapping, *named), named, fillvalue=""
+            )
+        ]
+
+    @classmethod
+    def _item(cls, mapping: Mapping[str, Any]) -> pyarrow.Field:
+        """The one field a list repeats."""
+        held = cls._held(mapping, ITEM)
+        if len(held) != 1:
+            raise ValueError(
+                f"list {mapping.get(NAME, '')!r} holds {len(held)} fields, and a list repeats "
+                "exactly one; dump it with into_dict() rather than writing it by hand"
+            )
+        return cls._members(mapping, ITEM)[0]
+
+    @classmethod
+    def _map_type(cls, mapping: Mapping[str, Any]) -> pyarrow.DataType:
+        """One map, whose entry is a struct of a key and a value."""
+        key, value = cls._map_halves(mapping)
+        return pyarrow.map_(key, value, keys_sorted=_flag(mapping, "keys_sorted"))
+
+    @classmethod
+    def _map_halves(cls, mapping: Mapping[str, Any]) -> tuple[pyarrow.Field, pyarrow.Field]:
+        """A map entry's two halves, read from the document rather than rebuilt.
+
+        The entries block is *checked* to be a struct, never constructed as
+        one: a struct read supplies no positional names, so both halves would
+        come back named `""`, `_anonymous` would keep that spelling on the next
+        dump -- it only drops the name Arrow owns -- and a store would look
+        mutated every time it was rewritten.
+        """
+        name = mapping.get(NAME, "")
+        held = cls._held(mapping, "key", "value")
+        if len(held) == 1:
+            entry = held[0]
+            if str(entry.get("type")) != "struct":
+                raise ValueError(
+                    f"map {name!r} holds a {entry.get('type')!r} entry, and a map is a list of "
+                    "struct entries; dump it with into_dict() rather than writing it by hand"
+                )
+            held = [dict(block) for block in entry.get("fields") or []]
+        if len(held) != 2:
+            raise ValueError(
+                f"map {name!r} holds {len(held)} fields, and one entry is a key and a value; "
+                "dump it with into_dict() rather than writing it by hand"
+            )
+        key, value = (
+            cls.from_dict({NAME: default, **block}).into_arrow_field()
+            for block, default in zip(held, ("key", "value"), strict=True)
+        )
+        # Arrow forces a map key NOT NULL, so a document saying otherwise would
+        # read back as a type the cast that follows refuses.
+        return key.with_nullable(False), value
 
     # -- converting ---------------------------------------------------------
 
@@ -619,9 +687,13 @@ class Field(Convertible):
     def into_dict(self) -> dict[str, Any]:
         """This field as plain containers, nesting rather than flattening.
 
-        A struct is a `fields:` list, a list an `item:`, a map a `key:`/`value:`
-        pair -- never a flat `struct<...>` string, which would bury the nested
-        descriptions the dump exists to show. Scalars stay one line.
+        Every container writes one `fields:` block, so a walker that knows
+        `fields` has walked the whole tree and a member reads back the same
+        whether it was written as a struct's or as the thing a list repeats:
+        the `Party` that `NoPartyIDs <453>` repeats is the one field its list
+        holds. A map writes one entry, which is a struct of its key and its
+        value. Scalars stay one line, and a flat `struct<...>` string would
+        bury the nested descriptions the dump exists to show.
         """
         described: dict[str, Any] = {NAME: self.name, "type": self.kind()}
         if self.nullable:
@@ -954,7 +1026,7 @@ class ListField(Field):
         return "list"
 
     def nested(self) -> dict[str, Any]:
-        return {ITEM: _anonymous(self.item, ITEM)}
+        return {"fields": [_anonymous(self.item, ITEM)]}
 
     def leaf_names(self) -> list[str]:
         return self._extend({ITEM: self.item})
@@ -1104,16 +1176,23 @@ class MapField(Field):
         return "map"
 
     def nested(self) -> dict[str, Any]:
-        """Both halves -- and whether the keys are sorted, which is in the type.
+        """One entry -- and whether the keys are sorted, which is in the type.
 
-        Arrow compares two maps that disagree on it as different types, so a
-        dump that left it out read back as a map a cast would refuse.
+        A map is a list of entries and an entry is a struct of a key and a
+        value, so it writes the one `fields` block every container writes.
+        Arrow compares two maps that disagree on `keys_sorted` as different
+        types, so a dump that left it out read back as a map a cast would
+        refuse.
         """
         described: dict[str, Any] = {}
         if self.dtype.keys_sorted:
             described["keys_sorted"] = True
-        described["key"] = _anonymous(self.key, "key")
-        described["value"] = _anonymous(self.value, "value")
+        described["fields"] = [
+            {
+                "type": "struct",
+                "fields": [_anonymous(self.key, "key"), _anonymous(self.value, "value")],
+            }
+        ]
         return described
 
     def leaf_names(self) -> list[str]:

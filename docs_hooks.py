@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import re
+from itertools import zip_longest
 from pathlib import Path
 from typing import Any
 
@@ -282,8 +283,10 @@ def _column(
     `fix` is the whole of the origin a widget can show honestly -- the tag and
     the name a value is read from -- so the registry's version and message-type
     lists are dropped here. They belong to the field, and the registry pages
-    already hold them. Struct fields, list items and map pairs stay nested
-    because their path is part of the persisted contract.
+    already hold them. Every container's members stay nested because their path
+    is part of the persisted contract, and every container nests them under one
+    `fields` block -- so a map's entry is unwrapped to the two halves a reader
+    of the page is actually looking for.
     """
     column: dict[str, Any] = {
         "name": member.get("name") or default_name,
@@ -310,14 +313,19 @@ def _column(
     unit = (member.get("metadata") or {}).get("unit")
     if unit:
         column["unit"] = unit
-    if member.get("fields"):
-        column["fields"] = [_column(child, enums) for child in member["fields"]]
-    if member.get("item"):
-        column["item"] = _column(member["item"], enums, "item")
-    if member.get("key"):
-        column["key_field"] = _column(member["key"], enums, "key")
-    if member.get("value"):
-        column["value_field"] = _column(member["value"], enums, "value")
+    children = member.get("fields") or []
+    owned: tuple[str, ...] = ()
+    if member["type"] == "map":
+        # A map writes one entry and the entry is a struct of its two halves.
+        # The wrapper row says nothing a reader wants, and the halves are the
+        # one place their names live: the document leaves them out.
+        children = (children[0].get("fields") if children else None) or []
+        owned = ("key", "value")
+    if children:
+        column["fields"] = [
+            _column(child, enums, default)
+            for child, default in zip_longest(children, owned, fillvalue="item")
+        ]
     return column
 
 

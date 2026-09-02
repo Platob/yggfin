@@ -677,7 +677,7 @@ def test_component_member_metadata_is_readable_json_and_round_trips(store: Offli
     document = json.loads(
         (Path(store.cache_dir) / "components" / "readable_component.json").read_text()
     )
-    values = document["fields"][0]["item"]["fields"][0]["fix"]["values"]
+    values = document["fields"][0]["fields"][0]["fields"][0]["fix"]["values"]
     assert values == [{"value": "1", "meaning": "one", "aliases": ["ONE"]}]
 
     reopened = Offline(cache_dir=store.cache_dir).merged_component("ReadableComponent")

@@ -59,7 +59,7 @@ DAY = 86_400_000_000_000
 #: Nanoseconds in an hour, used to locate `unix`'s partition boundary.
 HOUR = 3_600_000_000_000
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 
 # A parsed row's identity belongs to that row, not to any market event built
 # from it. Explicit overrides may still supply these values for a native row.

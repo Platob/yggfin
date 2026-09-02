@@ -300,13 +300,24 @@
     };
   }
 
+  // Every container carries one `fields` block, a map's entry already unwrapped
+  // to its key and value. Only a list still hides a level: the row for the
+  // member it repeats says nothing the list's own row has not already said.
+  const LIST_TYPES = new Set([
+    "list",
+    "large_list",
+    "list_view",
+    "large_list_view",
+    "fixed_size_list",
+  ]);
+
   function childColumns(column) {
-    if (Array.isArray(column.fields) && column.fields.length) return column.fields;
-    const pairs = [column.key_field, column.value_field].filter(Boolean);
-    if (pairs.length) return pairs;
-    const item = column.item;
-    if (!item) return [];
-    return Array.isArray(item.fields) && item.fields.length ? item.fields : [item];
+    const children = Array.isArray(column.fields) ? column.fields : [];
+    if (children.length === 1 && LIST_TYPES.has(column.type)) {
+      const item = children[0];
+      return Array.isArray(item.fields) && item.fields.length ? item.fields : [item];
+    }
+    return children;
   }
 
   function leafColumns(columns) {

@@ -1,7 +1,7 @@
 name: Book
 type: struct
 description: Both sides of one book, flat, and the prices that only exist across them.
-metadata: {namespace: rekep.market.book, version: '1'}
+metadata: {namespace: rekep.market.book, version: '2'}
 fields:
 - name: unix
   type: int64
@@ -62,8 +62,8 @@ fields:
   type: list
   description: Related exact event `hash` values, with the primary match first.
   fix: {name: LinkHashes}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -78,10 +78,11 @@ fields:
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
   fix: {name: AltIDs}
-  key:
-    type: string
-  value:
-    type: string
+  fields:
+  - type: struct
+    fields:
+    - type: string
+    - type: string
 - name: prevunix
   type: int64
   nullable: true
@@ -98,8 +99,8 @@ fields:
   nullable: true
   description: Every event this one was built from, in the order they were combined.
   fix: {name: ParentHash}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: lastmkt
   type: int32
   nullable: true
@@ -169,10 +170,11 @@ fields:
   type: map
   nullable: true
   description: Protocol fields carried verbatim, exactly as the venue sent them.
-  key:
-    type: string
-  value:
-    type: string
+  fields:
+  - type: struct
+    fields:
+    - type: string
+    - type: string
 - name: spread
   type: double
   nullable: true
@@ -247,8 +249,8 @@ fields:
   type: list
   description: Changed buy levels on deltas; every live buy level on snapshots, best first.
   fix: {name: BidLevels}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: px
       type: double
@@ -262,8 +264,8 @@ fields:
   type: list
   description: Changed sell levels on deltas; every live sell level on snapshots, best first.
   fix: {name: AskLevels}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: px
       type: double
@@ -276,8 +278,8 @@ fields:
 - name: deltas
   type: list
   description: Order state transitions belonging to this book delta.
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: unix
       type: int64
@@ -336,8 +338,8 @@ fields:
       type: list
       description: Related exact event `hash` values, with the primary match first.
       fix: {name: LinkHashes}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -352,10 +354,11 @@ fields:
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
       fix: {name: AltIDs}
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: prevunix
       type: int64
       nullable: true
@@ -372,8 +375,8 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       fix: {name: ParentHash}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: lastmkt
       type: int32
       nullable: true
@@ -444,10 +447,11 @@ fields:
       type: map
       nullable: true
       description: Protocol fields carried verbatim, exactly as the venue sent them.
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: timeinforce
       type: int32
       description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.
@@ -478,8 +482,8 @@ fields:
 - name: executions
   type: list
   description: Execution evidence belonging to this book delta.
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: unix
       type: int64
@@ -538,8 +542,8 @@ fields:
       type: list
       description: Related exact event `hash` values, with the primary match first.
       fix: {name: LinkHashes}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -554,10 +558,11 @@ fields:
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
       fix: {name: AltIDs}
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: prevunix
       type: int64
       nullable: true
@@ -574,8 +579,8 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       fix: {name: ParentHash}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: lastmkt
       type: int32
       nullable: true
@@ -646,10 +651,11 @@ fields:
       type: map
       nullable: true
       description: Protocol fields carried verbatim, exactly as the venue sent them.
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: cumqty
       type: double
       nullable: true
@@ -699,8 +705,8 @@ fields:
   type: list
   description: Complete living bid orders, populated only on snapshots.
   fix: {name: BidAlive}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: unix
       type: int64
@@ -759,8 +765,8 @@ fields:
       type: list
       description: Related exact event `hash` values, with the primary match first.
       fix: {name: LinkHashes}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -775,10 +781,11 @@ fields:
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
       fix: {name: AltIDs}
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: prevunix
       type: int64
       nullable: true
@@ -795,8 +802,8 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       fix: {name: ParentHash}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: lastmkt
       type: int32
       nullable: true
@@ -867,10 +874,11 @@ fields:
       type: map
       nullable: true
       description: Protocol fields carried verbatim, exactly as the venue sent them.
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: timeinforce
       type: int32
       description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.
@@ -902,8 +910,8 @@ fields:
   type: list
   description: Complete living ask orders, populated only on snapshots.
   fix: {name: AskAlive}
-  item:
-    type: struct
+  fields:
+  - type: struct
     fields:
     - name: unix
       type: int64
@@ -962,8 +970,8 @@ fields:
       type: list
       description: Related exact event `hash` values, with the primary match first.
       fix: {name: LinkHashes}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: version
       type: int64
       description: Which version of `xhash` this is, counting up from the first.
@@ -978,10 +986,11 @@ fields:
       type: map
       description: Other identifiers keyed by reference scheme or lifecycle field name.
       fix: {name: AltIDs}
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: prevunix
       type: int64
       nullable: true
@@ -998,8 +1007,8 @@ fields:
       nullable: true
       description: Every event this one was built from, in the order they were combined.
       fix: {name: ParentHash}
-      item:
-        type: fixed_size_binary[16]
+      fields:
+      - type: fixed_size_binary[16]
     - name: lastmkt
       type: int32
       nullable: true
@@ -1070,10 +1079,11 @@ fields:
       type: map
       nullable: true
       description: Protocol fields carried verbatim, exactly as the venue sent them.
-      key:
-        type: string
-      value:
-        type: string
+      fields:
+      - type: struct
+        fields:
+        - type: string
+        - type: string
     - name: timeinforce
       type: int32
       description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.

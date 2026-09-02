@@ -11,6 +11,7 @@ import pytest
 
 from rekep import Convertible, Field, ListField, MapField, StructField, scalar
 from rekep.fields import (
+    ITEM,
     FixedSizeListField,
     LargeListField,
     LargeListViewField,
@@ -374,9 +375,11 @@ def test_a_dump_nests_rather_than_flattening() -> None:
         "metadata": {"unit": "lots"},
     }
     assert by_name["root"]["nullable"] is True
-    assert by_name["venues"]["item"]["type"] == "struct", "a list shows its item"
-    assert by_name["limits"]["key"]["type"] == "string", "a map shows both halves"
-    assert by_name["limits"]["value"]["nullable"] is True
+    assert by_name["venues"]["fields"][0]["type"] == "struct", "a list shows what it repeats"
+    entry = by_name["limits"]["fields"][0]
+    assert entry["type"] == "struct", "a map shows one entry, which holds both halves"
+    assert [half["type"] for half in entry["fields"]] == ["string", "int64"]
+    assert entry["fields"][1]["nullable"] is True
 
 
 def test_a_dump_promotes_protocol_metadata_to_named_maps() -> None:
@@ -476,6 +479,55 @@ def test_every_type_survives_a_dump(dtype: pyarrow.DataType) -> None:
 def test_a_dump_names_the_list_flavour(dtype: pyarrow.DataType, named: str) -> None:
     """A contract file says which flavour it is, so a reader rebuilds that one."""
     assert Field(name="value", dtype=dtype).into_dict()["type"] == named
+
+
+def test_every_container_dumps_one_fields_block() -> None:
+    """A walker that knows `fields` has walked the whole tree, and the dump is
+    a fixed point: rewriting a store must not change what it holds."""
+    flavours = [
+        pyarrow.list_(pyarrow.int32()),
+        pyarrow.list_(pyarrow.field("party", pyarrow.string(), nullable=True)),
+        pyarrow.large_list(pyarrow.int32()),
+        pyarrow.list_view(pyarrow.int32()),
+        pyarrow.list_(pyarrow.int32(), 3),
+        pyarrow.map_(pyarrow.string(), pyarrow.int64()),
+        pyarrow.map_(pyarrow.string(), pyarrow.int64(), keys_sorted=True),
+    ]
+    for dtype in flavours:
+        dumped = Field(name="value", dtype=dtype).into_dict()
+        reread = Field.from_dict(dumped)
+        assert reread.dtype == dtype, dtype
+        assert reread.into_dict() == dumped, dtype
+        assert "item" not in dumped, dtype
+    named = Field(name="parties", dtype=flavours[1]).into_dict()
+    assert named["fields"] == [{"name": "party", "type": "string", "nullable": True}], (
+        "a name Arrow does not own is the author's and survives the dump"
+    )
+
+
+def test_a_container_written_before_the_fields_block_still_reads() -> None:
+    """`data/fix` is read at import, so a reader that only knew the new
+    spelling would make the package unimportable against its own data. Each
+    store migrates when it is next written, which is what the second half
+    asserts."""
+    legacy = {"name": "hashes", "type": "list", "item": {"type": "string"}}
+    # An `item` block with no `nullable` key reads NOT NULL, exactly as a
+    # member block does: an omitted nullability is stated, not unstated.
+    assert Field.from_dict(legacy).dtype == pyarrow.list_(
+        pyarrow.field(ITEM, pyarrow.string(), nullable=False)
+    )
+    legacy_map = {
+        "name": "altids",
+        "type": "map",
+        "key": {"type": "string"},
+        "value": {"type": "int32", "nullable": True},
+    }
+    assert Field.from_dict(legacy_map).dtype == pyarrow.map_(pyarrow.string(), pyarrow.int32())
+
+    for document in (legacy, legacy_map):
+        rewritten = Field.from_dict(document).into_dict()
+        assert "item" not in rewritten and "key" not in rewritten
+        assert Field.from_dict(rewritten).dtype == Field.from_dict(document).dtype
 
 
 def test_a_map_dumps_whether_its_keys_are_sorted() -> None:

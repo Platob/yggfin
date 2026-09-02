@@ -67,7 +67,7 @@ from rekep.market.instrument import Instrument
 from rekep.text.entries import xml_payload_arrow
 from rekep.text.message import SESSION_FIELDS, Message, _body_text_arrow, _event_types
 
-_CONTRACT_METADATA = MappingProxyType({"version": "1"})
+_CONTRACT_METADATA = MappingProxyType({"version": "2"})
 _PROTOCOL_CODE = Protocol.into_storage_type()
 
 #: What `vhash` cannot be taken over. The clocks and recorder provenance,

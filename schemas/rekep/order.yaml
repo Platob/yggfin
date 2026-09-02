@@ -1,7 +1,7 @@
 name: Order
 type: struct
 description: 'One version of one order: what was asked for, and how far it has got.'
-metadata: {namespace: rekep.market.orders, version: '1'}
+metadata: {namespace: rekep.market.orders, version: '2'}
 fields:
 - name: unix
   type: int64
@@ -62,8 +62,8 @@ fields:
   type: list
   description: Related exact event `hash` values, with the primary match first.
   fix: {name: LinkHashes}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: version
   type: int64
   description: Which version of `xhash` this is, counting up from the first.
@@ -78,10 +78,11 @@ fields:
   type: map
   description: Other identifiers keyed by reference scheme or lifecycle field name.
   fix: {name: AltIDs}
-  key:
-    type: string
-  value:
-    type: string
+  fields:
+  - type: struct
+    fields:
+    - type: string
+    - type: string
 - name: prevunix
   type: int64
   nullable: true
@@ -98,8 +99,8 @@ fields:
   nullable: true
   description: Every event this one was built from, in the order they were combined.
   fix: {name: ParentHash}
-  item:
-    type: fixed_size_binary[16]
+  fields:
+  - type: fixed_size_binary[16]
 - name: lastmkt
   type: int32
   nullable: true
@@ -170,10 +171,11 @@ fields:
   type: map
   nullable: true
   description: Protocol fields carried verbatim, exactly as the venue sent them.
-  key:
-    type: string
-  value:
-    type: string
+  fields:
+  - type: struct
+    fields:
+    - type: string
+    - type: string
 - name: timeinforce
   type: int32
   description: Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders.
