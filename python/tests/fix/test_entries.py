@@ -617,11 +617,33 @@ def test_a_record_keeps_the_newest_stated_added_version() -> None:
 
 
 def test_a_records_values_are_the_union_with_the_newest_winning_per_key() -> None:
-    """A value that only ever existed in 4.2 still parses, and a correction still wins."""
-    older = fix_field("FakeRole", 90001, "int", version="4.2", values={"1": "First", "2": "Gone"})
-    newer = fix_field("FakeRole", 90001, "int", version="4.4", values={"1": "Corrected"})
+    """A value that only ever existed in 4.2 still parses, and a correction still wins.
+
+    Except the provenance, which accumulates instead of collapsing: a newer
+    version restating a value did not stop the older vocabulary from having
+    declared it.
+    """
+    older = fix_field("FakeRole", 90001, "int", version="4.2")
+    older.fix.enumerated = (
+        FixFieldValue("1", "First", (), ("acme",)),
+        FixFieldValue("2", "Gone", (), ("acme",)),
+    )
+    newer = fix_field("FakeRole", 90001, "int", version="4.4")
+    newer.fix.enumerated = (
+        FixFieldValue("1", "Corrected", (), ("fixtrading-udf",)),
+        FixFieldValue("2", "", (), ()),
+    )
+
     entry = collapsed_record([older, newer], ["4.2", "4.4"])
-    assert entry.fix.enumerated == values_of({"1": "Corrected", "2": "Gone"})
+
+    assert {one.value: one.meaning for one in entry.fix.enumerated} == {
+        "1": "Corrected",
+        "2": "Gone",
+    }
+    assert {one.value: one.namespaces for one in entry.fix.enumerated} == {
+        "1": ("acme", "fixtrading-udf"),
+        "2": ("acme",),
+    }, "the first declarer first, and a reading that names none erases none"
 
 
 def test_a_records_value_parts_keep_the_source_that_supplied_each_half() -> None:

@@ -531,6 +531,12 @@ def merged_value(held: FixFieldValue | None, fresh: FixFieldValue) -> FixFieldVa
     The prose and the spellings collapse independently, because a version
     that lists a value without writing it up still names it -- so a reading
     that says nothing about one half does not erase the other's.
+
+    The namespaces are the one half that does not collapse at all. Which
+    vocabularies declared a value accumulates rather than competing, and a
+    reading is fed here oldest first, so they union with the first declarer
+    first. Letting the newest reading win would make a version that merely
+    restates a value erase who introduced it.
     """
     if held is None:
         return fresh
@@ -538,6 +544,7 @@ def merged_value(held: FixFieldValue | None, fresh: FixFieldValue) -> FixFieldVa
         fresh,
         meaning=fresh.meaning or held.meaning,
         aliases=fresh.aliases or held.aliases,
+        namespaces=tuple(dict.fromkeys((*held.namespaces, *fresh.namespaces))),
     )
 
 

@@ -180,9 +180,9 @@ class FixFieldValue(Convertible):
     an absent reading from a declared one, so a standard value left empty
     comes back from its first merge naming the venue alone -- `()` united with
     `("acme",)` is `("acme",)` -- and the standard's authorship is gone with
-    nothing raised. Every loader names its own vocabulary on every value it
-    produces, the standard's included, so empty is only what a document
-    written before this says: that nobody recorded where the value came from.
+    nothing raised. So a loader must name its own vocabulary on every value it
+    produces, the standard's included, and empty is then only what a document
+    written before it says: that nobody recorded where the value came from.
     """
 
     def __post_init__(self) -> None:
