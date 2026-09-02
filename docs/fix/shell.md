@@ -39,13 +39,9 @@ message declaration differs only by its `fix.msgtype` value:
 ```json
 {
   "name": "VenueOrder",
-  "versions": ["*"],
-  "declaration": {
-    "name": "VenueOrder",
-    "type": "struct",
-    "fix": {"component": "VenueOrder", "msgtype": "U1"},
-    "fields": []
-  }
+  "type": "struct",
+  "fix": {"component": "VenueOrder", "msgtype": "U1", "versions": ["*"]},
+  "fields": []
 }
 ```
 

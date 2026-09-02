@@ -14,7 +14,7 @@ print(group.versions)
 
 ```text
 ListType StructType
-('4.3', '4.4', '5.0', '5.0.SP1', '5.0.SP2')
+('4.0', '4.1', '4.2', '4.3', '4.4', '5.0', '5.0.SP1', '5.0.SP2')
 ```
 
 ULBridge may omit separators after the first pair while retaining an explicit
@@ -90,21 +90,17 @@ The reviewable record uses the common `Field` list representation:
 ```json
 {
   "name": "NoPartyIDs",
-  "versions": ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"],
-  "declaration": {
-    "name": "NoPartyIDs",
-    "type": "list",
-    "fix": {"tag": "453"},
-    "fields": [
-      {
-        "name": "PartyID",
-        "type": "struct",
-        "fields": [
-          {"name": "PartyID", "type": "string", "fix": {"tag": "448"}}
-        ]
-      }
-    ]
-  }
+  "type": "list",
+  "fix": {"tag": "453", "versions": ["4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]},
+  "fields": [
+    {
+      "name": "PartyID",
+      "type": "struct",
+      "fields": [
+        {"name": "PartyID", "type": "string", "fix": {"tag": "448"}}
+      ]
+    }
+  ]
 }
 ```
 

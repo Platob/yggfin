@@ -155,10 +155,10 @@
     const componentFields = new Map();
 
     components.forEach((component) => {
-      component._tree = fixDeclaration.members(component.declaration);
-      component._arrowType = fixDeclaration.arrowType(component.declaration);
+      component._tree = fixDeclaration.members(component);
+      component._arrowType = fixDeclaration.arrowType(component);
       component._folder = component.record_kind === "group" ? "repgroup" : "components";
-      component._msgType = fixDeclaration.msgType(component.declaration);
+      component._msgType = fixDeclaration.msgType(component);
       component._members = flattenMembers(component._tree);
       component._shape = componentShape(component);
       component._name = normalized(component.name);
@@ -559,7 +559,7 @@
           return {
             ...member,
             members: expandedMembers(
-              fixDeclaration.members(referenced.declaration),
+              fixDeclaration.members(referenced),
               new Set([...seen, key]),
             ),
           };
@@ -587,7 +587,7 @@
       const seen = new Set(JSON.parse(decodeURIComponent(node.dataset.componentSeen)));
       node.setAttribute("data-loaded", "");
       target.innerHTML = memberTree(
-        fixDeclaration.members(referenced.declaration),
+        fixDeclaration.members(referenced),
         Number(node.dataset.componentDepth) + 1,
         new Set([...seen, key]),
       );
@@ -663,7 +663,7 @@
             member.kind === "component" ? componentLink(member.name) : fieldLink(member);
           const description = field?.description || member.description;
           const direct = referenced
-            ? fixDeclaration.members(referenced.declaration)
+            ? fixDeclaration.members(referenced)
             : list(member.members);
           const nested = list(member.members).length || (referenced && !recursive);
           const line = `<span class="fix-registry__member-line">${badge(member.type, "type")} ${named} ${tagCode(member.tag ?? field?.tag, true)} ${

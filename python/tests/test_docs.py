@@ -151,6 +151,26 @@ def test_registry_docs_publish_arrow_types_and_derived_groups() -> None:
     assert len(udf) == 126
 
 
+def test_the_registry_browser_reads_the_keys_the_catalog_writes() -> None:
+    """A component entry *is* its declaration -- no wrapper around it.
+
+    The browser reached one through `component.declaration` for as long as the
+    store wrote that wrapper, and kept doing it after the store stopped: the
+    JS coerces a missing key to an empty object, so every member tree rendered
+    empty and every page still loaded. Nothing here is checked by a green
+    suite unless it is checked here.
+    """
+    catalog = _hooks()._registry_catalog(DOCS.parent)
+    entry = next(group for group in catalog["groups"] if group["name"] == "NoPartyIDs")
+
+    assert "declaration" not in entry, "a component is its declaration"
+    assert (entry["type"], entry["fields"][0]["type"]) == ("list", "struct")
+    for script in ("fix-registry.js", "fix-declaration.js"):
+        source = (DOCS / "javascripts" / script).read_text(encoding="utf-8")
+        assert ".declaration" not in source, f"{script} reads a key the catalog does not write"
+        assert ".item" not in source, f"{script} reads the container spelling that was retired"
+
+
 def test_registry_catalog_keeps_duplicate_tags_namespace_addressable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
