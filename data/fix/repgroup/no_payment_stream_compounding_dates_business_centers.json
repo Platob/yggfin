@@ -1,28 +1,25 @@
 {
  "name": "NoPaymentStreamCompoundingDatesBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStreamCompoundingDatesBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42620"
-  },
-  "item": {
-   "name": "PaymentStreamCompoundingDatesBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStreamCompoundingDatesBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42621"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42620",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStreamCompoundingDatesBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStreamCompoundingDatesBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42621"
     }
-   ]
-  }
+   }
+  ]
  }
 }

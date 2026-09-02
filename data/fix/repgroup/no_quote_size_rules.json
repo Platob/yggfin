@@ -1,45 +1,42 @@
 {
  "name": "NoQuoteSizeRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoQuoteSizeRules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2558"
-  },
-  "item": {
-   "name": "QuoteSizeRule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "MinBidSize",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "647"
-     }
-    },
-    {
-     "name": "MinOfferSize",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "648"
-     }
-    },
-    {
-     "name": "FastMarketIndicator",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2447"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2558",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "QuoteSizeRule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "MinBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "647"
     }
-   ]
-  }
+   },
+   {
+    "name": "MinOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "648"
+    }
+   },
+   {
+    "name": "FastMarketIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2447"
+    }
+   }
+  ]
  }
 }

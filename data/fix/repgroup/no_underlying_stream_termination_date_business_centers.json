@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingStreamTerminationDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingStreamTerminationDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40976"
-  },
-  "item": {
-   "name": "UnderlyingStreamTerminationDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingStreamTerminationDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40550"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40976",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingStreamTerminationDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingStreamTerminationDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40550"
     }
-   ]
-  }
+   }
+  ]
  }
 }

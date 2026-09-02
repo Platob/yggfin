@@ -1,440 +1,437 @@
 {
  "name": "QuoteAcknowledgement",
- "versions": [
-  "4.2"
- ],
- "declaration": {
-  "name": "QuoteAcknowledgement",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "QuoteAcknowledgement",
-   "msgtype": "b",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ]
-  },
-  "fields": [
-   {
-    "name": "QuoteReqID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "131"
-    }
-   },
-   {
-    "name": "QuoteID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "117"
-    }
-   },
-   {
-    "name": "QuoteStatus",
-    "type": "string",
-    "fix": {
-     "tag": "297"
-    }
-   },
-   {
-    "name": "QuoteRejectReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "300"
-    }
-   },
-   {
-    "name": "QuoteResponseLevel",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "301"
-    }
-   },
-   {
-    "name": "TradingSessionID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "336"
-    }
-   },
-   {
-    "name": "Text",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "58"
-    }
-   },
-   {
-    "name": "NoQuoteSets",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "296"
-    },
-    "item": {
-     "name": "QuoteSet",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "QuoteSetID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "302"
-       }
-      },
-      {
-       "name": "UnderlyingSymbol",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "311"
-       }
-      },
-      {
-       "name": "UnderlyingSymbolSfx",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "312"
-       }
-      },
-      {
-       "name": "UnderlyingSecurityID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "309"
-       }
-      },
-      {
-       "name": "UnderlyingIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "305"
-       }
-      },
-      {
-       "name": "UnderlyingSecurityType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "310"
-       }
-      },
-      {
-       "name": "UnderlyingMaturityMonthYear",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "313"
-       }
-      },
-      {
-       "name": "UnderlyingMaturityDay",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "314"
-       }
-      },
-      {
-       "name": "UnderlyingPutOrCall",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "315"
-       }
-      },
-      {
-       "name": "UnderlyingStrikePrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "316"
-       }
-      },
-      {
-       "name": "UnderlyingOptAttribute",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "317"
-       }
-      },
-      {
-       "name": "UnderlyingContractMultiplier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "436"
-       }
-      },
-      {
-       "name": "UnderlyingCouponRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "435"
-       }
-      },
-      {
-       "name": "UnderlyingSecurityExchange",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "308"
-       }
-      },
-      {
-       "name": "UnderlyingIssuer",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "306"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingIssuerLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "362"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingIssuer",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "363"
-       }
-      },
-      {
-       "name": "UnderlyingSecurityDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "307"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingSecurityDescLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "364"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingSecurityDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "365"
-       }
-      },
-      {
-       "name": "TotQuoteEntries",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "304"
-       }
-      },
-      {
-       "name": "NoQuoteEntries",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "295"
-       },
-       "item": {
-        "name": "QuoteEntry",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "QuoteEntryID",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "299"
-          }
-         },
-         {
-          "name": "Symbol",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "55"
-          }
-         },
-         {
-          "name": "SymbolSfx",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "65"
-          }
-         },
-         {
-          "name": "SecurityID",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "48"
-          }
-         },
-         {
-          "name": "IDSource",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "22"
-          }
-         },
-         {
-          "name": "SecurityType",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "167"
-          }
-         },
-         {
-          "name": "MaturityMonthYear",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "200"
-          }
-         },
-         {
-          "name": "MaturityDay",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "205"
-          }
-         },
-         {
-          "name": "PutOrCall",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "201"
-          }
-         },
-         {
-          "name": "StrikePrice",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "202"
-          }
-         },
-         {
-          "name": "OptAttribute",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "206"
-          }
-         },
-         {
-          "name": "ContractMultiplier",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "231"
-          }
-         },
-         {
-          "name": "CouponRate",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "223"
-          }
-         },
-         {
-          "name": "SecurityExchange",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "207"
-          }
-         },
-         {
-          "name": "Issuer",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "106"
-          }
-         },
-         {
-          "name": "EncodedIssuerLen",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "348"
-          }
-         },
-         {
-          "name": "EncodedIssuer",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "349"
-          }
-         },
-         {
-          "name": "SecurityDesc",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "107"
-          }
-         },
-         {
-          "name": "EncodedSecurityDescLen",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "350"
-          }
-         },
-         {
-          "name": "EncodedSecurityDesc",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "351"
-          }
-         },
-         {
-          "name": "QuoteEntryRejectReason",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "368"
-          }
-         }
-        ]
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "QuoteAcknowledgement",
+  "msgtype": "b",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "versions": [
+   "4.2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "QuoteReqID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "131"
+   }
+  },
+  {
+   "name": "QuoteID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "117"
+   }
+  },
+  {
+   "name": "QuoteStatus",
+   "type": "string",
+   "fix": {
+    "tag": "297"
+   }
+  },
+  {
+   "name": "QuoteRejectReason",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "300"
+   }
+  },
+  {
+   "name": "QuoteResponseLevel",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "301"
+   }
+  },
+  {
+   "name": "TradingSessionID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "336"
+   }
+  },
+  {
+   "name": "Text",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "58"
+   }
+  },
+  {
+   "name": "NoQuoteSets",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "296"
+   },
+   "item": {
+    "name": "QuoteSet",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "QuoteSetID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "302"
+      }
+     },
+     {
+      "name": "UnderlyingSymbol",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "311"
+      }
+     },
+     {
+      "name": "UnderlyingSymbolSfx",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "312"
+      }
+     },
+     {
+      "name": "UnderlyingSecurityID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "309"
+      }
+     },
+     {
+      "name": "UnderlyingIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "305"
+      }
+     },
+     {
+      "name": "UnderlyingSecurityType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "310"
+      }
+     },
+     {
+      "name": "UnderlyingMaturityMonthYear",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "313"
+      }
+     },
+     {
+      "name": "UnderlyingMaturityDay",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "314"
+      }
+     },
+     {
+      "name": "UnderlyingPutOrCall",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "315"
+      }
+     },
+     {
+      "name": "UnderlyingStrikePrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "316"
+      }
+     },
+     {
+      "name": "UnderlyingOptAttribute",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "317"
+      }
+     },
+     {
+      "name": "UnderlyingContractMultiplier",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "436"
+      }
+     },
+     {
+      "name": "UnderlyingCouponRate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "435"
+      }
+     },
+     {
+      "name": "UnderlyingSecurityExchange",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "308"
+      }
+     },
+     {
+      "name": "UnderlyingIssuer",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "306"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingIssuerLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "362"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingIssuer",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "363"
+      }
+     },
+     {
+      "name": "UnderlyingSecurityDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "307"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingSecurityDescLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "364"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingSecurityDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "365"
+      }
+     },
+     {
+      "name": "TotQuoteEntries",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "304"
+      }
+     },
+     {
+      "name": "NoQuoteEntries",
+      "type": "list",
+      "nullable": true,
+      "fix": {
+       "tag": "295"
+      },
+      "item": {
+       "name": "QuoteEntry",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "QuoteEntryID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "299"
+         }
+        },
+        {
+         "name": "Symbol",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "55"
+         }
+        },
+        {
+         "name": "SymbolSfx",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "65"
+         }
+        },
+        {
+         "name": "SecurityID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "48"
+         }
+        },
+        {
+         "name": "IDSource",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "22"
+         }
+        },
+        {
+         "name": "SecurityType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "167"
+         }
+        },
+        {
+         "name": "MaturityMonthYear",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "200"
+         }
+        },
+        {
+         "name": "MaturityDay",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "205"
+         }
+        },
+        {
+         "name": "PutOrCall",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "201"
+         }
+        },
+        {
+         "name": "StrikePrice",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "202"
+         }
+        },
+        {
+         "name": "OptAttribute",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "206"
+         }
+        },
+        {
+         "name": "ContractMultiplier",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "231"
+         }
+        },
+        {
+         "name": "CouponRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "223"
+         }
+        },
+        {
+         "name": "SecurityExchange",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "207"
+         }
+        },
+        {
+         "name": "Issuer",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "106"
+         }
+        },
+        {
+         "name": "EncodedIssuerLen",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "348"
+         }
+        },
+        {
+         "name": "EncodedIssuer",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "349"
+         }
+        },
+        {
+         "name": "SecurityDesc",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "107"
+         }
+        },
+        {
+         "name": "EncodedSecurityDescLen",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "350"
+         }
+        },
+        {
+         "name": "EncodedSecurityDesc",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "351"
+         }
+        },
+        {
+         "name": "QuoteEntryRejectReason",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "368"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

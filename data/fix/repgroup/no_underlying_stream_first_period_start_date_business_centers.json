@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingStreamFirstPeriodStartDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingStreamFirstPeriodStartDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40974"
-  },
-  "item": {
-   "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40560"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40974",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40560"
     }
-   ]
-  }
+   }
+  ]
  }
 }

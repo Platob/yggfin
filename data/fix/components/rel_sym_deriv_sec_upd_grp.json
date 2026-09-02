@@ -1,142 +1,139 @@
 {
  "name": "RelSymDerivSecUpdGrp",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "RelSymDerivSecUpdGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "RelSymDerivSecUpdGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "DerivativeSecurityListUpdateReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoRelatedSym",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "146"
-    },
-    "item": {
-     "name": "RelatedSym",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ListUpdateAction",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1324"
-       }
-      },
-      {
-       "name": "CorporateAction",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "292"
-       }
-      },
-      {
-       "name": "Instrument",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "Instrument"
-       },
-       "fields": []
-      },
-      {
-       "name": "InstrumentExtension",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "InstrumentExtension"
-       },
-       "fields": []
-      },
-      {
-       "name": "SecondaryPriceLimits",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "SecondaryPriceLimits"
-       },
-       "fields": []
-      },
-      {
-       "name": "Currency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "15"
-       }
-      },
-      {
-       "name": "CurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2897"
-       }
-      },
-      {
-       "name": "InstrmtLegGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "InstrmtLegGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "RelSymTransactTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1504"
-       }
-      },
-      {
-       "name": "Text",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "58"
-       }
-      },
-      {
-       "name": "EncodedTextLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "354"
-       }
-      },
-      {
-       "name": "EncodedText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "355"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "RelSymDerivSecUpdGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "DerivativeSecurityListUpdateReport"
+  ],
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoRelatedSym",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "146"
+   },
+   "item": {
+    "name": "RelatedSym",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ListUpdateAction",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1324"
+      }
+     },
+     {
+      "name": "CorporateAction",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "292"
+      }
+     },
+     {
+      "name": "Instrument",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "Instrument"
+      },
+      "fields": []
+     },
+     {
+      "name": "InstrumentExtension",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "InstrumentExtension"
+      },
+      "fields": []
+     },
+     {
+      "name": "SecondaryPriceLimits",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "SecondaryPriceLimits"
+      },
+      "fields": []
+     },
+     {
+      "name": "Currency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "15"
+      }
+     },
+     {
+      "name": "CurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2897"
+      }
+     },
+     {
+      "name": "InstrmtLegGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "InstrmtLegGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "RelSymTransactTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1504"
+      }
+     },
+     {
+      "name": "Text",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "58"
+      }
+     },
+     {
+      "name": "EncodedTextLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "354"
+      }
+     },
+     {
+      "name": "EncodedText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "355"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

@@ -1,167 +1,164 @@
 {
  "name": "UnderlyingDividendPayout",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "UnderlyingDividendPayout",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "UnderlyingDividendPayout",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "UnderlyingDividendPayoutRatio",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42860"
-    }
-   },
-   {
-    "name": "UnderlyingDividendPayoutConditions",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42861"
-    }
-   },
-   {
-    "name": "NoUnderlyingDividendPayments",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42855"
-    },
-    "item": {
-     "name": "UnderlyingDividendPayment",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "UnderlyingDividendPaymentDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42856"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPaymentAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42857"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPaymentCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42858"
-       }
-      },
-      {
-       "name": "UnderlyingDividendAccruedInterest",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42859"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "UnderlyingDividendPayout",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "UnderlyingDividendPayoutRatio",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42860"
+   }
+  },
+  {
+   "name": "UnderlyingDividendPayoutConditions",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42861"
+   }
+  },
+  {
+   "name": "NoUnderlyingDividendPayments",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42855"
+   },
+   "item": {
+    "name": "UnderlyingDividendPayment",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "UnderlyingDividendPaymentDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42856"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPaymentAmount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42857"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPaymentCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42858"
+      }
+     },
+     {
+      "name": "UnderlyingDividendAccruedInterest",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42859"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

@@ -1,55 +1,52 @@
 {
  "name": "NoUnderlyingAmounts",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingAmounts",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "984"
-  },
-  "item": {
-   "name": "UnderlyingAmount",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingPayAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "985"
-     }
-    },
-    {
-     "name": "UnderlyingCollectAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "986"
-     }
-    },
-    {
-     "name": "UnderlyingSettlementDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "987"
-     }
-    },
-    {
-     "name": "UnderlyingSettlementStatus",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "988"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "984",
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingAmount",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingPayAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "985"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingCollectAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "986"
+    }
+   },
+   {
+    "name": "UnderlyingSettlementDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "987"
+    }
+   },
+   {
+    "name": "UnderlyingSettlementStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "988"
+    }
+   }
+  ]
  }
 }

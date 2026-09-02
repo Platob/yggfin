@@ -1,633 +1,630 @@
 {
  "name": "CMEGroup",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "CMEGroup",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "CMEGroup",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "AddInstText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9764"
-    }
-   },
-   {
-    "name": "AggressorSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5797"
-    }
-   },
-   {
-    "name": "AutoQuoteRequest",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9776"
-    }
-   },
-   {
-    "name": "BackOfficeText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9709"
-    }
-   },
-   {
-    "name": "BrokerReceiptTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9714"
-    }
-   },
-   {
-    "name": "CabPriceIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9852"
-    }
-   },
-   {
-    "name": "CancelledSymbol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9774"
-    }
-   },
-   {
-    "name": "ClearingBusCycle",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9763"
-    }
-   },
-   {
-    "name": "ClearingLastPx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9760"
-    }
-   },
-   {
-    "name": "ClearingOrdType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9762"
-    }
-   },
-   {
-    "name": "ClearingSecurityID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9737"
-    }
-   },
-   {
-    "name": "ClearingStrikePx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9738"
-    }
-   },
-   {
-    "name": "CmtaGiveupCD",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9708"
-    }
-   },
-   {
-    "name": "CorrelationClOrdID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9717"
-    }
-   },
-   {
-    "name": "CtiCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9702"
-    }
-   },
-   {
-    "name": "DayCount1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5798"
-    }
-   },
-   {
-    "name": "DecayQuantity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5818"
-    }
-   },
-   {
-    "name": "DecayStartDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5819"
-    }
-   },
-   {
-    "name": "DisplayFactor",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9787"
-    }
-   },
-   {
-    "name": "ExchangeQuoteReqID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9770"
-    }
-   },
-   {
-    "name": "FeeBilling",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9706"
-    }
-   },
-   {
-    "name": "FillLineNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9728"
-    }
-   },
-   {
-    "name": "FillNumLines",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9727"
-    }
-   },
-   {
-    "name": "FillSeqNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9726"
-    }
-   },
-   {
-    "name": "FillTerminalID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9725"
-    }
-   },
-   {
-    "name": "FillUserID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9724"
-    }
-   },
-   {
-    "name": "FixingBraket",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5790"
-    }
-   },
-   {
-    "name": "FormattedLastPx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9732"
-    }
-   },
-   {
-    "name": "GiveUpFirm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9707"
-    }
-   },
-   {
-    "name": "LegSecurityGroup",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5795"
-    }
-   },
-   {
-    "name": "LoginRouteID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9716"
-    }
-   },
-   {
-    "name": "MassQuoteMessagesCount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5793"
-    }
-   },
-   {
-    "name": "MatchEventStartIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5799"
-    }
-   },
-   {
-    "name": "MaxCabPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9851"
-    }
-   },
-   {
-    "name": "MinCabPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9850"
-    }
-   },
-   {
-    "name": "MMAccount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9771"
-    }
-   },
-   {
-    "name": "MMProtectionReset",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9773"
-    }
-   },
-   {
-    "name": "NoProcessedEntries",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9772"
-    }
-   },
-   {
-    "name": "OFMOverride",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9768"
-    }
-   },
-   {
-    "name": "OmnibusAccount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9701"
-    }
-   },
-   {
-    "name": "OpenInterestQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5792"
-    }
-   },
-   {
-    "name": "OppBroker",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9700"
-    }
-   },
-   {
-    "name": "OppHouse",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9711"
-    }
-   },
-   {
-    "name": "OrderLegNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9729"
-    }
-   },
-   {
-    "name": "OriginalContractSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5849"
-    }
-   },
-   {
-    "name": "PartyRoleClearingFirm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9735"
-    }
-   },
-   {
-    "name": "PartyRoleClearingOrg",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9736"
-    }
-   },
-   {
-    "name": "PartyRoleExecutingTrader",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9734"
-    }
-   },
-   {
-    "name": "PostExecutionAllocation",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9710"
-    }
-   },
-   {
-    "name": "PriceDisplayFormat",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9800"
-    }
-   },
-   {
-    "name": "PriceRatio",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5770"
-    }
-   },
-   {
-    "name": "PricingModel",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9853"
-    }
-   },
-   {
-    "name": "PrintedTicketLabel",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9733"
-    }
-   },
-   {
-    "name": "ProductComplex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9705"
-    }
-   },
-   {
-    "name": "QuoteEntriesCount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5794"
-    }
-   },
-   {
-    "name": "SecondaryExecID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9769"
-    }
-   },
-   {
-    "name": "SecuritySubType2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9801"
-    }
-   },
-   {
-    "name": "SessionIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9703"
-    }
-   },
-   {
-    "name": "SpreadExecID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9788"
-    }
-   },
-   {
-    "name": "SpreadSecurityID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9789"
-    }
-   },
-   {
-    "name": "TFConfirmRequest",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9766"
-    }
-   },
-   {
-    "name": "TFPossRetransFlag",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9765"
-    }
-   },
-   {
-    "name": "TimeBracketCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9715"
-    }
-   },
-   {
-    "name": "TimeIn",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9713"
-    }
-   },
-   {
-    "name": "TimeOut",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9721"
-    }
-   },
-   {
-    "name": "TLTCClOrdRefID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9767"
-    }
-   },
-   {
-    "name": "TLTCFlag",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9731"
-    }
-   },
-   {
-    "name": "TotalVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5791"
-    }
-   },
-   {
-    "name": "TradingReferenceDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5796"
-    }
-   },
-   {
-    "name": "TrdRegTimestampOriginBrkReceipt",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9719"
-    }
-   },
-   {
-    "name": "TrdRegTimestampOriginExecution",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9720"
-    }
-   },
-   {
-    "name": "TrdRegTimestampOriginTimeOut",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9722"
-    }
-   },
-   {
-    "name": "TrdRegTimestampTimeIn",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9718"
-    }
-   },
-   {
-    "name": "UnsolicitedCancelType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9775"
-    }
-   },
-   {
-    "name": "UserDefinedInstrument",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9779"
-    }
-   },
-   {
-    "name": "VolumeIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7017"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "CMEGroup",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "AddInstText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9764"
+   }
+  },
+  {
+   "name": "AggressorSide",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5797"
+   }
+  },
+  {
+   "name": "AutoQuoteRequest",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9776"
+   }
+  },
+  {
+   "name": "BackOfficeText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9709"
+   }
+  },
+  {
+   "name": "BrokerReceiptTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9714"
+   }
+  },
+  {
+   "name": "CabPriceIncrement",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9852"
+   }
+  },
+  {
+   "name": "CancelledSymbol",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9774"
+   }
+  },
+  {
+   "name": "ClearingBusCycle",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9763"
+   }
+  },
+  {
+   "name": "ClearingLastPx",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9760"
+   }
+  },
+  {
+   "name": "ClearingOrdType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9762"
+   }
+  },
+  {
+   "name": "ClearingSecurityID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9737"
+   }
+  },
+  {
+   "name": "ClearingStrikePx",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9738"
+   }
+  },
+  {
+   "name": "CmtaGiveupCD",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9708"
+   }
+  },
+  {
+   "name": "CorrelationClOrdID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9717"
+   }
+  },
+  {
+   "name": "CtiCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9702"
+   }
+  },
+  {
+   "name": "DayCount1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5798"
+   }
+  },
+  {
+   "name": "DecayQuantity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5818"
+   }
+  },
+  {
+   "name": "DecayStartDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5819"
+   }
+  },
+  {
+   "name": "DisplayFactor",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9787"
+   }
+  },
+  {
+   "name": "ExchangeQuoteReqID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9770"
+   }
+  },
+  {
+   "name": "FeeBilling",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9706"
+   }
+  },
+  {
+   "name": "FillLineNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9728"
+   }
+  },
+  {
+   "name": "FillNumLines",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9727"
+   }
+  },
+  {
+   "name": "FillSeqNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9726"
+   }
+  },
+  {
+   "name": "FillTerminalID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9725"
+   }
+  },
+  {
+   "name": "FillUserID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9724"
+   }
+  },
+  {
+   "name": "FixingBraket",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5790"
+   }
+  },
+  {
+   "name": "FormattedLastPx",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9732"
+   }
+  },
+  {
+   "name": "GiveUpFirm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9707"
+   }
+  },
+  {
+   "name": "LegSecurityGroup",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5795"
+   }
+  },
+  {
+   "name": "LoginRouteID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9716"
+   }
+  },
+  {
+   "name": "MassQuoteMessagesCount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5793"
+   }
+  },
+  {
+   "name": "MatchEventStartIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5799"
+   }
+  },
+  {
+   "name": "MaxCabPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9851"
+   }
+  },
+  {
+   "name": "MinCabPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9850"
+   }
+  },
+  {
+   "name": "MMAccount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9771"
+   }
+  },
+  {
+   "name": "MMProtectionReset",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9773"
+   }
+  },
+  {
+   "name": "NoProcessedEntries",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9772"
+   }
+  },
+  {
+   "name": "OFMOverride",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9768"
+   }
+  },
+  {
+   "name": "OmnibusAccount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9701"
+   }
+  },
+  {
+   "name": "OpenInterestQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5792"
+   }
+  },
+  {
+   "name": "OppBroker",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9700"
+   }
+  },
+  {
+   "name": "OppHouse",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9711"
+   }
+  },
+  {
+   "name": "OrderLegNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9729"
+   }
+  },
+  {
+   "name": "OriginalContractSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5849"
+   }
+  },
+  {
+   "name": "PartyRoleClearingFirm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9735"
+   }
+  },
+  {
+   "name": "PartyRoleClearingOrg",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9736"
+   }
+  },
+  {
+   "name": "PartyRoleExecutingTrader",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9734"
+   }
+  },
+  {
+   "name": "PostExecutionAllocation",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9710"
+   }
+  },
+  {
+   "name": "PriceDisplayFormat",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9800"
+   }
+  },
+  {
+   "name": "PriceRatio",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5770"
+   }
+  },
+  {
+   "name": "PricingModel",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9853"
+   }
+  },
+  {
+   "name": "PrintedTicketLabel",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9733"
+   }
+  },
+  {
+   "name": "ProductComplex",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9705"
+   }
+  },
+  {
+   "name": "QuoteEntriesCount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5794"
+   }
+  },
+  {
+   "name": "SecondaryExecID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9769"
+   }
+  },
+  {
+   "name": "SecuritySubType2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9801"
+   }
+  },
+  {
+   "name": "SessionIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9703"
+   }
+  },
+  {
+   "name": "SpreadExecID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9788"
+   }
+  },
+  {
+   "name": "SpreadSecurityID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9789"
+   }
+  },
+  {
+   "name": "TFConfirmRequest",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9766"
+   }
+  },
+  {
+   "name": "TFPossRetransFlag",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9765"
+   }
+  },
+  {
+   "name": "TimeBracketCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9715"
+   }
+  },
+  {
+   "name": "TimeIn",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9713"
+   }
+  },
+  {
+   "name": "TimeOut",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9721"
+   }
+  },
+  {
+   "name": "TLTCClOrdRefID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9767"
+   }
+  },
+  {
+   "name": "TLTCFlag",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9731"
+   }
+  },
+  {
+   "name": "TotalVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5791"
+   }
+  },
+  {
+   "name": "TradingReferenceDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5796"
+   }
+  },
+  {
+   "name": "TrdRegTimestampOriginBrkReceipt",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9719"
+   }
+  },
+  {
+   "name": "TrdRegTimestampOriginExecution",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9720"
+   }
+  },
+  {
+   "name": "TrdRegTimestampOriginTimeOut",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9722"
+   }
+  },
+  {
+   "name": "TrdRegTimestampTimeIn",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9718"
+   }
+  },
+  {
+   "name": "UnsolicitedCancelType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9775"
+   }
+  },
+  {
+   "name": "UserDefinedInstrument",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9779"
+   }
+  },
+  {
+   "name": "VolumeIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7017"
+   }
+  }
+ ]
 }

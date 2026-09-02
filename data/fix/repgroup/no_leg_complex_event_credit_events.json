@@ -1,102 +1,99 @@
 {
  "name": "NoLegComplexEventCreditEvents",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegComplexEventCreditEvents",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41366"
-  },
-  "item": {
-   "name": "LegComplexEventCreditEvent",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegComplexEventCreditEventType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41367"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41368"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41369"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventPeriod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41370"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventUnit",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41371"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventDayType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41372"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventRateSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41373"
-     }
-    },
-    {
-     "name": "NoLegComplexEventCreditEventQualifiers",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41374"
-     },
-     "item": {
-      "name": "LegComplexEventCreditEventQualifier",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegComplexEventCreditEventQualifier",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41375"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41366",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegComplexEventCreditEvent",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegComplexEventCreditEventType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41367"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegComplexEventCreditEventValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41368"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41369"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41370"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41371"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventDayType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41372"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventRateSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41373"
+    }
+   },
+   {
+    "name": "NoLegComplexEventCreditEventQualifiers",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41374"
+    },
+    "item": {
+     "name": "LegComplexEventCreditEventQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventCreditEventQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41375"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

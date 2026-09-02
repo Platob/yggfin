@@ -1,44 +1,41 @@
 {
  "name": "NoStreamCommoditySettlTimes",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoStreamCommoditySettlTimes",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41286"
-  },
-  "item": {
-   "name": "StreamCommoditySettlTime",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "StreamCommoditySettlStart",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41287"
-     }
-    },
-    {
-     "name": "StreamCommoditySettlEnd",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41288"
-     }
-    },
-    {
-     "name": "StreamCommoditySettlTimeType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41588"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41286",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "StreamCommoditySettlTime",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "StreamCommoditySettlStart",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41287"
     }
-   ]
-  }
+   },
+   {
+    "name": "StreamCommoditySettlEnd",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41288"
+    }
+   },
+   {
+    "name": "StreamCommoditySettlTimeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41588"
+    }
+   }
+  ]
  }
 }

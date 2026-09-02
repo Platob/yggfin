@@ -1,97 +1,94 @@
 {
  "name": "SettlParties",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "SettlParties",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "SettlParties",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralReport",
-    "Confirmation",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "SettlementInstructions",
-    "SettlementObligationReport",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoSettlPartyIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "781"
-    },
-    "item": {
-     "name": "SettlPartyID",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "SettlPartyID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "782"
-       }
-      },
-      {
-       "name": "SettlPartyIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "783"
-       }
-      },
-      {
-       "name": "SettlPartyRole",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "784"
-       }
-      },
-      {
-       "name": "SettlPartyRoleQualifier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2389"
-       }
-      },
-      {
-       "name": "SettlPtysSubGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "SettlPtysSubGrp"
-       },
-       "fields": []
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "SettlParties",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralReport",
+   "Confirmation",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "SettlementInstructions",
+   "SettlementObligationReport",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoSettlPartyIDs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "781"
+   },
+   "item": {
+    "name": "SettlPartyID",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "SettlPartyID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "782"
+      }
+     },
+     {
+      "name": "SettlPartyIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "783"
+      }
+     },
+     {
+      "name": "SettlPartyRole",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "784"
+      }
+     },
+     {
+      "name": "SettlPartyRoleQualifier",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2389"
+      }
+     },
+     {
+      "name": "SettlPtysSubGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "SettlPtysSubGrp"
+      },
+      "fields": []
+     }
+    ]
+   }
+  }
+ ]
 }

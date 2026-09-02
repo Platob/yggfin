@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingOptionExerciseBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingOptionExerciseBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41820"
-  },
-  "item": {
-   "name": "UnderlyingOptionExerciseBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingOptionExerciseBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41821"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41820",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingOptionExerciseBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingOptionExerciseBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41821"
     }
-   ]
-  }
+   }
+  ]
  }
 }

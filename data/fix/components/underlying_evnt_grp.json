@@ -1,198 +1,195 @@
 {
  "name": "UnderlyingEvntGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "UnderlyingEvntGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "UnderlyingEvntGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoUnderlyingEvents",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1981"
-    },
-    "item": {
-     "name": "UnderlyingEvent",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "UnderlyingEventType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1982"
-       }
-      },
-      {
-       "name": "UnderlyingEventDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1983"
-       }
-      },
-      {
-       "name": "UnderlyingEventTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1984"
-       }
-      },
-      {
-       "name": "UnderlyingEventTimeUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1985"
-       }
-      },
-      {
-       "name": "UnderlyingEventTimePeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1986"
-       }
-      },
-      {
-       "name": "UnderlyingEventMonthYear",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2342"
-       }
-      },
-      {
-       "name": "UnderlyingEventPx",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1987"
-       }
-      },
-      {
-       "name": "UnderlyingEventText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2071"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingEventTextLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2072"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingEventText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2073"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "UnderlyingEvntGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoUnderlyingEvents",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1981"
+   },
+   "item": {
+    "name": "UnderlyingEvent",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "UnderlyingEventType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1982"
+      }
+     },
+     {
+      "name": "UnderlyingEventDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1983"
+      }
+     },
+     {
+      "name": "UnderlyingEventTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1984"
+      }
+     },
+     {
+      "name": "UnderlyingEventTimeUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1985"
+      }
+     },
+     {
+      "name": "UnderlyingEventTimePeriod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1986"
+      }
+     },
+     {
+      "name": "UnderlyingEventMonthYear",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2342"
+      }
+     },
+     {
+      "name": "UnderlyingEventPx",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1987"
+      }
+     },
+     {
+      "name": "UnderlyingEventText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2071"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingEventTextLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2072"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingEventText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2073"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

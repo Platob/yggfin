@@ -163,8 +163,9 @@ def test_registry_validation_refuses_duplicate_component_versions(dumped: Path) 
     name = "components/parties.json"
     document = documents.read(name)
     assert document is not None
-    versions = document["versions"]
-    documents.write(name, {**document, "versions": [*versions, versions[0]]})
+    fix = document["fix"]
+    versions = fix["versions"]
+    documents.write(name, {**document, "fix": {**fix, "versions": [*versions, versions[0]]}})
 
     with pytest.raises(ValueError, match="component.*invalid metadata"):
         FixRegistry._validate_registry_store(documents)

@@ -1,48 +1,45 @@
 {
  "name": "NoSideTrdRegTS",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoSideTrdRegTS",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1016"
-  },
-  "item": {
-   "name": "SideTrdRegTS",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "SideTrdRegTimestamp",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1012"
-     }
-    },
-    {
-     "name": "SideTrdRegTimestampType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1013"
-     }
-    },
-    {
-     "name": "SideTrdRegTimestampSrc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1014"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1016",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "SideTrdRegTS",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "SideTrdRegTimestamp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1012"
     }
-   ]
-  }
+   },
+   {
+    "name": "SideTrdRegTimestampType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1013"
+    }
+   },
+   {
+    "name": "SideTrdRegTimestampSrc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1014"
+    }
+   }
+  ]
  }
 }

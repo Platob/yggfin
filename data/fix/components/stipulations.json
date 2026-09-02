@@ -1,88 +1,85 @@
 {
  "name": "Stipulations",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "Stipulations",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "Stipulations",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "CrossOrderCancelReplaceRequest",
-    "ExecutionReport",
-    "IOI",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest",
-    "Quote",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListUpdateReport",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoStipulations",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "232"
-    },
-    "item": {
-     "name": "Stipulation",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "StipulationType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "233"
-       }
-      },
-      {
-       "name": "StipulationValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "234"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "Stipulations",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "CrossOrderCancelReplaceRequest",
+   "ExecutionReport",
+   "IOI",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest",
+   "Quote",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListUpdateReport",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoStipulations",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "232"
+   },
+   "item": {
+    "name": "Stipulation",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "StipulationType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "233"
+      }
+     },
+     {
+      "name": "StipulationValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "234"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

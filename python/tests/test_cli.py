@@ -554,31 +554,27 @@ def test_a_component_is_registered_from_a_declaration_and_removed(
         json.dumps(
             {
                 "name": "FakeParties",
-                "versions": ["9.1"],
-                "declaration": {
-                    "name": "FakeParties",
-                    "type": "struct",
-                    "fix": {"component": "FakeParties"},
-                    "fields": [
-                        {
-                            "name": "NoFakeParties",
-                            "type": "list",
-                            "nullable": True,
-                            "fix": {"tag": "90004"},
-                            "item": {
-                                "type": "struct",
-                                "fields": [
-                                    {
-                                        "name": "FakeRole",
-                                        "type": "string",
-                                        "nullable": True,
-                                        "fix": {"tag": "90001"},
-                                    }
-                                ],
-                            },
-                        }
-                    ],
-                },
+                "type": "struct",
+                "fix": {"component": "FakeParties", "versions": ["9.1"]},
+                "fields": [
+                    {
+                        "name": "NoFakeParties",
+                        "type": "list",
+                        "nullable": True,
+                        "fix": {"tag": "90004"},
+                        "item": {
+                            "type": "struct",
+                            "fields": [
+                                {
+                                    "name": "FakeRole",
+                                    "type": "string",
+                                    "nullable": True,
+                                    "fix": {"tag": "90001"},
+                                }
+                            ],
+                        },
+                    }
+                ],
             }
         )
     )
@@ -733,20 +729,16 @@ def test_registry_components_and_dump_are_scriptable(
         json.dumps(
             {
                 "name": "FakeParties",
-                "versions": ["9.1"],
-                "declaration": {
-                    "name": "FakeParties",
-                    "type": "struct",
-                    "fix": {"component": "FakeParties"},
-                    "fields": [
-                        {
-                            "name": "FakeRole",
-                            "type": "string",
-                            "nullable": True,
-                            "fix": {"tag": "90001"},
-                        }
-                    ],
-                },
+                "type": "struct",
+                "fix": {"component": "FakeParties", "versions": ["9.1"]},
+                "fields": [
+                    {
+                        "name": "FakeRole",
+                        "type": "string",
+                        "nullable": True,
+                        "fix": {"tag": "90001"},
+                    }
+                ],
             }
         )
     )
@@ -769,7 +761,7 @@ def test_registry_components_and_dump_are_scriptable(
         {"name": "FakeParties", "msgtype": "", "versions": ["9.1"]}
     ]
     assert run("fix", "registry", "component", "--store", str(store), "FakeParties") == 0
-    assert json.loads(capsys.readouterr().out)["declaration"]["fields"][0]["name"] == "FakeRole"
+    assert json.loads(capsys.readouterr().out)["fields"][0]["name"] == "FakeRole"
 
     archive = tmp_path / "fix.zip"
     assert run("fix", "registry", "dump", "--store", str(store), "--output", str(archive)) == 0
@@ -783,20 +775,16 @@ def test_a_message_uses_component_crud(
     declaration = tmp_path / "fake_message.json"
     document = {
         "name": "FakeMessage",
-        "versions": ["9.1"],
-        "declaration": {
-            "name": "FakeMessage",
-            "type": "struct",
-            "fix": {"component": "FakeMessage", "msgtype": "Z"},
-            "fields": [
-                {
-                    "name": "FakeRole",
-                    "type": "string",
-                    "nullable": True,
-                    "fix": {"tag": "90001"},
-                }
-            ],
-        },
+        "type": "struct",
+        "fix": {"component": "FakeMessage", "msgtype": "Z", "versions": ["9.1"]},
+        "fields": [
+            {
+                "name": "FakeRole",
+                "type": "string",
+                "nullable": True,
+                "fix": {"tag": "90001"},
+            }
+        ],
     }
     declaration.write_text(json.dumps(document))
 
@@ -818,7 +806,7 @@ def test_a_message_uses_component_crud(
         {"name": "FakeMessage", "msgtype": "Z", "versions": ["9.1"]}
     ]
 
-    document["declaration"]["fix"]["msgtype"] = "Y"
+    document["fix"]["msgtype"] = "Y"
     declaration.write_text(json.dumps(document))
     assert (
         run(

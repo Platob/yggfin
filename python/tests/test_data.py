@@ -72,8 +72,18 @@ def members(folder: str) -> dict[str, dict[str, object]]:
 
 @cache
 def records() -> dict[str, dict[str, object]]:
-    """Every field record in the archive, by the key its shard files it under."""
-    return {key: record for shard in members("fields").values() for key, record in shard.items()}
+    """Every field record in the archive, by the identity it states.
+
+    A shard is a list of records, so the key here is read *off* each record --
+    its tag, or its canonical name where FIX never numbered it -- rather than
+    from a mapping above it that could disagree with what it keys.
+    """
+    found: dict[str, dict[str, object]] = {}
+    for shard in members("fields").values():
+        for record in shard:
+            fix = record["fix"]
+            found[str(fix["tag"]) if "tag" in fix else str(record["name"])] = record
+    return found
 
 
 #: Every key one stored field record carries at its top level: the Arrow
@@ -200,8 +210,11 @@ def test_every_field_is_in_the_document_the_arithmetic_names() -> None:
             if name.startswith("fields/")
         }
     for name, shard in shards.items():
-        for key in shard:
-            assert field_document(int(key) if key.isdigit() else key) == name, key
+        assert isinstance(shard, list), name
+        for record in shard:
+            fix = record["fix"]
+            key = int(fix["tag"]) if "tag" in fix else record["name"]
+            assert field_document(key) == name, key
     populated = {int(name[len("fields/") : -len(".json")]) for name in shards}
     assert len(populated) == EXPECTED_FIELD_DOCUMENTS
     assert NAMED_SHARD in populated, "the fields with no tag are one shard among them"
@@ -286,14 +299,37 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     ], "tag 32's pre-4.3 name is a spelling of it, sourced to the version that used it"
 
 
+def test_every_stored_document_is_a_field_document() -> None:
+    """One serialization for the whole dictionary.
+
+    A shard is a list of field records and a component is the `Field` it
+    declares, so nothing here needs a second codec, and a key above a record
+    is that record's own identity written twice.
+    """
+    with zipfile.ZipFile(DATA) as archive:
+        for name in sorted(archive.namelist()):
+            document = json.loads(archive.read(name).decode("utf-8"))
+            if name.startswith("fields/") or "/fields/" in name:
+                assert isinstance(document, list), name
+                for record in document:
+                    assert set(record) <= FIELD_KEYS, name
+                    assert record["name"] and record["fix"]["versions"], name
+            elif name.startswith(("components/", "repgroup/")) or "/components/" in name:
+                assert isinstance(document, dict), name
+                assert set(document) <= FIELD_KEYS, name
+                assert document["fix"]["versions"], "the versions ride in its own fix"
+                assert "declaration" not in document, "a component is its declaration"
+
+
 def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     """The same for a component, and its declaration is a Field document: a
     struct of members, a list where one of them repeats, and `fix` at every
     level -- the shape every other declaration in this package is stored as."""
-    parties = members("components")["parties"]
-    assert parties["name"] == "Parties"
-    assert parties["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
-    declared = parties["declaration"]
+    declared = members("components")["parties"]
+    assert declared["name"] == "Parties"
+    assert declared["fix"]["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"], (
+        "the versions declaring it ride in its own `fix`, as a field record's do"
+    )
     assert declared["type"] == "struct" and declared["fix"]["component"] == "Parties"
     assert "msgtype" not in declared["fix"], "a reusable block is not a message definition"
     carried = declared["fix"]["msgtypes"]
@@ -306,10 +342,8 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
 
 
 def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None:
-    group = members("repgroup")["no_party_i_ds"]
-    declared = group["declaration"]
+    declared = members("repgroup")["no_party_i_ds"]
 
-    assert group["name"] == "NoPartyIDs"
     assert declared["name"] == "NoPartyIDs"
     assert declared["type"] == "list" and declared["fix"]["tag"] == "453"
     assert declared["item"]["type"] == "struct"
@@ -318,7 +352,7 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
         "PartyIDSource",
         "PartyRole",
     ]
-    embedded = members("components")["parties"]["declaration"]["fields"][0]
+    embedded = members("components")["parties"]["fields"][0]
     assert (embedded["name"], embedded["fix"]["tag"]) == ("NoPartyIDs", "453")
     assert embedded["item"]["fields"][-1] == {
         "name": "PtysSubGrp",
@@ -334,9 +368,8 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
 
 def test_a_message_is_stored_as_the_component_it_is() -> None:
     """One folder, one record shape: the MsgType is the whole difference."""
-    single = members("components")["new_order_single"]
-    assert single["name"] == "NewOrderSingle"
-    declared = single["declaration"]
+    declared = members("components")["new_order_single"]
+    assert declared["name"] == "NewOrderSingle"
     assert declared["fix"]["msgtype"] == "D"
     assert "msgtypes" not in declared["fix"], "a message is not carried by a message"
     assert declared["fields"][0] == {
@@ -352,7 +385,7 @@ def test_a_message_is_stored_as_the_component_it_is() -> None:
         "ClOrdLinkID",
     ], "the newest tree, as every record here keeps"
     stored = members("components")
-    messages = [one for one in stored.values() if one["declaration"]["fix"].get("msgtype")]
+    messages = [one for one in stored.values() if one["fix"].get("msgtype")]
     assert len(messages) == EXPECTED_MESSAGE_FILES
     assert len(stored) == EXPECTED_COMPONENT_FILES
 

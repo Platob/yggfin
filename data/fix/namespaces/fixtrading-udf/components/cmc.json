@@ -1,225 +1,222 @@
 {
  "name": "CMC",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "CMC",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "CMC",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "ChgFromSettlmnt",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9750"
-    }
-   },
-   {
-    "name": "ChgFromSettlmntDirection",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9751"
-    }
-   },
-   {
-    "name": "CrossOrdAskQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9781"
-    }
-   },
-   {
-    "name": "CrossOrdBidQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9780"
-    }
-   },
-   {
-    "name": "ExpositionOrderType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9758"
-    }
-   },
-   {
-    "name": "InstrumentExternalCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9754"
-    }
-   },
-   {
-    "name": "LastCrossReqTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9782"
-    }
-   },
-   {
-    "name": "LastQuoteReqTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9785"
-    }
-   },
-   {
-    "name": "MaxOrderQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9748"
-    }
-   },
-   {
-    "name": "MinOrderQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9749"
-    }
-   },
-   {
-    "name": "OptionSponsorType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9755"
-    }
-   },
-   {
-    "name": "OrderExpositionEndTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9759"
-    }
-   },
-   {
-    "name": "OrigOrdQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9757"
-    }
-   },
-   {
-    "name": "PIPExpiryDuration",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9742"
-    }
-   },
-   {
-    "name": "PIPExpiryTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9741"
-    }
-   },
-   {
-    "name": "PIPImprovementType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9744"
-    }
-   },
-   {
-    "name": "PIPManagementType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9743"
-    }
-   },
-   {
-    "name": "PIPMaxPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9745"
-    }
-   },
-   {
-    "name": "PIPSequentialNo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9740"
-    }
-   },
-   {
-    "name": "QuoteOrigin",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9470"
-    }
-   },
-   {
-    "name": "QuoteReqAskQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9784"
-    }
-   },
-   {
-    "name": "QuoteReqBidQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9783"
-    }
-   },
-   {
-    "name": "RemainingFills",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9756"
-    }
-   },
-   {
-    "name": "StrikePriceCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9752"
-    }
-   },
-   {
-    "name": "StrikePriceCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9753"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "CMC",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ChgFromSettlmnt",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9750"
+   }
+  },
+  {
+   "name": "ChgFromSettlmntDirection",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9751"
+   }
+  },
+  {
+   "name": "CrossOrdAskQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9781"
+   }
+  },
+  {
+   "name": "CrossOrdBidQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9780"
+   }
+  },
+  {
+   "name": "ExpositionOrderType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9758"
+   }
+  },
+  {
+   "name": "InstrumentExternalCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9754"
+   }
+  },
+  {
+   "name": "LastCrossReqTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9782"
+   }
+  },
+  {
+   "name": "LastQuoteReqTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9785"
+   }
+  },
+  {
+   "name": "MaxOrderQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9748"
+   }
+  },
+  {
+   "name": "MinOrderQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9749"
+   }
+  },
+  {
+   "name": "OptionSponsorType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9755"
+   }
+  },
+  {
+   "name": "OrderExpositionEndTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9759"
+   }
+  },
+  {
+   "name": "OrigOrdQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9757"
+   }
+  },
+  {
+   "name": "PIPExpiryDuration",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9742"
+   }
+  },
+  {
+   "name": "PIPExpiryTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9741"
+   }
+  },
+  {
+   "name": "PIPImprovementType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9744"
+   }
+  },
+  {
+   "name": "PIPManagementType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9743"
+   }
+  },
+  {
+   "name": "PIPMaxPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9745"
+   }
+  },
+  {
+   "name": "PIPSequentialNo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9740"
+   }
+  },
+  {
+   "name": "QuoteOrigin",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9470"
+   }
+  },
+  {
+   "name": "QuoteReqAskQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9784"
+   }
+  },
+  {
+   "name": "QuoteReqBidQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9783"
+   }
+  },
+  {
+   "name": "RemainingFills",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9756"
+   }
+  },
+  {
+   "name": "StrikePriceCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9752"
+   }
+  },
+  {
+   "name": "StrikePriceCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9753"
+   }
+  }
+ ]
 }

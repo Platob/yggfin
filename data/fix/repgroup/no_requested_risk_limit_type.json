@@ -1,28 +1,25 @@
 {
  "name": "NoRequestedRiskLimitType",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoRequestedRiskLimitType",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1668"
-  },
-  "item": {
-   "name": "RequestedRiskLimitType",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "RiskLimitType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1530"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1668",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "RequestedRiskLimitType",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "RiskLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1530"
     }
-   ]
-  }
+   }
+  ]
  }
 }

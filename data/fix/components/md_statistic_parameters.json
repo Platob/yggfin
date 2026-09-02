@@ -1,413 +1,410 @@
 {
  "name": "MDStatisticParameters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "MDStatisticParameters",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "MDStatisticParameters",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "MDStatisticType",
-    "type": "string",
-    "fix": {
-     "tag": "2456"
-    }
-   },
-   {
-    "name": "MDStatisticScope",
-    "type": "string",
-    "fix": {
-     "tag": "2457"
-    }
-   },
-   {
-    "name": "MDStatisticSubScope",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2458"
-    }
-   },
-   {
-    "name": "MDStatisticScopeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2459"
-    }
-   },
-   {
-    "name": "MDStatisticName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2454"
-    }
-   },
-   {
-    "name": "MDStatisticDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2455"
-    }
-   },
-   {
-    "name": "EncodedMDStatisticDescLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2481"
-    }
-   },
-   {
-    "name": "EncodedMDStatisticDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2482"
-    }
-   },
-   {
-    "name": "MarketDepth",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "264"
-    }
-   },
-   {
-    "name": "MDStatisticFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2460"
-    }
-   },
-   {
-    "name": "MDStatisticFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2461"
-    }
-   },
-   {
-    "name": "MDStatisticDelayPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2462"
-    }
-   },
-   {
-    "name": "MDStatisticDelayUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2463"
-    }
-   },
-   {
-    "name": "MDStatisticIntervalType",
-    "type": "string",
-    "fix": {
-     "tag": "2464"
-    }
-   },
-   {
-    "name": "MDStatisticIntervalTypeUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2465"
-    }
-   },
-   {
-    "name": "MDStatisticIntervalPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2466"
-    }
-   },
-   {
-    "name": "MDStatisticIntervalUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2467"
-    }
-   },
-   {
-    "name": "MDStatisticStartDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2468"
-    }
-   },
-   {
-    "name": "MDStatisticEndDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2469"
-    }
-   },
-   {
-    "name": "MDStatisticStartTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2470"
-    }
-   },
-   {
-    "name": "MDStatisticEndTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2471"
-    }
-   },
-   {
-    "name": "MDStatisticRatioType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2472"
-    }
-   },
-   {
-    "name": "NoNestedPartyIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "539"
-    },
-    "item": {
-     "name": "NestedPartyID",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "NestedPartyID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "524"
-       }
-      },
-      {
-       "name": "NestedPartyIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "525"
-       }
-      },
-      {
-       "name": "NestedPartyRole",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "538"
-       }
-      },
-      {
-       "name": "NestedPartyRoleQualifier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2384"
-       }
-      },
-      {
-       "name": "NoNestedPartySubIDs",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "804"
-       },
-       "item": {
-        "name": "NestedPartySubID",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "NestedPartySubID",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "545"
-          }
-         },
-         {
-          "name": "NestedPartySubIDType",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "805"
-          }
-         }
-        ]
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "AnnualTradingBusinessDays",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2584"
-    }
-   },
-   {
-    "name": "TradingCapacity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1815"
-    }
-   },
-   {
-    "name": "OrdType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40"
-    }
-   },
-   {
-    "name": "TimeInForce",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "59"
-    }
-   },
-   {
-    "name": "QuoteCondition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "276"
-    }
-   },
-   {
-    "name": "TradeCondition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "277"
-    }
-   },
-   {
-    "name": "Side",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "54"
-    }
-   },
-   {
-    "name": "TradeInputSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "578"
-    }
-   },
-   {
-    "name": "TradingSessionID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "336"
-    }
-   },
-   {
-    "name": "TradingSessionSubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "625"
-    }
-   },
-   {
-    "name": "MDOriginType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1024"
-    }
-   },
-   {
-    "name": "MDValueTier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2711"
-    }
-   },
-   {
-    "name": "TradSesMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "338"
-    }
-   },
-   {
-    "name": "MDFeedType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1022"
-    }
-   },
-   {
-    "name": "ExposureDuration",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1629"
-    }
-   },
-   {
-    "name": "ExposureDurationUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1916"
-    }
-   },
-   {
-    "name": "AggressorIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1057"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "MDStatisticParameters",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "MDStatisticType",
+   "type": "string",
+   "fix": {
+    "tag": "2456"
+   }
+  },
+  {
+   "name": "MDStatisticScope",
+   "type": "string",
+   "fix": {
+    "tag": "2457"
+   }
+  },
+  {
+   "name": "MDStatisticSubScope",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2458"
+   }
+  },
+  {
+   "name": "MDStatisticScopeType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2459"
+   }
+  },
+  {
+   "name": "MDStatisticName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2454"
+   }
+  },
+  {
+   "name": "MDStatisticDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2455"
+   }
+  },
+  {
+   "name": "EncodedMDStatisticDescLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2481"
+   }
+  },
+  {
+   "name": "EncodedMDStatisticDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2482"
+   }
+  },
+  {
+   "name": "MarketDepth",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "264"
+   }
+  },
+  {
+   "name": "MDStatisticFrequencyPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2460"
+   }
+  },
+  {
+   "name": "MDStatisticFrequencyUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2461"
+   }
+  },
+  {
+   "name": "MDStatisticDelayPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2462"
+   }
+  },
+  {
+   "name": "MDStatisticDelayUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2463"
+   }
+  },
+  {
+   "name": "MDStatisticIntervalType",
+   "type": "string",
+   "fix": {
+    "tag": "2464"
+   }
+  },
+  {
+   "name": "MDStatisticIntervalTypeUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2465"
+   }
+  },
+  {
+   "name": "MDStatisticIntervalPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2466"
+   }
+  },
+  {
+   "name": "MDStatisticIntervalUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2467"
+   }
+  },
+  {
+   "name": "MDStatisticStartDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2468"
+   }
+  },
+  {
+   "name": "MDStatisticEndDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2469"
+   }
+  },
+  {
+   "name": "MDStatisticStartTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2470"
+   }
+  },
+  {
+   "name": "MDStatisticEndTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2471"
+   }
+  },
+  {
+   "name": "MDStatisticRatioType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2472"
+   }
+  },
+  {
+   "name": "NoNestedPartyIDs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "539"
+   },
+   "item": {
+    "name": "NestedPartyID",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "NestedPartyID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "524"
+      }
+     },
+     {
+      "name": "NestedPartyIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "525"
+      }
+     },
+     {
+      "name": "NestedPartyRole",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "538"
+      }
+     },
+     {
+      "name": "NestedPartyRoleQualifier",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2384"
+      }
+     },
+     {
+      "name": "NoNestedPartySubIDs",
+      "type": "list",
+      "nullable": true,
+      "fix": {
+       "tag": "804"
+      },
+      "item": {
+       "name": "NestedPartySubID",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "NestedPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "545"
+         }
+        },
+        {
+         "name": "NestedPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "805"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "AnnualTradingBusinessDays",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2584"
+   }
+  },
+  {
+   "name": "TradingCapacity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1815"
+   }
+  },
+  {
+   "name": "OrdType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40"
+   }
+  },
+  {
+   "name": "TimeInForce",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "59"
+   }
+  },
+  {
+   "name": "QuoteCondition",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "276"
+   }
+  },
+  {
+   "name": "TradeCondition",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "277"
+   }
+  },
+  {
+   "name": "Side",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "54"
+   }
+  },
+  {
+   "name": "TradeInputSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "578"
+   }
+  },
+  {
+   "name": "TradingSessionID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "336"
+   }
+  },
+  {
+   "name": "TradingSessionSubID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "625"
+   }
+  },
+  {
+   "name": "MDOriginType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1024"
+   }
+  },
+  {
+   "name": "MDValueTier",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2711"
+   }
+  },
+  {
+   "name": "TradSesMethod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "338"
+   }
+  },
+  {
+   "name": "MDFeedType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1022"
+   }
+  },
+  {
+   "name": "ExposureDuration",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1629"
+   }
+  },
+  {
+   "name": "ExposureDurationUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1916"
+   }
+  },
+  {
+   "name": "AggressorIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1057"
+   }
+  }
+ ]
 }

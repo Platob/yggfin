@@ -1,97 +1,94 @@
 {
  "name": "BelgradeStockExchange",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "BelgradeStockExchange",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "BelgradeStockExchange",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "BidActivity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5962"
-    }
-   },
-   {
-    "name": "ExtendedVolatilityBand",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5995"
-    }
-   },
-   {
-    "name": "LowerVolatilityBand",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5994"
-    }
-   },
-   {
-    "name": "OfferActivity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5963"
-    }
-   },
-   {
-    "name": "PriceActivity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5990"
-    }
-   },
-   {
-    "name": "SumBidQuantity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5991"
-    }
-   },
-   {
-    "name": "SumOfferQuantity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5992"
-    }
-   },
-   {
-    "name": "TradingMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5996"
-    }
-   },
-   {
-    "name": "UpperVolatilityBand",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5993"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "BelgradeStockExchange",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "BidActivity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5962"
+   }
+  },
+  {
+   "name": "ExtendedVolatilityBand",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5995"
+   }
+  },
+  {
+   "name": "LowerVolatilityBand",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5994"
+   }
+  },
+  {
+   "name": "OfferActivity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5963"
+   }
+  },
+  {
+   "name": "PriceActivity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5990"
+   }
+  },
+  {
+   "name": "SumBidQuantity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5991"
+   }
+  },
+  {
+   "name": "SumOfferQuantity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5992"
+   }
+  },
+  {
+   "name": "TradingMethod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5996"
+   }
+  },
+  {
+   "name": "UpperVolatilityBand",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5993"
+   }
+  }
+ ]
 }

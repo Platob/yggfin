@@ -1,32 +1,29 @@
 {
  "name": "NoMandatoryClearingJurisdictions",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoMandatoryClearingJurisdictions",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41312"
-  },
-  "item": {
-   "name": "MandatoryClearingJurisdiction",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "MandatoryClearingJurisdiction",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41313"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41312",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "MandatoryClearingJurisdiction",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "MandatoryClearingJurisdiction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41313"
     }
-   ]
-  }
+   }
+  ]
  }
 }

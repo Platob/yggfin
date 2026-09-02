@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingReturnRateValuationDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingReturnRateValuationDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "43071"
-  },
-  "item": {
-   "name": "UnderlyingReturnRateValuationDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingReturnRateValuationDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "43072"
-     }
-    },
-    {
-     "name": "UnderlyingReturnRateValuationDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "43073"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "43071",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingReturnRateValuationDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingReturnRateValuationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43072"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingReturnRateValuationDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43073"
+    }
+   }
+  ]
  }
 }

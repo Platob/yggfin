@@ -1,175 +1,172 @@
 {
  "name": "NoOrders",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoOrders",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "73"
-  },
-  "item": {
-   "name": "Order",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ClOrdID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "11"
-     }
-    },
-    {
-     "name": "OrderID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "37"
-     }
-    },
-    {
-     "name": "SecondaryOrderID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "198"
-     }
-    },
-    {
-     "name": "SecondaryClOrdID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "526"
-     }
-    },
-    {
-     "name": "ListID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "66"
-     }
-    },
-    {
-     "name": "NoNested2PartyIDs",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "756"
-     },
-     "item": {
-      "name": "Nested2PartyID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "Nested2PartyID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "757"
-        }
-       },
-       {
-        "name": "Nested2PartyIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "758"
-        }
-       },
-       {
-        "name": "Nested2PartyRole",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "759"
-        }
-       },
-       {
-        "name": "Nested2PartyRoleQualifier",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2381"
-        }
-       },
-       {
-        "name": "NoNested2PartySubIDs",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "806"
-        },
-        "item": {
-         "name": "Nested2PartySubID",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "Nested2PartySubID",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "760"
-           }
-          },
-          {
-           "name": "Nested2PartySubIDType",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "807"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "OrderQty",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "38"
-     }
-    },
-    {
-     "name": "OrderAvgPx",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "799"
-     }
-    },
-    {
-     "name": "OrderBookingQty",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "800"
-     }
-    },
-    {
-     "name": "OrdType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "73",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "Order",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "11"
     }
-   ]
-  }
+   },
+   {
+    "name": "OrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "37"
+    }
+   },
+   {
+    "name": "SecondaryOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "198"
+    }
+   },
+   {
+    "name": "SecondaryClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "526"
+    }
+   },
+   {
+    "name": "ListID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "66"
+    }
+   },
+   {
+    "name": "NoNested2PartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "756"
+    },
+    "item": {
+     "name": "Nested2PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Nested2PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "757"
+       }
+      },
+      {
+       "name": "Nested2PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "758"
+       }
+      },
+      {
+       "name": "Nested2PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "759"
+       }
+      },
+      {
+       "name": "Nested2PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2381"
+       }
+      },
+      {
+       "name": "NoNested2PartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "806"
+       },
+       "item": {
+        "name": "Nested2PartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "Nested2PartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "760"
+          }
+         },
+         {
+          "name": "Nested2PartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "807"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "OrderQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "38"
+    }
+   },
+   {
+    "name": "OrderAvgPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "799"
+    }
+   },
+   {
+    "name": "OrderBookingQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "800"
+    }
+   },
+   {
+    "name": "OrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40"
+    }
+   }
+  ]
  }
 }

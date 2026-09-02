@@ -1,28 +1,25 @@
 {
  "name": "NoLegProvisionCashSettlValueDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegProvisionCashSettlValueDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40935"
-  },
-  "item": {
-   "name": "LegProvisionCashSettlValueDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegProvisionCashSettlValueDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40527"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40935",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegProvisionCashSettlValueDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegProvisionCashSettlValueDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40527"
     }
-   ]
-  }
+   }
+  ]
  }
 }

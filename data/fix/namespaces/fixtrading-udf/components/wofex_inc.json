@@ -1,41 +1,38 @@
 {
  "name": "WofexInc",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "WofexInc",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "WofexInc",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "CustomOrderType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6969"
-    }
-   },
-   {
-    "name": "TradeOrigin3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6970"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "WofexInc",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "CustomOrderType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6969"
+   }
+  },
+  {
+   "name": "TradeOrigin3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6970"
+   }
+  }
+ ]
 }

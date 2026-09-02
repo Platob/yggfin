@@ -1,125 +1,122 @@
 {
  "name": "PegInstructions",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "PegInstructions",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "PegInstructions",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "CrossOrderCancelReplaceRequest",
-    "ExecutionReport",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "PegOffsetValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "211"
-    }
-   },
-   {
-    "name": "PegPriceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1094"
-    }
-   },
-   {
-    "name": "PegMoveType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "835"
-    }
-   },
-   {
-    "name": "PegOffsetType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "836"
-    }
-   },
-   {
-    "name": "PegLimitType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "837"
-    }
-   },
-   {
-    "name": "PegRoundDirection",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "838"
-    }
-   },
-   {
-    "name": "PegScope",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "840"
-    }
-   },
-   {
-    "name": "PegSecurityIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1096"
-    }
-   },
-   {
-    "name": "PegSecurityID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1097"
-    }
-   },
-   {
-    "name": "PegSymbol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1098"
-    }
-   },
-   {
-    "name": "PegSecurityDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1099"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "PegInstructions",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "CrossOrderCancelReplaceRequest",
+   "ExecutionReport",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "PegOffsetValue",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "211"
+   }
+  },
+  {
+   "name": "PegPriceType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1094"
+   }
+  },
+  {
+   "name": "PegMoveType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "835"
+   }
+  },
+  {
+   "name": "PegOffsetType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "836"
+   }
+  },
+  {
+   "name": "PegLimitType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "837"
+   }
+  },
+  {
+   "name": "PegRoundDirection",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "838"
+   }
+  },
+  {
+   "name": "PegScope",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "840"
+   }
+  },
+  {
+   "name": "PegSecurityIDSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1096"
+   }
+  },
+  {
+   "name": "PegSecurityID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1097"
+   }
+  },
+  {
+   "name": "PegSymbol",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1098"
+   }
+  },
+  {
+   "name": "PegSecurityDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1099"
+   }
+  }
+ ]
 }

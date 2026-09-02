@@ -1,73 +1,70 @@
 {
  "name": "TargetPtysSubGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "TargetPtysSubGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "TargetPtysSubGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "ExecutionReport",
-    "MassQuoteAck",
-    "MultilegOrderCancelReplace",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "PositionTransferInstruction",
-    "PositionTransferInstructionAck",
-    "PositionTransferReport",
-    "QuoteCancel",
-    "QuoteStatusReport",
-    "QuoteStatusRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoTargetPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2433"
-    },
-    "item": {
-     "name": "TargetPartySubID",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "TargetPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2434"
-       }
-      },
-      {
-       "name": "TargetPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2435"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "TargetPtysSubGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "ExecutionReport",
+   "MassQuoteAck",
+   "MultilegOrderCancelReplace",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "PositionTransferInstruction",
+   "PositionTransferInstructionAck",
+   "PositionTransferReport",
+   "QuoteCancel",
+   "QuoteStatusReport",
+   "QuoteStatusRequest"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoTargetPartySubIDs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2433"
+   },
+   "item": {
+    "name": "TargetPartySubID",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "TargetPartySubID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2434"
+      }
+     },
+     {
+      "name": "TargetPartySubIDType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2435"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

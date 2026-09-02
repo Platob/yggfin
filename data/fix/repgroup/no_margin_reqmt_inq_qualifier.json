@@ -1,28 +1,25 @@
 {
  "name": "NoMarginReqmtInqQualifier",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoMarginReqmtInqQualifier",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1636"
-  },
-  "item": {
-   "name": "MarginReqmtInqQualifier",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "MarginReqmtInqQualifier",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1637"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1636",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "MarginReqmtInqQualifier",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "MarginReqmtInqQualifier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1637"
     }
-   ]
-  }
+   }
+  ]
  }
 }

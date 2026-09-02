@@ -1,120 +1,117 @@
 {
  "name": "NoPosAmt",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPosAmt",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "753"
-  },
-  "item": {
-   "name": "PosAmt",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PosAmtType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "707"
-     }
-    },
-    {
-     "name": "PosAmt",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "708"
-     }
-    },
-    {
-     "name": "PosAmtStreamDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2096"
-     }
-    },
-    {
-     "name": "PositionCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1055"
-     }
-    },
-    {
-     "name": "PositionCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2937"
-     }
-    },
-    {
-     "name": "PositionFXRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2097"
-     }
-    },
-    {
-     "name": "PositionFXRateCalc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2098"
-     }
-    },
-    {
-     "name": "PosAmtReason",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1585"
-     }
-    },
-    {
-     "name": "PosAmtMarketSegmentID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2099"
-     }
-    },
-    {
-     "name": "PosAmtMarketID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2100"
-     }
-    },
-    {
-     "name": "PosAmtPrice",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2876"
-     }
-    },
-    {
-     "name": "PosAmtPriceType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2877"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "753",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PosAmt",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PosAmtType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "707"
     }
-   ]
-  }
+   },
+   {
+    "name": "PosAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "708"
+    }
+   },
+   {
+    "name": "PosAmtStreamDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2096"
+    }
+   },
+   {
+    "name": "PositionCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1055"
+    }
+   },
+   {
+    "name": "PositionCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2937"
+    }
+   },
+   {
+    "name": "PositionFXRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2097"
+    }
+   },
+   {
+    "name": "PositionFXRateCalc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2098"
+    }
+   },
+   {
+    "name": "PosAmtReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1585"
+    }
+   },
+   {
+    "name": "PosAmtMarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2099"
+    }
+   },
+   {
+    "name": "PosAmtMarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2100"
+    }
+   },
+   {
+    "name": "PosAmtPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2876"
+    }
+   },
+   {
+    "name": "PosAmtPriceType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2877"
+    }
+   }
+  ]
  }
 }

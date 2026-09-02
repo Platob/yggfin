@@ -1,5 +1,5 @@
-{
- "50000": {
+[
+ {
   "name": "BatchID",
   "type": "string",
   "nullable": true,
@@ -28,7 +28,7 @@
    ]
   }
  },
- "50001": {
+ {
   "name": "BatchTotalMessages",
   "type": "int32",
   "nullable": true,
@@ -57,7 +57,7 @@
    ]
   }
  },
- "50002": {
+ {
   "name": "BatchProcessMode",
   "type": "int32",
   "nullable": true,
@@ -104,4 +104,4 @@
    ]
   }
  }
-}
+]

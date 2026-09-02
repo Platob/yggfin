@@ -1,28 +1,25 @@
 {
  "name": "NoLegStreamCommoditySettlBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegStreamCommoditySettlBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41646"
-  },
-  "item": {
-   "name": "LegStreamCommoditySettlBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegStreamCommoditySettlBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41647"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41646",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegStreamCommoditySettlBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegStreamCommoditySettlBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41647"
     }
-   ]
-  }
+   }
+  ]
  }
 }

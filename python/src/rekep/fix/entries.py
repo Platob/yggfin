@@ -408,33 +408,37 @@ class ComponentRecord(Convertible):
         return found
 
     def into_dict(self) -> dict[str, Any]:
-        """The record as its file holds it.
+        """The record as its file holds it: the declaration, and nothing above it.
 
-        The declaration is a `Field`, so its document is the one every other
-        declaration in this package writes -- a struct with its members, a
-        list with its item -- and a component file reads like a contract file
-        because it is one.
+        The declaration is a `Field`, so a component document is a field
+        document -- a struct with its members, a list with its item -- and the
+        versions declaring it and the names it answers to ride in its own
+        `fix` metadata, where a field record carries the same two. One shape
+        for a field, a group and a message, so there is no wrapper to keep in
+        step with what it wraps.
         """
-        return _document(
-            {
-                "name": self.name,
-                "versions": list(self.versions),
-                "aliases": [alias.into_dict() for alias in self.aliases],
-                "declaration": self.declaration.into_dict(),
-            }
-        )
+        stored = record_copy(self.declaration)
+        stored.fix.versions = list(self.versions)
+        if self.aliases:
+            stored.fix.named_aliases = self.aliases
+        return _document(stored.into_dict())
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
-        """Build one record from its stored document."""
-        declared = mapping.get("declaration")
-        if not isinstance(declared, Mapping):
-            raise TypeError("a FIX component record's declaration must be a document")
+        """Build one record from its stored field document."""
+        declaration = Field.from_dict(mapping)
+        fix = declaration.fix
+        versions = tuple(str(version) for version in fix.versions)
+        aliases = tuple(fix.named_aliases)
+        # The record owns both, so the declaration under it states neither
+        # twice: `into_dict` writes them back from the record that holds them.
+        fix.pop("versions", None)
+        fix.pop("aliases", None)
         return cls(
-            name=str(mapping.get("name") or ""),
-            versions=tuple(str(version) for version in mapping.get("versions") or ()),
-            declaration=Field.from_dict(declared),
-            aliases=_aliases_of(mapping.get("aliases")),
+            name=declaration.name,
+            versions=versions,
+            declaration=declaration,
+            aliases=aliases,
         )
 
     @classmethod
@@ -516,15 +520,6 @@ def _component_fields(
 def _document(payload: Mapping[str, Any]) -> dict[str, Any]:
     """A stored document with its empty parts dropped, for a small clean diff."""
     return {key: value for key, value in payload.items() if value not in (None, "", [], {})}
-
-
-def _aliases_of(declared: Any) -> tuple[Alias, ...]:
-    """Stored aliases, deduplicated by what they fold to, in declared order."""
-    found: dict[str, Alias] = {}
-    for entry in declared or ():
-        alias = Alias.from_dict(entry)
-        found.setdefault(alias.folded, alias)
-    return tuple(found.values())
 
 
 def merged_value(held: FixFieldValue | None, fresh: FixFieldValue) -> FixFieldValue:

@@ -1,31 +1,28 @@
 {
  "name": "NoContractualDefinitions",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoContractualDefinitions",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40040"
-  },
-  "item": {
-   "name": "ContractualDefinition",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ContractualDefinition",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40041"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40040",
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ContractualDefinition",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ContractualDefinition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40041"
     }
-   ]
-  }
+   }
+  ]
  }
 }

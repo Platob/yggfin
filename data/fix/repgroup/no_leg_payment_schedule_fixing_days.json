@@ -1,40 +1,37 @@
 {
  "name": "NoLegPaymentScheduleFixingDays",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegPaymentScheduleFixingDays",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41530"
-  },
-  "item": {
-   "name": "LegPaymentScheduleFixingDay",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegPaymentScheduleFixingDayOfWeek",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41531"
-     }
-    },
-    {
-     "name": "LegPaymentScheduleFixingDayNumber",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41532"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41530",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegPaymentScheduleFixingDay",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegPaymentScheduleFixingDayOfWeek",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41531"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegPaymentScheduleFixingDayNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41532"
+    }
+   }
+  ]
  }
 }

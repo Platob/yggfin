@@ -1,128 +1,125 @@
 {
  "name": "MiscFeesGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "MiscFeesGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "MiscFeesGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ExecutionReport",
-    "MarketDefinition",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoMiscFees",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "136"
-    },
-    "item": {
-     "name": "MiscFee",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "MiscFeeAmt",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "137"
-       }
-      },
-      {
-       "name": "MiscFeeCurr",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "138"
-       }
-      },
-      {
-       "name": "MiscFeeType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "139"
-       }
-      },
-      {
-       "name": "MiscFeeQualifier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2712"
-       }
-      },
-      {
-       "name": "MiscFeesSubGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "MiscFeesSubGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "MiscFeeBasis",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "891"
-       }
-      },
-      {
-       "name": "MiscFeeRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2216"
-       }
-      },
-      {
-       "name": "MiscFeeAmountDue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2217"
-       }
-      },
-      {
-       "name": "MiscFeeDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2713"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "MiscFeesGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ExecutionReport",
+   "MarketDefinition",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoMiscFees",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "136"
+   },
+   "item": {
+    "name": "MiscFee",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "MiscFeeAmt",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "137"
+      }
+     },
+     {
+      "name": "MiscFeeCurr",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "138"
+      }
+     },
+     {
+      "name": "MiscFeeType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "139"
+      }
+     },
+     {
+      "name": "MiscFeeQualifier",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2712"
+      }
+     },
+     {
+      "name": "MiscFeesSubGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "MiscFeesSubGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "MiscFeeBasis",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "891"
+      }
+     },
+     {
+      "name": "MiscFeeRate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2216"
+      }
+     },
+     {
+      "name": "MiscFeeAmountDue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2217"
+      }
+     },
+     {
+      "name": "MiscFeeDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2713"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

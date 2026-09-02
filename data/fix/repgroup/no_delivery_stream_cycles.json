@@ -1,44 +1,41 @@
 {
  "name": "NoDeliveryStreamCycles",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoDeliveryStreamCycles",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41081"
-  },
-  "item": {
-   "name": "DeliveryStreamCycle",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "DeliveryStreamCycleDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41082"
-     }
-    },
-    {
-     "name": "EncodedDeliveryStreamCycleDescLen",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41083"
-     }
-    },
-    {
-     "name": "EncodedDeliveryStreamCycleDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41084"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41081",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "DeliveryStreamCycle",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "DeliveryStreamCycleDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41082"
     }
-   ]
-  }
+   },
+   {
+    "name": "EncodedDeliveryStreamCycleDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41083"
+    }
+   },
+   {
+    "name": "EncodedDeliveryStreamCycleDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41084"
+    }
+   }
+  ]
  }
 }

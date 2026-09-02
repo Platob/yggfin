@@ -1,165 +1,162 @@
 {
  "name": "InstrmtMatchSideGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "InstrmtMatchSideGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "InstrmtMatchSideGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoInstrmtMatchSides",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1889"
-    },
-    "item": {
-     "name": "InstrmtMatchSide",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "Instrument",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "Instrument"
-       },
-       "fields": []
-      },
-      {
-       "name": "InstrmtLegGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "InstrmtLegGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "UndInstrmtGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "UndInstrmtGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "TrdMatchSubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1891"
-       }
-      },
-      {
-       "name": "Quantity",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "53"
-       }
-      },
-      {
-       "name": "Currency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "15"
-       }
-      },
-      {
-       "name": "CurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2897"
-       }
-      },
-      {
-       "name": "SettlCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "120"
-       }
-      },
-      {
-       "name": "SettlCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2899"
-       }
-      },
-      {
-       "name": "QtyType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "854"
-       }
-      },
-      {
-       "name": "LastQty",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "32"
-       }
-      },
-      {
-       "name": "PriceType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "423"
-       }
-      },
-      {
-       "name": "LastPx",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "31"
-       }
-      },
-      {
-       "name": "LastMkt",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "30"
-       }
-      },
-      {
-       "name": "TrdMatchSideGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "TrdMatchSideGrp"
-       },
-       "fields": []
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "InstrmtMatchSideGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoInstrmtMatchSides",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1889"
+   },
+   "item": {
+    "name": "InstrmtMatchSide",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "Instrument",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "Instrument"
+      },
+      "fields": []
+     },
+     {
+      "name": "InstrmtLegGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "InstrmtLegGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "UndInstrmtGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "UndInstrmtGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "TrdMatchSubID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1891"
+      }
+     },
+     {
+      "name": "Quantity",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "53"
+      }
+     },
+     {
+      "name": "Currency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "15"
+      }
+     },
+     {
+      "name": "CurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2897"
+      }
+     },
+     {
+      "name": "SettlCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "120"
+      }
+     },
+     {
+      "name": "SettlCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2899"
+      }
+     },
+     {
+      "name": "QtyType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "854"
+      }
+     },
+     {
+      "name": "LastQty",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "32"
+      }
+     },
+     {
+      "name": "PriceType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "423"
+      }
+     },
+     {
+      "name": "LastPx",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "31"
+      }
+     },
+     {
+      "name": "LastMkt",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "30"
+      }
+     },
+     {
+      "name": "TrdMatchSideGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "TrdMatchSideGrp"
+      },
+      "fields": []
+     }
+    ]
+   }
+  }
+ ]
 }

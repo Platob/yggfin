@@ -142,7 +142,7 @@ def test_registry_docs_publish_arrow_types_and_derived_groups() -> None:
     assert len(catalog["groups"]) == 525
     assert parties["record_kind"] == "group"
     assert parties["namespace"] == "standard"
-    assert parties["declaration"]["type"] == "list"
+    assert parties["type"] == "list", "a component entry is the field document it declares"
     udf = [
         component
         for component in catalog["components"]

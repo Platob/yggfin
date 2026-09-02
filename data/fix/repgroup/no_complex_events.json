@@ -1,382 +1,379 @@
 {
  "name": "NoComplexEvents",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoComplexEvents",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1483"
-  },
-  "item": {
-   "name": "ComplexEvent",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ComplexEventType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1484"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutPaySide",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2117"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutReceiveSide",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2118"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutUnderlier",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2119"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1485"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutPercentage",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2120"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2121"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2122"
-     }
-    },
-    {
-     "name": "ComplexOptPayoutCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2941"
-     }
-    },
-    {
-     "name": "ComplexEventPrice",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1486"
-     }
-    },
-    {
-     "name": "ComplexEventPricePercentage",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2123"
-     }
-    },
-    {
-     "name": "ComplexEventPriceBoundaryMethod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1487"
-     }
-    },
-    {
-     "name": "ComplexEventPriceBoundaryPrecision",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1488"
-     }
-    },
-    {
-     "name": "ComplexEventPriceTimeType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1489"
-     }
-    },
-    {
-     "name": "ComplexEventCondition",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1490"
-     }
-    },
-    {
-     "name": "ComplexEventDates",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventDates"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventCurrencyOne",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2124"
-     }
-    },
-    {
-     "name": "ComplexEventCurrencyOneCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2942"
-     }
-    },
-    {
-     "name": "ComplexEventCurrencyTwo",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2125"
-     }
-    },
-    {
-     "name": "ComplexEventCurrencyTwoCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2943"
-     }
-    },
-    {
-     "name": "ComplexEventQuoteBasis",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2126"
-     }
-    },
-    {
-     "name": "ComplexEventFixedFXRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2127"
-     }
-    },
-    {
-     "name": "ComplexEventSpotRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2407"
-     }
-    },
-    {
-     "name": "ComplexEventForwardPoints",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2408"
-     }
-    },
-    {
-     "name": "ComplexEventDeterminationMethod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2128"
-     }
-    },
-    {
-     "name": "ComplexEventCalculationAgent",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2129"
-     }
-    },
-    {
-     "name": "ComplexEventStrikePrice",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2130"
-     }
-    },
-    {
-     "name": "ComplexEventStrikeFactor",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2131"
-     }
-    },
-    {
-     "name": "ComplexEventStrikeNumberOfOptions",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2132"
-     }
-    },
-    {
-     "name": "ComplexEventRateSourceGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventRateSourceGrp"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventRelativeDate",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventRelativeDate"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventPeriodGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventPeriodGrp"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventCreditEventsXIDRef",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2133"
-     }
-    },
-    {
-     "name": "ComplexEventCreditEventNotifyingParty",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2134"
-     }
-    },
-    {
-     "name": "ComplexEventCreditEventBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2135"
-     }
-    },
-    {
-     "name": "ComplexEventCreditEventStandardSources",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2136"
-     }
-    },
-    {
-     "name": "ComplexEventCreditEventMinimumSources",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2137"
-     }
-    },
-    {
-     "name": "ComplexEventCreditEventSourceGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventCreditEventSourceGrp"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventCreditEventGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventCreditEventGrp"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventFuturesPriceValuation",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2597"
-     }
-    },
-    {
-     "name": "ComplexEventOptionsPriceValuation",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2598"
-     }
-    },
-    {
-     "name": "ComplexEventPVFinalPriceElectionFallback",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2599"
-     }
-    },
-    {
-     "name": "ComplexEventXID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2138"
-     }
-    },
-    {
-     "name": "ComplexEventXIDRef",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2139"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1483",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ComplexEvent",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ComplexEventType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1484"
     }
-   ]
-  }
+   },
+   {
+    "name": "ComplexOptPayoutPaySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2117"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutReceiveSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2118"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutUnderlier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2119"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1485"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutPercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2120"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2121"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2122"
+    }
+   },
+   {
+    "name": "ComplexOptPayoutCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2941"
+    }
+   },
+   {
+    "name": "ComplexEventPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1486"
+    }
+   },
+   {
+    "name": "ComplexEventPricePercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2123"
+    }
+   },
+   {
+    "name": "ComplexEventPriceBoundaryMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1487"
+    }
+   },
+   {
+    "name": "ComplexEventPriceBoundaryPrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1488"
+    }
+   },
+   {
+    "name": "ComplexEventPriceTimeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1489"
+    }
+   },
+   {
+    "name": "ComplexEventCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1490"
+    }
+   },
+   {
+    "name": "ComplexEventDates",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventDates"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventCurrencyOne",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2124"
+    }
+   },
+   {
+    "name": "ComplexEventCurrencyOneCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2942"
+    }
+   },
+   {
+    "name": "ComplexEventCurrencyTwo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2125"
+    }
+   },
+   {
+    "name": "ComplexEventCurrencyTwoCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2943"
+    }
+   },
+   {
+    "name": "ComplexEventQuoteBasis",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2126"
+    }
+   },
+   {
+    "name": "ComplexEventFixedFXRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2127"
+    }
+   },
+   {
+    "name": "ComplexEventSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2407"
+    }
+   },
+   {
+    "name": "ComplexEventForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2408"
+    }
+   },
+   {
+    "name": "ComplexEventDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2128"
+    }
+   },
+   {
+    "name": "ComplexEventCalculationAgent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2129"
+    }
+   },
+   {
+    "name": "ComplexEventStrikePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2130"
+    }
+   },
+   {
+    "name": "ComplexEventStrikeFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2131"
+    }
+   },
+   {
+    "name": "ComplexEventStrikeNumberOfOptions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2132"
+    }
+   },
+   {
+    "name": "ComplexEventRateSourceGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventRateSourceGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventRelativeDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventRelativeDate"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventPeriodGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventPeriodGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventCreditEventsXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2133"
+    }
+   },
+   {
+    "name": "ComplexEventCreditEventNotifyingParty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2134"
+    }
+   },
+   {
+    "name": "ComplexEventCreditEventBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2135"
+    }
+   },
+   {
+    "name": "ComplexEventCreditEventStandardSources",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2136"
+    }
+   },
+   {
+    "name": "ComplexEventCreditEventMinimumSources",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2137"
+    }
+   },
+   {
+    "name": "ComplexEventCreditEventSourceGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventCreditEventSourceGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventCreditEventGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventCreditEventGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventFuturesPriceValuation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2597"
+    }
+   },
+   {
+    "name": "ComplexEventOptionsPriceValuation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2598"
+    }
+   },
+   {
+    "name": "ComplexEventPVFinalPriceElectionFallback",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2599"
+    }
+   },
+   {
+    "name": "ComplexEventXID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2138"
+    }
+   },
+   {
+    "name": "ComplexEventXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2139"
+    }
+   }
+  ]
  }
 }

@@ -1,122 +1,119 @@
 {
  "name": "NoTestSteps",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTestSteps",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "3036"
-  },
-  "item": {
-   "name": "TestStep",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TestStepID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3037"
-     }
-    },
-    {
-     "name": "TestStepDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3038"
-     }
-    },
-    {
-     "name": "TestStepStartTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3039"
-     }
-    },
-    {
-     "name": "TestStepStartOffsetPeriod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3040"
-     }
-    },
-    {
-     "name": "TestStepStartOffsetUnit",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3041"
-     }
-    },
-    {
-     "name": "TestStepEndTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3042"
-     }
-    },
-    {
-     "name": "TestStepEndOffsetPeriod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3043"
-     }
-    },
-    {
-     "name": "TestStepEndOffsetUnit",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3044"
-     }
-    },
-    {
-     "name": "NoTestStepParameters",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "3045"
-     },
-     "item": {
-      "name": "TestStepParameter",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "TestStepParameterName",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "3046"
-        }
-       },
-       {
-        "name": "TestStepParameterType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "3047"
-        }
-       },
-       {
-        "name": "TestStepParameterValue",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "3048"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "3036",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TestStep",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TestStepID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3037"
     }
-   ]
-  }
+   },
+   {
+    "name": "TestStepDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3038"
+    }
+   },
+   {
+    "name": "TestStepStartTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3039"
+    }
+   },
+   {
+    "name": "TestStepStartOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3040"
+    }
+   },
+   {
+    "name": "TestStepStartOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3041"
+    }
+   },
+   {
+    "name": "TestStepEndTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3042"
+    }
+   },
+   {
+    "name": "TestStepEndOffsetPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3043"
+    }
+   },
+   {
+    "name": "TestStepEndOffsetUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3044"
+    }
+   },
+   {
+    "name": "NoTestStepParameters",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "3045"
+    },
+    "item": {
+     "name": "TestStepParameter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TestStepParameterName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3046"
+       }
+      },
+      {
+       "name": "TestStepParameterType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3047"
+       }
+      },
+      {
+       "name": "TestStepParameterValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3048"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

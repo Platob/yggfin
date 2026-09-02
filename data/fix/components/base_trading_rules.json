@@ -1,356 +1,353 @@
 {
  "name": "BaseTradingRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "BaseTradingRules",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "BaseTradingRules",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "MarketDefinition",
-    "MarketDefinitionUpdateReport",
-    "SecurityDefinition",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListUpdateReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoTickRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1205"
-    },
-    "item": {
-     "name": "TickRule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "StartTickPriceRange",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1206"
-       }
-      },
-      {
-       "name": "EndTickPriceRange",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1207"
-       }
-      },
-      {
-       "name": "TickIncrement",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1208"
-       }
-      },
-      {
-       "name": "TickRuleType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1209"
-       }
-      },
-      {
-       "name": "TickRuleProductComplex",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2571"
-       }
-      },
-      {
-       "name": "SettlPriceIncrement",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1830"
-       }
-      },
-      {
-       "name": "SettlPriceSecondaryIncrement",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1831"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoLotTypeRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1234"
-    },
-    "item": {
-     "name": "LotTypeRule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LotType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1093"
-       }
-      },
-      {
-       "name": "MinLotSize",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1231"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "PriceLimits",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "PriceLimits"
-    },
-    "fields": []
-   },
-   {
-    "name": "NoPriceRangeRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2550"
-    },
-    "item": {
-     "name": "PriceRangeRule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "StartPriceRange",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2551"
-       }
-      },
-      {
-       "name": "EndPriceRange",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2552"
-       }
-      },
-      {
-       "name": "PriceRangeValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2553"
-       }
-      },
-      {
-       "name": "PriceRangePercentage",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2554"
-       }
-      },
-      {
-       "name": "PriceRangeRuleID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2556"
-       }
-      },
-      {
-       "name": "PriceRangeProductComplex",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2555"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoQuoteSizeRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2558"
-    },
-    "item": {
-     "name": "QuoteSizeRule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "MinBidSize",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "647"
-       }
-      },
-      {
-       "name": "MinOfferSize",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "648"
-       }
-      },
-      {
-       "name": "FastMarketIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2447"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "ExpirationCycle",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "827"
-    }
-   },
-   {
-    "name": "TradeVolType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1786"
-    }
-   },
-   {
-    "name": "MinTradeVol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "562"
-    }
-   },
-   {
-    "name": "MaxTradeVol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1140"
-    }
-   },
-   {
-    "name": "MaxPriceVariation",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1143"
-    }
-   },
-   {
-    "name": "ImpliedMarketIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1144"
-    }
-   },
-   {
-    "name": "TradingCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1245"
-    }
-   },
-   {
-    "name": "TradingCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2934"
-    }
-   },
-   {
-    "name": "RoundLot",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "561"
-    }
-   },
-   {
-    "name": "MultilegModel",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1377"
-    }
-   },
-   {
-    "name": "MultilegPriceMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1378"
-    }
-   },
-   {
-    "name": "PriceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "423"
-    }
-   },
-   {
-    "name": "FastMarketPercentage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2557"
-    }
-   },
-   {
-    "name": "QuoteSideIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2559"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "BaseTradingRules",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "MarketDefinition",
+   "MarketDefinitionUpdateReport",
+   "SecurityDefinition",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListUpdateReport"
+  ],
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoTickRules",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1205"
+   },
+   "item": {
+    "name": "TickRule",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "StartTickPriceRange",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1206"
+      }
+     },
+     {
+      "name": "EndTickPriceRange",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1207"
+      }
+     },
+     {
+      "name": "TickIncrement",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1208"
+      }
+     },
+     {
+      "name": "TickRuleType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1209"
+      }
+     },
+     {
+      "name": "TickRuleProductComplex",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2571"
+      }
+     },
+     {
+      "name": "SettlPriceIncrement",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1830"
+      }
+     },
+     {
+      "name": "SettlPriceSecondaryIncrement",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1831"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoLotTypeRules",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1234"
+   },
+   "item": {
+    "name": "LotTypeRule",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LotType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1093"
+      }
+     },
+     {
+      "name": "MinLotSize",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1231"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "PriceLimits",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "PriceLimits"
+   },
+   "fields": []
+  },
+  {
+   "name": "NoPriceRangeRules",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2550"
+   },
+   "item": {
+    "name": "PriceRangeRule",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "StartPriceRange",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2551"
+      }
+     },
+     {
+      "name": "EndPriceRange",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2552"
+      }
+     },
+     {
+      "name": "PriceRangeValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2553"
+      }
+     },
+     {
+      "name": "PriceRangePercentage",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2554"
+      }
+     },
+     {
+      "name": "PriceRangeRuleID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2556"
+      }
+     },
+     {
+      "name": "PriceRangeProductComplex",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2555"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoQuoteSizeRules",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2558"
+   },
+   "item": {
+    "name": "QuoteSizeRule",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "MinBidSize",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "647"
+      }
+     },
+     {
+      "name": "MinOfferSize",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "648"
+      }
+     },
+     {
+      "name": "FastMarketIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2447"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "ExpirationCycle",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "827"
+   }
+  },
+  {
+   "name": "TradeVolType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1786"
+   }
+  },
+  {
+   "name": "MinTradeVol",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "562"
+   }
+  },
+  {
+   "name": "MaxTradeVol",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1140"
+   }
+  },
+  {
+   "name": "MaxPriceVariation",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1143"
+   }
+  },
+  {
+   "name": "ImpliedMarketIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1144"
+   }
+  },
+  {
+   "name": "TradingCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1245"
+   }
+  },
+  {
+   "name": "TradingCurrencyCodeSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2934"
+   }
+  },
+  {
+   "name": "RoundLot",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "561"
+   }
+  },
+  {
+   "name": "MultilegModel",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1377"
+   }
+  },
+  {
+   "name": "MultilegPriceMethod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1378"
+   }
+  },
+  {
+   "name": "PriceType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "423"
+   }
+  },
+  {
+   "name": "FastMarketPercentage",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2557"
+   }
+  },
+  {
+   "name": "QuoteSideIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2559"
+   }
+  }
+ ]
 }

@@ -1,64 +1,61 @@
 {
  "name": "NoLegPosAmt",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegPosAmt",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1586"
-  },
-  "item": {
-   "name": "LegPosAmt",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegPosAmt",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1587"
-     }
-    },
-    {
-     "name": "LegPosAmtType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1588"
-     }
-    },
-    {
-     "name": "LegPosCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1589"
-     }
-    },
-    {
-     "name": "LegPosCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2938"
-     }
-    },
-    {
-     "name": "LegPosAmtReason",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1590"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1586",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegPosAmt",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegPosAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1587"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegPosAmtType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1588"
+    }
+   },
+   {
+    "name": "LegPosCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1589"
+    }
+   },
+   {
+    "name": "LegPosCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2938"
+    }
+   },
+   {
+    "name": "LegPosAmtReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1590"
+    }
+   }
+  ]
  }
 }

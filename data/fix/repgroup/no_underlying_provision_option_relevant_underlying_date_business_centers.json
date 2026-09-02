@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42188"
-  },
-  "item": {
-   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42189"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42188",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42189"
     }
-   ]
-  }
+   }
+  ]
  }
 }

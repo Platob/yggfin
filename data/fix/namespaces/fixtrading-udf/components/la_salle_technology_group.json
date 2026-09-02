@@ -1,73 +1,70 @@
 {
  "name": "LaSalleTechnologyGroup",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "LaSalleTechnologyGroup",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "LaSalleTechnologyGroup",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "ApplicationQueueAction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6700"
-    }
-   },
-   {
-    "name": "ApplicationQueueDepth",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6699"
-    }
-   },
-   {
-    "name": "ApplicationQueueResolution",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6701"
-    }
-   },
-   {
-    "name": "NoTradePriceConditions",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5997"
-    }
-   },
-   {
-    "name": "TradePriceCondition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5998"
-    }
-   },
-   {
-    "name": "UserAssignedCancelID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9468"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "LaSalleTechnologyGroup",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ApplicationQueueAction",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6700"
+   }
+  },
+  {
+   "name": "ApplicationQueueDepth",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6699"
+   }
+  },
+  {
+   "name": "ApplicationQueueResolution",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6701"
+   }
+  },
+  {
+   "name": "NoTradePriceConditions",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5997"
+   }
+  },
+  {
+   "name": "TradePriceCondition",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5998"
+   }
+  },
+  {
+   "name": "UserAssignedCancelID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9468"
+   }
+  }
+ ]
 }

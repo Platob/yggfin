@@ -1,146 +1,143 @@
 {
  "name": "NoRiskLimitTypes",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoRiskLimitTypes",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1529"
-  },
-  "item": {
-   "name": "RiskLimitType",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "RiskLimitType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1530"
-     }
-    },
-    {
-     "name": "RiskLimitAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1531"
-     }
-    },
-    {
-     "name": "RiskLimitAction",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1767"
-     }
-    },
-    {
-     "name": "RiskLimitUtilizationAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1766"
-     }
-    },
-    {
-     "name": "RiskLimitUtilizationPercent",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1765"
-     }
-    },
-    {
-     "name": "RiskLimitCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1532"
-     }
-    },
-    {
-     "name": "RiskLimitCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2939"
-     }
-    },
-    {
-     "name": "RiskLimitPlatform",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1533"
-     }
-    },
-    {
-     "name": "RiskLimitVelocityPeriod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2336"
-     }
-    },
-    {
-     "name": "RiskLimitVelocityUnit",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2337"
-     }
-    },
-    {
-     "name": "NoRiskWarningLevels",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "1559"
-     },
-     "item": {
-      "name": "RiskWarningLevel",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "RiskWarningLevelAction",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1769"
-        }
-       },
-       {
-        "name": "RiskWarningLevelPercent",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1560"
-        }
-       },
-       {
-        "name": "RiskWarningLevelAmount",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1768"
-        }
-       },
-       {
-        "name": "RiskWarningLevelName",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1561"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1529",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "RiskLimitType",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "RiskLimitType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1530"
     }
-   ]
-  }
+   },
+   {
+    "name": "RiskLimitAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1531"
+    }
+   },
+   {
+    "name": "RiskLimitAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1767"
+    }
+   },
+   {
+    "name": "RiskLimitUtilizationAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1766"
+    }
+   },
+   {
+    "name": "RiskLimitUtilizationPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1765"
+    }
+   },
+   {
+    "name": "RiskLimitCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1532"
+    }
+   },
+   {
+    "name": "RiskLimitCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2939"
+    }
+   },
+   {
+    "name": "RiskLimitPlatform",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1533"
+    }
+   },
+   {
+    "name": "RiskLimitVelocityPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2336"
+    }
+   },
+   {
+    "name": "RiskLimitVelocityUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2337"
+    }
+   },
+   {
+    "name": "NoRiskWarningLevels",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1559"
+    },
+    "item": {
+     "name": "RiskWarningLevel",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RiskWarningLevelAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1769"
+       }
+      },
+      {
+       "name": "RiskWarningLevelPercent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1560"
+       }
+      },
+      {
+       "name": "RiskWarningLevelAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1768"
+       }
+      },
+      {
+       "name": "RiskWarningLevelName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1561"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

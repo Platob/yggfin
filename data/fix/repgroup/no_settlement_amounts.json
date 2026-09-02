@@ -1,44 +1,41 @@
 {
  "name": "NoSettlementAmounts",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoSettlementAmounts",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1700"
-  },
-  "item": {
-   "name": "SettlementAmount",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "SettlementAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1701"
-     }
-    },
-    {
-     "name": "SettlementAmountCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1702"
-     }
-    },
-    {
-     "name": "SettlementAmountCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2903"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1700",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "SettlementAmount",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "SettlementAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1701"
     }
-   ]
-  }
+   },
+   {
+    "name": "SettlementAmountCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1702"
+    }
+   },
+   {
+    "name": "SettlementAmountCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2903"
+    }
+   }
+  ]
  }
 }

@@ -1,5 +1,5 @@
-{
- "9001": {
+[
+ {
   "name": "TradeType",
   "type": "string",
   "nullable": true,
@@ -46,7 +46,7 @@
    ]
   }
  },
- "9002": {
+ {
   "name": "RegisteredRep",
   "type": "string",
   "nullable": true,
@@ -71,7 +71,7 @@
    ]
   }
  },
- "9003": {
+ {
   "name": "BranchOffice",
   "type": "string",
   "nullable": true,
@@ -96,7 +96,7 @@
    ]
   }
  },
- "9004": {
+ {
   "name": "ContraSideQualifier",
   "type": "int32",
   "nullable": true,
@@ -131,7 +131,7 @@
    ]
   }
  },
- "9005": {
+ {
   "name": "OmitSECFee",
   "type": "string",
   "nullable": true,
@@ -166,7 +166,7 @@
    ]
   }
  },
- "9006": {
+ {
   "name": "OmitTAFFee",
   "type": "string",
   "nullable": true,
@@ -201,7 +201,7 @@
    ]
   }
  },
- "9007": {
+ {
   "name": "LocateID",
   "type": "string",
   "nullable": true,
@@ -226,7 +226,7 @@
    ]
   }
  },
- "9008": {
+ {
   "name": "LocateSource",
   "type": "string",
   "nullable": true,
@@ -251,7 +251,7 @@
    ]
   }
  },
- "9009": {
+ {
   "name": "CancelTradeID",
   "type": "string",
   "nullable": true,
@@ -276,7 +276,7 @@
    ]
   }
  },
- "9010": {
+ {
   "name": "NSCCClearing",
   "type": "string",
   "nullable": true,
@@ -323,7 +323,7 @@
    ]
   }
  },
- "9011": {
+ {
   "name": "Response",
   "type": "string",
   "nullable": true,
@@ -348,4 +348,4 @@
    ]
   }
  }
-}
+]

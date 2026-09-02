@@ -1,92 +1,89 @@
 {
  "name": "MiscFeesSubGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "MiscFeesSubGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "MiscFeesSubGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ExecutionReport",
-    "MarketDefinition",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoMiscFeeSubTypes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2633"
-    },
-    "item": {
-     "name": "MiscFeeSubType",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "MiscFeeSubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2634"
-       }
-      },
-      {
-       "name": "MiscFeeSubTypeAmt",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2635"
-       }
-      },
-      {
-       "name": "MiscFeeSubTypeDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2636"
-       }
-      },
-      {
-       "name": "EncodedMiscFeeSubTypeDescLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2637"
-       }
-      },
-      {
-       "name": "EncodedMiscFeeSubTypeDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2638"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "MiscFeesSubGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ExecutionReport",
+   "MarketDefinition",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoMiscFeeSubTypes",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2633"
+   },
+   "item": {
+    "name": "MiscFeeSubType",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "MiscFeeSubType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2634"
+      }
+     },
+     {
+      "name": "MiscFeeSubTypeAmt",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2635"
+      }
+     },
+     {
+      "name": "MiscFeeSubTypeDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2636"
+      }
+     },
+     {
+      "name": "EncodedMiscFeeSubTypeDescLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2637"
+      }
+     },
+     {
+      "name": "EncodedMiscFeeSubTypeDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2638"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

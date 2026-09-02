@@ -1,36 +1,33 @@
 {
  "name": "NoLegPaymentStreamPricingDays",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegPaymentStreamPricingDays",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41596"
-  },
-  "item": {
-   "name": "LegPaymentStreamPricingDay",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegPaymentStreamPricingDayOfWeek",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41597"
-     }
-    },
-    {
-     "name": "LegPaymentStreamPricingDayNumber",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41598"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41596",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegPaymentStreamPricingDay",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegPaymentStreamPricingDayOfWeek",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41597"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegPaymentStreamPricingDayNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41598"
+    }
+   }
+  ]
  }
 }

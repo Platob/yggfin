@@ -1,142 +1,139 @@
 {
  "name": "PostTradePayment",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "PostTradePayment",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "PostTradePayment",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "PayManagementReport",
-    "PayManagementRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "PostTradePaymentType",
-    "type": "string",
-    "fix": {
-     "tag": "2824"
-    }
-   },
-   {
-    "name": "PostTradePaymentAmount",
-    "type": "string",
-    "fix": {
-     "tag": "2817"
-    }
-   },
-   {
-    "name": "PostTradePaymentCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2818"
-    }
-   },
-   {
-    "name": "PostTradePaymentCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2956"
-    }
-   },
-   {
-    "name": "PostTradePaymentCalculationDate",
-    "type": "string",
-    "fix": {
-     "tag": "2825"
-    }
-   },
-   {
-    "name": "PostTradePaymentValueDate",
-    "type": "string",
-    "fix": {
-     "tag": "2826"
-    }
-   },
-   {
-    "name": "PostTradePaymentFinalValueDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2827"
-    }
-   },
-   {
-    "name": "PostTradePaymentDebitOrCredit",
-    "type": "string",
-    "fix": {
-     "tag": "2819"
-    }
-   },
-   {
-    "name": "PostTradePaymentAccount",
-    "type": "string",
-    "fix": {
-     "tag": "2816"
-    }
-   },
-   {
-    "name": "PostTradePaymentID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2821"
-    }
-   },
-   {
-    "name": "PostTradePaymentDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2820"
-    }
-   },
-   {
-    "name": "EncodedPostTradePaymentDescLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2815"
-    }
-   },
-   {
-    "name": "EncodedPostTradePaymentDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2814"
-    }
-   },
-   {
-    "name": "PostTradePaymentLinkID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2822"
-    }
-   },
-   {
-    "name": "PostTradePaymentStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2823"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "PostTradePayment",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "PayManagementReport",
+   "PayManagementRequest"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "PostTradePaymentType",
+   "type": "string",
+   "fix": {
+    "tag": "2824"
+   }
+  },
+  {
+   "name": "PostTradePaymentAmount",
+   "type": "string",
+   "fix": {
+    "tag": "2817"
+   }
+  },
+  {
+   "name": "PostTradePaymentCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2818"
+   }
+  },
+  {
+   "name": "PostTradePaymentCurrencyCodeSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2956"
+   }
+  },
+  {
+   "name": "PostTradePaymentCalculationDate",
+   "type": "string",
+   "fix": {
+    "tag": "2825"
+   }
+  },
+  {
+   "name": "PostTradePaymentValueDate",
+   "type": "string",
+   "fix": {
+    "tag": "2826"
+   }
+  },
+  {
+   "name": "PostTradePaymentFinalValueDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2827"
+   }
+  },
+  {
+   "name": "PostTradePaymentDebitOrCredit",
+   "type": "string",
+   "fix": {
+    "tag": "2819"
+   }
+  },
+  {
+   "name": "PostTradePaymentAccount",
+   "type": "string",
+   "fix": {
+    "tag": "2816"
+   }
+  },
+  {
+   "name": "PostTradePaymentID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2821"
+   }
+  },
+  {
+   "name": "PostTradePaymentDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2820"
+   }
+  },
+  {
+   "name": "EncodedPostTradePaymentDescLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2815"
+   }
+  },
+  {
+   "name": "EncodedPostTradePaymentDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2814"
+   }
+  },
+  {
+   "name": "PostTradePaymentLinkID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2822"
+   }
+  },
+  {
+   "name": "PostTradePaymentStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2823"
+   }
+  }
+ ]
 }

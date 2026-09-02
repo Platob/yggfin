@@ -1,174 +1,171 @@
 {
  "name": "AllocCommissionDataGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "AllocCommissionDataGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "AllocCommissionDataGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoAllocCommissions",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2653"
-    },
-    "item": {
-     "name": "AllocCommission",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "AllocCommissionAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2654"
-       }
-      },
-      {
-       "name": "AllocCommissionAmountType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2655"
-       }
-      },
-      {
-       "name": "AllocCommissionAmountSubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2726"
-       }
-      },
-      {
-       "name": "AllocCommissionBasis",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2656"
-       }
-      },
-      {
-       "name": "AllocCommissionCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2657"
-       }
-      },
-      {
-       "name": "AllocCommissionCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2925"
-       }
-      },
-      {
-       "name": "AllocCommissionUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2658"
-       }
-      },
-      {
-       "name": "AllocCommissionUnitOfMeasureCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2659"
-       }
-      },
-      {
-       "name": "AllocCommissionUnitOfMeasureCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2926"
-       }
-      },
-      {
-       "name": "AllocCommissionRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2660"
-       }
-      },
-      {
-       "name": "AllocCommissionSharedIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2661"
-       }
-      },
-      {
-       "name": "AllocCommissionAmountShared",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2662"
-       }
-      },
-      {
-       "name": "AllocCommissionLegRefID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2663"
-       }
-      },
-      {
-       "name": "AllocCommissionDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2664"
-       }
-      },
-      {
-       "name": "EncodedAllocCommissionDescLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2665"
-       }
-      },
-      {
-       "name": "EncodedAllocCommissionDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2666"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "AllocCommissionDataGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoAllocCommissions",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2653"
+   },
+   "item": {
+    "name": "AllocCommission",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "AllocCommissionAmount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2654"
+      }
+     },
+     {
+      "name": "AllocCommissionAmountType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2655"
+      }
+     },
+     {
+      "name": "AllocCommissionAmountSubType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2726"
+      }
+     },
+     {
+      "name": "AllocCommissionBasis",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2656"
+      }
+     },
+     {
+      "name": "AllocCommissionCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2657"
+      }
+     },
+     {
+      "name": "AllocCommissionCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2925"
+      }
+     },
+     {
+      "name": "AllocCommissionUnitOfMeasure",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2658"
+      }
+     },
+     {
+      "name": "AllocCommissionUnitOfMeasureCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2659"
+      }
+     },
+     {
+      "name": "AllocCommissionUnitOfMeasureCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2926"
+      }
+     },
+     {
+      "name": "AllocCommissionRate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2660"
+      }
+     },
+     {
+      "name": "AllocCommissionSharedIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2661"
+      }
+     },
+     {
+      "name": "AllocCommissionAmountShared",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2662"
+      }
+     },
+     {
+      "name": "AllocCommissionLegRefID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2663"
+      }
+     },
+     {
+      "name": "AllocCommissionDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2664"
+      }
+     },
+     {
+      "name": "EncodedAllocCommissionDescLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2665"
+      }
+     },
+     {
+      "name": "EncodedAllocCommissionDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2666"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

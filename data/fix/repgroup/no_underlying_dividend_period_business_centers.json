@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingDividendPeriodBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingDividendPeriodBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42882"
-  },
-  "item": {
-   "name": "UnderlyingDividendPeriodBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingDividendPeriodBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42883"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42882",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingDividendPeriodBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingDividendPeriodBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42883"
     }
-   ]
-  }
+   }
+  ]
  }
 }

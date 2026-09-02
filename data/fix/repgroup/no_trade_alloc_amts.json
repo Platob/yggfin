@@ -1,64 +1,61 @@
 {
  "name": "NoTradeAllocAmts",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTradeAllocAmts",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1844"
-  },
-  "item": {
-   "name": "TradeAllocAmt",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TradeAllocAmtType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1845"
-     }
-    },
-    {
-     "name": "TradeAllocAmt",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1846"
-     }
-    },
-    {
-     "name": "TradeAllocCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1847"
-     }
-    },
-    {
-     "name": "TradeAllocCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2933"
-     }
-    },
-    {
-     "name": "TradeAllocAmtReason",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1850"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1844",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TradeAllocAmt",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TradeAllocAmtType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1845"
     }
-   ]
-  }
+   },
+   {
+    "name": "TradeAllocAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1846"
+    }
+   },
+   {
+    "name": "TradeAllocCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1847"
+    }
+   },
+   {
+    "name": "TradeAllocCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2933"
+    }
+   },
+   {
+    "name": "TradeAllocAmtReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1850"
+    }
+   }
+  ]
  }
 }

@@ -1,89 +1,86 @@
 {
  "name": "NoTargetPartyIDs",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTargetPartyIDs",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1461"
-  },
-  "item": {
-   "name": "TargetPartyID",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TargetPartyID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1462"
-     }
-    },
-    {
-     "name": "TargetPartyIDSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1463"
-     }
-    },
-    {
-     "name": "TargetPartyRole",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1464"
-     }
-    },
-    {
-     "name": "TargetPartyRoleQualifier",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1818"
-     }
-    },
-    {
-     "name": "NoTargetPartySubIDs",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "2433"
-     },
-     "item": {
-      "name": "TargetPartySubID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "TargetPartySubID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2434"
-        }
-       },
-       {
-        "name": "TargetPartySubIDType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2435"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1461",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TargetPartyID",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TargetPartyID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1462"
     }
-   ]
-  }
+   },
+   {
+    "name": "TargetPartyIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1463"
+    }
+   },
+   {
+    "name": "TargetPartyRole",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1464"
+    }
+   },
+   {
+    "name": "TargetPartyRoleQualifier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1818"
+    }
+   },
+   {
+    "name": "NoTargetPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2433"
+    },
+    "item": {
+     "name": "TargetPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TargetPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2434"
+       }
+      },
+      {
+       "name": "TargetPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2435"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

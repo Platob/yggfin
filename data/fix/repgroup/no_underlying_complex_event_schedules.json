@@ -1,64 +1,61 @@
 {
  "name": "NoUnderlyingComplexEventSchedules",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingComplexEventSchedules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41750"
-  },
-  "item": {
-   "name": "UnderlyingComplexEventSchedule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingComplexEventScheduleStartDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41751"
-     }
-    },
-    {
-     "name": "UnderlyingComplexEventScheduleEndDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41752"
-     }
-    },
-    {
-     "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41753"
-     }
-    },
-    {
-     "name": "UnderlyingComplexEventScheduleFrequencyUnit",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41754"
-     }
-    },
-    {
-     "name": "UnderlyingComplexEventScheduleRollConvention",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41755"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41750",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingComplexEventSchedule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingComplexEventScheduleStartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41751"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingComplexEventScheduleEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41752"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41753"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventScheduleFrequencyUnit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41754"
+    }
+   },
+   {
+    "name": "UnderlyingComplexEventScheduleRollConvention",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41755"
+    }
+   }
+  ]
  }
 }

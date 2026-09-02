@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingSettlMethodElectionDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingSettlMethodElectionDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "43074"
-  },
-  "item": {
-   "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "43075"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "43074",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43075"
     }
-   ]
-  }
+   }
+  ]
  }
 }

@@ -1,74 +1,71 @@
 {
  "name": "NoLegStreamCommoditySettlDays",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegStreamCommoditySettlDays",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41680"
-  },
-  "item": {
-   "name": "LegStreamCommoditySettlDay",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegStreamCommoditySettlDay",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41681"
-     }
-    },
-    {
-     "name": "LegStreamCommoditySettlTotalHours",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41682"
-     }
-    },
-    {
-     "name": "NoLegStreamCommoditySettlTimes",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41683"
-     },
-     "item": {
-      "name": "LegStreamCommoditySettlTime",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegStreamCommoditySettlStart",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41684"
-        }
-       },
-       {
-        "name": "LegStreamCommoditySettlEnd",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41685"
-        }
-       },
-       {
-        "name": "LegStreamCommoditySettlTimeType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41935"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41680",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegStreamCommoditySettlDay",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegStreamCommoditySettlDay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41681"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegStreamCommoditySettlTotalHours",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41682"
+    }
+   },
+   {
+    "name": "NoLegStreamCommoditySettlTimes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41683"
+    },
+    "item": {
+     "name": "LegStreamCommoditySettlTime",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamCommoditySettlStart",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41684"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlEnd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41685"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41935"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

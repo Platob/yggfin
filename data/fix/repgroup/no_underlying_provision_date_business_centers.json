@@ -1,32 +1,29 @@
 {
  "name": "NoUnderlyingProvisionDateBusinessCenters",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingProvisionDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42190"
-  },
-  "item": {
-   "name": "UnderlyingProvisionDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingProvisionDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42191"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42190",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingProvisionDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingProvisionDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42191"
     }
-   ]
-  }
+   }
+  ]
  }
 }

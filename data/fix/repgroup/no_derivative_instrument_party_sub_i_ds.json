@@ -1,37 +1,34 @@
 {
  "name": "NoDerivativeInstrumentPartySubIDs",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoDerivativeInstrumentPartySubIDs",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1296"
-  },
-  "item": {
-   "name": "DerivativeInstrumentPartySubID",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "DerivativeInstrumentPartySubID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1297"
-     }
-    },
-    {
-     "name": "DerivativeInstrumentPartySubIDType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1298"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1296",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "DerivativeInstrumentPartySubID",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "DerivativeInstrumentPartySubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1297"
     }
-   ]
-  }
+   },
+   {
+    "name": "DerivativeInstrumentPartySubIDType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1298"
+    }
+   }
+  ]
  }
 }

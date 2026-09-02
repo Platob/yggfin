@@ -1,283 +1,280 @@
 {
  "name": "PaymentStreamNonDeliverableSettlTerms",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "PaymentStreamNonDeliverableSettlTerms",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "PaymentStreamNonDeliverableSettlTerms",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "Allocation",
-    "AllocationInstruction",
-    "AllocationInstructionAck",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AllocationReportAck",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "CrossRequest",
-    "CrossRequestAck",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarginRequirementInquiry",
-    "MarginRequirementInquiryAck",
-    "MarginRequirementReport",
-    "MarketDataAck",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassOrder",
-    "MassOrderAck",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "SettlementObligationReport",
-    "SettlementStatusReport",
-    "SettlementStatusRequest",
-    "StreamAssignmentReport",
-    "StreamAssignmentRequest",
-    "TradeAggregationReport",
-    "TradeAggregationRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport",
-    "TradingSessionStatus"
-   ]
-  },
-  "fields": [
-   {
-    "name": "PaymentStreamNonDeliverableRefCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40817"
-    }
-   },
-   {
-    "name": "PaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40818"
-    }
-   },
-   {
-    "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40946"
-    },
-    "item": {
-     "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40819"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "PaymentStreamNonDeliverableFixingDatesRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40820"
-    }
-   },
-   {
-    "name": "PaymentStreamNonDeliverableFixingDatesOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40821"
-    }
-   },
-   {
-    "name": "PaymentStreamNonDeliverableFixingDatesOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40822"
-    }
-   },
-   {
-    "name": "PaymentStreamNonDeliverableFixingDatesOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40823"
-    }
-   },
-   {
-    "name": "PaymentStreamNonDeliverableSettlRateSource",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "PaymentStreamNonDeliverableSettlRateSource"
-    },
-    "fields": []
-   },
-   {
-    "name": "NoNonDeliverableFixingDates",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40825"
-    },
-    "item": {
-     "name": "NonDeliverableFixingDate",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "NonDeliverableFixingDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40826"
-       }
-      },
-      {
-       "name": "NonDeliverableFixingDateType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40827"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoSettlRateFallbacks",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40085"
-    },
-    "item": {
-     "name": "SettlRateFallback",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "SettlRatePostponementMaximumDays",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40086"
-       }
-      },
-      {
-       "name": "SettlRateFallbackRateSource",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "SettlRateFallbackRateSource"
-       },
-       "fields": []
-      },
-      {
-       "name": "SettlRatePostponementSurvey",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40088"
-       }
-      },
-      {
-       "name": "SettlRatePostponementCalculationAgent",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40089"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "PaymentStreamNonDeliverableSettlTerms",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "Allocation",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "CrossRequest",
+   "CrossRequestAck",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarginRequirementInquiry",
+   "MarginRequirementInquiryAck",
+   "MarginRequirementReport",
+   "MarketDataAck",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassOrder",
+   "MassOrderAck",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "SettlementObligationReport",
+   "SettlementStatusReport",
+   "SettlementStatusRequest",
+   "StreamAssignmentReport",
+   "StreamAssignmentRequest",
+   "TradeAggregationReport",
+   "TradeAggregationRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport",
+   "TradingSessionStatus"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "PaymentStreamNonDeliverableRefCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40817"
+   }
+  },
+  {
+   "name": "PaymentStreamNonDeliverableFixingDatesBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40818"
+   }
+  },
+  {
+   "name": "NoPaymentStreamNonDeliverableFixingDatesBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40946"
+   },
+   "item": {
+    "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "PaymentStreamNonDeliverableFixingDatesBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40819"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "PaymentStreamNonDeliverableFixingDatesRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40820"
+   }
+  },
+  {
+   "name": "PaymentStreamNonDeliverableFixingDatesOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40821"
+   }
+  },
+  {
+   "name": "PaymentStreamNonDeliverableFixingDatesOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40822"
+   }
+  },
+  {
+   "name": "PaymentStreamNonDeliverableFixingDatesOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40823"
+   }
+  },
+  {
+   "name": "PaymentStreamNonDeliverableSettlRateSource",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "PaymentStreamNonDeliverableSettlRateSource"
+   },
+   "fields": []
+  },
+  {
+   "name": "NoNonDeliverableFixingDates",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40825"
+   },
+   "item": {
+    "name": "NonDeliverableFixingDate",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "NonDeliverableFixingDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40826"
+      }
+     },
+     {
+      "name": "NonDeliverableFixingDateType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40827"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoSettlRateFallbacks",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40085"
+   },
+   "item": {
+    "name": "SettlRateFallback",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "SettlRatePostponementMaximumDays",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40086"
+      }
+     },
+     {
+      "name": "SettlRateFallbackRateSource",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "SettlRateFallbackRateSource"
+      },
+      "fields": []
+     },
+     {
+      "name": "SettlRatePostponementSurvey",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40088"
+      }
+     },
+     {
+      "name": "SettlRatePostponementCalculationAgent",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40089"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

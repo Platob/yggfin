@@ -1,153 +1,150 @@
 {
  "name": "BearStearns",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "BearStearns",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "BearStearns",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "Active",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6290"
-    }
-   },
-   {
-    "name": "AskDifference",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6245"
-    }
-   },
-   {
-    "name": "BetaNeutralityLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6238"
-    }
-   },
-   {
-    "name": "BidDifference",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6244"
-    }
-   },
-   {
-    "name": "Cash1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6248"
-    }
-   },
-   {
-    "name": "DollarNeutral",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6249"
-    }
-   },
-   {
-    "name": "DollarNeutralityLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6236"
-    }
-   },
-   {
-    "name": "LmtTickSizeRatio",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6247"
-    }
-   },
-   {
-    "name": "MaxShares",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6242"
-    }
-   },
-   {
-    "name": "MktTickSizeRatio",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6246"
-    }
-   },
-   {
-    "name": "OrderRatio",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6241"
-    }
-   },
-   {
-    "name": "RatioNeutralityLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6237"
-    }
-   },
-   {
-    "name": "RiskAversion1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6235"
-    }
-   },
-   {
-    "name": "Spread1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6240"
-    }
-   },
-   {
-    "name": "SpreadFormula",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6239"
-    }
-   },
-   {
-    "name": "SpreadType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6243"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "BearStearns",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "Active",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6290"
+   }
+  },
+  {
+   "name": "AskDifference",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6245"
+   }
+  },
+  {
+   "name": "BetaNeutralityLimit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6238"
+   }
+  },
+  {
+   "name": "BidDifference",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6244"
+   }
+  },
+  {
+   "name": "Cash1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6248"
+   }
+  },
+  {
+   "name": "DollarNeutral",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6249"
+   }
+  },
+  {
+   "name": "DollarNeutralityLimit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6236"
+   }
+  },
+  {
+   "name": "LmtTickSizeRatio",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6247"
+   }
+  },
+  {
+   "name": "MaxShares",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6242"
+   }
+  },
+  {
+   "name": "MktTickSizeRatio",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6246"
+   }
+  },
+  {
+   "name": "OrderRatio",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6241"
+   }
+  },
+  {
+   "name": "RatioNeutralityLimit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6237"
+   }
+  },
+  {
+   "name": "RiskAversion1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6235"
+   }
+  },
+  {
+   "name": "Spread1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6240"
+   }
+  },
+  {
+   "name": "SpreadFormula",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6239"
+   }
+  },
+  {
+   "name": "SpreadType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6243"
+   }
+  }
+ ]
 }

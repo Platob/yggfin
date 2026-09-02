@@ -1,263 +1,260 @@
 {
  "name": "UnderlyingPaymentStreamCompoundingDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "UnderlyingPaymentStreamCompoundingDates",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "UnderlyingPaymentStreamCompoundingDates",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "UnderlyingPaymentStreamCompoundingDatesBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42904"
-    }
-   },
-   {
-    "name": "NoUnderlyingPaymentStreamCompoundingDatesBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42915"
-    },
-    "item": {
-     "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42916"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoUnderlyingPaymentStreamCompoundingDates",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42901"
-    },
-    "item": {
-     "name": "UnderlyingPaymentStreamCompoundingDate",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "UnderlyingPaymentStreamCompoundingDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42902"
-       }
-      },
-      {
-       "name": "UnderlyingPaymentStreamCompoundingDateType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42903"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingDatesRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42905"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingDatesOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42906"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingDatesOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42907"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingDatesOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42908"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingPeriodSkip",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42909"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingStartDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingPaymentStreamCompoundingStartDate"
-    },
-    "fields": []
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingEndDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingPaymentStreamCompoundingEndDate"
-    },
-    "fields": []
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42910"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42911"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRollConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42912"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamBoundsFirstDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42913"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamBoundsLastDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42914"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "UnderlyingPaymentStreamCompoundingDates",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "UnderlyingPaymentStreamCompoundingDatesBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42904"
+   }
+  },
+  {
+   "name": "NoUnderlyingPaymentStreamCompoundingDatesBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42915"
+   },
+   "item": {
+    "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42916"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoUnderlyingPaymentStreamCompoundingDates",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42901"
+   },
+   "item": {
+    "name": "UnderlyingPaymentStreamCompoundingDate",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "UnderlyingPaymentStreamCompoundingDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42902"
+      }
+     },
+     {
+      "name": "UnderlyingPaymentStreamCompoundingDateType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42903"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingDatesRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42905"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingDatesOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42906"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingDatesOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42907"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingDatesOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42908"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingPeriodSkip",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42909"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingStartDate",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "UnderlyingPaymentStreamCompoundingStartDate"
+   },
+   "fields": []
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingEndDate",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "UnderlyingPaymentStreamCompoundingEndDate"
+   },
+   "fields": []
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFrequencyPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42910"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFrequencyUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42911"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRollConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42912"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamBoundsFirstDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42913"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamBoundsLastDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42914"
+   }
+  }
+ ]
 }

@@ -1,457 +1,454 @@
 {
  "name": "Fidessa",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "Fidessa",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "Fidessa",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "FidessaTradeFlags",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6450"
-    }
-   },
-   {
-    "name": "FidStrategyParameter1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7015"
-    }
-   },
-   {
-    "name": "FidStrategyParameter2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7016"
-    }
-   },
-   {
-    "name": "FidStrategyParameter3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7110"
-    }
-   },
-   {
-    "name": "FidStrategyParameter4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7111"
-    }
-   },
-   {
-    "name": "FidStrategyParameter5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7112"
-    }
-   },
-   {
-    "name": "FidStrategyParameter6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7113"
-    }
-   },
-   {
-    "name": "FidStrategyParameter7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7114"
-    }
-   },
-   {
-    "name": "FidStrategyParameter8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7115"
-    }
-   },
-   {
-    "name": "FidStrategyParameter9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7116"
-    }
-   },
-   {
-    "name": "FidStrategyParameter10",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7117"
-    }
-   },
-   {
-    "name": "FidStrategyParameter11",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7118"
-    }
-   },
-   {
-    "name": "FidStrategyParameter12",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7119"
-    }
-   },
-   {
-    "name": "FidStrategyParameter13",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7120"
-    }
-   },
-   {
-    "name": "FidStrategyParameter14",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7121"
-    }
-   },
-   {
-    "name": "FidStrategyParameter15",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7122"
-    }
-   },
-   {
-    "name": "FidStrategyParameter16",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7123"
-    }
-   },
-   {
-    "name": "FidStrategyParameter17",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7124"
-    }
-   },
-   {
-    "name": "FidStrategyParameter18",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7125"
-    }
-   },
-   {
-    "name": "FidStrategyParameter19",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7126"
-    }
-   },
-   {
-    "name": "FidStrategyParameter20",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7127"
-    }
-   },
-   {
-    "name": "FidStrategyParameter21",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7128"
-    }
-   },
-   {
-    "name": "FidStrategyParameter22",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7129"
-    }
-   },
-   {
-    "name": "FidStrategyParameter23",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7130"
-    }
-   },
-   {
-    "name": "FidStrategyParameter24",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7131"
-    }
-   },
-   {
-    "name": "FidStrategyParameter25",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7132"
-    }
-   },
-   {
-    "name": "FidStrategyParameter26",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7133"
-    }
-   },
-   {
-    "name": "FidStrategyParameter27",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7134"
-    }
-   },
-   {
-    "name": "FidStrategyParameter28",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7135"
-    }
-   },
-   {
-    "name": "FidStrategyParameter29",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7136"
-    }
-   },
-   {
-    "name": "FidStrategyParameter30",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7137"
-    }
-   },
-   {
-    "name": "FidStrategyParameter31",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7138"
-    }
-   },
-   {
-    "name": "FidStrategyParameter32",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7139"
-    }
-   },
-   {
-    "name": "FidStrategyParameter33",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7140"
-    }
-   },
-   {
-    "name": "FidStrategyParameter34",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7141"
-    }
-   },
-   {
-    "name": "FidStrategyParameter35",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7142"
-    }
-   },
-   {
-    "name": "FidStrategyParameter36",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7143"
-    }
-   },
-   {
-    "name": "FidStrategyParameter37",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7144"
-    }
-   },
-   {
-    "name": "FidStrategyParameter38",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7145"
-    }
-   },
-   {
-    "name": "FidStrategyParameter39",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7146"
-    }
-   },
-   {
-    "name": "FidStrategyParameter40",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7147"
-    }
-   },
-   {
-    "name": "FidStrategyParameter41",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7148"
-    }
-   },
-   {
-    "name": "FidStrategyParameter42",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7149"
-    }
-   },
-   {
-    "name": "FidStrategyParameter43",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7150"
-    }
-   },
-   {
-    "name": "FidStrategyParameter44",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7151"
-    }
-   },
-   {
-    "name": "FidStrategyParameter45",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7152"
-    }
-   },
-   {
-    "name": "FidStrategyParameter46",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7153"
-    }
-   },
-   {
-    "name": "FidStrategyParameter47",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7154"
-    }
-   },
-   {
-    "name": "FidStrategyParameter48",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7155"
-    }
-   },
-   {
-    "name": "FidStrategyParameter49",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7156"
-    }
-   },
-   {
-    "name": "FidStrategyParameter50",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7157"
-    }
-   },
-   {
-    "name": "FidStrategyParameter51",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7158"
-    }
-   },
-   {
-    "name": "FidStrategyParameter52",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7159"
-    }
-   },
-   {
-    "name": "InvestorAdvisorCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9000"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "Fidessa",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "FidessaTradeFlags",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6450"
+   }
+  },
+  {
+   "name": "FidStrategyParameter1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7015"
+   }
+  },
+  {
+   "name": "FidStrategyParameter2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7016"
+   }
+  },
+  {
+   "name": "FidStrategyParameter3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7110"
+   }
+  },
+  {
+   "name": "FidStrategyParameter4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7111"
+   }
+  },
+  {
+   "name": "FidStrategyParameter5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7112"
+   }
+  },
+  {
+   "name": "FidStrategyParameter6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7113"
+   }
+  },
+  {
+   "name": "FidStrategyParameter7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7114"
+   }
+  },
+  {
+   "name": "FidStrategyParameter8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7115"
+   }
+  },
+  {
+   "name": "FidStrategyParameter9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7116"
+   }
+  },
+  {
+   "name": "FidStrategyParameter10",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7117"
+   }
+  },
+  {
+   "name": "FidStrategyParameter11",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7118"
+   }
+  },
+  {
+   "name": "FidStrategyParameter12",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7119"
+   }
+  },
+  {
+   "name": "FidStrategyParameter13",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7120"
+   }
+  },
+  {
+   "name": "FidStrategyParameter14",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7121"
+   }
+  },
+  {
+   "name": "FidStrategyParameter15",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7122"
+   }
+  },
+  {
+   "name": "FidStrategyParameter16",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7123"
+   }
+  },
+  {
+   "name": "FidStrategyParameter17",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7124"
+   }
+  },
+  {
+   "name": "FidStrategyParameter18",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7125"
+   }
+  },
+  {
+   "name": "FidStrategyParameter19",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7126"
+   }
+  },
+  {
+   "name": "FidStrategyParameter20",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7127"
+   }
+  },
+  {
+   "name": "FidStrategyParameter21",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7128"
+   }
+  },
+  {
+   "name": "FidStrategyParameter22",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7129"
+   }
+  },
+  {
+   "name": "FidStrategyParameter23",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7130"
+   }
+  },
+  {
+   "name": "FidStrategyParameter24",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7131"
+   }
+  },
+  {
+   "name": "FidStrategyParameter25",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7132"
+   }
+  },
+  {
+   "name": "FidStrategyParameter26",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7133"
+   }
+  },
+  {
+   "name": "FidStrategyParameter27",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7134"
+   }
+  },
+  {
+   "name": "FidStrategyParameter28",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7135"
+   }
+  },
+  {
+   "name": "FidStrategyParameter29",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7136"
+   }
+  },
+  {
+   "name": "FidStrategyParameter30",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7137"
+   }
+  },
+  {
+   "name": "FidStrategyParameter31",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7138"
+   }
+  },
+  {
+   "name": "FidStrategyParameter32",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7139"
+   }
+  },
+  {
+   "name": "FidStrategyParameter33",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7140"
+   }
+  },
+  {
+   "name": "FidStrategyParameter34",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7141"
+   }
+  },
+  {
+   "name": "FidStrategyParameter35",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7142"
+   }
+  },
+  {
+   "name": "FidStrategyParameter36",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7143"
+   }
+  },
+  {
+   "name": "FidStrategyParameter37",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7144"
+   }
+  },
+  {
+   "name": "FidStrategyParameter38",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7145"
+   }
+  },
+  {
+   "name": "FidStrategyParameter39",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7146"
+   }
+  },
+  {
+   "name": "FidStrategyParameter40",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7147"
+   }
+  },
+  {
+   "name": "FidStrategyParameter41",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7148"
+   }
+  },
+  {
+   "name": "FidStrategyParameter42",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7149"
+   }
+  },
+  {
+   "name": "FidStrategyParameter43",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7150"
+   }
+  },
+  {
+   "name": "FidStrategyParameter44",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7151"
+   }
+  },
+  {
+   "name": "FidStrategyParameter45",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7152"
+   }
+  },
+  {
+   "name": "FidStrategyParameter46",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7153"
+   }
+  },
+  {
+   "name": "FidStrategyParameter47",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7154"
+   }
+  },
+  {
+   "name": "FidStrategyParameter48",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7155"
+   }
+  },
+  {
+   "name": "FidStrategyParameter49",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7156"
+   }
+  },
+  {
+   "name": "FidStrategyParameter50",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7157"
+   }
+  },
+  {
+   "name": "FidStrategyParameter51",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7158"
+   }
+  },
+  {
+   "name": "FidStrategyParameter52",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7159"
+   }
+  },
+  {
+   "name": "InvestorAdvisorCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9000"
+   }
+  }
+ ]
 }

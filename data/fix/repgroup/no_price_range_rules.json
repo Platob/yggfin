@@ -1,69 +1,66 @@
 {
  "name": "NoPriceRangeRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPriceRangeRules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2550"
-  },
-  "item": {
-   "name": "PriceRangeRule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "StartPriceRange",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2551"
-     }
-    },
-    {
-     "name": "EndPriceRange",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2552"
-     }
-    },
-    {
-     "name": "PriceRangeValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2553"
-     }
-    },
-    {
-     "name": "PriceRangePercentage",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2554"
-     }
-    },
-    {
-     "name": "PriceRangeRuleID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2556"
-     }
-    },
-    {
-     "name": "PriceRangeProductComplex",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2555"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2550",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PriceRangeRule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "StartPriceRange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2551"
     }
-   ]
-  }
+   },
+   {
+    "name": "EndPriceRange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2552"
+    }
+   },
+   {
+    "name": "PriceRangeValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2553"
+    }
+   },
+   {
+    "name": "PriceRangePercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2554"
+    }
+   },
+   {
+    "name": "PriceRangeRuleID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2556"
+    }
+   },
+   {
+    "name": "PriceRangeProductComplex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2555"
+    }
+   }
+  ]
  }
 }

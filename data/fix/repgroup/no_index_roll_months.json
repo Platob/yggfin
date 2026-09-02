@@ -1,31 +1,28 @@
 {
  "name": "NoIndexRollMonths",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoIndexRollMonths",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2734"
-  },
-  "item": {
-   "name": "IndexRollMonth",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "IndexRollMonth",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2733"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2734",
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "IndexRollMonth",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "IndexRollMonth",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2733"
     }
-   ]
-  }
+   }
+  ]
  }
 }

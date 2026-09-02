@@ -1,262 +1,259 @@
 {
  "name": "UnderlyingAdditionalTermBondRefGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "UnderlyingAdditionalTermBondRefGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "UnderlyingAdditionalTermBondRefGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoUnderlyingAdditionalTermBondRefs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41340"
-    },
-    "item": {
-     "name": "UnderlyingAdditionalTermBondRef",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "UnderlyingAdditionalTermBondSecurityID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41341"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondSecurityIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41701"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41709"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingAdditionalTermBondDescLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41710"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingAdditionalTermBondDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41711"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41712"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondIssuer",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42017"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42025"
-       }
-      },
-      {
-       "name": "EncodedUnderlyingAdditionalTermBondIssuer",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42026"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondSeniority",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42027"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondCouponType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42028"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondCouponRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42029"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondMaturityDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42030"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondParValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42031"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42032"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42033"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondCouponFrequencyUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42034"
-       }
-      },
-      {
-       "name": "UnderlyingAdditionalTermBondDayCount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42035"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "UnderlyingAdditionalTermBondRefGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoUnderlyingAdditionalTermBondRefs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41340"
+   },
+   "item": {
+    "name": "UnderlyingAdditionalTermBondRef",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "UnderlyingAdditionalTermBondSecurityID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41341"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondSecurityIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41701"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41709"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingAdditionalTermBondDescLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41710"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingAdditionalTermBondDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41711"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41712"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondIssuer",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42017"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42025"
+      }
+     },
+     {
+      "name": "EncodedUnderlyingAdditionalTermBondIssuer",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42026"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondSeniority",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42027"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondCouponType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42028"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondCouponRate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42029"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondMaturityDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42030"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondParValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42031"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42032"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42033"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondCouponFrequencyUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42034"
+      }
+     },
+     {
+      "name": "UnderlyingAdditionalTermBondDayCount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42035"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

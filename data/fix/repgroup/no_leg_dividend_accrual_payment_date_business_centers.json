@@ -1,28 +1,25 @@
 {
  "name": "NoLegDividendAccrualPaymentDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegDividendAccrualPaymentDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42310"
-  },
-  "item": {
-   "name": "LegDividendAccrualPaymentDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegDividendAccrualPaymentDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42311"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42310",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegDividendAccrualPaymentDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegDividendAccrualPaymentDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42311"
     }
-   ]
-  }
+   }
+  ]
  }
 }

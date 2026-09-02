@@ -1,424 +1,421 @@
 {
  "name": "SideCrossOrdModGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "SideCrossOrdModGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "SideCrossOrdModGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "CrossOrderCancelReplaceRequest",
-    "NewOrderCross"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoSides",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "552"
-    },
-    "item": {
-     "name": "Side",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "Side",
-       "type": "string",
-       "fix": {
-        "tag": "54"
-       }
-      },
-      {
-       "name": "ShortMarkingExemptIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2102"
-       }
-      },
-      {
-       "name": "OrigClOrdID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41"
-       }
-      },
-      {
-       "name": "ClOrdID",
-       "type": "string",
-       "fix": {
-        "tag": "11"
-       }
-      },
-      {
-       "name": "SecondaryClOrdID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "526"
-       }
-      },
-      {
-       "name": "ClOrdLinkID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "583"
-       }
-      },
-      {
-       "name": "OrigOrdModTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "586"
-       }
-      },
-      {
-       "name": "Parties",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "Parties"
-       },
-       "fields": []
-      },
-      {
-       "name": "SideCrossLegGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "SideCrossLegGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "SideShortSaleExemptionReason",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1690"
-       }
-      },
-      {
-       "name": "TradeOriginationDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "229"
-       }
-      },
-      {
-       "name": "TradeDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "75"
-       }
-      },
-      {
-       "name": "Account",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1"
-       }
-      },
-      {
-       "name": "AcctIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "660"
-       }
-      },
-      {
-       "name": "AccountType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "581"
-       }
-      },
-      {
-       "name": "DayBookingInst",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "589"
-       }
-      },
-      {
-       "name": "BookingUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "590"
-       }
-      },
-      {
-       "name": "PreallocMethod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "591"
-       }
-      },
-      {
-       "name": "AllocID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "70"
-       }
-      },
-      {
-       "name": "PreAllocGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "PreAllocGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "QtyType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "854"
-       }
-      },
-      {
-       "name": "OrderQtyData",
-       "type": "struct",
-       "fix": {
-        "component": "OrderQtyData"
-       },
-       "fields": []
-      },
-      {
-       "name": "CommissionData",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "CommissionData"
-       },
-       "fields": []
-      },
-      {
-       "name": "CommissionDataGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "CommissionDataGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "OrderCapacity",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "528"
-       }
-      },
-      {
-       "name": "OrderRestrictions",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "529"
-       }
-      },
-      {
-       "name": "OrderOrigination",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1724"
-       }
-      },
-      {
-       "name": "OriginatingDeptID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1725"
-       }
-      },
-      {
-       "name": "ReceivingDeptID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1726"
-       }
-      },
-      {
-       "name": "RoutingArrangmentIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2883"
-       }
-      },
-      {
-       "name": "PreTradeAnonymity",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1091"
-       }
-      },
-      {
-       "name": "CustOrderCapacity",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "582"
-       }
-      },
-      {
-       "name": "ForexReq",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "121"
-       }
-      },
-      {
-       "name": "SettlCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "120"
-       }
-      },
-      {
-       "name": "SettlCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2899"
-       }
-      },
-      {
-       "name": "BookingType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "775"
-       }
-      },
-      {
-       "name": "Text",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "58"
-       }
-      },
-      {
-       "name": "EncodedTextLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "354"
-       }
-      },
-      {
-       "name": "EncodedText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "355"
-       }
-      },
-      {
-       "name": "ClearingAccountType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1816"
-       }
-      },
-      {
-       "name": "PositionEffect",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "77"
-       }
-      },
-      {
-       "name": "CoveredOrUncovered",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "203"
-       }
-      },
-      {
-       "name": "CashMargin",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "544"
-       }
-      },
-      {
-       "name": "ClearingFeeIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "635"
-       }
-      },
-      {
-       "name": "SolicitedFlag",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "377"
-       }
-      },
-      {
-       "name": "SideComplianceID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "659"
-       }
-      },
-      {
-       "name": "SideTimeInForce",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "962"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "SideCrossOrdModGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "CrossOrderCancelReplaceRequest",
+   "NewOrderCross"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoSides",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "552"
+   },
+   "item": {
+    "name": "Side",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "Side",
+      "type": "string",
+      "fix": {
+       "tag": "54"
+      }
+     },
+     {
+      "name": "ShortMarkingExemptIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2102"
+      }
+     },
+     {
+      "name": "OrigClOrdID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41"
+      }
+     },
+     {
+      "name": "ClOrdID",
+      "type": "string",
+      "fix": {
+       "tag": "11"
+      }
+     },
+     {
+      "name": "SecondaryClOrdID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "526"
+      }
+     },
+     {
+      "name": "ClOrdLinkID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "583"
+      }
+     },
+     {
+      "name": "OrigOrdModTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "586"
+      }
+     },
+     {
+      "name": "Parties",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "Parties"
+      },
+      "fields": []
+     },
+     {
+      "name": "SideCrossLegGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "SideCrossLegGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "SideShortSaleExemptionReason",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1690"
+      }
+     },
+     {
+      "name": "TradeOriginationDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "229"
+      }
+     },
+     {
+      "name": "TradeDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "75"
+      }
+     },
+     {
+      "name": "Account",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1"
+      }
+     },
+     {
+      "name": "AcctIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "660"
+      }
+     },
+     {
+      "name": "AccountType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "581"
+      }
+     },
+     {
+      "name": "DayBookingInst",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "589"
+      }
+     },
+     {
+      "name": "BookingUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "590"
+      }
+     },
+     {
+      "name": "PreallocMethod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "591"
+      }
+     },
+     {
+      "name": "AllocID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "70"
+      }
+     },
+     {
+      "name": "PreAllocGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "PreAllocGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "QtyType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "854"
+      }
+     },
+     {
+      "name": "OrderQtyData",
+      "type": "struct",
+      "fix": {
+       "component": "OrderQtyData"
+      },
+      "fields": []
+     },
+     {
+      "name": "CommissionData",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "CommissionData"
+      },
+      "fields": []
+     },
+     {
+      "name": "CommissionDataGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "CommissionDataGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "OrderCapacity",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "528"
+      }
+     },
+     {
+      "name": "OrderRestrictions",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "529"
+      }
+     },
+     {
+      "name": "OrderOrigination",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1724"
+      }
+     },
+     {
+      "name": "OriginatingDeptID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1725"
+      }
+     },
+     {
+      "name": "ReceivingDeptID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1726"
+      }
+     },
+     {
+      "name": "RoutingArrangmentIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2883"
+      }
+     },
+     {
+      "name": "PreTradeAnonymity",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1091"
+      }
+     },
+     {
+      "name": "CustOrderCapacity",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "582"
+      }
+     },
+     {
+      "name": "ForexReq",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "121"
+      }
+     },
+     {
+      "name": "SettlCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "120"
+      }
+     },
+     {
+      "name": "SettlCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2899"
+      }
+     },
+     {
+      "name": "BookingType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "775"
+      }
+     },
+     {
+      "name": "Text",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "58"
+      }
+     },
+     {
+      "name": "EncodedTextLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "354"
+      }
+     },
+     {
+      "name": "EncodedText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "355"
+      }
+     },
+     {
+      "name": "ClearingAccountType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1816"
+      }
+     },
+     {
+      "name": "PositionEffect",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "77"
+      }
+     },
+     {
+      "name": "CoveredOrUncovered",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "203"
+      }
+     },
+     {
+      "name": "CashMargin",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "544"
+      }
+     },
+     {
+      "name": "ClearingFeeIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "635"
+      }
+     },
+     {
+      "name": "SolicitedFlag",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "377"
+      }
+     },
+     {
+      "name": "SideComplianceID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "659"
+      }
+     },
+     {
+      "name": "SideTimeInForce",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "962"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

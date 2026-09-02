@@ -1,356 +1,353 @@
 {
  "name": "FinancingDetails",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "FinancingDetails",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "FinancingDetails",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "Email",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderStatusRequest",
-    "PositionReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "AgreementDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "913"
-    }
-   },
-   {
-    "name": "AgreementID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "914"
-    }
-   },
-   {
-    "name": "AgreementVersion",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1961"
-    }
-   },
-   {
-    "name": "AgreementDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "915"
-    }
-   },
-   {
-    "name": "AgreementCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "918"
-    }
-   },
-   {
-    "name": "AgreementCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2952"
-    }
-   },
-   {
-    "name": "MasterConfirmationDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1962"
-    }
-   },
-   {
-    "name": "MasterConfirmationDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1963"
-    }
-   },
-   {
-    "name": "MasterConfirmationAnnexDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1964"
-    }
-   },
-   {
-    "name": "MasterConfirmationAnnexDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1965"
-    }
-   },
-   {
-    "name": "BrokerConfirmationDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1966"
-    }
-   },
-   {
-    "name": "NoContractualDefinitions",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40040"
-    },
-    "item": {
-     "name": "ContractualDefinition",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ContractualDefinition",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40041"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoFinancingTermSupplements",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40046"
-    },
-    "item": {
-     "name": "FinancingTermSupplement",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "FinancingTermSupplementDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40047"
-       }
-      },
-      {
-       "name": "FinancingTermSupplementDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40048"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoContractualMatrices",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40042"
-    },
-    "item": {
-     "name": "ContractualMatrix",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ContractualMatrixSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40043"
-       }
-      },
-      {
-       "name": "ContractualMatrixDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40044"
-       }
-      },
-      {
-       "name": "ContractualMatrixTerm",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40045"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "CreditSupportAgreementDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1967"
-    }
-   },
-   {
-    "name": "CreditSupportAgreementDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1968"
-    }
-   },
-   {
-    "name": "CreditSupportAgreementID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1969"
-    }
-   },
-   {
-    "name": "GoverningLaw",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1970"
-    }
-   },
-   {
-    "name": "DocumentationText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1513"
-    }
-   },
-   {
-    "name": "EncodedDocumentationTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1525"
-    }
-   },
-   {
-    "name": "EncodedDocumentationText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1527"
-    }
-   },
-   {
-    "name": "TerminationType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "788"
-    }
-   },
-   {
-    "name": "StartDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "916"
-    }
-   },
-   {
-    "name": "EndDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "917"
-    }
-   },
-   {
-    "name": "DeliveryType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "919"
-    }
-   },
-   {
-    "name": "MarginRatio",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "898"
-    }
-   },
-   {
-    "name": "MarginPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3114"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "FinancingDetails",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "Email",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderStatusRequest",
+   "PositionReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "AgreementDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "913"
+   }
+  },
+  {
+   "name": "AgreementID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "914"
+   }
+  },
+  {
+   "name": "AgreementVersion",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1961"
+   }
+  },
+  {
+   "name": "AgreementDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "915"
+   }
+  },
+  {
+   "name": "AgreementCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "918"
+   }
+  },
+  {
+   "name": "AgreementCurrencyCodeSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2952"
+   }
+  },
+  {
+   "name": "MasterConfirmationDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1962"
+   }
+  },
+  {
+   "name": "MasterConfirmationDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1963"
+   }
+  },
+  {
+   "name": "MasterConfirmationAnnexDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1964"
+   }
+  },
+  {
+   "name": "MasterConfirmationAnnexDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1965"
+   }
+  },
+  {
+   "name": "BrokerConfirmationDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1966"
+   }
+  },
+  {
+   "name": "NoContractualDefinitions",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40040"
+   },
+   "item": {
+    "name": "ContractualDefinition",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ContractualDefinition",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40041"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoFinancingTermSupplements",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40046"
+   },
+   "item": {
+    "name": "FinancingTermSupplement",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "FinancingTermSupplementDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40047"
+      }
+     },
+     {
+      "name": "FinancingTermSupplementDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40048"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoContractualMatrices",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40042"
+   },
+   "item": {
+    "name": "ContractualMatrix",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ContractualMatrixSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40043"
+      }
+     },
+     {
+      "name": "ContractualMatrixDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40044"
+      }
+     },
+     {
+      "name": "ContractualMatrixTerm",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40045"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "CreditSupportAgreementDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1967"
+   }
+  },
+  {
+   "name": "CreditSupportAgreementDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1968"
+   }
+  },
+  {
+   "name": "CreditSupportAgreementID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1969"
+   }
+  },
+  {
+   "name": "GoverningLaw",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1970"
+   }
+  },
+  {
+   "name": "DocumentationText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1513"
+   }
+  },
+  {
+   "name": "EncodedDocumentationTextLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1525"
+   }
+  },
+  {
+   "name": "EncodedDocumentationText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1527"
+   }
+  },
+  {
+   "name": "TerminationType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "788"
+   }
+  },
+  {
+   "name": "StartDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "916"
+   }
+  },
+  {
+   "name": "EndDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "917"
+   }
+  },
+  {
+   "name": "DeliveryType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "919"
+   }
+  },
+  {
+   "name": "MarginRatio",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "898"
+   }
+  },
+  {
+   "name": "MarginPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "3114"
+   }
+  }
+ ]
 }

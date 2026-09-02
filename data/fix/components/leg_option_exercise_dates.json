@@ -1,294 +1,291 @@
 {
  "name": "LegOptionExerciseDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "LegOptionExerciseDates",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "LegOptionExerciseDates",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderMultileg",
-    "News",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "LegOptionExerciseBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41493"
-    }
-   },
-   {
-    "name": "NoLegOptionExerciseBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41491"
-    },
-    "item": {
-     "name": "LegOptionExerciseBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegOptionExerciseBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41492"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoLegOptionExerciseDates",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41512"
-    },
-    "item": {
-     "name": "LegOptionExerciseDate",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegOptionExerciseDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41513"
-       }
-      },
-      {
-       "name": "LegOptionExerciseDateType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41514"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegOptionExerciseEarliestDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41494"
-    }
-   },
-   {
-    "name": "LegOptionExerciseEarliestDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41495"
-    }
-   },
-   {
-    "name": "LegOptionExerciseEarliestDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41496"
-    }
-   },
-   {
-    "name": "LegOptionExerciseFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41497"
-    }
-   },
-   {
-    "name": "LegOptionExerciseFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41498"
-    }
-   },
-   {
-    "name": "LegOptionExerciseStartDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41499"
-    }
-   },
-   {
-    "name": "LegOptionExerciseStartDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41500"
-    }
-   },
-   {
-    "name": "LegOptionExerciseStartDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41501"
-    }
-   },
-   {
-    "name": "LegOptionExerciseStartDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41502"
-    }
-   },
-   {
-    "name": "LegOptionExerciseStartDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41503"
-    }
-   },
-   {
-    "name": "LegOptionExerciseStartDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41504"
-    }
-   },
-   {
-    "name": "LegOptionExerciseSkip",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41505"
-    }
-   },
-   {
-    "name": "LegOptionExerciseNominationDeadline",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41506"
-    }
-   },
-   {
-    "name": "LegOptionExerciseFirstDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41507"
-    }
-   },
-   {
-    "name": "LegOptionExerciseLastDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41508"
-    }
-   },
-   {
-    "name": "LegOptionExerciseEarliestTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41509"
-    }
-   },
-   {
-    "name": "LegOptionExerciseLatestTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41510"
-    }
-   },
-   {
-    "name": "LegOptionExerciseTimeBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41511"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "LegOptionExerciseDates",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderMultileg",
+   "News",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "LegOptionExerciseBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41493"
+   }
+  },
+  {
+   "name": "NoLegOptionExerciseBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41491"
+   },
+   "item": {
+    "name": "LegOptionExerciseBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegOptionExerciseBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41492"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoLegOptionExerciseDates",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41512"
+   },
+   "item": {
+    "name": "LegOptionExerciseDate",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegOptionExerciseDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41513"
+      }
+     },
+     {
+      "name": "LegOptionExerciseDateType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41514"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegOptionExerciseEarliestDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41494"
+   }
+  },
+  {
+   "name": "LegOptionExerciseEarliestDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41495"
+   }
+  },
+  {
+   "name": "LegOptionExerciseEarliestDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41496"
+   }
+  },
+  {
+   "name": "LegOptionExerciseFrequencyPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41497"
+   }
+  },
+  {
+   "name": "LegOptionExerciseFrequencyUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41498"
+   }
+  },
+  {
+   "name": "LegOptionExerciseStartDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41499"
+   }
+  },
+  {
+   "name": "LegOptionExerciseStartDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41500"
+   }
+  },
+  {
+   "name": "LegOptionExerciseStartDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41501"
+   }
+  },
+  {
+   "name": "LegOptionExerciseStartDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41502"
+   }
+  },
+  {
+   "name": "LegOptionExerciseStartDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41503"
+   }
+  },
+  {
+   "name": "LegOptionExerciseStartDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41504"
+   }
+  },
+  {
+   "name": "LegOptionExerciseSkip",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41505"
+   }
+  },
+  {
+   "name": "LegOptionExerciseNominationDeadline",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41506"
+   }
+  },
+  {
+   "name": "LegOptionExerciseFirstDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41507"
+   }
+  },
+  {
+   "name": "LegOptionExerciseLastDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41508"
+   }
+  },
+  {
+   "name": "LegOptionExerciseEarliestTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41509"
+   }
+  },
+  {
+   "name": "LegOptionExerciseLatestTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41510"
+   }
+  },
+  {
+   "name": "LegOptionExerciseTimeBusinessCenter",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41511"
+   }
+  }
+ ]
 }

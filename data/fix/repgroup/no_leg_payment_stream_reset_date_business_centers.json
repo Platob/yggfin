@@ -1,28 +1,25 @@
 {
  "name": "NoLegPaymentStreamResetDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegPaymentStreamResetDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40931"
-  },
-  "item": {
-   "name": "LegPaymentStreamResetDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegPaymentStreamResetDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40305"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40931",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegPaymentStreamResetDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegPaymentStreamResetDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40305"
     }
-   ]
-  }
+   }
+  ]
  }
 }

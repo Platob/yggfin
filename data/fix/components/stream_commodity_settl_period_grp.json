@@ -1,250 +1,247 @@
 {
  "name": "StreamCommoditySettlPeriodGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "StreamCommoditySettlPeriodGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "StreamCommoditySettlPeriodGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "Allocation",
-    "AllocationInstruction",
-    "AllocationInstructionAck",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AllocationReportAck",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "CrossRequest",
-    "CrossRequestAck",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarginRequirementInquiry",
-    "MarginRequirementInquiryAck",
-    "MarginRequirementReport",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassOrder",
-    "MassOrderAck",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "SettlementObligationReport",
-    "StreamAssignmentReport",
-    "StreamAssignmentRequest",
-    "TradeAggregationReport",
-    "TradeAggregationRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport",
-    "TradingSessionStatus"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoStreamCommoditySettlPeriods",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41289"
-    },
-    "item": {
-     "name": "StreamCommoditySettlPeriod",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "StreamCommoditySettlCountry",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41290"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlTimeZone",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41291"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlFlowType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41292"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodNotional",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41293"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodNotionalUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41294"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodFrequencyPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41295"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodFrequencyUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41296"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodPrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41297"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodPriceUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41298"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodPriceCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41299"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlHolidaysProcessingInstruction",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41300"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlDayGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "StreamCommoditySettlDayGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "StreamCommoditySettlPeriodXID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41301"
-       }
-      },
-      {
-       "name": "StreamCommoditySettlPeriodXIDRef",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41302"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "StreamCommoditySettlPeriodGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "Allocation",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "CrossRequest",
+   "CrossRequestAck",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarginRequirementInquiry",
+   "MarginRequirementInquiryAck",
+   "MarginRequirementReport",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassOrder",
+   "MassOrderAck",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "SettlementObligationReport",
+   "StreamAssignmentReport",
+   "StreamAssignmentRequest",
+   "TradeAggregationReport",
+   "TradeAggregationRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport",
+   "TradingSessionStatus"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoStreamCommoditySettlPeriods",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41289"
+   },
+   "item": {
+    "name": "StreamCommoditySettlPeriod",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "StreamCommoditySettlCountry",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41290"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlTimeZone",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41291"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlFlowType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41292"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodNotional",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41293"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodNotionalUnitOfMeasure",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41294"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodFrequencyPeriod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41295"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodFrequencyUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41296"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodPrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41297"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodPriceUnitOfMeasure",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41298"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodPriceCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41299"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlHolidaysProcessingInstruction",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41300"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlDayGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "StreamCommoditySettlDayGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "StreamCommoditySettlPeriodXID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41301"
+      }
+     },
+     {
+      "name": "StreamCommoditySettlPeriodXIDRef",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41302"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

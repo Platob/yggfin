@@ -1,29 +1,26 @@
 {
  "name": "NoTimeInForceRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTimeInForceRules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1239"
-  },
-  "item": {
-   "name": "TimeInForceRule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TimeInForce",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "59"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1239",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TimeInForceRule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TimeInForce",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "59"
     }
-   ]
-  }
+   }
+  ]
  }
 }

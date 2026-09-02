@@ -1,56 +1,53 @@
 {
  "name": "NoNotAffectedOrders",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoNotAffectedOrders",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1370"
-  },
-  "item": {
-   "name": "NotAffectedOrder",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "NotAffOrigClOrdID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1372"
-     }
-    },
-    {
-     "name": "NotAffectedOrderID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1371"
-     }
-    },
-    {
-     "name": "NotAffSecondaryOrderID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1825"
-     }
-    },
-    {
-     "name": "NotAffectedReason",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2677"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1370",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "NotAffectedOrder",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "NotAffOrigClOrdID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1372"
     }
-   ]
-  }
+   },
+   {
+    "name": "NotAffectedOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1371"
+    }
+   },
+   {
+    "name": "NotAffSecondaryOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1825"
+    }
+   },
+   {
+    "name": "NotAffectedReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2677"
+    }
+   }
+  ]
  }
 }

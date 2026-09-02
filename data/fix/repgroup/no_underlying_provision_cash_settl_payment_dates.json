@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingProvisionCashSettlPaymentDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingProvisionCashSettlPaymentDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42099"
-  },
-  "item": {
-   "name": "UnderlyingProvisionCashSettlPaymentDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingProvisionCashSettlPaymentDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42100"
-     }
-    },
-    {
-     "name": "UnderlyingProvisionCashSettlPaymentDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42101"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42099",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingProvisionCashSettlPaymentDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42100"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingProvisionCashSettlPaymentDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42101"
+    }
+   }
+  ]
  }
 }

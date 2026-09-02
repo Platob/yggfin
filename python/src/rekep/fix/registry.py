@@ -431,9 +431,11 @@ class FixRegistry(Convertible):
             if name == VERSIONS_FILE:
                 continue
             document = place.read(name)
-            if not isinstance(document, Mapping) or not document:
+            if not document or not isinstance(document, Mapping | list):
                 raise ValueError(f"FIX registry document {name!r} is empty or unreadable")
             if name == SOURCES_FILE:
+                if not isinstance(document, Mapping):
+                    raise ValueError("the FIX registry source manifest is invalid")
                 sources = document.get("sources")
                 required = {
                     "source_id",
@@ -455,9 +457,12 @@ class FixRegistry(Convertible):
             )
             if name.startswith(f"{FIELDS}/") or namespaced:
                 namespace = namespaced.group(1) if namespaced else ""
-                for stored, record in document.items():
+                if not isinstance(document, list):
+                    raise ValueError(f"FIX registry shard {name!r} is not a list of records")
+                for record in document:
                     if not isinstance(record, Mapping):
-                        raise ValueError(f"FIX field {stored!r} in {name!r} is not an object")
+                        raise ValueError(f"a FIX field in {name!r} is not an object")
+                    stored = record.get("name")
                     # A record validates by being read, the way a component's
                     # declaration does: a document `Field` cannot parse is not
                     # one, and `refuse_record` says the rest.
@@ -474,14 +479,7 @@ class FixRegistry(Convertible):
                             f"FIX field {stored!r} in {name!r} names a version this store "
                             "does not declare"
                         )
-                    declared_tag = entry.fix.tag
-                    expected_key = (
-                        str(declared_tag) if declared_tag is not None else entry.fix.canonical
-                    )
-                    if (
-                        str(stored) != expected_key
-                        or field_document(entry.fix.key, namespace) != name
-                    ):
+                    if field_document(entry.fix.key, namespace) != name:
                         raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
                     identity = (namespace, entry.fix.key)
                     if identity in fields:
@@ -502,10 +500,11 @@ class FixRegistry(Convertible):
             )
             if not component_file and not group_file:
                 raise ValueError(f"unexpected FIX registry document {name!r}")
-            unknown = sorted(set(document) - {"name", "versions", "declaration", "aliases"})
-            component_versions = document.get("versions")
+            component_versions = (
+                document.get("fix", {}).get("versions") if isinstance(document, Mapping) else None
+            )
             if (
-                unknown
+                not isinstance(document, Mapping)
                 or type(document.get("name")) is not str
                 or not isinstance(component_versions, list)
                 or any(type(version) is not str for version in component_versions)
@@ -514,8 +513,6 @@ class FixRegistry(Convertible):
                     not namespace
                     and not set(component_versions).issubset(known_versions | {ANY_VERSION})
                 )
-                or not isinstance(document.get("declaration"), Mapping)
-                or not isinstance(document.get("aliases", []), list)
             ):
                 kind = "repeating group" if group_file else "component"
                 raise ValueError(f"FIX {kind} in {name!r} has invalid metadata")

@@ -1,31 +1,28 @@
 {
  "name": "NoThrottleMsgType",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoThrottleMsgType",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1618"
-  },
-  "item": {
-   "name": "ThrottleMsgType",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ThrottleMsgType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1619"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1618",
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ThrottleMsgType",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ThrottleMsgType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1619"
     }
-   ]
-  }
+   }
+  ]
  }
 }

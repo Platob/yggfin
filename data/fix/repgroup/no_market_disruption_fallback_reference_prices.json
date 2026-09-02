@@ -1,92 +1,89 @@
 {
  "name": "NoMarketDisruptionFallbackReferencePrices",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoMarketDisruptionFallbackReferencePrices",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41096"
-  },
-  "item": {
-   "name": "MarketDisruptionFallbackReferencePrice",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "MarketDisruptionFallbackUnderlierType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41097"
-     }
-    },
-    {
-     "name": "MarketDisruptionFallbackUnderlierSecurityID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41098"
-     }
-    },
-    {
-     "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41099"
-     }
-    },
-    {
-     "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41100"
-     }
-    },
-    {
-     "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41101"
-     }
-    },
-    {
-     "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41102"
-     }
-    },
-    {
-     "name": "MarketDisruptionFallbackOpenUnits",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41103"
-     }
-    },
-    {
-     "name": "MarketDisruptionFallbackBasketCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41104"
-     }
-    },
-    {
-     "name": "MarketDisruptionFallbackBasketDivisor",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41105"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41096",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "MarketDisruptionFallbackReferencePrice",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "MarketDisruptionFallbackUnderlierType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41097"
     }
-   ]
-  }
+   },
+   {
+    "name": "MarketDisruptionFallbackUnderlierSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41098"
+    }
+   },
+   {
+    "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41099"
+    }
+   },
+   {
+    "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41100"
+    }
+   },
+   {
+    "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41101"
+    }
+   },
+   {
+    "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41102"
+    }
+   },
+   {
+    "name": "MarketDisruptionFallbackOpenUnits",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41103"
+    }
+   },
+   {
+    "name": "MarketDisruptionFallbackBasketCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41104"
+    }
+   },
+   {
+    "name": "MarketDisruptionFallbackBasketDivisor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41105"
+    }
+   }
+  ]
  }
 }

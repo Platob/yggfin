@@ -1,44 +1,41 @@
 {
  "name": "NoTestStepParameters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTestStepParameters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "3045"
-  },
-  "item": {
-   "name": "TestStepParameter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TestStepParameterName",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3046"
-     }
-    },
-    {
-     "name": "TestStepParameterType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3047"
-     }
-    },
-    {
-     "name": "TestStepParameterValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3048"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "3045",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TestStepParameter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TestStepParameterName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3046"
     }
-   ]
-  }
+   },
+   {
+    "name": "TestStepParameterType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3047"
+    }
+   },
+   {
+    "name": "TestStepParameterValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3048"
+    }
+   }
+  ]
  }
 }

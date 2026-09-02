@@ -1,36 +1,33 @@
 {
  "name": "NoLegOptionExerciseDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegOptionExerciseDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41512"
-  },
-  "item": {
-   "name": "LegOptionExerciseDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegOptionExerciseDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41513"
-     }
-    },
-    {
-     "name": "LegOptionExerciseDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41514"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41512",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegOptionExerciseDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegOptionExerciseDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41513"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegOptionExerciseDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41514"
+    }
+   }
+  ]
  }
 }

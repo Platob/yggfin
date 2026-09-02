@@ -73,7 +73,7 @@ def dictionary() -> dict[str, dict[str, Any]]:
             record
             for name in sorted(archive.namelist())
             if name.startswith("fields/")
-            for record in json.loads(archive.read(name).decode("utf-8")).values()
+            for record in json.loads(archive.read(name).decode("utf-8"))
         ]
     for aliased in (False, True):
         for record in records:

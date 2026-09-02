@@ -1,184 +1,181 @@
 {
  "name": "LegProvisionOptionExpirationDate",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "LegProvisionOptionExpirationDate",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "LegProvisionOptionExpirationDate",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderMultileg",
-    "News",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "LegProvisionOptionExpirationDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40498"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40499"
-    }
-   },
-   {
-    "name": "NoLegProvisionOptionExpirationDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40937"
-    },
-    "item": {
-     "name": "LegProvisionOptionExpirationDateBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegProvisionOptionExpirationDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40500"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40501"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40502"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40503"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40504"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40505"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40506"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExpirationTimeBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40507"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "LegProvisionOptionExpirationDate",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderMultileg",
+   "News",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "LegProvisionOptionExpirationDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40498"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40499"
+   }
+  },
+  {
+   "name": "NoLegProvisionOptionExpirationDateBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40937"
+   },
+   "item": {
+    "name": "LegProvisionOptionExpirationDateBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegProvisionOptionExpirationDateBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40500"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40501"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40502"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40503"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40504"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40505"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40506"
+   }
+  },
+  {
+   "name": "LegProvisionOptionExpirationTimeBusinessCenter",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40507"
+   }
+  }
+ ]
 }

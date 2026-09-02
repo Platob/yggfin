@@ -1,44 +1,41 @@
 {
  "name": "NoStreamAssetAttributes",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoStreamAssetAttributes",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41237"
-  },
-  "item": {
-   "name": "StreamAssetAttribute",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "StreamAssetAttributeType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41238"
-     }
-    },
-    {
-     "name": "StreamAssetAttributeValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41239"
-     }
-    },
-    {
-     "name": "StreamAssetAttributeLimit",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41240"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41237",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "StreamAssetAttribute",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "StreamAssetAttributeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41238"
     }
-   ]
-  }
+   },
+   {
+    "name": "StreamAssetAttributeValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41239"
+    }
+   },
+   {
+    "name": "StreamAssetAttributeLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41240"
+    }
+   }
+  ]
  }
 }

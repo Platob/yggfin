@@ -1,28 +1,25 @@
 {
  "name": "NoReturnRateValuationDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoReturnRateValuationDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42770"
-  },
-  "item": {
-   "name": "ReturnRateValuationDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ReturnRateValuationDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42771"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42770",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ReturnRateValuationDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ReturnRateValuationDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42771"
     }
-   ]
-  }
+   }
+  ]
  }
 }

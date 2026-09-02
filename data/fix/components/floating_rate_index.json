@@ -1,98 +1,95 @@
 {
  "name": "FloatingRateIndex",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "FloatingRateIndex",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "FloatingRateIndex",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "Confirmation",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "Email",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "FloatingRateIndexID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2731"
-    }
-   },
-   {
-    "name": "FloatingRateIndexIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2732"
-    }
-   },
-   {
-    "name": "FloatingRateIndexCurveUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2730"
-    }
-   },
-   {
-    "name": "FloatingRateIndexCurvePeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2728"
-    }
-   },
-   {
-    "name": "FloatingRateIndexCurveSpread",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2729"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "FloatingRateIndex",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "Confirmation",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "Email",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "FloatingRateIndexID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2731"
+   }
+  },
+  {
+   "name": "FloatingRateIndexIDSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2732"
+   }
+  },
+  {
+   "name": "FloatingRateIndexCurveUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2730"
+   }
+  },
+  {
+   "name": "FloatingRateIndexCurvePeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2728"
+   }
+  },
+  {
+   "name": "FloatingRateIndexCurveSpread",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2729"
+   }
+  }
+ ]
 }

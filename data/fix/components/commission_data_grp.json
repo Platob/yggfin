@@ -1,179 +1,176 @@
 {
  "name": "CommissionDataGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "CommissionDataGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "CommissionDataGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "Confirmation",
-    "CrossOrderCancelReplaceRequest",
-    "ExecutionReport",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoCommissions",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2639"
-    },
-    "item": {
-     "name": "Commission",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "CommissionAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2640"
-       }
-      },
-      {
-       "name": "CommissionAmountType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2641"
-       }
-      },
-      {
-       "name": "CommissionAmountSubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2725"
-       }
-      },
-      {
-       "name": "CommissionBasis",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2642"
-       }
-      },
-      {
-       "name": "CommissionCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2643"
-       }
-      },
-      {
-       "name": "CommissionCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2923"
-       }
-      },
-      {
-       "name": "CommissionUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2644"
-       }
-      },
-      {
-       "name": "CommissionUnitOfMeasureCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2645"
-       }
-      },
-      {
-       "name": "CommissionUnitOfMeasureCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2924"
-       }
-      },
-      {
-       "name": "CommissionRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2646"
-       }
-      },
-      {
-       "name": "CommissionSharedIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2647"
-       }
-      },
-      {
-       "name": "CommissionAmountShared",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2648"
-       }
-      },
-      {
-       "name": "CommissionLegRefID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2649"
-       }
-      },
-      {
-       "name": "CommissionDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2650"
-       }
-      },
-      {
-       "name": "EncodedCommissionDescLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2651"
-       }
-      },
-      {
-       "name": "EncodedCommissionDesc",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2652"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "CommissionDataGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "Confirmation",
+   "CrossOrderCancelReplaceRequest",
+   "ExecutionReport",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoCommissions",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2639"
+   },
+   "item": {
+    "name": "Commission",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "CommissionAmount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2640"
+      }
+     },
+     {
+      "name": "CommissionAmountType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2641"
+      }
+     },
+     {
+      "name": "CommissionAmountSubType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2725"
+      }
+     },
+     {
+      "name": "CommissionBasis",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2642"
+      }
+     },
+     {
+      "name": "CommissionCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2643"
+      }
+     },
+     {
+      "name": "CommissionCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2923"
+      }
+     },
+     {
+      "name": "CommissionUnitOfMeasure",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2644"
+      }
+     },
+     {
+      "name": "CommissionUnitOfMeasureCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2645"
+      }
+     },
+     {
+      "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2924"
+      }
+     },
+     {
+      "name": "CommissionRate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2646"
+      }
+     },
+     {
+      "name": "CommissionSharedIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2647"
+      }
+     },
+     {
+      "name": "CommissionAmountShared",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2648"
+      }
+     },
+     {
+      "name": "CommissionLegRefID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2649"
+      }
+     },
+     {
+      "name": "CommissionDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2650"
+      }
+     },
+     {
+      "name": "EncodedCommissionDescLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2651"
+      }
+     },
+     {
+      "name": "EncodedCommissionDesc",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2652"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

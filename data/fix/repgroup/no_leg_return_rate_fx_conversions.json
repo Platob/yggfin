@@ -1,44 +1,41 @@
 {
  "name": "NoLegReturnRateFXConversions",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegReturnRateFXConversions",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42530"
-  },
-  "item": {
-   "name": "LegReturnRateFXConversion",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegReturnRateFXCurrencySymbol",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42531"
-     }
-    },
-    {
-     "name": "LegReturnRateFXRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42532"
-     }
-    },
-    {
-     "name": "LegReturnRateFXRateCalc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42533"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42530",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegReturnRateFXConversion",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegReturnRateFXCurrencySymbol",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42531"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegReturnRateFXRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42532"
+    }
+   },
+   {
+    "name": "LegReturnRateFXRateCalc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42533"
+    }
+   }
+  ]
  }
 }

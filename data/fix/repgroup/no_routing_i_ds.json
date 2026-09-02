@@ -1,43 +1,40 @@
 {
  "name": "NoRoutingIDs",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoRoutingIDs",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "215"
-  },
-  "item": {
-   "name": "RoutingID",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "RoutingType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "216"
-     }
-    },
-    {
-     "name": "RoutingID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "217"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "215",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "RoutingID",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "RoutingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "216"
     }
-   ]
-  }
+   },
+   {
+    "name": "RoutingID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "217"
+    }
+   }
+  ]
  }
 }

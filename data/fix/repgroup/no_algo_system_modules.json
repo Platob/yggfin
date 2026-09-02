@@ -1,44 +1,41 @@
 {
  "name": "NoAlgoSystemModules",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoAlgoSystemModules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "3025"
-  },
-  "item": {
-   "name": "AlgoSystemModule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "AlgoSystemModuleName",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3026"
-     }
-    },
-    {
-     "name": "AlgoSystemModuleVersion",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3027"
-     }
-    },
-    {
-     "name": "AlgoSystemModuleLastUpdateTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3080"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "3025",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "AlgoSystemModule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "AlgoSystemModuleName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3026"
     }
-   ]
-  }
+   },
+   {
+    "name": "AlgoSystemModuleVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3027"
+    }
+   },
+   {
+    "name": "AlgoSystemModuleLastUpdateTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3080"
+    }
+   }
+  ]
  }
 }

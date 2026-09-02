@@ -1,49 +1,46 @@
 {
  "name": "NoComplexEventDates",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoComplexEventDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1491"
-  },
-  "item": {
-   "name": "ComplexEventDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ComplexEventStartDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1492"
-     }
-    },
-    {
-     "name": "ComplexEventEndDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1493"
-     }
-    },
-    {
-     "name": "ComplexEventTimes",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventTimes"
-     },
-     "fields": []
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1491",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ComplexEventDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ComplexEventStartDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1492"
     }
-   ]
-  }
+   },
+   {
+    "name": "ComplexEventEndDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1493"
+    }
+   },
+   {
+    "name": "ComplexEventTimes",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventTimes"
+    },
+    "fields": []
+   }
+  ]
  }
 }

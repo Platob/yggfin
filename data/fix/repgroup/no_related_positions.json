@@ -1,48 +1,45 @@
 {
  "name": "NoRelatedPositions",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoRelatedPositions",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1861"
-  },
-  "item": {
-   "name": "RelatedPosition",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "RelatedPositionID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1862"
-     }
-    },
-    {
-     "name": "RelatedPositionIDSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1863"
-     }
-    },
-    {
-     "name": "RelatedPositionDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1864"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1861",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "RelatedPosition",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "RelatedPositionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1862"
     }
-   ]
-  }
+   },
+   {
+    "name": "RelatedPositionIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1863"
+    }
+   },
+   {
+    "name": "RelatedPositionDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1864"
+    }
+   }
+  ]
  }
 }

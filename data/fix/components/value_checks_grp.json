@@ -1,62 +1,59 @@
 {
  "name": "ValueChecksGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "ValueChecksGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "ValueChecksGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "ExecutionReport",
-    "MultilegOrderCancelReplace",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest",
-    "Quote"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoValueChecks",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1868"
-    },
-    "item": {
-     "name": "ValueCheck",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ValueCheckType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1869"
-       }
-      },
-      {
-       "name": "ValueCheckAction",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1870"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "ValueChecksGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "ExecutionReport",
+   "MultilegOrderCancelReplace",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest",
+   "Quote"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoValueChecks",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1868"
+   },
+   "item": {
+    "name": "ValueCheck",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ValueCheckType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1869"
+      }
+     },
+     {
+      "name": "ValueCheckAction",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1870"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

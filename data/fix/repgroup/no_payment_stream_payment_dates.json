@@ -1,36 +1,33 @@
 {
  "name": "NoPaymentStreamPaymentDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStreamPaymentDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41220"
-  },
-  "item": {
-   "name": "PaymentStreamPaymentDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStreamPaymentDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41221"
-     }
-    },
-    {
-     "name": "PaymentStreamPaymentDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41222"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41220",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStreamPaymentDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStreamPaymentDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41221"
     }
-   ]
-  }
+   },
+   {
+    "name": "PaymentStreamPaymentDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41222"
+    }
+   }
+  ]
  }
 }

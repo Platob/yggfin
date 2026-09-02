@@ -1,49 +1,46 @@
 {
  "name": "AffectedMarketSegmentGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "AffectedMarketSegmentGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "AffectedMarketSegmentGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "OrderMassActionReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoAffectedMarketSegments",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1791"
-    },
-    "item": {
-     "name": "AffectedMarketSegment",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "AffectedMarketSegmentID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1792"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "AffectedMarketSegmentGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "OrderMassActionReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoAffectedMarketSegments",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1791"
+   },
+   "item": {
+    "name": "AffectedMarketSegment",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "AffectedMarketSegmentID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1792"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

@@ -1,132 +1,129 @@
 {
  "name": "BidDescReqGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "BidDescReqGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "BidDescReqGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "BidRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoBidDescriptors",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "398"
-    },
-    "item": {
-     "name": "BidDescriptor",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "BidDescriptorType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "399"
-       }
-      },
-      {
-       "name": "BidDescriptor",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "400"
-       }
-      },
-      {
-       "name": "SideValueInd",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "401"
-       }
-      },
-      {
-       "name": "LiquidityValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "404"
-       }
-      },
-      {
-       "name": "LiquidityNumSecurities",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "441"
-       }
-      },
-      {
-       "name": "LiquidityPctLow",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "402"
-       }
-      },
-      {
-       "name": "LiquidityPctHigh",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "403"
-       }
-      },
-      {
-       "name": "EFPTrackingError",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "405"
-       }
-      },
-      {
-       "name": "FairValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "406"
-       }
-      },
-      {
-       "name": "OutsideIndexPct",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "407"
-       }
-      },
-      {
-       "name": "ValueOfFutures",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "408"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "BidDescReqGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "BidRequest"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoBidDescriptors",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "398"
+   },
+   "item": {
+    "name": "BidDescriptor",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "BidDescriptorType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "399"
+      }
+     },
+     {
+      "name": "BidDescriptor",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "400"
+      }
+     },
+     {
+      "name": "SideValueInd",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "401"
+      }
+     },
+     {
+      "name": "LiquidityValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "404"
+      }
+     },
+     {
+      "name": "LiquidityNumSecurities",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "441"
+      }
+     },
+     {
+      "name": "LiquidityPctLow",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "402"
+      }
+     },
+     {
+      "name": "LiquidityPctHigh",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "403"
+      }
+     },
+     {
+      "name": "EFPTrackingError",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "405"
+      }
+     },
+     {
+      "name": "FairValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "406"
+      }
+     },
+     {
+      "name": "OutsideIndexPct",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "407"
+      }
+     },
+     {
+      "name": "ValueOfFutures",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "408"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

@@ -1,36 +1,33 @@
 {
  "name": "NoPaymentStreamPricingDays",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStreamPricingDays",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41227"
-  },
-  "item": {
-   "name": "PaymentStreamPricingDay",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStreamPricingDayOfWeek",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41228"
-     }
-    },
-    {
-     "name": "PaymentStreamPricingDayNumber",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41229"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41227",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStreamPricingDay",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStreamPricingDayOfWeek",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41228"
     }
-   ]
-  }
+   },
+   {
+    "name": "PaymentStreamPricingDayNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41229"
+    }
+   }
+  ]
  }
 }

@@ -1,84 +1,81 @@
 {
  "name": "NoMarginAmt",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoMarginAmt",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1643"
-  },
-  "item": {
-   "name": "MarginAmt",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "MarginAmt",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1645"
-     }
-    },
-    {
-     "name": "MarginAmtType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1644"
-     }
-    },
-    {
-     "name": "MarginAmtCcy",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1646"
-     }
-    },
-    {
-     "name": "MarginAmtFXRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2088"
-     }
-    },
-    {
-     "name": "MarginAmtFXRateCalc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2089"
-     }
-    },
-    {
-     "name": "MarginAmountMarketSegmentID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1714"
-     }
-    },
-    {
-     "name": "MarginAmountMarketID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1715"
-     }
-    },
-    {
-     "name": "MarginDirection",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2851"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1643",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "MarginAmt",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "MarginAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1645"
     }
-   ]
-  }
+   },
+   {
+    "name": "MarginAmtType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1644"
+    }
+   },
+   {
+    "name": "MarginAmtCcy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1646"
+    }
+   },
+   {
+    "name": "MarginAmtFXRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2088"
+    }
+   },
+   {
+    "name": "MarginAmtFXRateCalc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2089"
+    }
+   },
+   {
+    "name": "MarginAmountMarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1714"
+    }
+   },
+   {
+    "name": "MarginAmountMarketID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1715"
+    }
+   },
+   {
+    "name": "MarginDirection",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2851"
+    }
+   }
+  ]
  }
 }

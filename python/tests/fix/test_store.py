@@ -51,6 +51,19 @@ from rekep.fix.transcribe import FixCodec
 PUBLISHED = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
 
 
+def shard(path: Path) -> dict[str, dict[str, Any]]:
+    """One stored shard indexed by the identity each record states.
+
+    A shard is a list of records, so what a test looks a record up by is read
+    off the record rather than from a key written above it.
+    """
+    records = json.loads(Path(path).read_text())
+    assert isinstance(records, list), f"{path} is not a list of field records"
+    return {
+        str(one["fix"]["tag"]) if "tag" in one["fix"] else str(one["name"]): one for one in records
+    }
+
+
 def _record(
     name: str,
     tag: int | None = None,
@@ -138,7 +151,7 @@ def test_a_cold_store_is_written_as_tag_shards(store: Offline) -> None:
     ]
     # Tags 90001 and 90002 share the 90000--90999 shard.
     assert [path.name for path in (folder / "fields").iterdir()] == ["000090.json"]
-    assert sorted(json.loads((folder / "fields" / "000090.json").read_text())) == [
+    assert sorted(shard(folder / "fields" / "000090.json")) == [
         "90001",
         "90002",
     ]
@@ -149,7 +162,7 @@ def test_alternate_tags_round_trip_as_readable_ordered_metadata(store: Offline) 
     entry.fix.tags = (90011, 90012)
     store.update_field(entry)
 
-    document = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
+    document = shard(Path(store.cache_dir) / field_document(90001))
     assert document["90001"]["fix"]["tags"] == [90011, 90012]
     assert Offline(cache_dir=store.cache_dir).field(90001).fix.tags == (90011, 90012)
 
@@ -198,7 +211,7 @@ def test_incremental_folding_keeps_every_contributing_source(tmp_path: Path) -> 
         "aliases": {"1": "onixs", "2": "nanoconda"},
     }
 
-    document = json.loads((tmp_path / "fix" / field_document(54)).read_text())["54"]
+    document = shard(tmp_path / "fix" / field_document(54))["54"]
     assert document["fix"]["sources"] == ["nanoconda", "onixs"]
     assert document["fix"]["origins"]["values"] == {
         "1": "onixs",
@@ -290,7 +303,7 @@ def test_a_field_fix_never_numbered_is_kept_where_a_name_can_be_found(store: Off
     named = field_document("FAKE.VENDOR.CODE")
     store.add_field(_record("FAKE.VENDOR.CODE", column="fakevendorcode"))
     assert (Path(store.cache_dir) / named).exists()
-    assert list(json.loads((Path(store.cache_dir) / named).read_text())) == ["FAKE.VENDOR.CODE"]
+    assert list(shard(Path(store.cache_dir) / named)) == ["FAKE.VENDOR.CODE"]
     assert Offline(cache_dir=store.cache_dir).resolve("fake.vendor.code") is not None
 
 
@@ -304,7 +317,7 @@ def test_a_renamed_tag_is_one_identity_and_the_older_spelling_an_alias(store: Of
     assert entry.fix.versions == ("9.0", "9.1")
     assert [alias.name for alias in entry.fix.named_aliases] == ["FakeRoleCode"]
     assert store.resolve("FakeRoleCode") is entry
-    stored = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
+    stored = shard(Path(store.cache_dir) / field_document(90001))
     assert stored["90001"]["fix"]["aliases"] == [
         {"name": "FakeRoleCode", "source": "9.0", "occurrences": 0}
     ]
@@ -325,7 +338,7 @@ def test_storing_a_version_says_what_that_version_has(store: Offline) -> None:
     assert store.resolve("FakeRole").fix.versions == ("9.1",)
     store._store_fields("9.1", [_field("FakeCode", 90002, "9.1")])
     assert store.resolve("FakeRole") is None, "its last version went, and so did the record"
-    assert "90001" not in json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
+    assert "90001" not in shard(Path(store.cache_dir) / field_document(90001))
 
 
 # -- resolving a name --------------------------------------------------------
@@ -370,7 +383,7 @@ def test_an_alias_is_data_and_carries_where_it_came_from(store: Offline) -> None
     """A near miss counted in a capture is evidence; a name typed in is not."""
     entry = store.alias_field("FakeRole", Alias(name="FakeRolle", source="brk", occurrences=41))
     assert store.resolve("FakeRolle").fix.tag == 90001
-    stored = json.loads((Path(store.cache_dir) / field_document(90001)).read_text())
+    stored = shard(Path(store.cache_dir) / field_document(90001))
     assert {"name": "FakeRolle", "source": "brk", "occurrences": 41} in stored["90001"]["fix"][
         "aliases"
     ]
@@ -526,7 +539,7 @@ def test_msg_type_event_kinds_are_configurable_store_data(store: Offline) -> Non
         "0": EventType.MISC,
         "D": EventType.ORDER,
     }
-    document = json.loads((Path(store.cache_dir) / field_document(35)).read_text())
+    document = shard(Path(store.cache_dir) / field_document(35))
     assert document["35"]["fix"]["event_types"] == {"D": "ORDER"}, (
         "by name, because this file is read and edited by hand and the packed "
         "code is a nineteen-digit integer"
@@ -590,7 +603,7 @@ def test_a_change_is_validated_against_the_whole_store_before_it_is_written(
     with pytest.raises(ValueError, match="already FakeCode's"):
         store.add_field(clashing)
     assert store.resolve("FakeOther") is None, "refused whole, never written half"
-    assert "90004" not in json.loads((Path(store.cache_dir) / field_document(90004)).read_text())
+    assert "90004" not in shard(Path(store.cache_dir) / field_document(90004))
 
 
 def test_a_component_identity_is_created_updated_and_removed(store: Offline) -> None:
@@ -664,7 +677,7 @@ def test_component_member_metadata_is_readable_json_and_round_trips(store: Offli
     document = json.loads(
         (Path(store.cache_dir) / "components" / "readable_component.json").read_text()
     )
-    values = document["declaration"]["fields"][0]["item"]["fields"][0]["fix"]["values"]
+    values = document["fields"][0]["item"]["fields"][0]["fix"]["values"]
     assert values == [{"value": "1", "meaning": "one", "aliases": ["ONE"]}]
 
     reopened = Offline(cache_dir=store.cache_dir).merged_component("ReadableComponent")
@@ -921,8 +934,8 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
     # field document every other declaration in this repository is written in:
     # the Arrow reading at the top, the protocol's own keys under `fix`.
     stored = json.loads((Path(store.cache_dir) / field_document("FAKE.VENDOR.CODE")).read_text())
-    assert stored == {
-        "FAKE.VENDOR.CODE": {
+    assert stored == [
+        {
             "name": "FAKE.VENDOR.CODE",
             "type": "string",
             "nullable": True,
@@ -934,8 +947,8 @@ def test_a_declared_vendor_field_is_lifted_into_a_log_column(
                 "aliases": [{"name": "FAKEVENDORCODE", "source": "brk", "occurrences": 5}],
             },
         }
-    }
-    assert "kind" not in stored["FAKE.VENDOR.CODE"]["fix"], (
+    ], "the record alone: it states its own name, so nothing keys it a second time"
+    assert "kind" not in stored[0]["fix"], (
         "having no tag is what makes it namespaced; storing the answer beside "
         "the question is a second place for the two to disagree"
     )

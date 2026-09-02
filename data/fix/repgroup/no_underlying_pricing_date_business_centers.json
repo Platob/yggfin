@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingPricingDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingPricingDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41947"
-  },
-  "item": {
-   "name": "UnderlyingPricingDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingPricingDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41948"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41947",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingPricingDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingPricingDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41948"
     }
-   ]
-  }
+   }
+  ]
  }
 }

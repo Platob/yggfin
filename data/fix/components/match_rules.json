@@ -1,83 +1,80 @@
 {
  "name": "MatchRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "MatchRules",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "MatchRules",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "MarketDefinition",
-    "MarketDefinitionUpdateReport",
-    "SecurityDefinition",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListUpdateReport",
-    "TradingSessionList",
-    "TradingSessionListUpdateReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoMatchRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1235"
-    },
-    "item": {
-     "name": "MatchRule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "MatchAlgorithm",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1142"
-       }
-      },
-      {
-       "name": "MatchType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "574"
-       }
-      },
-      {
-       "name": "MatchRuleProductComplex",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2569"
-       }
-      },
-      {
-       "name": "CustomerPriority",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2570"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "MatchRules",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "MarketDefinition",
+   "MarketDefinitionUpdateReport",
+   "SecurityDefinition",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListUpdateReport",
+   "TradingSessionList",
+   "TradingSessionListUpdateReport"
+  ],
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoMatchRules",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1235"
+   },
+   "item": {
+    "name": "MatchRule",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "MatchAlgorithm",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1142"
+      }
+     },
+     {
+      "name": "MatchType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "574"
+      }
+     },
+     {
+      "name": "MatchRuleProductComplex",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2569"
+      }
+     },
+     {
+      "name": "CustomerPriority",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2570"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

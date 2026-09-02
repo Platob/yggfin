@@ -1,132 +1,129 @@
 {
  "name": "NoSettlDetails",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoSettlDetails",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1158"
-  },
-  "item": {
-   "name": "SettlDetail",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "SettlObligSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1164"
-     }
-    },
-    {
-     "name": "StandInstDbType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "169"
-     }
-    },
-    {
-     "name": "StandInstDbName",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "170"
-     }
-    },
-    {
-     "name": "StandInstDbID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "171"
-     }
-    },
-    {
-     "name": "NoSettlPartyIDs",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "781"
-     },
-     "item": {
-      "name": "SettlPartyID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "SettlPartyID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "782"
-        }
-       },
-       {
-        "name": "SettlPartyIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "783"
-        }
-       },
-       {
-        "name": "SettlPartyRole",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "784"
-        }
-       },
-       {
-        "name": "SettlPartyRoleQualifier",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2389"
-        }
-       },
-       {
-        "name": "NoSettlPartySubIDs",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "801"
-        },
-        "item": {
-         "name": "SettlPartySubID",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "SettlPartySubID",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "785"
-           }
-          },
-          {
-           "name": "SettlPartySubIDType",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "786"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1158",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "SettlDetail",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "SettlObligSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1164"
     }
-   ]
-  }
+   },
+   {
+    "name": "StandInstDbType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "169"
+    }
+   },
+   {
+    "name": "StandInstDbName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "170"
+    }
+   },
+   {
+    "name": "StandInstDbID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "171"
+    }
+   },
+   {
+    "name": "NoSettlPartyIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "781"
+    },
+    "item": {
+     "name": "SettlPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "782"
+       }
+      },
+      {
+       "name": "SettlPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "783"
+       }
+      },
+      {
+       "name": "SettlPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "784"
+       }
+      },
+      {
+       "name": "SettlPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2389"
+       }
+      },
+      {
+       "name": "NoSettlPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "801"
+       },
+       "item": {
+        "name": "SettlPartySubID",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "SettlPartySubID",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "785"
+          }
+         },
+         {
+          "name": "SettlPartySubIDType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "786"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

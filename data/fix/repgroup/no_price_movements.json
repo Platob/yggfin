@@ -1,42 +1,39 @@
 {
  "name": "NoPriceMovements",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPriceMovements",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1919"
-  },
-  "item": {
-   "name": "PriceMovement",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PriceMovementValueGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "PriceMovementValueGrp"
-     },
-     "fields": []
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1919",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PriceMovement",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PriceMovementValueGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "PriceMovementValueGrp"
     },
-    {
-     "name": "ClearingAccountTypeGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ClearingAccountTypeGrp"
-     },
-     "fields": []
-    }
-   ]
-  }
+    "fields": []
+   },
+   {
+    "name": "ClearingAccountTypeGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ClearingAccountTypeGrp"
+    },
+    "fields": []
+   }
+  ]
  }
 }

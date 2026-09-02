@@ -1,95 +1,92 @@
 {
  "name": "MaturityRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "MaturityRules",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "MaturityRules",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "SecurityDefinition",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListUpdateReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoMaturityRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1236"
-    },
-    "item": {
-     "name": "MaturityRule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "MaturityRuleID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1222"
-       }
-      },
-      {
-       "name": "MaturityMonthYearFormat",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1303"
-       }
-      },
-      {
-       "name": "MaturityMonthYearIncrementUnits",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1302"
-       }
-      },
-      {
-       "name": "StartMaturityMonthYear",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1241"
-       }
-      },
-      {
-       "name": "EndMaturityMonthYear",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1226"
-       }
-      },
-      {
-       "name": "MaturityMonthYearIncrement",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1229"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "MaturityRules",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "SecurityDefinition",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListUpdateReport"
+  ],
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoMaturityRules",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1236"
+   },
+   "item": {
+    "name": "MaturityRule",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "MaturityRuleID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1222"
+      }
+     },
+     {
+      "name": "MaturityMonthYearFormat",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1303"
+      }
+     },
+     {
+      "name": "MaturityMonthYearIncrementUnits",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1302"
+      }
+     },
+     {
+      "name": "StartMaturityMonthYear",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1241"
+      }
+     },
+     {
+      "name": "EndMaturityMonthYear",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1226"
+      }
+     },
+     {
+      "name": "MaturityMonthYearIncrement",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1229"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

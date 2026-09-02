@@ -1,91 +1,88 @@
 {
  "name": "RootParties",
- "versions": [
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "RootParties",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "RootParties",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoRootPartyIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1116"
-    },
-    "item": {
-     "name": "RootPartyID",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "RootPartyID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1117"
-       }
-      },
-      {
-       "name": "RootPartyIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1118"
-       }
-      },
-      {
-       "name": "RootPartyRole",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1119"
-       }
-      },
-      {
-       "name": "RootPartyRoleQualifier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2388"
-       }
-      },
-      {
-       "name": "RootSubParties",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "RootSubParties"
-       },
-       "fields": []
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "RootParties",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoRootPartyIDs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1116"
+   },
+   "item": {
+    "name": "RootPartyID",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "RootPartyID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1117"
+      }
+     },
+     {
+      "name": "RootPartyIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1118"
+      }
+     },
+     {
+      "name": "RootPartyRole",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1119"
+      }
+     },
+     {
+      "name": "RootPartyRoleQualifier",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2388"
+      }
+     },
+     {
+      "name": "RootSubParties",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "RootSubParties"
+      },
+      "fields": []
+     }
+    ]
+   }
+  }
+ ]
 }

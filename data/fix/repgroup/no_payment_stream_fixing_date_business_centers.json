@@ -1,28 +1,25 @@
 {
  "name": "NoPaymentStreamFixingDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStreamFixingDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40950"
-  },
-  "item": {
-   "name": "PaymentStreamFixingDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStreamFixingDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40776"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40950",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStreamFixingDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStreamFixingDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40776"
     }
-   ]
-  }
+   }
+  ]
  }
 }

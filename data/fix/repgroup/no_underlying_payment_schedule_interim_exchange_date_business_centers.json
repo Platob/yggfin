@@ -1,32 +1,29 @@
 {
  "name": "NoUnderlyingPaymentScheduleInterimExchangeDateBusinessCenters",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingPaymentScheduleInterimExchangeDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40967"
-  },
-  "item": {
-   "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40699"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40967",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40699"
     }
-   ]
-  }
+   }
+  ]
  }
 }

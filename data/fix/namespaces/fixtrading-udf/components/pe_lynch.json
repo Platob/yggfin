@@ -1,249 +1,246 @@
 {
  "name": "PELynch",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "PELynch",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "PELynch",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "AutoHedgePrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6352"
-    }
-   },
-   {
-    "name": "BasketName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6376"
-    }
-   },
-   {
-    "name": "HighLimitSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6372"
-    }
-   },
-   {
-    "name": "Index",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6363"
-    }
-   },
-   {
-    "name": "IndexLowerPct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6365"
-    }
-   },
-   {
-    "name": "IndexLowerSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6371"
-    }
-   },
-   {
-    "name": "IndexUpperPct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6364"
-    }
-   },
-   {
-    "name": "IndexUpperSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6370"
-    }
-   },
-   {
-    "name": "LowerPricePct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6356"
-    }
-   },
-   {
-    "name": "LowerPricePctSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6375"
-    }
-   },
-   {
-    "name": "LowLimitSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6373"
-    }
-   },
-   {
-    "name": "Position",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6351"
-    }
-   },
-   {
-    "name": "RehedgePercent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6353"
-    }
-   },
-   {
-    "name": "Sector1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6360"
-    }
-   },
-   {
-    "name": "SectorLowerPct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6362"
-    }
-   },
-   {
-    "name": "SectorLowerSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6369"
-    }
-   },
-   {
-    "name": "SectorUpperPct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6361"
-    }
-   },
-   {
-    "name": "SectorUpperSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6368"
-    }
-   },
-   {
-    "name": "Slices",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6377"
-    }
-   },
-   {
-    "name": "StrikePrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6354"
-    }
-   },
-   {
-    "name": "TickRule",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6350"
-    }
-   },
-   {
-    "name": "TrackLowerPct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6359"
-    }
-   },
-   {
-    "name": "TrackLowerSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6367"
-    }
-   },
-   {
-    "name": "TrackSecurity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6357"
-    }
-   },
-   {
-    "name": "TrackUpperPct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6358"
-    }
-   },
-   {
-    "name": "TrackUpperSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6366"
-    }
-   },
-   {
-    "name": "UpperPricePct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6355"
-    }
-   },
-   {
-    "name": "UpperPricePctSIT",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6374"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "PELynch",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "AutoHedgePrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6352"
+   }
+  },
+  {
+   "name": "BasketName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6376"
+   }
+  },
+  {
+   "name": "HighLimitSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6372"
+   }
+  },
+  {
+   "name": "Index",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6363"
+   }
+  },
+  {
+   "name": "IndexLowerPct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6365"
+   }
+  },
+  {
+   "name": "IndexLowerSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6371"
+   }
+  },
+  {
+   "name": "IndexUpperPct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6364"
+   }
+  },
+  {
+   "name": "IndexUpperSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6370"
+   }
+  },
+  {
+   "name": "LowerPricePct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6356"
+   }
+  },
+  {
+   "name": "LowerPricePctSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6375"
+   }
+  },
+  {
+   "name": "LowLimitSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6373"
+   }
+  },
+  {
+   "name": "Position",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6351"
+   }
+  },
+  {
+   "name": "RehedgePercent",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6353"
+   }
+  },
+  {
+   "name": "Sector1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6360"
+   }
+  },
+  {
+   "name": "SectorLowerPct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6362"
+   }
+  },
+  {
+   "name": "SectorLowerSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6369"
+   }
+  },
+  {
+   "name": "SectorUpperPct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6361"
+   }
+  },
+  {
+   "name": "SectorUpperSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6368"
+   }
+  },
+  {
+   "name": "Slices",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6377"
+   }
+  },
+  {
+   "name": "StrikePrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6354"
+   }
+  },
+  {
+   "name": "TickRule",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6350"
+   }
+  },
+  {
+   "name": "TrackLowerPct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6359"
+   }
+  },
+  {
+   "name": "TrackLowerSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6367"
+   }
+  },
+  {
+   "name": "TrackSecurity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6357"
+   }
+  },
+  {
+   "name": "TrackUpperPct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6358"
+   }
+  },
+  {
+   "name": "TrackUpperSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6366"
+   }
+  },
+  {
+   "name": "UpperPricePct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6355"
+   }
+  },
+  {
+   "name": "UpperPricePctSIT",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6374"
+   }
+  }
+ ]
 }

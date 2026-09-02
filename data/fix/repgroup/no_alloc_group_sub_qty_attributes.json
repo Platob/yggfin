@@ -1,38 +1,35 @@
 {
  "name": "NoAllocGroupSubQtyAttributes",
- "versions": [
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoAllocGroupSubQtyAttributes",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2979"
-  },
-  "item": {
-   "name": "AllocGroupSubQtyAttribute",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "AllocGroupSubQtyType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2980"
-     }
-    },
-    {
-     "name": "AllocGroupSubQtyValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2981"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2979",
+  "versions": [
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "AllocGroupSubQtyAttribute",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "AllocGroupSubQtyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2980"
     }
-   ]
-  }
+   },
+   {
+    "name": "AllocGroupSubQtyValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2981"
+    }
+   }
+  ]
  }
 }

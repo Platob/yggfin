@@ -1,28 +1,25 @@
 {
  "name": "NoLegPaymentStubEndDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegPaymentStubEndDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42495"
-  },
-  "item": {
-   "name": "LegPaymentStubEndDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegPaymentStubEndDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42496"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42495",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegPaymentStubEndDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegPaymentStubEndDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42496"
     }
-   ]
-  }
+   }
+  ]
  }
 }

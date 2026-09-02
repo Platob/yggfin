@@ -1,665 +1,662 @@
 {
  "name": "TSXGroup",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "TSXGroup",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "TSXGroup",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "POComment",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7737"
-    }
-   },
-   {
-    "name": "PriceBandInst",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7738"
-    }
-   },
-   {
-    "name": "ShortMarkingExempt",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7729"
-    }
-   },
-   {
-    "name": "TMXUDF1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6752"
-    }
-   },
-   {
-    "name": "TMXUDF2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6753"
-    }
-   },
-   {
-    "name": "TMXUDF3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6756"
-    }
-   },
-   {
-    "name": "TMXUDF4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6758"
-    }
-   },
-   {
-    "name": "TMXUDF5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6764"
-    }
-   },
-   {
-    "name": "TMXUDF6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6766"
-    }
-   },
-   {
-    "name": "TMXUDF7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6787"
-    }
-   },
-   {
-    "name": "TMXUDF8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7718"
-    }
-   },
-   {
-    "name": "TMXUDF9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7730"
-    }
-   },
-   {
-    "name": "TSXAccountType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6750"
-    }
-   },
-   {
-    "name": "TSXActionSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6760"
-    }
-   },
-   {
-    "name": "TSXAL1Timestamp",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7725"
-    }
-   },
-   {
-    "name": "TSXAnonymous",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6761"
-    }
-   },
-   {
-    "name": "TSXATSName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6775"
-    }
-   },
-   {
-    "name": "TSXATSTimestamp",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7724"
-    }
-   },
-   {
-    "name": "TSXBasketTrade",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6754"
-    }
-   },
-   {
-    "name": "TSXBrokerNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6774"
-    }
-   },
-   {
-    "name": "TSXBuyAccountId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6769"
-    }
-   },
-   {
-    "name": "TSXBuyAccountType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6767"
-    }
-   },
-   {
-    "name": "TSXBuyCustomerType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6797"
-    }
-   },
-   {
-    "name": "TSXBuyJitney",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6781"
-    }
-   },
-   {
-    "name": "TSXBuyParticipation",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6785"
-    }
-   },
-   {
-    "name": "TSXBuyParticipationVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7719"
-    }
-   },
-   {
-    "name": "TSXBuyRegulationID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6771"
-    }
-   },
-   {
-    "name": "TSXByPass",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6791"
-    }
-   },
-   {
-    "name": "TSXCrossType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6773"
-    }
-   },
-   {
-    "name": "TSXCustomerType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6794"
-    }
-   },
-   {
-    "name": "TSXErrorNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6779"
-    }
-   },
-   {
-    "name": "TSXExchangeAdmin",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6780"
-    }
-   },
-   {
-    "name": "TSXExchangeUserID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6762"
-    }
-   },
-   {
-    "name": "TSXExecCancelledReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7727"
-    }
-   },
-   {
-    "name": "TSXJitney",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6757"
-    }
-   },
-   {
-    "name": "TSXLongLife",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7735"
-    }
-   },
-   {
-    "name": "TSXMarketInst",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7739"
-    }
-   },
-   {
-    "name": "TSXMatchingPriority",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7732"
-    }
-   },
-   {
-    "name": "TSXMessageId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6789"
-    }
-   },
-   {
-    "name": "TSXMGFCandidate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6759"
-    }
-   },
-   {
-    "name": "TSXMGFVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6799"
-    }
-   },
-   {
-    "name": "TSXMinInteractionSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6793"
-    }
-   },
-   {
-    "name": "TSXNCIB",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6792"
-    }
-   },
-   {
-    "name": "TSXNonResident",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6783"
-    }
-   },
-   {
-    "name": "TSXNoTradeFeat",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7713"
-    }
-   },
-   {
-    "name": "TSXNoTradeKey",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7714"
-    }
-   },
-   {
-    "name": "TSXNoTradeOrderNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7715"
-    }
-   },
-   {
-    "name": "TSXNoTradePrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7717"
-    }
-   },
-   {
-    "name": "TSXNoTradeVol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7716"
-    }
-   },
-   {
-    "name": "TSXOrderKey",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6790"
-    }
-   },
-   {
-    "name": "TSXOrigTradeID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6795"
-    }
-   },
-   {
-    "name": "TSXParticipationOption",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7712"
-    }
-   },
-   {
-    "name": "TSXPegType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7723"
-    }
-   },
-   {
-    "name": "TSXPrincipalTrade",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6776"
-    }
-   },
-   {
-    "name": "TSXPrivateOrigPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6796"
-    }
-   },
-   {
-    "name": "TSXProgramTrade",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6755"
-    }
-   },
-   {
-    "name": "TSXReferenceVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6765"
-    }
-   },
-   {
-    "name": "TSXRegulationID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6763"
-    }
-   },
-   {
-    "name": "TSXRemainingBuyParticipationVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7721"
-    }
-   },
-   {
-    "name": "TSXRemainingMGFVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7728"
-    }
-   },
-   {
-    "name": "TSXRemainingSellParticipationVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7722"
-    }
-   },
-   {
-    "name": "TSXRTAutoFill",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6784"
-    }
-   },
-   {
-    "name": "TSXSeekDarkLiquidity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7731"
-    }
-   },
-   {
-    "name": "TSXSelfTrade",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7733"
-    }
-   },
-   {
-    "name": "TSXSellAccountId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6770"
-    }
-   },
-   {
-    "name": "TSXSellAccountType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6768"
-    }
-   },
-   {
-    "name": "TSXSellCustomerType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6798"
-    }
-   },
-   {
-    "name": "TSXSellJitney",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6782"
-    }
-   },
-   {
-    "name": "TSXSellParticipation",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6786"
-    }
-   },
-   {
-    "name": "TSXSellParticipationVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7720"
-    }
-   },
-   {
-    "name": "TSXSellRegulationID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6772"
-    }
-   },
-   {
-    "name": "TSXSOROrderID1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7710"
-    }
-   },
-   {
-    "name": "TSXSOROrderID2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7711"
-    }
-   },
-   {
-    "name": "TSXSpeedbump",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7734"
-    }
-   },
-   {
-    "name": "TSXSpreadGoal",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6788"
-    }
-   },
-   {
-    "name": "TSXTradeCorrection",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6778"
-    }
-   },
-   {
-    "name": "TSXUndisplayed",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7726"
-    }
-   },
-   {
-    "name": "TSXUserId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6751"
-    }
-   },
-   {
-    "name": "TSXWashTrade",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6777"
-    }
-   },
-   {
-    "name": "UndisclTradedVol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7736"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "TSXGroup",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "POComment",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7737"
+   }
+  },
+  {
+   "name": "PriceBandInst",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7738"
+   }
+  },
+  {
+   "name": "ShortMarkingExempt",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7729"
+   }
+  },
+  {
+   "name": "TMXUDF1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6752"
+   }
+  },
+  {
+   "name": "TMXUDF2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6753"
+   }
+  },
+  {
+   "name": "TMXUDF3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6756"
+   }
+  },
+  {
+   "name": "TMXUDF4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6758"
+   }
+  },
+  {
+   "name": "TMXUDF5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6764"
+   }
+  },
+  {
+   "name": "TMXUDF6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6766"
+   }
+  },
+  {
+   "name": "TMXUDF7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6787"
+   }
+  },
+  {
+   "name": "TMXUDF8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7718"
+   }
+  },
+  {
+   "name": "TMXUDF9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7730"
+   }
+  },
+  {
+   "name": "TSXAccountType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6750"
+   }
+  },
+  {
+   "name": "TSXActionSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6760"
+   }
+  },
+  {
+   "name": "TSXAL1Timestamp",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7725"
+   }
+  },
+  {
+   "name": "TSXAnonymous",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6761"
+   }
+  },
+  {
+   "name": "TSXATSName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6775"
+   }
+  },
+  {
+   "name": "TSXATSTimestamp",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7724"
+   }
+  },
+  {
+   "name": "TSXBasketTrade",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6754"
+   }
+  },
+  {
+   "name": "TSXBrokerNumber",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6774"
+   }
+  },
+  {
+   "name": "TSXBuyAccountId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6769"
+   }
+  },
+  {
+   "name": "TSXBuyAccountType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6767"
+   }
+  },
+  {
+   "name": "TSXBuyCustomerType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6797"
+   }
+  },
+  {
+   "name": "TSXBuyJitney",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6781"
+   }
+  },
+  {
+   "name": "TSXBuyParticipation",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6785"
+   }
+  },
+  {
+   "name": "TSXBuyParticipationVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7719"
+   }
+  },
+  {
+   "name": "TSXBuyRegulationID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6771"
+   }
+  },
+  {
+   "name": "TSXByPass",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6791"
+   }
+  },
+  {
+   "name": "TSXCrossType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6773"
+   }
+  },
+  {
+   "name": "TSXCustomerType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6794"
+   }
+  },
+  {
+   "name": "TSXErrorNumber",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6779"
+   }
+  },
+  {
+   "name": "TSXExchangeAdmin",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6780"
+   }
+  },
+  {
+   "name": "TSXExchangeUserID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6762"
+   }
+  },
+  {
+   "name": "TSXExecCancelledReason",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7727"
+   }
+  },
+  {
+   "name": "TSXJitney",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6757"
+   }
+  },
+  {
+   "name": "TSXLongLife",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7735"
+   }
+  },
+  {
+   "name": "TSXMarketInst",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7739"
+   }
+  },
+  {
+   "name": "TSXMatchingPriority",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7732"
+   }
+  },
+  {
+   "name": "TSXMessageId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6789"
+   }
+  },
+  {
+   "name": "TSXMGFCandidate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6759"
+   }
+  },
+  {
+   "name": "TSXMGFVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6799"
+   }
+  },
+  {
+   "name": "TSXMinInteractionSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6793"
+   }
+  },
+  {
+   "name": "TSXNCIB",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6792"
+   }
+  },
+  {
+   "name": "TSXNonResident",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6783"
+   }
+  },
+  {
+   "name": "TSXNoTradeFeat",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7713"
+   }
+  },
+  {
+   "name": "TSXNoTradeKey",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7714"
+   }
+  },
+  {
+   "name": "TSXNoTradeOrderNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7715"
+   }
+  },
+  {
+   "name": "TSXNoTradePrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7717"
+   }
+  },
+  {
+   "name": "TSXNoTradeVol",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7716"
+   }
+  },
+  {
+   "name": "TSXOrderKey",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6790"
+   }
+  },
+  {
+   "name": "TSXOrigTradeID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6795"
+   }
+  },
+  {
+   "name": "TSXParticipationOption",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7712"
+   }
+  },
+  {
+   "name": "TSXPegType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7723"
+   }
+  },
+  {
+   "name": "TSXPrincipalTrade",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6776"
+   }
+  },
+  {
+   "name": "TSXPrivateOrigPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6796"
+   }
+  },
+  {
+   "name": "TSXProgramTrade",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6755"
+   }
+  },
+  {
+   "name": "TSXReferenceVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6765"
+   }
+  },
+  {
+   "name": "TSXRegulationID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6763"
+   }
+  },
+  {
+   "name": "TSXRemainingBuyParticipationVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7721"
+   }
+  },
+  {
+   "name": "TSXRemainingMGFVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7728"
+   }
+  },
+  {
+   "name": "TSXRemainingSellParticipationVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7722"
+   }
+  },
+  {
+   "name": "TSXRTAutoFill",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6784"
+   }
+  },
+  {
+   "name": "TSXSeekDarkLiquidity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7731"
+   }
+  },
+  {
+   "name": "TSXSelfTrade",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7733"
+   }
+  },
+  {
+   "name": "TSXSellAccountId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6770"
+   }
+  },
+  {
+   "name": "TSXSellAccountType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6768"
+   }
+  },
+  {
+   "name": "TSXSellCustomerType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6798"
+   }
+  },
+  {
+   "name": "TSXSellJitney",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6782"
+   }
+  },
+  {
+   "name": "TSXSellParticipation",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6786"
+   }
+  },
+  {
+   "name": "TSXSellParticipationVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7720"
+   }
+  },
+  {
+   "name": "TSXSellRegulationID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6772"
+   }
+  },
+  {
+   "name": "TSXSOROrderID1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7710"
+   }
+  },
+  {
+   "name": "TSXSOROrderID2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7711"
+   }
+  },
+  {
+   "name": "TSXSpeedbump",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7734"
+   }
+  },
+  {
+   "name": "TSXSpreadGoal",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6788"
+   }
+  },
+  {
+   "name": "TSXTradeCorrection",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6778"
+   }
+  },
+  {
+   "name": "TSXUndisplayed",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7726"
+   }
+  },
+  {
+   "name": "TSXUserId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6751"
+   }
+  },
+  {
+   "name": "TSXWashTrade",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6777"
+   }
+  },
+  {
+   "name": "UndisclTradedVol",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7736"
+   }
+  }
+ ]
 }

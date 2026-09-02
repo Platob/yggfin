@@ -1,56 +1,53 @@
 {
  "name": "NoSecondaryAssetClasses",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoSecondaryAssetClasses",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1976"
-  },
-  "item": {
-   "name": "SecondaryAssetClass",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "SecondaryAssetClass",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1977"
-     }
-    },
-    {
-     "name": "SecondaryAssetSubClass",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1978"
-     }
-    },
-    {
-     "name": "SecondaryAssetType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1979"
-     }
-    },
-    {
-     "name": "SecondaryAssetSubType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2741"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1976",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "SecondaryAssetClass",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "SecondaryAssetClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1977"
     }
-   ]
-  }
+   },
+   {
+    "name": "SecondaryAssetSubClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1978"
+    }
+   },
+   {
+    "name": "SecondaryAssetType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1979"
+    }
+   },
+   {
+    "name": "SecondaryAssetSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2741"
+    }
+   }
+  ]
  }
 }

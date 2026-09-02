@@ -1,258 +1,255 @@
 {
  "name": "QuoteAck",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "QuoteAck",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "QuoteAck",
-   "msgtype": "CW",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07"
-  },
-  "fields": [
-   {
-    "name": "StandardHeader",
-    "type": "struct",
-    "fix": {
-     "component": "StandardHeader"
-    },
-    "fields": []
-   },
-   {
-    "name": "QuoteID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "117"
-    }
-   },
-   {
-    "name": "QuoteMsgID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1166"
-    }
-   },
-   {
-    "name": "QuoteReqID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "131"
-    }
-   },
-   {
-    "name": "QuoteType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "537"
-    }
-   },
-   {
-    "name": "QuoteCancelType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "298"
-    }
-   },
-   {
-    "name": "SecondaryQuoteID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1751"
-    }
-   },
-   {
-    "name": "QuoteAckStatus",
-    "type": "string",
-    "fix": {
-     "tag": "1865"
-    }
-   },
-   {
-    "name": "QuoteRejectReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "300"
-    }
-   },
-   {
-    "name": "RejectText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1328"
-    }
-   },
-   {
-    "name": "EncodedRejectTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1664"
-    }
-   },
-   {
-    "name": "EncodedRejectText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1665"
-    }
-   },
-   {
-    "name": "NoPartyIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "453"
-    },
-    "item": {
-     "name": "PartyID",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "PartyID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "448"
-       }
-      },
-      {
-       "name": "PartyIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "447"
-       }
-      },
-      {
-       "name": "PartyRole",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "452"
-       }
-      },
-      {
-       "name": "PartyRoleQualifier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2376"
-       }
-      },
-      {
-       "name": "NoPartySubIDs",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "802"
-       },
-       "item": {
-        "name": "PartySubID",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "PartySubID",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "523"
-          }
-         },
-         {
-          "name": "PartySubIDType",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "803"
-          }
-         }
-        ]
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoQuoteAttributes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2706"
-    },
-    "item": {
-     "name": "QuoteAttribute",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "QuoteAttributeType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2707"
-       }
-      },
-      {
-       "name": "QuoteAttributeValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2708"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "Text",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "58"
-    }
-   },
-   {
-    "name": "EncodedTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "354"
-    }
-   },
-   {
-    "name": "EncodedText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "355"
-    }
-   },
-   {
-    "name": "StandardTrailer",
-    "type": "struct",
-    "fix": {
-     "component": "StandardTrailer"
-    },
-    "fields": []
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "QuoteAck",
+  "msgtype": "CW",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "StandardHeader",
+   "type": "struct",
+   "fix": {
+    "component": "StandardHeader"
+   },
+   "fields": []
+  },
+  {
+   "name": "QuoteID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "117"
+   }
+  },
+  {
+   "name": "QuoteMsgID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1166"
+   }
+  },
+  {
+   "name": "QuoteReqID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "131"
+   }
+  },
+  {
+   "name": "QuoteType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "537"
+   }
+  },
+  {
+   "name": "QuoteCancelType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "298"
+   }
+  },
+  {
+   "name": "SecondaryQuoteID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1751"
+   }
+  },
+  {
+   "name": "QuoteAckStatus",
+   "type": "string",
+   "fix": {
+    "tag": "1865"
+   }
+  },
+  {
+   "name": "QuoteRejectReason",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "300"
+   }
+  },
+  {
+   "name": "RejectText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1328"
+   }
+  },
+  {
+   "name": "EncodedRejectTextLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1664"
+   }
+  },
+  {
+   "name": "EncodedRejectText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1665"
+   }
+  },
+  {
+   "name": "NoPartyIDs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "453"
+   },
+   "item": {
+    "name": "PartyID",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "PartyID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "448"
+      }
+     },
+     {
+      "name": "PartyIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "447"
+      }
+     },
+     {
+      "name": "PartyRole",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "452"
+      }
+     },
+     {
+      "name": "PartyRoleQualifier",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2376"
+      }
+     },
+     {
+      "name": "NoPartySubIDs",
+      "type": "list",
+      "nullable": true,
+      "fix": {
+       "tag": "802"
+      },
+      "item": {
+       "name": "PartySubID",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "PartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "523"
+         }
+        },
+        {
+         "name": "PartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "803"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NoQuoteAttributes",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2706"
+   },
+   "item": {
+    "name": "QuoteAttribute",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "QuoteAttributeType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2707"
+      }
+     },
+     {
+      "name": "QuoteAttributeValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2708"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "Text",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "58"
+   }
+  },
+  {
+   "name": "EncodedTextLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "354"
+   }
+  },
+  {
+   "name": "EncodedText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "355"
+   }
+  },
+  {
+   "name": "StandardTrailer",
+   "type": "struct",
+   "fix": {
+    "component": "StandardTrailer"
+   },
+   "fields": []
+  }
+ ]
 }

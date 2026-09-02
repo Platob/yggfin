@@ -1,5 +1,5 @@
-{
- "ISINCODE": {
+[
+ {
   "name": "ISINCODE",
   "type": "string",
   "nullable": true,
@@ -17,7 +17,7 @@
    ]
   }
  },
- "ParentClOrdID": {
+ {
   "name": "ParentClOrdID",
   "type": "string",
   "nullable": true,
@@ -30,7 +30,7 @@
    "column": "parentclordid"
   }
  },
- "ParentOrderID": {
+ {
   "name": "ParentOrderID",
   "type": "string",
   "nullable": true,
@@ -43,4 +43,4 @@
    "column": "parentorderid"
   }
  }
-}
+]

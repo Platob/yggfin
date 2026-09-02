@@ -1,40 +1,37 @@
 {
  "name": "NoComplexEventAveragingObservations",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoComplexEventAveragingObservations",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40994"
-  },
-  "item": {
-   "name": "ComplexEventAveragingObservation",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ComplexEventAveragingObservationNumber",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40995"
-     }
-    },
-    {
-     "name": "ComplexEventAveragingWeight",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40996"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40994",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ComplexEventAveragingObservation",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ComplexEventAveragingObservationNumber",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40995"
     }
-   ]
-  }
+   },
+   {
+    "name": "ComplexEventAveragingWeight",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40996"
+    }
+   }
+  ]
  }
 }

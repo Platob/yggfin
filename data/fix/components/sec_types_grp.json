@@ -1,92 +1,89 @@
 {
  "name": "SecTypesGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "SecTypesGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "SecTypesGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "SecurityTypes"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoSecurityTypes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "558"
-    },
-    "item": {
-     "name": "SecurityType",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "SecurityType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "167"
-       }
-      },
-      {
-       "name": "SecuritySubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "762"
-       }
-      },
-      {
-       "name": "Product",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "460"
-       }
-      },
-      {
-       "name": "CFICode",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "461"
-       }
-      },
-      {
-       "name": "UPICode",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2891"
-       }
-      },
-      {
-       "name": "TransactTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "60"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "SecTypesGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "SecurityTypes"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoSecurityTypes",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "558"
+   },
+   "item": {
+    "name": "SecurityType",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "SecurityType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "167"
+      }
+     },
+     {
+      "name": "SecuritySubType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "762"
+      }
+     },
+     {
+      "name": "Product",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "460"
+      }
+     },
+     {
+      "name": "CFICode",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "461"
+      }
+     },
+     {
+      "name": "UPICode",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2891"
+      }
+     },
+     {
+      "name": "TransactTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "60"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

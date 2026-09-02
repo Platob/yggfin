@@ -1,67 +1,64 @@
 {
  "name": "NoComplexEventPeriods",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoComplexEventPeriods",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41010"
-  },
-  "item": {
-   "name": "ComplexEventPeriod",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ComplexEventPeriodType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41011"
-     }
-    },
-    {
-     "name": "ComplexEventBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41012"
-     }
-    },
-    {
-     "name": "ComplexEventScheduleGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventScheduleGrp"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventPeriodDateGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventPeriodDateGrp"
-     },
-     "fields": []
-    },
-    {
-     "name": "ComplexEventAveragingObservationGrp",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "ComplexEventAveragingObservationGrp"
-     },
-     "fields": []
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41010",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ComplexEventPeriod",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ComplexEventPeriodType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41011"
     }
-   ]
-  }
+   },
+   {
+    "name": "ComplexEventBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41012"
+    }
+   },
+   {
+    "name": "ComplexEventScheduleGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventScheduleGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventPeriodDateGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventPeriodDateGrp"
+    },
+    "fields": []
+   },
+   {
+    "name": "ComplexEventAveragingObservationGrp",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "ComplexEventAveragingObservationGrp"
+    },
+    "fields": []
+   }
+  ]
  }
 }
