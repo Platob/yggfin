@@ -15,34 +15,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ContAmt",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ContAmtType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "519"
+ "fields": [
+  {
+   "name": "ContAmt",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ContAmtType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "519"
+     }
+    },
+    {
+     "name": "ContAmtValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "520"
+     }
+    },
+    {
+     "name": "ContAmtCurr",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "521"
+     }
     }
-   },
-   {
-    "name": "ContAmtValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "520"
-    }
-   },
-   {
-    "name": "ContAmtCurr",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "521"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

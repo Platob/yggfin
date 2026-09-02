@@ -30,28 +30,30 @@
    "fix": {
     "tag": "1218"
    },
-   "item": {
-    "name": "DerivativeSecurityAltID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DerivativeSecurityAltID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1219"
+   "fields": [
+    {
+     "name": "DerivativeSecurityAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1219"
+       }
+      },
+      {
+       "name": "DerivativeSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1220"
+       }
       }
-     },
-     {
-      "name": "DerivativeSecurityAltIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1220"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

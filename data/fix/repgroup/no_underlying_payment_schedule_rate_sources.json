@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentScheduleRateSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentScheduleRateSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40705"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentScheduleRateSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentScheduleRateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40705"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentScheduleRateSourceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40706"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentScheduleReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40707"
+     }
     }
-   },
-   {
-    "name": "UnderlyingPaymentScheduleRateSourceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40706"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentScheduleReferencePage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40707"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -29,28 +29,30 @@
    "fix": {
     "tag": "2871"
    },
-   "item": {
-    "name": "TransactionAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TransactionAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2872"
+   "fields": [
+    {
+     "name": "TransactionAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TransactionAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2872"
+       }
+      },
+      {
+       "name": "TransactionAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2873"
+       }
       }
-     },
-     {
-      "name": "TransactionAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2873"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

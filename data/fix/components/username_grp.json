@@ -28,20 +28,22 @@
    "fix": {
     "tag": "809"
    },
-   "item": {
-    "name": "Username",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Username",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "553"
+   "fields": [
+    {
+     "name": "Username",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Username",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "553"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -12,35 +12,37 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingAdditionalTerm",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42037"
-    }
-   },
-   {
-    "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42038"
-    }
-   },
-   {
-    "name": "UnderlyingAdditionalTermBondRefGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingAdditionalTermBondRefGrp"
+ "fields": [
+  {
+   "name": "UnderlyingAdditionalTerm",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42037"
+     }
     },
-    "fields": []
-   }
-  ]
- }
+    {
+     "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42038"
+     }
+    },
+    {
+     "name": "UnderlyingAdditionalTermBondRefGrp",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingAdditionalTermBondRefGrp"
+     },
+     "fields": []
+    }
+   ]
+  }
+ ]
 }

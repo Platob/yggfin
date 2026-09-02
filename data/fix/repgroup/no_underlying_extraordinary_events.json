@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingExtraordinaryEvent",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingExtraordinaryEventType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42885"
+ "fields": [
+  {
+   "name": "UnderlyingExtraordinaryEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingExtraordinaryEventType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42885"
+     }
+    },
+    {
+     "name": "UnderlyingExtraordinaryEventValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42886"
+     }
     }
-   },
-   {
-    "name": "UnderlyingExtraordinaryEventValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42886"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

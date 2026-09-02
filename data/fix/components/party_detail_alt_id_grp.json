@@ -40,37 +40,39 @@
    "fix": {
     "tag": "1516"
    },
-   "item": {
-    "name": "PartyDetailAltID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyDetailAltID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1517"
-      }
-     },
-     {
-      "name": "PartyDetailAltIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1518"
-      }
-     },
-     {
-      "name": "PartyDetailAltSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyDetailAltSubGrp"
+   "fields": [
+    {
+     "name": "PartyDetailAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyDetailAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1517"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "PartyDetailAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1518"
+       }
+      },
+      {
+       "name": "PartyDetailAltSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailAltSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -9,27 +9,29 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "InstrumentScope",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "InstrumentScopeOperator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1535"
-    }
-   },
-   {
-    "name": "InstrumentScope",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "InstrumentScope"
+ "fields": [
+  {
+   "name": "InstrumentScope",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentScopeOperator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1535"
+     }
     },
-    "fields": []
-   }
-  ]
- }
+    {
+     "name": "InstrumentScope",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "InstrumentScope"
+     },
+     "fields": []
+    }
+   ]
+  }
+ ]
 }

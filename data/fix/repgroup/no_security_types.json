@@ -12,58 +12,60 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "SecurityType",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "SecurityType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "167"
+ "fields": [
+  {
+   "name": "SecurityType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SecurityType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "167"
+     }
+    },
+    {
+     "name": "SecuritySubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "762"
+     }
+    },
+    {
+     "name": "Product",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "460"
+     }
+    },
+    {
+     "name": "CFICode",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "461"
+     }
+    },
+    {
+     "name": "UPICode",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2891"
+     }
+    },
+    {
+     "name": "TransactTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "60"
+     }
     }
-   },
-   {
-    "name": "SecuritySubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "762"
-    }
-   },
-   {
-    "name": "Product",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "460"
-    }
-   },
-   {
-    "name": "CFICode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "461"
-    }
-   },
-   {
-    "name": "UPICode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2891"
-    }
-   },
-   {
-    "name": "TransactTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "60"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

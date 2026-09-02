@@ -47,36 +47,38 @@
    "fix": {
     "tag": "957"
    },
-   "item": {
-    "name": "StrategyParameter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StrategyParameterName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "958"
+   "fields": [
+    {
+     "name": "StrategyParameter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StrategyParameterName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "958"
+       }
+      },
+      {
+       "name": "StrategyParameterType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "959"
+       }
+      },
+      {
+       "name": "StrategyParameterValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "960"
+       }
       }
-     },
-     {
-      "name": "StrategyParameterType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "959"
-      }
-     },
-     {
-      "name": "StrategyParameterValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "960"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoAlgoSystemModules",
@@ -85,36 +87,38 @@
    "fix": {
     "tag": "3025"
    },
-   "item": {
-    "name": "AlgoSystemModule",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AlgoSystemModuleName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3026"
+   "fields": [
+    {
+     "name": "AlgoSystemModule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AlgoSystemModuleName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3026"
+       }
+      },
+      {
+       "name": "AlgoSystemModuleVersion",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3027"
+       }
+      },
+      {
+       "name": "AlgoSystemModuleLastUpdateTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3080"
+       }
       }
-     },
-     {
-      "name": "AlgoSystemModuleVersion",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3027"
-      }
-     },
-     {
-      "name": "AlgoSystemModuleLastUpdateTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3080"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoTestScenarios",
@@ -123,547 +127,567 @@
    "fix": {
     "tag": "3028"
    },
-   "item": {
-    "name": "TestScenario",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TestScenarioID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3029"
-      }
-     },
-     {
-      "name": "TestScenarioStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3030"
-      }
-     },
-     {
-      "name": "TestScenarioStartTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3031"
-      }
-     },
-     {
-      "name": "TestScenarioEndTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3032"
-      }
-     },
-     {
-      "name": "NoTestScenarioParameters",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3130"
+   "fields": [
+    {
+     "name": "TestScenario",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TestScenarioID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3029"
+       }
       },
-      "item": {
-       "name": "TestScenarioParameter",
-       "type": "struct",
+      {
+       "name": "TestScenarioStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3030"
+       }
+      },
+      {
+       "name": "TestScenarioStartTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3031"
+       }
+      },
+      {
+       "name": "TestScenarioEndTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3032"
+       }
+      },
+      {
+       "name": "NoTestScenarioParameters",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3130"
+       },
        "fields": [
         {
-         "name": "TestScenarioParameterName",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3131"
-         }
-        },
-        {
-         "name": "TestScenarioParameterType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3132"
-         }
-        },
-        {
-         "name": "TestScenarioParameterValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3133"
-         }
+         "name": "TestScenarioParameter",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TestScenarioParameterName",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3131"
+           }
+          },
+          {
+           "name": "TestScenarioParameterType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3132"
+           }
+          },
+          {
+           "name": "TestScenarioParameterValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3133"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoNestedPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "539"
       },
-      "item": {
-       "name": "NestedPartyID",
-       "type": "struct",
+      {
+       "name": "NoNestedPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "539"
+       },
        "fields": [
         {
          "name": "NestedPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "524"
-         }
-        },
-        {
-         "name": "NestedPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "525"
-         }
-        },
-        {
-         "name": "NestedPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "538"
-         }
-        },
-        {
-         "name": "NestedPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2384"
-         }
-        },
-        {
-         "name": "NoNestedPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "804"
-         },
-         "item": {
-          "name": "NestedPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "NestedPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "545"
-            }
-           },
-           {
-            "name": "NestedPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "805"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NestedPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "524"
            }
-          ]
-         }
+          },
+          {
+           "name": "NestedPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "525"
+           }
+          },
+          {
+           "name": "NestedPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "538"
+           }
+          },
+          {
+           "name": "NestedPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2384"
+           }
+          },
+          {
+           "name": "NoNestedPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "804"
+           },
+           "fields": [
+            {
+             "name": "NestedPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "NestedPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "545"
+               }
+              },
+              {
+               "name": "NestedPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "805"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoInstrumentScopes",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1656"
       },
-      "item": {
-       "name": "InstrumentScope",
-       "type": "struct",
+      {
+       "name": "NoInstrumentScopes",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1656"
+       },
        "fields": [
-        {
-         "name": "InstrumentScopeOperator",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1535"
-         }
-        },
         {
          "name": "InstrumentScope",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "InstrumentScope"
-         },
-         "fields": []
-        }
-       ]
-      }
-     },
-     {
-      "name": "MDOriginType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1024"
-      }
-     },
-     {
-      "name": "MDOriginDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3033"
-      }
-     },
-     {
-      "name": "MDOriginTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3034"
-      }
-     },
-     {
-      "name": "TestStepGroupID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3035"
-      }
-     },
-     {
-      "name": "NoTestSteps",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3036"
-      },
-      "item": {
-       "name": "TestStep",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "TestStepID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3037"
-         }
-        },
-        {
-         "name": "TestStepDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3038"
-         }
-        },
-        {
-         "name": "TestStepStartTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3039"
-         }
-        },
-        {
-         "name": "TestStepStartOffsetPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3040"
-         }
-        },
-        {
-         "name": "TestStepStartOffsetUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3041"
-         }
-        },
-        {
-         "name": "TestStepEndTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3042"
-         }
-        },
-        {
-         "name": "TestStepEndOffsetPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3043"
-         }
-        },
-        {
-         "name": "TestStepEndOffsetUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3044"
-         }
-        },
-        {
-         "name": "NoTestStepParameters",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "3045"
-         },
-         "item": {
-          "name": "TestStepParameter",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "TestStepParameterName",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3046"
-            }
-           },
-           {
-            "name": "TestStepParameterType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3047"
-            }
-           },
-           {
-            "name": "TestStepParameterValue",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3048"
-            }
+         "fields": [
+          {
+           "name": "InstrumentScopeOperator",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1535"
            }
-          ]
-         }
+          },
+          {
+           "name": "InstrumentScope",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "InstrumentScope"
+           },
+           "fields": []
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoTestSystemModules",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3049"
       },
-      "item": {
-       "name": "TestSystemModule",
-       "type": "struct",
+      {
+       "name": "MDOriginType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1024"
+       }
+      },
+      {
+       "name": "MDOriginDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3033"
+       }
+      },
+      {
+       "name": "MDOriginTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3034"
+       }
+      },
+      {
+       "name": "TestStepGroupID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3035"
+       }
+      },
+      {
+       "name": "NoTestSteps",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3036"
+       },
        "fields": [
         {
-         "name": "TestSystemModuleName",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3050"
-         }
-        },
-        {
-         "name": "TestSystemModuleVersion",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3051"
-         }
-        },
-        {
-         "name": "TestSystemModuleLastUpdateTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3081"
-         }
+         "name": "TestStep",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TestStepID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3037"
+           }
+          },
+          {
+           "name": "TestStepDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3038"
+           }
+          },
+          {
+           "name": "TestStepStartTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3039"
+           }
+          },
+          {
+           "name": "TestStepStartOffsetPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3040"
+           }
+          },
+          {
+           "name": "TestStepStartOffsetUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3041"
+           }
+          },
+          {
+           "name": "TestStepEndTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3042"
+           }
+          },
+          {
+           "name": "TestStepEndOffsetPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3043"
+           }
+          },
+          {
+           "name": "TestStepEndOffsetUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3044"
+           }
+          },
+          {
+           "name": "NoTestStepParameters",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "3045"
+           },
+           "fields": [
+            {
+             "name": "TestStepParameter",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "TestStepParameterName",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3046"
+               }
+              },
+              {
+               "name": "TestStepParameterType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3047"
+               }
+              },
+              {
+               "name": "TestStepParameterValue",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3048"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoTestMeasures",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3052"
       },
-      "item": {
-       "name": "TestMeasure",
-       "type": "struct",
+      {
+       "name": "NoTestSystemModules",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3049"
+       },
        "fields": [
         {
-         "name": "TestMeasureName",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3053"
-         }
-        },
-        {
-         "name": "TestMeasureDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3054"
-         }
-        },
-        {
-         "name": "TestMeasureType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3055"
-         }
-        },
-        {
-         "name": "TestMeasurePrecision",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3056"
-         }
-        },
-        {
-         "name": "TestMeasureResult",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3057"
-         }
-        },
-        {
-         "name": "TestThresholdType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3058"
-         }
-        },
-        {
-         "name": "TestWarningLevelValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3059"
-         }
-        },
-        {
-         "name": "TestFailLevelValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3060"
-         }
-        },
-        {
-         "name": "TestPeakLevelValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3061"
-         }
+         "name": "TestSystemModule",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TestSystemModuleName",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3050"
+           }
+          },
+          {
+           "name": "TestSystemModuleVersion",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3051"
+           }
+          },
+          {
+           "name": "TestSystemModuleLastUpdateTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3081"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoTestOrders",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3082"
       },
-      "item": {
-       "name": "TestOrder",
-       "type": "struct",
+      {
+       "name": "NoTestMeasures",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3052"
+       },
        "fields": [
         {
-         "name": "TestOrderID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3083"
-         }
-        },
+         "name": "TestMeasure",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TestMeasureName",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3053"
+           }
+          },
+          {
+           "name": "TestMeasureDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3054"
+           }
+          },
+          {
+           "name": "TestMeasureType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3055"
+           }
+          },
+          {
+           "name": "TestMeasurePrecision",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3056"
+           }
+          },
+          {
+           "name": "TestMeasureResult",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3057"
+           }
+          },
+          {
+           "name": "TestThresholdType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3058"
+           }
+          },
+          {
+           "name": "TestWarningLevelValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3059"
+           }
+          },
+          {
+           "name": "TestFailLevelValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3060"
+           }
+          },
+          {
+           "name": "TestPeakLevelValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3061"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "NoTestOrders",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3082"
+       },
+       "fields": [
         {
-         "name": "TestOrderSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3084"
-         }
-        },
-        {
-         "name": "TestOrderSecurityID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3085"
-         }
-        },
-        {
-         "name": "TestOrderSecurityIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3086"
-         }
-        },
-        {
-         "name": "TestOrderPrice",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3087"
-         }
-        },
-        {
-         "name": "TestOrderPriceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3088"
-         }
-        },
-        {
-         "name": "TestOrderQty",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3089"
-         }
-        },
-        {
-         "name": "TestOrderOffsetPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3090"
-         }
-        },
-        {
-         "name": "TestOrderOffsetUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3091"
-         }
+         "name": "TestOrder",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TestOrderID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3083"
+           }
+          },
+          {
+           "name": "TestOrderSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3084"
+           }
+          },
+          {
+           "name": "TestOrderSecurityID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3085"
+           }
+          },
+          {
+           "name": "TestOrderSecurityIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3086"
+           }
+          },
+          {
+           "name": "TestOrderPrice",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3087"
+           }
+          },
+          {
+           "name": "TestOrderPriceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3088"
+           }
+          },
+          {
+           "name": "TestOrderQty",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3089"
+           }
+          },
+          {
+           "name": "TestOrderOffsetPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3090"
+           }
+          },
+          {
+           "name": "TestOrderOffsetUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3091"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "TestSuiteStatus",

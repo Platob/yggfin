@@ -104,28 +104,30 @@
    "fix": {
     "tag": "40656"
    },
-   "item": {
-    "name": "UnderlyingNonDeliverableFixingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingNonDeliverableFixingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40657"
+   "fields": [
+    {
+     "name": "UnderlyingNonDeliverableFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingNonDeliverableFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40657"
+       }
+      },
+      {
+       "name": "UnderlyingNonDeliverableFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40658"
+       }
       }
-     },
-     {
-      "name": "UnderlyingNonDeliverableFixingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40658"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

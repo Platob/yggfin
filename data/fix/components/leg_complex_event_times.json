@@ -90,28 +90,30 @@
    "fix": {
     "tag": "2253"
    },
-   "item": {
-    "name": "LegComplexEventTime",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegComplexEventStartTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2204"
+   "fields": [
+    {
+     "name": "LegComplexEventTime",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventStartTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2204"
+       }
+      },
+      {
+       "name": "LegComplexEventEndTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2247"
+       }
       }
-     },
-     {
-      "name": "LegComplexEventEndTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2247"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

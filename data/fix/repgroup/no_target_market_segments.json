@@ -9,18 +9,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TargetMarketSegment",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TargetMarketSegmentID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1790"
+ "fields": [
+  {
+   "name": "TargetMarketSegment",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TargetMarketSegmentID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1790"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

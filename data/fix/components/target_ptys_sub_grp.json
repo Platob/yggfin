@@ -43,28 +43,30 @@
    "fix": {
     "tag": "2433"
    },
-   "item": {
-    "name": "TargetPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TargetPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2434"
+   "fields": [
+    {
+     "name": "TargetPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TargetPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2434"
+       }
+      },
+      {
+       "name": "TargetPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2435"
+       }
       }
-     },
-     {
-      "name": "TargetPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2435"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

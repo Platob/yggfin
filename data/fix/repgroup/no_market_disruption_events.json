@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MarketDisruptionEvent",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MarketDisruptionEvent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41093"
+ "fields": [
+  {
+   "name": "MarketDisruptionEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MarketDisruptionEvent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41093"
+     }
+    },
+    {
+     "name": "MarketDisruptionValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40991"
+     }
     }
-   },
-   {
-    "name": "MarketDisruptionValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40991"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -104,20 +104,22 @@
    "fix": {
     "tag": "43000"
    },
-   "item": {
-    "name": "UnderlyingPaymentStubStartDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStubStartDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43001"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStubStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStubStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43001"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -190,567 +190,591 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
-      },
-      "fields": []
-     },
-     {
-      "name": "InstrumentExtension",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentExtension"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoSecurityClassifications",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1582"
-      },
-      "item": {
-       "name": "SecurityClassification",
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoSecurityClassifications",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1582"
+       },
        "fields": [
         {
-         "name": "SecurityClassificationReason",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1583"
-         }
-        },
-        {
-         "name": "SecurityClassificationValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1584"
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "FinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "FinancingDetails"
-      },
-      "fields": []
-     },
-     {
-      "name": "SecurityTradingRules",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SecurityTradingRules"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoStrikeRules",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1201"
-      },
-      "item": {
-       "name": "StrikeRule",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "StrikeRuleID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1223"
-         }
-        },
-        {
-         "name": "StartStrikePxRange",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1202"
-         }
-        },
-        {
-         "name": "EndStrikePxRange",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1203"
-         }
-        },
-        {
-         "name": "StrikeIncrement",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1204"
-         }
-        },
-        {
-         "name": "StrikeExerciseStyle",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1304"
-         }
-        },
-        {
-         "name": "NoMaturityRules",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "1236"
-         },
-         "item": {
-          "name": "MaturityRule",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "MaturityRuleID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1222"
-            }
-           },
-           {
-            "name": "MaturityMonthYearFormat",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1303"
-            }
-           },
-           {
-            "name": "MaturityMonthYearIncrementUnits",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1302"
-            }
-           },
-           {
-            "name": "StartMaturityMonthYear",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1241"
-            }
-           },
-           {
-            "name": "EndMaturityMonthYear",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1226"
-            }
-           },
-           {
-            "name": "MaturityMonthYearIncrement",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1229"
-            }
-           }
-          ]
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "NoUnderlyings",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "711"
-      },
-      "item": {
-       "name": "Underlying",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "UnderlyingInstrument",
+         "name": "SecurityClassification",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "UnderlyingInstrument"
-         },
-         "fields": []
+         "fields": [
+          {
+           "name": "SecurityClassificationReason",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1583"
+           }
+          },
+          {
+           "name": "SecurityClassificationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1584"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
-      }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "NoStipulations",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "232"
       },
-      "item": {
-       "name": "Stipulation",
+      {
+       "name": "FinancingDetails",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "SecurityTradingRules",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SecurityTradingRules"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoStrikeRules",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1201"
+       },
        "fields": [
         {
-         "name": "StipulationType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "233"
-         }
-        },
-        {
-         "name": "StipulationValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "234"
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "NoLegs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "555"
-      },
-      "item": {
-       "name": "Leg",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "InstrumentLeg",
+         "name": "StrikeRule",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "InstrumentLeg"
-         },
-         "fields": []
-        },
-        {
-         "name": "LegSwapType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "690"
-         }
-        },
-        {
-         "name": "LegSettlType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "587"
-         }
-        },
-        {
-         "name": "NoLegStipulations",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "683"
-         },
-         "item": {
-          "name": "LegStipulation",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "LegStipulationType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "688"
-            }
-           },
-           {
-            "name": "LegStipulationValue",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "689"
-            }
+         "fields": [
+          {
+           "name": "StrikeRuleID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1223"
            }
-          ]
-         }
-        },
+          },
+          {
+           "name": "StartStrikePxRange",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1202"
+           }
+          },
+          {
+           "name": "EndStrikePxRange",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1203"
+           }
+          },
+          {
+           "name": "StrikeIncrement",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1204"
+           }
+          },
+          {
+           "name": "StrikeExerciseStyle",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1304"
+           }
+          },
+          {
+           "name": "NoMaturityRules",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "1236"
+           },
+           "fields": [
+            {
+             "name": "MaturityRule",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "MaturityRuleID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1222"
+               }
+              },
+              {
+               "name": "MaturityMonthYearFormat",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1303"
+               }
+              },
+              {
+               "name": "MaturityMonthYearIncrementUnits",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1302"
+               }
+              },
+              {
+               "name": "StartMaturityMonthYear",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1241"
+               }
+              },
+              {
+               "name": "EndMaturityMonthYear",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1226"
+               }
+              },
+              {
+               "name": "MaturityMonthYearIncrement",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1229"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "NoUnderlyings",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "711"
+       },
+       "fields": [
         {
-         "name": "LegBenchmarkCurveData",
+         "name": "Underlying",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "LegBenchmarkCurveData"
-         },
-         "fields": []
+         "fields": [
+          {
+           "name": "UnderlyingInstrument",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "UnderlyingInstrument"
+           },
+           "fields": []
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoRelatedInstruments",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1647"
       },
-      "item": {
-       "name": "RelatedInstrument",
-       "type": "struct",
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "NoStipulations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "232"
+       },
        "fields": [
         {
-         "name": "RelatedInstrumentType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1648"
-         }
-        },
-        {
-         "name": "RelatedSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1649"
-         }
-        },
-        {
-         "name": "RelatedSecurityID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1650"
-         }
-        },
-        {
-         "name": "RelatedSecurityIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1651"
-         }
-        },
-        {
-         "name": "RelatedSecurityType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1652"
-         }
-        },
-        {
-         "name": "RelatedMaturityMonthYear",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1653"
-         }
-        },
-        {
-         "name": "RelatedToSecurityID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2413"
-         }
-        },
-        {
-         "name": "RelatedToSecurityIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2414"
-         }
-        },
-        {
-         "name": "RelatedToStreamXIDRef",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2415"
-         }
-        },
-        {
-         "name": "RelatedToDividendPeriodXIDRef",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2417"
-         }
+         "name": "Stipulation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "StipulationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "233"
+           }
+          },
+          {
+           "name": "StipulationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "234"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "SpreadOrBenchmarkCurveData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SpreadOrBenchmarkCurveData"
       },
-      "fields": []
-     },
-     {
-      "name": "YieldData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "YieldData"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoPriceMovements",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1919"
-      },
-      "item": {
-       "name": "PriceMovement",
-       "type": "struct",
+      {
+       "name": "NoLegs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "555"
+       },
        "fields": [
         {
-         "name": "NoPriceMovementValues",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "1920"
-         },
-         "item": {
-          "name": "PriceMovementValue",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "PriceMovementValue",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1921"
-            }
+         "name": "Leg",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "InstrumentLeg",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "InstrumentLeg"
            },
-           {
-            "name": "PriceMovementPoint",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1922"
-            }
+           "fields": []
+          },
+          {
+           "name": "LegSwapType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "690"
+           }
+          },
+          {
+           "name": "LegSettlType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "587"
+           }
+          },
+          {
+           "name": "NoLegStipulations",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "683"
            },
-           {
-            "name": "PriceMovementType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1923"
+           "fields": [
+            {
+             "name": "LegStipulation",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "LegStipulationType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "688"
+               }
+              },
+              {
+               "name": "LegStipulationValue",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "689"
+               }
+              }
+             ]
             }
-           }
-          ]
-         }
-        },
-        {
-         "name": "NoClearingAccountTypes",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "1918"
-         },
-         "item": {
-          "name": "ClearingAccountType",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "ClearingAccountType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1816"
-            }
-           }
-          ]
-         }
+           ]
+          },
+          {
+           "name": "LegBenchmarkCurveData",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "LegBenchmarkCurveData"
+           },
+           "fields": []
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "NoRelatedInstruments",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1647"
+       },
+       "fields": [
+        {
+         "name": "RelatedInstrument",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "RelatedInstrumentType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1648"
+           }
+          },
+          {
+           "name": "RelatedSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1649"
+           }
+          },
+          {
+           "name": "RelatedSecurityID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1650"
+           }
+          },
+          {
+           "name": "RelatedSecurityIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1651"
+           }
+          },
+          {
+           "name": "RelatedSecurityType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1652"
+           }
+          },
+          {
+           "name": "RelatedMaturityMonthYear",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1653"
+           }
+          },
+          {
+           "name": "RelatedToSecurityID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2413"
+           }
+          },
+          {
+           "name": "RelatedToSecurityIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2414"
+           }
+          },
+          {
+           "name": "RelatedToStreamXIDRef",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2415"
+           }
+          },
+          {
+           "name": "RelatedToDividendPeriodXIDRef",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2417"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "SpreadOrBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SpreadOrBenchmarkCurveData"
+       },
+       "fields": []
+      },
+      {
+       "name": "YieldData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "YieldData"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoPriceMovements",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1919"
+       },
+       "fields": [
+        {
+         "name": "PriceMovement",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NoPriceMovementValues",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "1920"
+           },
+           "fields": [
+            {
+             "name": "PriceMovementValue",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "PriceMovementValue",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1921"
+               }
+              },
+              {
+               "name": "PriceMovementPoint",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1922"
+               }
+              },
+              {
+               "name": "PriceMovementType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1923"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "name": "NoClearingAccountTypes",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "1918"
+           },
+           "fields": [
+            {
+             "name": "ClearingAccountType",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "ClearingAccountType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1816"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "RelSymTransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1504"
+       }
+      },
+      {
+       "name": "NumOfSimpleInstruments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1606"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "RelSymTransactTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1504"
-      }
-     },
-     {
-      "name": "NumOfSimpleInstruments",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1606"
-      }
-     },
-     {
-      "name": "Text",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "58"
-      }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

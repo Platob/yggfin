@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "InstrumentScopeSecurityAltID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "InstrumentScopeSecurityAltID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1541"
+ "fields": [
+  {
+   "name": "InstrumentScopeSecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentScopeSecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1541"
+     }
+    },
+    {
+     "name": "InstrumentScopeSecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1542"
+     }
     }
-   },
-   {
-    "name": "InstrumentScopeSecurityAltIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1542"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

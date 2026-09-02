@@ -98,20 +98,22 @@
    "fix": {
     "tag": "41515"
    },
-   "item": {
-    "name": "LegOptionExerciseExpirationDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegOptionExerciseExpirationDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41516"
+   "fields": [
+    {
+     "name": "LegOptionExerciseExpirationDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegOptionExerciseExpirationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41516"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegOptionExerciseExpirationDates",
@@ -120,28 +122,30 @@
    "fix": {
     "tag": "41527"
    },
-   "item": {
-    "name": "LegOptionExerciseExpirationDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegOptionExerciseExpirationDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41528"
+   "fields": [
+    {
+     "name": "LegOptionExerciseExpirationDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegOptionExerciseExpirationDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41528"
+       }
+      },
+      {
+       "name": "LegOptionExerciseExpirationDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41529"
+       }
       }
-     },
-     {
-      "name": "LegOptionExerciseExpirationDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41529"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegOptionExerciseExpirationDateRelativeTo",

@@ -90,20 +90,22 @@
    "fix": {
     "tag": "41515"
    },
-   "item": {
-    "name": "LegOptionExerciseExpirationDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegOptionExerciseExpirationDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41516"
+   "fields": [
+    {
+     "name": "LegOptionExerciseExpirationDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegOptionExerciseExpirationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41516"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

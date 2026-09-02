@@ -27,44 +27,46 @@
    "fix": {
     "tag": "73"
    },
-   "item": {
-    "name": "Order",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "11"
+   "fields": [
+    {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "OrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "38"
+       }
+      },
+      {
+       "name": "OrderAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "799"
+       }
       }
-     },
-     {
-      "name": "OrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "37"
-      }
-     },
-     {
-      "name": "OrderQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "38"
-      }
-     },
-     {
-      "name": "OrderAvgPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "799"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

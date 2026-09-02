@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegReturnRateFXConversion",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegReturnRateFXCurrencySymbol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42531"
+ "fields": [
+  {
+   "name": "LegReturnRateFXConversion",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegReturnRateFXCurrencySymbol",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42531"
+     }
+    },
+    {
+     "name": "LegReturnRateFXRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42532"
+     }
+    },
+    {
+     "name": "LegReturnRateFXRateCalc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42533"
+     }
     }
-   },
-   {
-    "name": "LegReturnRateFXRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42532"
-    }
-   },
-   {
-    "name": "LegReturnRateFXRateCalc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42533"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

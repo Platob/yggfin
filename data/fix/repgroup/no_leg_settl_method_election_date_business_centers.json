@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegSettlMethodElectionDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegSettlMethodElectionDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42582"
+ "fields": [
+  {
+   "name": "LegSettlMethodElectionDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegSettlMethodElectionDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42582"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

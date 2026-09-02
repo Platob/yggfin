@@ -35,28 +35,30 @@
    "fix": {
     "tag": "2668"
    },
-   "item": {
-    "name": "TrdRegPublication",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TrdRegPublicationType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2669"
+   "fields": [
+    {
+     "name": "TrdRegPublication",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegPublicationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2669"
+       }
+      },
+      {
+       "name": "TrdRegPublicationReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2670"
+       }
       }
-     },
-     {
-      "name": "TrdRegPublicationReason",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2670"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

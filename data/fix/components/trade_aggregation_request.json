@@ -102,44 +102,46 @@
    "fix": {
     "tag": "73"
    },
-   "item": {
-    "name": "Order",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "11"
+   "fields": [
+    {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "OrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "38"
+       }
+      },
+      {
+       "name": "OrderAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "799"
+       }
       }
-     },
-     {
-      "name": "OrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "37"
-      }
-     },
-     {
-      "name": "OrderQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "38"
-      }
-     },
-     {
-      "name": "OrderAvgPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "799"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoExecs",
@@ -148,44 +150,46 @@
    "fix": {
     "tag": "124"
    },
-   "item": {
-    "name": "Exec",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LastQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "32"
+   "fields": [
+    {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
+      },
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
+      },
+      {
+       "name": "TradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1003"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
       }
-     },
-     {
-      "name": "ExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "17"
-      }
-     },
-     {
-      "name": "TradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1003"
-      }
-     },
-     {
-      "name": "LastPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "31"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Account",
@@ -210,74 +214,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

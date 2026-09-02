@@ -104,261 +104,263 @@
    "fix": {
     "tag": "40540"
    },
-   "item": {
-    "name": "UnderlyingStream",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40541"
-      }
-     },
-     {
-      "name": "UnderlyingStreamXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42016"
-      }
-     },
-     {
-      "name": "UnderlyingStreamDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40542"
-      }
-     },
-     {
-      "name": "UnderlyingStreamVersion",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43083"
-      }
-     },
-     {
-      "name": "UnderlyingStreamVersionEffectiveDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43084"
-      }
-     },
-     {
-      "name": "UnderlyingStreamPaySide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40543"
-      }
-     },
-     {
-      "name": "UnderlyingStreamReceiveSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40544"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42018"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40545"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40546"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalDeterminationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43085"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalAdjustments",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43086"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42019"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42020"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalCommodityFrequency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42021"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42022"
-      }
-     },
-     {
-      "name": "UnderlyingStreamTotalNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42023"
-      }
-     },
-     {
-      "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42024"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommodity",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamCommodity"
+   "fields": [
+    {
+     "name": "UnderlyingStream",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40541"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamEffectiveDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamEffectiveDate"
+      {
+       "name": "UnderlyingStreamXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42016"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamTerminationDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamTerminationDate"
+      {
+       "name": "UnderlyingStreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40542"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamCalculationPeriodDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamCalculationPeriodDates"
+      {
+       "name": "UnderlyingStreamVersion",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43083"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingPaymentStream",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingPaymentStream"
+      {
+       "name": "UnderlyingStreamVersionEffectiveDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43084"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingPaymentScheduleGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingPaymentScheduleGrp"
+      {
+       "name": "UnderlyingStreamPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40543"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingPaymentStubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingPaymentStubGrp"
+      {
+       "name": "UnderlyingStreamReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40544"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingDeliveryStream",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingDeliveryStream"
+      {
+       "name": "UnderlyingStreamNotionalXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42018"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingDeliveryScheduleGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingDeliveryScheduleGrp"
+      {
+       "name": "UnderlyingStreamNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40545"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40547"
+      {
+       "name": "UnderlyingStreamCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40546"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43085"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalAdjustments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43086"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42019"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42020"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalCommodityFrequency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42021"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42022"
+       }
+      },
+      {
+       "name": "UnderlyingStreamTotalNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42023"
+       }
+      },
+      {
+       "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42024"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommodity",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamCommodity"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamEffectiveDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamEffectiveDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamTerminationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamTerminationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamCalculationPeriodDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamCalculationPeriodDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentStubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentStubGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingDeliveryStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingDeliveryStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingDeliveryScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingDeliveryScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40547"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingStreamTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40988"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40989"
+       }
       }
-     },
-     {
-      "name": "EncodedUnderlyingStreamTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40988"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingStreamText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40989"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

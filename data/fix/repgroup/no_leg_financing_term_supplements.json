@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegFinancingTermSupplement",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegFinancingTermSupplementDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42201"
+ "fields": [
+  {
+   "name": "LegFinancingTermSupplement",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegFinancingTermSupplementDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42201"
+     }
+    },
+    {
+     "name": "LegFinancingTermSupplementDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42202"
+     }
     }
-   },
-   {
-    "name": "LegFinancingTermSupplementDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42202"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

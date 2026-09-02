@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingRateSpreadStep",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingRateSpreadStepDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43006"
+ "fields": [
+  {
+   "name": "UnderlyingRateSpreadStep",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingRateSpreadStepDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43006"
+     }
+    },
+    {
+     "name": "UnderlyingRateSpreadStepValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43007"
+     }
     }
-   },
-   {
-    "name": "UnderlyingRateSpreadStepValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43007"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

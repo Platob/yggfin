@@ -744,10 +744,6 @@ class ComponentGroup:
         return self._declaration[1]
 
     @cached_property
-    def _member_paths(self) -> dict[int, tuple[str, ...]]:
-        return self._declaration[2]
-
-    @cached_property
     def _group_delimiters(self) -> dict[tuple[str, ...], set[int]]:
         return self._declaration[3]
 

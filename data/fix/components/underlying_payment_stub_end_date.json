@@ -121,20 +121,22 @@
    "fix": {
     "tag": "42991"
    },
-   "item": {
-    "name": "UnderlyingPaymentStubEndDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStubEndDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42992"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStubEndDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStubEndDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42992"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingPaymentStubEndDateRelativeTo",

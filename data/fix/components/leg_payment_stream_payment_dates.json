@@ -98,20 +98,22 @@
    "fix": {
     "tag": "40930"
    },
-   "item": {
-    "name": "LegPaymentStreamPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40293"
+   "fields": [
+    {
+     "name": "LegPaymentStreamPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40293"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegPaymentStreamPaymentDates",
@@ -120,28 +122,30 @@
    "fix": {
     "tag": "41589"
    },
-   "item": {
-    "name": "LegPaymentStreamPaymentDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamPaymentDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41590"
+   "fields": [
+    {
+     "name": "LegPaymentStreamPaymentDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41590"
+       }
+      },
+      {
+       "name": "LegPaymentStreamPaymentDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41591"
+       }
       }
-     },
-     {
-      "name": "LegPaymentStreamPaymentDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41591"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegPaymentStreamPaymentFrequencyPeriod",

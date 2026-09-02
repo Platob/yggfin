@@ -8,43 +8,45 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingSettlRateFallback",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingSettlRatePostponementMaximumDays",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40660"
-    }
-   },
-   {
-    "name": "UnderlyingSettlRateFallbackRateSource",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingSettlRateFallbackRateSource"
+ "fields": [
+  {
+   "name": "UnderlyingSettlRateFallback",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingSettlRatePostponementMaximumDays",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40660"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "UnderlyingSettlRatePostponementSurvey",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40662"
+    {
+     "name": "UnderlyingSettlRateFallbackRateSource",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingSettlRateFallbackRateSource"
+     },
+     "fields": []
+    },
+    {
+     "name": "UnderlyingSettlRatePostponementSurvey",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40662"
+     }
+    },
+    {
+     "name": "UnderlyingSettlRatePostponementCalculationAgent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40663"
+     }
     }
-   },
-   {
-    "name": "UnderlyingSettlRatePostponementCalculationAgent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40663"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

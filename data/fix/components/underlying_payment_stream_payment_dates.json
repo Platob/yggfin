@@ -113,20 +113,22 @@
    "fix": {
     "tag": "40969"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40582"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40582"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingPaymentStreamPaymentDates",
@@ -135,28 +137,30 @@
    "fix": {
     "tag": "41937"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamPaymentDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamPaymentDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41938"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamPaymentDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41938"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamPaymentDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41939"
+       }
       }
-     },
-     {
-      "name": "UnderlyingPaymentStreamPaymentDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41939"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingPaymentStreamPaymentFrequencyPeriod",

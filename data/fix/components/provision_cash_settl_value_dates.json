@@ -151,20 +151,22 @@
    "fix": {
     "tag": "40953"
    },
-   "item": {
-    "name": "ProvisionCashSettlValueDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProvisionCashSettlValueDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40117"
+   "fields": [
+    {
+     "name": "ProvisionCashSettlValueDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionCashSettlValueDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40117"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "ProvisionCashSettlValueDateRelativeTo",

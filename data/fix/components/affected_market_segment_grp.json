@@ -27,20 +27,22 @@
    "fix": {
     "tag": "1791"
    },
-   "item": {
-    "name": "AffectedMarketSegment",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AffectedMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1792"
+   "fields": [
+    {
+     "name": "AffectedMarketSegment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AffectedMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1792"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

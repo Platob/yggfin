@@ -77,30 +77,32 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "LegFinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegFinancingDetails"
-      },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegFinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegFinancingDetails"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

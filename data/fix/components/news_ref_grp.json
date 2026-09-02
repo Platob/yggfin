@@ -27,28 +27,30 @@
    "fix": {
     "tag": "1475"
    },
-   "item": {
-    "name": "NewsRefID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NewsRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1476"
+   "fields": [
+    {
+     "name": "NewsRefID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NewsRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1476"
+       }
+      },
+      {
+       "name": "NewsRefType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1477"
+       }
       }
-     },
-     {
-      "name": "NewsRefType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1477"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

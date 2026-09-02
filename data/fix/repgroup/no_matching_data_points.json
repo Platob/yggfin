@@ -11,42 +11,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MatchingDataPoint",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MatchingDataPointIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2782"
+ "fields": [
+  {
+   "name": "MatchingDataPoint",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MatchingDataPointIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2782"
+     }
+    },
+    {
+     "name": "MatchingDataPointValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2783"
+     }
+    },
+    {
+     "name": "MatchingDataPointType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2784"
+     }
+    },
+    {
+     "name": "MatchingDataPointName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2785"
+     }
     }
-   },
-   {
-    "name": "MatchingDataPointValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2783"
-    }
-   },
-   {
-    "name": "MatchingDataPointType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2784"
-    }
-   },
-   {
-    "name": "MatchingDataPointName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2785"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

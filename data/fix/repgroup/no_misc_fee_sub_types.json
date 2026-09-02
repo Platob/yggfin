@@ -15,50 +15,52 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MiscFeeSubType",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MiscFeeSubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2634"
+ "fields": [
+  {
+   "name": "MiscFeeSubType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MiscFeeSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2634"
+     }
+    },
+    {
+     "name": "MiscFeeSubTypeAmt",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2635"
+     }
+    },
+    {
+     "name": "MiscFeeSubTypeDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2636"
+     }
+    },
+    {
+     "name": "EncodedMiscFeeSubTypeDescLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2637"
+     }
+    },
+    {
+     "name": "EncodedMiscFeeSubTypeDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2638"
+     }
     }
-   },
-   {
-    "name": "MiscFeeSubTypeAmt",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2635"
-    }
-   },
-   {
-    "name": "MiscFeeSubTypeDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2636"
-    }
-   },
-   {
-    "name": "EncodedMiscFeeSubTypeDescLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2637"
-    }
-   },
-   {
-    "name": "EncodedMiscFeeSubTypeDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2638"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

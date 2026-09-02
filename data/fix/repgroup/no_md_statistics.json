@@ -7,67 +7,69 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MDStatistic",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MDStatisticParameters",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "MDStatisticParameters"
+ "fields": [
+  {
+   "name": "MDStatistic",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MDStatisticParameters",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "MDStatisticParameters"
+     },
+     "fields": []
     },
-    "fields": []
-   },
-   {
-    "name": "MDStatisticID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2475"
+    {
+     "name": "MDStatisticID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2475"
+     }
+    },
+    {
+     "name": "MDStatisticTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2476"
+     }
+    },
+    {
+     "name": "MDStatisticStatus",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2477"
+     }
+    },
+    {
+     "name": "MDStatisticValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2478"
+     }
+    },
+    {
+     "name": "MDStatisticValueType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2479"
+     }
+    },
+    {
+     "name": "MDStatisticValueUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2480"
+     }
     }
-   },
-   {
-    "name": "MDStatisticTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2476"
-    }
-   },
-   {
-    "name": "MDStatisticStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2477"
-    }
-   },
-   {
-    "name": "MDStatisticValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2478"
-    }
-   },
-   {
-    "name": "MDStatisticValueType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2479"
-    }
-   },
-   {
-    "name": "MDStatisticValueUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2480"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -104,125 +104,127 @@
    "fix": {
     "tag": "42002"
    },
-   "item": {
-    "name": "UnderlyingStreamCommoditySettlPeriod",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamCommoditySettlCountry",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42003"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlTimeZone",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42004"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlFlowType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42005"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42006"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42007"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42008"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42009"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42010"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodPriceUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42011"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodPriceCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42012"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlHolidaysProcessingInstruction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42013"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlDayGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamCommoditySettlDayGrp"
+   "fields": [
+    {
+     "name": "UnderlyingStreamCommoditySettlPeriod",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamCommoditySettlCountry",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42003"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42014"
+      {
+       "name": "UnderlyingStreamCommoditySettlTimeZone",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42004"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42005"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42006"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42007"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42008"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42009"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42010"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodPriceUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42011"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodPriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42012"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlHolidaysProcessingInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42013"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlDayGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamCommoditySettlDayGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42014"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42015"
+       }
       }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlPeriodXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42015"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

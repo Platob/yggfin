@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingDividendPeriodBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingDividendPeriodBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42883"
+ "fields": [
+  {
+   "name": "UnderlyingDividendPeriodBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingDividendPeriodBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42883"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

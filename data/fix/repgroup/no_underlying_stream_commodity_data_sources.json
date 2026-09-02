@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingStreamCommodityDataSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingStreamCommodityDataSourceID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41994"
+ "fields": [
+  {
+   "name": "UnderlyingStreamCommodityDataSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamCommodityDataSourceID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41994"
+     }
+    },
+    {
+     "name": "UnderlyingStreamCommodityDataSourceIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41995"
+     }
     }
-   },
-   {
-    "name": "UnderlyingStreamCommodityDataSourceIDType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41995"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

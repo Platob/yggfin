@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40940"
    },
-   "item": {
-    "name": "LegStreamCalculationPeriodBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegStreamCalculationPeriodBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40266"
+   "fields": [
+    {
+     "name": "LegStreamCalculationPeriodBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamCalculationPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40266"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

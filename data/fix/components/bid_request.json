@@ -122,100 +122,102 @@
    "fix": {
     "tag": "398"
    },
-   "item": {
-    "name": "BidDescriptor",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "BidDescriptorType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "399"
+   "fields": [
+    {
+     "name": "BidDescriptor",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "BidDescriptorType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "399"
+       }
+      },
+      {
+       "name": "BidDescriptor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "400"
+       }
+      },
+      {
+       "name": "SideValueInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "401"
+       }
+      },
+      {
+       "name": "LiquidityValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "404"
+       }
+      },
+      {
+       "name": "LiquidityNumSecurities",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "441"
+       }
+      },
+      {
+       "name": "LiquidityPctLow",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "402"
+       }
+      },
+      {
+       "name": "LiquidityPctHigh",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "403"
+       }
+      },
+      {
+       "name": "EFPTrackingError",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "405"
+       }
+      },
+      {
+       "name": "FairValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "406"
+       }
+      },
+      {
+       "name": "OutsideIndexPct",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "407"
+       }
+      },
+      {
+       "name": "ValueOfFutures",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "408"
+       }
       }
-     },
-     {
-      "name": "BidDescriptor",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "400"
-      }
-     },
-     {
-      "name": "SideValueInd",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "401"
-      }
-     },
-     {
-      "name": "LiquidityValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "404"
-      }
-     },
-     {
-      "name": "LiquidityNumSecurities",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "441"
-      }
-     },
-     {
-      "name": "LiquidityPctLow",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "402"
-      }
-     },
-     {
-      "name": "LiquidityPctHigh",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "403"
-      }
-     },
-     {
-      "name": "EFPTrackingError",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "405"
-      }
-     },
-     {
-      "name": "FairValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "406"
-      }
-     },
-     {
-      "name": "OutsideIndexPct",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "407"
-      }
-     },
-     {
-      "name": "ValueOfFutures",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "408"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoBidComponents",
@@ -224,84 +226,86 @@
    "fix": {
     "tag": "420"
    },
-   "item": {
-    "name": "BidComponent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ListID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "66"
+   "fields": [
+    {
+     "name": "BidComponent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "66"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
+      },
+      {
+       "name": "NetGrossInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "430"
+       }
+      },
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "Account",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1"
+       }
+      },
+      {
+       "name": "AcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "660"
+       }
       }
-     },
-     {
-      "name": "Side",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "54"
-      }
-     },
-     {
-      "name": "TradingSessionID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "336"
-      }
-     },
-     {
-      "name": "TradingSessionSubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "625"
-      }
-     },
-     {
-      "name": "NetGrossInd",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "430"
-      }
-     },
-     {
-      "name": "SettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "63"
-      }
-     },
-     {
-      "name": "SettlDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "64"
-      }
-     },
-     {
-      "name": "Account",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1"
-      }
-     },
-     {
-      "name": "AcctIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "660"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LiquidityIndType",

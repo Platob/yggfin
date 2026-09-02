@@ -129,20 +129,22 @@
    "fix": {
     "tag": "42182"
    },
-   "item": {
-    "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42183"
+   "fields": [
+    {
+     "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionCashSettlValueDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42183"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingProvisionCashSettlValueDateRelativeTo",

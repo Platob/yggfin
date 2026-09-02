@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40949"
    },
-   "item": {
-    "name": "PaymentStreamInitialFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentStreamInitialFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40769"
+   "fields": [
+    {
+     "name": "PaymentStreamInitialFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamInitialFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40769"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

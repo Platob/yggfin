@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40934"
    },
-   "item": {
-    "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40517"
+   "fields": [
+    {
+     "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionCashSettlPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40517"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

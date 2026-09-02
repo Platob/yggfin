@@ -15,26 +15,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ValueCheck",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ValueCheckType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1869"
+ "fields": [
+  {
+   "name": "ValueCheck",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ValueCheckType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1869"
+     }
+    },
+    {
+     "name": "ValueCheckAction",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1870"
+     }
     }
-   },
-   {
-    "name": "ValueCheckAction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1870"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

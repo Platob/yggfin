@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPaymentStreamPricingDay",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegPaymentStreamPricingDayOfWeek",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41597"
+ "fields": [
+  {
+   "name": "LegPaymentStreamPricingDay",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamPricingDayOfWeek",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41597"
+     }
+    },
+    {
+     "name": "LegPaymentStreamPricingDayNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41598"
+     }
     }
-   },
-   {
-    "name": "LegPaymentStreamPricingDayNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41598"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

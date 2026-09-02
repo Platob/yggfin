@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentStreamFormula",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentStreamFormulaLength",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43111"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentStreamFormula",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamFormulaLength",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43111"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentStreamFormula",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42982"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentStreamFormulaDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42983"
+     }
     }
-   },
-   {
-    "name": "UnderlyingPaymentStreamFormula",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42982"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamFormulaDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42983"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

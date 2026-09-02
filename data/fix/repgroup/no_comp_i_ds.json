@@ -11,42 +11,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "CompID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RefCompID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "930"
+ "fields": [
+  {
+   "name": "CompID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RefCompID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "930"
+     }
+    },
+    {
+     "name": "RefSubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "931"
+     }
+    },
+    {
+     "name": "LocationID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "283"
+     }
+    },
+    {
+     "name": "DeskID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "284"
+     }
     }
-   },
-   {
-    "name": "RefSubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "931"
-    }
-   },
-   {
-    "name": "LocationID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "283"
-    }
-   },
-   {
-    "name": "DeskID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "284"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

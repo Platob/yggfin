@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40929"
    },
-   "item": {
-    "name": "LegPaymentStreamNonDeliverableFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40361"
+   "fields": [
+    {
+     "name": "LegPaymentStreamNonDeliverableFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40361"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ProvisionCashSettlPaymentDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ProvisionCashSettlPaymentDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40164"
+ "fields": [
+  {
+   "name": "ProvisionCashSettlPaymentDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionCashSettlPaymentDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40164"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

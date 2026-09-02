@@ -123,20 +123,22 @@
    "fix": {
     "tag": "41005"
    },
-   "item": {
-    "name": "ComplexEventCreditEventQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ComplexEventCreditEventQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41006"
+   "fields": [
+    {
+     "name": "ComplexEventCreditEventQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventCreditEventQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41006"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

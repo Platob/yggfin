@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingCashSettlDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingCashSettlDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42789"
+ "fields": [
+  {
+   "name": "UnderlyingCashSettlDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingCashSettlDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42789"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

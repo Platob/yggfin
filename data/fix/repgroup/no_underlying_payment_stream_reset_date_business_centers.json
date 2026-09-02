@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40594"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40594"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

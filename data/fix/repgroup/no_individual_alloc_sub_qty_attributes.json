@@ -11,26 +11,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "IndividualAllocSubQtyAttribute",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "IndividualAllocSubQtyType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3100"
+ "fields": [
+  {
+   "name": "IndividualAllocSubQtyAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "IndividualAllocSubQtyType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3100"
+     }
+    },
+    {
+     "name": "IndividualAllocSubQtyValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3101"
+     }
     }
-   },
-   {
-    "name": "IndividualAllocSubQtyValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3101"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

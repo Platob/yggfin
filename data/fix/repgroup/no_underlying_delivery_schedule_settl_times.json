@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingDeliveryScheduleSettlTime",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingDeliveryScheduleSettlStart",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41774"
+ "fields": [
+  {
+   "name": "UnderlyingDeliveryScheduleSettlTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingDeliveryScheduleSettlStart",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41774"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleSettlEnd",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41775"
+     }
+    },
+    {
+     "name": "UnderlyingDeliveryScheduleSettlTimeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41776"
+     }
     }
-   },
-   {
-    "name": "UnderlyingDeliveryScheduleSettlEnd",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41775"
-    }
-   },
-   {
-    "name": "UnderlyingDeliveryScheduleSettlTimeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41776"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

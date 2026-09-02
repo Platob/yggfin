@@ -104,55 +104,57 @@
    "fix": {
     "tag": "41729"
    },
-   "item": {
-    "name": "UnderlyingComplexEventPeriod",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingComplexEventPeriodType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41730"
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventPeriod",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventPeriodType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41730"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41731"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventPeriodDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventPeriodDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingComplexEventAveragingObservationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventAveragingObservationGrp"
+       },
+       "fields": []
       }
-     },
-     {
-      "name": "UnderlyingComplexEventBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41731"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventScheduleGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingComplexEventScheduleGrp"
-      },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingComplexEventPeriodDateGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingComplexEventPeriodDateGrp"
-      },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingComplexEventAveragingObservationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingComplexEventAveragingObservationGrp"
-      },
-      "fields": []
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

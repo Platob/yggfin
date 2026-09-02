@@ -90,37 +90,39 @@
    "fix": {
     "tag": "41680"
    },
-   "item": {
-    "name": "LegStreamCommoditySettlDay",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegStreamCommoditySettlDay",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41681"
-      }
-     },
-     {
-      "name": "LegStreamCommoditySettlTotalHours",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41682"
-      }
-     },
-     {
-      "name": "LegStreamCommoditySettlTimeGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegStreamCommoditySettlTimeGrp"
+   "fields": [
+    {
+     "name": "LegStreamCommoditySettlDay",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamCommoditySettlDay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41681"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegStreamCommoditySettlTotalHours",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41682"
+       }
+      },
+      {
+       "name": "LegStreamCommoditySettlTimeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStreamCommoditySettlTimeGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

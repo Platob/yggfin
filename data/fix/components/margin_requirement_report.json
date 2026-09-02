@@ -88,74 +88,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "RegulatoryReportType",
@@ -180,108 +184,110 @@
    "fix": {
     "tag": "768"
    },
-   "item": {
-    "name": "TrdRegTimestamp",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TrdRegTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "769"
+   "fields": [
+    {
+     "name": "TrdRegTimestamp",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "769"
+       }
+      },
+      {
+       "name": "TrdRegTimestampType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "770"
+       }
+      },
+      {
+       "name": "TrdRegTimestampOrigin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "771"
+       }
+      },
+      {
+       "name": "TrdRegTimestampManualIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2839"
+       }
+      },
+      {
+       "name": "DeskType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1033"
+       }
+      },
+      {
+       "name": "DeskTypeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1034"
+       }
+      },
+      {
+       "name": "DeskOrderHandlingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1035"
+       }
+      },
+      {
+       "name": "InformationBarrierID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1727"
+       }
+      },
+      {
+       "name": "NBBOEntryType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2831"
+       }
+      },
+      {
+       "name": "NBBOPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2832"
+       }
+      },
+      {
+       "name": "NBBOQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2833"
+       }
+      },
+      {
+       "name": "NBBOSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2834"
+       }
       }
-     },
-     {
-      "name": "TrdRegTimestampType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "770"
-      }
-     },
-     {
-      "name": "TrdRegTimestampOrigin",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "771"
-      }
-     },
-     {
-      "name": "TrdRegTimestampManualIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2839"
-      }
-     },
-     {
-      "name": "DeskType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1033"
-      }
-     },
-     {
-      "name": "DeskTypeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1034"
-      }
-     },
-     {
-      "name": "DeskOrderHandlingInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1035"
-      }
-     },
-     {
-      "name": "InformationBarrierID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1727"
-      }
-     },
-     {
-      "name": "NBBOEntryType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2831"
-      }
-     },
-     {
-      "name": "NBBOPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2832"
-      }
-     },
-     {
-      "name": "NBBOQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2833"
-      }
-     },
-     {
-      "name": "NBBOSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2834"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "ClearingBusinessDate",
@@ -354,76 +360,78 @@
    "fix": {
     "tag": "1643"
    },
-   "item": {
-    "name": "MarginAmt",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MarginAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1645"
+   "fields": [
+    {
+     "name": "MarginAmt",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MarginAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1645"
+       }
+      },
+      {
+       "name": "MarginAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1644"
+       }
+      },
+      {
+       "name": "MarginAmtCcy",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1646"
+       }
+      },
+      {
+       "name": "MarginAmtFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2088"
+       }
+      },
+      {
+       "name": "MarginAmtFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2089"
+       }
+      },
+      {
+       "name": "MarginAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1714"
+       }
+      },
+      {
+       "name": "MarginAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1715"
+       }
+      },
+      {
+       "name": "MarginDirection",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2851"
+       }
       }
-     },
-     {
-      "name": "MarginAmtType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1644"
-      }
-     },
-     {
-      "name": "MarginAmtCcy",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1646"
-      }
-     },
-     {
-      "name": "MarginAmtFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2088"
-      }
-     },
-     {
-      "name": "MarginAmtFXRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2089"
-      }
-     },
-     {
-      "name": "MarginAmountMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1714"
-      }
-     },
-     {
-      "name": "MarginAmountMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1715"
-      }
-     },
-     {
-      "name": "MarginDirection",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2851"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "TransactTime",

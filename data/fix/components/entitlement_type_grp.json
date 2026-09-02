@@ -27,28 +27,30 @@
    "fix": {
     "tag": "2345"
    },
-   "item": {
-    "name": "EntitlementType",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "EntitlementType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1775"
+   "fields": [
+    {
+     "name": "EntitlementType",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "EntitlementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1775"
+       }
+      },
+      {
+       "name": "EntitlementSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2402"
+       }
       }
-     },
-     {
-      "name": "EntitlementSubType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2402"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

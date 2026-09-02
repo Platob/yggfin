@@ -9,18 +9,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TimeInForceRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TimeInForce",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "59"
+ "fields": [
+  {
+   "name": "TimeInForceRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TimeInForce",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "59"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

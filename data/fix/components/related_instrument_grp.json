@@ -49,92 +49,94 @@
    "fix": {
     "tag": "1647"
    },
-   "item": {
-    "name": "RelatedInstrument",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedInstrumentType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1648"
+   "fields": [
+    {
+     "name": "RelatedInstrument",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedInstrumentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1648"
+       }
+      },
+      {
+       "name": "RelatedSymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1649"
+       }
+      },
+      {
+       "name": "RelatedSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1650"
+       }
+      },
+      {
+       "name": "RelatedSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1651"
+       }
+      },
+      {
+       "name": "RelatedSecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1652"
+       }
+      },
+      {
+       "name": "RelatedMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1653"
+       }
+      },
+      {
+       "name": "RelatedToSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2413"
+       }
+      },
+      {
+       "name": "RelatedToSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2414"
+       }
+      },
+      {
+       "name": "RelatedToStreamXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2415"
+       }
+      },
+      {
+       "name": "RelatedToDividendPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2417"
+       }
       }
-     },
-     {
-      "name": "RelatedSymbol",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1649"
-      }
-     },
-     {
-      "name": "RelatedSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1650"
-      }
-     },
-     {
-      "name": "RelatedSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1651"
-      }
-     },
-     {
-      "name": "RelatedSecurityType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1652"
-      }
-     },
-     {
-      "name": "RelatedMaturityMonthYear",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1653"
-      }
-     },
-     {
-      "name": "RelatedToSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2413"
-      }
-     },
-     {
-      "name": "RelatedToSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2414"
-      }
-     },
-     {
-      "name": "RelatedToStreamXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2415"
-      }
-     },
-     {
-      "name": "RelatedToDividendPeriodXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2417"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

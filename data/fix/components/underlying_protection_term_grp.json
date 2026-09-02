@@ -104,103 +104,105 @@
    "fix": {
     "tag": "42068"
    },
-   "item": {
-    "name": "UnderlyingProtectionTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProtectionTermNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42069"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42070"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermSellerNotifies",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42071"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermBuyerNotifies",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42072"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermEventBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42073"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermStandardSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42074"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermEventMinimumSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42075"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermEventNewsSourceGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProtectionTermEventNewsSourceGrp"
+   "fields": [
+    {
+     "name": "UnderlyingProtectionTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42069"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProtectionTermEventGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProtectionTermEventGrp"
+      {
+       "name": "UnderlyingProtectionTermCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42070"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProtectionTermObligationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProtectionTermObligationGrp"
+      {
+       "name": "UnderlyingProtectionTermSellerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42071"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProtectionTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42076"
+      {
+       "name": "UnderlyingProtectionTermBuyerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42072"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42073"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42074"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42075"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventNewsSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermEventNewsSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProtectionTermEventGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermEventGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProtectionTermObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProtectionTermObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProtectionTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42076"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

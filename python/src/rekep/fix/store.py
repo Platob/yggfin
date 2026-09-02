@@ -1094,17 +1094,12 @@ def _shard_document(shard: Mapping[int | str, Field]) -> list[dict[str, Any]]:
     """
     tags = sorted(key for key in shard if isinstance(key, int))
     names = sorted(key for key in shard if not isinstance(key, int))
-    return [_field_document(shard[key]) for key in (*tags, *names)]
-
-
-def _field_document(record: Field) -> dict[str, Any]:
-    """One registry field with JSON metadata shown as the value it contains."""
-    return _readable_declaration(record.into_dict())
+    return [field_record_document(shard[key]) for key in (*tags, *names)]
 
 
 def field_record_document(record: Field) -> dict[str, Any]:
-    """One field record in the readable JSON shape used by registry stores."""
-    return _field_document(record)
+    """One registry field with its JSON metadata shown as the value it contains."""
+    return _readable_declaration(record.into_dict())
 
 
 def field_from_document(document: Mapping[str, Any]) -> Field:

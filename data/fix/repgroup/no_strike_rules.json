@@ -13,112 +13,116 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "StrikeRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StrikeRuleID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1223"
-    }
-   },
-   {
-    "name": "StartStrikePxRange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1202"
-    }
-   },
-   {
-    "name": "EndStrikePxRange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1203"
-    }
-   },
-   {
-    "name": "StrikeIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1204"
-    }
-   },
-   {
-    "name": "StrikeExerciseStyle",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1304"
-    }
-   },
-   {
-    "name": "NoMaturityRules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1236"
+ "fields": [
+  {
+   "name": "StrikeRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StrikeRuleID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1223"
+     }
     },
-    "item": {
-     "name": "MaturityRule",
-     "type": "struct",
+    {
+     "name": "StartStrikePxRange",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1202"
+     }
+    },
+    {
+     "name": "EndStrikePxRange",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1203"
+     }
+    },
+    {
+     "name": "StrikeIncrement",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1204"
+     }
+    },
+    {
+     "name": "StrikeExerciseStyle",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1304"
+     }
+    },
+    {
+     "name": "NoMaturityRules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1236"
+     },
      "fields": [
       {
-       "name": "MaturityRuleID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1222"
-       }
-      },
-      {
-       "name": "MaturityMonthYearFormat",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1303"
-       }
-      },
-      {
-       "name": "MaturityMonthYearIncrementUnits",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1302"
-       }
-      },
-      {
-       "name": "StartMaturityMonthYear",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1241"
-       }
-      },
-      {
-       "name": "EndMaturityMonthYear",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1226"
-       }
-      },
-      {
-       "name": "MaturityMonthYearIncrement",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1229"
-       }
+       "name": "MaturityRule",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "MaturityRuleID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1222"
+         }
+        },
+        {
+         "name": "MaturityMonthYearFormat",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1303"
+         }
+        },
+        {
+         "name": "MaturityMonthYearIncrementUnits",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1302"
+         }
+        },
+        {
+         "name": "StartMaturityMonthYear",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1241"
+         }
+        },
+        {
+         "name": "EndMaturityMonthYear",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1226"
+         }
+        },
+        {
+         "name": "MaturityMonthYearIncrement",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1229"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

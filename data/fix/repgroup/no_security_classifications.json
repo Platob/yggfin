@@ -13,26 +13,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "SecurityClassification",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "SecurityClassificationReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1583"
+ "fields": [
+  {
+   "name": "SecurityClassification",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SecurityClassificationReason",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1583"
+     }
+    },
+    {
+     "name": "SecurityClassificationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1584"
+     }
     }
-   },
-   {
-    "name": "SecurityClassificationValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1584"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

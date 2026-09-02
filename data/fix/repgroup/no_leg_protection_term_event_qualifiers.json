@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegProtectionTermEventQualifier",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegProtectionTermEventQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41634"
+ "fields": [
+  {
+   "name": "LegProtectionTermEventQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProtectionTermEventQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41634"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

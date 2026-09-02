@@ -68,21 +68,13 @@ def promoted_scalar(source: pyarrow.DataType, target: pyarrow.DataType) -> pyarr
     beats an error -- the same reasoning `arrow_type_of` gives for an unknown
     FIX datatype, because every FIX value is representable as text.
     """
+    promoted = _promotion(source, target)
+    if promoted is not None:
+        return promoted
+    # Mismatched containers are not two readings of one field, so the target
+    # stands; anything else is two scalars and text holds both.
     kinds = pyarrow.types
-    if source.equals(target):
-        return target
-    if kinds.is_null(source):
-        return target
-    if kinds.is_null(target):
-        return source
-    if kinds.is_timestamp(source) and kinds.is_timestamp(target):
-        unit = max((source.unit, target.unit), key=_TIMESTAMP_UNITS.index)
-        return pyarrow.timestamp(unit, tz=target.tz or source.tz)
-    if kinds.is_nested(source) or kinds.is_nested(target):
-        # Mismatched containers are not two readings of one field.
-        return target
-    unified = _unified_scalar(source, target)
-    return unified if unified is not None else pyarrow.string()
+    return target if kinds.is_nested(source) or kinds.is_nested(target) else pyarrow.string()
 
 
 def reconcilable(source: pyarrow.DataType, target: pyarrow.DataType) -> bool:
@@ -92,27 +84,32 @@ def reconcilable(source: pyarrow.DataType, target: pyarrow.DataType) -> bool:
     text is not an answer here and the refusal is the evidence: only what
     Arrow declines to unify marks two readings as two identities.
     """
-    kinds = pyarrow.types
-    if source.equals(target) or kinds.is_null(source) or kinds.is_null(target):
-        return True
-    if kinds.is_timestamp(source) and kinds.is_timestamp(target):
-        return True
-    if kinds.is_nested(source) or kinds.is_nested(target):
-        return source.equals(target)
-    return _unified_scalar(source, target) is not None
+    return _promotion(source, target) is not None
 
 
 # -- helpers ----------------------------------------------------------------
 
 
-def _unified_scalar(source: pyarrow.DataType, target: pyarrow.DataType) -> pyarrow.DataType | None:
-    """What Arrow promotes the pair to, or None where it refuses.
+def _promotion(source: pyarrow.DataType, target: pyarrow.DataType) -> pyarrow.DataType | None:
+    """The type holding both readings, or None where the pair is two identities.
 
-    `unify_schemas` refuses through more than one exception type -- pyarrow
-    25.0.1 raises `ArrowTypeError` for `int32` against `string`, and a naive
-    timestamp against a localised one has raised `ArrowInvalid` -- so the
-    catch is the base they share. Narrowing it to one crashes on the other.
+    The one triage both public questions ask; they differ only in what they
+    make of a refusal. `unify_schemas` refuses through more than one exception
+    type -- pyarrow 25.0.1 raises `ArrowTypeError` for `int32` against
+    `string` -- so the catch is the base every Arrow error shares, on purpose:
+    which one a pair raises is not part of Arrow's contract, and narrowing it
+    crashes on the next pair.
     """
+    kinds = pyarrow.types
+    if source.equals(target) or kinds.is_null(source):
+        return target
+    if kinds.is_null(target):
+        return source
+    if kinds.is_nested(source) or kinds.is_nested(target):
+        return None
+    if kinds.is_timestamp(source) and kinds.is_timestamp(target):
+        unit = max((source.unit, target.unit), key=_TIMESTAMP_UNITS.index)
+        return pyarrow.timestamp(unit, tz=target.tz or source.tz)
     try:
         unified = pyarrow.unify_schemas(
             [

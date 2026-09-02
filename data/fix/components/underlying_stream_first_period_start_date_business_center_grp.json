@@ -104,20 +104,22 @@
    "fix": {
     "tag": "40974"
    },
-   "item": {
-    "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40560"
+   "fields": [
+    {
+     "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40560"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

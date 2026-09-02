@@ -15,18 +15,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40221"
+ "fields": [
+  {
+   "name": "PaymentBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40221"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

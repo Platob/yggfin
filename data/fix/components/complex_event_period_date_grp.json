@@ -123,28 +123,30 @@
    "fix": {
     "tag": "41007"
    },
-   "item": {
-    "name": "ComplexEventPeriodDateTime",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ComplexEventPeriodDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41008"
+   "fields": [
+    {
+     "name": "ComplexEventPeriodDateTime",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventPeriodDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41008"
+       }
+      },
+      {
+       "name": "ComplexEventPeriodTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41009"
+       }
       }
-     },
-     {
-      "name": "ComplexEventPeriodTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41009"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

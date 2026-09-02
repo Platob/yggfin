@@ -30,78 +30,80 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "UndInstrmtGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UndInstrmtGrp"
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "InstrmtLegGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrmtLegGrp"
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "PrevClosePx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "140"
+      {
+       "name": "PrevClosePx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "140"
+       }
+      },
+      {
+       "name": "QuoteRequestType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "303"
+       }
+      },
+      {
+       "name": "QuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "537"
+       }
+      },
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
       }
-     },
-     {
-      "name": "QuoteRequestType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "303"
-      }
-     },
-     {
-      "name": "QuoteType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "537"
-      }
-     },
-     {
-      "name": "TradingSessionID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "336"
-      }
-     },
-     {
-      "name": "TradingSessionSubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "625"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

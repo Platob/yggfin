@@ -15,72 +15,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Nested4PartyID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "Nested4PartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1415"
-    }
-   },
-   {
-    "name": "Nested4PartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1416"
-    }
-   },
-   {
-    "name": "Nested4PartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1417"
-    }
-   },
-   {
-    "name": "Nested4PartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2383"
-    }
-   },
-   {
-    "name": "NoNested4PartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1413"
+ "fields": [
+  {
+   "name": "Nested4PartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Nested4PartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1415"
+     }
     },
-    "item": {
-     "name": "Nested4PartySubID",
-     "type": "struct",
+    {
+     "name": "Nested4PartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1416"
+     }
+    },
+    {
+     "name": "Nested4PartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1417"
+     }
+    },
+    {
+     "name": "Nested4PartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2383"
+     }
+    },
+    {
+     "name": "NoNested4PartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1413"
+     },
      "fields": [
       {
        "name": "Nested4PartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1412"
-       }
-      },
-      {
-       "name": "Nested4PartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1411"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "Nested4PartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1412"
+         }
+        },
+        {
+         "name": "Nested4PartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1411"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

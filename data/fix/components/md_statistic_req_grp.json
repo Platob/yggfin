@@ -27,29 +27,31 @@
    "fix": {
     "tag": "2474"
    },
-   "item": {
-    "name": "MDStatistic",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MDStatisticID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2475"
-      }
-     },
-     {
-      "name": "MDStatisticParameters",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "MDStatisticParameters"
+   "fields": [
+    {
+     "name": "MDStatistic",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDStatisticID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2475"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "MDStatisticParameters",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "MDStatisticParameters"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

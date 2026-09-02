@@ -104,28 +104,30 @@
    "fix": {
     "tag": "41841"
    },
-   "item": {
-    "name": "UnderlyingOptionExerciseDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingOptionExerciseDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41842"
+   "fields": [
+    {
+     "name": "UnderlyingOptionExerciseDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingOptionExerciseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41842"
+       }
+      },
+      {
+       "name": "UnderlyingOptionExerciseDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41843"
+       }
       }
-     },
-     {
-      "name": "UnderlyingOptionExerciseDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41843"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

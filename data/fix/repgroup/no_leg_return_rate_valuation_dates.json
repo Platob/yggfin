@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegReturnRateValuationDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegReturnRateValuationDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42572"
+ "fields": [
+  {
+   "name": "LegReturnRateValuationDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegReturnRateValuationDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42572"
+     }
+    },
+    {
+     "name": "LegReturnRateValuationDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42573"
+     }
     }
-   },
-   {
-    "name": "LegReturnRateValuationDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42573"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

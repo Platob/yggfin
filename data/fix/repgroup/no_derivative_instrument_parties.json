@@ -9,72 +9,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "DerivativeInstrumentParty",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "DerivativeInstrumentPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1293"
-    }
-   },
-   {
-    "name": "DerivativeInstrumentPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1294"
-    }
-   },
-   {
-    "name": "DerivativeInstrumentPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1295"
-    }
-   },
-   {
-    "name": "DerivativeInstrumentPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2377"
-    }
-   },
-   {
-    "name": "NoDerivativeInstrumentPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1296"
+ "fields": [
+  {
+   "name": "DerivativeInstrumentParty",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DerivativeInstrumentPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1293"
+     }
     },
-    "item": {
-     "name": "DerivativeInstrumentPartySubID",
-     "type": "struct",
+    {
+     "name": "DerivativeInstrumentPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1294"
+     }
+    },
+    {
+     "name": "DerivativeInstrumentPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1295"
+     }
+    },
+    {
+     "name": "DerivativeInstrumentPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2377"
+     }
+    },
+    {
+     "name": "NoDerivativeInstrumentPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1296"
+     },
      "fields": [
       {
        "name": "DerivativeInstrumentPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1297"
-       }
-      },
-      {
-       "name": "DerivativeInstrumentPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1298"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "DerivativeInstrumentPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1297"
+         }
+        },
+        {
+         "name": "DerivativeInstrumentPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1298"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

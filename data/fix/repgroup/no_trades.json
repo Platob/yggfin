@@ -11,26 +11,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Trade",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradeReportID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "571"
+ "fields": [
+  {
+   "name": "Trade",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradeReportID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "571"
+     }
+    },
+    {
+     "name": "SecondaryTradeReportID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "818"
+     }
     }
-   },
-   {
-    "name": "SecondaryTradeReportID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "818"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

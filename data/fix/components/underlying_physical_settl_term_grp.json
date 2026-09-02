@@ -104,53 +104,55 @@
    "fix": {
     "tag": "42060"
    },
-   "item": {
-    "name": "UnderlyingPhysicalSettlTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPhysicalSettlDeliverableObligationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingPhysicalSettlDeliverableObligationGrp"
+   "fields": [
+    {
+     "name": "UnderlyingPhysicalSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPhysicalSettlDeliverableObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPhysicalSettlDeliverableObligationGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingPhysicalSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42061"
+      {
+       "name": "UnderlyingPhysicalSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42061"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42062"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42063"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42064"
+       }
       }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42062"
-      }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42063"
-      }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42064"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

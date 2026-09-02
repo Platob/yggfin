@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegStreamCalculationPeriodDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegStreamCalculationPeriodDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41639"
+ "fields": [
+  {
+   "name": "LegStreamCalculationPeriodDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamCalculationPeriodDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41639"
+     }
+    },
+    {
+     "name": "LegStreamCalculationPeriodDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41640"
+     }
     }
-   },
-   {
-    "name": "LegStreamCalculationPeriodDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41640"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

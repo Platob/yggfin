@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MarketDisruptionFallback",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MarketDisruptionFallbackType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41095"
+ "fields": [
+  {
+   "name": "MarketDisruptionFallback",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MarketDisruptionFallbackType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41095"
+     }
+    },
+    {
+     "name": "MarketDisruptionFallbackValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40992"
+     }
     }
-   },
-   {
-    "name": "MarketDisruptionFallbackValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40992"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

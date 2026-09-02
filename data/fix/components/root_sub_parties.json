@@ -36,28 +36,30 @@
    "fix": {
     "tag": "1120"
    },
-   "item": {
-    "name": "RootPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RootPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1121"
+   "fields": [
+    {
+     "name": "RootPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RootPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1121"
+       }
+      },
+      {
+       "name": "RootPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1122"
+       }
       }
-     },
-     {
-      "name": "RootPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1122"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

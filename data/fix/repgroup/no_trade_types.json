@@ -15,26 +15,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TradeType",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3006"
+ "fields": [
+  {
+   "name": "TradeType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3006"
+     }
+    },
+    {
+     "name": "TradeSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3007"
+     }
     }
-   },
-   {
-    "name": "TradeSubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3007"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -30,19 +30,21 @@
    "fix": {
     "tag": "267"
    },
-   "item": {
-    "name": "MDEntryType",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MDEntryType",
-      "type": "string",
-      "fix": {
-       "tag": "269"
+   "fields": [
+    {
+     "name": "MDEntryType",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDEntryType",
+       "type": "string",
+       "fix": {
+        "tag": "269"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

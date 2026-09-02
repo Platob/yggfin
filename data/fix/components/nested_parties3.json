@@ -35,53 +35,55 @@
    "fix": {
     "tag": "948"
    },
-   "item": {
-    "name": "Nested3PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Nested3PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "949"
-      }
-     },
-     {
-      "name": "Nested3PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "950"
-      }
-     },
-     {
-      "name": "Nested3PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "951"
-      }
-     },
-     {
-      "name": "Nested3PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2382"
-      }
-     },
-     {
-      "name": "NstdPtys3SubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NstdPtys3SubGrp"
+   "fields": [
+    {
+     "name": "Nested3PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Nested3PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "949"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "Nested3PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "950"
+       }
+      },
+      {
+       "name": "Nested3PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "951"
+       }
+      },
+      {
+       "name": "Nested3PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2382"
+       }
+      },
+      {
+       "name": "NstdPtys3SubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NstdPtys3SubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

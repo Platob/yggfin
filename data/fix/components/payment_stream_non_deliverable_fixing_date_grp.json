@@ -123,28 +123,30 @@
    "fix": {
     "tag": "40825"
    },
-   "item": {
-    "name": "NonDeliverableFixingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NonDeliverableFixingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40826"
+   "fields": [
+    {
+     "name": "NonDeliverableFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NonDeliverableFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40826"
+       }
+      },
+      {
+       "name": "NonDeliverableFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40827"
+       }
       }
-     },
-     {
-      "name": "NonDeliverableFixingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40827"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

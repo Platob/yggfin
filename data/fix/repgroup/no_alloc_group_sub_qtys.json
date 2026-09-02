@@ -10,72 +10,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "AllocGroupSubQty",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "AllocGroupSubQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2976"
-    }
-   },
-   {
-    "name": "AllocGroupSubQtyOffset",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2977"
-    }
-   },
-   {
-    "name": "AllocGroupRemainingSubQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2978"
-    }
-   },
-   {
-    "name": "AllocGroupSubQtyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2974"
-    }
-   },
-   {
-    "name": "NoAllocGroupSubQtyAttributes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2979"
+ "fields": [
+  {
+   "name": "AllocGroupSubQty",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AllocGroupSubQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2976"
+     }
     },
-    "item": {
-     "name": "AllocGroupSubQtyAttribute",
-     "type": "struct",
+    {
+     "name": "AllocGroupSubQtyOffset",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2977"
+     }
+    },
+    {
+     "name": "AllocGroupRemainingSubQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2978"
+     }
+    },
+    {
+     "name": "AllocGroupSubQtyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2974"
+     }
+    },
+    {
+     "name": "NoAllocGroupSubQtyAttributes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2979"
+     },
      "fields": [
       {
-       "name": "AllocGroupSubQtyType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2980"
-       }
-      },
-      {
-       "name": "AllocGroupSubQtyValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2981"
-       }
+       "name": "AllocGroupSubQtyAttribute",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "AllocGroupSubQtyType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2980"
+         }
+        },
+        {
+         "name": "AllocGroupSubQtyValue",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2981"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

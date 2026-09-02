@@ -123,45 +123,47 @@
    "fix": {
     "tag": "40085"
    },
-   "item": {
-    "name": "SettlRateFallback",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlRatePostponementMaximumDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40086"
-      }
-     },
-     {
-      "name": "SettlRateFallbackRateSource",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SettlRateFallbackRateSource"
+   "fields": [
+    {
+     "name": "SettlRateFallback",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlRatePostponementMaximumDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40086"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "SettlRatePostponementSurvey",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40088"
+      {
+       "name": "SettlRateFallbackRateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlRateFallbackRateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "SettlRatePostponementSurvey",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40088"
+       }
+      },
+      {
+       "name": "SettlRatePostponementCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40089"
+       }
       }
-     },
-     {
-      "name": "SettlRatePostponementCalculationAgent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40089"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -104,44 +104,46 @@
    "fix": {
     "tag": "43064"
    },
-   "item": {
-    "name": "UnderlyingReturnRatePrice",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingReturnRatePriceBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43065"
+   "fields": [
+    {
+     "name": "UnderlyingReturnRatePrice",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingReturnRatePriceBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43065"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43066"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePriceCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43067"
+       }
+      },
+      {
+       "name": "UnderlyingReturnRatePriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43068"
+       }
       }
-     },
-     {
-      "name": "UnderlyingReturnRatePrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43066"
-      }
-     },
-     {
-      "name": "UnderlyingReturnRatePriceCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43067"
-      }
-     },
-     {
-      "name": "UnderlyingReturnRatePriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43068"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -127,74 +127,78 @@
    "fix": {
     "tag": "1657"
    },
-   "item": {
-    "name": "RequestingPartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RequestingPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1658"
-      }
-     },
-     {
-      "name": "RequestingPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1659"
-      }
-     },
-     {
-      "name": "RequestingPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1660"
-      }
-     },
-     {
-      "name": "RequestingPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2338"
-      }
-     },
-     {
-      "name": "NoRequestingPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1661"
+   "fields": [
+    {
+     "name": "RequestingPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RequestingPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1658"
+       }
       },
-      "item": {
-       "name": "RequestingPartySubID",
-       "type": "struct",
+      {
+       "name": "RequestingPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1659"
+       }
+      },
+      {
+       "name": "RequestingPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1660"
+       }
+      },
+      {
+       "name": "RequestingPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2338"
+       }
+      },
+      {
+       "name": "NoRequestingPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1661"
+       },
        "fields": [
         {
          "name": "RequestingPartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1662"
-         }
-        },
-        {
-         "name": "RequestingPartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1663"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "RequestingPartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1662"
+           }
+          },
+          {
+           "name": "RequestingPartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1663"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoPartyIDs",
@@ -203,74 +207,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoRelatedPartyDetailID",
@@ -279,156 +287,166 @@
    "fix": {
     "tag": "1562"
    },
-   "item": {
-    "name": "RelatedPartyDetailID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedPartyDetailID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1563"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1564"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1565"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1675"
-      }
-     },
-     {
-      "name": "NoRelatedPartyDetailSubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1566"
+   "fields": [
+    {
+     "name": "RelatedPartyDetailID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedPartyDetailID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1563"
+       }
       },
-      "item": {
-       "name": "RelatedPartyDetailSubID",
-       "type": "struct",
+      {
+       "name": "RelatedPartyDetailIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1564"
+       }
+      },
+      {
+       "name": "RelatedPartyDetailRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1565"
+       }
+      },
+      {
+       "name": "RelatedPartyDetailRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1675"
+       }
+      },
+      {
+       "name": "NoRelatedPartyDetailSubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1566"
+       },
        "fields": [
         {
          "name": "RelatedPartyDetailSubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1567"
-         }
-        },
-        {
-         "name": "RelatedPartyDetailSubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1568"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "RelatedPartyDetailSubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1567"
+           }
+          },
+          {
+           "name": "RelatedPartyDetailSubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1568"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoRelatedPartyDetailAltID",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1569"
       },
-      "item": {
-       "name": "RelatedPartyDetailAltID",
-       "type": "struct",
+      {
+       "name": "NoRelatedPartyDetailAltID",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1569"
+       },
        "fields": [
         {
          "name": "RelatedPartyDetailAltID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1570"
-         }
-        },
-        {
-         "name": "RelatedPartyDetailAltIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1571"
-         }
-        },
-        {
-         "name": "NoRelatedPartyDetailAltSubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "1572"
-         },
-         "item": {
-          "name": "RelatedPartyDetailAltSubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "RelatedPartyDetailAltSubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1573"
-            }
-           },
-           {
-            "name": "RelatedPartyDetailAltSubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "1574"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "RelatedPartyDetailAltID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1570"
            }
-          ]
-         }
+          },
+          {
+           "name": "RelatedPartyDetailAltIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1571"
+           }
+          },
+          {
+           "name": "NoRelatedPartyDetailAltSubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "1572"
+           },
+           "fields": [
+            {
+             "name": "RelatedPartyDetailAltSubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "RelatedPartyDetailAltSubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1573"
+               }
+              },
+              {
+               "name": "RelatedPartyDetailAltSubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "1574"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoPartyRelationships",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1514"
       },
-      "item": {
-       "name": "PartyRelationship",
-       "type": "struct",
+      {
+       "name": "NoPartyRelationships",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1514"
+       },
        "fields": [
         {
          "name": "PartyRelationship",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1515"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartyRelationship",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1515"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Instrument",
@@ -446,527 +464,543 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegOrderQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "685"
-      }
-     },
-     {
-      "name": "LegQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "687"
-      }
-     },
-     {
-      "name": "LegSwapType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "690"
-      }
-     },
-     {
-      "name": "NoLegStipulations",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "683"
-      },
-      "item": {
-       "name": "LegStipulation",
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegOrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "685"
+       }
+      },
+      {
+       "name": "LegQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "687"
+       }
+      },
+      {
+       "name": "LegSwapType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "690"
+       }
+      },
+      {
+       "name": "NoLegStipulations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "683"
+       },
        "fields": [
         {
-         "name": "LegStipulationType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "688"
-         }
-        },
-        {
-         "name": "LegStipulationValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "689"
-         }
+         "name": "LegStipulation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegStipulationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "688"
+           }
+          },
+          {
+           "name": "LegStipulationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "689"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "LegAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1366"
-      }
-     },
-     {
-      "name": "NoLegAllocs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "670"
       },
-      "item": {
-       "name": "LegAlloc",
-       "type": "struct",
+      {
+       "name": "LegAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1366"
+       }
+      },
+      {
+       "name": "NoLegAllocs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "670"
+       },
        "fields": [
         {
-         "name": "LegAllocAccount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "671"
-         }
-        },
-        {
-         "name": "LegIndividualAllocID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "672"
-         }
-        },
-        {
-         "name": "NoNested2PartyIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "756"
-         },
-         "item": {
-          "name": "Nested2PartyID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "Nested2PartyID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "757"
-            }
+         "name": "LegAlloc",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegAllocAccount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "671"
+           }
+          },
+          {
+           "name": "LegIndividualAllocID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "672"
+           }
+          },
+          {
+           "name": "NoNested2PartyIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "756"
            },
-           {
-            "name": "Nested2PartyIDSource",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "758"
-            }
-           },
-           {
-            "name": "Nested2PartyRole",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "759"
-            }
-           },
-           {
-            "name": "Nested2PartyRoleQualifier",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "2381"
-            }
-           },
-           {
-            "name": "NoNested2PartySubIDs",
-            "type": "list",
-            "nullable": true,
-            "fix": {
-             "tag": "806"
-            },
-            "item": {
-             "name": "Nested2PartySubID",
+           "fields": [
+            {
+             "name": "Nested2PartyID",
              "type": "struct",
              "fields": [
               {
-               "name": "Nested2PartySubID",
+               "name": "Nested2PartyID",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "760"
+                "tag": "757"
                }
               },
               {
-               "name": "Nested2PartySubIDType",
+               "name": "Nested2PartyIDSource",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "807"
+                "tag": "758"
+               }
+              },
+              {
+               "name": "Nested2PartyRole",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "759"
+               }
+              },
+              {
+               "name": "Nested2PartyRoleQualifier",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "2381"
+               }
+              },
+              {
+               "name": "NoNested2PartySubIDs",
+               "type": "list",
+               "nullable": true,
+               "fix": {
+                "tag": "806"
+               },
+               "fields": [
+                {
+                 "name": "Nested2PartySubID",
+                 "type": "struct",
+                 "fields": [
+                  {
+                   "name": "Nested2PartySubID",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "760"
+                   }
+                  },
+                  {
+                   "name": "Nested2PartySubIDType",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "807"
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "name": "LegAllocQty",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "673"
+           }
+          },
+          {
+           "name": "LegAllocAcctIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "674"
+           }
+          },
+          {
+           "name": "LegAllocSettlCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1367"
+           }
+          },
+          {
+           "name": "LegAllocSettlCurrencyCodeSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2928"
+           }
+          },
+          {
+           "name": "LegCustodialLotID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1756"
+           }
+          },
+          {
+           "name": "LegVersusPurchaseDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1757"
+           }
+          },
+          {
+           "name": "LegVersusPurchasePrice",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1758"
+           }
+          },
+          {
+           "name": "LegCurrentCostBasis",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1759"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "LegAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2680"
+       }
+      },
+      {
+       "name": "LegClearingAccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1817"
+       }
+      },
+      {
+       "name": "LegPositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "564"
+       }
+      },
+      {
+       "name": "LegCoveredOrUncovered",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "565"
+       }
+      },
+      {
+       "name": "NoNestedPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "539"
+       },
+       "fields": [
+        {
+         "name": "NestedPartyID",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NestedPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "524"
+           }
+          },
+          {
+           "name": "NestedPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "525"
+           }
+          },
+          {
+           "name": "NestedPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "538"
+           }
+          },
+          {
+           "name": "NestedPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2384"
+           }
+          },
+          {
+           "name": "NoNestedPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "804"
+           },
+           "fields": [
+            {
+             "name": "NestedPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "NestedPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "545"
+               }
+              },
+              {
+               "name": "NestedPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "805"
                }
               }
              ]
             }
-           }
-          ]
-         }
-        },
-        {
-         "name": "LegAllocQty",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "673"
-         }
-        },
-        {
-         "name": "LegAllocAcctIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "674"
-         }
-        },
-        {
-         "name": "LegAllocSettlCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1367"
-         }
-        },
-        {
-         "name": "LegAllocSettlCurrencyCodeSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2928"
-         }
-        },
-        {
-         "name": "LegCustodialLotID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1756"
-         }
-        },
-        {
-         "name": "LegVersusPurchaseDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1757"
-         }
-        },
-        {
-         "name": "LegVersusPurchasePrice",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1758"
-         }
-        },
-        {
-         "name": "LegCurrentCostBasis",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1759"
-         }
+           ]
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "LegAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2680"
-      }
-     },
-     {
-      "name": "LegClearingAccountType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1817"
-      }
-     },
-     {
-      "name": "LegPositionEffect",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "564"
-      }
-     },
-     {
-      "name": "LegCoveredOrUncovered",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "565"
-      }
-     },
-     {
-      "name": "NoNestedPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "539"
       },
-      "item": {
-       "name": "NestedPartyID",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "NestedPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "524"
-         }
-        },
-        {
-         "name": "NestedPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "525"
-         }
-        },
-        {
-         "name": "NestedPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "538"
-         }
-        },
-        {
-         "name": "NestedPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2384"
-         }
-        },
-        {
-         "name": "NoNestedPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "804"
-         },
-         "item": {
-          "name": "NestedPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "NestedPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "545"
-            }
-           },
-           {
-            "name": "NestedPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "805"
-            }
-           }
-          ]
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "LegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "654"
-      }
-     },
-     {
-      "name": "LegSettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "587"
-      }
-     },
-     {
-      "name": "LegSettlDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "588"
-      }
-     },
-     {
-      "name": "LegSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "675"
-      }
-     },
-     {
-      "name": "LegSettlCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2900"
-      }
-     },
-     {
-      "name": "LegVolatility",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1379"
-      }
-     },
-     {
-      "name": "LegDividendYield",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1381"
-      }
-     },
-     {
-      "name": "LegCurrencyRatio",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1383"
-      }
-     },
-     {
-      "name": "LegExecInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1384"
-      }
-     },
-     {
-      "name": "LegShortSaleExemptionReason",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1689"
-      }
-     },
-     {
-      "name": "NoLegRateSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3116"
+      {
+       "name": "LegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "654"
+       }
       },
-      "item": {
-       "name": "LegRateSource",
-       "type": "struct",
+      {
+       "name": "LegSettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "587"
+       }
+      },
+      {
+       "name": "LegSettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "588"
+       }
+      },
+      {
+       "name": "LegSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "675"
+       }
+      },
+      {
+       "name": "LegSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2900"
+       }
+      },
+      {
+       "name": "LegVolatility",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1379"
+       }
+      },
+      {
+       "name": "LegDividendYield",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1381"
+       }
+      },
+      {
+       "name": "LegCurrencyRatio",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1383"
+       }
+      },
+      {
+       "name": "LegExecInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1384"
+       }
+      },
+      {
+       "name": "LegShortSaleExemptionReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1689"
+       }
+      },
+      {
+       "name": "NoLegRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3116"
+       },
        "fields": [
         {
          "name": "LegRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3117"
-         }
-        },
-        {
-         "name": "LegRateSourceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3118"
-         }
-        },
-        {
-         "name": "LegReferencePage",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3119"
-         }
-        },
-        {
-         "name": "LegRateSourceReferencePageHeading",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3120"
-         }
-        },
-        {
-         "name": "LegRateSourceSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3121"
-         }
-        },
-        {
-         "name": "LegFXBenchmark",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3122"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3123"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3124"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3125"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3117"
+           }
+          },
+          {
+           "name": "LegRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3118"
+           }
+          },
+          {
+           "name": "LegReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3119"
+           }
+          },
+          {
+           "name": "LegRateSourceReferencePageHeading",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3120"
+           }
+          },
+          {
+           "name": "LegRateSourceSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3121"
+           }
+          },
+          {
+           "name": "LegFXBenchmark",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3122"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3123"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3124"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3125"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyings",
@@ -975,21 +1009,23 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
-      },
-      "fields": []
-     }
-    ]
-   }
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "Side",

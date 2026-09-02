@@ -90,125 +90,127 @@
    "fix": {
     "tag": "41408"
    },
-   "item": {
-    "name": "LegDeliverySchedule",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDeliveryScheduleType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41409"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41410"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41411"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41412"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleNotionalCommodityFrequency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41413"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleNegativeTolerance",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41414"
-      }
-     },
-     {
-      "name": "LegDeliverySchedulePositiveTolerance",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41415"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41416"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleToleranceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41417"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlCountry",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41418"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlTimeZone",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41419"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlFlowType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41420"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41421"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlDayGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegDeliveryScheduleSettlDayGrp"
+   "fields": [
+    {
+     "name": "LegDeliverySchedule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryScheduleType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41409"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegDeliveryScheduleXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41410"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41411"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41412"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleNotionalCommodityFrequency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41413"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleNegativeTolerance",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41414"
+       }
+      },
+      {
+       "name": "LegDeliverySchedulePositiveTolerance",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41415"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41416"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleToleranceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41417"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleSettlCountry",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41418"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleSettlTimeZone",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41419"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleSettlFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41420"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41421"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleSettlDayGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegDeliveryScheduleSettlDayGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

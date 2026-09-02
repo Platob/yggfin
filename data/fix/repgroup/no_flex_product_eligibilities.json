@@ -9,26 +9,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "FlexProductEligibility",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "FlexProductEligibilityIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1242"
+ "fields": [
+  {
+   "name": "FlexProductEligibility",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "FlexProductEligibilityIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1242"
+     }
+    },
+    {
+     "name": "FlexProductEligibilityComplex",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2561"
+     }
     }
-   },
-   {
-    "name": "FlexProductEligibilityComplex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2561"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

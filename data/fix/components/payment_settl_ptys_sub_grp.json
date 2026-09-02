@@ -30,28 +30,30 @@
    "fix": {
     "tag": "40238"
    },
-   "item": {
-    "name": "PaymentSettlPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentSettlPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40239"
+   "fields": [
+    {
+     "name": "PaymentSettlPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentSettlPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40239"
+       }
+      },
+      {
+       "name": "PaymentSettlPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40240"
+       }
       }
-     },
-     {
-      "name": "PaymentSettlPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40240"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

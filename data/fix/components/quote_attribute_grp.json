@@ -29,28 +29,30 @@
    "fix": {
     "tag": "2706"
    },
-   "item": {
-    "name": "QuoteAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "QuoteAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2707"
+   "fields": [
+    {
+     "name": "QuoteAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "QuoteAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2707"
+       }
+      },
+      {
+       "name": "QuoteAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2708"
+       }
       }
-     },
-     {
-      "name": "QuoteAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2708"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

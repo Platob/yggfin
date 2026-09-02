@@ -104,37 +104,39 @@
    "fix": {
     "tag": "41770"
    },
-   "item": {
-    "name": "UnderlyingDeliveryScheduleSettlDay",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingDeliveryScheduleSettlDay",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41771"
-      }
-     },
-     {
-      "name": "UnderlyingDeliveryScheduleSettlTotalHours",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41772"
-      }
-     },
-     {
-      "name": "UnderlyingDeliveryScheduleSettlTimeGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingDeliveryScheduleSettlTimeGrp"
+   "fields": [
+    {
+     "name": "UnderlyingDeliveryScheduleSettlDay",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDeliveryScheduleSettlDay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41771"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "UnderlyingDeliveryScheduleSettlTotalHours",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41772"
+       }
+      },
+      {
+       "name": "UnderlyingDeliveryScheduleSettlTimeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingDeliveryScheduleSettlTimeGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

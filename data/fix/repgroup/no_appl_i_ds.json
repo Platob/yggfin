@@ -9,34 +9,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ApplID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RefApplID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1355"
+ "fields": [
+  {
+   "name": "ApplID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RefApplID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1355"
+     }
+    },
+    {
+     "name": "ApplNewSeqNum",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1399"
+     }
+    },
+    {
+     "name": "RefApplLastSeqNum",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1357"
+     }
     }
-   },
-   {
-    "name": "ApplNewSeqNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1399"
-    }
-   },
-   {
-    "name": "RefApplLastSeqNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1357"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

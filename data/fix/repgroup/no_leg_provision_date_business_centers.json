@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegProvisionDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegProvisionDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40452"
+ "fields": [
+  {
+   "name": "LegProvisionDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40452"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingStreamEffectiveDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingStreamEffectiveDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40059"
+ "fields": [
+  {
+   "name": "UnderlyingStreamEffectiveDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamEffectiveDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40059"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

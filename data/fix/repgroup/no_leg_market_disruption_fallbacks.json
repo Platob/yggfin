@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegMarketDisruptionFallback",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegMarketDisruptionFallbackType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41470"
+ "fields": [
+  {
+   "name": "LegMarketDisruptionFallback",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegMarketDisruptionFallbackType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41470"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionFallbackValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40990"
+     }
     }
-   },
-   {
-    "name": "LegMarketDisruptionFallbackValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40990"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -33,118 +33,120 @@
    "fix": {
     "tag": "124"
    },
-   "item": {
-    "name": "Exec",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LastQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "32"
-      }
-     },
-     {
-      "name": "ExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "17"
-      }
-     },
-     {
-      "name": "SecondaryExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "527"
-      }
-     },
-     {
-      "name": "LastPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "31"
-      }
-     },
-     {
-      "name": "LastParPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "669"
-      }
-     },
-     {
-      "name": "LastCapacity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "29"
-      }
-     },
-     {
-      "name": "TradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1003"
-      }
-     },
-     {
-      "name": "FirmTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1041"
-      }
-     },
-     {
-      "name": "TrdMatchID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "880"
-      }
-     },
-     {
-      "name": "ExecutionTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2749"
-      }
-     },
-     {
-      "name": "TradeReportingIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2524"
-      }
-     },
-     {
-      "name": "TrdRegPublicationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "TrdRegPublicationGrp"
+   "fields": [
+    {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "TradePriceConditionGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "TradePriceConditionGrp"
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "SecondaryExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "527"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
+      },
+      {
+       "name": "LastParPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "669"
+       }
+      },
+      {
+       "name": "LastCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "29"
+       }
+      },
+      {
+       "name": "TradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1003"
+       }
+      },
+      {
+       "name": "FirmTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1041"
+       }
+      },
+      {
+       "name": "TrdMatchID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "880"
+       }
+      },
+      {
+       "name": "ExecutionTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2749"
+       }
+      },
+      {
+       "name": "TradeReportingIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2524"
+       }
+      },
+      {
+       "name": "TrdRegPublicationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TrdRegPublicationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "TradePriceConditionGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TradePriceConditionGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -12,72 +12,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ProvisionPartyID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ProvisionPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40175"
-    }
-   },
-   {
-    "name": "ProvisionPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40176"
-    }
-   },
-   {
-    "name": "ProvisionPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40177"
-    }
-   },
-   {
-    "name": "ProvisionPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2385"
-    }
-   },
-   {
-    "name": "NoProvisionPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40178"
+ "fields": [
+  {
+   "name": "ProvisionPartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40175"
+     }
     },
-    "item": {
-     "name": "ProvisionPartySubID",
-     "type": "struct",
+    {
+     "name": "ProvisionPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40176"
+     }
+    },
+    {
+     "name": "ProvisionPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40177"
+     }
+    },
+    {
+     "name": "ProvisionPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2385"
+     }
+    },
+    {
+     "name": "NoProvisionPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40178"
+     },
      "fields": [
       {
        "name": "ProvisionPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40179"
-       }
-      },
-      {
-       "name": "ProvisionPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40180"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "ProvisionPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40179"
+         }
+        },
+        {
+         "name": "ProvisionPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40180"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

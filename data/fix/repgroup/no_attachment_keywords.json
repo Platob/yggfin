@@ -16,18 +16,20 @@
    "FIXT1.1"
   ]
  },
- "item": {
-  "name": "AttachmentKeyword",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "AttachmentKeyword",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2114"
+ "fields": [
+  {
+   "name": "AttachmentKeyword",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AttachmentKeyword",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2114"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

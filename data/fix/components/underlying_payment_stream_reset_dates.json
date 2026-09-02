@@ -121,20 +121,22 @@
    "fix": {
     "tag": "40970"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40594"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamResetDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40594"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingPaymentStreamResetFrequencyPeriod",
@@ -183,20 +185,22 @@
    "fix": {
     "tag": "40971"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40600"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamInitialFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40600"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingPaymentStreamInitialFixingDateOffsetPeriod",
@@ -253,20 +257,22 @@
    "fix": {
     "tag": "40972"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40607"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40607"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingPaymentStreamFixingDateOffsetPeriod",
@@ -331,28 +337,30 @@
    "fix": {
     "tag": "42955"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamFixingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamFixingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42956"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42956"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42957"
+       }
       }
-     },
-     {
-      "name": "UnderlyingPaymentStreamFixingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42957"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

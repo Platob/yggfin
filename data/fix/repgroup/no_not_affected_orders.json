@@ -12,42 +12,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "NotAffectedOrder",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "NotAffOrigClOrdID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1372"
+ "fields": [
+  {
+   "name": "NotAffectedOrder",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "NotAffOrigClOrdID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1372"
+     }
+    },
+    {
+     "name": "NotAffectedOrderID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1371"
+     }
+    },
+    {
+     "name": "NotAffSecondaryOrderID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1825"
+     }
+    },
+    {
+     "name": "NotAffectedReason",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2677"
+     }
     }
-   },
-   {
-    "name": "NotAffectedOrderID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1371"
-    }
-   },
-   {
-    "name": "NotAffSecondaryOrderID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1825"
-    }
-   },
-   {
-    "name": "NotAffectedReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2677"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

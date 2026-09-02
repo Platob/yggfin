@@ -126,36 +126,38 @@
    "fix": {
     "tag": "454"
    },
-   "item": {
-    "name": "SecurityAltID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SecurityAltID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "455"
+   "fields": [
+    {
+     "name": "SecurityAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "455"
+       }
+      },
+      {
+       "name": "SecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "456"
+       }
+      },
+      {
+       "name": "SymbolPositionNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2957"
+       }
       }
-     },
-     {
-      "name": "SecurityAltIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "456"
-      }
-     },
-     {
-      "name": "SymbolPositionNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2957"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

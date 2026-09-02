@@ -90,248 +90,250 @@
    "fix": {
     "tag": "42534"
    },
-   "item": {
-    "name": "LegReturnRate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegReturnRatePriceSequence",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42535"
-      }
-     },
-     {
-      "name": "LegReturnRateCommissionBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42536"
-      }
-     },
-     {
-      "name": "LegReturnRateCommissionAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42537"
-      }
-     },
-     {
-      "name": "LegReturnRateCommissionCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42538"
-      }
-     },
-     {
-      "name": "LegReturnRateTotalCommissionPerTrade",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42539"
-      }
-     },
-     {
-      "name": "LegReturnRateDeterminationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42540"
-      }
-     },
-     {
-      "name": "LegReturnRatePriceGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegReturnRatePriceGrp"
+   "fields": [
+    {
+     "name": "LegReturnRate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegReturnRatePriceSequence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42535"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegReturnRateFXConversionGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegReturnRateFXConversionGrp"
+      {
+       "name": "LegReturnRateCommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42536"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegReturnRateAmountRelativeTo",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42541"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteMeasureType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42542"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteUnits",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42543"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42544"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42545"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteCurrencyType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42546"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteTimeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42547"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42548"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42549"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteExpirationTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42550"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42551"
-      }
-     },
-     {
-      "name": "LegReturnRateQuoteExchange",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42552"
-      }
-     },
-     {
-      "name": "LegReturnRateInformationSourceGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegReturnRateInformationSourceGrp"
+      {
+       "name": "LegReturnRateCommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42537"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegReturnRateQuotePricingModel",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42553"
-      }
-     },
-     {
-      "name": "LegReturnRateCashFlowType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42554"
-      }
-     },
-     {
-      "name": "LegReturnRateDateGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegReturnRateDateGrp"
+      {
+       "name": "LegReturnRateCommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42538"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegReturnRateValuationTimeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42555"
+      {
+       "name": "LegReturnRateTotalCommissionPerTrade",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42539"
+       }
+      },
+      {
+       "name": "LegReturnRateDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42540"
+       }
+      },
+      {
+       "name": "LegReturnRatePriceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegReturnRatePriceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegReturnRateFXConversionGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegReturnRateFXConversionGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegReturnRateAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42541"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteMeasureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42542"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteUnits",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42543"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42544"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42545"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteCurrencyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42546"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42547"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42548"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42549"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteExpirationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42550"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42551"
+       }
+      },
+      {
+       "name": "LegReturnRateQuoteExchange",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42552"
+       }
+      },
+      {
+       "name": "LegReturnRateInformationSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegReturnRateInformationSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegReturnRateQuotePricingModel",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42553"
+       }
+      },
+      {
+       "name": "LegReturnRateCashFlowType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42554"
+       }
+      },
+      {
+       "name": "LegReturnRateDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegReturnRateDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegReturnRateValuationTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42555"
+       }
+      },
+      {
+       "name": "LegReturnRateValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42556"
+       }
+      },
+      {
+       "name": "LegReturnRateValuationTimeBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42557"
+       }
+      },
+      {
+       "name": "LegReturnRateValuationPriceOption",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42558"
+       }
+      },
+      {
+       "name": "LegReturnRateFinalPriceFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42559"
+       }
       }
-     },
-     {
-      "name": "LegReturnRateValuationTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42556"
-      }
-     },
-     {
-      "name": "LegReturnRateValuationTimeBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42557"
-      }
-     },
-     {
-      "name": "LegReturnRateValuationPriceOption",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42558"
-      }
-     },
-     {
-      "name": "LegReturnRateFinalPriceFallback",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42559"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

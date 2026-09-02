@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentStreamPricingDay",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentStreamPricingDayOfWeek",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41945"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentStreamPricingDay",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamPricingDayOfWeek",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41945"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentStreamPricingDayNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41946"
+     }
     }
-   },
-   {
-    "name": "UnderlyingPaymentStreamPricingDayNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41946"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

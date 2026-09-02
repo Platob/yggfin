@@ -31,109 +31,111 @@
    "fix": {
     "tag": "78"
    },
-   "item": {
-    "name": "Alloc",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AllocAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "79"
-      }
-     },
-     {
-      "name": "AllocAcctIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "661"
-      }
-     },
-     {
-      "name": "AllocSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "736"
-      }
-     },
-     {
-      "name": "AllocSettlCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2927"
-      }
-     },
-     {
-      "name": "IndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "467"
-      }
-     },
-     {
-      "name": "AllocLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2727"
-      }
-     },
-     {
-      "name": "NestedParties3",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties3"
+   "fields": [
+    {
+     "name": "Alloc",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "79"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "AllocQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "80"
+      {
+       "name": "AllocAcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "661"
+       }
+      },
+      {
+       "name": "AllocSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "736"
+       }
+      },
+      {
+       "name": "AllocSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2927"
+       }
+      },
+      {
+       "name": "IndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "467"
+       }
+      },
+      {
+       "name": "AllocLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2727"
+       }
+      },
+      {
+       "name": "NestedParties3",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties3"
+       },
+       "fields": []
+      },
+      {
+       "name": "AllocQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "80"
+       }
+      },
+      {
+       "name": "CustodialLotID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1752"
+       }
+      },
+      {
+       "name": "VersusPurchaseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1753"
+       }
+      },
+      {
+       "name": "VersusPurchasePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1754"
+       }
+      },
+      {
+       "name": "CurrentCostBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1755"
+       }
       }
-     },
-     {
-      "name": "CustodialLotID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1752"
-      }
-     },
-     {
-      "name": "VersusPurchaseDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1753"
-      }
-     },
-     {
-      "name": "VersusPurchasePrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1754"
-      }
-     },
-     {
-      "name": "CurrentCostBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1755"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

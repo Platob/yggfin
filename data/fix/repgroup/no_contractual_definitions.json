@@ -11,18 +11,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ContractualDefinition",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ContractualDefinition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40041"
+ "fields": [
+  {
+   "name": "ContractualDefinition",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ContractualDefinition",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40041"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

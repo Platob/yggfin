@@ -15,26 +15,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Nested4PartySubID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "Nested4PartySubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1412"
+ "fields": [
+  {
+   "name": "Nested4PartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Nested4PartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1412"
+     }
+    },
+    {
+     "name": "Nested4PartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1411"
+     }
     }
-   },
-   {
-    "name": "Nested4PartySubIDType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1411"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

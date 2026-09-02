@@ -15,26 +15,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PartySubID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PartySubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "523"
+ "fields": [
+  {
+   "name": "PartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "523"
+     }
+    },
+    {
+     "name": "PartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "803"
+     }
     }
-   },
-   {
-    "name": "PartySubIDType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "803"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

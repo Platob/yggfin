@@ -30,59 +30,61 @@
    "fix": {
     "tag": "296"
    },
-   "item": {
-    "name": "QuoteSet",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "QuoteSetID",
-      "type": "string",
-      "fix": {
-       "tag": "302"
-      }
-     },
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
+   "fields": [
+    {
+     "name": "QuoteSet",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "QuoteSetID",
+       "type": "string",
+       "fix": {
+        "tag": "302"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "QuoteSetValidUntilTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "367"
-      }
-     },
-     {
-      "name": "TotNoQuoteEntries",
-      "type": "string",
-      "fix": {
-       "tag": "304"
-      }
-     },
-     {
-      "name": "LastFragment",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "893"
-      }
-     },
-     {
-      "name": "QuotEntryGrp",
-      "type": "struct",
-      "fix": {
-       "component": "QuotEntryGrp"
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "QuoteSetValidUntilTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "367"
+       }
+      },
+      {
+       "name": "TotNoQuoteEntries",
+       "type": "string",
+       "fix": {
+        "tag": "304"
+       }
+      },
+      {
+       "name": "LastFragment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "893"
+       }
+      },
+      {
+       "name": "QuotEntryGrp",
+       "type": "struct",
+       "fix": {
+        "component": "QuotEntryGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

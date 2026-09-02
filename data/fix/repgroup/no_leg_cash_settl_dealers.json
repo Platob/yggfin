@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegCashSettlDealer",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegCashSettlDealer",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41343"
+ "fields": [
+  {
+   "name": "LegCashSettlDealer",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegCashSettlDealer",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41343"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

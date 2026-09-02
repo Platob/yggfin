@@ -30,130 +30,132 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "InstrumentExtension",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentExtension"
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "FinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "FinancingDetails"
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "UndInstrmtGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UndInstrmtGrp"
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "InstrmtLegGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrmtLegGrp"
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "RelatedInstrumentGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "RelatedInstrumentGrp"
+      {
+       "name": "RelatedInstrumentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedInstrumentGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "SpreadOrBenchmarkCurveData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SpreadOrBenchmarkCurveData"
+      {
+       "name": "SpreadOrBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SpreadOrBenchmarkCurveData"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "QuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "537"
+       }
+      },
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "MDEntrySize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "271"
+       }
+      },
+      {
+       "name": "MDStreamID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1500"
+       }
       }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "QuoteType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "537"
-      }
-     },
-     {
-      "name": "SettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "63"
-      }
-     },
-     {
-      "name": "SettlDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "64"
-      }
-     },
-     {
-      "name": "MDEntrySize",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "271"
-      }
-     },
-     {
-      "name": "MDStreamID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1500"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

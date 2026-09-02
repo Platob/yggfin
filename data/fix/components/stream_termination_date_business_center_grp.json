@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40961"
    },
-   "item": {
-    "name": "StreamTerminationDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StreamTerminationDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40067"
+   "fields": [
+    {
+     "name": "StreamTerminationDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StreamTerminationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40067"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

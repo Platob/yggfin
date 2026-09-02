@@ -35,28 +35,30 @@
    "fix": {
     "tag": "2593"
    },
-   "item": {
-    "name": "OrderAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OrderAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2594"
+   "fields": [
+    {
+     "name": "OrderAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2594"
+       }
+      },
+      {
+       "name": "OrderAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2595"
+       }
       }
-     },
-     {
-      "name": "OrderAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2595"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

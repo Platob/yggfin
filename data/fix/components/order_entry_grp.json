@@ -27,102 +27,104 @@
    "fix": {
     "tag": "2428"
    },
-   "item": {
-    "name": "OrderEntry",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OrderEntryAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2429"
-      }
-     },
-     {
-      "name": "OrderEntryID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2430"
-      }
-     },
-     {
-      "name": "ClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "11"
-      }
-     },
-     {
-      "name": "OrigClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41"
-      }
-     },
-     {
-      "name": "OrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "37"
-      }
-     },
-     {
-      "name": "OrdType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40"
-      }
-     },
-     {
-      "name": "Price",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "44"
-      }
-     },
-     {
-      "name": "Side",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "54"
-      }
-     },
-     {
-      "name": "TimeInForce",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "59"
-      }
-     },
-     {
-      "name": "OrderQtyData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "OrderQtyData"
+   "fields": [
+    {
+     "name": "OrderEntry",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderEntryAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2429"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
+      {
+       "name": "OrderEntryID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2430"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "TimeInForce",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "59"
+       }
+      },
+      {
+       "name": "OrderQtyData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "OrderQtyData"
+       },
+       "fields": []
+      },
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

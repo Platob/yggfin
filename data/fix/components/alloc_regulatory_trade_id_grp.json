@@ -34,60 +34,62 @@
    "fix": {
     "tag": "1908"
    },
-   "item": {
-    "name": "AllocRegulatoryTradeID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AllocRegulatoryTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1909"
+   "fields": [
+    {
+     "name": "AllocRegulatoryTradeID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocRegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1909"
+       }
+      },
+      {
+       "name": "AllocRegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1910"
+       }
+      },
+      {
+       "name": "AllocRegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1911"
+       }
+      },
+      {
+       "name": "AllocRegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1912"
+       }
+      },
+      {
+       "name": "AllocRegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2406"
+       }
+      },
+      {
+       "name": "AllocRegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2399"
+       }
       }
-     },
-     {
-      "name": "AllocRegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1910"
-      }
-     },
-     {
-      "name": "AllocRegulatoryTradeIDEvent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1911"
-      }
-     },
-     {
-      "name": "AllocRegulatoryTradeIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1912"
-      }
-     },
-     {
-      "name": "AllocRegulatoryLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2406"
-      }
-     },
-     {
-      "name": "AllocRegulatoryTradeIDScope",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2399"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

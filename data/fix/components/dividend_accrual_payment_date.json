@@ -175,20 +175,22 @@
    "fix": {
     "tag": "42236"
    },
-   "item": {
-    "name": "DividendAccrualPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DividendAccrualPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42237"
+   "fields": [
+    {
+     "name": "DividendAccrualPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DividendAccrualPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42237"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "DividendAccrualPaymentDateAdjusted",

@@ -32,53 +32,55 @@
    "fix": {
     "tag": "1158"
    },
-   "item": {
-    "name": "SettlDetail",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlObligSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1164"
-      }
-     },
-     {
-      "name": "StandInstDbType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "169"
-      }
-     },
-     {
-      "name": "StandInstDbName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "170"
-      }
-     },
-     {
-      "name": "StandInstDbID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "171"
-      }
-     },
-     {
-      "name": "SettlParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SettlParties"
+   "fields": [
+    {
+     "name": "SettlDetail",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlObligSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1164"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "StandInstDbType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "169"
+       }
+      },
+      {
+       "name": "StandInstDbName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "170"
+       }
+      },
+      {
+       "name": "StandInstDbID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "171"
+       }
+      },
+      {
+       "name": "SettlParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlParties"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

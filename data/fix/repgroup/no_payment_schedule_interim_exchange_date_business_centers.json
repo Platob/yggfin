@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentScheduleInterimExchangeDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentScheduleInterimExchangeDatesBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40863"
+ "fields": [
+  {
+   "name": "PaymentScheduleInterimExchangeDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentScheduleInterimExchangeDatesBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40863"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

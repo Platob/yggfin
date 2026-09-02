@@ -106,53 +106,55 @@
    "fix": {
     "tag": "1058"
    },
-   "item": {
-    "name": "UndlyInstrumentParty",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrumentPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1059"
-      }
-     },
-     {
-      "name": "UnderlyingInstrumentPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1060"
-      }
-     },
-     {
-      "name": "UnderlyingInstrumentPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1061"
-      }
-     },
-     {
-      "name": "UnderlyingInstrumentPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2391"
-      }
-     },
-     {
-      "name": "UndlyInstrumentPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UndlyInstrumentPtysSubGrp"
+   "fields": [
+    {
+     "name": "UndlyInstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1059"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "UnderlyingInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1060"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1061"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2391"
+       }
+      },
+      {
+       "name": "UndlyInstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndlyInstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

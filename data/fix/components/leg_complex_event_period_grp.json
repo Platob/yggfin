@@ -90,55 +90,57 @@
    "fix": {
     "tag": "41379"
    },
-   "item": {
-    "name": "LegComplexEventPeriod",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegComplexEventPeriodType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41380"
+   "fields": [
+    {
+     "name": "LegComplexEventPeriod",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventPeriodType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41380"
+       }
+      },
+      {
+       "name": "LegComplexEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41381"
+       }
+      },
+      {
+       "name": "LegComplexEventScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegComplexEventScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegComplexEventPeriodDateGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegComplexEventPeriodDateGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegComplexEventAveragingObservationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegComplexEventAveragingObservationGrp"
+       },
+       "fields": []
       }
-     },
-     {
-      "name": "LegComplexEventBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41381"
-      }
-     },
-     {
-      "name": "LegComplexEventScheduleGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegComplexEventScheduleGrp"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegComplexEventPeriodDateGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegComplexEventPeriodDateGrp"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegComplexEventAveragingObservationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegComplexEventAveragingObservationGrp"
-      },
-      "fields": []
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

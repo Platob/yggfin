@@ -98,20 +98,22 @@
    "fix": {
     "tag": "40923"
    },
-   "item": {
-    "name": "LegBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40924"
+   "fields": [
+    {
+     "name": "LegBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40924"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegDateRollConvention",

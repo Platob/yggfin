@@ -36,28 +36,30 @@
    "fix": {
     "tag": "215"
    },
-   "item": {
-    "name": "RoutingID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RoutingType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "216"
+   "fields": [
+    {
+     "name": "RoutingID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RoutingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "216"
+       }
+      },
+      {
+       "name": "RoutingID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "217"
+       }
       }
-     },
-     {
-      "name": "RoutingID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "217"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

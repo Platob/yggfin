@@ -90,20 +90,22 @@
    "fix": {
     "tag": "42386"
    },
-   "item": {
-    "name": "LegDividendPeriodBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDividendPeriodBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42387"
+   "fields": [
+    {
+     "name": "LegDividendPeriodBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDividendPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42387"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

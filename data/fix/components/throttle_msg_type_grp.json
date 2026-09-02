@@ -28,20 +28,22 @@
    "fix": {
     "tag": "1618"
    },
-   "item": {
-    "name": "ThrottleMsgType",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ThrottleMsgType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1619"
+   "fields": [
+    {
+     "name": "ThrottleMsgType",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ThrottleMsgType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1619"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

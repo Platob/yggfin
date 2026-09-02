@@ -36,101 +36,103 @@
    "fix": {
     "tag": "670"
    },
-   "item": {
-    "name": "LegAlloc",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegAllocAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "671"
-      }
-     },
-     {
-      "name": "LegIndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "672"
-      }
-     },
-     {
-      "name": "NestedParties2",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties2"
+   "fields": [
+    {
+     "name": "LegAlloc",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegAllocAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "671"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegAllocQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "673"
+      {
+       "name": "LegIndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "672"
+       }
+      },
+      {
+       "name": "NestedParties2",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties2"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegAllocQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "673"
+       }
+      },
+      {
+       "name": "LegAllocAcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "674"
+       }
+      },
+      {
+       "name": "LegAllocSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1367"
+       }
+      },
+      {
+       "name": "LegAllocSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2928"
+       }
+      },
+      {
+       "name": "LegCustodialLotID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1756"
+       }
+      },
+      {
+       "name": "LegVersusPurchaseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1757"
+       }
+      },
+      {
+       "name": "LegVersusPurchasePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1758"
+       }
+      },
+      {
+       "name": "LegCurrentCostBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1759"
+       }
       }
-     },
-     {
-      "name": "LegAllocAcctIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "674"
-      }
-     },
-     {
-      "name": "LegAllocSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1367"
-      }
-     },
-     {
-      "name": "LegAllocSettlCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2928"
-      }
-     },
-     {
-      "name": "LegCustodialLotID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1756"
-      }
-     },
-     {
-      "name": "LegVersusPurchaseDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1757"
-      }
-     },
-     {
-      "name": "LegVersusPurchasePrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1758"
-      }
-     },
-     {
-      "name": "LegCurrentCostBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1759"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

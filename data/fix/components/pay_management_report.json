@@ -175,60 +175,62 @@
    "fix": {
     "tag": "1855"
    },
-   "item": {
-    "name": "RelatedTrade",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1856"
+   "fields": [
+    {
+     "name": "RelatedTrade",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1856"
+       }
+      },
+      {
+       "name": "RelatedTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1857"
+       }
+      },
+      {
+       "name": "RelatedRegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2103"
+       }
+      },
+      {
+       "name": "RelatedTradeDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1858"
+       }
+      },
+      {
+       "name": "RelatedTradeMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1859"
+       }
+      },
+      {
+       "name": "RelatedTradeQuantity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1860"
+       }
       }
-     },
-     {
-      "name": "RelatedTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1857"
-      }
-     },
-     {
-      "name": "RelatedRegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2103"
-      }
-     },
-     {
-      "name": "RelatedTradeDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1858"
-      }
-     },
-     {
-      "name": "RelatedTradeMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1859"
-      }
-     },
-     {
-      "name": "RelatedTradeQuantity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1860"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoPartyIDs",
@@ -237,74 +239,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "PostTradePayment",
@@ -321,120 +327,126 @@
    "fix": {
     "tag": "1158"
    },
-   "item": {
-    "name": "SettlDetail",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlObligSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1164"
-      }
-     },
-     {
-      "name": "StandInstDbType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "169"
-      }
-     },
-     {
-      "name": "StandInstDbName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "170"
-      }
-     },
-     {
-      "name": "StandInstDbID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "171"
-      }
-     },
-     {
-      "name": "NoSettlPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "781"
+   "fields": [
+    {
+     "name": "SettlDetail",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlObligSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1164"
+       }
       },
-      "item": {
-       "name": "SettlPartyID",
-       "type": "struct",
+      {
+       "name": "StandInstDbType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "169"
+       }
+      },
+      {
+       "name": "StandInstDbName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "170"
+       }
+      },
+      {
+       "name": "StandInstDbID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "171"
+       }
+      },
+      {
+       "name": "NoSettlPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "781"
+       },
        "fields": [
         {
          "name": "SettlPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "782"
-         }
-        },
-        {
-         "name": "SettlPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "783"
-         }
-        },
-        {
-         "name": "SettlPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "784"
-         }
-        },
-        {
-         "name": "SettlPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2389"
-         }
-        },
-        {
-         "name": "NoSettlPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "801"
-         },
-         "item": {
-          "name": "SettlPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "SettlPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "785"
-            }
-           },
-           {
-            "name": "SettlPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "786"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "SettlPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "782"
            }
-          ]
-         }
+          },
+          {
+           "name": "SettlPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "783"
+           }
+          },
+          {
+           "name": "SettlPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "784"
+           }
+          },
+          {
+           "name": "SettlPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2389"
+           }
+          },
+          {
+           "name": "NoSettlPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "801"
+           },
+           "fields": [
+            {
+             "name": "SettlPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "SettlPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "785"
+               }
+              },
+              {
+               "name": "SettlPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "786"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

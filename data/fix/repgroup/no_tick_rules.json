@@ -9,66 +9,68 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TickRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StartTickPriceRange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1206"
+ "fields": [
+  {
+   "name": "TickRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StartTickPriceRange",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1206"
+     }
+    },
+    {
+     "name": "EndTickPriceRange",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1207"
+     }
+    },
+    {
+     "name": "TickIncrement",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1208"
+     }
+    },
+    {
+     "name": "TickRuleType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1209"
+     }
+    },
+    {
+     "name": "TickRuleProductComplex",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2571"
+     }
+    },
+    {
+     "name": "SettlPriceIncrement",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1830"
+     }
+    },
+    {
+     "name": "SettlPriceSecondaryIncrement",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1831"
+     }
     }
-   },
-   {
-    "name": "EndTickPriceRange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1207"
-    }
-   },
-   {
-    "name": "TickIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1208"
-    }
-   },
-   {
-    "name": "TickRuleType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1209"
-    }
-   },
-   {
-    "name": "TickRuleProductComplex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2571"
-    }
-   },
-   {
-    "name": "SettlPriceIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1830"
-    }
-   },
-   {
-    "name": "SettlPriceSecondaryIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1831"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

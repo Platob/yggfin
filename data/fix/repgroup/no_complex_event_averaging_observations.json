@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ComplexEventAveragingObservation",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ComplexEventAveragingObservationNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40995"
+ "fields": [
+  {
+   "name": "ComplexEventAveragingObservation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ComplexEventAveragingObservationNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40995"
+     }
+    },
+    {
+     "name": "ComplexEventAveragingWeight",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40996"
+     }
     }
-   },
-   {
-    "name": "ComplexEventAveragingWeight",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40996"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

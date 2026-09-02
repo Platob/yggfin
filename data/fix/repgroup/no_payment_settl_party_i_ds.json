@@ -15,72 +15,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentSettlPartyID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentSettlPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40234"
-    }
-   },
-   {
-    "name": "PaymentSettlPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40235"
-    }
-   },
-   {
-    "name": "PaymentSettlPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40236"
-    }
-   },
-   {
-    "name": "PaymentSettlPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40237"
-    }
-   },
-   {
-    "name": "NoPaymentSettlPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40238"
+ "fields": [
+  {
+   "name": "PaymentSettlPartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentSettlPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40234"
+     }
     },
-    "item": {
-     "name": "PaymentSettlPartySubID",
-     "type": "struct",
+    {
+     "name": "PaymentSettlPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40235"
+     }
+    },
+    {
+     "name": "PaymentSettlPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40236"
+     }
+    },
+    {
+     "name": "PaymentSettlPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40237"
+     }
+    },
+    {
+     "name": "NoPaymentSettlPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40238"
+     },
      "fields": [
       {
        "name": "PaymentSettlPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40239"
-       }
-      },
-      {
-       "name": "PaymentSettlPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40240"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "PaymentSettlPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40239"
+         }
+        },
+        {
+         "name": "PaymentSettlPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40240"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

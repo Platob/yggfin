@@ -11,42 +11,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "FundingSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "FundingSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2846"
+ "fields": [
+  {
+   "name": "FundingSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "FundingSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2846"
+     }
+    },
+    {
+     "name": "FundingSourceMarketValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2848"
+     }
+    },
+    {
+     "name": "FundingSourceCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2847"
+     }
+    },
+    {
+     "name": "FundingSourceCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2954"
+     }
     }
-   },
-   {
-    "name": "FundingSourceMarketValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2848"
-    }
-   },
-   {
-    "name": "FundingSourceCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2847"
-    }
-   },
-   {
-    "name": "FundingSourceCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2954"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

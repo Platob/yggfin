@@ -10,26 +10,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "AllocGroupSubQtyAttribute",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "AllocGroupSubQtyType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2980"
+ "fields": [
+  {
+   "name": "AllocGroupSubQtyAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AllocGroupSubQtyType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2980"
+     }
+    },
+    {
+     "name": "AllocGroupSubQtyValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2981"
+     }
     }
-   },
-   {
-    "name": "AllocGroupSubQtyValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2981"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

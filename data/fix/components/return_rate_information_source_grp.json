@@ -123,36 +123,38 @@
    "fix": {
     "tag": "42761"
    },
-   "item": {
-    "name": "ReturnRateInformationSource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ReturnRateInformationSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42762"
+   "fields": [
+    {
+     "name": "ReturnRateInformationSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRateInformationSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42762"
+       }
+      },
+      {
+       "name": "ReturnRateReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42763"
+       }
+      },
+      {
+       "name": "ReturnRateReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42764"
+       }
       }
-     },
-     {
-      "name": "ReturnRateReferencePage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42763"
-      }
-     },
-     {
-      "name": "ReturnRateReferencePageHeading",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42764"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

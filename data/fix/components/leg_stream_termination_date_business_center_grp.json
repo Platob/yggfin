@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40943"
    },
-   "item": {
-    "name": "LegStreamTerminationDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegStreamTerminationDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40259"
+   "fields": [
+    {
+     "name": "LegStreamTerminationDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStreamTerminationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40259"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

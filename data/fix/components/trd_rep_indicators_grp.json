@@ -29,28 +29,30 @@
    "fix": {
     "tag": "1387"
    },
-   "item": {
-    "name": "TrdRepIndicator",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TrdRepPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1388"
+   "fields": [
+    {
+     "name": "TrdRepIndicator",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRepPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1388"
+       }
+      },
+      {
+       "name": "TrdRepIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1389"
+       }
       }
-     },
-     {
-      "name": "TrdRepIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1389"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

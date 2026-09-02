@@ -90,37 +90,39 @@
    "fix": {
     "tag": "2250"
    },
-   "item": {
-    "name": "LegComplexEventDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegComplexEventStartDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2251"
-      }
-     },
-     {
-      "name": "LegComplexEventEndDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2252"
-      }
-     },
-     {
-      "name": "LegComplexEventTimes",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegComplexEventTimes"
+   "fields": [
+    {
+     "name": "LegComplexEventDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2251"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegComplexEventEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2252"
+       }
+      },
+      {
+       "name": "LegComplexEventTimes",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegComplexEventTimes"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

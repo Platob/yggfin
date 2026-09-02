@@ -28,29 +28,31 @@
    "fix": {
     "tag": "1676"
    },
-   "item": {
-    "name": "PartyUpdate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ListUpdateAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1324"
-      }
-     },
-     {
-      "name": "PartyDetailGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyDetailGrp"
+   "fields": [
+    {
+     "name": "PartyUpdate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

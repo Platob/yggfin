@@ -27,36 +27,38 @@
    "fix": {
     "tag": "1920"
    },
-   "item": {
-    "name": "PriceMovementValue",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PriceMovementValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1921"
+   "fields": [
+    {
+     "name": "PriceMovementValue",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceMovementValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1921"
+       }
+      },
+      {
+       "name": "PriceMovementPoint",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1922"
+       }
+      },
+      {
+       "name": "PriceMovementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1923"
+       }
       }
-     },
-     {
-      "name": "PriceMovementPoint",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1922"
-      }
-     },
-     {
-      "name": "PriceMovementType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1923"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

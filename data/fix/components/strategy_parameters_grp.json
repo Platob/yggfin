@@ -36,36 +36,38 @@
    "fix": {
     "tag": "957"
    },
-   "item": {
-    "name": "StrategyParameter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StrategyParameterName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "958"
+   "fields": [
+    {
+     "name": "StrategyParameter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StrategyParameterName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "958"
+       }
+      },
+      {
+       "name": "StrategyParameterType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "959"
+       }
+      },
+      {
+       "name": "StrategyParameterValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "960"
+       }
       }
-     },
-     {
-      "name": "StrategyParameterType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "959"
-      }
-     },
-     {
-      "name": "StrategyParameterValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "960"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

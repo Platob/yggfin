@@ -55,20 +55,22 @@
    "fix": {
     "tag": "2734"
    },
-   "item": {
-    "name": "IndexRollMonth",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "IndexRollMonth",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2733"
+   "fields": [
+    {
+     "name": "IndexRollMonth",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IndexRollMonth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2733"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

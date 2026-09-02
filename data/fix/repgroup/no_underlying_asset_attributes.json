@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingAssetAttribute",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingAssetAttributeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2313"
+ "fields": [
+  {
+   "name": "UnderlyingAssetAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingAssetAttributeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2313"
+     }
+    },
+    {
+     "name": "UnderlyingAssetAttributeValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2314"
+     }
+    },
+    {
+     "name": "UnderlyingAssetAttributeLimit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2315"
+     }
     }
-   },
-   {
-    "name": "UnderlyingAssetAttributeValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2314"
-    }
-   },
-   {
-    "name": "UnderlyingAssetAttributeLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2315"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

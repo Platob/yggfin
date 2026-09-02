@@ -8,72 +8,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RequestingPartyID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RequestingPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1658"
-    }
-   },
-   {
-    "name": "RequestingPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1659"
-    }
-   },
-   {
-    "name": "RequestingPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1660"
-    }
-   },
-   {
-    "name": "RequestingPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2338"
-    }
-   },
-   {
-    "name": "NoRequestingPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1661"
+ "fields": [
+  {
+   "name": "RequestingPartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RequestingPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1658"
+     }
     },
-    "item": {
-     "name": "RequestingPartySubID",
-     "type": "struct",
+    {
+     "name": "RequestingPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1659"
+     }
+    },
+    {
+     "name": "RequestingPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1660"
+     }
+    },
+    {
+     "name": "RequestingPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2338"
+     }
+    },
+    {
+     "name": "NoRequestingPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1661"
+     },
      "fields": [
       {
        "name": "RequestingPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1662"
-       }
-      },
-      {
-       "name": "RequestingPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1663"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "RequestingPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1662"
+         }
+        },
+        {
+         "name": "RequestingPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1663"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

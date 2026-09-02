@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentStreamResetDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentStreamResetDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40763"
+ "fields": [
+  {
+   "name": "PaymentStreamResetDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamResetDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40763"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

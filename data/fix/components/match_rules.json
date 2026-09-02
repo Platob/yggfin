@@ -37,44 +37,46 @@
    "fix": {
     "tag": "1235"
    },
-   "item": {
-    "name": "MatchRule",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MatchAlgorithm",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1142"
+   "fields": [
+    {
+     "name": "MatchRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchAlgorithm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1142"
+       }
+      },
+      {
+       "name": "MatchType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "574"
+       }
+      },
+      {
+       "name": "MatchRuleProductComplex",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2569"
+       }
+      },
+      {
+       "name": "CustomerPriority",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2570"
+       }
       }
-     },
-     {
-      "name": "MatchType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "574"
-      }
-     },
-     {
-      "name": "MatchRuleProductComplex",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2569"
-      }
-     },
-     {
-      "name": "CustomerPriority",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2570"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

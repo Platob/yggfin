@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingComplexEventCreditEventSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingComplexEventCreditEventSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41749"
+ "fields": [
+  {
+   "name": "UnderlyingComplexEventCreditEventSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventCreditEventSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41749"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

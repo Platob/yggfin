@@ -12,42 +12,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "SecondaryAssetClass",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "SecondaryAssetClass",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1977"
+ "fields": [
+  {
+   "name": "SecondaryAssetClass",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SecondaryAssetClass",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1977"
+     }
+    },
+    {
+     "name": "SecondaryAssetSubClass",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1978"
+     }
+    },
+    {
+     "name": "SecondaryAssetType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1979"
+     }
+    },
+    {
+     "name": "SecondaryAssetSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2741"
+     }
     }
-   },
-   {
-    "name": "SecondaryAssetSubClass",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1978"
-    }
-   },
-   {
-    "name": "SecondaryAssetType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1979"
-    }
-   },
-   {
-    "name": "SecondaryAssetSubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2741"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

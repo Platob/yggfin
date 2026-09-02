@@ -11,26 +11,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ReferenceDataDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ReferenceDataDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2747"
+ "fields": [
+  {
+   "name": "ReferenceDataDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ReferenceDataDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2747"
+     }
+    },
+    {
+     "name": "ReferenceDataDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2748"
+     }
     }
-   },
-   {
-    "name": "ReferenceDataDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2748"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

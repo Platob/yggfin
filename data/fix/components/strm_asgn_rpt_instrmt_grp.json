@@ -27,77 +27,79 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "SettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "63"
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "StreamAsgnType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1617"
+       }
+      },
+      {
+       "name": "MDStreamID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1500"
+       }
+      },
+      {
+       "name": "StreamAsgnRejReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1502"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "StreamAsgnType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1617"
-      }
-     },
-     {
-      "name": "MDStreamID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1500"
-      }
-     },
-     {
-      "name": "StreamAsgnRejReason",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1502"
-      }
-     },
-     {
-      "name": "Text",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "58"
-      }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -123,103 +123,105 @@
    "fix": {
     "tag": "40181"
    },
-   "item": {
-    "name": "ProtectionTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProtectionTermNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40182"
-      }
-     },
-     {
-      "name": "ProtectionTermCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40183"
-      }
-     },
-     {
-      "name": "ProtectionTermSellerNotifies",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40184"
-      }
-     },
-     {
-      "name": "ProtectionTermBuyerNotifies",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40185"
-      }
-     },
-     {
-      "name": "ProtectionTermEventBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40186"
-      }
-     },
-     {
-      "name": "ProtectionTermStandardSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40187"
-      }
-     },
-     {
-      "name": "ProtectionTermEventMinimumSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40188"
-      }
-     },
-     {
-      "name": "ProtectionTermEventNewsSourceGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ProtectionTermEventNewsSourceGrp"
+   "fields": [
+    {
+     "name": "ProtectionTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProtectionTermNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40182"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "ProtectionTermEventGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ProtectionTermEventGrp"
+      {
+       "name": "ProtectionTermCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40183"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "ProtectionTermObligationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ProtectionTermObligationGrp"
+      {
+       "name": "ProtectionTermSellerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40184"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "ProtectionTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40190"
+      {
+       "name": "ProtectionTermBuyerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40185"
+       }
+      },
+      {
+       "name": "ProtectionTermEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40186"
+       }
+      },
+      {
+       "name": "ProtectionTermStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40187"
+       }
+      },
+      {
+       "name": "ProtectionTermEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40188"
+       }
+      },
+      {
+       "name": "ProtectionTermEventNewsSourceGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermEventNewsSourceGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProtectionTermEventGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermEventGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProtectionTermObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ProtectionTermObligationGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProtectionTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40190"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

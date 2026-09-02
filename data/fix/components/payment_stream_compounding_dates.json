@@ -135,20 +135,22 @@
    "fix": {
     "tag": "42620"
    },
-   "item": {
-    "name": "PaymentStreamCompoundingDatesBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentStreamCompoundingDatesBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42621"
+   "fields": [
+    {
+     "name": "PaymentStreamCompoundingDatesBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamCompoundingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42621"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoPaymentStreamCompoundingDates",
@@ -157,28 +159,30 @@
    "fix": {
     "tag": "42606"
    },
-   "item": {
-    "name": "PaymentStreamCompoundingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentStreamCompoundingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42607"
+   "fields": [
+    {
+     "name": "PaymentStreamCompoundingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamCompoundingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42607"
+       }
+      },
+      {
+       "name": "PaymentStreamCompoundingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42608"
+       }
       }
-     },
-     {
-      "name": "PaymentStreamCompoundingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42608"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "PaymentStreamCompoundingDatesRelativeTo",

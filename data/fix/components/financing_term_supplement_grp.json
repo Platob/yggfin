@@ -71,28 +71,30 @@
    "fix": {
     "tag": "40046"
    },
-   "item": {
-    "name": "FinancingTermSupplement",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "FinancingTermSupplementDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40047"
+   "fields": [
+    {
+     "name": "FinancingTermSupplement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "FinancingTermSupplementDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40047"
+       }
+      },
+      {
+       "name": "FinancingTermSupplementDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40048"
+       }
       }
-     },
-     {
-      "name": "FinancingTermSupplementDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40048"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

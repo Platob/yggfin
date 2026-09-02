@@ -299,11 +299,6 @@ def parse_session(document: str) -> tuple[tuple[str, bool], ...]:
     return tuple((name, required) for name, _, required in _session_members(document))
 
 
-def parse_session_components(document: str) -> tuple[tuple[str, str], ...]:
-    """Direct session fields paired with their standard component."""
-    return tuple((name, component) for name, component, _ in _session_members(document))
-
-
 def _session_members(document: str) -> tuple[tuple[str, str, bool], ...]:
     """Direct header and trailer fields with their owner and requiredness."""
     root = _root(document)

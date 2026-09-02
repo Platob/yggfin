@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPaymentStubEndDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegPaymentStubEndDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42496"
+ "fields": [
+  {
+   "name": "LegPaymentStubEndDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStubEndDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42496"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

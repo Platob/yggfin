@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TestSystemModule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TestSystemModuleName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3050"
+ "fields": [
+  {
+   "name": "TestSystemModule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TestSystemModuleName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3050"
+     }
+    },
+    {
+     "name": "TestSystemModuleVersion",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3051"
+     }
+    },
+    {
+     "name": "TestSystemModuleLastUpdateTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3081"
+     }
     }
-   },
-   {
-    "name": "TestSystemModuleVersion",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3051"
-    }
-   },
-   {
-    "name": "TestSystemModuleLastUpdateTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3081"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

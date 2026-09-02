@@ -90,28 +90,30 @@
    "fix": {
     "tag": "41363"
    },
-   "item": {
-    "name": "LegComplexEventAveragingObservation",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegComplexEventAveragingObservationNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41364"
+   "fields": [
+    {
+     "name": "LegComplexEventAveragingObservation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventAveragingObservationNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41364"
+       }
+      },
+      {
+       "name": "LegComplexEventAveragingWeight",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41365"
+       }
       }
-     },
-     {
-      "name": "LegComplexEventAveragingWeight",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41365"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

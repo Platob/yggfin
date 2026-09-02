@@ -11,34 +11,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "AllocTrdRegTimestamp",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "AllocTrdRegTimestamp",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3009"
+ "fields": [
+  {
+   "name": "AllocTrdRegTimestamp",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AllocTrdRegTimestamp",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3009"
+     }
+    },
+    {
+     "name": "AllocTrdRegTimestampType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3010"
+     }
+    },
+    {
+     "name": "AllocTrdRegTimestampSrc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3011"
+     }
     }
-   },
-   {
-    "name": "AllocTrdRegTimestampType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3010"
-    }
-   },
-   {
-    "name": "AllocTrdRegTimestampSrc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3011"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

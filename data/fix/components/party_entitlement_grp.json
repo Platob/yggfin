@@ -27,38 +27,40 @@
    "fix": {
     "tag": "1772"
    },
-   "item": {
-    "name": "PartyEntitlement",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyDetailGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyDetailGrp"
+   "fields": [
+    {
+     "name": "PartyEntitlement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "EntitlementStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1883"
+      {
+       "name": "EntitlementStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1883"
+       }
+      },
+      {
+       "name": "EntitlementGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "EntitlementGrp"
+       },
+       "fields": []
       }
-     },
-     {
-      "name": "EntitlementGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "EntitlementGrp"
-      },
-      "fields": []
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -156,7 +156,12 @@ def arrow_type_of(datatype: str | None) -> pyarrow.DataType:
 
 
 def datatype_identity(datatype: str | None) -> str:
-    """The contract identity used to compare FIX datatype readings."""
+    """Two spellings of one FIX datatype word, folded together.
+
+    The version-collapse report is the one caller: it says which readings a
+    record dropped, and `char` against `String` is not a reading it dropped.
+    Nothing decides an identity by this -- Arrow does that.
+    """
     folded = (datatype or "").strip().casefold()
     return "string" if folded == "char" else folded
 

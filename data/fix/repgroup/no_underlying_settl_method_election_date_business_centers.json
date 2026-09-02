@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43075"
+ "fields": [
+  {
+   "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingSettlMethodElectionDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43075"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

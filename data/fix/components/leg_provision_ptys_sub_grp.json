@@ -90,28 +90,30 @@
    "fix": {
     "tag": "40537"
    },
-   "item": {
-    "name": "LegProvisionPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProvisionPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40538"
+   "fields": [
+    {
+     "name": "LegProvisionPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40538"
+       }
+      },
+      {
+       "name": "LegProvisionPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40539"
+       }
       }
-     },
-     {
-      "name": "LegProvisionPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40539"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

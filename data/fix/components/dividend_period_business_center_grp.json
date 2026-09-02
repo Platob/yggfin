@@ -123,20 +123,22 @@
    "fix": {
     "tag": "42294"
    },
-   "item": {
-    "name": "DividendPeriodBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DividendPeriodBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42295"
+   "fields": [
+    {
+     "name": "DividendPeriodBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DividendPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42295"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

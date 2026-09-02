@@ -104,284 +104,286 @@
    "fix": {
     "tag": "42149"
    },
-   "item": {
-    "name": "UnderlyingProvision",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42150"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateUnadjusted",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42151"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateBusinessDayConvention",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42152"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateBusinessCenterGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionDateBusinessCenterGrp"
+   "fields": [
+    {
+     "name": "UnderlyingProvision",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42150"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionDateAdjusted",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42153"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateTenorPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42154"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateTenorUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42155"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionBreakFeeElection",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43002"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionBreakFeeRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43003"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCalculationAgent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42156"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42157"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionSinglePartySellerSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42158"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlValueDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionCashSettlValueDates"
+      {
+       "name": "UnderlyingProvisionDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42151"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionOptionExerciseDates"
+      {
+       "name": "UnderlyingProvisionDateBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42152"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionExpirationDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionOptionExpirationDate"
+      {
+       "name": "UnderlyingProvisionDateBusinessCenterGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionDateBusinessCenterGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionOptionRelevantUnderlyingDate"
+      {
+       "name": "UnderlyingProvisionDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42153"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseStyle",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42159"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42160"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42161"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42162"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionMinimumNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42163"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionMaximumNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42164"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseConfirmation",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42165"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlPaymentDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionCashSettlPaymentDates"
+      {
+       "name": "UnderlyingProvisionDateTenorPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42154"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42166"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42167"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlCurrency2",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42168"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlQuoteType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42169"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlQuoteSource",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionCashSettlQuoteSource"
+      {
+       "name": "UnderlyingProvisionDateTenorUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42155"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42170"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingProvisionTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42171"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingProvisionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42172"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionParties"
+      {
+       "name": "UnderlyingProvisionBreakFeeElection",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43002"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "UnderlyingProvisionBreakFeeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43003"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42156"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42157"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionSinglePartySellerSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42158"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlValueDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlValueDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionExerciseDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExpirationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionExpirationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionRelevantUnderlyingDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseStyle",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42159"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42160"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42161"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42162"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionMinimumNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42163"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionMaximumNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42164"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseConfirmation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42165"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlPaymentDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42166"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42167"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlCurrency2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42168"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlQuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42169"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlQuoteSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlQuoteSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42170"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingProvisionTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42171"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingProvisionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42172"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionParties"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

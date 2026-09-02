@@ -15,18 +15,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TradePriceCondition",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradePriceCondition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1839"
+ "fields": [
+  {
+   "name": "TradePriceCondition",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradePriceCondition",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1839"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

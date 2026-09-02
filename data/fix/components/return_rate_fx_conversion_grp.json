@@ -123,36 +123,38 @@
    "fix": {
     "tag": "42731"
    },
-   "item": {
-    "name": "ReturnRateFXConversion",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ReturnRateFXCurrencySymbol",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42732"
+   "fields": [
+    {
+     "name": "ReturnRateFXConversion",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReturnRateFXCurrencySymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42732"
+       }
+      },
+      {
+       "name": "ReturnRateFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42733"
+       }
+      },
+      {
+       "name": "ReturnRateFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42734"
+       }
       }
-     },
-     {
-      "name": "ReturnRateFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42733"
-      }
-     },
-     {
-      "name": "ReturnRateFXRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42734"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

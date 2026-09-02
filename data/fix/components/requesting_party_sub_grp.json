@@ -42,28 +42,30 @@
    "fix": {
     "tag": "1661"
    },
-   "item": {
-    "name": "RequestingPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RequestingPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1662"
+   "fields": [
+    {
+     "name": "RequestingPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RequestingPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1662"
+       }
+      },
+      {
+       "name": "RequestingPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1663"
+       }
       }
-     },
-     {
-      "name": "RequestingPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1663"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

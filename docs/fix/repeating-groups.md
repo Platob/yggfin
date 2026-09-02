@@ -95,13 +95,15 @@ The reviewable record uses the common `Field` list representation:
     "name": "NoPartyIDs",
     "type": "list",
     "fix": {"tag": "453"},
-    "item": {
-      "name": "PartyID",
-      "type": "struct",
-      "fields": [
-        {"name": "PartyID", "type": "string", "fix": {"tag": "448"}}
-      ]
-    }
+    "fields": [
+      {
+        "name": "PartyID",
+        "type": "struct",
+        "fields": [
+          {"name": "PartyID", "type": "string", "fix": {"tag": "448"}}
+        ]
+      }
+    ]
   }
 }
 ```

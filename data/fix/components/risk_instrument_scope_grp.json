@@ -32,37 +32,39 @@
    "fix": {
     "tag": "1534"
    },
-   "item": {
-    "name": "RiskInstrumentScope",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentScopeOperator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1535"
-      }
-     },
-     {
-      "name": "InstrumentScope",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentScope"
+   "fields": [
+    {
+     "name": "RiskInstrumentScope",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentScopeOperator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1535"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "RiskInstrumentMultiplier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1558"
+      {
+       "name": "InstrumentScope",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentScope"
+       },
+       "fields": []
+      },
+      {
+       "name": "RiskInstrumentMultiplier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1558"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

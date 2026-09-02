@@ -15,26 +15,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Stipulation",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StipulationType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "233"
+ "fields": [
+  {
+   "name": "Stipulation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StipulationType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "233"
+     }
+    },
+    {
+     "name": "StipulationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "234"
+     }
     }
-   },
-   {
-    "name": "StipulationValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "234"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

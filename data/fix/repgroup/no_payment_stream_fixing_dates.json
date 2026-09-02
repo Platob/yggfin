@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentStreamFixingDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentStreamFixingDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42661"
+ "fields": [
+  {
+   "name": "PaymentStreamFixingDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamFixingDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42661"
+     }
+    },
+    {
+     "name": "PaymentStreamFixingDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42662"
+     }
     }
-   },
-   {
-    "name": "PaymentStreamFixingDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42662"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

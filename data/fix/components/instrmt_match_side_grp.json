@@ -27,136 +27,138 @@
    "fix": {
     "tag": "1889"
    },
-   "item": {
-    "name": "InstrmtMatchSide",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "InstrmtMatchSide",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "InstrmtLegGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrmtLegGrp"
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "UndInstrmtGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UndInstrmtGrp"
+      {
+       "name": "UndInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UndInstrmtGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "TrdMatchSubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1891"
-      }
-     },
-     {
-      "name": "Quantity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "53"
-      }
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
-      }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "SettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "120"
-      }
-     },
-     {
-      "name": "SettlCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2899"
-      }
-     },
-     {
-      "name": "QtyType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "854"
-      }
-     },
-     {
-      "name": "LastQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "32"
-      }
-     },
-     {
-      "name": "PriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "423"
-      }
-     },
-     {
-      "name": "LastPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "31"
-      }
-     },
-     {
-      "name": "LastMkt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "30"
-      }
-     },
-     {
-      "name": "TrdMatchSideGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "TrdMatchSideGrp"
+      {
+       "name": "TrdMatchSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1891"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "Quantity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "53"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2899"
+       }
+      },
+      {
+       "name": "QtyType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "854"
+       }
+      },
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
+      },
+      {
+       "name": "PriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "423"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
+      },
+      {
+       "name": "LastMkt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "30"
+       }
+      },
+      {
+       "name": "TrdMatchSideGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TrdMatchSideGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

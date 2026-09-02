@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40957"
    },
-   "item": {
-    "name": "ProvisionDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProvisionDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40094"
+   "fields": [
+    {
+     "name": "ProvisionDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40094"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

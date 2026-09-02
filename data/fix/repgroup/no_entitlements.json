@@ -8,93 +8,95 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Entitlement",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "EntitlementIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1774"
-    }
-   },
-   {
-    "name": "EntitlementType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1775"
-    }
-   },
-   {
-    "name": "EntitlementSubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2402"
-    }
-   },
-   {
-    "name": "EntitlementAttribGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "EntitlementAttribGrp"
+ "fields": [
+  {
+   "name": "Entitlement",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "EntitlementIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1774"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "EntitlementID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1776"
-    }
-   },
-   {
-    "name": "EntitlementPlatform",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1784"
-    }
-   },
-   {
-    "name": "InstrumentScopeGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "InstrumentScopeGrp"
+    {
+     "name": "EntitlementType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1775"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "MarketSegmentScopeGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "MarketSegmentScopeGrp"
+    {
+     "name": "EntitlementSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2402"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "EntitlementStartDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1782"
+    {
+     "name": "EntitlementAttribGrp",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "EntitlementAttribGrp"
+     },
+     "fields": []
+    },
+    {
+     "name": "EntitlementID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1776"
+     }
+    },
+    {
+     "name": "EntitlementPlatform",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1784"
+     }
+    },
+    {
+     "name": "InstrumentScopeGrp",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "InstrumentScopeGrp"
+     },
+     "fields": []
+    },
+    {
+     "name": "MarketSegmentScopeGrp",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "MarketSegmentScopeGrp"
+     },
+     "fields": []
+    },
+    {
+     "name": "EntitlementStartDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1782"
+     }
+    },
+    {
+     "name": "EntitlementEndDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1783"
+     }
     }
-   },
-   {
-    "name": "EntitlementEndDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1783"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

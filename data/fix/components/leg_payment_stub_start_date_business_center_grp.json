@@ -90,20 +90,22 @@
    "fix": {
     "tag": "42504"
    },
-   "item": {
-    "name": "LegPaymentStubStartDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStubStartDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42505"
+   "fields": [
+    {
+     "name": "LegPaymentStubStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStubStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42505"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

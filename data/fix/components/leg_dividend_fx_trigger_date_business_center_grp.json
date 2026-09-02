@@ -90,20 +90,22 @@
    "fix": {
     "tag": "42364"
    },
-   "item": {
-    "name": "LegDividendFXTriggerDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDividendFXTriggerDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42365"
+   "fields": [
+    {
+     "name": "LegDividendFXTriggerDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDividendFXTriggerDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42365"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

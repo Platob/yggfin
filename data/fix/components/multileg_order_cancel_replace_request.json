@@ -116,36 +116,38 @@
    "fix": {
     "tag": "78"
    },
-   "item": {
-    "name": "Alloc",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AllocAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "79"
+   "fields": [
+    {
+     "name": "Alloc",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "79"
+       }
+      },
+      {
+       "name": "IndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "467"
+       }
+      },
+      {
+       "name": "AllocQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "80"
+       }
       }
-     },
-     {
-      "name": "IndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "467"
-      }
-     },
-     {
-      "name": "AllocQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "80"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "SettlmntTyp",
@@ -225,28 +227,30 @@
    "fix": {
     "tag": "386"
    },
-   "item": {
-    "name": "TradingSession",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TradingSessionID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "336"
+   "fields": [
+    {
+     "name": "TradingSession",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
       }
-     },
-     {
-      "name": "TradingSessionSubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "625"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "ProcessCode",
@@ -285,78 +289,80 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "LegPositionEffect",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "564"
-      }
-     },
-     {
-      "name": "LegCoveredOrUncovered",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "565"
-      }
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+      {
+       "name": "LegPositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "564"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "654"
+      {
+       "name": "LegCoveredOrUncovered",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "565"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "654"
+       }
+      },
+      {
+       "name": "LegPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "566"
+       }
+      },
+      {
+       "name": "LegSettlmntTyp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "587"
+       }
+      },
+      {
+       "name": "LegFutSettDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "588"
+       }
       }
-     },
-     {
-      "name": "LegPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "566"
-      }
-     },
-     {
-      "name": "LegSettlmntTyp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "587"
-      }
-     },
-     {
-      "name": "LegFutSettDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "588"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LocateReqd",

@@ -29,28 +29,30 @@
    "fix": {
     "tag": "1311"
    },
-   "item": {
-    "name": "DerivativeInstrAttrib",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DerivativeInstrAttribType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1313"
+   "fields": [
+    {
+     "name": "DerivativeInstrAttrib",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrAttribType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1313"
+       }
+      },
+      {
+       "name": "DerivativeInstrAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1314"
+       }
       }
-     },
-     {
-      "name": "DerivativeInstrAttribValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1314"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

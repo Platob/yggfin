@@ -123,28 +123,30 @@
    "fix": {
     "tag": "41161"
    },
-   "item": {
-    "name": "PaymentScheduleFixingDay",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentScheduleFixingDayOfWeek",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41162"
+   "fields": [
+    {
+     "name": "PaymentScheduleFixingDay",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentScheduleFixingDayOfWeek",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41162"
+       }
+      },
+      {
+       "name": "PaymentScheduleFixingDayNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41163"
+       }
       }
-     },
-     {
-      "name": "PaymentScheduleFixingDayNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41163"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

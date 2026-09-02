@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "StreamCommoditySettlBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StreamCommoditySettlBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41250"
+ "fields": [
+  {
+   "name": "StreamCommoditySettlBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StreamCommoditySettlBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41250"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -31,20 +31,22 @@
    "fix": {
     "tag": "938"
    },
-   "item": {
-    "name": "CollInquiryQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "CollInquiryQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "896"
+   "fields": [
+    {
+     "name": "CollInquiryQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CollInquiryQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "896"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

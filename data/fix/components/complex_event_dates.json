@@ -123,37 +123,39 @@
    "fix": {
     "tag": "1491"
    },
-   "item": {
-    "name": "ComplexEventDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ComplexEventStartDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1492"
-      }
-     },
-     {
-      "name": "ComplexEventEndDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1493"
-      }
-     },
-     {
-      "name": "ComplexEventTimes",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ComplexEventTimes"
+   "fields": [
+    {
+     "name": "ComplexEventDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1492"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "ComplexEventEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1493"
+       }
+      },
+      {
+       "name": "ComplexEventTimes",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ComplexEventTimes"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

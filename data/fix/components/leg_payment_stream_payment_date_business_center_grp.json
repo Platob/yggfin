@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40930"
    },
-   "item": {
-    "name": "LegPaymentStreamPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40293"
+   "fields": [
+    {
+     "name": "LegPaymentStreamPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40293"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

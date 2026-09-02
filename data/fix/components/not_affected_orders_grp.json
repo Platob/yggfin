@@ -20,28 +20,30 @@
    "fix": {
     "tag": "1370"
    },
-   "item": {
-    "name": "NotAffectedOrder",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NotAffOrigClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1372"
+   "fields": [
+    {
+     "name": "NotAffectedOrder",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NotAffOrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1372"
+       }
+      },
+      {
+       "name": "NotAffectedOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1371"
+       }
       }
-     },
-     {
-      "name": "NotAffectedOrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1371"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

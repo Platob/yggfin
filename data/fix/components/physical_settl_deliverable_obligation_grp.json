@@ -123,28 +123,30 @@
    "fix": {
     "tag": "40209"
    },
-   "item": {
-    "name": "PhysicalSettlDeliverableObligation",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PhysicalSettlDeliverableObligationType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40210"
+   "fields": [
+    {
+     "name": "PhysicalSettlDeliverableObligation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PhysicalSettlDeliverableObligationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40210"
+       }
+      },
+      {
+       "name": "PhysicalSettlDeliverableObligationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40211"
+       }
       }
-     },
-     {
-      "name": "PhysicalSettlDeliverableObligationValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40211"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

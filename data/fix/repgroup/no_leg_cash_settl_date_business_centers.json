@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegCashSettlDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegCashSettlDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42307"
+ "fields": [
+  {
+   "name": "LegCashSettlDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegCashSettlDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42307"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

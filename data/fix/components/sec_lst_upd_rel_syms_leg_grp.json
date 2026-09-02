@@ -29,55 +29,57 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "LegSwapType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "690"
+      {
+       "name": "LegSwapType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "690"
+       }
+      },
+      {
+       "name": "LegSettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "587"
+       }
+      },
+      {
+       "name": "LegStipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegBenchmarkCurveData"
+       },
+       "fields": []
       }
-     },
-     {
-      "name": "LegSettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "587"
-      }
-     },
-     {
-      "name": "LegStipulations",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegStipulations"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegBenchmarkCurveData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegBenchmarkCurveData"
-      },
-      "fields": []
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

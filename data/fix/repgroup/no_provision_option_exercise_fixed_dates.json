@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ProvisionOptionExerciseFixedDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ProvisionOptionExerciseFixedDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40143"
+ "fields": [
+  {
+   "name": "ProvisionOptionExerciseFixedDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionOptionExerciseFixedDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40143"
+     }
+    },
+    {
+     "name": "ProvisionOptionExerciseFixedDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40144"
+     }
     }
-   },
-   {
-    "name": "ProvisionOptionExerciseFixedDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40144"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

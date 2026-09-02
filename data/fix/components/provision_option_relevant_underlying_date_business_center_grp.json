@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40956"
    },
-   "item": {
-    "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40157"
+   "fields": [
+    {
+     "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionOptionRelevantUnderlyingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40157"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -9,58 +9,60 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PriceRangeRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StartPriceRange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2551"
+ "fields": [
+  {
+   "name": "PriceRangeRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StartPriceRange",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2551"
+     }
+    },
+    {
+     "name": "EndPriceRange",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2552"
+     }
+    },
+    {
+     "name": "PriceRangeValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2553"
+     }
+    },
+    {
+     "name": "PriceRangePercentage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2554"
+     }
+    },
+    {
+     "name": "PriceRangeRuleID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2556"
+     }
+    },
+    {
+     "name": "PriceRangeProductComplex",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2555"
+     }
     }
-   },
-   {
-    "name": "EndPriceRange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2552"
-    }
-   },
-   {
-    "name": "PriceRangeValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2553"
-    }
-   },
-   {
-    "name": "PriceRangePercentage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2554"
-    }
-   },
-   {
-    "name": "PriceRangeRuleID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2556"
-    }
-   },
-   {
-    "name": "PriceRangeProductComplex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2555"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

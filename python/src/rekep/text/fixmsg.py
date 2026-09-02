@@ -67,7 +67,7 @@ from rekep.market.instrument import Instrument
 from rekep.text.entries import xml_payload_arrow
 from rekep.text.message import SESSION_FIELDS, Message, _body_text_arrow, _event_types
 
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _PROTOCOL_CODE = Protocol.into_storage_type()
 
 #: What `vhash` cannot be taken over. The clocks and recorder provenance,
@@ -3019,20 +3019,6 @@ def _take_record_batch(batch: pyarrow.RecordBatch, where: pyarrow.Array) -> pyar
     return pyarrow.RecordBatch.from_arrays(
         [pyarrow.compute.take(column, where) for column in batch.columns],
         schema=batch.schema,
-    )
-
-
-def _scatter_record_batches(
-    parts: Sequence[pyarrow.RecordBatch], positions: Sequence[pyarrow.Array]
-) -> pyarrow.RecordBatch:
-    """Restore disjoint translated row slices to their source order."""
-    schema = parts[0].schema
-    return pyarrow.RecordBatch.from_arrays(
-        [
-            scattered([part.column(index) for part in parts], positions)
-            for index in range(len(schema))
-        ],
-        schema=schema,
     )
 
 

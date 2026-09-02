@@ -27,44 +27,46 @@
    "fix": {
     "tag": "2864"
    },
-   "item": {
-    "name": "SideCollateralReinvestment",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SideCollateralReinvestmentType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2867"
+   "fields": [
+    {
+     "name": "SideCollateralReinvestment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SideCollateralReinvestmentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2867"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2865"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2866"
+       }
+      },
+      {
+       "name": "SideCollateralReinvestmentCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2932"
+       }
       }
-     },
-     {
-      "name": "SideCollateralReinvestmentAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2865"
-      }
-     },
-     {
-      "name": "SideCollateralReinvestmentCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2866"
-      }
-     },
-     {
-      "name": "SideCollateralReinvestmentCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2932"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

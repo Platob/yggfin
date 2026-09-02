@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingComplexEventTime",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingComplexEventStartTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2057"
+ "fields": [
+  {
+   "name": "UnderlyingComplexEventTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventStartTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2057"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventEndTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2058"
+     }
     }
-   },
-   {
-    "name": "UnderlyingComplexEventEndTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2058"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

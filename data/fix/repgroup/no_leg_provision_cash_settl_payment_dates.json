@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegProvisionCashSettlPaymentDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegProvisionCashSettlPaymentDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40474"
+ "fields": [
+  {
+   "name": "LegProvisionCashSettlPaymentDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionCashSettlPaymentDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40474"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlPaymentDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40475"
+     }
     }
-   },
-   {
-    "name": "LegProvisionCashSettlPaymentDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40475"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

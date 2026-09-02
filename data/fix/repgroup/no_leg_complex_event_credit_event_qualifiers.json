@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegComplexEventCreditEventQualifier",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegComplexEventCreditEventQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41375"
+ "fields": [
+  {
+   "name": "LegComplexEventCreditEventQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegComplexEventCreditEventQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41375"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

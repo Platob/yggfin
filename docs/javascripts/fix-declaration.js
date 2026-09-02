@@ -13,7 +13,9 @@
   // The entry a block declares: a list declares it once and repeats it, a
   // struct is one already.
   const entryOf = (declared) =>
-    object(declared).type === "list" ? object(object(declared).item) : object(declared);
+    object(declared).type === "list"
+      ? object(list(object(declared).fields)[0])
+      : object(declared);
 
   // A member that defers to a block declared elsewhere: it names the component
   // and carries none of its members, because expanding the published
@@ -25,7 +27,7 @@
   // beside every node would repeat the tree inside its own label.
   const arrowType = (declared) => {
     const field = object(declared);
-    if (field.type === "list") return `list<${arrowType(field.item)}>`;
+    if (field.type === "list") return `list<${arrowType(list(field.fields)[0])}>`;
     if (field.type === "map") return "map";
     return field.type || "unknown";
   };

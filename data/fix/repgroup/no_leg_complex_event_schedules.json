@@ -12,50 +12,52 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegComplexEventSchedule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegComplexEventScheduleStartDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41401"
+ "fields": [
+  {
+   "name": "LegComplexEventSchedule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegComplexEventScheduleStartDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41401"
+     }
+    },
+    {
+     "name": "LegComplexEventScheduleEndDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41402"
+     }
+    },
+    {
+     "name": "LegComplexEventScheduleFrequencyPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41403"
+     }
+    },
+    {
+     "name": "LegComplexEventScheduleFrequencyUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41404"
+     }
+    },
+    {
+     "name": "LegComplexEventScheduleRollConvention",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41405"
+     }
     }
-   },
-   {
-    "name": "LegComplexEventScheduleEndDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41402"
-    }
-   },
-   {
-    "name": "LegComplexEventScheduleFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41403"
-    }
-   },
-   {
-    "name": "LegComplexEventScheduleFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41404"
-    }
-   },
-   {
-    "name": "LegComplexEventScheduleRollConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41405"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

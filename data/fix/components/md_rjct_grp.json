@@ -30,20 +30,22 @@
    "fix": {
     "tag": "816"
    },
-   "item": {
-    "name": "AltMDSource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AltMDSourceID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "817"
+   "fields": [
+    {
+     "name": "AltMDSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AltMDSourceID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "817"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

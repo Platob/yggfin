@@ -12,19 +12,21 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "OfLegUnderlying",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingLegInstrument",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingLegInstrument"
-    },
-    "fields": []
-   }
-  ]
- }
+ "fields": [
+  {
+   "name": "OfLegUnderlying",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingLegInstrument",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "UnderlyingLegInstrument"
+     },
+     "fields": []
+    }
+   ]
+  }
+ ]
 }

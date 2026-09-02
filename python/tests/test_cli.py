@@ -562,17 +562,19 @@ def test_a_component_is_registered_from_a_declaration_and_removed(
                         "type": "list",
                         "nullable": True,
                         "fix": {"tag": "90004"},
-                        "item": {
-                            "type": "struct",
-                            "fields": [
-                                {
-                                    "name": "FakeRole",
-                                    "type": "string",
-                                    "nullable": True,
-                                    "fix": {"tag": "90001"},
-                                }
-                            ],
-                        },
+                        "fields": [
+                            {
+                                "type": "struct",
+                                "fields": [
+                                    {
+                                        "name": "FakeRole",
+                                        "type": "string",
+                                        "nullable": True,
+                                        "fix": {"tag": "90001"},
+                                    }
+                                ],
+                            }
+                        ],
                     }
                 ],
             }

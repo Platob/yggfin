@@ -98,20 +98,22 @@
    "fix": {
     "tag": "40936"
    },
-   "item": {
-    "name": "LegProvisionOptionExerciseBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProvisionOptionExerciseBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40477"
+   "fields": [
+    {
+     "name": "LegProvisionOptionExerciseBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionOptionExerciseBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40477"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegProvisionOptionExerciseFixedDates",
@@ -120,28 +122,30 @@
    "fix": {
     "tag": "40495"
    },
-   "item": {
-    "name": "LegProvisionOptionExerciseFixedDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProvisionOptionExerciseFixedDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40496"
+   "fields": [
+    {
+     "name": "LegProvisionOptionExerciseFixedDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionOptionExerciseFixedDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40496"
+       }
+      },
+      {
+       "name": "LegProvisionOptionExerciseFixedDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40497"
+       }
       }
-     },
-     {
-      "name": "LegProvisionOptionExerciseFixedDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40497"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegProvisionOptionExerciseEarliestDateOffsetPeriod",

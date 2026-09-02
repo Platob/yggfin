@@ -123,28 +123,30 @@
    "fix": {
     "tag": "42296"
    },
-   "item": {
-    "name": "ExtraordinaryEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ExtraordinaryEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42297"
+   "fields": [
+    {
+     "name": "ExtraordinaryEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ExtraordinaryEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42297"
+       }
+      },
+      {
+       "name": "ExtraordinaryEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42298"
+       }
       }
-     },
-     {
-      "name": "ExtraordinaryEventValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42298"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

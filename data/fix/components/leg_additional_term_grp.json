@@ -90,37 +90,39 @@
    "fix": {
     "tag": "41335"
    },
-   "item": {
-    "name": "LegAdditionalTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegAdditionalTermConditionPrecedentBondIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41336"
-      }
-     },
-     {
-      "name": "LegAdditionalTermDiscrepancyClauseIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41337"
-      }
-     },
-     {
-      "name": "LegAdditionalTermBondRefGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegAdditionalTermBondRefGrp"
+   "fields": [
+    {
+     "name": "LegAdditionalTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegAdditionalTermConditionPrecedentBondIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41336"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegAdditionalTermDiscrepancyClauseIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41337"
+       }
+      },
+      {
+       "name": "LegAdditionalTermBondRefGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegAdditionalTermBondRefGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

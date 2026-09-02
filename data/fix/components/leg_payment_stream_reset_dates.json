@@ -106,20 +106,22 @@
    "fix": {
     "tag": "40931"
    },
-   "item": {
-    "name": "LegPaymentStreamResetDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamResetDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40305"
+   "fields": [
+    {
+     "name": "LegPaymentStreamResetDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamResetDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40305"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegPaymentStreamResetFrequencyPeriod",
@@ -168,20 +170,22 @@
    "fix": {
     "tag": "40932"
    },
-   "item": {
-    "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40311"
+   "fields": [
+    {
+     "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40311"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegPaymentStreamInitialFixingDateOffsetPeriod",
@@ -238,20 +242,22 @@
    "fix": {
     "tag": "40933"
    },
-   "item": {
-    "name": "LegPaymentStreamFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40318"
+   "fields": [
+    {
+     "name": "LegPaymentStreamFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40318"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegPaymentStreamFixingDateOffsetPeriod",
@@ -316,28 +322,30 @@
    "fix": {
     "tag": "42459"
    },
-   "item": {
-    "name": "LegPaymentStreamFixingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamFixingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42460"
+   "fields": [
+    {
+     "name": "LegPaymentStreamFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42460"
+       }
+      },
+      {
+       "name": "LegPaymentStreamFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42461"
+       }
       }
-     },
-     {
-      "name": "LegPaymentStreamFixingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42461"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

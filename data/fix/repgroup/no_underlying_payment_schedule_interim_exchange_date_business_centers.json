@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40699"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40699"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

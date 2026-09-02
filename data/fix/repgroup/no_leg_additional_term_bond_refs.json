@@ -12,154 +12,156 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegAdditionalTermBondRef",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegAdditionalTermBondSecurityID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41317"
+ "fields": [
+  {
+   "name": "LegAdditionalTermBondRef",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegAdditionalTermBondSecurityID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41317"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondSecurityIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41318"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41319"
+     }
+    },
+    {
+     "name": "EncodedLegAdditionalTermBondDescLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41320"
+     }
+    },
+    {
+     "name": "EncodedLegAdditionalTermBondDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41321"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41322"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondIssuer",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41323"
+     }
+    },
+    {
+     "name": "EncodedLegAdditionalTermBondIssuerLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41324"
+     }
+    },
+    {
+     "name": "EncodedLegAdditionalTermBondIssuer",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41325"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondSeniority",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41326"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondCouponType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41327"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondCouponRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41328"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondMaturityDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41329"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondParValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41330"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondCurrentTotalIssuedAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41331"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondCouponFrequencyPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41332"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondCouponFrequencyUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41333"
+     }
+    },
+    {
+     "name": "LegAdditionalTermBondDayCount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41334"
+     }
     }
-   },
-   {
-    "name": "LegAdditionalTermBondSecurityIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41318"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41319"
-    }
-   },
-   {
-    "name": "EncodedLegAdditionalTermBondDescLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41320"
-    }
-   },
-   {
-    "name": "EncodedLegAdditionalTermBondDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41321"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41322"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondIssuer",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41323"
-    }
-   },
-   {
-    "name": "EncodedLegAdditionalTermBondIssuerLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41324"
-    }
-   },
-   {
-    "name": "EncodedLegAdditionalTermBondIssuer",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41325"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondSeniority",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41326"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondCouponType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41327"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondCouponRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41328"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondMaturityDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41329"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondParValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41330"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondCurrentTotalIssuedAmount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41331"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondCouponFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41332"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondCouponFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41333"
-    }
-   },
-   {
-    "name": "LegAdditionalTermBondDayCount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41334"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -556,8 +556,3 @@ def _clear_street_datatype(datatype: str) -> str:
 def _value_meaning(value: str, description: str) -> str:
     match = re.search(rf"(?:^|\s){re.escape(value)}\s*[-=]\s*([^`]+)", description)
     return match[1].strip() if match else ""
-
-
-def with_url(source: SourceAdapter, url: str) -> SourceAdapter:
-    """The same adapter pointed at a mirror or an offline file URL."""
-    return dataclasses.replace(source, url=url)

@@ -104,20 +104,22 @@
    "fix": {
     "tag": "42085"
    },
-   "item": {
-    "name": "UnderlyingProtectionTermEventQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProtectionTermEventQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42086"
+   "fields": [
+    {
+     "name": "UnderlyingProtectionTermEventQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermEventQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42086"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

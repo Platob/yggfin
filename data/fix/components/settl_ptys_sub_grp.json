@@ -42,28 +42,30 @@
    "fix": {
     "tag": "801"
    },
-   "item": {
-    "name": "SettlPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "785"
+   "fields": [
+    {
+     "name": "SettlPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "785"
+       }
+      },
+      {
+       "name": "SettlPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "786"
+       }
       }
-     },
-     {
-      "name": "SettlPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "786"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

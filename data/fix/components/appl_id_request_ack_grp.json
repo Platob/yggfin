@@ -28,69 +28,71 @@
    "fix": {
     "tag": "1351"
    },
-   "item": {
-    "name": "ApplID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RefApplID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1355"
-      }
-     },
-     {
-      "name": "RefApplReqID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1433"
-      }
-     },
-     {
-      "name": "ApplBegSeqNum",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1182"
-      }
-     },
-     {
-      "name": "ApplEndSeqNum",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1183"
-      }
-     },
-     {
-      "name": "RefApplLastSeqNum",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1357"
-      }
-     },
-     {
-      "name": "ApplResponseError",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1354"
-      }
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+   "fields": [
+    {
+     "name": "ApplID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefApplID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1355"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "RefApplReqID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1433"
+       }
+      },
+      {
+       "name": "ApplBegSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1182"
+       }
+      },
+      {
+       "name": "ApplEndSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1183"
+       }
+      },
+      {
+       "name": "RefApplLastSeqNum",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1357"
+       }
+      },
+      {
+       "name": "ApplResponseError",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1354"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -30,7 +30,7 @@ from rekep.text.entries import ENTRIES, Entry, referential_payload_arrow, xml_pa
 #: The standard header is lifted out of `entries` into columns of its own,
 #: and a lifted column is read back out of the list wherever it is empty --
 #: a null column and a column a projection dropped being the same absence.
-_CONTRACT_METADATA = MappingProxyType({"version": "2"})
+_CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _DIRECTION_CODE = Direction.into_storage_type()
 _EVENT_CODE = pyarrow.int64()
 _PROTOCOL_CODE = Protocol.into_storage_type()

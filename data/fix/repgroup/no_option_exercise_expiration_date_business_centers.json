@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "OptionExerciseExpirationDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "OptionExerciseExpirationDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41141"
+ "fields": [
+  {
+   "name": "OptionExerciseExpirationDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "OptionExerciseExpirationDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41141"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

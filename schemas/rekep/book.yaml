@@ -1,7 +1,7 @@
 name: Book
 type: struct
 description: Both sides of one book, flat, and the prices that only exist across them.
-metadata: {namespace: rekep.market.book, version: '2'}
+metadata: {namespace: rekep.market.book, version: '1'}
 fields:
 - name: unix
   type: int64

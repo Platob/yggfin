@@ -104,37 +104,39 @@
    "fix": {
     "tag": "2053"
    },
-   "item": {
-    "name": "UnderlyingComplexEventDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingComplexEventStartDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2054"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventEndDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2055"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventTimes",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingComplexEventTimes"
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2054"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "UnderlyingComplexEventEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2055"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventTimes",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventTimes"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "InstrumentPartySubID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "InstrumentPartySubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1053"
+ "fields": [
+  {
+   "name": "InstrumentPartySubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentPartySubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1053"
+     }
+    },
+    {
+     "name": "InstrumentPartySubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1054"
+     }
     }
-   },
-   {
-    "name": "InstrumentPartySubIDType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1054"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -121,74 +121,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Account",
@@ -245,20 +249,22 @@
    "fix": {
     "tag": "124"
    },
-   "item": {
-    "name": "Exec",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "17"
+   "fields": [
+    {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoTrades",
@@ -267,28 +273,30 @@
    "fix": {
     "tag": "897"
    },
-   "item": {
-    "name": "Trade",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TradeReportID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "571"
+   "fields": [
+    {
+     "name": "Trade",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradeReportID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "571"
+       }
+      },
+      {
+       "name": "SecondaryTradeReportID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "818"
+       }
       }
-     },
-     {
-      "name": "SecondaryTradeReportID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "818"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Instrument",
@@ -355,116 +363,120 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegFinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegFinancingDetails"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoLegRateSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3116"
-      },
-      "item": {
-       "name": "LegRateSource",
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegFinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegFinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoLegRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3116"
+       },
        "fields": [
         {
          "name": "LegRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3117"
-         }
-        },
-        {
-         "name": "LegRateSourceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3118"
-         }
-        },
-        {
-         "name": "LegReferencePage",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3119"
-         }
-        },
-        {
-         "name": "LegRateSourceReferencePageHeading",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3120"
-         }
-        },
-        {
-         "name": "LegRateSourceSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3121"
-         }
-        },
-        {
-         "name": "LegFXBenchmark",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3122"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3123"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3124"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3125"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3117"
+           }
+          },
+          {
+           "name": "LegRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3118"
+           }
+          },
+          {
+           "name": "LegReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3119"
+           }
+          },
+          {
+           "name": "LegRateSourceReferencePageHeading",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3120"
+           }
+          },
+          {
+           "name": "LegRateSourceSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3121"
+           }
+          },
+          {
+           "name": "LegFXBenchmark",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3122"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3123"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3124"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3125"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyings",
@@ -473,29 +485,31 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "CollAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "944"
+      {
+       "name": "CollAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "944"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "MarginExcess",
@@ -528,178 +542,182 @@
    "fix": {
     "tag": "1703"
    },
-   "item": {
-    "name": "CollateralAmount",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "CurrentCollateralAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1704"
-      }
-     },
-     {
-      "name": "CollateralCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1705"
-      }
-     },
-     {
-      "name": "CollateralCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2929"
-      }
-     },
-     {
-      "name": "CollateralAmountType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2632"
-      }
-     },
-     {
-      "name": "CollateralFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2090"
-      }
-     },
-     {
-      "name": "CollateralFXRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2091"
-      }
-     },
-     {
-      "name": "CollateralType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1706"
-      }
-     },
-     {
-      "name": "CollateralAmountMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2092"
-      }
-     },
-     {
-      "name": "CollateralAmountMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2093"
-      }
-     },
-     {
-      "name": "HaircutIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1902"
-      }
-     },
-     {
-      "name": "CollateralPortfolioID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2350"
-      }
-     },
-     {
-      "name": "CollateralPercentOverage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2690"
-      }
-     },
-     {
-      "name": "CollateralMarketPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2689"
-      }
-     },
-     {
-      "name": "CollateralReinvestmentRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2840"
-      }
-     },
-     {
-      "name": "NoCollateralReinvestments",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2845"
+   "fields": [
+    {
+     "name": "CollateralAmount",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CurrentCollateralAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1704"
+       }
       },
-      "item": {
-       "name": "CollateralReinvestment",
-       "type": "struct",
+      {
+       "name": "CollateralCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1705"
+       }
+      },
+      {
+       "name": "CollateralCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2929"
+       }
+      },
+      {
+       "name": "CollateralAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2632"
+       }
+      },
+      {
+       "name": "CollateralFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2090"
+       }
+      },
+      {
+       "name": "CollateralFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2091"
+       }
+      },
+      {
+       "name": "CollateralType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1706"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2092"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2093"
+       }
+      },
+      {
+       "name": "HaircutIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1902"
+       }
+      },
+      {
+       "name": "CollateralPortfolioID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2350"
+       }
+      },
+      {
+       "name": "CollateralPercentOverage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2690"
+       }
+      },
+      {
+       "name": "CollateralMarketPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2689"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2840"
+       }
+      },
+      {
+       "name": "NoCollateralReinvestments",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2845"
+       },
        "fields": [
         {
-         "name": "CollateralReinvestmentType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2844"
-         }
-        },
-        {
-         "name": "CollateralReinvestmentAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2842"
-         }
-        },
-        {
-         "name": "CollateralReinvestmentCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2843"
-         }
-        },
-        {
-         "name": "CollateralReinvestmentCurrencyCodeSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2931"
-         }
+         "name": "CollateralReinvestment",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "CollateralReinvestmentType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2844"
+           }
+          },
+          {
+           "name": "CollateralReinvestmentAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2842"
+           }
+          },
+          {
+           "name": "CollateralReinvestmentCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2843"
+           }
+          },
+          {
+           "name": "CollateralReinvestmentCurrencyCodeSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2931"
+           }
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "UnderlyingRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2841"
+       }
       }
-     },
-     {
-      "name": "UnderlyingRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2841"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoTrdRegTimestamps",
@@ -708,108 +726,110 @@
    "fix": {
     "tag": "768"
    },
-   "item": {
-    "name": "TrdRegTimestamp",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TrdRegTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "769"
+   "fields": [
+    {
+     "name": "TrdRegTimestamp",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "769"
+       }
+      },
+      {
+       "name": "TrdRegTimestampType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "770"
+       }
+      },
+      {
+       "name": "TrdRegTimestampOrigin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "771"
+       }
+      },
+      {
+       "name": "TrdRegTimestampManualIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2839"
+       }
+      },
+      {
+       "name": "DeskType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1033"
+       }
+      },
+      {
+       "name": "DeskTypeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1034"
+       }
+      },
+      {
+       "name": "DeskOrderHandlingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1035"
+       }
+      },
+      {
+       "name": "InformationBarrierID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1727"
+       }
+      },
+      {
+       "name": "NBBOEntryType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2831"
+       }
+      },
+      {
+       "name": "NBBOPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2832"
+       }
+      },
+      {
+       "name": "NBBOQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2833"
+       }
+      },
+      {
+       "name": "NBBOSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2834"
+       }
       }
-     },
-     {
-      "name": "TrdRegTimestampType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "770"
-      }
-     },
-     {
-      "name": "TrdRegTimestampOrigin",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "771"
-      }
-     },
-     {
-      "name": "TrdRegTimestampManualIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2839"
-      }
-     },
-     {
-      "name": "DeskType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1033"
-      }
-     },
-     {
-      "name": "DeskTypeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1034"
-      }
-     },
-     {
-      "name": "DeskOrderHandlingInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1035"
-      }
-     },
-     {
-      "name": "InformationBarrierID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1727"
-      }
-     },
-     {
-      "name": "NBBOEntryType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2831"
-      }
-     },
-     {
-      "name": "NBBOPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2832"
-      }
-     },
-     {
-      "name": "NBBOQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2833"
-      }
-     },
-     {
-      "name": "NBBOSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2834"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Side",
@@ -826,130 +846,134 @@
    "fix": {
     "tag": "136"
    },
-   "item": {
-    "name": "MiscFee",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MiscFeeAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "137"
-      }
-     },
-     {
-      "name": "MiscFeeCurr",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "138"
-      }
-     },
-     {
-      "name": "MiscFeeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "139"
-      }
-     },
-     {
-      "name": "MiscFeeQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2712"
-      }
-     },
-     {
-      "name": "NoMiscFeeSubTypes",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2633"
+   "fields": [
+    {
+     "name": "MiscFee",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MiscFeeAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "137"
+       }
       },
-      "item": {
-       "name": "MiscFeeSubType",
-       "type": "struct",
+      {
+       "name": "MiscFeeCurr",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "138"
+       }
+      },
+      {
+       "name": "MiscFeeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "139"
+       }
+      },
+      {
+       "name": "MiscFeeQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2712"
+       }
+      },
+      {
+       "name": "NoMiscFeeSubTypes",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2633"
+       },
        "fields": [
         {
          "name": "MiscFeeSubType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2634"
-         }
-        },
-        {
-         "name": "MiscFeeSubTypeAmt",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2635"
-         }
-        },
-        {
-         "name": "MiscFeeSubTypeDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2636"
-         }
-        },
-        {
-         "name": "EncodedMiscFeeSubTypeDescLen",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2637"
-         }
-        },
-        {
-         "name": "EncodedMiscFeeSubTypeDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2638"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "MiscFeeSubType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2634"
+           }
+          },
+          {
+           "name": "MiscFeeSubTypeAmt",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2635"
+           }
+          },
+          {
+           "name": "MiscFeeSubTypeDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2636"
+           }
+          },
+          {
+           "name": "EncodedMiscFeeSubTypeDescLen",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2637"
+           }
+          },
+          {
+           "name": "EncodedMiscFeeSubTypeDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2638"
+           }
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "MiscFeeBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "891"
+       }
+      },
+      {
+       "name": "MiscFeeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2216"
+       }
+      },
+      {
+       "name": "MiscFeeAmountDue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2217"
+       }
+      },
+      {
+       "name": "MiscFeeDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2713"
+       }
       }
-     },
-     {
-      "name": "MiscFeeBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "891"
-      }
-     },
-     {
-      "name": "MiscFeeRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2216"
-      }
-     },
-     {
-      "name": "MiscFeeAmountDue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2217"
-      }
-     },
-     {
-      "name": "MiscFeeDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2713"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Price",
@@ -1015,28 +1039,30 @@
    "fix": {
     "tag": "232"
    },
-   "item": {
-    "name": "Stipulation",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StipulationType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "233"
+   "fields": [
+    {
+     "name": "Stipulation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StipulationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "233"
+       }
+      },
+      {
+       "name": "StipulationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "234"
+       }
       }
-     },
-     {
-      "name": "StipulationValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "234"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "WireReference",

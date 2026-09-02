@@ -10,33 +10,35 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Capacity",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "OrderCapacity",
-    "type": "string",
-    "fix": {
-     "tag": "528"
+ "fields": [
+  {
+   "name": "Capacity",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "OrderCapacity",
+     "type": "string",
+     "fix": {
+      "tag": "528"
+     }
+    },
+    {
+     "name": "OrderRestrictions",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "529"
+     }
+    },
+    {
+     "name": "OrderCapacityQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "863"
+     }
     }
-   },
-   {
-    "name": "OrderRestrictions",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "529"
-    }
-   },
-   {
-    "name": "OrderCapacityQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "863"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

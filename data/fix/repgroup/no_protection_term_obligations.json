@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ProtectionTermObligation",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ProtectionTermObligationType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40202"
+ "fields": [
+  {
+   "name": "ProtectionTermObligation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProtectionTermObligationType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40202"
+     }
+    },
+    {
+     "name": "ProtectionTermObligationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40203"
+     }
     }
-   },
-   {
-    "name": "ProtectionTermObligationValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40203"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

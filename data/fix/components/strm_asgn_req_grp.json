@@ -27,30 +27,32 @@
    "fix": {
     "tag": "1499"
    },
-   "item": {
-    "name": "AsgnReq",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Parties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Parties"
+   "fields": [
+    {
+     "name": "AsgnReq",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Parties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Parties"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "StrmAsgnReqInstrmtGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "StrmAsgnReqInstrmtGrp"
-      },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "StrmAsgnReqInstrmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StrmAsgnReqInstrmtGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

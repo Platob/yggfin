@@ -156,28 +156,30 @@
    "fix": {
     "tag": "2871"
    },
-   "item": {
-    "name": "TransactionAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TransactionAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2872"
+   "fields": [
+    {
+     "name": "TransactionAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TransactionAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2872"
+       }
+      },
+      {
+       "name": "TransactionAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2873"
+       }
       }
-     },
-     {
-      "name": "TransactionAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2873"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoTrdRegTimestamps",
@@ -186,108 +188,110 @@
    "fix": {
     "tag": "768"
    },
-   "item": {
-    "name": "TrdRegTimestamp",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TrdRegTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "769"
+   "fields": [
+    {
+     "name": "TrdRegTimestamp",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "769"
+       }
+      },
+      {
+       "name": "TrdRegTimestampType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "770"
+       }
+      },
+      {
+       "name": "TrdRegTimestampOrigin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "771"
+       }
+      },
+      {
+       "name": "TrdRegTimestampManualIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2839"
+       }
+      },
+      {
+       "name": "DeskType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1033"
+       }
+      },
+      {
+       "name": "DeskTypeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1034"
+       }
+      },
+      {
+       "name": "DeskOrderHandlingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1035"
+       }
+      },
+      {
+       "name": "InformationBarrierID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1727"
+       }
+      },
+      {
+       "name": "NBBOEntryType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2831"
+       }
+      },
+      {
+       "name": "NBBOPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2832"
+       }
+      },
+      {
+       "name": "NBBOQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2833"
+       }
+      },
+      {
+       "name": "NBBOSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2834"
+       }
       }
-     },
-     {
-      "name": "TrdRegTimestampType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "770"
-      }
-     },
-     {
-      "name": "TrdRegTimestampOrigin",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "771"
-      }
-     },
-     {
-      "name": "TrdRegTimestampManualIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2839"
-      }
-     },
-     {
-      "name": "DeskType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1033"
-      }
-     },
-     {
-      "name": "DeskTypeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1034"
-      }
-     },
-     {
-      "name": "DeskOrderHandlingInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1035"
-      }
-     },
-     {
-      "name": "InformationBarrierID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1727"
-      }
-     },
-     {
-      "name": "NBBOEntryType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2831"
-      }
-     },
-     {
-      "name": "NBBOPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2832"
-      }
-     },
-     {
-      "name": "NBBOQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2833"
-      }
-     },
-     {
-      "name": "NBBOSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2834"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "ClearingBusinessDate",
@@ -454,74 +458,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Account",
@@ -716,116 +724,120 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegFinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegFinancingDetails"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoLegRateSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3116"
-      },
-      "item": {
-       "name": "LegRateSource",
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegFinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegFinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoLegRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3116"
+       },
        "fields": [
         {
          "name": "LegRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3117"
-         }
-        },
-        {
-         "name": "LegRateSourceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3118"
-         }
-        },
-        {
-         "name": "LegReferencePage",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3119"
-         }
-        },
-        {
-         "name": "LegRateSourceReferencePageHeading",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3120"
-         }
-        },
-        {
-         "name": "LegRateSourceSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3121"
-         }
-        },
-        {
-         "name": "LegFXBenchmark",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3122"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3123"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3124"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3125"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3117"
+           }
+          },
+          {
+           "name": "LegRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3118"
+           }
+          },
+          {
+           "name": "LegReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3119"
+           }
+          },
+          {
+           "name": "LegRateSourceReferencePageHeading",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3120"
+           }
+          },
+          {
+           "name": "LegRateSourceSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3121"
+           }
+          },
+          {
+           "name": "LegFXBenchmark",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3122"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3123"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3124"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3125"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoRelatedInstruments",
@@ -834,92 +846,94 @@
    "fix": {
     "tag": "1647"
    },
-   "item": {
-    "name": "RelatedInstrument",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedInstrumentType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1648"
+   "fields": [
+    {
+     "name": "RelatedInstrument",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedInstrumentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1648"
+       }
+      },
+      {
+       "name": "RelatedSymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1649"
+       }
+      },
+      {
+       "name": "RelatedSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1650"
+       }
+      },
+      {
+       "name": "RelatedSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1651"
+       }
+      },
+      {
+       "name": "RelatedSecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1652"
+       }
+      },
+      {
+       "name": "RelatedMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1653"
+       }
+      },
+      {
+       "name": "RelatedToSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2413"
+       }
+      },
+      {
+       "name": "RelatedToSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2414"
+       }
+      },
+      {
+       "name": "RelatedToStreamXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2415"
+       }
+      },
+      {
+       "name": "RelatedToDividendPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2417"
+       }
       }
-     },
-     {
-      "name": "RelatedSymbol",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1649"
-      }
-     },
-     {
-      "name": "RelatedSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1650"
-      }
-     },
-     {
-      "name": "RelatedSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1651"
-      }
-     },
-     {
-      "name": "RelatedSecurityType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1652"
-      }
-     },
-     {
-      "name": "RelatedMaturityMonthYear",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1653"
-      }
-     },
-     {
-      "name": "RelatedToSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2413"
-      }
-     },
-     {
-      "name": "RelatedToSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2414"
-      }
-     },
-     {
-      "name": "RelatedToStreamXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2415"
-      }
-     },
-     {
-      "name": "RelatedToDividendPeriodXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2417"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoCollateralAmounts",
@@ -928,178 +942,182 @@
    "fix": {
     "tag": "1703"
    },
-   "item": {
-    "name": "CollateralAmount",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "CurrentCollateralAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1704"
-      }
-     },
-     {
-      "name": "CollateralCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1705"
-      }
-     },
-     {
-      "name": "CollateralCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2929"
-      }
-     },
-     {
-      "name": "CollateralAmountType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2632"
-      }
-     },
-     {
-      "name": "CollateralFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2090"
-      }
-     },
-     {
-      "name": "CollateralFXRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2091"
-      }
-     },
-     {
-      "name": "CollateralType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1706"
-      }
-     },
-     {
-      "name": "CollateralAmountMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2092"
-      }
-     },
-     {
-      "name": "CollateralAmountMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2093"
-      }
-     },
-     {
-      "name": "HaircutIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1902"
-      }
-     },
-     {
-      "name": "CollateralPortfolioID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2350"
-      }
-     },
-     {
-      "name": "CollateralPercentOverage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2690"
-      }
-     },
-     {
-      "name": "CollateralMarketPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2689"
-      }
-     },
-     {
-      "name": "CollateralReinvestmentRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2840"
-      }
-     },
-     {
-      "name": "NoCollateralReinvestments",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2845"
+   "fields": [
+    {
+     "name": "CollateralAmount",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CurrentCollateralAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1704"
+       }
       },
-      "item": {
-       "name": "CollateralReinvestment",
-       "type": "struct",
+      {
+       "name": "CollateralCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1705"
+       }
+      },
+      {
+       "name": "CollateralCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2929"
+       }
+      },
+      {
+       "name": "CollateralAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2632"
+       }
+      },
+      {
+       "name": "CollateralFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2090"
+       }
+      },
+      {
+       "name": "CollateralFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2091"
+       }
+      },
+      {
+       "name": "CollateralType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1706"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2092"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2093"
+       }
+      },
+      {
+       "name": "HaircutIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1902"
+       }
+      },
+      {
+       "name": "CollateralPortfolioID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2350"
+       }
+      },
+      {
+       "name": "CollateralPercentOverage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2690"
+       }
+      },
+      {
+       "name": "CollateralMarketPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2689"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2840"
+       }
+      },
+      {
+       "name": "NoCollateralReinvestments",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2845"
+       },
        "fields": [
         {
-         "name": "CollateralReinvestmentType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2844"
-         }
-        },
-        {
-         "name": "CollateralReinvestmentAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2842"
-         }
-        },
-        {
-         "name": "CollateralReinvestmentCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2843"
-         }
-        },
-        {
-         "name": "CollateralReinvestmentCurrencyCodeSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2931"
-         }
+         "name": "CollateralReinvestment",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "CollateralReinvestmentType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2844"
+           }
+          },
+          {
+           "name": "CollateralReinvestmentAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2842"
+           }
+          },
+          {
+           "name": "CollateralReinvestmentCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2843"
+           }
+          },
+          {
+           "name": "CollateralReinvestmentCurrencyCodeSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2931"
+           }
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "UnderlyingRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2841"
+       }
       }
-     },
-     {
-      "name": "UnderlyingRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2841"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "CollateralizationValueDate",
@@ -1116,91 +1134,95 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
-      },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingSettlPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "732"
-      }
-     },
-     {
-      "name": "UnderlyingSettlPriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "733"
-      }
-     },
-     {
-      "name": "UnderlyingDeliveryAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1037"
-      }
-     },
-     {
-      "name": "NoUnderlyingAmounts",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "984"
-      },
-      "item": {
-       "name": "UnderlyingAmount",
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingSettlPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "732"
+       }
+      },
+      {
+       "name": "UnderlyingSettlPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "733"
+       }
+      },
+      {
+       "name": "UnderlyingDeliveryAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1037"
+       }
+      },
+      {
+       "name": "NoUnderlyingAmounts",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "984"
+       },
        "fields": [
         {
-         "name": "UnderlyingPayAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "985"
-         }
-        },
-        {
-         "name": "UnderlyingCollectAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "986"
-         }
-        },
-        {
-         "name": "UnderlyingSettlementDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "987"
-         }
-        },
-        {
-         "name": "UnderlyingSettlementStatus",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "988"
-         }
+         "name": "UnderlyingAmount",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPayAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "985"
+           }
+          },
+          {
+           "name": "UnderlyingCollectAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "986"
+           }
+          },
+          {
+           "name": "UnderlyingSettlementDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "987"
+           }
+          },
+          {
+           "name": "UnderlyingSettlementStatus",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "988"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "TransactTime",
@@ -1217,160 +1239,166 @@
    "fix": {
     "tag": "702"
    },
-   "item": {
-    "name": "Position",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PosType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "703"
-      }
-     },
-     {
-      "name": "LongQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "704"
-      }
-     },
-     {
-      "name": "ShortQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "705"
-      }
-     },
-     {
-      "name": "CoveredQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1654"
-      }
-     },
-     {
-      "name": "PosQtyStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "706"
-      }
-     },
-     {
-      "name": "QuantityDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "976"
-      }
-     },
-     {
-      "name": "PosQtyUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1836"
-      }
-     },
-     {
-      "name": "PosQtyUnitOfMeasureCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1835"
-      }
-     },
-     {
-      "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2936"
-      }
-     },
-     {
-      "name": "NoNestedPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "539"
+   "fields": [
+    {
+     "name": "Position",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PosType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "703"
+       }
       },
-      "item": {
-       "name": "NestedPartyID",
-       "type": "struct",
+      {
+       "name": "LongQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "704"
+       }
+      },
+      {
+       "name": "ShortQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "705"
+       }
+      },
+      {
+       "name": "CoveredQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1654"
+       }
+      },
+      {
+       "name": "PosQtyStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "706"
+       }
+      },
+      {
+       "name": "QuantityDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "976"
+       }
+      },
+      {
+       "name": "PosQtyUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1836"
+       }
+      },
+      {
+       "name": "PosQtyUnitOfMeasureCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1835"
+       }
+      },
+      {
+       "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2936"
+       }
+      },
+      {
+       "name": "NoNestedPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "539"
+       },
        "fields": [
         {
          "name": "NestedPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "524"
-         }
-        },
-        {
-         "name": "NestedPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "525"
-         }
-        },
-        {
-         "name": "NestedPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "538"
-         }
-        },
-        {
-         "name": "NestedPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2384"
-         }
-        },
-        {
-         "name": "NoNestedPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "804"
-         },
-         "item": {
-          "name": "NestedPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "NestedPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "545"
-            }
-           },
-           {
-            "name": "NestedPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "805"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NestedPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "524"
            }
-          ]
-         }
+          },
+          {
+           "name": "NestedPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "525"
+           }
+          },
+          {
+           "name": "NestedPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "538"
+           }
+          },
+          {
+           "name": "NestedPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2384"
+           }
+          },
+          {
+           "name": "NoNestedPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "804"
+           },
+           "fields": [
+            {
+             "name": "NestedPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "NestedPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "545"
+               }
+              },
+              {
+               "name": "NestedPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "805"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoPosAmt",
@@ -1379,108 +1407,110 @@
    "fix": {
     "tag": "753"
    },
-   "item": {
-    "name": "PosAmt",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PosAmtType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "707"
+   "fields": [
+    {
+     "name": "PosAmt",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PosAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "707"
+       }
+      },
+      {
+       "name": "PosAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "708"
+       }
+      },
+      {
+       "name": "PosAmtStreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2096"
+       }
+      },
+      {
+       "name": "PositionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1055"
+       }
+      },
+      {
+       "name": "PositionCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2937"
+       }
+      },
+      {
+       "name": "PositionFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2097"
+       }
+      },
+      {
+       "name": "PositionFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2098"
+       }
+      },
+      {
+       "name": "PosAmtReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1585"
+       }
+      },
+      {
+       "name": "PosAmtMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2099"
+       }
+      },
+      {
+       "name": "PosAmtMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2100"
+       }
+      },
+      {
+       "name": "PosAmtPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2876"
+       }
+      },
+      {
+       "name": "PosAmtPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2877"
+       }
       }
-     },
-     {
-      "name": "PosAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "708"
-      }
-     },
-     {
-      "name": "PosAmtStreamDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2096"
-      }
-     },
-     {
-      "name": "PositionCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1055"
-      }
-     },
-     {
-      "name": "PositionCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2937"
-      }
-     },
-     {
-      "name": "PositionFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2097"
-      }
-     },
-     {
-      "name": "PositionFXRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2098"
-      }
-     },
-     {
-      "name": "PosAmtReason",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1585"
-      }
-     },
-     {
-      "name": "PosAmtMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2099"
-      }
-     },
-     {
-      "name": "PosAmtMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2100"
-      }
-     },
-     {
-      "name": "PosAmtPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2876"
-      }
-     },
-     {
-      "name": "PosAmtPriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2877"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoRegulatoryTradeIDs",
@@ -1489,60 +1519,62 @@
    "fix": {
     "tag": "1907"
    },
-   "item": {
-    "name": "RegulatoryTradeID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RegulatoryTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1903"
+   "fields": [
+    {
+     "name": "RegulatoryTradeID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1903"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1905"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1904"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1906"
+       }
+      },
+      {
+       "name": "RegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2411"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2397"
+       }
       }
-     },
-     {
-      "name": "RegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1905"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDEvent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1904"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1906"
-      }
-     },
-     {
-      "name": "RegulatoryLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2411"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDScope",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2397"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoPayments",
@@ -1551,444 +1583,454 @@
    "fix": {
     "tag": "40212"
    },
-   "item": {
-    "name": "Payment",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40213"
-      }
-     },
-     {
-      "name": "PaymentSubType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40993"
-      }
-     },
-     {
-      "name": "PaymentPaySide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40214"
-      }
-     },
-     {
-      "name": "PaymentReceiveSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40215"
-      }
-     },
-     {
-      "name": "PaymentDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43087"
-      }
-     },
-     {
-      "name": "PaymentCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40216"
-      }
-     },
-     {
-      "name": "PaymentAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40217"
-      }
-     },
-     {
-      "name": "PaymentAmountRelativeTo",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42598"
-      }
-     },
-     {
-      "name": "PaymentAmountDeterminationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42599"
-      }
-     },
-     {
-      "name": "PaymentFixedRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43097"
-      }
-     },
-     {
-      "name": "PaymentFloatingRateIndex",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43098"
-      }
-     },
-     {
-      "name": "PaymentFloatingRateIndexCurveUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43100"
-      }
-     },
-     {
-      "name": "PaymentFloatingRateIndexCurvePeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43099"
-      }
-     },
-     {
-      "name": "PaymentFloatingRateSpread",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43101"
-      }
-     },
-     {
-      "name": "PaymentRateResetFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43105"
-      }
-     },
-     {
-      "name": "PaymentRateResetFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43104"
-      }
-     },
-     {
-      "name": "PaymentFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43103"
-      }
-     },
-     {
-      "name": "PaymentFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43102"
-      }
-     },
-     {
-      "name": "PaymentPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40218"
-      }
-     },
-     {
-      "name": "PaymentPriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40919"
-      }
-     },
-     {
-      "name": "PaymentUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41155"
-      }
-     },
-     {
-      "name": "PaymentDateUnadjusted",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40219"
-      }
-     },
-     {
-      "name": "PaymentBusinessDayConvention",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40220"
-      }
-     },
-     {
-      "name": "NoPaymentBusinessCenters",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "40944"
+   "fields": [
+    {
+     "name": "Payment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40213"
+       }
       },
-      "item": {
-       "name": "PaymentBusinessCenter",
-       "type": "struct",
+      {
+       "name": "PaymentSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40993"
+       }
+      },
+      {
+       "name": "PaymentPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40214"
+       }
+      },
+      {
+       "name": "PaymentReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40215"
+       }
+      },
+      {
+       "name": "PaymentDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43087"
+       }
+      },
+      {
+       "name": "PaymentCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40216"
+       }
+      },
+      {
+       "name": "PaymentAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40217"
+       }
+      },
+      {
+       "name": "PaymentAmountRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42598"
+       }
+      },
+      {
+       "name": "PaymentAmountDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42599"
+       }
+      },
+      {
+       "name": "PaymentFixedRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43097"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateIndex",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43098"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateIndexCurveUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43100"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateIndexCurvePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43099"
+       }
+      },
+      {
+       "name": "PaymentFloatingRateSpread",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43101"
+       }
+      },
+      {
+       "name": "PaymentRateResetFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43105"
+       }
+      },
+      {
+       "name": "PaymentRateResetFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43104"
+       }
+      },
+      {
+       "name": "PaymentFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43103"
+       }
+      },
+      {
+       "name": "PaymentFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43102"
+       }
+      },
+      {
+       "name": "PaymentPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40218"
+       }
+      },
+      {
+       "name": "PaymentPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40919"
+       }
+      },
+      {
+       "name": "PaymentUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41155"
+       }
+      },
+      {
+       "name": "PaymentDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40219"
+       }
+      },
+      {
+       "name": "PaymentBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40220"
+       }
+      },
+      {
+       "name": "NoPaymentBusinessCenters",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "40944"
+       },
        "fields": [
         {
          "name": "PaymentBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40221"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PaymentBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40221"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "PaymentDateRelativeTo",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41156"
-      }
-     },
-     {
-      "name": "PaymentDateOffsetPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41157"
-      }
-     },
-     {
-      "name": "PaymentDateOffsetUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41158"
-      }
-     },
-     {
-      "name": "PaymentDateOffsetDayType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41159"
-      }
-     },
-     {
-      "name": "PaymentDateAdjusted",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40222"
-      }
-     },
-     {
-      "name": "PaymentForwardStartType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41160"
-      }
-     },
-     {
-      "name": "PaymentDiscountFactor",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40224"
-      }
-     },
-     {
-      "name": "PaymentPresentValueAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40225"
-      }
-     },
-     {
-      "name": "PaymentPresentValueCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40226"
-      }
-     },
-     {
-      "name": "PaymentSettlStyle",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40227"
-      }
-     },
-     {
-      "name": "PaymentMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "492"
-      }
-     },
-     {
-      "name": "NoPaymentSettls",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "40230"
       },
-      "item": {
-       "name": "PaymentSettl",
-       "type": "struct",
+      {
+       "name": "PaymentDateRelativeTo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41156"
+       }
+      },
+      {
+       "name": "PaymentDateOffsetPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41157"
+       }
+      },
+      {
+       "name": "PaymentDateOffsetUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41158"
+       }
+      },
+      {
+       "name": "PaymentDateOffsetDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41159"
+       }
+      },
+      {
+       "name": "PaymentDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40222"
+       }
+      },
+      {
+       "name": "PaymentForwardStartType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41160"
+       }
+      },
+      {
+       "name": "PaymentDiscountFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40224"
+       }
+      },
+      {
+       "name": "PaymentPresentValueAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40225"
+       }
+      },
+      {
+       "name": "PaymentPresentValueCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40226"
+       }
+      },
+      {
+       "name": "PaymentSettlStyle",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40227"
+       }
+      },
+      {
+       "name": "PaymentMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "492"
+       }
+      },
+      {
+       "name": "NoPaymentSettls",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "40230"
+       },
        "fields": [
         {
-         "name": "PaymentSettlAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40231"
-         }
-        },
-        {
-         "name": "PaymentSettlCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40232"
-         }
-        },
-        {
-         "name": "NoPaymentSettlPartyIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "40233"
-         },
-         "item": {
-          "name": "PaymentSettlPartyID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "PaymentSettlPartyID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40234"
-            }
+         "name": "PaymentSettl",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PaymentSettlAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40231"
+           }
+          },
+          {
+           "name": "PaymentSettlCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40232"
+           }
+          },
+          {
+           "name": "NoPaymentSettlPartyIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "40233"
            },
-           {
-            "name": "PaymentSettlPartyIDSource",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40235"
-            }
-           },
-           {
-            "name": "PaymentSettlPartyRole",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40236"
-            }
-           },
-           {
-            "name": "PaymentSettlPartyRoleQualifier",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40237"
-            }
-           },
-           {
-            "name": "NoPaymentSettlPartySubIDs",
-            "type": "list",
-            "nullable": true,
-            "fix": {
-             "tag": "40238"
-            },
-            "item": {
-             "name": "PaymentSettlPartySubID",
+           "fields": [
+            {
+             "name": "PaymentSettlPartyID",
              "type": "struct",
              "fields": [
               {
-               "name": "PaymentSettlPartySubID",
+               "name": "PaymentSettlPartyID",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "40239"
+                "tag": "40234"
                }
               },
               {
-               "name": "PaymentSettlPartySubIDType",
+               "name": "PaymentSettlPartyIDSource",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "40240"
+                "tag": "40235"
                }
+              },
+              {
+               "name": "PaymentSettlPartyRole",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "40236"
+               }
+              },
+              {
+               "name": "PaymentSettlPartyRoleQualifier",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "40237"
+               }
+              },
+              {
+               "name": "NoPaymentSettlPartySubIDs",
+               "type": "list",
+               "nullable": true,
+               "fix": {
+                "tag": "40238"
+               },
+               "fields": [
+                {
+                 "name": "PaymentSettlPartySubID",
+                 "type": "struct",
+                 "fields": [
+                  {
+                   "name": "PaymentSettlPartySubID",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "40239"
+                   }
+                  },
+                  {
+                   "name": "PaymentSettlPartySubIDType",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "40240"
+                   }
+                  }
+                 ]
+                }
+               ]
               }
              ]
             }
-           }
-          ]
-         }
+           ]
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "PaymentLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41304"
+       }
+      },
+      {
+       "name": "PaymentText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40229"
+       }
+      },
+      {
+       "name": "EncodedPaymentTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40984"
+       }
+      },
+      {
+       "name": "EncodedPaymentText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40985"
+       }
       }
-     },
-     {
-      "name": "PaymentLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41304"
-      }
-     },
-     {
-      "name": "PaymentText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40229"
-      }
-     },
-     {
-      "name": "EncodedPaymentTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40984"
-      }
-     },
-     {
-      "name": "EncodedPaymentText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40985"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "RegistStatus",
@@ -2029,60 +2071,62 @@
    "fix": {
     "tag": "1855"
    },
-   "item": {
-    "name": "RelatedTrade",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1856"
+   "fields": [
+    {
+     "name": "RelatedTrade",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1856"
+       }
+      },
+      {
+       "name": "RelatedTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1857"
+       }
+      },
+      {
+       "name": "RelatedRegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2103"
+       }
+      },
+      {
+       "name": "RelatedTradeDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1858"
+       }
+      },
+      {
+       "name": "RelatedTradeMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1859"
+       }
+      },
+      {
+       "name": "RelatedTradeQuantity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1860"
+       }
       }
-     },
-     {
-      "name": "RelatedTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1857"
-      }
-     },
-     {
-      "name": "RelatedRegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2103"
-      }
-     },
-     {
-      "name": "RelatedTradeDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1858"
-      }
-     },
-     {
-      "name": "RelatedTradeMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1859"
-      }
-     },
-     {
-      "name": "RelatedTradeQuantity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1860"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Text",

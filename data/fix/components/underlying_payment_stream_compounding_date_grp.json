@@ -104,28 +104,30 @@
    "fix": {
     "tag": "42901"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamCompoundingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamCompoundingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42902"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamCompoundingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamCompoundingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42902"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamCompoundingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42903"
+       }
       }
-     },
-     {
-      "name": "UnderlyingPaymentStreamCompoundingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42903"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

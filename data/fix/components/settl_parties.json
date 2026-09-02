@@ -42,53 +42,55 @@
    "fix": {
     "tag": "781"
    },
-   "item": {
-    "name": "SettlPartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "782"
-      }
-     },
-     {
-      "name": "SettlPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "783"
-      }
-     },
-     {
-      "name": "SettlPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "784"
-      }
-     },
-     {
-      "name": "SettlPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2389"
-      }
-     },
-     {
-      "name": "SettlPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SettlPtysSubGrp"
+   "fields": [
+    {
+     "name": "SettlPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "782"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "SettlPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "783"
+       }
+      },
+      {
+       "name": "SettlPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "784"
+       }
+      },
+      {
+       "name": "SettlPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2389"
+       }
+      },
+      {
+       "name": "SettlPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

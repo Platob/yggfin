@@ -112,60 +112,62 @@
    "fix": {
     "tag": "1907"
    },
-   "item": {
-    "name": "RegulatoryTradeID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RegulatoryTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1903"
+   "fields": [
+    {
+     "name": "RegulatoryTradeID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1903"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1905"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1904"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1906"
+       }
+      },
+      {
+       "name": "RegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2411"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2397"
+       }
       }
-     },
-     {
-      "name": "RegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1905"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDEvent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1904"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1906"
-      }
-     },
-     {
-      "name": "RegulatoryLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2411"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDScope",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2397"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "TradeConfirmationReferenceID",
@@ -190,74 +192,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoOrders",
@@ -266,160 +272,166 @@
    "fix": {
     "tag": "73"
    },
-   "item": {
-    "name": "Order",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "11"
-      }
-     },
-     {
-      "name": "OrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "37"
-      }
-     },
-     {
-      "name": "SecondaryOrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "198"
-      }
-     },
-     {
-      "name": "SecondaryClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "526"
-      }
-     },
-     {
-      "name": "ListID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "66"
-      }
-     },
-     {
-      "name": "NoNested2PartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "756"
+   "fields": [
+    {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
       },
-      "item": {
-       "name": "Nested2PartyID",
-       "type": "struct",
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "SecondaryOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "198"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "ListID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "66"
+       }
+      },
+      {
+       "name": "NoNested2PartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "756"
+       },
        "fields": [
         {
          "name": "Nested2PartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "757"
-         }
-        },
-        {
-         "name": "Nested2PartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "758"
-         }
-        },
-        {
-         "name": "Nested2PartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "759"
-         }
-        },
-        {
-         "name": "Nested2PartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2381"
-         }
-        },
-        {
-         "name": "NoNested2PartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "806"
-         },
-         "item": {
-          "name": "Nested2PartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "Nested2PartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "760"
-            }
-           },
-           {
-            "name": "Nested2PartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "807"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "Nested2PartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "757"
            }
-          ]
-         }
+          },
+          {
+           "name": "Nested2PartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "758"
+           }
+          },
+          {
+           "name": "Nested2PartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "759"
+           }
+          },
+          {
+           "name": "Nested2PartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2381"
+           }
+          },
+          {
+           "name": "NoNested2PartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "806"
+           },
+           "fields": [
+            {
+             "name": "Nested2PartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "Nested2PartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "760"
+               }
+              },
+              {
+               "name": "Nested2PartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "807"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "OrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "38"
+       }
+      },
+      {
+       "name": "OrderAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "799"
+       }
+      },
+      {
+       "name": "OrderBookingQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "800"
+       }
+      },
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
       }
-     },
-     {
-      "name": "OrderQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "38"
-      }
-     },
-     {
-      "name": "OrderAvgPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "799"
-      }
-     },
-     {
-      "name": "OrderBookingQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "800"
-      }
-     },
-     {
-      "name": "OrdType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoExecs",
@@ -428,152 +440,158 @@
    "fix": {
     "tag": "124"
    },
-   "item": {
-    "name": "Exec",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LastQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "32"
-      }
-     },
-     {
-      "name": "ExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "17"
-      }
-     },
-     {
-      "name": "SecondaryExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "527"
-      }
-     },
-     {
-      "name": "LastPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "31"
-      }
-     },
-     {
-      "name": "LastParPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "669"
-      }
-     },
-     {
-      "name": "LastCapacity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "29"
-      }
-     },
-     {
-      "name": "TradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1003"
-      }
-     },
-     {
-      "name": "FirmTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1041"
-      }
-     },
-     {
-      "name": "TrdMatchID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "880"
-      }
-     },
-     {
-      "name": "ExecutionTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2749"
-      }
-     },
-     {
-      "name": "TradeReportingIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2524"
-      }
-     },
-     {
-      "name": "NoTrdRegPublications",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2668"
+   "fields": [
+    {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
       },
-      "item": {
-       "name": "TrdRegPublication",
-       "type": "struct",
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
+      },
+      {
+       "name": "SecondaryExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "527"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
+      },
+      {
+       "name": "LastParPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "669"
+       }
+      },
+      {
+       "name": "LastCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "29"
+       }
+      },
+      {
+       "name": "TradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1003"
+       }
+      },
+      {
+       "name": "FirmTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1041"
+       }
+      },
+      {
+       "name": "TrdMatchID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "880"
+       }
+      },
+      {
+       "name": "ExecutionTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2749"
+       }
+      },
+      {
+       "name": "TradeReportingIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2524"
+       }
+      },
+      {
+       "name": "NoTrdRegPublications",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2668"
+       },
        "fields": [
         {
-         "name": "TrdRegPublicationType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2669"
-         }
-        },
-        {
-         "name": "TrdRegPublicationReason",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2670"
-         }
+         "name": "TrdRegPublication",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TrdRegPublicationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2669"
+           }
+          },
+          {
+           "name": "TrdRegPublicationReason",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2670"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoTradePriceConditions",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1838"
       },
-      "item": {
-       "name": "TradePriceCondition",
-       "type": "struct",
+      {
+       "name": "NoTradePriceConditions",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1838"
+       },
        "fields": [
         {
          "name": "TradePriceCondition",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1839"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "TradePriceCondition",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1839"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "AllocID",
@@ -684,108 +702,110 @@
    "fix": {
     "tag": "768"
    },
-   "item": {
-    "name": "TrdRegTimestamp",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TrdRegTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "769"
+   "fields": [
+    {
+     "name": "TrdRegTimestamp",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TrdRegTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "769"
+       }
+      },
+      {
+       "name": "TrdRegTimestampType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "770"
+       }
+      },
+      {
+       "name": "TrdRegTimestampOrigin",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "771"
+       }
+      },
+      {
+       "name": "TrdRegTimestampManualIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2839"
+       }
+      },
+      {
+       "name": "DeskType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1033"
+       }
+      },
+      {
+       "name": "DeskTypeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1034"
+       }
+      },
+      {
+       "name": "DeskOrderHandlingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1035"
+       }
+      },
+      {
+       "name": "InformationBarrierID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1727"
+       }
+      },
+      {
+       "name": "NBBOEntryType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2831"
+       }
+      },
+      {
+       "name": "NBBOPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2832"
+       }
+      },
+      {
+       "name": "NBBOQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2833"
+       }
+      },
+      {
+       "name": "NBBOSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2834"
+       }
       }
-     },
-     {
-      "name": "TrdRegTimestampType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "770"
-      }
-     },
-     {
-      "name": "TrdRegTimestampOrigin",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "771"
-      }
-     },
-     {
-      "name": "TrdRegTimestampManualIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2839"
-      }
-     },
-     {
-      "name": "DeskType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1033"
-      }
-     },
-     {
-      "name": "DeskTypeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1034"
-      }
-     },
-     {
-      "name": "DeskOrderHandlingInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1035"
-      }
-     },
-     {
-      "name": "InformationBarrierID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1727"
-      }
-     },
-     {
-      "name": "NBBOEntryType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2831"
-      }
-     },
-     {
-      "name": "NBBOPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2832"
-      }
-     },
-     {
-      "name": "NBBOQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2833"
-      }
-     },
-     {
-      "name": "NBBOSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2834"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Instrument",
@@ -820,21 +840,23 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
-      },
-      "fields": []
-     }
-    ]
-   }
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegs",
@@ -843,116 +865,120 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegFinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegFinancingDetails"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoLegRateSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3116"
-      },
-      "item": {
-       "name": "LegRateSource",
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegFinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegFinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoLegRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3116"
+       },
        "fields": [
         {
          "name": "LegRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3117"
-         }
-        },
-        {
-         "name": "LegRateSourceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3118"
-         }
-        },
-        {
-         "name": "LegReferencePage",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3119"
-         }
-        },
-        {
-         "name": "LegRateSourceReferencePageHeading",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3120"
-         }
-        },
-        {
-         "name": "LegRateSourceSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3121"
-         }
-        },
-        {
-         "name": "LegFXBenchmark",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3122"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3123"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3124"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3125"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3117"
+           }
+          },
+          {
+           "name": "LegRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3118"
+           }
+          },
+          {
+           "name": "LegReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3119"
+           }
+          },
+          {
+           "name": "LegRateSourceReferencePageHeading",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3120"
+           }
+          },
+          {
+           "name": "LegRateSourceSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3121"
+           }
+          },
+          {
+           "name": "LegFXBenchmark",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3122"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3123"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3124"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3125"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "YieldData",
@@ -1015,35 +1041,37 @@
    "fix": {
     "tag": "862"
    },
-   "item": {
-    "name": "Capacity",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OrderCapacity",
-      "type": "string",
-      "fix": {
-       "tag": "528"
+   "fields": [
+    {
+     "name": "Capacity",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderCapacity",
+       "type": "string",
+       "fix": {
+        "tag": "528"
+       }
+      },
+      {
+       "name": "OrderRestrictions",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "529"
+       }
+      },
+      {
+       "name": "OrderCapacityQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "863"
+       }
       }
-     },
-     {
-      "name": "OrderRestrictions",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "529"
-      }
-     },
-     {
-      "name": "OrderCapacityQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "863"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "AllocAccount",
@@ -1098,20 +1126,22 @@
    "fix": {
     "tag": "2709"
    },
-   "item": {
-    "name": "PriceQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PriceQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2710"
+   "fields": [
+    {
+     "name": "PriceQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2710"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "AvgParPx",
@@ -1361,140 +1391,142 @@
    "fix": {
     "tag": "2639"
    },
-   "item": {
-    "name": "Commission",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "CommissionAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2640"
+   "fields": [
+    {
+     "name": "Commission",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CommissionAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2640"
+       }
+      },
+      {
+       "name": "CommissionAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2641"
+       }
+      },
+      {
+       "name": "CommissionAmountSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2725"
+       }
+      },
+      {
+       "name": "CommissionBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2642"
+       }
+      },
+      {
+       "name": "CommissionCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2643"
+       }
+      },
+      {
+       "name": "CommissionCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2923"
+       }
+      },
+      {
+       "name": "CommissionUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2644"
+       }
+      },
+      {
+       "name": "CommissionUnitOfMeasureCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2645"
+       }
+      },
+      {
+       "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2924"
+       }
+      },
+      {
+       "name": "CommissionRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2646"
+       }
+      },
+      {
+       "name": "CommissionSharedIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2647"
+       }
+      },
+      {
+       "name": "CommissionAmountShared",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2648"
+       }
+      },
+      {
+       "name": "CommissionLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2649"
+       }
+      },
+      {
+       "name": "CommissionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2650"
+       }
+      },
+      {
+       "name": "EncodedCommissionDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2651"
+       }
+      },
+      {
+       "name": "EncodedCommissionDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2652"
+       }
       }
-     },
-     {
-      "name": "CommissionAmountType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2641"
-      }
-     },
-     {
-      "name": "CommissionAmountSubType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2725"
-      }
-     },
-     {
-      "name": "CommissionBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2642"
-      }
-     },
-     {
-      "name": "CommissionCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2643"
-      }
-     },
-     {
-      "name": "CommissionCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2923"
-      }
-     },
-     {
-      "name": "CommissionUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2644"
-      }
-     },
-     {
-      "name": "CommissionUnitOfMeasureCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2645"
-      }
-     },
-     {
-      "name": "CommissionUnitOfMeasureCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2924"
-      }
-     },
-     {
-      "name": "CommissionRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2646"
-      }
-     },
-     {
-      "name": "CommissionSharedIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2647"
-      }
-     },
-     {
-      "name": "CommissionAmountShared",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2648"
-      }
-     },
-     {
-      "name": "CommissionLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2649"
-      }
-     },
-     {
-      "name": "CommissionDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2650"
-      }
-     },
-     {
-      "name": "EncodedCommissionDescLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2651"
-      }
-     },
-     {
-      "name": "EncodedCommissionDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2652"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoStipulations",
@@ -1503,28 +1535,30 @@
    "fix": {
     "tag": "232"
    },
-   "item": {
-    "name": "Stipulation",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StipulationType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "233"
+   "fields": [
+    {
+     "name": "Stipulation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StipulationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "233"
+       }
+      },
+      {
+       "name": "StipulationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "234"
+       }
       }
-     },
-     {
-      "name": "StipulationValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "234"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoMiscFees",
@@ -1533,130 +1567,134 @@
    "fix": {
     "tag": "136"
    },
-   "item": {
-    "name": "MiscFee",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MiscFeeAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "137"
-      }
-     },
-     {
-      "name": "MiscFeeCurr",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "138"
-      }
-     },
-     {
-      "name": "MiscFeeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "139"
-      }
-     },
-     {
-      "name": "MiscFeeQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2712"
-      }
-     },
-     {
-      "name": "NoMiscFeeSubTypes",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2633"
+   "fields": [
+    {
+     "name": "MiscFee",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MiscFeeAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "137"
+       }
       },
-      "item": {
-       "name": "MiscFeeSubType",
-       "type": "struct",
+      {
+       "name": "MiscFeeCurr",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "138"
+       }
+      },
+      {
+       "name": "MiscFeeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "139"
+       }
+      },
+      {
+       "name": "MiscFeeQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2712"
+       }
+      },
+      {
+       "name": "NoMiscFeeSubTypes",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2633"
+       },
        "fields": [
         {
          "name": "MiscFeeSubType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2634"
-         }
-        },
-        {
-         "name": "MiscFeeSubTypeAmt",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2635"
-         }
-        },
-        {
-         "name": "MiscFeeSubTypeDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2636"
-         }
-        },
-        {
-         "name": "EncodedMiscFeeSubTypeDescLen",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2637"
-         }
-        },
-        {
-         "name": "EncodedMiscFeeSubTypeDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2638"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "MiscFeeSubType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2634"
+           }
+          },
+          {
+           "name": "MiscFeeSubTypeAmt",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2635"
+           }
+          },
+          {
+           "name": "MiscFeeSubTypeDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2636"
+           }
+          },
+          {
+           "name": "EncodedMiscFeeSubTypeDescLen",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2637"
+           }
+          },
+          {
+           "name": "EncodedMiscFeeSubTypeDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2638"
+           }
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "MiscFeeBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "891"
+       }
+      },
+      {
+       "name": "MiscFeeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2216"
+       }
+      },
+      {
+       "name": "MiscFeeAmountDue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2217"
+       }
+      },
+      {
+       "name": "MiscFeeDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2713"
+       }
       }
-     },
-     {
-      "name": "MiscFeeBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "891"
-      }
-     },
-     {
-      "name": "MiscFeeRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2216"
-      }
-     },
-     {
-      "name": "MiscFeeAmountDue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2217"
-      }
-     },
-     {
-      "name": "MiscFeeDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2713"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoMatchExceptions",
@@ -1665,92 +1703,94 @@
    "fix": {
     "tag": "2772"
    },
-   "item": {
-    "name": "MatchException",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MatchExceptionType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2773"
+   "fields": [
+    {
+     "name": "MatchException",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchExceptionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2773"
+       }
+      },
+      {
+       "name": "MatchExceptionElementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2774"
+       }
+      },
+      {
+       "name": "MatchExceptionElementName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2775"
+       }
+      },
+      {
+       "name": "MatchExceptionAllocValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2776"
+       }
+      },
+      {
+       "name": "MatchExceptionConfirmValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2777"
+       }
+      },
+      {
+       "name": "MatchExceptionToleranceValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2778"
+       }
+      },
+      {
+       "name": "MatchExceptionToleranceValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2779"
+       }
+      },
+      {
+       "name": "MatchExceptionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2780"
+       }
+      },
+      {
+       "name": "EncodedMatchExceptionTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2797"
+       }
+      },
+      {
+       "name": "EncodedMatchExceptionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2798"
+       }
       }
-     },
-     {
-      "name": "MatchExceptionElementType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2774"
-      }
-     },
-     {
-      "name": "MatchExceptionElementName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2775"
-      }
-     },
-     {
-      "name": "MatchExceptionAllocValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2776"
-      }
-     },
-     {
-      "name": "MatchExceptionConfirmValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2777"
-      }
-     },
-     {
-      "name": "MatchExceptionToleranceValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2778"
-      }
-     },
-     {
-      "name": "MatchExceptionToleranceValueType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2779"
-      }
-     },
-     {
-      "name": "MatchExceptionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2780"
-      }
-     },
-     {
-      "name": "EncodedMatchExceptionTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2797"
-      }
-     },
-     {
-      "name": "EncodedMatchExceptionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2798"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoMatchingDataPoints",
@@ -1759,44 +1799,46 @@
    "fix": {
     "tag": "2781"
    },
-   "item": {
-    "name": "MatchingDataPoint",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MatchingDataPointIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2782"
+   "fields": [
+    {
+     "name": "MatchingDataPoint",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchingDataPointIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2782"
+       }
+      },
+      {
+       "name": "MatchingDataPointValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2783"
+       }
+      },
+      {
+       "name": "MatchingDataPointType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2784"
+       }
+      },
+      {
+       "name": "MatchingDataPointName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2785"
+       }
       }
-     },
-     {
-      "name": "MatchingDataPointValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2783"
-      }
-     },
-     {
-      "name": "MatchingDataPointType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2784"
-      }
-     },
-     {
-      "name": "MatchingDataPointName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2785"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

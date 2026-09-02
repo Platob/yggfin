@@ -30,53 +30,55 @@
    "fix": {
     "tag": "1292"
    },
-   "item": {
-    "name": "DerivativeInstrumentParty",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DerivativeInstrumentPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1293"
-      }
-     },
-     {
-      "name": "DerivativeInstrumentPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1294"
-      }
-     },
-     {
-      "name": "DerivativeInstrumentPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1295"
-      }
-     },
-     {
-      "name": "DerivativeInstrumentPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2377"
-      }
-     },
-     {
-      "name": "DerivativeInstrumentPartySubIDsGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "DerivativeInstrumentPartySubIDsGrp"
+   "fields": [
+    {
+     "name": "DerivativeInstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1293"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "DerivativeInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1294"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1295"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2377"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartySubIDsGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DerivativeInstrumentPartySubIDsGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

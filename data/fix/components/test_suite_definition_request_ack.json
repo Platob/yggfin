@@ -47,44 +47,46 @@
    "fix": {
     "tag": "3092"
    },
-   "item": {
-    "name": "TestGatewayDetail",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TestGatewayDetailName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3093"
+   "fields": [
+    {
+     "name": "TestGatewayDetail",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TestGatewayDetailName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3093"
+       }
+      },
+      {
+       "name": "TestGatewayDetailType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3094"
+       }
+      },
+      {
+       "name": "TestGatewayDetailValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3095"
+       }
+      },
+      {
+       "name": "TestGatewayMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3096"
+       }
       }
-     },
-     {
-      "name": "TestGatewayDetailType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3094"
-      }
-     },
-     {
-      "name": "TestGatewayDetailValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3095"
-      }
-     },
-     {
-      "name": "TestGatewayMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3096"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "RejectText",

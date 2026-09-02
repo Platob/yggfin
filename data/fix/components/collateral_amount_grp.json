@@ -31,141 +31,143 @@
    "fix": {
     "tag": "1703"
    },
-   "item": {
-    "name": "CollateralAmount",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "CurrentCollateralAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1704"
-      }
-     },
-     {
-      "name": "CollateralCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1705"
-      }
-     },
-     {
-      "name": "CollateralCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2929"
-      }
-     },
-     {
-      "name": "CollateralAmountType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2632"
-      }
-     },
-     {
-      "name": "CollateralFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2090"
-      }
-     },
-     {
-      "name": "CollateralFXRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2091"
-      }
-     },
-     {
-      "name": "CollateralType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1706"
-      }
-     },
-     {
-      "name": "CollateralAmountMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2092"
-      }
-     },
-     {
-      "name": "CollateralAmountMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2093"
-      }
-     },
-     {
-      "name": "HaircutIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1902"
-      }
-     },
-     {
-      "name": "CollateralPortfolioID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2350"
-      }
-     },
-     {
-      "name": "CollateralPercentOverage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2690"
-      }
-     },
-     {
-      "name": "CollateralMarketPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2689"
-      }
-     },
-     {
-      "name": "CollateralReinvestmentRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2840"
-      }
-     },
-     {
-      "name": "CollateralReinvestmentGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "CollateralReinvestmentGrp"
+   "fields": [
+    {
+     "name": "CollateralAmount",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CurrentCollateralAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1704"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2841"
+      {
+       "name": "CollateralCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1705"
+       }
+      },
+      {
+       "name": "CollateralCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2929"
+       }
+      },
+      {
+       "name": "CollateralAmountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2632"
+       }
+      },
+      {
+       "name": "CollateralFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2090"
+       }
+      },
+      {
+       "name": "CollateralFXRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2091"
+       }
+      },
+      {
+       "name": "CollateralType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1706"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2092"
+       }
+      },
+      {
+       "name": "CollateralAmountMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2093"
+       }
+      },
+      {
+       "name": "HaircutIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1902"
+       }
+      },
+      {
+       "name": "CollateralPortfolioID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2350"
+       }
+      },
+      {
+       "name": "CollateralPercentOverage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2690"
+       }
+      },
+      {
+       "name": "CollateralMarketPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2689"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2840"
+       }
+      },
+      {
+       "name": "CollateralReinvestmentGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CollateralReinvestmentGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2841"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

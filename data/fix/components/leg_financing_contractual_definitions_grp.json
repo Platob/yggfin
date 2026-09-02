@@ -76,20 +76,22 @@
    "fix": {
     "tag": "42198"
    },
-   "item": {
-    "name": "LegContractualDefinition",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegContractualDefinition",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42199"
+   "fields": [
+    {
+     "name": "LegContractualDefinition",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42199"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

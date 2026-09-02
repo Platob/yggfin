@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RelatedPosition",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RelatedPositionID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1862"
+ "fields": [
+  {
+   "name": "RelatedPosition",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RelatedPositionID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1862"
+     }
+    },
+    {
+     "name": "RelatedPositionIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1863"
+     }
+    },
+    {
+     "name": "RelatedPositionDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1864"
+     }
     }
-   },
-   {
-    "name": "RelatedPositionIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1863"
-    }
-   },
-   {
-    "name": "RelatedPositionDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1864"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

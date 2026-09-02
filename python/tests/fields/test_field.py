@@ -11,7 +11,6 @@ import pytest
 
 from rekep import Convertible, Field, ListField, MapField, StructField, scalar
 from rekep.fields import (
-    ITEM,
     FixedSizeListField,
     LargeListField,
     LargeListViewField,
@@ -505,29 +504,21 @@ def test_every_container_dumps_one_fields_block() -> None:
     )
 
 
-def test_a_container_written_before_the_fields_block_still_reads() -> None:
-    """`data/fix` is read at import, so a reader that only knew the new
-    spelling would make the package unimportable against its own data. Each
-    store migrates when it is next written, which is what the second half
-    asserts."""
-    legacy = {"name": "hashes", "type": "list", "item": {"type": "string"}}
-    # An `item` block with no `nullable` key reads NOT NULL, exactly as a
-    # member block does: an omitted nullability is stated, not unstated.
-    assert Field.from_dict(legacy).dtype == pyarrow.list_(
-        pyarrow.field(ITEM, pyarrow.string(), nullable=False)
-    )
-    legacy_map = {
-        "name": "altids",
-        "type": "map",
-        "key": {"type": "string"},
-        "value": {"type": "int32", "nullable": True},
-    }
-    assert Field.from_dict(legacy_map).dtype == pyarrow.map_(pyarrow.string(), pyarrow.int32())
-
-    for document in (legacy, legacy_map):
-        rewritten = Field.from_dict(document).into_dict()
-        assert "item" not in rewritten and "key" not in rewritten
-        assert Field.from_dict(rewritten).dtype == Field.from_dict(document).dtype
+def test_a_container_has_exactly_one_spelling() -> None:
+    """`fields` is not one accepted spelling among several. A document that
+    names its members any other way is refused where it is read, rather than
+    read as a container holding nothing."""
+    with pytest.raises(ValueError, match="holds 0 fields"):
+        Field.from_dict({"name": "hashes", "type": "list", "item": {"type": "string"}})
+    with pytest.raises(ValueError, match="holds 0 fields"):
+        Field.from_dict(
+            {
+                "name": "altids",
+                "type": "map",
+                "key": {"type": "string"},
+                "value": {"type": "int32"},
+            }
+        )
 
 
 def test_a_map_dumps_whether_its_keys_are_sorted() -> None:
@@ -550,9 +541,13 @@ def test_a_fixed_width_binary_survives_the_spelling_arrow_prints() -> None:
 @pytest.mark.parametrize("size", [-1, 2.7, True, "3", None])
 def test_a_fixed_size_list_width_is_checked_not_coerced(size: object) -> None:
     """`int(size)` took all of these, and a negative width built a plain list."""
-    dumped = {"name": "value", "type": "fixed_size_list", "item": {"type": "int32"}}
+    dumped = {"name": "value", "type": "fixed_size_list", "fields": [{"type": "int32"}]}
     with pytest.raises(ValueError, match="list_size"):
         Field.from_dict({**dumped, "list_size": size} if size is not None else dumped)
+
+
+#: One map entry, which is what a map's `fields` block holds.
+_ENTRY = {"fields": [{"type": "struct", "fields": [{"type": "string"}, {"type": "int32"}]}]}
 
 
 @pytest.mark.parametrize(
@@ -560,27 +555,13 @@ def test_a_fixed_size_list_width_is_checked_not_coerced(size: object) -> None:
 )
 def test_keys_sorted_is_read_strictly(written: object, sorted_keys: bool) -> None:
     """`bool("false")` is True, and `keys_sorted` is part of the map's type."""
-    dumped = {
-        "name": "value",
-        "type": "map",
-        "keys_sorted": written,
-        "key": {"type": "string"},
-        "value": {"type": "int32"},
-    }
+    dumped = {"name": "value", "type": "map", "keys_sorted": written, **_ENTRY}
     assert Field.from_dict(dumped).dtype.keys_sorted is sorted_keys
 
 
 def test_a_flag_that_is_neither_true_nor_false_is_refused() -> None:
     with pytest.raises(ValueError, match="keys_sorted"):
-        Field.from_dict(
-            {
-                "name": "value",
-                "type": "map",
-                "keys_sorted": "no",
-                "key": {"type": "string"},
-                "value": {"type": "int32"},
-            }
-        )
+        Field.from_dict({"name": "value", "type": "map", "keys_sorted": "no", **_ENTRY})
 
 
 def test_a_fixed_width_binary_is_refused_where_it_is_misspelled() -> None:

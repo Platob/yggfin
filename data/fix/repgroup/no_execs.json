@@ -15,150 +15,156 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Exec",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LastQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "32"
-    }
-   },
-   {
-    "name": "ExecID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "17"
-    }
-   },
-   {
-    "name": "SecondaryExecID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "527"
-    }
-   },
-   {
-    "name": "LastPx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "31"
-    }
-   },
-   {
-    "name": "LastParPx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "669"
-    }
-   },
-   {
-    "name": "LastCapacity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "29"
-    }
-   },
-   {
-    "name": "TradeID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1003"
-    }
-   },
-   {
-    "name": "FirmTradeID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1041"
-    }
-   },
-   {
-    "name": "TrdMatchID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "880"
-    }
-   },
-   {
-    "name": "ExecutionTimestamp",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2749"
-    }
-   },
-   {
-    "name": "TradeReportingIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2524"
-    }
-   },
-   {
-    "name": "NoTrdRegPublications",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2668"
+ "fields": [
+  {
+   "name": "Exec",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LastQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "32"
+     }
     },
-    "item": {
-     "name": "TrdRegPublication",
-     "type": "struct",
+    {
+     "name": "ExecID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "17"
+     }
+    },
+    {
+     "name": "SecondaryExecID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "527"
+     }
+    },
+    {
+     "name": "LastPx",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "31"
+     }
+    },
+    {
+     "name": "LastParPx",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "669"
+     }
+    },
+    {
+     "name": "LastCapacity",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "29"
+     }
+    },
+    {
+     "name": "TradeID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1003"
+     }
+    },
+    {
+     "name": "FirmTradeID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1041"
+     }
+    },
+    {
+     "name": "TrdMatchID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "880"
+     }
+    },
+    {
+     "name": "ExecutionTimestamp",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2749"
+     }
+    },
+    {
+     "name": "TradeReportingIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2524"
+     }
+    },
+    {
+     "name": "NoTrdRegPublications",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2668"
+     },
      "fields": [
       {
-       "name": "TrdRegPublicationType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2669"
-       }
-      },
-      {
-       "name": "TrdRegPublicationReason",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2670"
-       }
+       "name": "TrdRegPublication",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "TrdRegPublicationType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2669"
+         }
+        },
+        {
+         "name": "TrdRegPublicationReason",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2670"
+         }
+        }
+       ]
       }
      ]
-    }
-   },
-   {
-    "name": "NoTradePriceConditions",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1838"
     },
-    "item": {
-     "name": "TradePriceCondition",
-     "type": "struct",
+    {
+     "name": "NoTradePriceConditions",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1838"
+     },
      "fields": [
       {
        "name": "TradePriceCondition",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1839"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "TradePriceCondition",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1839"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

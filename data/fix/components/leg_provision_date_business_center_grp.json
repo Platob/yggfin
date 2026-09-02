@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40939"
    },
-   "item": {
-    "name": "LegProvisionDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProvisionDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40452"
+   "fields": [
+    {
+     "name": "LegProvisionDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40452"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

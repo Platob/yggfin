@@ -12,56 +12,60 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegComplexEventDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegComplexEventStartDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2251"
-    }
-   },
-   {
-    "name": "LegComplexEventEndDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2252"
-    }
-   },
-   {
-    "name": "NoLegComplexEventTimes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2253"
+ "fields": [
+  {
+   "name": "LegComplexEventDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegComplexEventStartDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2251"
+     }
     },
-    "item": {
-     "name": "LegComplexEventTime",
-     "type": "struct",
+    {
+     "name": "LegComplexEventEndDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2252"
+     }
+    },
+    {
+     "name": "NoLegComplexEventTimes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2253"
+     },
      "fields": [
       {
-       "name": "LegComplexEventStartTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2204"
-       }
-      },
-      {
-       "name": "LegComplexEventEndTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2247"
-       }
+       "name": "LegComplexEventTime",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegComplexEventStartTime",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2204"
+         }
+        },
+        {
+         "name": "LegComplexEventEndTime",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2247"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

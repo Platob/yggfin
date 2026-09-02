@@ -13,26 +13,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TradingService",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradingServiceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3135"
+ "fields": [
+  {
+   "name": "TradingService",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradingServiceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3135"
+     }
+    },
+    {
+     "name": "TradingServiceDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3136"
+     }
     }
-   },
-   {
-    "name": "TradingServiceDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3136"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

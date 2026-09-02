@@ -143,20 +143,22 @@
    "fix": {
     "tag": "42705"
    },
-   "item": {
-    "name": "PaymentStubStartDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentStubStartDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42706"
+   "fields": [
+    {
+     "name": "PaymentStubStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStubStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42706"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "PaymentStubStartDateRelativeTo",

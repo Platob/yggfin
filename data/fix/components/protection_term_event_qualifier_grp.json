@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40199"
    },
-   "item": {
-    "name": "ProtectionTermEventQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProtectionTermEventQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40200"
+   "fields": [
+    {
+     "name": "ProtectionTermEventQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProtectionTermEventQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40200"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

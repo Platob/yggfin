@@ -104,20 +104,22 @@
    "fix": {
     "tag": "42184"
    },
-   "item": {
-    "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42185"
+   "fields": [
+    {
+     "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionOptionExerciseBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42185"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

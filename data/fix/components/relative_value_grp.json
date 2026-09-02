@@ -29,36 +29,38 @@
    "fix": {
     "tag": "2529"
    },
-   "item": {
-    "name": "RelativeValue",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelativeValueType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2530"
+   "fields": [
+    {
+     "name": "RelativeValue",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelativeValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2530"
+       }
+      },
+      {
+       "name": "RelativeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2531"
+       }
+      },
+      {
+       "name": "RelativeValueSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2532"
+       }
       }
-     },
-     {
-      "name": "RelativeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2531"
-      }
-     },
-     {
-      "name": "RelativeValueSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2532"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

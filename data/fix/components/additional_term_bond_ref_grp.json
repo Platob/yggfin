@@ -123,156 +123,158 @@
    "fix": {
     "tag": "40000"
    },
-   "item": {
-    "name": "AdditionalTermBondRef",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AdditionalTermBondSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40001"
+   "fields": [
+    {
+     "name": "AdditionalTermBondRef",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AdditionalTermBondSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40001"
+       }
+      },
+      {
+       "name": "AdditionalTermBondSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40002"
+       }
+      },
+      {
+       "name": "AdditionalTermBondDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40003"
+       }
+      },
+      {
+       "name": "EncodedAdditionalTermBondDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40004"
+       }
+      },
+      {
+       "name": "EncodedAdditionalTermBondDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40005"
+       }
+      },
+      {
+       "name": "AdditionalTermBondCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40006"
+       }
+      },
+      {
+       "name": "AdditionalTermBondIssuer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40007"
+       }
+      },
+      {
+       "name": "EncodedAdditionalTermBondIssuerLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40008"
+       }
+      },
+      {
+       "name": "EncodedAdditionalTermBondIssuer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40009"
+       }
+      },
+      {
+       "name": "AdditionalTermBondSeniority",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40010"
+       }
+      },
+      {
+       "name": "AdditionalTermBondCouponType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40011"
+       }
+      },
+      {
+       "name": "AdditionalTermBondCouponRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40012"
+       }
+      },
+      {
+       "name": "AdditionalTermBondMaturityDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40013"
+       }
+      },
+      {
+       "name": "AdditionalTermBondParValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40014"
+       }
+      },
+      {
+       "name": "AdditionalTermBondCurrentTotalIssuedAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40015"
+       }
+      },
+      {
+       "name": "AdditionalTermBondCouponFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40016"
+       }
+      },
+      {
+       "name": "AdditionalTermBondCouponFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40017"
+       }
+      },
+      {
+       "name": "AdditionalTermBondDayCount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40018"
+       }
       }
-     },
-     {
-      "name": "AdditionalTermBondSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40002"
-      }
-     },
-     {
-      "name": "AdditionalTermBondDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40003"
-      }
-     },
-     {
-      "name": "EncodedAdditionalTermBondDescLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40004"
-      }
-     },
-     {
-      "name": "EncodedAdditionalTermBondDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40005"
-      }
-     },
-     {
-      "name": "AdditionalTermBondCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40006"
-      }
-     },
-     {
-      "name": "AdditionalTermBondIssuer",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40007"
-      }
-     },
-     {
-      "name": "EncodedAdditionalTermBondIssuerLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40008"
-      }
-     },
-     {
-      "name": "EncodedAdditionalTermBondIssuer",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40009"
-      }
-     },
-     {
-      "name": "AdditionalTermBondSeniority",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40010"
-      }
-     },
-     {
-      "name": "AdditionalTermBondCouponType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40011"
-      }
-     },
-     {
-      "name": "AdditionalTermBondCouponRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40012"
-      }
-     },
-     {
-      "name": "AdditionalTermBondMaturityDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40013"
-      }
-     },
-     {
-      "name": "AdditionalTermBondParValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40014"
-      }
-     },
-     {
-      "name": "AdditionalTermBondCurrentTotalIssuedAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40015"
-      }
-     },
-     {
-      "name": "AdditionalTermBondCouponFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40016"
-      }
-     },
-     {
-      "name": "AdditionalTermBondCouponFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40017"
-      }
-     },
-     {
-      "name": "AdditionalTermBondDayCount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40018"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40927"
    },
-   "item": {
-    "name": "LegPaymentScheduleFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentScheduleFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40400"
+   "fields": [
+    {
+     "name": "LegPaymentScheduleFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentScheduleFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40400"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

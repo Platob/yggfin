@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegReturnRateValuationDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegReturnRateValuationDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42570"
+ "fields": [
+  {
+   "name": "LegReturnRateValuationDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegReturnRateValuationDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42570"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

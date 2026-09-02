@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40311"
+ "fields": [
+  {
+   "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamInitialFixingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40311"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

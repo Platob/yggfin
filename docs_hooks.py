@@ -275,6 +275,11 @@ def _lift_session_header(document: dict[str, Any], key: str) -> None:
             member["fix"] = {"tag": tag, "name": member["name"]}
 
 
+#: Every container writes one `fields` block, so the flavour word is the only
+#: thing that says a block repeats what it holds rather than composing it.
+_LIST_TYPES = frozenset({"list", "large_list", "list_view", "large_list_view", "fixed_size_list"})
+
+
 def _column(
     member: dict[str, Any], enums: dict[str, Any], default_name: str = "item"
 ) -> dict[str, Any]:
@@ -284,9 +289,9 @@ def _column(
     the name a value is read from -- so the registry's version and message-type
     lists are dropped here. They belong to the field, and the registry pages
     already hold them. Every container's members stay nested because their path
-    is part of the persisted contract, and every container nests them under one
-    `fields` block -- so a map's entry is unwrapped to the two halves a reader
-    of the page is actually looking for.
+    is part of the persisted contract; the one block each writes is unwrapped
+    here to what a page reader is looking for -- a map's two halves, and the
+    members of the struct a list repeats.
     """
     column: dict[str, Any] = {
         "name": member.get("name") or default_name,
@@ -316,11 +321,15 @@ def _column(
     children = member.get("fields") or []
     owned: tuple[str, ...] = ()
     if member["type"] == "map":
-        # A map writes one entry and the entry is a struct of its two halves.
-        # The wrapper row says nothing a reader wants, and the halves are the
-        # one place their names live: the document leaves them out.
-        children = (children[0].get("fields") if children else None) or []
+        # A map writes one entry, a struct of its two halves. The wrapper row
+        # says nothing a reader wants, and the halves are named here because
+        # the document leaves out the names Arrow owns.
+        children = children[0]["fields"]
         owned = ("key", "value")
+    elif member["type"] in _LIST_TYPES and children:
+        # Likewise the row for the field a list repeats, where that field is a
+        # struct: its members are what the reader came for.
+        children = children[0].get("fields") or children
     if children:
         column["fields"] = [
             _column(child, enums, default)

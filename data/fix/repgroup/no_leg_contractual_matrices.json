@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegContractualMatrix",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegContractualMatrixSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42204"
+ "fields": [
+  {
+   "name": "LegContractualMatrix",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegContractualMatrixSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42204"
+     }
+    },
+    {
+     "name": "LegContractualMatrixDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42205"
+     }
+    },
+    {
+     "name": "LegContractualMatrixTerm",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42206"
+     }
     }
-   },
-   {
-    "name": "LegContractualMatrixDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42205"
-    }
-   },
-   {
-    "name": "LegContractualMatrixTerm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42206"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

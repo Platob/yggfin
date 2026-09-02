@@ -104,20 +104,22 @@
    "fix": {
     "tag": "41962"
    },
-   "item": {
-    "name": "UnderlyingStreamCommoditySettlBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamCommoditySettlBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41963"
+   "fields": [
+    {
+     "name": "UnderlyingStreamCommoditySettlBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamCommoditySettlBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41963"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

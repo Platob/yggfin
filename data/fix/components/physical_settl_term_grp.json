@@ -123,53 +123,55 @@
    "fix": {
     "tag": "40204"
    },
-   "item": {
-    "name": "PhysicalSettlTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PhysicalSettlDeliverableObligationGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PhysicalSettlDeliverableObligationGrp"
+   "fields": [
+    {
+     "name": "PhysicalSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PhysicalSettlDeliverableObligationGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PhysicalSettlDeliverableObligationGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "PhysicalSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40205"
+      {
+       "name": "PhysicalSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40205"
+       }
+      },
+      {
+       "name": "PhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40206"
+       }
+      },
+      {
+       "name": "PhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40207"
+       }
+      },
+      {
+       "name": "PhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40208"
+       }
       }
-     },
-     {
-      "name": "PhysicalSettlBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40206"
-      }
-     },
-     {
-      "name": "PhysicalSettlMaximumBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40207"
-      }
-     },
-     {
-      "name": "PhysicalSettlTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40208"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

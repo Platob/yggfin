@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegDividendAccrualPaymentDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegDividendAccrualPaymentDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42311"
+ "fields": [
+  {
+   "name": "LegDividendAccrualPaymentDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegDividendAccrualPaymentDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42311"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

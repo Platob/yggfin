@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ProvisionOptionExerciseBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ProvisionOptionExerciseBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40124"
+ "fields": [
+  {
+   "name": "ProvisionOptionExerciseBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionOptionExerciseBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40124"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -15,18 +15,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "QuoteQualifier",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "QuoteQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "695"
+ "fields": [
+  {
+   "name": "QuoteQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "QuoteQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "695"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

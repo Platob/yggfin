@@ -113,20 +113,22 @@
    "fix": {
     "tag": "42180"
    },
-   "item": {
-    "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42181"
+   "fields": [
+    {
+     "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42181"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingProvisionCashSettlPaymentDateRelativeTo",
@@ -183,28 +185,30 @@
    "fix": {
     "tag": "42099"
    },
-   "item": {
-    "name": "UnderlyingProvisionCashSettlPaymentDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionCashSettlPaymentDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42100"
+   "fields": [
+    {
+     "name": "UnderlyingProvisionCashSettlPaymentDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42100"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42101"
+       }
       }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlPaymentDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42101"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

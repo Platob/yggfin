@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "SettlementAmount",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "SettlementAmount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1701"
+ "fields": [
+  {
+   "name": "SettlementAmount",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SettlementAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1701"
+     }
+    },
+    {
+     "name": "SettlementAmountCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1702"
+     }
+    },
+    {
+     "name": "SettlementAmountCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2903"
+     }
     }
-   },
-   {
-    "name": "SettlementAmountCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1702"
-    }
-   },
-   {
-    "name": "SettlementAmountCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2903"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

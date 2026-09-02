@@ -15,42 +15,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MatchInst",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MatchInst",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1625"
+ "fields": [
+  {
+   "name": "MatchInst",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MatchInst",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1625"
+     }
+    },
+    {
+     "name": "MatchInstMarketID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1673"
+     }
+    },
+    {
+     "name": "MatchAttribTagID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1626"
+     }
+    },
+    {
+     "name": "MatchAttribValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1627"
+     }
     }
-   },
-   {
-    "name": "MatchInstMarketID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1673"
-    }
-   },
-   {
-    "name": "MatchAttribTagID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1626"
-    }
-   },
-   {
-    "name": "MatchAttribValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1627"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

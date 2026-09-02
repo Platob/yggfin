@@ -90,53 +90,55 @@
    "fix": {
     "tag": "40533"
    },
-   "item": {
-    "name": "LegProvisionPartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProvisionPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40534"
-      }
-     },
-     {
-      "name": "LegProvisionPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40535"
-      }
-     },
-     {
-      "name": "LegProvisionPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40536"
-      }
-     },
-     {
-      "name": "LegProvisionPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2380"
-      }
-     },
-     {
-      "name": "LegProvisionPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegProvisionPtysSubGrp"
+   "fields": [
+    {
+     "name": "LegProvisionPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProvisionPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40534"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegProvisionPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40535"
+       }
+      },
+      {
+       "name": "LegProvisionPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40536"
+       }
+      },
+      {
+       "name": "LegProvisionPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2380"
+       }
+      },
+      {
+       "name": "LegProvisionPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegProvisionPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

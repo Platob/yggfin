@@ -57,28 +57,30 @@
    "fix": {
     "tag": "1475"
    },
-   "item": {
-    "name": "NewsRefID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NewsRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1476"
+   "fields": [
+    {
+     "name": "NewsRefID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NewsRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1476"
+       }
+      },
+      {
+       "name": "NewsRefType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1477"
+       }
       }
-     },
-     {
-      "name": "NewsRefType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1477"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NewsCategory",
@@ -142,28 +144,30 @@
    "fix": {
     "tag": "215"
    },
-   "item": {
-    "name": "RoutingID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RoutingType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "216"
+   "fields": [
+    {
+     "name": "RoutingID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RoutingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "216"
+       }
+      },
+      {
+       "name": "RoutingID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "217"
+       }
       }
-     },
-     {
-      "name": "RoutingID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "217"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "MarketID",
@@ -188,133 +192,137 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
-      },
-      "fields": []
-     },
-     {
-      "name": "InstrumentExtension",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentExtension"
-      },
-      "fields": []
-     },
-     {
-      "name": "FinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "FinancingDetails"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoRelatedInstruments",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1647"
-      },
-      "item": {
-       "name": "RelatedInstrument",
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "FinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "FinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoRelatedInstruments",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1647"
+       },
        "fields": [
         {
-         "name": "RelatedInstrumentType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1648"
-         }
-        },
-        {
-         "name": "RelatedSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1649"
-         }
-        },
-        {
-         "name": "RelatedSecurityID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1650"
-         }
-        },
-        {
-         "name": "RelatedSecurityIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1651"
-         }
-        },
-        {
-         "name": "RelatedSecurityType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1652"
-         }
-        },
-        {
-         "name": "RelatedMaturityMonthYear",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1653"
-         }
-        },
-        {
-         "name": "RelatedToSecurityID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2413"
-         }
-        },
-        {
-         "name": "RelatedToSecurityIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2414"
-         }
-        },
-        {
-         "name": "RelatedToStreamXIDRef",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2415"
-         }
-        },
-        {
-         "name": "RelatedToDividendPeriodXIDRef",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2417"
-         }
+         "name": "RelatedInstrument",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "RelatedInstrumentType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1648"
+           }
+          },
+          {
+           "name": "RelatedSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1649"
+           }
+          },
+          {
+           "name": "RelatedSecurityID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1650"
+           }
+          },
+          {
+           "name": "RelatedSecurityIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1651"
+           }
+          },
+          {
+           "name": "RelatedSecurityType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1652"
+           }
+          },
+          {
+           "name": "RelatedMaturityMonthYear",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1653"
+           }
+          },
+          {
+           "name": "RelatedToSecurityID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2413"
+           }
+          },
+          {
+           "name": "RelatedToSecurityIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2414"
+           }
+          },
+          {
+           "name": "RelatedToStreamXIDRef",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2415"
+           }
+          },
+          {
+           "name": "RelatedToDividendPeriodXIDRef",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2417"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegs",
@@ -323,116 +331,120 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegFinancingDetails",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegFinancingDetails"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoLegRateSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "3116"
-      },
-      "item": {
-       "name": "LegRateSource",
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegFinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegFinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoLegRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3116"
+       },
        "fields": [
         {
          "name": "LegRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3117"
-         }
-        },
-        {
-         "name": "LegRateSourceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3118"
-         }
-        },
-        {
-         "name": "LegReferencePage",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3119"
-         }
-        },
-        {
-         "name": "LegRateSourceReferencePageHeading",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3120"
-         }
-        },
-        {
-         "name": "LegRateSourceSymbol",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3121"
-         }
-        },
-        {
-         "name": "LegFXBenchmark",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3122"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3123"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3124"
-         }
-        },
-        {
-         "name": "LegFXBenchmarkBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "3125"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3117"
+           }
+          },
+          {
+           "name": "LegRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3118"
+           }
+          },
+          {
+           "name": "LegReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3119"
+           }
+          },
+          {
+           "name": "LegRateSourceReferencePageHeading",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3120"
+           }
+          },
+          {
+           "name": "LegRateSourceSymbol",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3121"
+           }
+          },
+          {
+           "name": "LegFXBenchmark",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3122"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3123"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3124"
+           }
+          },
+          {
+           "name": "LegFXBenchmarkBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "3125"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyings",
@@ -441,21 +453,23 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
-      },
-      "fields": []
-     }
-    ]
-   }
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLinesOfText",
@@ -463,35 +477,37 @@
    "fix": {
     "tag": "33"
    },
-   "item": {
-    "name": "LinesOfText",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Text",
-      "type": "string",
-      "fix": {
-       "tag": "58"
+   "fields": [
+    {
+     "name": "LinesOfText",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Text",
+       "type": "string",
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "URLLink",

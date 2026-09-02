@@ -30,52 +30,54 @@
    "fix": {
     "tag": "382"
    },
-   "item": {
-    "name": "ContraBroker",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ContraBroker",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "375"
+   "fields": [
+    {
+     "name": "ContraBroker",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContraBroker",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "375"
+       }
+      },
+      {
+       "name": "ContraTrader",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "337"
+       }
+      },
+      {
+       "name": "ContraTradeQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "437"
+       }
+      },
+      {
+       "name": "ContraTradeTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "438"
+       }
+      },
+      {
+       "name": "ContraLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "655"
+       }
       }
-     },
-     {
-      "name": "ContraTrader",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "337"
-      }
-     },
-     {
-      "name": "ContraTradeQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "437"
-      }
-     },
-     {
-      "name": "ContraTradeTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "438"
-      }
-     },
-     {
-      "name": "ContraLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "655"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

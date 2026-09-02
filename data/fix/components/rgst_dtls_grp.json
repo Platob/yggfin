@@ -30,77 +30,79 @@
    "fix": {
     "tag": "473"
    },
-   "item": {
-    "name": "RegistDtl",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RegistDtls",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "509"
-      }
-     },
-     {
-      "name": "RegistEmail",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "511"
-      }
-     },
-     {
-      "name": "MailingDtls",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "474"
-      }
-     },
-     {
-      "name": "MailingInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "482"
-      }
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+   "fields": [
+    {
+     "name": "RegistDtl",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RegistDtls",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "509"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "OwnerType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "522"
+      {
+       "name": "RegistEmail",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "511"
+       }
+      },
+      {
+       "name": "MailingDtls",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "474"
+       }
+      },
+      {
+       "name": "MailingInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "482"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "OwnerType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "522"
+       }
+      },
+      {
+       "name": "DateOfBirth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "486"
+       }
+      },
+      {
+       "name": "InvestorCountryOfResidence",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "475"
+       }
       }
-     },
-     {
-      "name": "DateOfBirth",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "486"
-      }
-     },
-     {
-      "name": "InvestorCountryOfResidence",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "475"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

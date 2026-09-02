@@ -58,74 +58,78 @@
    "fix": {
     "tag": "1610"
    },
-   "item": {
-    "name": "Throttle",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ThrottleAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1611"
-      }
-     },
-     {
-      "name": "ThrottleType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1612"
-      }
-     },
-     {
-      "name": "ThrottleNoMsgs",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1613"
-      }
-     },
-     {
-      "name": "ThrottleTimeInterval",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1614"
-      }
-     },
-     {
-      "name": "ThrottleTimeUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1615"
-      }
-     },
-     {
-      "name": "NoThrottleMsgType",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1618"
+   "fields": [
+    {
+     "name": "Throttle",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ThrottleAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1611"
+       }
       },
-      "item": {
-       "name": "ThrottleMsgType",
-       "type": "struct",
+      {
+       "name": "ThrottleType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1612"
+       }
+      },
+      {
+       "name": "ThrottleNoMsgs",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1613"
+       }
+      },
+      {
+       "name": "ThrottleTimeInterval",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1614"
+       }
+      },
+      {
+       "name": "ThrottleTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1615"
+       }
+      },
+      {
+       "name": "NoThrottleMsgType",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1618"
+       },
        "fields": [
         {
          "name": "ThrottleMsgType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1619"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "ThrottleMsgType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1619"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UserStatusText",

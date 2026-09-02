@@ -13,58 +13,60 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "MaturityRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MaturityRuleID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1222"
+ "fields": [
+  {
+   "name": "MaturityRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MaturityRuleID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1222"
+     }
+    },
+    {
+     "name": "MaturityMonthYearFormat",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1303"
+     }
+    },
+    {
+     "name": "MaturityMonthYearIncrementUnits",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1302"
+     }
+    },
+    {
+     "name": "StartMaturityMonthYear",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1241"
+     }
+    },
+    {
+     "name": "EndMaturityMonthYear",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1226"
+     }
+    },
+    {
+     "name": "MaturityMonthYearIncrement",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1229"
+     }
     }
-   },
-   {
-    "name": "MaturityMonthYearFormat",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1303"
-    }
-   },
-   {
-    "name": "MaturityMonthYearIncrementUnits",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1302"
-    }
-   },
-   {
-    "name": "StartMaturityMonthYear",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1241"
-    }
-   },
-   {
-    "name": "EndMaturityMonthYear",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1226"
-    }
-   },
-   {
-    "name": "MaturityMonthYearIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1229"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

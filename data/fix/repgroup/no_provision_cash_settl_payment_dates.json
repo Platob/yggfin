@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ProvisionCashSettlPaymentDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ProvisionCashSettlPaymentDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40172"
+ "fields": [
+  {
+   "name": "ProvisionCashSettlPaymentDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ProvisionCashSettlPaymentDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40172"
+     }
+    },
+    {
+     "name": "ProvisionCashSettlPaymentDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40173"
+     }
     }
-   },
-   {
-    "name": "ProvisionCashSettlPaymentDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40173"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

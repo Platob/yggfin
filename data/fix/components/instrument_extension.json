@@ -77,28 +77,30 @@
    "fix": {
     "tag": "870"
    },
-   "item": {
-    "name": "InstrAttrib",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrAttribType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "871"
+   "fields": [
+    {
+     "name": "InstrAttrib",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrAttribType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "871"
+       }
+      },
+      {
+       "name": "InstrAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "872"
+       }
       }
-     },
-     {
-      "name": "InstrAttribValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "872"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "CommodityFinalPriceType",
@@ -115,20 +117,22 @@
    "fix": {
     "tag": "2734"
    },
-   "item": {
-    "name": "IndexRollMonth",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "IndexRollMonth",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2733"
+   "fields": [
+    {
+     "name": "IndexRollMonth",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IndexRollMonth",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2733"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NextIndexRollDate",
@@ -154,28 +158,30 @@
    "fix": {
     "tag": "2746"
    },
-   "item": {
-    "name": "ReferenceDataDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ReferenceDataDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2747"
+   "fields": [
+    {
+     "name": "ReferenceDataDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ReferenceDataDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2747"
+       }
+      },
+      {
+       "name": "ReferenceDataDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2748"
+       }
       }
-     },
-     {
-      "name": "ReferenceDataDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2748"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

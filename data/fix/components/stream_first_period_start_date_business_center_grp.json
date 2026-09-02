@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40959"
    },
-   "item": {
-    "name": "StreamFirstPeriodStartDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StreamFirstPeriodStartDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40077"
+   "fields": [
+    {
+     "name": "StreamFirstPeriodStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StreamFirstPeriodStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40077"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

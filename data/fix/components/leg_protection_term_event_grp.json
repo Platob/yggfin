@@ -90,77 +90,79 @@
    "fix": {
     "tag": "41625"
    },
-   "item": {
-    "name": "LegProtectionTermEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegProtectionTermEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41626"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41627"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41628"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41629"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41630"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventDayType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41631"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventRateSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41632"
-      }
-     },
-     {
-      "name": "LegProtectionTermEventQualifierGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegProtectionTermEventQualifierGrp"
+   "fields": [
+    {
+     "name": "LegProtectionTermEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegProtectionTermEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41626"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegProtectionTermEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41627"
+       }
+      },
+      {
+       "name": "LegProtectionTermEventCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41628"
+       }
+      },
+      {
+       "name": "LegProtectionTermEventPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41629"
+       }
+      },
+      {
+       "name": "LegProtectionTermEventUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41630"
+       }
+      },
+      {
+       "name": "LegProtectionTermEventDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41631"
+       }
+      },
+      {
+       "name": "LegProtectionTermEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41632"
+       }
+      },
+      {
+       "name": "LegProtectionTermEventQualifierGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegProtectionTermEventQualifierGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

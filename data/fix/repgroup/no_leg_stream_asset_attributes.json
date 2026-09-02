@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegStreamAssetAttribute",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegStreamAssetAttributeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41453"
+ "fields": [
+  {
+   "name": "LegStreamAssetAttribute",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamAssetAttributeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41453"
+     }
+    },
+    {
+     "name": "LegStreamAssetAttributeValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41454"
+     }
+    },
+    {
+     "name": "LegStreamAssetAttributeLimit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41455"
+     }
     }
-   },
-   {
-    "name": "LegStreamAssetAttributeValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41454"
-    }
-   },
-   {
-    "name": "LegStreamAssetAttributeLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41455"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -1,7 +1,7 @@
 name: Order
 type: struct
 description: 'One version of one order: what was asked for, and how far it has got.'
-metadata: {namespace: rekep.market.orders, version: '2'}
+metadata: {namespace: rekep.market.orders, version: '1'}
 fields:
 - name: unix
   type: int64

@@ -27,20 +27,22 @@
    "fix": {
     "tag": "1918"
    },
-   "item": {
-    "name": "ClearingAccountType",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ClearingAccountType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1816"
+   "fields": [
+    {
+     "name": "ClearingAccountType",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClearingAccountType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1816"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

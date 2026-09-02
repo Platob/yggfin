@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPhysicalSettlDeliverableObligation",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPhysicalSettlDeliverableObligationType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42066"
+ "fields": [
+  {
+   "name": "UnderlyingPhysicalSettlDeliverableObligation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPhysicalSettlDeliverableObligationType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42066"
+     }
+    },
+    {
+     "name": "UnderlyingPhysicalSettlDeliverableObligationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42067"
+     }
     }
-   },
-   {
-    "name": "UnderlyingPhysicalSettlDeliverableObligationValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42067"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -123,36 +123,38 @@
    "fix": {
     "tag": "41054"
    },
-   "item": {
-    "name": "DeliveryScheduleSettlTime",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DeliveryScheduleSettlStart",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41055"
+   "fields": [
+    {
+     "name": "DeliveryScheduleSettlTime",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DeliveryScheduleSettlStart",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41055"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlEnd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41056"
+       }
+      },
+      {
+       "name": "DeliveryScheduleSettlTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41057"
+       }
       }
-     },
-     {
-      "name": "DeliveryScheduleSettlEnd",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41056"
-      }
-     },
-     {
-      "name": "DeliveryScheduleSettlTimeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41057"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

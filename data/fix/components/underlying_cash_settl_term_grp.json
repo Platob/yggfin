@@ -104,190 +104,192 @@
    "fix": {
     "tag": "42041"
    },
-   "item": {
-    "name": "UnderlyingCashSettlTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingCashSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42042"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationFirstBusinessDayOffset",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42043"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationSubsequentBusinessDaysOffset",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42044"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlNumOfValuationDates",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42045"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42046"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42047"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlQuoteMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42048"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlQuoteAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42049"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlQuoteCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42050"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlMinimumQuoteAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42051"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlMinimumQuoteCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42052"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlDealerGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingCashSettlDealerGrp"
+   "fields": [
+    {
+     "name": "UnderlyingCashSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingCashSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42042"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingCashSettlPriceSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42797"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlPriceDefault",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42798"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42053"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42054"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingCashSettlDate"
+      {
+       "name": "UnderlyingCashSettlValuationFirstBusinessDayOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42043"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingCashSettlRecoveryFactor",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42055"
+      {
+       "name": "UnderlyingCashSettlValuationSubsequentBusinessDaysOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42044"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlNumOfValuationDates",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42045"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42046"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42047"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42048"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlQuoteAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42049"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42050"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlMinimumQuoteAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42051"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlMinimumQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42052"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlDealerGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingCashSettlDealerGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingCashSettlPriceSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42797"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlPriceDefault",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42798"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42053"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42054"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingCashSettlDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingCashSettlRecoveryFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42055"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlFixedTermIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42056"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlAccruedInterestIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42057"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlValuationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42058"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42059"
+       }
       }
-     },
-     {
-      "name": "UnderlyingCashSettlFixedTermIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42056"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlAccruedInterestIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42057"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42058"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42059"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

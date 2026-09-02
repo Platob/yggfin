@@ -11,26 +11,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "InstrAttrib",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "InstrAttribType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "871"
+ "fields": [
+  {
+   "name": "InstrAttrib",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrAttribType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "871"
+     }
+    },
+    {
+     "name": "InstrAttribValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "872"
+     }
     }
-   },
-   {
-    "name": "InstrAttribValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "872"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

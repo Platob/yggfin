@@ -12,42 +12,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingComplexEventRateSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingComplexEventRateSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41733"
+ "fields": [
+  {
+   "name": "UnderlyingComplexEventRateSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventRateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41733"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventRateSourceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41734"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41735"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventReferencePageHeading",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41736"
+     }
     }
-   },
-   {
-    "name": "UnderlyingComplexEventRateSourceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41734"
-    }
-   },
-   {
-    "name": "UnderlyingComplexEventReferencePage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41735"
-    }
-   },
-   {
-    "name": "UnderlyingComplexEventReferencePageHeading",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41736"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

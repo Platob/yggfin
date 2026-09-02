@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RequestedRiskLimitType",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RiskLimitType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1530"
+ "fields": [
+  {
+   "name": "RequestedRiskLimitType",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RiskLimitType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1530"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

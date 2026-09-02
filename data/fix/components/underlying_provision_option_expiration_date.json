@@ -121,20 +121,22 @@
    "fix": {
     "tag": "42186"
    },
-   "item": {
-    "name": "UnderlyingProvisionOptionExpirationDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionOptionExpirationDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42187"
+   "fields": [
+    {
+     "name": "UnderlyingProvisionOptionExpirationDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionOptionExpirationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42187"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingProvisionOptionExpirationDateRelativeTo",

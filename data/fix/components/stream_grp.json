@@ -123,261 +123,263 @@
    "fix": {
     "tag": "40049"
    },
-   "item": {
-    "name": "Stream",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StreamType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40050"
-      }
-     },
-     {
-      "name": "StreamXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41303"
-      }
-     },
-     {
-      "name": "StreamDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40051"
-      }
-     },
-     {
-      "name": "StreamVersion",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42784"
-      }
-     },
-     {
-      "name": "StreamVersionEffectiveDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42785"
-      }
-     },
-     {
-      "name": "StreamPaySide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40052"
-      }
-     },
-     {
-      "name": "StreamReceiveSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40053"
-      }
-     },
-     {
-      "name": "StreamNotionalXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41305"
-      }
-     },
-     {
-      "name": "StreamNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40054"
-      }
-     },
-     {
-      "name": "StreamCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40055"
-      }
-     },
-     {
-      "name": "StreamNotionalDeterminationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42786"
-      }
-     },
-     {
-      "name": "StreamNotionalAdjustments",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42787"
-      }
-     },
-     {
-      "name": "StreamNotionalFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41306"
-      }
-     },
-     {
-      "name": "StreamNotionalFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41307"
-      }
-     },
-     {
-      "name": "StreamNotionalCommodityFrequency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41308"
-      }
-     },
-     {
-      "name": "StreamNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41309"
-      }
-     },
-     {
-      "name": "StreamTotalNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41310"
-      }
-     },
-     {
-      "name": "StreamTotalNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41311"
-      }
-     },
-     {
-      "name": "StreamCommodity",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "StreamCommodity"
+   "fields": [
+    {
+     "name": "Stream",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StreamType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40050"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "StreamEffectiveDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "StreamEffectiveDate"
+      {
+       "name": "StreamXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41303"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "StreamTerminationDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "StreamTerminationDate"
+      {
+       "name": "StreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40051"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "StreamCalculationPeriodDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "StreamCalculationPeriodDates"
+      {
+       "name": "StreamVersion",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42784"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "PaymentStream",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PaymentStream"
+      {
+       "name": "StreamVersionEffectiveDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42785"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "PaymentScheduleGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PaymentScheduleGrp"
+      {
+       "name": "StreamPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40052"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "PaymentStubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PaymentStubGrp"
+      {
+       "name": "StreamReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40053"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "DeliveryStream",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "DeliveryStream"
+      {
+       "name": "StreamNotionalXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41305"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "DeliveryScheduleGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "DeliveryScheduleGrp"
+      {
+       "name": "StreamNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40054"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "StreamText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40056"
+      {
+       "name": "StreamCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40055"
+       }
+      },
+      {
+       "name": "StreamNotionalDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42786"
+       }
+      },
+      {
+       "name": "StreamNotionalAdjustments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42787"
+       }
+      },
+      {
+       "name": "StreamNotionalFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41306"
+       }
+      },
+      {
+       "name": "StreamNotionalFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41307"
+       }
+      },
+      {
+       "name": "StreamNotionalCommodityFrequency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41308"
+       }
+      },
+      {
+       "name": "StreamNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41309"
+       }
+      },
+      {
+       "name": "StreamTotalNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41310"
+       }
+      },
+      {
+       "name": "StreamTotalNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41311"
+       }
+      },
+      {
+       "name": "StreamCommodity",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StreamCommodity"
+       },
+       "fields": []
+      },
+      {
+       "name": "StreamEffectiveDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StreamEffectiveDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "StreamTerminationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StreamTerminationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "StreamCalculationPeriodDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "StreamCalculationPeriodDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PaymentStubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentStubGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "DeliveryStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DeliveryStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "DeliveryScheduleGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "DeliveryScheduleGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "StreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40056"
+       }
+      },
+      {
+       "name": "EncodedStreamTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40982"
+       }
+      },
+      {
+       "name": "EncodedStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40983"
+       }
       }
-     },
-     {
-      "name": "EncodedStreamTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40982"
-      }
-     },
-     {
-      "name": "EncodedStreamText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40983"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

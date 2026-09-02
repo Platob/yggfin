@@ -28,53 +28,55 @@
    "fix": {
     "tag": "1414"
    },
-   "item": {
-    "name": "Nested4PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Nested4PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1415"
-      }
-     },
-     {
-      "name": "Nested4PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1416"
-      }
-     },
-     {
-      "name": "Nested4PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1417"
-      }
-     },
-     {
-      "name": "Nested4PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2383"
-      }
-     },
-     {
-      "name": "NstdPtys4SubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NstdPtys4SubGrp"
+   "fields": [
+    {
+     "name": "Nested4PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Nested4PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1415"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "Nested4PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1416"
+       }
+      },
+      {
+       "name": "Nested4PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1417"
+       }
+      },
+      {
+       "name": "Nested4PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2383"
+       }
+      },
+      {
+       "name": "NstdPtys4SubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NstdPtys4SubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

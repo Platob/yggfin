@@ -104,36 +104,38 @@
    "fix": {
     "tag": "41804"
    },
-   "item": {
-    "name": "UnderlyingDeliveryStreamCycle",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingDeliveryStreamCycleDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41805"
+   "fields": [
+    {
+     "name": "UnderlyingDeliveryStreamCycle",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41805"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingDeliveryStreamCycleDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41806"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41807"
+       }
       }
-     },
-     {
-      "name": "EncodedUnderlyingDeliveryStreamCycleDescLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41806"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingDeliveryStreamCycleDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41807"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

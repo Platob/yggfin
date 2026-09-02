@@ -90,20 +90,22 @@
    "fix": {
     "tag": "40928"
    },
-   "item": {
-    "name": "LegPaymentScheduleInterimExchangeDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentScheduleInterimExchangeDatesBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40409"
+   "fields": [
+    {
+     "name": "LegPaymentScheduleInterimExchangeDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentScheduleInterimExchangeDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40409"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

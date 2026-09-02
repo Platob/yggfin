@@ -104,339 +104,351 @@
    "fix": {
     "tag": "1165"
    },
-   "item": {
-    "name": "SettlOblig",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NetGrossInd",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "430"
-      }
-     },
-     {
-      "name": "SettlObligID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1161"
-      }
-     },
-     {
-      "name": "SettlObligTransType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1162"
-      }
-     },
-     {
-      "name": "SettlObligRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1163"
-      }
-     },
-     {
-      "name": "CcyAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1157"
-      }
-     },
-     {
-      "name": "SettlCurrAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "119"
-      }
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
-      }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "SettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "120"
-      }
-     },
-     {
-      "name": "SettlCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2899"
-      }
-     },
-     {
-      "name": "SettlCurrFxRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "155"
-      }
-     },
-     {
-      "name": "SettlDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "64"
-      }
-     },
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "SettlOblig",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NetGrossInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "430"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "NoPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "453"
+      {
+       "name": "SettlObligID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1161"
+       }
       },
-      "item": {
-       "name": "PartyID",
+      {
+       "name": "SettlObligTransType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1162"
+       }
+      },
+      {
+       "name": "SettlObligRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1163"
+       }
+      },
+      {
+       "name": "CcyAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1157"
+       }
+      },
+      {
+       "name": "SettlCurrAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "119"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2899"
+       }
+      },
+      {
+       "name": "SettlCurrFxRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "155"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "Instrument",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "453"
+       },
        "fields": [
         {
          "name": "PartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "448"
-         }
-        },
-        {
-         "name": "PartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "447"
-         }
-        },
-        {
-         "name": "PartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "452"
-         }
-        },
-        {
-         "name": "PartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2376"
-         }
-        },
-        {
-         "name": "NoPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "802"
-         },
-         "item": {
-          "name": "PartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "PartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "523"
-            }
-           },
-           {
-            "name": "PartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "803"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "448"
            }
-          ]
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "EffectiveTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "168"
-      }
-     },
-     {
-      "name": "ExpireTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "126"
-      }
-     },
-     {
-      "name": "LastUpdateTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "779"
-      }
-     },
-     {
-      "name": "NoSettlDetails",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1158"
-      },
-      "item": {
-       "name": "SettlDetail",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "SettlObligSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1164"
-         }
-        },
-        {
-         "name": "StandInstDbType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "169"
-         }
-        },
-        {
-         "name": "StandInstDbName",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "170"
-         }
-        },
-        {
-         "name": "StandInstDbID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "171"
-         }
-        },
-        {
-         "name": "NoSettlPartyIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "781"
-         },
-         "item": {
-          "name": "SettlPartyID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "SettlPartyID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "782"
-            }
+          },
+          {
+           "name": "PartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "447"
+           }
+          },
+          {
+           "name": "PartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "452"
+           }
+          },
+          {
+           "name": "PartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2376"
+           }
+          },
+          {
+           "name": "NoPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "802"
            },
-           {
-            "name": "SettlPartyIDSource",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "783"
-            }
-           },
-           {
-            "name": "SettlPartyRole",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "784"
-            }
-           },
-           {
-            "name": "SettlPartyRoleQualifier",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "2389"
-            }
-           },
-           {
-            "name": "NoSettlPartySubIDs",
-            "type": "list",
-            "nullable": true,
-            "fix": {
-             "tag": "801"
-            },
-            "item": {
-             "name": "SettlPartySubID",
+           "fields": [
+            {
+             "name": "PartySubID",
              "type": "struct",
              "fields": [
               {
-               "name": "SettlPartySubID",
+               "name": "PartySubID",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "785"
+                "tag": "523"
                }
               },
               {
-               "name": "SettlPartySubIDType",
+               "name": "PartySubIDType",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "786"
+                "tag": "803"
                }
               }
              ]
             }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "EffectiveTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "168"
+       }
+      },
+      {
+       "name": "ExpireTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "126"
+       }
+      },
+      {
+       "name": "LastUpdateTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "779"
+       }
+      },
+      {
+       "name": "NoSettlDetails",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1158"
+       },
+       "fields": [
+        {
+         "name": "SettlDetail",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "SettlObligSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1164"
            }
-          ]
-         }
+          },
+          {
+           "name": "StandInstDbType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "169"
+           }
+          },
+          {
+           "name": "StandInstDbName",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "170"
+           }
+          },
+          {
+           "name": "StandInstDbID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "171"
+           }
+          },
+          {
+           "name": "NoSettlPartyIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "781"
+           },
+           "fields": [
+            {
+             "name": "SettlPartyID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "SettlPartyID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "782"
+               }
+              },
+              {
+               "name": "SettlPartyIDSource",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "783"
+               }
+              },
+              {
+               "name": "SettlPartyRole",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "784"
+               }
+              },
+              {
+               "name": "SettlPartyRoleQualifier",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "2389"
+               }
+              },
+              {
+               "name": "NoSettlPartySubIDs",
+               "type": "list",
+               "nullable": true,
+               "fix": {
+                "tag": "801"
+               },
+               "fields": [
+                {
+                 "name": "SettlPartySubID",
+                 "type": "struct",
+                 "fields": [
+                  {
+                   "name": "SettlPartySubID",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "785"
+                   }
+                  },
+                  {
+                   "name": "SettlPartySubIDType",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "786"
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

@@ -31,36 +31,38 @@
    "fix": {
     "tag": "534"
    },
-   "item": {
-    "name": "AffectedOrder",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AffectedOrigClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1824"
+   "fields": [
+    {
+     "name": "AffectedOrder",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AffectedOrigClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1824"
+       }
+      },
+      {
+       "name": "AffectedOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "535"
+       }
+      },
+      {
+       "name": "AffectedSecondaryOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "536"
+       }
       }
-     },
-     {
-      "name": "AffectedOrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "535"
-      }
-     },
-     {
-      "name": "AffectedSecondaryOrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "536"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

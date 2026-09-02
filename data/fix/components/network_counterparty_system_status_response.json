@@ -65,58 +65,60 @@
    "fix": {
     "tag": "936"
    },
-   "item": {
-    "name": "CompID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RefCompID",
-      "type": "string",
-      "fix": {
-       "tag": "930"
+   "fields": [
+    {
+     "name": "CompID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RefCompID",
+       "type": "string",
+       "fix": {
+        "tag": "930"
+       }
+      },
+      {
+       "name": "RefSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "931"
+       }
+      },
+      {
+       "name": "LocationID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "283"
+       }
+      },
+      {
+       "name": "DeskID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "284"
+       }
+      },
+      {
+       "name": "StatusValue",
+       "type": "string",
+       "fix": {
+        "tag": "928"
+       }
+      },
+      {
+       "name": "StatusText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "929"
+       }
       }
-     },
-     {
-      "name": "RefSubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "931"
-      }
-     },
-     {
-      "name": "LocationID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "283"
-      }
-     },
-     {
-      "name": "DeskID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "284"
-      }
-     },
-     {
-      "name": "StatusValue",
-      "type": "string",
-      "fix": {
-       "tag": "928"
-      }
-     },
-     {
-      "name": "StatusText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "929"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

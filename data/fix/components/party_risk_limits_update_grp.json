@@ -29,62 +29,64 @@
    "fix": {
     "tag": "1677"
    },
-   "item": {
-    "name": "PartyRiskLimit",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ListUpdateAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1324"
-      }
-     },
-     {
-      "name": "PartyDetailGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyDetailGrp"
+   "fields": [
+    {
+     "name": "PartyRiskLimit",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "RiskLimitsGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "RiskLimitsGrp"
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "RiskLimitID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1670"
+      {
+       "name": "RiskLimitsGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RiskLimitsGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RiskLimitID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1670"
+       }
+      },
+      {
+       "name": "RiskLimitCheckModelType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2339"
+       }
+      },
+      {
+       "name": "PartyRiskLimitStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2355"
+       }
       }
-     },
-     {
-      "name": "RiskLimitCheckModelType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2339"
-      }
-     },
-     {
-      "name": "PartyRiskLimitStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -123,77 +123,79 @@
    "fix": {
     "tag": "40997"
    },
-   "item": {
-    "name": "ComplexEventCreditEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ComplexEventCreditEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40998"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40999"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41000"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41001"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41002"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventDayType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41003"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventRateSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41004"
-      }
-     },
-     {
-      "name": "ComplexEventCreditEventQualifierGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ComplexEventCreditEventQualifierGrp"
+   "fields": [
+    {
+     "name": "ComplexEventCreditEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ComplexEventCreditEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40998"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "ComplexEventCreditEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40999"
+       }
+      },
+      {
+       "name": "ComplexEventCreditEventCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41000"
+       }
+      },
+      {
+       "name": "ComplexEventCreditEventPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41001"
+       }
+      },
+      {
+       "name": "ComplexEventCreditEventUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41002"
+       }
+      },
+      {
+       "name": "ComplexEventCreditEventDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41003"
+       }
+      },
+      {
+       "name": "ComplexEventCreditEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41004"
+       }
+      },
+      {
+       "name": "ComplexEventCreditEventQualifierGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ComplexEventCreditEventQualifierGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

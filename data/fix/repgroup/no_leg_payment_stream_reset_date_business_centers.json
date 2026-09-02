@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPaymentStreamResetDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegPaymentStreamResetDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40305"
+ "fields": [
+  {
+   "name": "LegPaymentStreamResetDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamResetDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40305"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

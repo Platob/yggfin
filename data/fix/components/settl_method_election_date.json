@@ -143,20 +143,22 @@
    "fix": {
     "tag": "42775"
    },
-   "item": {
-    "name": "SettlMethodElectionDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlMethodElectionDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42776"
+   "fields": [
+    {
+     "name": "SettlMethodElectionDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlMethodElectionDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42776"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "SettlMethodElectionDateRelativeTo",

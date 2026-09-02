@@ -59,123 +59,127 @@
    "fix": {
     "tag": "428"
    },
-   "item": {
-    "name": "Strike",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "fix": {
-       "component": "Instrument"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoUnderlyings",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "711"
-      },
-      "item": {
-       "name": "Underlying",
+   "fields": [
+    {
+     "name": "Strike",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
        "type": "struct",
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoUnderlyings",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "711"
+       },
        "fields": [
         {
-         "name": "UnderlyingInstrument",
+         "name": "Underlying",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "UnderlyingInstrument"
-         },
-         "fields": []
+         "fields": [
+          {
+           "name": "UnderlyingInstrument",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "UnderlyingInstrument"
+           },
+           "fields": []
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "PrevClosePx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "140"
+       }
+      },
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "PrevClosePx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "140"
-      }
-     },
-     {
-      "name": "ClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "11"
-      }
-     },
-     {
-      "name": "SecondaryClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "526"
-      }
-     },
-     {
-      "name": "Side",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "54"
-      }
-     },
-     {
-      "name": "Price",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "44"
-      }
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
-      }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "Text",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "58"
-      }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

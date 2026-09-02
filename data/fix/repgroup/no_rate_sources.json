@@ -15,90 +15,92 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RateSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RateSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1446"
+ "fields": [
+  {
+   "name": "RateSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1446"
+     }
+    },
+    {
+     "name": "RateSourceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1447"
+     }
+    },
+    {
+     "name": "ReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1448"
+     }
+    },
+    {
+     "name": "RateSourceReferencePageHeading",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2412"
+     }
+    },
+    {
+     "name": "FXBenchmarkRateFix",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2796"
+     }
+    },
+    {
+     "name": "RateSourceSymbol",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3072"
+     }
+    },
+    {
+     "name": "FXBenchmark",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3073"
+     }
+    },
+    {
+     "name": "FXBenchmarkDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3074"
+     }
+    },
+    {
+     "name": "FXBenchmarkTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3075"
+     }
+    },
+    {
+     "name": "FXBenchmarkBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3076"
+     }
     }
-   },
-   {
-    "name": "RateSourceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1447"
-    }
-   },
-   {
-    "name": "ReferencePage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1448"
-    }
-   },
-   {
-    "name": "RateSourceReferencePageHeading",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2412"
-    }
-   },
-   {
-    "name": "FXBenchmarkRateFix",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2796"
-    }
-   },
-   {
-    "name": "RateSourceSymbol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3072"
-    }
-   },
-   {
-    "name": "FXBenchmark",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3073"
-    }
-   },
-   {
-    "name": "FXBenchmarkDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3074"
-    }
-   },
-   {
-    "name": "FXBenchmarkTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3075"
-    }
-   },
-   {
-    "name": "FXBenchmarkBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3076"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -27,54 +27,56 @@
    "fix": {
     "tag": "1677"
    },
-   "item": {
-    "name": "PartyRiskLimit",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyDetailGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyDetailGrp"
+   "fields": [
+    {
+     "name": "PartyRiskLimit",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "RiskLimitsGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "RiskLimitsGrp"
+      {
+       "name": "RiskLimitsGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RiskLimitsGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "RiskLimitID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1670"
+      {
+       "name": "RiskLimitID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1670"
+       }
+      },
+      {
+       "name": "RiskLimitCheckModelType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2339"
+       }
+      },
+      {
+       "name": "PartyRiskLimitStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2355"
+       }
       }
-     },
-     {
-      "name": "RiskLimitCheckModelType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2339"
-      }
-     },
-     {
-      "name": "PartyRiskLimitStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

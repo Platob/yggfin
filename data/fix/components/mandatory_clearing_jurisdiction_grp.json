@@ -27,20 +27,22 @@
    "fix": {
     "tag": "41312"
    },
-   "item": {
-    "name": "MandatoryClearingJurisdiction",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MandatoryClearingJurisdiction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41313"
+   "fields": [
+    {
+     "name": "MandatoryClearingJurisdiction",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MandatoryClearingJurisdiction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41313"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

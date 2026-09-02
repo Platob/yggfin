@@ -125,53 +125,55 @@
    "fix": {
     "tag": "1018"
    },
-   "item": {
-    "name": "InstrumentParty",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1019"
-      }
-     },
-     {
-      "name": "InstrumentPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1050"
-      }
-     },
-     {
-      "name": "InstrumentPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1051"
-      }
-     },
-     {
-      "name": "InstrumentPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2378"
-      }
-     },
-     {
-      "name": "InstrumentPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentPtysSubGrp"
+   "fields": [
+    {
+     "name": "InstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1019"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "InstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1050"
+       }
+      },
+      {
+       "name": "InstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1051"
+       }
+      },
+      {
+       "name": "InstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2378"
+       }
+      },
+      {
+       "name": "InstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

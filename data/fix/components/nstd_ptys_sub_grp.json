@@ -65,28 +65,30 @@
    "fix": {
     "tag": "804"
    },
-   "item": {
-    "name": "NestedPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NestedPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "545"
+   "fields": [
+    {
+     "name": "NestedPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NestedPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "545"
+       }
+      },
+      {
+       "name": "NestedPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "805"
+       }
       }
-     },
-     {
-      "name": "NestedPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "805"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

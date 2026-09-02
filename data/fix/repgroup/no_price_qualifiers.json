@@ -15,18 +15,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PriceQualifier",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PriceQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2710"
+ "fields": [
+  {
+   "name": "PriceQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PriceQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2710"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

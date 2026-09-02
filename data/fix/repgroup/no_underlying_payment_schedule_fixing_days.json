@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentScheduleFixingDay",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41879"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentScheduleFixingDay",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41879"
+     }
+    },
+    {
+     "name": "UnderlyingPaymentScheduleFixingDayNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41880"
+     }
     }
-   },
-   {
-    "name": "UnderlyingPaymentScheduleFixingDayNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41880"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

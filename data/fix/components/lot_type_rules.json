@@ -35,28 +35,30 @@
    "fix": {
     "tag": "1234"
    },
-   "item": {
-    "name": "LotTypeRule",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LotType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1093"
+   "fields": [
+    {
+     "name": "LotTypeRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LotType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1093"
+       }
+      },
+      {
+       "name": "MinLotSize",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1231"
+       }
       }
-     },
-     {
-      "name": "MinLotSize",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1231"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

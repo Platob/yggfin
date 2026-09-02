@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegProtectionTermObligation",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegProtectionTermObligationType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41636"
+ "fields": [
+  {
+   "name": "LegProtectionTermObligation",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProtectionTermObligationType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41636"
+     }
+    },
+    {
+     "name": "LegProtectionTermObligationValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41637"
+     }
     }
-   },
-   {
-    "name": "LegProtectionTermObligationValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41637"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -30,37 +30,39 @@
    "fix": {
     "tag": "40230"
    },
-   "item": {
-    "name": "PaymentSettl",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentSettlAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40231"
-      }
-     },
-     {
-      "name": "PaymentSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40232"
-      }
-     },
-     {
-      "name": "PaymentSettlParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PaymentSettlParties"
+   "fields": [
+    {
+     "name": "PaymentSettl",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentSettlAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40231"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "PaymentSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40232"
+       }
+      },
+      {
+       "name": "PaymentSettlParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentSettlParties"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -104,20 +104,22 @@
    "fix": {
     "tag": "42039"
    },
-   "item": {
-    "name": "UnderlyingCashSettlDealer",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingCashSettlDealer",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42040"
+   "fields": [
+    {
+     "name": "UnderlyingCashSettlDealer",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingCashSettlDealer",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42040"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

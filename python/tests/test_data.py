@@ -90,9 +90,7 @@ def records() -> dict[str, dict[str, object]]:
 #: reading, and the protocol's own nested under `fix`. The same document a
 #: component declaration and `schemas/rekep/*.yaml` are written in, which is
 #: the whole reason there is no second codec for a field record.
-FIELD_KEYS = frozenset(
-    {"name", "type", "nullable", "description", "fix", "fields", "item", "key", "value"}
-)
+FIELD_KEYS = frozenset({"name", "type", "nullable", "description", "fix", "fields"})
 
 #: The `fix:` keys whose value is itself a document in a readable field shard.
 NESTED = (
@@ -338,7 +336,7 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     group = declared["fields"][0]
     assert group["name"] == "NoPartyIDs"
     assert group["type"] == "list" and group["fix"]["tag"] == "453"
-    assert group["item"]["fields"][0]["name"] == "PartyID"
+    assert group["fields"][0]["fields"][0]["name"] == "PartyID"
 
 
 def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None:
@@ -346,22 +344,23 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
 
     assert declared["name"] == "NoPartyIDs"
     assert declared["type"] == "list" and declared["fix"]["tag"] == "453"
-    assert declared["item"]["type"] == "struct"
-    assert [member["name"] for member in declared["item"]["fields"][:3]] == [
+    repeated = declared["fields"][0]
+    assert repeated["type"] == "struct", "a list holds the one field it repeats"
+    assert [member["name"] for member in repeated["fields"][:3]] == [
         "PartyID",
         "PartyIDSource",
         "PartyRole",
     ]
     embedded = members("components")["parties"]["fields"][0]
     assert (embedded["name"], embedded["fix"]["tag"]) == ("NoPartyIDs", "453")
-    assert embedded["item"]["fields"][-1] == {
+    assert embedded["fields"][0]["fields"][-1] == {
         "name": "PtysSubGrp",
         "type": "struct",
         "nullable": True,
         "fix": {"component": "PtysSubGrp"},
         "fields": [],
     }, "the owning component keeps its nested reference"
-    assert declared["item"]["fields"][-1]["name"] == "NoPartySubIDs", (
+    assert repeated["fields"][-1]["name"] == "NoPartySubIDs", (
         "the group index exposes the recursively resolved list"
     )
 

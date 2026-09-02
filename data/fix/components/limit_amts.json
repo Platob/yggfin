@@ -29,76 +29,78 @@
    "fix": {
     "tag": "1630"
    },
-   "item": {
-    "name": "LimitAmt",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LimitAmtType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1631"
+   "fields": [
+    {
+     "name": "LimitAmt",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LimitAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1631"
+       }
+      },
+      {
+       "name": "LastLimitAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1632"
+       }
+      },
+      {
+       "name": "LimitAmtRemaining",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1633"
+       }
+      },
+      {
+       "name": "LimitUtilizationAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2394"
+       }
+      },
+      {
+       "name": "LimitAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2395"
+       }
+      },
+      {
+       "name": "LimitAmtCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1634"
+       }
+      },
+      {
+       "name": "LimitAmtCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2935"
+       }
+      },
+      {
+       "name": "LimitRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2396"
+       }
       }
-     },
-     {
-      "name": "LastLimitAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1632"
-      }
-     },
-     {
-      "name": "LimitAmtRemaining",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1633"
-      }
-     },
-     {
-      "name": "LimitUtilizationAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2394"
-      }
-     },
-     {
-      "name": "LimitAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2395"
-      }
-     },
-     {
-      "name": "LimitAmtCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1634"
-      }
-     },
-     {
-      "name": "LimitAmtCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2935"
-      }
-     },
-     {
-      "name": "LimitRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2396"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

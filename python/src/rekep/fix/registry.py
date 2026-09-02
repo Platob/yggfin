@@ -720,10 +720,7 @@ class FixRegistry(Convertible):
                 if replayed:
                     changes = MappingProxyType({"additions": 0, "updates": 0})
                 else:
-                    definitions = tuple(
-                        field.into_field() if hasattr(field, "into_field") else field
-                        for field in registry.fields
-                    )
+                    definitions = tuple(field.into_field() for field in registry.fields)
                     changes = self.add_definitions(definitions, registry.source.namespace)
                 changed = changed or bool(changes["additions"] or changes["updates"])
                 if registry.source.namespace == STANDARD_NAMESPACE and not replayed:
@@ -1420,16 +1417,12 @@ class FixRegistry(Convertible):
         Two ways a namespace says "this is the standard's field under our own
         tag": the registry's own `replacement-tag`, which names the tag the
         UDF was folded into, and a canonical name the standard already owns.
-        Both are only taken when Arrow can hold both readings in one column.
-
-        The datatype *word* used to answer this, and it answered it twice
-        wrong: it called a `Qty` reading of an `int` field a disagreement, and
-        it let a real collision through whenever either side left the word
-        out. Dropping it without putting this in its place is not safe --
-        `Fidessa_GTP_Alloc_FIX44_DropCopy.cfb` alone declares 11 vendor tags
-        whose name the standard owns at a *different* tag, 6442
-        `BenchmarkPrice` against standard 662 and 6871 `DeskID` against
-        standard 284 among them, and none of the 11 folds today.
+        Both are only taken when Arrow can hold both readings in one column,
+        which is a guard and not a formality: `Fidessa_GTP_Alloc_FIX44_DropCopy.cfb`
+        alone declares 11 vendor tags whose name the standard owns at a
+        *different* tag -- 6442 `BenchmarkPrice` against standard 662 and 6871
+        `DeskID` against standard 284 among them -- and none of the 11 is the
+        standard's field renumbered.
         """
         fix = record.fix
         replacement = fix.get("replacement-tag")
@@ -2367,7 +2360,7 @@ class FixRegistry(Convertible):
         reported rather than served short, and only explicit `scrape` may
         replace it.
         """
-        torn = getattr(self._layout, "torn", ())
+        torn = self._layout.torn
         if not torn:
             return False
         warnings.warn(
@@ -2379,9 +2372,7 @@ class FixRegistry(Convertible):
 
     def _forget(self) -> None:
         """Drop everything derived from the store, after the store changed."""
-        forget = getattr(self._layout, "forget", None)
-        if forget is not None:
-            forget()
+        self._layout.forget()
         self._indexes.clear()
         self._scalars.clear()
         self.__dict__.pop("_entries", None)

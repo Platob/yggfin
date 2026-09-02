@@ -46,28 +46,30 @@
    "fix": {
     "tag": "683"
    },
-   "item": {
-    "name": "LegStipulation",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegStipulationType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "688"
+   "fields": [
+    {
+     "name": "LegStipulation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegStipulationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "688"
+       }
+      },
+      {
+       "name": "LegStipulationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "689"
+       }
       }
-     },
-     {
-      "name": "LegStipulationValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "689"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -12,260 +12,262 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentStub",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentStubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40873"
-    }
-   },
-   {
-    "name": "PaymentStubLength",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40874"
-    }
-   },
-   {
-    "name": "PaymentStubStartDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "PaymentStubStartDate"
+ "fields": [
+  {
+   "name": "PaymentStub",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40873"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "PaymentStubEndDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "PaymentStubEndDate"
+    {
+     "name": "PaymentStubLength",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40874"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "PaymentStubRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40875"
+    {
+     "name": "PaymentStubStartDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "PaymentStubStartDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "PaymentStubEndDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "PaymentStubEndDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "PaymentStubRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40875"
+     }
+    },
+    {
+     "name": "PaymentStubFixedAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40876"
+     }
+    },
+    {
+     "name": "PaymentStubFixedCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40877"
+     }
+    },
+    {
+     "name": "PaymentStubIndex",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40878"
+     }
+    },
+    {
+     "name": "PaymentStubIndexSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40879"
+     }
+    },
+    {
+     "name": "PaymentStubIndexCurvePeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40880"
+     }
+    },
+    {
+     "name": "PaymentStubIndexCurveUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40881"
+     }
+    },
+    {
+     "name": "PaymentStubIndexRateMultiplier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40882"
+     }
+    },
+    {
+     "name": "PaymentStubIndexRateSpread",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40883"
+     }
+    },
+    {
+     "name": "PaymentStubIndexRateSpreadPositionType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40884"
+     }
+    },
+    {
+     "name": "PaymentStubIndexRateTreatment",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40885"
+     }
+    },
+    {
+     "name": "PaymentStubIndexCapRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40886"
+     }
+    },
+    {
+     "name": "PaymentStubIndexCapRateBuySide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40887"
+     }
+    },
+    {
+     "name": "PaymentStubIndexCapRateSellSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40888"
+     }
+    },
+    {
+     "name": "PaymentStubIndexFloorRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40889"
+     }
+    },
+    {
+     "name": "PaymentStubIndexFloorRateBuySide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40890"
+     }
+    },
+    {
+     "name": "PaymentStubIndexFloorRateSellSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40891"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40892"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2Source",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40893"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2CurvePeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40894"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2CurveUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40895"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2RateMultiplier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40896"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2RateSpread",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40897"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2RateSpreadPositionType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40898"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2RateTreatment",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40899"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2CapRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40900"
+     }
+    },
+    {
+     "name": "PaymentStubIndex2FloorRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40901"
+     }
     }
-   },
-   {
-    "name": "PaymentStubFixedAmount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40876"
-    }
-   },
-   {
-    "name": "PaymentStubFixedCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40877"
-    }
-   },
-   {
-    "name": "PaymentStubIndex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40878"
-    }
-   },
-   {
-    "name": "PaymentStubIndexSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40879"
-    }
-   },
-   {
-    "name": "PaymentStubIndexCurvePeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40880"
-    }
-   },
-   {
-    "name": "PaymentStubIndexCurveUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40881"
-    }
-   },
-   {
-    "name": "PaymentStubIndexRateMultiplier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40882"
-    }
-   },
-   {
-    "name": "PaymentStubIndexRateSpread",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40883"
-    }
-   },
-   {
-    "name": "PaymentStubIndexRateSpreadPositionType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40884"
-    }
-   },
-   {
-    "name": "PaymentStubIndexRateTreatment",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40885"
-    }
-   },
-   {
-    "name": "PaymentStubIndexCapRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40886"
-    }
-   },
-   {
-    "name": "PaymentStubIndexCapRateBuySide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40887"
-    }
-   },
-   {
-    "name": "PaymentStubIndexCapRateSellSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40888"
-    }
-   },
-   {
-    "name": "PaymentStubIndexFloorRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40889"
-    }
-   },
-   {
-    "name": "PaymentStubIndexFloorRateBuySide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40890"
-    }
-   },
-   {
-    "name": "PaymentStubIndexFloorRateSellSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40891"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40892"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2Source",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40893"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2CurvePeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40894"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2CurveUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40895"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2RateMultiplier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40896"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2RateSpread",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40897"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2RateSpreadPositionType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40898"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2RateTreatment",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40899"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2CapRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40900"
-    }
-   },
-   {
-    "name": "PaymentStubIndex2FloorRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40901"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -104,92 +104,94 @@
    "fix": {
     "tag": "1981"
    },
-   "item": {
-    "name": "UnderlyingEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1982"
+   "fields": [
+    {
+     "name": "UnderlyingEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1982"
+       }
+      },
+      {
+       "name": "UnderlyingEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1983"
+       }
+      },
+      {
+       "name": "UnderlyingEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1984"
+       }
+      },
+      {
+       "name": "UnderlyingEventTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1985"
+       }
+      },
+      {
+       "name": "UnderlyingEventTimePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1986"
+       }
+      },
+      {
+       "name": "UnderlyingEventMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2342"
+       }
+      },
+      {
+       "name": "UnderlyingEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1987"
+       }
+      },
+      {
+       "name": "UnderlyingEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2071"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingEventTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2072"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2073"
+       }
       }
-     },
-     {
-      "name": "UnderlyingEventDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1983"
-      }
-     },
-     {
-      "name": "UnderlyingEventTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1984"
-      }
-     },
-     {
-      "name": "UnderlyingEventTimeUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1985"
-      }
-     },
-     {
-      "name": "UnderlyingEventTimePeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1986"
-      }
-     },
-     {
-      "name": "UnderlyingEventMonthYear",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2342"
-      }
-     },
-     {
-      "name": "UnderlyingEventPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1987"
-      }
-     },
-     {
-      "name": "UnderlyingEventText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2071"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingEventTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2072"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingEventText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2073"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

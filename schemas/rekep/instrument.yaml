@@ -1,7 +1,7 @@
 name: InstUpdate
 type: struct
 description: One observed version of an instrument component.
-metadata: {namespace: rekep.market.instrument, version: '2'}
+metadata: {namespace: rekep.market.instrument, version: '1'}
 fields:
 - name: unix
   type: int64

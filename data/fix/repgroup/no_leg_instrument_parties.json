@@ -12,72 +12,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegInstrumentParty",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegInstrumentPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2255"
-    }
-   },
-   {
-    "name": "LegInstrumentPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2256"
-    }
-   },
-   {
-    "name": "LegInstrumentPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2257"
-    }
-   },
-   {
-    "name": "LegInstrumentPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2379"
-    }
-   },
-   {
-    "name": "NoLegInstrumentPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2258"
+ "fields": [
+  {
+   "name": "LegInstrumentParty",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegInstrumentPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2255"
+     }
     },
-    "item": {
-     "name": "LegInstrumentPartySubID",
-     "type": "struct",
+    {
+     "name": "LegInstrumentPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2256"
+     }
+    },
+    {
+     "name": "LegInstrumentPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2257"
+     }
+    },
+    {
+     "name": "LegInstrumentPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2379"
+     }
+    },
+    {
+     "name": "NoLegInstrumentPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "2258"
+     },
      "fields": [
       {
        "name": "LegInstrumentPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2259"
-       }
-      },
-      {
-       "name": "LegInstrumentPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2260"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegInstrumentPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2259"
+         }
+        },
+        {
+         "name": "LegInstrumentPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2260"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

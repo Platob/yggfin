@@ -27,44 +27,46 @@
    "fix": {
     "tag": "124"
    },
-   "item": {
-    "name": "Exec",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LastQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "32"
+   "fields": [
+    {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
+      },
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
+      },
+      {
+       "name": "TradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1003"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
       }
-     },
-     {
-      "name": "ExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "17"
-      }
-     },
-     {
-      "name": "TradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1003"
-      }
-     },
-     {
-      "name": "LastPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "31"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

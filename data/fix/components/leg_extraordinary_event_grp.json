@@ -90,28 +90,30 @@
    "fix": {
     "tag": "42388"
    },
-   "item": {
-    "name": "LegExtraordinaryEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegExtraordinaryEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42389"
+   "fields": [
+    {
+     "name": "LegExtraordinaryEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegExtraordinaryEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42389"
+       }
+      },
+      {
+       "name": "LegExtraordinaryEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42390"
+       }
       }
-     },
-     {
-      "name": "LegExtraordinaryEventValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42390"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

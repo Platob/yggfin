@@ -13,58 +13,60 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RelatedTrade",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RelatedTradeID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1856"
+ "fields": [
+  {
+   "name": "RelatedTrade",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RelatedTradeID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1856"
+     }
+    },
+    {
+     "name": "RelatedTradeIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1857"
+     }
+    },
+    {
+     "name": "RelatedRegulatoryTradeIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2103"
+     }
+    },
+    {
+     "name": "RelatedTradeDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1858"
+     }
+    },
+    {
+     "name": "RelatedTradeMarketID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1859"
+     }
+    },
+    {
+     "name": "RelatedTradeQuantity",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1860"
+     }
     }
-   },
-   {
-    "name": "RelatedTradeIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1857"
-    }
-   },
-   {
-    "name": "RelatedRegulatoryTradeIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2103"
-    }
-   },
-   {
-    "name": "RelatedTradeDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1858"
-    }
-   },
-   {
-    "name": "RelatedTradeMarketID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1859"
-    }
-   },
-   {
-    "name": "RelatedTradeQuantity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1860"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

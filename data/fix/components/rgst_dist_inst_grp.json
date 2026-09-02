@@ -30,76 +30,78 @@
    "fix": {
     "tag": "510"
    },
-   "item": {
-    "name": "DistribInst",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DistribPaymentMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "477"
+   "fields": [
+    {
+     "name": "DistribInst",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DistribPaymentMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "477"
+       }
+      },
+      {
+       "name": "DistribPercentage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "512"
+       }
+      },
+      {
+       "name": "CashDistribCurr",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "478"
+       }
+      },
+      {
+       "name": "CashDistribAgentName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "498"
+       }
+      },
+      {
+       "name": "CashDistribAgentCode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "499"
+       }
+      },
+      {
+       "name": "CashDistribAgentAcctNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "500"
+       }
+      },
+      {
+       "name": "CashDistribPayRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "501"
+       }
+      },
+      {
+       "name": "CashDistribAgentAcctName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "502"
+       }
       }
-     },
-     {
-      "name": "DistribPercentage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "512"
-      }
-     },
-     {
-      "name": "CashDistribCurr",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "478"
-      }
-     },
-     {
-      "name": "CashDistribAgentName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "498"
-      }
-     },
-     {
-      "name": "CashDistribAgentCode",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "499"
-      }
-     },
-     {
-      "name": "CashDistribAgentAcctNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "500"
-      }
-     },
-     {
-      "name": "CashDistribPayRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "501"
-      }
-     },
-     {
-      "name": "CashDistribAgentAcctName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "502"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

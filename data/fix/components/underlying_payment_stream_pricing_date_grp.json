@@ -104,28 +104,30 @@
    "fix": {
     "tag": "41941"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamPricingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamPricingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41942"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamPricingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamPricingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41942"
+       }
+      },
+      {
+       "name": "UnderlyingPaymentStreamPricingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41943"
+       }
       }
-     },
-     {
-      "name": "UnderlyingPaymentStreamPricingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41943"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

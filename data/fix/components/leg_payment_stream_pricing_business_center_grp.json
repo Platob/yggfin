@@ -90,20 +90,22 @@
    "fix": {
     "tag": "41561"
    },
-   "item": {
-    "name": "LegPaymentStreamPricingBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamPricingBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41562"
+   "fields": [
+    {
+     "name": "LegPaymentStreamPricingBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPricingBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41562"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

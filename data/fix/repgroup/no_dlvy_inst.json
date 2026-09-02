@@ -11,35 +11,37 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "DlvyInst",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "SettlInstSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "165"
-    }
-   },
-   {
-    "name": "DlvyInstType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "787"
-    }
-   },
-   {
-    "name": "SettlParties",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "SettlParties"
+ "fields": [
+  {
+   "name": "DlvyInst",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SettlInstSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "165"
+     }
     },
-    "fields": []
-   }
-  ]
- }
+    {
+     "name": "DlvyInstType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "787"
+     }
+    },
+    {
+     "name": "SettlParties",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "SettlParties"
+     },
+     "fields": []
+    }
+   ]
+  }
+ ]
 }

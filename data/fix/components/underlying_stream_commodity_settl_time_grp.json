@@ -104,36 +104,38 @@
    "fix": {
     "tag": "41999"
    },
-   "item": {
-    "name": "UnderlyingStreamCommoditySettlTime",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamCommoditySettlStart",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42000"
+   "fields": [
+    {
+     "name": "UnderlyingStreamCommoditySettlTime",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamCommoditySettlStart",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42000"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlEnd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42001"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommoditySettlTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41936"
+       }
       }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlEnd",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42001"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommoditySettlTimeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41936"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Date",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradeDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "75"
+ "fields": [
+  {
+   "name": "Date",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradeDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "75"
+     }
+    },
+    {
+     "name": "LastUpdateTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "779"
+     }
+    },
+    {
+     "name": "TransactTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "60"
+     }
     }
-   },
-   {
-    "name": "LastUpdateTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "779"
-    }
-   },
-   {
-    "name": "TransactTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "60"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

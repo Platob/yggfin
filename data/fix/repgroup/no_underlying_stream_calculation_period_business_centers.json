@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40557"
+ "fields": [
+  {
+   "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40557"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

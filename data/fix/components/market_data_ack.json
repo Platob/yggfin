@@ -47,61 +47,63 @@
    "fix": {
     "tag": "268"
    },
-   "item": {
-    "name": "MDEntry",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MDEntryStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3106"
-      }
-     },
-     {
-      "name": "MDEntryID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "278"
-      }
-     },
-     {
-      "name": "MDEntryStatusText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3107"
-      }
-     },
-     {
-      "name": "EncodedMDEntryStatusTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3108"
-      }
-     },
-     {
-      "name": "EncodedMDEntryStatusText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3109"
-      }
-     },
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "MDEntry",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MDEntryStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3106"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "MDEntryID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "278"
+       }
+      },
+      {
+       "name": "MDEntryStatusText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3107"
+       }
+      },
+      {
+       "name": "EncodedMDEntryStatusTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3108"
+       }
+      },
+      {
+       "name": "EncodedMDEntryStatusText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3109"
+       }
+      },
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "TransactTime",
@@ -118,35 +120,37 @@
    "fix": {
     "tag": "33"
    },
-   "item": {
-    "name": "LinesOfText",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Text",
-      "type": "string",
-      "fix": {
-       "tag": "58"
+   "fields": [
+    {
+     "name": "LinesOfText",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Text",
+       "type": "string",
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "RejectText",

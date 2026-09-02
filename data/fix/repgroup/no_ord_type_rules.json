@@ -9,18 +9,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "OrdTypeRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "OrdType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40"
+ "fields": [
+  {
+   "name": "OrdTypeRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "OrdType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

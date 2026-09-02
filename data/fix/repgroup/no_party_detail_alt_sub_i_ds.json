@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PartyDetailAltSubID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PartyDetailAltSubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1520"
+ "fields": [
+  {
+   "name": "PartyDetailAltSubID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PartyDetailAltSubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1520"
+     }
+    },
+    {
+     "name": "PartyDetailAltSubIDType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1521"
+     }
     }
-   },
-   {
-    "name": "PartyDetailAltSubIDType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1521"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -33,28 +33,30 @@
    "fix": {
     "tag": "1312"
    },
-   "item": {
-    "name": "NestedInstrAttrib",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NestedInstrAttribType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1210"
+   "fields": [
+    {
+     "name": "NestedInstrAttrib",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NestedInstrAttribType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1210"
+       }
+      },
+      {
+       "name": "NestedInstrAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1211"
+       }
       }
-     },
-     {
-      "name": "NestedInstrAttribValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1211"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

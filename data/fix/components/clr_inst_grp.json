@@ -34,20 +34,22 @@
    "fix": {
     "tag": "576"
    },
-   "item": {
-    "name": "ClearingInstruction",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ClearingInstruction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "577"
+   "fields": [
+    {
+     "name": "ClearingInstruction",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClearingInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "577"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

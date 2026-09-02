@@ -12,1232 +12,1252 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegStream",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegStreamType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40242"
-    }
-   },
-   {
-    "name": "LegStreamXID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41700"
-    }
-   },
-   {
-    "name": "LegStreamDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40243"
-    }
-   },
-   {
-    "name": "LegStreamVersion",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42583"
-    }
-   },
-   {
-    "name": "LegStreamVersionEffectiveDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42584"
-    }
-   },
-   {
-    "name": "LegStreamPaySide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40244"
-    }
-   },
-   {
-    "name": "LegStreamReceiveSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40245"
-    }
-   },
-   {
-    "name": "LegStreamNotionalXIDRef",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41702"
-    }
-   },
-   {
-    "name": "LegStreamNotional",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40246"
-    }
-   },
-   {
-    "name": "LegStreamCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40247"
-    }
-   },
-   {
-    "name": "LegStreamNotionalDeterminationMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42585"
-    }
-   },
-   {
-    "name": "LegStreamNotionalAdjustments",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42586"
-    }
-   },
-   {
-    "name": "LegStreamNotionalFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41703"
-    }
-   },
-   {
-    "name": "LegStreamNotionalFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41704"
-    }
-   },
-   {
-    "name": "LegStreamNotionalCommodityFrequency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41705"
-    }
-   },
-   {
-    "name": "LegStreamNotionalUnitOfMeasure",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41706"
-    }
-   },
-   {
-    "name": "LegStreamTotalNotional",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41707"
-    }
-   },
-   {
-    "name": "LegStreamTotalNotionalUnitOfMeasure",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41708"
-    }
-   },
-   {
-    "name": "LegStreamCommodity",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegStreamCommodity"
+ "fields": [
+  {
+   "name": "LegStream",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40242"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegStreamEffectiveDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegStreamEffectiveDate"
+    {
+     "name": "LegStreamXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41700"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegStreamTerminationDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegStreamTerminationDate"
+    {
+     "name": "LegStreamDesc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40243"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegStreamCalculationPeriodDates",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegStreamCalculationPeriodDates"
+    {
+     "name": "LegStreamVersion",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42583"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegPaymentStream",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegPaymentStream"
+    {
+     "name": "LegStreamVersionEffectiveDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42584"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "NoLegPaymentSchedules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40374"
+    {
+     "name": "LegStreamPaySide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40244"
+     }
     },
-    "item": {
-     "name": "LegPaymentSchedule",
+    {
+     "name": "LegStreamReceiveSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40245"
+     }
+    },
+    {
+     "name": "LegStreamNotionalXIDRef",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41702"
+     }
+    },
+    {
+     "name": "LegStreamNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40246"
+     }
+    },
+    {
+     "name": "LegStreamCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40247"
+     }
+    },
+    {
+     "name": "LegStreamNotionalDeterminationMethod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42585"
+     }
+    },
+    {
+     "name": "LegStreamNotionalAdjustments",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42586"
+     }
+    },
+    {
+     "name": "LegStreamNotionalFrequencyPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41703"
+     }
+    },
+    {
+     "name": "LegStreamNotionalFrequencyUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41704"
+     }
+    },
+    {
+     "name": "LegStreamNotionalCommodityFrequency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41705"
+     }
+    },
+    {
+     "name": "LegStreamNotionalUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41706"
+     }
+    },
+    {
+     "name": "LegStreamTotalNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41707"
+     }
+    },
+    {
+     "name": "LegStreamTotalNotionalUnitOfMeasure",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41708"
+     }
+    },
+    {
+     "name": "LegStreamCommodity",
      "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegStreamCommodity"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegStreamEffectiveDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegStreamEffectiveDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegStreamTerminationDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegStreamTerminationDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegStreamCalculationPeriodDates",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegStreamCalculationPeriodDates"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegPaymentStream",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegPaymentStream"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoLegPaymentSchedules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40374"
+     },
      "fields": [
       {
-       "name": "LegPaymentScheduleType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40375"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleXID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41533"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleXIDRef",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41534"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40376"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStartDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40377"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleEndDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40378"
-       }
-      },
-      {
-       "name": "LegPaymentSchedulePaySide",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40379"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleReceiveSide",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40380"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleNotional",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40381"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40382"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40383"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateMultiplier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40384"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateSpread",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40385"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41535"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41536"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateConversionFactor",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41537"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateSpreadType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41538"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateSpreadPositionType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40386"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleRateTreatment",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40387"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixedAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40388"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixedCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40389"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleSettlPeriodPrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41539"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleSettlPeriodPriceCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41540"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleSettlPeriodPriceUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41541"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41542"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepFrequencyPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40390"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepFrequencyUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40391"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepOffsetValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40392"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40393"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepOffsetRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40394"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleStepRelativeTo",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40395"
-       }
-      },
-      {
-       "name": "NoLegPaymentScheduleRateSources",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "40414"
-       },
-       "item": {
-        "name": "LegPaymentScheduleRateSource",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegPaymentScheduleRateSource",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40415"
-          }
-         },
-         {
-          "name": "LegPaymentScheduleRateSourceType",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40416"
-          }
-         },
-         {
-          "name": "LegPaymentScheduleReferencePage",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40417"
-          }
-         }
-        ]
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40396"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleWeight",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40397"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateRelativeTo",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40398"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateBusinessDayConvention",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40399"
-       }
-      },
-      {
-       "name": "NoLegPaymentScheduleFixingDateBusinessCenters",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "40927"
-       },
-       "item": {
-        "name": "LegPaymentScheduleFixingDateBusinessCenter",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegPaymentScheduleFixingDateBusinessCenter",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40400"
-          }
-         }
-        ]
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateOffsetPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40401"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateOffsetUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40402"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateOffsetDayType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40403"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDayDistribution",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41543"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDayCount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41544"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingDateAdjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40404"
-       }
-      },
-      {
-       "name": "NoLegPaymentScheduleFixingDays",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "41530"
-       },
-       "item": {
-        "name": "LegPaymentScheduleFixingDay",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegPaymentScheduleFixingDayOfWeek",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "41531"
-          }
-         },
-         {
-          "name": "LegPaymentScheduleFixingDayNumber",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "41532"
-          }
-         }
-        ]
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingLagPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41545"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingLagUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41546"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingFirstObservationDateOffsetPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41547"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingFirstObservationDateOffsetUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41548"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40405"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleFixingTimeBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40406"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleInterimExchangePaymentDateRelativeTo",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40407"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleInterimExchangeDatesBusinessDayConvention",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40408"
-       }
-      },
-      {
-       "name": "NoLegPaymentScheduleInterimExchangeDateBusinessCenters",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "40928"
-       },
-       "item": {
-        "name": "LegPaymentScheduleInterimExchangeDateBusinessCenter",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegPaymentScheduleInterimExchangeDatesBusinessCenter",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40409"
-          }
-         }
-        ]
-       }
-      },
-      {
-       "name": "LegPaymentScheduleInterimExchangeDatesOffsetPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40410"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleInterimExchangeDatesOffsetUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40411"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleInterimExchangeDatesOffsetDayType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40412"
-       }
-      },
-      {
-       "name": "LegPaymentScheduleInterimExchangeDateAdjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40413"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NoLegPaymentStubs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40418"
-    },
-    "item": {
-     "name": "LegPaymentStub",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegPaymentStubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40419"
-       }
-      },
-      {
-       "name": "LegPaymentStubLength",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40420"
-       }
-      },
-      {
-       "name": "LegPaymentStubStartDate",
+       "name": "LegPaymentSchedule",
        "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "LegPaymentStubStartDate"
-       },
-       "fields": []
-      },
-      {
-       "name": "LegPaymentStubEndDate",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "LegPaymentStubEndDate"
-       },
-       "fields": []
-      },
-      {
-       "name": "LegPaymentStubRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40421"
-       }
-      },
-      {
-       "name": "LegPaymentStubFixedAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40422"
-       }
-      },
-      {
-       "name": "LegPaymentStubFixedCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40423"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40424"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40425"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexCurvePeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40426"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexCurveUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40427"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexRateMultiplier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40428"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexRateSpread",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40429"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexRateSpreadPositionType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40430"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexRateTreatment",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40431"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexCapRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40432"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexCapRateBuySide",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40433"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexCapRateSellSide",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40434"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexFloorRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40435"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexFloorRateBuySide",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40436"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndexFloorRateSellSide",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40437"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40438"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2Source",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40439"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2CurvePeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40440"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2CurveUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40441"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2RateMultiplier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40442"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2RateSpread",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40443"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2RateSpreadPositionType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40444"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2RateTreatment",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40445"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2CapRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40446"
-       }
-      },
-      {
-       "name": "LegPaymentStubIndex2FloorRate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40447"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegDeliveryStream",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegDeliveryStream"
-    },
-    "fields": []
-   },
-   {
-    "name": "NoLegDeliverySchedules",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41408"
-    },
-    "item": {
-     "name": "LegDeliverySchedule",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegDeliveryScheduleType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41409"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleXID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41410"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleNotional",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41411"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41412"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleNotionalCommodityFrequency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41413"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleNegativeTolerance",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41414"
-       }
-      },
-      {
-       "name": "LegDeliverySchedulePositiveTolerance",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41415"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41416"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleToleranceType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41417"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleSettlCountry",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41418"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleSettlTimeZone",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41419"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleSettlFlowType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41420"
-       }
-      },
-      {
-       "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41421"
-       }
-      },
-      {
-       "name": "NoLegDeliveryScheduleSettlDays",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "41422"
-       },
-       "item": {
-        "name": "LegDeliveryScheduleSettlDay",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegDeliveryScheduleSettlDay",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "41423"
-          }
+       "fields": [
+        {
+         "name": "LegPaymentScheduleType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40375"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleXID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41533"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleXIDRef",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41534"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStubType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40376"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStartDateUnadjusted",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40377"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleEndDateUnadjusted",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40378"
+         }
+        },
+        {
+         "name": "LegPaymentSchedulePaySide",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40379"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleReceiveSide",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40380"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleNotional",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40381"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleCurrency",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40382"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40383"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateMultiplier",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40384"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateSpread",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40385"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateCurrency",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41535"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateUnitOfMeasure",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41536"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateConversionFactor",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41537"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateSpreadType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41538"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateSpreadPositionType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40386"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleRateTreatment",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40387"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixedAmount",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40388"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixedCurrency",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40389"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleSettlPeriodPrice",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41539"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleSettlPeriodPriceCurrency",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41540"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleSettlPeriodPriceUnitOfMeasure",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41541"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepUnitOfMeasure",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41542"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepFrequencyPeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40390"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepFrequencyUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40391"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepOffsetValue",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40392"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40393"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepOffsetRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40394"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleStepRelativeTo",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40395"
+         }
+        },
+        {
+         "name": "NoLegPaymentScheduleRateSources",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "40414"
          },
-         {
-          "name": "LegDeliveryScheduleSettlTotalHours",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "41424"
-          }
-         },
-         {
-          "name": "NoLegDeliveryScheduleSettlTimes",
-          "type": "list",
-          "nullable": true,
-          "fix": {
-           "tag": "41425"
-          },
-          "item": {
-           "name": "LegDeliveryScheduleSettlTime",
+         "fields": [
+          {
+           "name": "LegPaymentScheduleRateSource",
            "type": "struct",
            "fields": [
             {
-             "name": "LegDeliveryScheduleSettlStart",
+             "name": "LegPaymentScheduleRateSource",
              "type": "string",
              "nullable": true,
              "fix": {
-              "tag": "41426"
+              "tag": "40415"
              }
             },
             {
-             "name": "LegDeliveryScheduleSettlEnd",
+             "name": "LegPaymentScheduleRateSourceType",
              "type": "string",
              "nullable": true,
              "fix": {
-              "tag": "41427"
+              "tag": "40416"
              }
             },
             {
-             "name": "LegDeliveryScheduleSettlTimeType",
+             "name": "LegPaymentScheduleReferencePage",
              "type": "string",
              "nullable": true,
              "fix": {
-              "tag": "41428"
+              "tag": "40417"
              }
             }
            ]
           }
+         ]
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateUnadjusted",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40396"
          }
-        ]
-       }
+        },
+        {
+         "name": "LegPaymentScheduleWeight",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40397"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateRelativeTo",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40398"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateBusinessDayConvention",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40399"
+         }
+        },
+        {
+         "name": "NoLegPaymentScheduleFixingDateBusinessCenters",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "40927"
+         },
+         "fields": [
+          {
+           "name": "LegPaymentScheduleFixingDateBusinessCenter",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegPaymentScheduleFixingDateBusinessCenter",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "40400"
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateOffsetPeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40401"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateOffsetUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40402"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateOffsetDayType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40403"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDayDistribution",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41543"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDayCount",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41544"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingDateAdjusted",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40404"
+         }
+        },
+        {
+         "name": "NoLegPaymentScheduleFixingDays",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "41530"
+         },
+         "fields": [
+          {
+           "name": "LegPaymentScheduleFixingDay",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegPaymentScheduleFixingDayOfWeek",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "41531"
+             }
+            },
+            {
+             "name": "LegPaymentScheduleFixingDayNumber",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "41532"
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "LegPaymentScheduleFixingLagPeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41545"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingLagUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41546"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingFirstObservationDateOffsetPeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41547"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingFirstObservationDateOffsetUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41548"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingTime",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40405"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleFixingTimeBusinessCenter",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40406"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleInterimExchangePaymentDateRelativeTo",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40407"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleInterimExchangeDatesBusinessDayConvention",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40408"
+         }
+        },
+        {
+         "name": "NoLegPaymentScheduleInterimExchangeDateBusinessCenters",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "40928"
+         },
+         "fields": [
+          {
+           "name": "LegPaymentScheduleInterimExchangeDateBusinessCenter",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegPaymentScheduleInterimExchangeDatesBusinessCenter",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "40409"
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "name": "LegPaymentScheduleInterimExchangeDatesOffsetPeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40410"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleInterimExchangeDatesOffsetUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40411"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleInterimExchangeDatesOffsetDayType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40412"
+         }
+        },
+        {
+         "name": "LegPaymentScheduleInterimExchangeDateAdjusted",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40413"
+         }
+        }
+       ]
       }
      ]
+    },
+    {
+     "name": "NoLegPaymentStubs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40418"
+     },
+     "fields": [
+      {
+       "name": "LegPaymentStub",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegPaymentStubType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40419"
+         }
+        },
+        {
+         "name": "LegPaymentStubLength",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40420"
+         }
+        },
+        {
+         "name": "LegPaymentStubStartDate",
+         "type": "struct",
+         "nullable": true,
+         "fix": {
+          "component": "LegPaymentStubStartDate"
+         },
+         "fields": []
+        },
+        {
+         "name": "LegPaymentStubEndDate",
+         "type": "struct",
+         "nullable": true,
+         "fix": {
+          "component": "LegPaymentStubEndDate"
+         },
+         "fields": []
+        },
+        {
+         "name": "LegPaymentStubRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40421"
+         }
+        },
+        {
+         "name": "LegPaymentStubFixedAmount",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40422"
+         }
+        },
+        {
+         "name": "LegPaymentStubFixedCurrency",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40423"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40424"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexSource",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40425"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexCurvePeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40426"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexCurveUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40427"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexRateMultiplier",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40428"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexRateSpread",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40429"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexRateSpreadPositionType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40430"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexRateTreatment",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40431"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexCapRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40432"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexCapRateBuySide",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40433"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexCapRateSellSide",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40434"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexFloorRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40435"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexFloorRateBuySide",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40436"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndexFloorRateSellSide",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40437"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40438"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2Source",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40439"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2CurvePeriod",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40440"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2CurveUnit",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40441"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2RateMultiplier",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40442"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2RateSpread",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40443"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2RateSpreadPositionType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40444"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2RateTreatment",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40445"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2CapRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40446"
+         }
+        },
+        {
+         "name": "LegPaymentStubIndex2FloorRate",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40447"
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "LegDeliveryStream",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegDeliveryStream"
+     },
+     "fields": []
+    },
+    {
+     "name": "NoLegDeliverySchedules",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41408"
+     },
+     "fields": [
+      {
+       "name": "LegDeliverySchedule",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegDeliveryScheduleType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41409"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleXID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41410"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleNotional",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41411"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41412"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleNotionalCommodityFrequency",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41413"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleNegativeTolerance",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41414"
+         }
+        },
+        {
+         "name": "LegDeliverySchedulePositiveTolerance",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41415"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41416"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleToleranceType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41417"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleSettlCountry",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41418"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleSettlTimeZone",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41419"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleSettlFlowType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41420"
+         }
+        },
+        {
+         "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41421"
+         }
+        },
+        {
+         "name": "NoLegDeliveryScheduleSettlDays",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "41422"
+         },
+         "fields": [
+          {
+           "name": "LegDeliveryScheduleSettlDay",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegDeliveryScheduleSettlDay",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "41423"
+             }
+            },
+            {
+             "name": "LegDeliveryScheduleSettlTotalHours",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "41424"
+             }
+            },
+            {
+             "name": "NoLegDeliveryScheduleSettlTimes",
+             "type": "list",
+             "nullable": true,
+             "fix": {
+              "tag": "41425"
+             },
+             "fields": [
+              {
+               "name": "LegDeliveryScheduleSettlTime",
+               "type": "struct",
+               "fields": [
+                {
+                 "name": "LegDeliveryScheduleSettlStart",
+                 "type": "string",
+                 "nullable": true,
+                 "fix": {
+                  "tag": "41426"
+                 }
+                },
+                {
+                 "name": "LegDeliveryScheduleSettlEnd",
+                 "type": "string",
+                 "nullable": true,
+                 "fix": {
+                  "tag": "41427"
+                 }
+                },
+                {
+                 "name": "LegDeliveryScheduleSettlTimeType",
+                 "type": "string",
+                 "nullable": true,
+                 "fix": {
+                  "tag": "41428"
+                 }
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "LegStreamText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40248"
+     }
+    },
+    {
+     "name": "EncodedLegStreamTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40978"
+     }
+    },
+    {
+     "name": "EncodedLegStreamText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40979"
+     }
     }
-   },
-   {
-    "name": "LegStreamText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40248"
-    }
-   },
-   {
-    "name": "EncodedLegStreamTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40978"
-    }
-   },
-   {
-    "name": "EncodedLegStreamText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40979"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

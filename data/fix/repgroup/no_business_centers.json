@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "BusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "BusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40471"
+ "fields": [
+  {
+   "name": "BusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "BusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40471"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

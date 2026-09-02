@@ -71,104 +71,110 @@
    "fix": {
     "tag": "85"
    },
-   "item": {
-    "name": "DlvyInst",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SettlInstSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "165"
-      }
-     },
-     {
-      "name": "DlvyInstType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "787"
-      }
-     },
-     {
-      "name": "NoSettlPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "781"
+   "fields": [
+    {
+     "name": "DlvyInst",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SettlInstSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "165"
+       }
       },
-      "item": {
-       "name": "SettlPartyID",
-       "type": "struct",
+      {
+       "name": "DlvyInstType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "787"
+       }
+      },
+      {
+       "name": "NoSettlPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "781"
+       },
        "fields": [
         {
          "name": "SettlPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "782"
-         }
-        },
-        {
-         "name": "SettlPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "783"
-         }
-        },
-        {
-         "name": "SettlPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "784"
-         }
-        },
-        {
-         "name": "SettlPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2389"
-         }
-        },
-        {
-         "name": "NoSettlPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "801"
-         },
-         "item": {
-          "name": "SettlPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "SettlPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "785"
-            }
-           },
-           {
-            "name": "SettlPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "786"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "SettlPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "782"
            }
-          ]
-         }
+          },
+          {
+           "name": "SettlPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "783"
+           }
+          },
+          {
+           "name": "SettlPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "784"
+           }
+          },
+          {
+           "name": "SettlPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2389"
+           }
+          },
+          {
+           "name": "NoSettlPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "801"
+           },
+           "fields": [
+            {
+             "name": "SettlPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "SettlPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "785"
+               }
+              },
+              {
+               "name": "SettlPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "786"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

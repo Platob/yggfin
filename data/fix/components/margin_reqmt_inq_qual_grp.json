@@ -28,20 +28,22 @@
    "fix": {
     "tag": "1636"
    },
-   "item": {
-    "name": "MarginReqmtInqQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MarginReqmtInqQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1637"
+   "fields": [
+    {
+     "name": "MarginReqmtInqQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MarginReqmtInqQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1637"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -90,37 +90,39 @@
    "fix": {
     "tag": "41422"
    },
-   "item": {
-    "name": "LegDeliveryScheduleSettlDay",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDeliveryScheduleSettlDay",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41423"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlTotalHours",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41424"
-      }
-     },
-     {
-      "name": "LegDeliveryScheduleSettlTimeGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegDeliveryScheduleSettlTimeGrp"
+   "fields": [
+    {
+     "name": "LegDeliveryScheduleSettlDay",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryScheduleSettlDay",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41423"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegDeliveryScheduleSettlTotalHours",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41424"
+       }
+      },
+      {
+       "name": "LegDeliveryScheduleSettlTimeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegDeliveryScheduleSettlTimeGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

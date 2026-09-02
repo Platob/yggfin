@@ -104,53 +104,55 @@
    "fix": {
     "tag": "42173"
    },
-   "item": {
-    "name": "UnderlyingProvisionPartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42174"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42175"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42176"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40918"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionPtysSubGrp"
+   "fields": [
+    {
+     "name": "UnderlyingProvisionPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42174"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "UnderlyingProvisionPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42175"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42176"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40918"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

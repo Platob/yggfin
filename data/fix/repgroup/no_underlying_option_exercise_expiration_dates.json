@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingOptionExerciseExpirationDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingOptionExerciseExpirationDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41857"
+ "fields": [
+  {
+   "name": "UnderlyingOptionExerciseExpirationDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingOptionExerciseExpirationDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41857"
+     }
+    },
+    {
+     "name": "UnderlyingOptionExerciseExpirationDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41858"
+     }
     }
-   },
-   {
-    "name": "UnderlyingOptionExerciseExpirationDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41858"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

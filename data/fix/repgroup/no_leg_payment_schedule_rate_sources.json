@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPaymentScheduleRateSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegPaymentScheduleRateSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40415"
+ "fields": [
+  {
+   "name": "LegPaymentScheduleRateSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentScheduleRateSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40415"
+     }
+    },
+    {
+     "name": "LegPaymentScheduleRateSourceType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40416"
+     }
+    },
+    {
+     "name": "LegPaymentScheduleReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40417"
+     }
     }
-   },
-   {
-    "name": "LegPaymentScheduleRateSourceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40416"
-    }
-   },
-   {
-    "name": "LegPaymentScheduleReferencePage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40417"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

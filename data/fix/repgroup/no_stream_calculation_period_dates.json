@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "StreamCalculationPeriodDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StreamCalculationPeriodDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41242"
+ "fields": [
+  {
+   "name": "StreamCalculationPeriodDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StreamCalculationPeriodDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41242"
+     }
+    },
+    {
+     "name": "StreamCalculationPeriodDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41243"
+     }
     }
-   },
-   {
-    "name": "StreamCalculationPeriodDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41243"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

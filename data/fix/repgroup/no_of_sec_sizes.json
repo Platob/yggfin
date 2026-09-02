@@ -13,26 +13,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "OfSecSize",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "MDSecSizeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1178"
+ "fields": [
+  {
+   "name": "OfSecSize",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "MDSecSizeType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1178"
+     }
+    },
+    {
+     "name": "MDSecSize",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1179"
+     }
     }
-   },
-   {
-    "name": "MDSecSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1179"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -27,86 +27,88 @@
    "fix": {
     "tag": "1772"
    },
-   "item": {
-    "name": "PartyEntitlement",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ListUpdateAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1324"
-      }
-     },
-     {
-      "name": "EntitlementStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1883"
-      }
-     },
-     {
-      "name": "EntitlementResult",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1884"
-      }
-     },
-     {
-      "name": "RejectText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1328"
-      }
-     },
-     {
-      "name": "EncodedRejectTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1664"
-      }
-     },
-     {
-      "name": "EncodedRejectText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1665"
-      }
-     },
-     {
-      "name": "PartyDetailGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyDetailGrp"
+   "fields": [
+    {
+     "name": "PartyEntitlement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ListUpdateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1324"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "EntitlementGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "EntitlementGrp"
+      {
+       "name": "EntitlementStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1883"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "EntitlementRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1885"
+      {
+       "name": "EntitlementResult",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1884"
+       }
+      },
+      {
+       "name": "RejectText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1328"
+       }
+      },
+      {
+       "name": "EncodedRejectTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1664"
+       }
+      },
+      {
+       "name": "EncodedRejectText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1665"
+       }
+      },
+      {
+       "name": "PartyDetailGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyDetailGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "EntitlementGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "EntitlementGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "EntitlementRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1885"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

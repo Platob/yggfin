@@ -104,20 +104,22 @@
    "fix": {
     "tag": "42799"
    },
-   "item": {
-    "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42800"
+   "fields": [
+    {
+     "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDividendAccrualPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42800"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

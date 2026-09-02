@@ -104,20 +104,22 @@
    "fix": {
     "tag": "42090"
    },
-   "item": {
-    "name": "UnderlyingProtectionTermEventNewsSource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProtectionTermEventNewsSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42091"
+   "fields": [
+    {
+     "name": "UnderlyingProtectionTermEventNewsSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermEventNewsSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42091"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

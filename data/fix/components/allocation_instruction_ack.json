@@ -63,74 +63,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "SecondaryAllocID",
@@ -274,60 +278,62 @@
    "fix": {
     "tag": "1907"
    },
-   "item": {
-    "name": "RegulatoryTradeID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RegulatoryTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1903"
+   "fields": [
+    {
+     "name": "RegulatoryTradeID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1903"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1905"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1904"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1906"
+       }
+      },
+      {
+       "name": "RegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2411"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2397"
+       }
       }
-     },
-     {
-      "name": "RegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1905"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDEvent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1904"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1906"
-      }
-     },
-     {
-      "name": "RegulatoryLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2411"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDScope",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2397"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoAllocs",
@@ -336,374 +342,382 @@
    "fix": {
     "tag": "78"
    },
-   "item": {
-    "name": "Alloc",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AllocAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "79"
-      }
-     },
-     {
-      "name": "AllocAcctIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "661"
-      }
-     },
-     {
-      "name": "AllocPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "366"
-      }
-     },
-     {
-      "name": "AllocPositionEffect",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1047"
-      }
-     },
-     {
-      "name": "IndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "467"
-      }
-     },
-     {
-      "name": "ParentAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1593"
-      }
-     },
-     {
-      "name": "FirmMnemonic",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1729"
-      }
-     },
-     {
-      "name": "ClearedIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1832"
-      }
-     },
-     {
-      "name": "AllocLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2727"
-      }
-     },
-     {
-      "name": "NoAllocRegulatoryTradeIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1908"
+   "fields": [
+    {
+     "name": "Alloc",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "79"
+       }
       },
-      "item": {
-       "name": "AllocRegulatoryTradeID",
-       "type": "struct",
+      {
+       "name": "AllocAcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "661"
+       }
+      },
+      {
+       "name": "AllocPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "366"
+       }
+      },
+      {
+       "name": "AllocPositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1047"
+       }
+      },
+      {
+       "name": "IndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "467"
+       }
+      },
+      {
+       "name": "ParentAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1593"
+       }
+      },
+      {
+       "name": "FirmMnemonic",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1729"
+       }
+      },
+      {
+       "name": "ClearedIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1832"
+       }
+      },
+      {
+       "name": "AllocLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2727"
+       }
+      },
+      {
+       "name": "NoAllocRegulatoryTradeIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1908"
+       },
        "fields": [
         {
          "name": "AllocRegulatoryTradeID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1909"
-         }
-        },
-        {
-         "name": "AllocRegulatoryTradeIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1910"
-         }
-        },
-        {
-         "name": "AllocRegulatoryTradeIDEvent",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1911"
-         }
-        },
-        {
-         "name": "AllocRegulatoryTradeIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1912"
-         }
-        },
-        {
-         "name": "AllocRegulatoryLegRefID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2406"
-         }
-        },
-        {
-         "name": "AllocRegulatoryTradeIDScope",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2399"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "AllocRegulatoryTradeID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1909"
+           }
+          },
+          {
+           "name": "AllocRegulatoryTradeIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1910"
+           }
+          },
+          {
+           "name": "AllocRegulatoryTradeIDEvent",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1911"
+           }
+          },
+          {
+           "name": "AllocRegulatoryTradeIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1912"
+           }
+          },
+          {
+           "name": "AllocRegulatoryLegRefID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2406"
+           }
+          },
+          {
+           "name": "AllocRegulatoryTradeIDScope",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2399"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "IndividualAllocRejCode",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "776"
-      }
-     },
-     {
-      "name": "NoNestedPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "539"
       },
-      "item": {
-       "name": "NestedPartyID",
-       "type": "struct",
+      {
+       "name": "IndividualAllocRejCode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "776"
+       }
+      },
+      {
+       "name": "NoNestedPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "539"
+       },
        "fields": [
         {
          "name": "NestedPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "524"
-         }
-        },
-        {
-         "name": "NestedPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "525"
-         }
-        },
-        {
-         "name": "NestedPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "538"
-         }
-        },
-        {
-         "name": "NestedPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2384"
-         }
-        },
-        {
-         "name": "NoNestedPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "804"
-         },
-         "item": {
-          "name": "NestedPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "NestedPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "545"
-            }
-           },
-           {
-            "name": "NestedPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "805"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "NestedPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "524"
            }
-          ]
-         }
+          },
+          {
+           "name": "NestedPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "525"
+           }
+          },
+          {
+           "name": "NestedPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "538"
+           }
+          },
+          {
+           "name": "NestedPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2384"
+           }
+          },
+          {
+           "name": "NoNestedPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "804"
+           },
+           "fields": [
+            {
+             "name": "NestedPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "NestedPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "545"
+               }
+              },
+              {
+               "name": "NestedPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "805"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "AllocHandlInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "209"
+       }
+      },
+      {
+       "name": "AllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "161"
+       }
+      },
+      {
+       "name": "EncodedAllocTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "360"
+       }
+      },
+      {
+       "name": "EncodedAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "361"
+       }
+      },
+      {
+       "name": "FirmAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1732"
+       }
+      },
+      {
+       "name": "EncodedFirmAllocTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1733"
+       }
+      },
+      {
+       "name": "EncodedFirmAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1734"
+       }
+      },
+      {
+       "name": "SecondaryIndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "989"
+       }
+      },
+      {
+       "name": "AllocCustomerCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "993"
+       }
+      },
+      {
+       "name": "IndividualAllocType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "992"
+       }
+      },
+      {
+       "name": "AllocQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "80"
+       }
+      },
+      {
+       "name": "AllocCalculatedCcyQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2515"
+       }
+      },
+      {
+       "name": "CustodialLotID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1752"
+       }
+      },
+      {
+       "name": "VersusPurchaseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1753"
+       }
+      },
+      {
+       "name": "VersusPurchasePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1754"
+       }
+      },
+      {
+       "name": "CurrentCostBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1755"
+       }
+      },
+      {
+       "name": "AllocAvgPxGroupID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2770"
+       }
+      },
+      {
+       "name": "AllocAvgPxIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2769"
+       }
       }
-     },
-     {
-      "name": "AllocHandlInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "209"
-      }
-     },
-     {
-      "name": "AllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "161"
-      }
-     },
-     {
-      "name": "EncodedAllocTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "360"
-      }
-     },
-     {
-      "name": "EncodedAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "361"
-      }
-     },
-     {
-      "name": "FirmAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1732"
-      }
-     },
-     {
-      "name": "EncodedFirmAllocTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1733"
-      }
-     },
-     {
-      "name": "EncodedFirmAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1734"
-      }
-     },
-     {
-      "name": "SecondaryIndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "989"
-      }
-     },
-     {
-      "name": "AllocCustomerCapacity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "993"
-      }
-     },
-     {
-      "name": "IndividualAllocType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "992"
-      }
-     },
-     {
-      "name": "AllocQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "80"
-      }
-     },
-     {
-      "name": "AllocCalculatedCcyQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2515"
-      }
-     },
-     {
-      "name": "CustodialLotID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1752"
-      }
-     },
-     {
-      "name": "VersusPurchaseDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1753"
-      }
-     },
-     {
-      "name": "VersusPurchasePrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1754"
-      }
-     },
-     {
-      "name": "CurrentCostBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1755"
-      }
-     },
-     {
-      "name": "AllocAvgPxGroupID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2770"
-      }
-     },
-     {
-      "name": "AllocAvgPxIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2769"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

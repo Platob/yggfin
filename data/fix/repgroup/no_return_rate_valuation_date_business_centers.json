@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ReturnRateValuationDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ReturnRateValuationDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42771"
+ "fields": [
+  {
+   "name": "ReturnRateValuationDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ReturnRateValuationDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42771"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

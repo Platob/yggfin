@@ -143,20 +143,22 @@
    "fix": {
     "tag": "40955"
    },
-   "item": {
-    "name": "ProvisionOptionExpirationDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProvisionOptionExpirationDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40147"
+   "fields": [
+    {
+     "name": "ProvisionOptionExpirationDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProvisionOptionExpirationDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40147"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "ProvisionOptionExpirationDateRelativeTo",

@@ -14,33 +14,35 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LinesOfText",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "Text",
-    "type": "string",
-    "fix": {
-     "tag": "58"
+ "fields": [
+  {
+   "name": "LinesOfText",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Text",
+     "type": "string",
+     "fix": {
+      "tag": "58"
+     }
+    },
+    {
+     "name": "EncodedTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "354"
+     }
+    },
+    {
+     "name": "EncodedText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "355"
+     }
     }
-   },
-   {
-    "name": "EncodedTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "354"
-    }
-   },
-   {
-    "name": "EncodedText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "355"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

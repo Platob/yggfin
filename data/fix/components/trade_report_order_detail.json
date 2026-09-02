@@ -93,60 +93,62 @@
    "fix": {
     "tag": "73"
    },
-   "item": {
-    "name": "Order",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedOrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2887"
+   "fields": [
+    {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2887"
+       }
+      },
+      {
+       "name": "RelatedOrderIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2888"
+       }
+      },
+      {
+       "name": "RelatedOrderTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2836"
+       }
+      },
+      {
+       "name": "RelatedOrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2889"
+       }
+      },
+      {
+       "name": "OrderRelationship",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2890"
+       }
+      },
+      {
+       "name": "OrderOriginationFirmID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2835"
+       }
       }
-     },
-     {
-      "name": "RelatedOrderIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2888"
-      }
-     },
-     {
-      "name": "RelatedOrderTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2836"
-      }
-     },
-     {
-      "name": "RelatedOrderQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2889"
-      }
-     },
-     {
-      "name": "OrderRelationship",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2890"
-      }
-     },
-     {
-      "name": "OrderOriginationFirmID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2835"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "PreTradeAnonymity",
@@ -244,44 +246,46 @@
    "fix": {
     "tag": "1624"
    },
-   "item": {
-    "name": "MatchInst",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MatchInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1625"
+   "fields": [
+    {
+     "name": "MatchInst",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1625"
+       }
+      },
+      {
+       "name": "MatchInstMarketID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1673"
+       }
+      },
+      {
+       "name": "MatchAttribTagID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1626"
+       }
+      },
+      {
+       "name": "MatchAttribValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1627"
+       }
       }
-     },
-     {
-      "name": "MatchInstMarketID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1673"
-      }
-     },
-     {
-      "name": "MatchAttribTagID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1626"
-      }
-     },
-     {
-      "name": "MatchAttribValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1627"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "SelfMatchPreventionID",
@@ -371,28 +375,30 @@
    "fix": {
     "tag": "2593"
    },
-   "item": {
-    "name": "OrderAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OrderAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2594"
+   "fields": [
+    {
+     "name": "OrderAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrderAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2594"
+       }
+      },
+      {
+       "name": "OrderAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2595"
+       }
       }
-     },
-     {
-      "name": "OrderAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2595"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "ExDestinationType",

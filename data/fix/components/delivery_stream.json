@@ -135,20 +135,22 @@
    "fix": {
     "tag": "41085"
    },
-   "item": {
-    "name": "DeliveryStreamCommoditySource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DeliveryStreamCommoditySource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41086"
+   "fields": [
+    {
+     "name": "DeliveryStreamCommoditySource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DeliveryStreamCommoditySource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41086"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "DeliveryStreamPipeline",
@@ -253,36 +255,38 @@
    "fix": {
     "tag": "41081"
    },
-   "item": {
-    "name": "DeliveryStreamCycle",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DeliveryStreamCycleDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41082"
+   "fields": [
+    {
+     "name": "DeliveryStreamCycle",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41082"
+       }
+      },
+      {
+       "name": "EncodedDeliveryStreamCycleDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41083"
+       }
+      },
+      {
+       "name": "EncodedDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41084"
+       }
       }
-     },
-     {
-      "name": "EncodedDeliveryStreamCycleDescLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41083"
-      }
-     },
-     {
-      "name": "EncodedDeliveryStreamCycleDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41084"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "DeliveryStreamTitleTransferLocation",

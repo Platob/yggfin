@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40951"
    },
-   "item": {
-    "name": "ProtectionTermEventNewsSource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ProtectionTermEventNewsSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40189"
+   "fields": [
+    {
+     "name": "ProtectionTermEventNewsSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ProtectionTermEventNewsSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40189"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

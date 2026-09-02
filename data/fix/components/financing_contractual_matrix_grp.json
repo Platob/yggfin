@@ -71,36 +71,38 @@
    "fix": {
     "tag": "40042"
    },
-   "item": {
-    "name": "ContractualMatrix",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ContractualMatrixSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40043"
+   "fields": [
+    {
+     "name": "ContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40043"
+       }
+      },
+      {
+       "name": "ContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40044"
+       }
+      },
+      {
+       "name": "ContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40045"
+       }
       }
-     },
-     {
-      "name": "ContractualMatrixDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40044"
-      }
-     },
-     {
-      "name": "ContractualMatrixTerm",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40045"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

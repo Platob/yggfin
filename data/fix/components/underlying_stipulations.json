@@ -107,28 +107,30 @@
    "fix": {
     "tag": "887"
    },
-   "item": {
-    "name": "UnderlyingStip",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStipType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "888"
+   "fields": [
+    {
+     "name": "UnderlyingStip",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStipType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "888"
+       }
+      },
+      {
+       "name": "UnderlyingStipValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "889"
+       }
       }
-     },
-     {
-      "name": "UnderlyingStipValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "889"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

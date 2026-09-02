@@ -135,20 +135,22 @@
    "fix": {
     "tag": "40278"
    },
-   "item": {
-    "name": "BusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "BusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40471"
+   "fields": [
+    {
+     "name": "BusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "BusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40471"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "DateRollConvention",

@@ -31,28 +31,30 @@
    "fix": {
     "tag": "1812"
    },
-   "item": {
-    "name": "DisclosureInstruction",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DisclosureType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1813"
+   "fields": [
+    {
+     "name": "DisclosureInstruction",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DisclosureType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1813"
+       }
+      },
+      {
+       "name": "DisclosureInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1814"
+       }
       }
-     },
-     {
-      "name": "DisclosureInstruction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1814"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

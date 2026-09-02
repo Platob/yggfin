@@ -12,34 +12,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "SideTrdRegTS",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "SideTrdRegTimestamp",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1012"
+ "fields": [
+  {
+   "name": "SideTrdRegTS",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "SideTrdRegTimestamp",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1012"
+     }
+    },
+    {
+     "name": "SideTrdRegTimestampType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1013"
+     }
+    },
+    {
+     "name": "SideTrdRegTimestampSrc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1014"
+     }
     }
-   },
-   {
-    "name": "SideTrdRegTimestampType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1013"
-    }
-   },
-   {
-    "name": "SideTrdRegTimestampSrc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1014"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

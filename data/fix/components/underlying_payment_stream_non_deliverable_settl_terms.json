@@ -121,20 +121,22 @@
    "fix": {
     "tag": "40968"
    },
-   "item": {
-    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBizCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40650"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBizCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40650"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingPaymentStreamNonDeliverableFixingDatesRelativeTo",
@@ -184,28 +186,30 @@
    "fix": {
     "tag": "40656"
    },
-   "item": {
-    "name": "UnderlyingNonDeliverableFixingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingNonDeliverableFixingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40657"
+   "fields": [
+    {
+     "name": "UnderlyingNonDeliverableFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingNonDeliverableFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40657"
+       }
+      },
+      {
+       "name": "UnderlyingNonDeliverableFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40658"
+       }
       }
-     },
-     {
-      "name": "UnderlyingNonDeliverableFixingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40658"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingSettlRateFallbacks",
@@ -214,45 +218,47 @@
    "fix": {
     "tag": "40659"
    },
-   "item": {
-    "name": "UnderlyingSettlRateFallback",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingSettlRatePostponementMaximumDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40660"
-      }
-     },
-     {
-      "name": "UnderlyingSettlRateFallbackRateSource",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingSettlRateFallbackRateSource"
+   "fields": [
+    {
+     "name": "UnderlyingSettlRateFallback",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingSettlRatePostponementMaximumDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40660"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingSettlRatePostponementSurvey",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40662"
+      {
+       "name": "UnderlyingSettlRateFallbackRateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingSettlRateFallbackRateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingSettlRatePostponementSurvey",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40662"
+       }
+      },
+      {
+       "name": "UnderlyingSettlRatePostponementCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40663"
+       }
       }
-     },
-     {
-      "name": "UnderlyingSettlRatePostponementCalculationAgent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40663"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

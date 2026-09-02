@@ -90,53 +90,55 @@
    "fix": {
     "tag": "2254"
    },
-   "item": {
-    "name": "LegInstrumentParty",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegInstrumentPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2255"
-      }
-     },
-     {
-      "name": "LegInstrumentPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2256"
-      }
-     },
-     {
-      "name": "LegInstrumentPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2257"
-      }
-     },
-     {
-      "name": "LegInstrumentPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2379"
-      }
-     },
-     {
-      "name": "LegInstrumentPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegInstrumentPtysSubGrp"
+   "fields": [
+    {
+     "name": "LegInstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2255"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LegInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2256"
+       }
+      },
+      {
+       "name": "LegInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2257"
+       }
+      },
+      {
+       "name": "LegInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2379"
+       }
+      },
+      {
+       "name": "LegInstrumentPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegInstrumentPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

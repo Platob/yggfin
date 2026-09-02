@@ -135,7 +135,7 @@ class Alias(Convertible):
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any] | str) -> Alias:
-        """Read either spelling: a plain name, or a name with its provenance."""
+        """One alias, from its document or from the bare name a setter takes."""
         if isinstance(mapping, str):
             return cls(name=mapping)
         return cls(
@@ -829,10 +829,6 @@ class FixMetadata(ProtocolMetadata):
     def symbols(self) -> Mapping[str, str]:
         """`{wire value: its symbolic name}`, for storing the scheme not the character."""
         return symbols_of(self.enumerated)
-
-    def symbol(self, value: Any) -> str:
-        """The symbolic name of one wire value, or the value where it has none."""
-        return self.decode(value)
 
     def value_of(self, value: Any) -> FixFieldValue | None:
         """The record for one wire value, or None where no version defines it."""

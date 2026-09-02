@@ -28,28 +28,30 @@
    "fix": {
     "tag": "2545"
    },
-   "item": {
-    "name": "RelatedMarketSegment",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedMarketSegmentID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2546"
+   "fields": [
+    {
+     "name": "RelatedMarketSegment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedMarketSegmentID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2546"
+       }
+      },
+      {
+       "name": "MarketSegmentRelationship",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2547"
+       }
       }
-     },
-     {
-      "name": "MarketSegmentRelationship",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2547"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

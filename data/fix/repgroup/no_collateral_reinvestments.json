@@ -12,42 +12,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "CollateralReinvestment",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "CollateralReinvestmentType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2844"
+ "fields": [
+  {
+   "name": "CollateralReinvestment",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "CollateralReinvestmentType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2844"
+     }
+    },
+    {
+     "name": "CollateralReinvestmentAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2842"
+     }
+    },
+    {
+     "name": "CollateralReinvestmentCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2843"
+     }
+    },
+    {
+     "name": "CollateralReinvestmentCurrencyCodeSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2931"
+     }
     }
-   },
-   {
-    "name": "CollateralReinvestmentAmount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2842"
-    }
-   },
-   {
-    "name": "CollateralReinvestmentCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2843"
-    }
-   },
-   {
-    "name": "CollateralReinvestmentCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2931"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

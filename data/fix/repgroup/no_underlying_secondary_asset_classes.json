@@ -12,42 +12,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingSecondaryAssetClass",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingSecondaryAssetClass",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2081"
+ "fields": [
+  {
+   "name": "UnderlyingSecondaryAssetClass",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingSecondaryAssetClass",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2081"
+     }
+    },
+    {
+     "name": "UnderlyingSecondaryAssetSubClass",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2082"
+     }
+    },
+    {
+     "name": "UnderlyingSecondaryAssetType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2083"
+     }
+    },
+    {
+     "name": "UnderlyingSecondaryAssetSubType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2745"
+     }
     }
-   },
-   {
-    "name": "UnderlyingSecondaryAssetSubClass",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2082"
-    }
-   },
-   {
-    "name": "UnderlyingSecondaryAssetType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2083"
-    }
-   },
-   {
-    "name": "UnderlyingSecondaryAssetSubType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2745"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -9,26 +9,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "AuctionTypeRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "AuctionType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1803"
+ "fields": [
+  {
+   "name": "AuctionTypeRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AuctionType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1803"
+     }
+    },
+    {
+     "name": "AuctionTypeProductComplex",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2549"
+     }
     }
-   },
-   {
-    "name": "AuctionTypeProductComplex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2549"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

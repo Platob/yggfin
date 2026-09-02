@@ -8,43 +8,45 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegSettlRateFallback",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegSettlRatePostponementMaximumDays",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40903"
-    }
-   },
-   {
-    "name": "LegSettlRateFallbackRateSource",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegSettlRateFallbackRateSource"
+ "fields": [
+  {
+   "name": "LegSettlRateFallback",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegSettlRatePostponementMaximumDays",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40903"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegSettlRatePostponementSurvey",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40905"
+    {
+     "name": "LegSettlRateFallbackRateSource",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegSettlRateFallbackRateSource"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegSettlRatePostponementSurvey",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40905"
+     }
+    },
+    {
+     "name": "LegSettlRatePostponementCalculationAgent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40906"
+     }
     }
-   },
-   {
-    "name": "LegSettlRatePostponementCalculationAgent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40906"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

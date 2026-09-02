@@ -15,252 +15,254 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Alloc",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "AllocAccount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "79"
-    }
-   },
-   {
-    "name": "AllocAcctIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "661"
-    }
-   },
-   {
-    "name": "AllocPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "366"
-    }
-   },
-   {
-    "name": "AllocPositionEffect",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1047"
-    }
-   },
-   {
-    "name": "IndividualAllocID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "467"
-    }
-   },
-   {
-    "name": "ParentAllocID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1593"
-    }
-   },
-   {
-    "name": "FirmMnemonic",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1729"
-    }
-   },
-   {
-    "name": "ClearedIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1832"
-    }
-   },
-   {
-    "name": "AllocLegRefID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2727"
-    }
-   },
-   {
-    "name": "AllocRegulatoryTradeIDGrp",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "AllocRegulatoryTradeIDGrp"
+ "fields": [
+  {
+   "name": "Alloc",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "AllocAccount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "79"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "IndividualAllocRejCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "776"
-    }
-   },
-   {
-    "name": "NestedParties",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "NestedParties"
+    {
+     "name": "AllocAcctIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "661"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "AllocHandlInst",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "209"
+    {
+     "name": "AllocPrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "366"
+     }
+    },
+    {
+     "name": "AllocPositionEffect",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1047"
+     }
+    },
+    {
+     "name": "IndividualAllocID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "467"
+     }
+    },
+    {
+     "name": "ParentAllocID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1593"
+     }
+    },
+    {
+     "name": "FirmMnemonic",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1729"
+     }
+    },
+    {
+     "name": "ClearedIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1832"
+     }
+    },
+    {
+     "name": "AllocLegRefID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2727"
+     }
+    },
+    {
+     "name": "AllocRegulatoryTradeIDGrp",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "AllocRegulatoryTradeIDGrp"
+     },
+     "fields": []
+    },
+    {
+     "name": "IndividualAllocRejCode",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "776"
+     }
+    },
+    {
+     "name": "NestedParties",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "NestedParties"
+     },
+     "fields": []
+    },
+    {
+     "name": "AllocHandlInst",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "209"
+     }
+    },
+    {
+     "name": "AllocText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "161"
+     }
+    },
+    {
+     "name": "EncodedAllocTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "360"
+     }
+    },
+    {
+     "name": "EncodedAllocText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "361"
+     }
+    },
+    {
+     "name": "FirmAllocText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1732"
+     }
+    },
+    {
+     "name": "EncodedFirmAllocTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1733"
+     }
+    },
+    {
+     "name": "EncodedFirmAllocText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1734"
+     }
+    },
+    {
+     "name": "SecondaryIndividualAllocID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "989"
+     }
+    },
+    {
+     "name": "AllocCustomerCapacity",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "993"
+     }
+    },
+    {
+     "name": "IndividualAllocType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "992"
+     }
+    },
+    {
+     "name": "AllocQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "80"
+     }
+    },
+    {
+     "name": "AllocCalculatedCcyQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2515"
+     }
+    },
+    {
+     "name": "CustodialLotID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1752"
+     }
+    },
+    {
+     "name": "VersusPurchaseDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1753"
+     }
+    },
+    {
+     "name": "VersusPurchasePrice",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1754"
+     }
+    },
+    {
+     "name": "CurrentCostBasis",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1755"
+     }
+    },
+    {
+     "name": "AllocAvgPxGroupID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2770"
+     }
+    },
+    {
+     "name": "AllocAvgPxIndicator",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2769"
+     }
     }
-   },
-   {
-    "name": "AllocText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "161"
-    }
-   },
-   {
-    "name": "EncodedAllocTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "360"
-    }
-   },
-   {
-    "name": "EncodedAllocText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "361"
-    }
-   },
-   {
-    "name": "FirmAllocText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1732"
-    }
-   },
-   {
-    "name": "EncodedFirmAllocTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1733"
-    }
-   },
-   {
-    "name": "EncodedFirmAllocText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1734"
-    }
-   },
-   {
-    "name": "SecondaryIndividualAllocID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "989"
-    }
-   },
-   {
-    "name": "AllocCustomerCapacity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "993"
-    }
-   },
-   {
-    "name": "IndividualAllocType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "992"
-    }
-   },
-   {
-    "name": "AllocQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "80"
-    }
-   },
-   {
-    "name": "AllocCalculatedCcyQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2515"
-    }
-   },
-   {
-    "name": "CustodialLotID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1752"
-    }
-   },
-   {
-    "name": "VersusPurchaseDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1753"
-    }
-   },
-   {
-    "name": "VersusPurchasePrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1754"
-    }
-   },
-   {
-    "name": "CurrentCostBasis",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1755"
-    }
-   },
-   {
-    "name": "AllocAvgPxGroupID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2770"
-    }
-   },
-   {
-    "name": "AllocAvgPxIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2769"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

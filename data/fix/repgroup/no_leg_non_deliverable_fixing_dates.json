@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegNonDeliverableFixingDate",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegNonDeliverableFixingDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40368"
+ "fields": [
+  {
+   "name": "LegNonDeliverableFixingDate",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegNonDeliverableFixingDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40368"
+     }
+    },
+    {
+     "name": "LegNonDeliverableFixingDateType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40369"
+     }
     }
-   },
-   {
-    "name": "LegNonDeliverableFixingDateType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40369"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

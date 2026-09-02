@@ -164,20 +164,22 @@
    "fix": {
     "tag": "42198"
    },
-   "item": {
-    "name": "LegContractualDefinition",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegContractualDefinition",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42199"
+   "fields": [
+    {
+     "name": "LegContractualDefinition",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42199"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegFinancingTermSupplements",
@@ -186,28 +188,30 @@
    "fix": {
     "tag": "42200"
    },
-   "item": {
-    "name": "LegFinancingTermSupplement",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegFinancingTermSupplementDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42201"
+   "fields": [
+    {
+     "name": "LegFinancingTermSupplement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegFinancingTermSupplementDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42201"
+       }
+      },
+      {
+       "name": "LegFinancingTermSupplementDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42202"
+       }
       }
-     },
-     {
-      "name": "LegFinancingTermSupplementDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42202"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegContractualMatrices",
@@ -216,36 +220,38 @@
    "fix": {
     "tag": "42203"
    },
-   "item": {
-    "name": "LegContractualMatrix",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegContractualMatrixSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42204"
+   "fields": [
+    {
+     "name": "LegContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42204"
+       }
+      },
+      {
+       "name": "LegContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42205"
+       }
+      },
+      {
+       "name": "LegContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42206"
+       }
       }
-     },
-     {
-      "name": "LegContractualMatrixDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42205"
-      }
-     },
-     {
-      "name": "LegContractualMatrixTerm",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42206"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegCreditSupportAgreementDesc",

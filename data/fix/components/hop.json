@@ -20,36 +20,38 @@
    "fix": {
     "tag": "627"
    },
-   "item": {
-    "name": "Hop",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "HopCompID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "628"
+   "fields": [
+    {
+     "name": "Hop",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "HopCompID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "628"
+       }
+      },
+      {
+       "name": "HopSendingTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "629"
+       }
+      },
+      {
+       "name": "HopRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "630"
+       }
       }
-     },
-     {
-      "name": "HopSendingTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "629"
-      }
-     },
-     {
-      "name": "HopRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "630"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

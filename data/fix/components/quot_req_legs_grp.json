@@ -31,104 +31,106 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "LegOrderQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "685"
-      }
-     },
-     {
-      "name": "LegQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "687"
-      }
-     },
-     {
-      "name": "LegMidPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2346"
-      }
-     },
-     {
-      "name": "LegSwapType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "690"
-      }
-     },
-     {
-      "name": "LegSettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "587"
-      }
-     },
-     {
-      "name": "LegSettlDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "588"
-      }
-     },
-     {
-      "name": "LegStipulations",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegStipulations"
+      {
+       "name": "LegOrderQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "685"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+      {
+       "name": "LegQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "687"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegBenchmarkCurveData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegBenchmarkCurveData"
+      {
+       "name": "LegMidPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2346"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "654"
+      {
+       "name": "LegSwapType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "690"
+       }
+      },
+      {
+       "name": "LegSettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "587"
+       }
+      },
+      {
+       "name": "LegSettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "588"
+       }
+      },
+      {
+       "name": "LegStipulations",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegStipulations"
+       },
+       "fields": []
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegBenchmarkCurveData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegBenchmarkCurveData"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "654"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

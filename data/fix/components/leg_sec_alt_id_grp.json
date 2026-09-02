@@ -93,36 +93,38 @@
    "fix": {
     "tag": "604"
    },
-   "item": {
-    "name": "LegSecurityAltID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegSecurityAltID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "605"
+   "fields": [
+    {
+     "name": "LegSecurityAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "605"
+       }
+      },
+      {
+       "name": "LegSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "606"
+       }
+      },
+      {
+       "name": "LegSymbolPositionNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2958"
+       }
       }
-     },
-     {
-      "name": "LegSecurityAltIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "606"
-      }
-     },
-     {
-      "name": "LegSymbolPositionNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2958"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

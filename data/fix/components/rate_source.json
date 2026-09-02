@@ -36,52 +36,54 @@
    "fix": {
     "tag": "1445"
    },
-   "item": {
-    "name": "RateSource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RateSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1446"
+   "fields": [
+    {
+     "name": "RateSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1446"
+       }
+      },
+      {
+       "name": "RateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1447"
+       }
+      },
+      {
+       "name": "ReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1448"
+       }
+      },
+      {
+       "name": "RateSourceReferemcePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2412"
+       }
+      },
+      {
+       "name": "FXBenchmarkRateFix",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2796"
+       }
       }
-     },
-     {
-      "name": "RateSourceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1447"
-      }
-     },
-     {
-      "name": "ReferencePage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1448"
-      }
-     },
-     {
-      "name": "RateSourceReferemcePageHeading",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2412"
-      }
-     },
-     {
-      "name": "FXBenchmarkRateFix",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2796"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

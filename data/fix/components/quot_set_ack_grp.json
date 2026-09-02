@@ -31,86 +31,88 @@
    "fix": {
     "tag": "296"
    },
-   "item": {
-    "name": "QuoteSet",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "QuoteSetID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "302"
-      }
-     },
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
+   "fields": [
+    {
+     "name": "QuoteSet",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "QuoteSetID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "302"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "QuoteSetValidUntilTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "367"
-      }
-     },
-     {
-      "name": "TotNoQuoteEntries",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "304"
-      }
-     },
-     {
-      "name": "TotNoCxldQuotes",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1168"
-      }
-     },
-     {
-      "name": "TotNoAccQuotes",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1169"
-      }
-     },
-     {
-      "name": "TotNoRejQuotes",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1170"
-      }
-     },
-     {
-      "name": "LastFragment",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "893"
-      }
-     },
-     {
-      "name": "QuotEntryAckGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "QuotEntryAckGrp"
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "QuoteSetValidUntilTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "367"
+       }
+      },
+      {
+       "name": "TotNoQuoteEntries",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "304"
+       }
+      },
+      {
+       "name": "TotNoCxldQuotes",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1168"
+       }
+      },
+      {
+       "name": "TotNoAccQuotes",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1169"
+       }
+      },
+      {
+       "name": "TotNoRejQuotes",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1170"
+       }
+      },
+      {
+       "name": "LastFragment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "893"
+       }
+      },
+      {
+       "name": "QuotEntryAckGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "QuotEntryAckGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

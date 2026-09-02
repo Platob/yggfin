@@ -88,74 +88,78 @@
    "fix": {
     "tag": "453"
    },
-   "item": {
-    "name": "PartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "448"
-      }
-     },
-     {
-      "name": "PartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "447"
-      }
-     },
-     {
-      "name": "PartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "452"
-      }
-     },
-     {
-      "name": "PartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2376"
-      }
-     },
-     {
-      "name": "NoPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "802"
+   "fields": [
+    {
+     "name": "PartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "448"
+       }
       },
-      "item": {
-       "name": "PartySubID",
-       "type": "struct",
+      {
+       "name": "PartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "447"
+       }
+      },
+      {
+       "name": "PartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "452"
+       }
+      },
+      {
+       "name": "PartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2376"
+       }
+      },
+      {
+       "name": "NoPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "802"
+       },
        "fields": [
         {
          "name": "PartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "523"
-         }
-        },
-        {
-         "name": "PartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "803"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "PartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "523"
+           }
+          },
+          {
+           "name": "PartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "803"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "FinancingDetails",
@@ -173,21 +177,23 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
-      },
-      "fields": []
-     }
-    ]
-   }
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "NoRelatedInstruments",
@@ -196,92 +202,94 @@
    "fix": {
     "tag": "1647"
    },
-   "item": {
-    "name": "RelatedInstrument",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedInstrumentType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1648"
+   "fields": [
+    {
+     "name": "RelatedInstrument",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedInstrumentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1648"
+       }
+      },
+      {
+       "name": "RelatedSymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1649"
+       }
+      },
+      {
+       "name": "RelatedSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1650"
+       }
+      },
+      {
+       "name": "RelatedSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1651"
+       }
+      },
+      {
+       "name": "RelatedSecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1652"
+       }
+      },
+      {
+       "name": "RelatedMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1653"
+       }
+      },
+      {
+       "name": "RelatedToSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2413"
+       }
+      },
+      {
+       "name": "RelatedToSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2414"
+       }
+      },
+      {
+       "name": "RelatedToStreamXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2415"
+       }
+      },
+      {
+       "name": "RelatedToDividendPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2417"
+       }
       }
-     },
-     {
-      "name": "RelatedSymbol",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1649"
-      }
-     },
-     {
-      "name": "RelatedSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1650"
-      }
-     },
-     {
-      "name": "RelatedSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1651"
-      }
-     },
-     {
-      "name": "RelatedSecurityType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1652"
-      }
-     },
-     {
-      "name": "RelatedMaturityMonthYear",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1653"
-      }
-     },
-     {
-      "name": "RelatedToSecurityID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2413"
-      }
-     },
-     {
-      "name": "RelatedToSecurityIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2414"
-      }
-     },
-     {
-      "name": "RelatedToStreamXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2415"
-      }
-     },
-     {
-      "name": "RelatedToDividendPeriodXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2417"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Side",
@@ -337,28 +345,30 @@
    "fix": {
     "tag": "232"
    },
-   "item": {
-    "name": "Stipulation",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StipulationType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "233"
+   "fields": [
+    {
+     "name": "Stipulation",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StipulationType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "233"
+       }
+      },
+      {
+       "name": "StipulationValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "234"
+       }
       }
-     },
-     {
-      "name": "StipulationValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "234"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegs",
@@ -367,59 +377,63 @@
    "fix": {
     "tag": "555"
    },
-   "item": {
-    "name": "Leg",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "InstrumentLeg",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentLeg"
-      },
-      "fields": []
-     },
-     {
-      "name": "LegIOIQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "682"
-      }
-     },
-     {
-      "name": "NoLegStipulations",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "683"
-      },
-      "item": {
-       "name": "LegStipulation",
+   "fields": [
+    {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegIOIQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "682"
+       }
+      },
+      {
+       "name": "NoLegStipulations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "683"
+       },
        "fields": [
         {
-         "name": "LegStipulationType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "688"
-         }
-        },
-        {
-         "name": "LegStipulationValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "689"
-         }
+         "name": "LegStipulation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "LegStipulationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "688"
+           }
+          },
+          {
+           "name": "LegStipulationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "689"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "PriceType",
@@ -436,20 +450,22 @@
    "fix": {
     "tag": "2709"
    },
-   "item": {
-    "name": "PriceQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PriceQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2710"
+   "fields": [
+    {
+     "name": "PriceQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2710"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Price",
@@ -490,20 +506,22 @@
    "fix": {
     "tag": "199"
    },
-   "item": {
-    "name": "IOIQualifier",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "IOIQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "104"
+   "fields": [
+    {
+     "name": "IOIQualifier",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "IOIQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "104"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Text",
@@ -552,28 +570,30 @@
    "fix": {
     "tag": "215"
    },
-   "item": {
-    "name": "RoutingID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RoutingType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "216"
+   "fields": [
+    {
+     "name": "RoutingID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RoutingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "216"
+       }
+      },
+      {
+       "name": "RoutingID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "217"
+       }
       }
-     },
-     {
-      "name": "RoutingID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "217"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "SpreadOrBenchmarkCurveData",
@@ -591,44 +611,46 @@
    "fix": {
     "tag": "2529"
    },
-   "item": {
-    "name": "RelativeValue",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelativeValueType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2530"
+   "fields": [
+    {
+     "name": "RelativeValue",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelativeValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2530"
+       }
+      },
+      {
+       "name": "RelativeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2531"
+       }
+      },
+      {
+       "name": "RelativeValueSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2532"
+       }
+      },
+      {
+       "name": "RelativeValueTimestamp",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "3004"
+       }
       }
-     },
-     {
-      "name": "RelativeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2531"
-      }
-     },
-     {
-      "name": "RelativeValueSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2532"
-      }
-     },
-     {
-      "name": "RelativeValueTimestamp",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "3004"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "YieldData",

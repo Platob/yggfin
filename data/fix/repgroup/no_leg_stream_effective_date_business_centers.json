@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegStreamEffectiveDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegStreamEffectiveDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40251"
+ "fields": [
+  {
+   "name": "LegStreamEffectiveDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegStreamEffectiveDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40251"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

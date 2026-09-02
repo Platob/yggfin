@@ -9,26 +9,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Expiration",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ExpirationQtyType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "982"
+ "fields": [
+  {
+   "name": "Expiration",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ExpirationQtyType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "982"
+     }
+    },
+    {
+     "name": "ExpQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "983"
+     }
     }
-   },
-   {
-    "name": "ExpQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "983"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

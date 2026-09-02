@@ -129,20 +129,22 @@
    "fix": {
     "tag": "40973"
    },
-   "item": {
-    "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40557"
+   "fields": [
+    {
+     "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40557"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingStreamCalculationPeriodDates",
@@ -151,28 +153,30 @@
    "fix": {
     "tag": "41954"
    },
-   "item": {
-    "name": "UnderlyingStreamCalculationPeriodDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamCalculationPeriodDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41955"
+   "fields": [
+    {
+     "name": "UnderlyingStreamCalculationPeriodDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamCalculationPeriodDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41955"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCalculationPeriodDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41956"
+       }
       }
-     },
-     {
-      "name": "UnderlyingStreamCalculationPeriodDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41956"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingStreamFirstPeriodStartDateUnadjusted",
@@ -197,20 +201,22 @@
    "fix": {
     "tag": "40974"
    },
-   "item": {
-    "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40560"
+   "fields": [
+    {
+     "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamFirstPeriodStartDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40560"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingStreamFirstPeriodStartDateAdjusted",

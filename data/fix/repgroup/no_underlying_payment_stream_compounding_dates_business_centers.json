@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42916"
+ "fields": [
+  {
+   "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPaymentStreamCompoundingDatesBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42916"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

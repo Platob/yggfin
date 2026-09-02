@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PartyRelationship",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PartyRelationship",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1515"
+ "fields": [
+  {
+   "name": "PartyRelationship",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PartyRelationship",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1515"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -36,98 +36,102 @@
    "fix": {
     "tag": "2104"
    },
-   "item": {
-    "name": "Attachment",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AttachmentName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2105"
-      }
-     },
-     {
-      "name": "AttachmentMediaType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2106"
-      }
-     },
-     {
-      "name": "AttachmentClassification",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2107"
-      }
-     },
-     {
-      "name": "AttachmentExternalURL",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2108"
-      }
-     },
-     {
-      "name": "AttachmentEncodingType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2109"
-      }
-     },
-     {
-      "name": "UnencodedAttachmentLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2110"
-      }
-     },
-     {
-      "name": "EncodedAttachmentLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2111"
-      }
-     },
-     {
-      "name": "EncodedAttachment",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2112"
-      }
-     },
-     {
-      "name": "NoAttachmentKeywords",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2113"
+   "fields": [
+    {
+     "name": "Attachment",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AttachmentName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2105"
+       }
       },
-      "item": {
-       "name": "AttachmentKeyword",
-       "type": "struct",
+      {
+       "name": "AttachmentMediaType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2106"
+       }
+      },
+      {
+       "name": "AttachmentClassification",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2107"
+       }
+      },
+      {
+       "name": "AttachmentExternalURL",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2108"
+       }
+      },
+      {
+       "name": "AttachmentEncodingType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2109"
+       }
+      },
+      {
+       "name": "UnencodedAttachmentLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2110"
+       }
+      },
+      {
+       "name": "EncodedAttachmentLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2111"
+       }
+      },
+      {
+       "name": "EncodedAttachment",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2112"
+       }
+      },
+      {
+       "name": "NoAttachmentKeywords",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2113"
+       },
        "fields": [
         {
          "name": "AttachmentKeyword",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2114"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "AttachmentKeyword",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2114"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

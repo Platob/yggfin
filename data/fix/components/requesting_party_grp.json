@@ -42,53 +42,55 @@
    "fix": {
     "tag": "1657"
    },
-   "item": {
-    "name": "RequestingPartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RequestingPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1658"
-      }
-     },
-     {
-      "name": "RequestingPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1659"
-      }
-     },
-     {
-      "name": "RequestingPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1660"
-      }
-     },
-     {
-      "name": "RequestingPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2338"
-      }
-     },
-     {
-      "name": "RequestingPartySubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "RequestingPartySubGrp"
+   "fields": [
+    {
+     "name": "RequestingPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RequestingPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1658"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "RequestingPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1659"
+       }
+      },
+      {
+       "name": "RequestingPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1660"
+       }
+      },
+      {
+       "name": "RequestingPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2338"
+       }
+      },
+      {
+       "name": "RequestingPartySubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RequestingPartySubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

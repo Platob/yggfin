@@ -30,112 +30,114 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "SecondaryPriceLimits",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SecondaryPriceLimits"
+      {
+       "name": "SecondaryPriceLimits",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SecondaryPriceLimits"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
-      }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "CorporateAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "292"
-      }
-     },
-     {
-      "name": "InstrumentExtension",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentExtension"
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "InstrmtLegGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrmtLegGrp"
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "RelSymTransactTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1504"
+      {
+       "name": "CorporateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "292"
+       }
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "InstrmtLegGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrmtLegGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelSymTransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1504"
+       }
+      },
+      {
+       "name": "NumOfSimpleInstruments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1606"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "NumOfSimpleInstruments",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1606"
-      }
-     },
-     {
-      "name": "Text",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "58"
-      }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

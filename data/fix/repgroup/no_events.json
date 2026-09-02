@@ -12,90 +12,92 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Event",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "EventType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "865"
+ "fields": [
+  {
+   "name": "Event",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "EventType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "865"
+     }
+    },
+    {
+     "name": "EventDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "866"
+     }
+    },
+    {
+     "name": "EventTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1145"
+     }
+    },
+    {
+     "name": "EventTimeUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1827"
+     }
+    },
+    {
+     "name": "EventTimePeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1826"
+     }
+    },
+    {
+     "name": "EventMonthYear",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2340"
+     }
+    },
+    {
+     "name": "EventPx",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "867"
+     }
+    },
+    {
+     "name": "EventText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "868"
+     }
+    },
+    {
+     "name": "EncodedEventTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1578"
+     }
+    },
+    {
+     "name": "EncodedEventText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1579"
+     }
     }
-   },
-   {
-    "name": "EventDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "866"
-    }
-   },
-   {
-    "name": "EventTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1145"
-    }
-   },
-   {
-    "name": "EventTimeUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1827"
-    }
-   },
-   {
-    "name": "EventTimePeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1826"
-    }
-   },
-   {
-    "name": "EventMonthYear",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2340"
-    }
-   },
-   {
-    "name": "EventPx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "867"
-    }
-   },
-   {
-    "name": "EventText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "868"
-    }
-   },
-   {
-    "name": "EncodedEventTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1578"
-    }
-   },
-   {
-    "name": "EncodedEventText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1579"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

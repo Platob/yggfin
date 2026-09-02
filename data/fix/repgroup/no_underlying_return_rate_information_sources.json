@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingReturnRateInformationSource",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingReturnRateInformationSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43061"
+ "fields": [
+  {
+   "name": "UnderlyingReturnRateInformationSource",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingReturnRateInformationSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43061"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateReferencePage",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43062"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateReferencePageHeading",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43063"
+     }
     }
-   },
-   {
-    "name": "UnderlyingReturnRateReferencePage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43062"
-    }
-   },
-   {
-    "name": "UnderlyingReturnRateReferencePageHeading",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43063"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

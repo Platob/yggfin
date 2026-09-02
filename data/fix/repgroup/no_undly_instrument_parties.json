@@ -12,72 +12,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UndlyInstrumentParty",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingInstrumentPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1059"
-    }
-   },
-   {
-    "name": "UnderlyingInstrumentPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1060"
-    }
-   },
-   {
-    "name": "UnderlyingInstrumentPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1061"
-    }
-   },
-   {
-    "name": "UnderlyingInstrumentPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2391"
-    }
-   },
-   {
-    "name": "NoUndlyInstrumentPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1062"
+ "fields": [
+  {
+   "name": "UndlyInstrumentParty",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingInstrumentPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1059"
+     }
     },
-    "item": {
-     "name": "UndlyInstrumentPartySubID",
-     "type": "struct",
+    {
+     "name": "UnderlyingInstrumentPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1060"
+     }
+    },
+    {
+     "name": "UnderlyingInstrumentPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1061"
+     }
+    },
+    {
+     "name": "UnderlyingInstrumentPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2391"
+     }
+    },
+    {
+     "name": "NoUndlyInstrumentPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1062"
+     },
      "fields": [
       {
-       "name": "UnderlyingInstrumentPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1063"
-       }
-      },
-      {
-       "name": "UnderlyingInstrumentPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1064"
-       }
+       "name": "UndlyInstrumentPartySubID",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "UnderlyingInstrumentPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1063"
+         }
+        },
+        {
+         "name": "UnderlyingInstrumentPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1064"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

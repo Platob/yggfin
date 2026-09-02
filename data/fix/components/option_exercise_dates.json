@@ -135,20 +135,22 @@
    "fix": {
     "tag": "41116"
    },
-   "item": {
-    "name": "OptionExerciseBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OptionExerciseBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41117"
+   "fields": [
+    {
+     "name": "OptionExerciseBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OptionExerciseBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41117"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoOptionExerciseDates",
@@ -157,28 +159,30 @@
    "fix": {
     "tag": "41137"
    },
-   "item": {
-    "name": "OptionExerciseDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OptionExerciseDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41138"
+   "fields": [
+    {
+     "name": "OptionExerciseDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OptionExerciseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41138"
+       }
+      },
+      {
+       "name": "OptionExerciseDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41139"
+       }
       }
-     },
-     {
-      "name": "OptionExerciseDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41139"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "OptionExerciseEarliestDateOffsetDayType",

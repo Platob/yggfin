@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42420"
+ "fields": [
+  {
+   "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegPaymentStreamCompoundingDatesBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42420"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -268,10 +268,7 @@ def test_fix_component_docs_keep_nested_contracts_collapsible() -> None:
         "securityid",
         "legs",
     }
-    assert {column["name"] for column in legs["fields"][0]["fields"]} >= {
-        "symbol",
-        "securityid",
-    }
+    assert {column["name"] for column in legs["fields"]} >= {"symbol", "securityid"}
     assert [column["name"] for column in altids["fields"]] == ["key", "value"]
 
     lineage = (DOCS / "javascripts" / "product-lineage.js").read_text(encoding="utf-8")

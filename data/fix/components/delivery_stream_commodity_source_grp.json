@@ -123,20 +123,22 @@
    "fix": {
     "tag": "41085"
    },
-   "item": {
-    "name": "DeliveryStreamCommoditySource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DeliveryStreamCommoditySource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41086"
+   "fields": [
+    {
+     "name": "DeliveryStreamCommoditySource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DeliveryStreamCommoditySource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41086"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -90,92 +90,94 @@
    "fix": {
     "tag": "2059"
    },
-   "item": {
-    "name": "LegEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2060"
+   "fields": [
+    {
+     "name": "LegEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2060"
+       }
+      },
+      {
+       "name": "LegEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2061"
+       }
+      },
+      {
+       "name": "LegEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2062"
+       }
+      },
+      {
+       "name": "LegEventTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2063"
+       }
+      },
+      {
+       "name": "LegEventTimePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2064"
+       }
+      },
+      {
+       "name": "LegEventMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2341"
+       }
+      },
+      {
+       "name": "LegEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2065"
+       }
+      },
+      {
+       "name": "LegEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2066"
+       }
+      },
+      {
+       "name": "EncodedLegEventTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2074"
+       }
+      },
+      {
+       "name": "EncodedLegEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2075"
+       }
       }
-     },
-     {
-      "name": "LegEventDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2061"
-      }
-     },
-     {
-      "name": "LegEventTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2062"
-      }
-     },
-     {
-      "name": "LegEventTimeUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2063"
-      }
-     },
-     {
-      "name": "LegEventTimePeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2064"
-      }
-     },
-     {
-      "name": "LegEventMonthYear",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2341"
-      }
-     },
-     {
-      "name": "LegEventPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2065"
-      }
-     },
-     {
-      "name": "LegEventText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2066"
-      }
-     },
-     {
-      "name": "EncodedLegEventTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2074"
-      }
-     },
-     {
-      "name": "EncodedLegEventText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2075"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

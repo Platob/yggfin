@@ -8,42 +8,44 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RiskWarningLevel",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RiskWarningLevelAction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1769"
+ "fields": [
+  {
+   "name": "RiskWarningLevel",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RiskWarningLevelAction",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1769"
+     }
+    },
+    {
+     "name": "RiskWarningLevelPercent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1560"
+     }
+    },
+    {
+     "name": "RiskWarningLevelAmount",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1768"
+     }
+    },
+    {
+     "name": "RiskWarningLevelName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1561"
+     }
     }
-   },
-   {
-    "name": "RiskWarningLevelPercent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1560"
-    }
-   },
-   {
-    "name": "RiskWarningLevelAmount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1768"
-    }
-   },
-   {
-    "name": "RiskWarningLevelName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1561"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

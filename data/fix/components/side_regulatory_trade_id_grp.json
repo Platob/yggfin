@@ -27,60 +27,62 @@
    "fix": {
     "tag": "1971"
    },
-   "item": {
-    "name": "SideRegulatoryTradeID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "SideRegulatoryTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1972"
+   "fields": [
+    {
+     "name": "SideRegulatoryTradeID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "SideRegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1972"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1973"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1974"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1975"
+       }
+      },
+      {
+       "name": "SideRegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2416"
+       }
+      },
+      {
+       "name": "SideRegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2398"
+       }
       }
-     },
-     {
-      "name": "SideRegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1973"
-      }
-     },
-     {
-      "name": "SideRegulatoryTradeIDEvent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1974"
-      }
-     },
-     {
-      "name": "SideRegulatoryTradeIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1975"
-      }
-     },
-     {
-      "name": "SideRegulatoryLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2416"
-      }
-     },
-     {
-      "name": "SideRegulatoryTradeIDScope",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2398"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

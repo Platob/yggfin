@@ -30,54 +30,56 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingSettlPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "732"
-      }
-     },
-     {
-      "name": "UnderlyingSettlPriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "733"
-      }
-     },
-     {
-      "name": "UnderlyingDeliveryAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1037"
-      }
-     },
-     {
-      "name": "UnderlyingAmount",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingAmount"
+      {
+       "name": "UnderlyingSettlPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "732"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "UnderlyingSettlPriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "733"
+       }
+      },
+      {
+       "name": "UnderlyingDeliveryAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1037"
+       }
+      },
+      {
+       "name": "UnderlyingAmount",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingAmount"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -77,52 +77,54 @@
    "fix": {
     "tag": "73"
    },
-   "item": {
-    "name": "Order",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "11"
+   "fields": [
+    {
+     "name": "Order",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "11"
+       }
+      },
+      {
+       "name": "OrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "37"
+       }
+      },
+      {
+       "name": "SecondaryOrderID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "198"
+       }
+      },
+      {
+       "name": "SecondaryClOrdID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "526"
+       }
+      },
+      {
+       "name": "ListID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "66"
+       }
       }
-     },
-     {
-      "name": "OrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "37"
-      }
-     },
-     {
-      "name": "SecondaryOrderID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "198"
-      }
-     },
-     {
-      "name": "SecondaryClOrdID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "526"
-      }
-     },
-     {
-      "name": "ListID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "66"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoExecs",
@@ -131,52 +133,54 @@
    "fix": {
     "tag": "124"
    },
-   "item": {
-    "name": "Exec",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LastQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "32"
+   "fields": [
+    {
+     "name": "Exec",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LastQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "32"
+       }
+      },
+      {
+       "name": "ExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "17"
+       }
+      },
+      {
+       "name": "SecondaryExecID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "527"
+       }
+      },
+      {
+       "name": "LastPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "31"
+       }
+      },
+      {
+       "name": "LastCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "29"
+       }
       }
-     },
-     {
-      "name": "ExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "17"
-      }
-     },
-     {
-      "name": "SecondaryExecID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "527"
-      }
-     },
-     {
-      "name": "LastPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "31"
-      }
-     },
-     {
-      "name": "LastCapacity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "29"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Side",
@@ -406,212 +410,216 @@
    "fix": {
     "tag": "78"
    },
-   "item": {
-    "name": "Alloc",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AllocAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "79"
-      }
-     },
-     {
-      "name": "AllocPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "366"
-      }
-     },
-     {
-      "name": "AllocQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "80"
-      }
-     },
-     {
-      "name": "IndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "467"
-      }
-     },
-     {
-      "name": "ProcessCode",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "81"
-      }
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+   "fields": [
+    {
+     "name": "Alloc",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "79"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "NotifyBrokerOfCredit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "208"
-      }
-     },
-     {
-      "name": "AllocHandlInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "209"
-      }
-     },
-     {
-      "name": "AllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "161"
-      }
-     },
-     {
-      "name": "EncodedAllocTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "360"
-      }
-     },
-     {
-      "name": "EncodedAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "361"
-      }
-     },
-     {
-      "name": "CommissionData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "CommissionData"
+      {
+       "name": "AllocPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "366"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "AllocAvgPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "153"
-      }
-     },
-     {
-      "name": "AllocNetMoney",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "154"
-      }
-     },
-     {
-      "name": "SettlCurrAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "119"
-      }
-     },
-     {
-      "name": "SettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "120"
-      }
-     },
-     {
-      "name": "SettlCurrFxRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "155"
-      }
-     },
-     {
-      "name": "SettlCurrFxRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "156"
-      }
-     },
-     {
-      "name": "AccruedInterestAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "159"
-      }
-     },
-     {
-      "name": "SettlInstMode",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "160"
-      }
-     },
-     {
-      "name": "NoMiscFees",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "136"
+      {
+       "name": "AllocQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "80"
+       }
       },
-      "item": {
-       "name": "MiscFee",
+      {
+       "name": "IndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "467"
+       }
+      },
+      {
+       "name": "ProcessCode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "81"
+       }
+      },
+      {
+       "name": "NestedParties",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "NotifyBrokerOfCredit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "208"
+       }
+      },
+      {
+       "name": "AllocHandlInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "209"
+       }
+      },
+      {
+       "name": "AllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "161"
+       }
+      },
+      {
+       "name": "EncodedAllocTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "360"
+       }
+      },
+      {
+       "name": "EncodedAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "361"
+       }
+      },
+      {
+       "name": "CommissionData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CommissionData"
+       },
+       "fields": []
+      },
+      {
+       "name": "AllocAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "153"
+       }
+      },
+      {
+       "name": "AllocNetMoney",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "154"
+       }
+      },
+      {
+       "name": "SettlCurrAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "119"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "SettlCurrFxRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "155"
+       }
+      },
+      {
+       "name": "SettlCurrFxRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "156"
+       }
+      },
+      {
+       "name": "AccruedInterestAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "159"
+       }
+      },
+      {
+       "name": "SettlInstMode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "160"
+       }
+      },
+      {
+       "name": "NoMiscFees",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "136"
+       },
        "fields": [
         {
-         "name": "MiscFeeAmt",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "137"
-         }
-        },
-        {
-         "name": "MiscFeeCurr",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "138"
-         }
-        },
-        {
-         "name": "MiscFeeType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "139"
-         }
+         "name": "MiscFee",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "MiscFeeAmt",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "137"
+           }
+          },
+          {
+           "name": "MiscFeeCurr",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "138"
+           }
+          },
+          {
+           "name": "MiscFeeType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "139"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

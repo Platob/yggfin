@@ -8,64 +8,68 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingStreamCommoditySettlDay",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingStreamCommoditySettlDay",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41997"
-    }
-   },
-   {
-    "name": "UnderlyingStreamCommoditySettlTotalHours",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41998"
-    }
-   },
-   {
-    "name": "NoUnderlyingStreamCommoditySettlTimes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41999"
+ "fields": [
+  {
+   "name": "UnderlyingStreamCommoditySettlDay",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingStreamCommoditySettlDay",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41997"
+     }
     },
-    "item": {
-     "name": "UnderlyingStreamCommoditySettlTime",
-     "type": "struct",
+    {
+     "name": "UnderlyingStreamCommoditySettlTotalHours",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41998"
+     }
+    },
+    {
+     "name": "NoUnderlyingStreamCommoditySettlTimes",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41999"
+     },
      "fields": [
       {
-       "name": "UnderlyingStreamCommoditySettlStart",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42000"
-       }
-      },
-      {
-       "name": "UnderlyingStreamCommoditySettlEnd",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42001"
-       }
-      },
-      {
-       "name": "UnderlyingStreamCommoditySettlTimeType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41936"
-       }
+       "name": "UnderlyingStreamCommoditySettlTime",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "UnderlyingStreamCommoditySettlStart",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "42000"
+         }
+        },
+        {
+         "name": "UnderlyingStreamCommoditySettlEnd",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "42001"
+         }
+        },
+        {
+         "name": "UnderlyingStreamCommoditySettlTimeType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41936"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -90,28 +90,30 @@
    "fix": {
     "tag": "2258"
    },
-   "item": {
-    "name": "LegInstrumentPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegInstrumentPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2259"
+   "fields": [
+    {
+     "name": "LegInstrumentPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegInstrumentPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2259"
+       }
+      },
+      {
+       "name": "LegInstrumentPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2260"
+       }
       }
-     },
-     {
-      "name": "LegInstrumentPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2260"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

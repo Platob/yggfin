@@ -13,18 +13,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "StatsIndicator",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "StatsType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1176"
+ "fields": [
+  {
+   "name": "StatsIndicator",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "StatsType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1176"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -37,20 +37,22 @@
    "fix": {
     "tag": "1237"
    },
-   "item": {
-    "name": "OrdTypeRule",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "OrdType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40"
+   "fields": [
+    {
+     "name": "OrdTypeRule",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "OrdType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -30,132 +30,134 @@
    "fix": {
     "tag": "420"
    },
-   "item": {
-    "name": "BidComponent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "CommissionData",
-      "type": "struct",
-      "fix": {
-       "component": "CommissionData"
+   "fields": [
+    {
+     "name": "BidComponent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "CommissionData",
+       "type": "struct",
+       "fix": {
+        "component": "CommissionData"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "ListID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "66"
+      {
+       "name": "ListID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "66"
+       }
+      },
+      {
+       "name": "Country",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "421"
+       }
+      },
+      {
+       "name": "Side",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "54"
+       }
+      },
+      {
+       "name": "Price",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "44"
+       }
+      },
+      {
+       "name": "PriceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "423"
+       }
+      },
+      {
+       "name": "FairValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "406"
+       }
+      },
+      {
+       "name": "NetGrossInd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "430"
+       }
+      },
+      {
+       "name": "SettlType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "63"
+       }
+      },
+      {
+       "name": "SettlDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "64"
+       }
+      },
+      {
+       "name": "TradingSessionID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "336"
+       }
+      },
+      {
+       "name": "TradingSessionSubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "625"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "Country",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "421"
-      }
-     },
-     {
-      "name": "Side",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "54"
-      }
-     },
-     {
-      "name": "Price",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "44"
-      }
-     },
-     {
-      "name": "PriceType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "423"
-      }
-     },
-     {
-      "name": "FairValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "406"
-      }
-     },
-     {
-      "name": "NetGrossInd",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "430"
-      }
-     },
-     {
-      "name": "SettlType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "63"
-      }
-     },
-     {
-      "name": "SettlDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "64"
-      }
-     },
-     {
-      "name": "TradingSessionID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "336"
-      }
-     },
-     {
-      "name": "TradingSessionSubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "625"
-      }
-     },
-     {
-      "name": "Text",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "58"
-      }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -90,28 +90,30 @@
    "fix": {
     "tag": "41593"
    },
-   "item": {
-    "name": "LegPaymentStreamPricingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamPricingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41594"
+   "fields": [
+    {
+     "name": "LegPaymentStreamPricingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamPricingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41594"
+       }
+      },
+      {
+       "name": "LegPaymentStreamPricingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41595"
+       }
       }
-     },
-     {
-      "name": "LegPaymentStreamPricingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41595"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

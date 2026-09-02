@@ -36,93 +36,95 @@
    "fix": {
     "tag": "702"
    },
-   "item": {
-    "name": "Position",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PosType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "703"
-      }
-     },
-     {
-      "name": "LongQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "704"
-      }
-     },
-     {
-      "name": "ShortQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "705"
-      }
-     },
-     {
-      "name": "CoveredQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1654"
-      }
-     },
-     {
-      "name": "PosQtyStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "706"
-      }
-     },
-     {
-      "name": "QuantityDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "976"
-      }
-     },
-     {
-      "name": "PosQtyUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1836"
-      }
-     },
-     {
-      "name": "PosQtyUnitOfMeasureCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1835"
-      }
-     },
-     {
-      "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2936"
-      }
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+   "fields": [
+    {
+     "name": "Position",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PosType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "703"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "LongQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "704"
+       }
+      },
+      {
+       "name": "ShortQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "705"
+       }
+      },
+      {
+       "name": "CoveredQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1654"
+       }
+      },
+      {
+       "name": "PosQtyStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "706"
+       }
+      },
+      {
+       "name": "QuantityDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "976"
+       }
+      },
+      {
+       "name": "PosQtyUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1836"
+       }
+      },
+      {
+       "name": "PosQtyUnitOfMeasureCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1835"
+       }
+      },
+      {
+       "name": "PosQtyUnitOfMeasureCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2936"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

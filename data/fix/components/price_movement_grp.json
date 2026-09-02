@@ -27,30 +27,32 @@
    "fix": {
     "tag": "1919"
    },
-   "item": {
-    "name": "PriceMovement",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PriceMovementValueGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PriceMovementValueGrp"
+   "fields": [
+    {
+     "name": "PriceMovement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PriceMovementValueGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PriceMovementValueGrp"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "ClearingAccountTypeGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ClearingAccountTypeGrp"
-      },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "ClearingAccountTypeGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ClearingAccountTypeGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

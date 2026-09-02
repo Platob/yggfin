@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegMarketDisruptionEvent",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegMarketDisruptionEvent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41468"
+ "fields": [
+  {
+   "name": "LegMarketDisruptionEvent",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegMarketDisruptionEvent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41468"
+     }
+    },
+    {
+     "name": "LegMarketDisruptionValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40223"
+     }
     }
-   },
-   {
-    "name": "LegMarketDisruptionValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40223"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

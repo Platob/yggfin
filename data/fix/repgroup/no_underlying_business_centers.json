@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40963"
+ "fields": [
+  {
+   "name": "UnderlyingBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40963"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

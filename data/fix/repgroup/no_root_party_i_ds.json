@@ -15,72 +15,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "RootPartyID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "RootPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1117"
-    }
-   },
-   {
-    "name": "RootPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1118"
-    }
-   },
-   {
-    "name": "RootPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1119"
-    }
-   },
-   {
-    "name": "RootPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2388"
-    }
-   },
-   {
-    "name": "NoRootPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1120"
+ "fields": [
+  {
+   "name": "RootPartyID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "RootPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1117"
+     }
     },
-    "item": {
-     "name": "RootPartySubID",
-     "type": "struct",
+    {
+     "name": "RootPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1118"
+     }
+    },
+    {
+     "name": "RootPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1119"
+     }
+    },
+    {
+     "name": "RootPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2388"
+     }
+    },
+    {
+     "name": "NoRootPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1120"
+     },
      "fields": [
       {
        "name": "RootPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1121"
-       }
-      },
-      {
-       "name": "RootPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1122"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "RootPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1121"
+         }
+        },
+        {
+         "name": "RootPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1122"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

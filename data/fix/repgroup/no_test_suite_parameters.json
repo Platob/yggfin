@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TestSuiteParameter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TestSuiteParameterName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3127"
+ "fields": [
+  {
+   "name": "TestSuiteParameter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TestSuiteParameterName",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3127"
+     }
+    },
+    {
+     "name": "TestSuiteParameterType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3128"
+     }
+    },
+    {
+     "name": "TestSuiteParameterValue",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "3129"
+     }
     }
-   },
-   {
-    "name": "TestSuiteParameterType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3128"
-    }
-   },
-   {
-    "name": "TestSuiteParameterValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "3129"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

@@ -8,34 +8,36 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingReturnRateFXConversion",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingReturnRateFXCurrencySymbol",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43031"
+ "fields": [
+  {
+   "name": "UnderlyingReturnRateFXConversion",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingReturnRateFXCurrencySymbol",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43031"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateFXRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43032"
+     }
+    },
+    {
+     "name": "UnderlyingReturnRateFXRateCalc",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "43033"
+     }
     }
-   },
-   {
-    "name": "UnderlyingReturnRateFXRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43032"
-    }
-   },
-   {
-    "name": "UnderlyingReturnRateFXRateCalc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "43033"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

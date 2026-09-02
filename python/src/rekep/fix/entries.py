@@ -561,22 +561,11 @@ def folded_field_values(
     return tuple(values.values()), {part: found for part, found in origins.items() if found}
 
 
-def _json(value: Any) -> str:
-    return json.dumps(value, separators=(",", ":"))
-
-
 def _json_any(value: str | None) -> Any:
     try:
         return json.loads(value or "null")
     except (TypeError, ValueError):
         return None
-
-
-def _json_mapping(value: str | None) -> dict[str, str]:
-    decoded = _json_any(value)
-    return (
-        {str(key): str(item) for key, item in decoded.items()} if isinstance(decoded, dict) else {}
-    )
 
 
 def _json_sequence(value: str | None) -> list[str]:

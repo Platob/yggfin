@@ -30,53 +30,55 @@
    "fix": {
     "tag": "40233"
    },
-   "item": {
-    "name": "PaymentSettlPartyID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentSettlPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40234"
-      }
-     },
-     {
-      "name": "PaymentSettlPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40235"
-      }
-     },
-     {
-      "name": "PaymentSettlPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40236"
-      }
-     },
-     {
-      "name": "PaymentSettlPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40237"
-      }
-     },
-     {
-      "name": "PaymentSettlPtysSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PaymentSettlPtysSubGrp"
+   "fields": [
+    {
+     "name": "PaymentSettlPartyID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentSettlPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40234"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "PaymentSettlPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40235"
+       }
+      },
+      {
+       "name": "PaymentSettlPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40236"
+       }
+      },
+      {
+       "name": "PaymentSettlPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40237"
+       }
+      },
+      {
+       "name": "PaymentSettlPtysSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PaymentSettlPtysSubGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

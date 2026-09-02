@@ -32,476 +32,478 @@
    "fix": {
     "tag": "78"
    },
-   "item": {
-    "name": "Alloc",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AllocAccount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "79"
-      }
-     },
-     {
-      "name": "AllocAcctIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "661"
-      }
-     },
-     {
-      "name": "MatchStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "573"
-      }
-     },
-     {
-      "name": "AllocPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "366"
-      }
-     },
-     {
-      "name": "AllocQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "80"
-      }
-     },
-     {
-      "name": "AllocCalculatedCcyQty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2515"
-      }
-     },
-     {
-      "name": "CustodialLotID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1752"
-      }
-     },
-     {
-      "name": "VersusPurchaseDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1753"
-      }
-     },
-     {
-      "name": "VersusPurchasePrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1754"
-      }
-     },
-     {
-      "name": "CurrentCostBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1755"
-      }
-     },
-     {
-      "name": "IndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "467"
-      }
-     },
-     {
-      "name": "FirmMnemonic",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1729"
-      }
-     },
-     {
-      "name": "ParentAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1593"
-      }
-     },
-     {
-      "name": "AllocLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2727"
-      }
-     },
-     {
-      "name": "AllocRegulatoryTradeIDGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "AllocRegulatoryTradeIDGrp"
+   "fields": [
+    {
+     "name": "Alloc",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AllocAccount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "79"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "ProcessCode",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "81"
-      }
-     },
-     {
-      "name": "SecondaryIndividualAllocID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "989"
-      }
-     },
-     {
-      "name": "AllocMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1002"
-      }
-     },
-     {
-      "name": "AllocationRollupInstruction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1735"
-      }
-     },
-     {
-      "name": "AllocCustomerCapacity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "993"
-      }
-     },
-     {
-      "name": "AllocPositionEffect",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1047"
-      }
-     },
-     {
-      "name": "IndividualAllocType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "992"
-      }
-     },
-     {
-      "name": "NestedParties",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "NestedParties"
+      {
+       "name": "AllocAcctIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "661"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "NotifyBrokerOfCredit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "208"
-      }
-     },
-     {
-      "name": "AllocHandlInst",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "209"
-      }
-     },
-     {
-      "name": "AllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "161"
-      }
-     },
-     {
-      "name": "EncodedAllocTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "360"
-      }
-     },
-     {
-      "name": "EncodedAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "361"
-      }
-     },
-     {
-      "name": "FirmAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1732"
-      }
-     },
-     {
-      "name": "EncodedFirmAllocTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1733"
-      }
-     },
-     {
-      "name": "EncodedFirmAllocText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1734"
-      }
-     },
-     {
-      "name": "CommissionData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "CommissionData"
+      {
+       "name": "MatchStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "573"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "AllocCommissionDataGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "AllocCommissionDataGrp"
+      {
+       "name": "AllocPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "366"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "AllocAvgPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "153"
-      }
-     },
-     {
-      "name": "AllocNetMoney",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "154"
-      }
-     },
-     {
-      "name": "SettlCurrAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "119"
-      }
-     },
-     {
-      "name": "AllocGrossTradeAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2300"
-      }
-     },
-     {
-      "name": "AllocSettlCurrAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "737"
-      }
-     },
-     {
-      "name": "SettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "120"
-      }
-     },
-     {
-      "name": "AllocSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "736"
-      }
-     },
-     {
-      "name": "AllocSettlCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2927"
-      }
-     },
-     {
-      "name": "SettlCurrFxRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "155"
-      }
-     },
-     {
-      "name": "SettlCurrFxRateCalc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "156"
-      }
-     },
-     {
-      "name": "AllocAccruedInterestAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "742"
-      }
-     },
-     {
-      "name": "AllocInterestAtMaturity",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "741"
-      }
-     },
-     {
-      "name": "MiscFeesGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "MiscFeesGrp"
+      {
+       "name": "AllocQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "80"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "ClrInstGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "ClrInstGrp"
+      {
+       "name": "AllocCalculatedCcyQty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2515"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "ClearingFeeIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "635"
-      }
-     },
-     {
-      "name": "AllocSettlInstType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "780"
-      }
-     },
-     {
-      "name": "SettlInstructionsData",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SettlInstructionsData"
+      {
+       "name": "CustodialLotID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1752"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "AllocRefRiskLimitCheckID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2392"
-      }
-     },
-     {
-      "name": "AllocRefRiskLimitCheckIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2393"
-      }
-     },
-     {
-      "name": "AllocRiskLimitCheckStatus",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2483"
-      }
-     },
-     {
-      "name": "AllocGroupAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2761"
-      }
-     },
-     {
-      "name": "AllocAvgPxGroupID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2770"
-      }
-     },
-     {
-      "name": "AllocAvgPxIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2769"
-      }
-     },
-     {
-      "name": "TradeAllocAmtGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "TradeAllocAmtGrp"
+      {
+       "name": "VersusPurchaseDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1753"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "VersusPurchasePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1754"
+       }
+      },
+      {
+       "name": "CurrentCostBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1755"
+       }
+      },
+      {
+       "name": "IndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "467"
+       }
+      },
+      {
+       "name": "FirmMnemonic",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1729"
+       }
+      },
+      {
+       "name": "ParentAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1593"
+       }
+      },
+      {
+       "name": "AllocLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2727"
+       }
+      },
+      {
+       "name": "AllocRegulatoryTradeIDGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "AllocRegulatoryTradeIDGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ProcessCode",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "81"
+       }
+      },
+      {
+       "name": "SecondaryIndividualAllocID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "989"
+       }
+      },
+      {
+       "name": "AllocMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1002"
+       }
+      },
+      {
+       "name": "AllocationRollupInstruction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1735"
+       }
+      },
+      {
+       "name": "AllocCustomerCapacity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "993"
+       }
+      },
+      {
+       "name": "AllocPositionEffect",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1047"
+       }
+      },
+      {
+       "name": "IndividualAllocType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "992"
+       }
+      },
+      {
+       "name": "NestedParties",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "NestedParties"
+       },
+       "fields": []
+      },
+      {
+       "name": "NotifyBrokerOfCredit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "208"
+       }
+      },
+      {
+       "name": "AllocHandlInst",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "209"
+       }
+      },
+      {
+       "name": "AllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "161"
+       }
+      },
+      {
+       "name": "EncodedAllocTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "360"
+       }
+      },
+      {
+       "name": "EncodedAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "361"
+       }
+      },
+      {
+       "name": "FirmAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1732"
+       }
+      },
+      {
+       "name": "EncodedFirmAllocTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1733"
+       }
+      },
+      {
+       "name": "EncodedFirmAllocText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1734"
+       }
+      },
+      {
+       "name": "CommissionData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "CommissionData"
+       },
+       "fields": []
+      },
+      {
+       "name": "AllocCommissionDataGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "AllocCommissionDataGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "AllocAvgPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "153"
+       }
+      },
+      {
+       "name": "AllocNetMoney",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "154"
+       }
+      },
+      {
+       "name": "SettlCurrAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "119"
+       }
+      },
+      {
+       "name": "AllocGrossTradeAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2300"
+       }
+      },
+      {
+       "name": "AllocSettlCurrAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "737"
+       }
+      },
+      {
+       "name": "SettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "120"
+       }
+      },
+      {
+       "name": "AllocSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "736"
+       }
+      },
+      {
+       "name": "AllocSettlCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2927"
+       }
+      },
+      {
+       "name": "SettlCurrFxRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "155"
+       }
+      },
+      {
+       "name": "SettlCurrFxRateCalc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "156"
+       }
+      },
+      {
+       "name": "AllocAccruedInterestAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "742"
+       }
+      },
+      {
+       "name": "AllocInterestAtMaturity",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "741"
+       }
+      },
+      {
+       "name": "MiscFeesGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "MiscFeesGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ClrInstGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "ClrInstGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "ClearingFeeIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "635"
+       }
+      },
+      {
+       "name": "AllocSettlInstType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "780"
+       }
+      },
+      {
+       "name": "SettlInstructionsData",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SettlInstructionsData"
+       },
+       "fields": []
+      },
+      {
+       "name": "AllocRefRiskLimitCheckID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2392"
+       }
+      },
+      {
+       "name": "AllocRefRiskLimitCheckIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2393"
+       }
+      },
+      {
+       "name": "AllocRiskLimitCheckStatus",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2483"
+       }
+      },
+      {
+       "name": "AllocGroupAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2761"
+       }
+      },
+      {
+       "name": "AllocAvgPxGroupID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2770"
+       }
+      },
+      {
+       "name": "AllocAvgPxIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2769"
+       }
+      },
+      {
+       "name": "TradeAllocAmtGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "TradeAllocAmtGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -98,20 +98,22 @@
    "fix": {
     "tag": "41460"
    },
-   "item": {
-    "name": "LegDeliveryStreamCommoditySource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDeliveryStreamCommoditySource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41461"
+   "fields": [
+    {
+     "name": "LegDeliveryStreamCommoditySource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryStreamCommoditySource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41461"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegDeliveryStreamPipeline",
@@ -216,36 +218,38 @@
    "fix": {
     "tag": "41456"
    },
-   "item": {
-    "name": "LegDeliveryStreamCycle",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDeliveryStreamCycleDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41457"
+   "fields": [
+    {
+     "name": "LegDeliveryStreamCycle",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41457"
+       }
+      },
+      {
+       "name": "EncodedLegDeliveryStreamCycleDescLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41458"
+       }
+      },
+      {
+       "name": "EncodedLegDeliveryStreamCycleDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41459"
+       }
       }
-     },
-     {
-      "name": "EncodedLegDeliveryStreamCycleDescLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41458"
-      }
-     },
-     {
-      "name": "EncodedLegDeliveryStreamCycleDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41459"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegDeliveryStreamTitleTransferLocation",

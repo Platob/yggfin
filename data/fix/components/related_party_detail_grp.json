@@ -44,71 +44,73 @@
    "fix": {
     "tag": "1562"
    },
-   "item": {
-    "name": "RelatedPartyDetailID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RelatedPartyDetailID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1563"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1564"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1565"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1675"
-      }
-     },
-     {
-      "name": "RelatedPartyDetailSubGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "RelatedPartyDetailSubGrp"
+   "fields": [
+    {
+     "name": "RelatedPartyDetailID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedPartyDetailID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1563"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "RelatedPartyDetailAltIDGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "RelatedPartyDetailAltIDGrp"
+      {
+       "name": "RelatedPartyDetailIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1564"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "PartyRelationshipGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "PartyRelationshipGrp"
+      {
+       "name": "RelatedPartyDetailRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1565"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "RelatedPartyDetailRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1675"
+       }
+      },
+      {
+       "name": "RelatedPartyDetailSubGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedPartyDetailSubGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "RelatedPartyDetailAltIDGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "RelatedPartyDetailAltIDGrp"
+       },
+       "fields": []
+      },
+      {
+       "name": "PartyRelationshipGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "PartyRelationshipGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

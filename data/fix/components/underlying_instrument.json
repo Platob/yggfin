@@ -141,36 +141,38 @@
    "fix": {
     "tag": "457"
    },
-   "item": {
-    "name": "UnderlyingSecurityAltID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingSecurityAltID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "458"
+   "fields": [
+    {
+     "name": "UnderlyingSecurityAltID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingSecurityAltID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "458"
+       }
+      },
+      {
+       "name": "UnderlyingSecurityAltIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "459"
+       }
+      },
+      {
+       "name": "UnderlyingSymbolPositionNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2959"
+       }
       }
-     },
-     {
-      "name": "UnderlyingSecurityAltIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "459"
-      }
-     },
-     {
-      "name": "UnderlyingSymbolPositionNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2959"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingID",
@@ -884,28 +886,30 @@
    "fix": {
     "tag": "887"
    },
-   "item": {
-    "name": "UnderlyingStip",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStipType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "888"
+   "fields": [
+    {
+     "name": "UnderlyingStip",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStipType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "888"
+       }
+      },
+      {
+       "name": "UnderlyingStipValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "889"
+       }
       }
-     },
-     {
-      "name": "UnderlyingStipValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "889"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingAdjustedQuantity",
@@ -946,74 +950,78 @@
    "fix": {
     "tag": "1058"
    },
-   "item": {
-    "name": "UndlyInstrumentParty",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrumentPartyID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1059"
-      }
-     },
-     {
-      "name": "UnderlyingInstrumentPartyIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1060"
-      }
-     },
-     {
-      "name": "UnderlyingInstrumentPartyRole",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1061"
-      }
-     },
-     {
-      "name": "UnderlyingInstrumentPartyRoleQualifier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2391"
-      }
-     },
-     {
-      "name": "NoUndlyInstrumentPartySubIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "1062"
+   "fields": [
+    {
+     "name": "UndlyInstrumentParty",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrumentPartyID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1059"
+       }
       },
-      "item": {
-       "name": "UndlyInstrumentPartySubID",
-       "type": "struct",
+      {
+       "name": "UnderlyingInstrumentPartyIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1060"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRole",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1061"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartyRoleQualifier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2391"
+       }
+      },
+      {
+       "name": "NoUndlyInstrumentPartySubIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "1062"
+       },
        "fields": [
         {
-         "name": "UnderlyingInstrumentPartySubID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1063"
-         }
-        },
-        {
-         "name": "UnderlyingInstrumentPartySubIDType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "1064"
-         }
+         "name": "UndlyInstrumentPartySubID",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingInstrumentPartySubID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1063"
+           }
+          },
+          {
+           "name": "UnderlyingInstrumentPartySubIDType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "1064"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingSettlMethod",
@@ -1158,92 +1166,94 @@
    "fix": {
     "tag": "1981"
    },
-   "item": {
-    "name": "UnderlyingEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1982"
+   "fields": [
+    {
+     "name": "UnderlyingEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1982"
+       }
+      },
+      {
+       "name": "UnderlyingEventDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1983"
+       }
+      },
+      {
+       "name": "UnderlyingEventTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1984"
+       }
+      },
+      {
+       "name": "UnderlyingEventTimeUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1985"
+       }
+      },
+      {
+       "name": "UnderlyingEventTimePeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1986"
+       }
+      },
+      {
+       "name": "UnderlyingEventMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2342"
+       }
+      },
+      {
+       "name": "UnderlyingEventPx",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1987"
+       }
+      },
+      {
+       "name": "UnderlyingEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2071"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingEventTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2072"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingEventText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2073"
+       }
       }
-     },
-     {
-      "name": "UnderlyingEventDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1983"
-      }
-     },
-     {
-      "name": "UnderlyingEventTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1984"
-      }
-     },
-     {
-      "name": "UnderlyingEventTimeUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1985"
-      }
-     },
-     {
-      "name": "UnderlyingEventTimePeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1986"
-      }
-     },
-     {
-      "name": "UnderlyingEventMonthYear",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2342"
-      }
-     },
-     {
-      "name": "UnderlyingEventPx",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1987"
-      }
-     },
-     {
-      "name": "UnderlyingEventText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2071"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingEventTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2072"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingEventText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2073"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingLienSeniority",
@@ -1436,44 +1446,46 @@
    "fix": {
     "tag": "2080"
    },
-   "item": {
-    "name": "UnderlyingSecondaryAssetClass",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingSecondaryAssetClass",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2081"
+   "fields": [
+    {
+     "name": "UnderlyingSecondaryAssetClass",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingSecondaryAssetClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2081"
+       }
+      },
+      {
+       "name": "UnderlyingSecondaryAssetSubClass",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2082"
+       }
+      },
+      {
+       "name": "UnderlyingSecondaryAssetType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2083"
+       }
+      },
+      {
+       "name": "UnderlyingSecondaryAssetSubType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2745"
+       }
       }
-     },
-     {
-      "name": "UnderlyingSecondaryAssetSubClass",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2082"
-      }
-     },
-     {
-      "name": "UnderlyingSecondaryAssetType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2083"
-      }
-     },
-     {
-      "name": "UnderlyingSecondaryAssetSubType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2745"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingAssetAttributes",
@@ -1482,36 +1494,38 @@
    "fix": {
     "tag": "2312"
    },
-   "item": {
-    "name": "UnderlyingAssetAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingAssetAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2313"
+   "fields": [
+    {
+     "name": "UnderlyingAssetAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingAssetAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2313"
+       }
+      },
+      {
+       "name": "UnderlyingAssetAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2314"
+       }
+      },
+      {
+       "name": "UnderlyingAssetAttributeLimit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2315"
+       }
       }
-     },
-     {
-      "name": "UnderlyingAssetAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2314"
-      }
-     },
-     {
-      "name": "UnderlyingAssetAttributeLimit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2315"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingSwapClass",
@@ -1840,689 +1854,711 @@
    "fix": {
     "tag": "2045"
    },
-   "item": {
-    "name": "UnderlyingComplexEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingComplexEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2046"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutPaySide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2261"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutReceiveSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2262"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutUnderlier",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2263"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2047"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutPercentage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2264"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2265"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2266"
-      }
-     },
-     {
-      "name": "UnderlyingComplexOptPayoutCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2947"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventPrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2048"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventPricePercentage",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2267"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventPriceBoundaryMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2049"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventPriceBoundaryPrecision",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2050"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventPriceTimeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2051"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCondition",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2052"
-      }
-     },
-     {
-      "name": "NoUnderlyingComplexEventDates",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "2053"
+   "fields": [
+    {
+     "name": "UnderlyingComplexEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2046"
+       }
       },
-      "item": {
-       "name": "UnderlyingComplexEventDate",
-       "type": "struct",
+      {
+       "name": "UnderlyingComplexOptPayoutPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2261"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2262"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutUnderlier",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2263"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2047"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutPercentage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2264"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2265"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2266"
+       }
+      },
+      {
+       "name": "UnderlyingComplexOptPayoutCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2947"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2048"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPricePercentage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2267"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPriceBoundaryMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2049"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPriceBoundaryPrecision",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2050"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPriceTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2051"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCondition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2052"
+       }
+      },
+      {
+       "name": "NoUnderlyingComplexEventDates",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2053"
+       },
        "fields": [
         {
-         "name": "UnderlyingComplexEventStartDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2054"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventEndDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "2055"
-         }
-        },
-        {
-         "name": "NoUnderlyingComplexEventTimes",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "2056"
-         },
-         "item": {
-          "name": "UnderlyingComplexEventTime",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingComplexEventStartTime",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "2057"
-            }
-           },
-           {
-            "name": "UnderlyingComplexEventEndTime",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "2058"
-            }
+         "name": "UnderlyingComplexEventDate",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventStartDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2054"
            }
-          ]
-         }
+          },
+          {
+           "name": "UnderlyingComplexEventEndDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "2055"
+           }
+          },
+          {
+           "name": "NoUnderlyingComplexEventTimes",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "2056"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingComplexEventTime",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingComplexEventStartTime",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "2057"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventEndTime",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "2058"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCurrencyOne",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2268"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCurrencyOneCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2948"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCurrencyTwo",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2269"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCurrencyTwoCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2949"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventQuoteBasis",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2270"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventFixedFXRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2271"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventSpotRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2419"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventForwardPoints",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2420"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventDeterminationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2272"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCalculationAgent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2273"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventStrikePrice",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2274"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventStrikeFactor",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2275"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventStrikeNumberOfOptions",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2276"
-      }
-     },
-     {
-      "name": "NoUnderlyingComplexEventRateSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "41732"
       },
-      "item": {
-       "name": "UnderlyingComplexEventRateSource",
-       "type": "struct",
+      {
+       "name": "UnderlyingComplexEventCurrencyOne",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2268"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyOneCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2948"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyTwo",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2269"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCurrencyTwoCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2949"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventQuoteBasis",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2270"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventFixedFXRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2271"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventSpotRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2419"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventForwardPoints",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2420"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2272"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2273"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventStrikePrice",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2274"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventStrikeFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2275"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventStrikeNumberOfOptions",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2276"
+       }
+      },
+      {
+       "name": "NoUnderlyingComplexEventRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41732"
+       },
        "fields": [
         {
          "name": "UnderlyingComplexEventRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41733"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventRateSourceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41734"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventReferencePage",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41735"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventReferencePageHeading",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41736"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41733"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventRateSourceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41734"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventReferencePage",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41735"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventReferencePageHeading",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41736"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventRelativeDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingComplexEventRelativeDate"
       },
-      "fields": []
-     },
-     {
-      "name": "NoUnderlyingComplexEventPeriods",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "41729"
-      },
-      "item": {
-       "name": "UnderlyingComplexEventPeriod",
+      {
+       "name": "UnderlyingComplexEventRelativeDate",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingComplexEventRelativeDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoUnderlyingComplexEventPeriods",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41729"
+       },
        "fields": [
         {
-         "name": "UnderlyingComplexEventPeriodType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41730"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41731"
-         }
-        },
-        {
-         "name": "NoUnderlyingComplexEventSchedules",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "41750"
-         },
-         "item": {
-          "name": "UnderlyingComplexEventSchedule",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingComplexEventScheduleStartDate",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41751"
-            }
-           },
-           {
-            "name": "UnderlyingComplexEventScheduleEndDate",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41752"
-            }
-           },
-           {
-            "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41753"
-            }
-           },
-           {
-            "name": "UnderlyingComplexEventScheduleFrequencyUnit",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41754"
-            }
-           },
-           {
-            "name": "UnderlyingComplexEventScheduleRollConvention",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41755"
-            }
+         "name": "UnderlyingComplexEventPeriod",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventPeriodType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41730"
            }
-          ]
-         }
-        },
-        {
-         "name": "NoUnderlyingComplexEventPeriodDateTimes",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "41726"
-         },
-         "item": {
-          "name": "UnderlyingComplexEventPeriodDateTime",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingComplexEventPeriodDate",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41727"
-            }
-           },
-           {
-            "name": "UnderlyingComplexEventPeriodTime",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41728"
-            }
+          },
+          {
+           "name": "UnderlyingComplexEventBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41731"
            }
-          ]
-         }
-        },
-        {
-         "name": "NoUnderlyingComplexEventAveragingObservations",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "41713"
-         },
-         "item": {
-          "name": "UnderlyingComplexEventAveragingObservation",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingComplexEventAveragingObservationNumber",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41714"
-            }
+          },
+          {
+           "name": "NoUnderlyingComplexEventSchedules",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41750"
            },
-           {
-            "name": "UnderlyingComplexEventAveragingWeight",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41715"
+           "fields": [
+            {
+             "name": "UnderlyingComplexEventSchedule",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingComplexEventScheduleStartDate",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41751"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventScheduleEndDate",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41752"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41753"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventScheduleFrequencyUnit",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41754"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventScheduleRollConvention",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41755"
+               }
+              }
+             ]
             }
-           }
-          ]
-         }
+           ]
+          },
+          {
+           "name": "NoUnderlyingComplexEventPeriodDateTimes",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41726"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingComplexEventPeriodDateTime",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingComplexEventPeriodDate",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41727"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventPeriodTime",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41728"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "name": "NoUnderlyingComplexEventAveragingObservations",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41713"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingComplexEventAveragingObservation",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingComplexEventAveragingObservationNumber",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41714"
+               }
+              },
+              {
+               "name": "UnderlyingComplexEventAveragingWeight",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41715"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCreditEventsXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2277"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCreditEventNotifyingParty",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2278"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCreditEventBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2279"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCreditEventStandardSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2280"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventCreditEventMinimumSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2281"
-      }
-     },
-     {
-      "name": "NoUnderlyingComplexEventCreditEventSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "41748"
       },
-      "item": {
-       "name": "UnderlyingComplexEventCreditEventSource",
-       "type": "struct",
+      {
+       "name": "UnderlyingComplexEventCreditEventsXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2277"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventNotifyingParty",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2278"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2279"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2280"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventCreditEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2281"
+       }
+      },
+      {
+       "name": "NoUnderlyingComplexEventCreditEventSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41748"
+       },
        "fields": [
         {
          "name": "UnderlyingComplexEventCreditEventSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41749"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventCreditEventSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41749"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoUnderlyingComplexEventCreditEvents",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "41716"
       },
-      "item": {
-       "name": "UnderlyingComplexEventCreditEvent",
-       "type": "struct",
+      {
+       "name": "NoUnderlyingComplexEventCreditEvents",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41716"
+       },
        "fields": [
         {
-         "name": "UnderlyingComplexEventCreditEventType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41717"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventCreditEventValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41718"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventCreditEventCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41719"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventCreditEventPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41720"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventCreditEventUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41721"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventCreditEventDayType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41722"
-         }
-        },
-        {
-         "name": "UnderlyingComplexEventCreditEventRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41723"
-         }
-        },
-        {
-         "name": "NoUnderlyingComplexEventCreditEventQualifiers",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "41724"
-         },
-         "item": {
-          "name": "UnderlyingComplexEventCreditEventQualifier",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingComplexEventCreditEventQualifier",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41725"
-            }
+         "name": "UnderlyingComplexEventCreditEvent",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingComplexEventCreditEventType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41717"
            }
-          ]
-         }
+          },
+          {
+           "name": "UnderlyingComplexEventCreditEventValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41718"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventCreditEventCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41719"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventCreditEventPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41720"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventCreditEventUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41721"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventCreditEventDayType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41722"
+           }
+          },
+          {
+           "name": "UnderlyingComplexEventCreditEventRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41723"
+           }
+          },
+          {
+           "name": "NoUnderlyingComplexEventCreditEventQualifiers",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41724"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingComplexEventCreditEventQualifier",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingComplexEventCreditEventQualifier",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41725"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "UnderlyingComplexEventFuturesPriceValuation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2611"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventOptionsPriceValuation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2612"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventPVFinalPriceElectionFallback",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2613"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2282"
+       }
+      },
+      {
+       "name": "UnderlyingComplexEventXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2283"
+       }
       }
-     },
-     {
-      "name": "UnderlyingComplexEventFuturesPriceValuation",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2611"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventOptionsPriceValuation",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2612"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventPVFinalPriceElectionFallback",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2613"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2282"
-      }
-     },
-     {
-      "name": "UnderlyingComplexEventXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2283"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingStrategyType",
@@ -2615,1234 +2651,1254 @@
    "fix": {
     "tag": "40540"
    },
-   "item": {
-    "name": "UnderlyingStream",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingStreamType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40541"
-      }
-     },
-     {
-      "name": "UnderlyingStreamXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42016"
-      }
-     },
-     {
-      "name": "UnderlyingStreamDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40542"
-      }
-     },
-     {
-      "name": "UnderlyingStreamVersion",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43083"
-      }
-     },
-     {
-      "name": "UnderlyingStreamVersionEffectiveDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43084"
-      }
-     },
-     {
-      "name": "UnderlyingStreamPaySide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40543"
-      }
-     },
-     {
-      "name": "UnderlyingStreamReceiveSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40544"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalXIDRef",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42018"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40545"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40546"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalDeterminationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43085"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalAdjustments",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43086"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalFrequencyPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42019"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalFrequencyUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42020"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalCommodityFrequency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42021"
-      }
-     },
-     {
-      "name": "UnderlyingStreamNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42022"
-      }
-     },
-     {
-      "name": "UnderlyingStreamTotalNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42023"
-      }
-     },
-     {
-      "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42024"
-      }
-     },
-     {
-      "name": "UnderlyingStreamCommodity",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamCommodity"
+   "fields": [
+    {
+     "name": "UnderlyingStream",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingStreamType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40541"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamEffectiveDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamEffectiveDate"
+      {
+       "name": "UnderlyingStreamXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42016"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamTerminationDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamTerminationDate"
+      {
+       "name": "UnderlyingStreamDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40542"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingStreamCalculationPeriodDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingStreamCalculationPeriodDates"
+      {
+       "name": "UnderlyingStreamVersion",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43083"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingPaymentStream",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingPaymentStream"
+      {
+       "name": "UnderlyingStreamVersionEffectiveDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43084"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "NoUnderlyingPaymentSchedules",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "40664"
+      {
+       "name": "UnderlyingStreamPaySide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40543"
+       }
       },
-      "item": {
-       "name": "UnderlyingPaymentSchedule",
+      {
+       "name": "UnderlyingStreamReceiveSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40544"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42018"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40545"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40546"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalDeterminationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43085"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalAdjustments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43086"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalFrequencyPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42019"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalFrequencyUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42020"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalCommodityFrequency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42021"
+       }
+      },
+      {
+       "name": "UnderlyingStreamNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42022"
+       }
+      },
+      {
+       "name": "UnderlyingStreamTotalNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42023"
+       }
+      },
+      {
+       "name": "UnderlyingStreamTotalNotionalUnitOfMeasure",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42024"
+       }
+      },
+      {
+       "name": "UnderlyingStreamCommodity",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamCommodity"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamEffectiveDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamEffectiveDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamTerminationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamTerminationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingStreamCalculationPeriodDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingStreamCalculationPeriodDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingPaymentStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingPaymentStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoUnderlyingPaymentSchedules",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "40664"
+       },
        "fields": [
         {
-         "name": "UnderlyingPaymentScheduleType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40665"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleXID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41881"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleXIDRef",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41882"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStubType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40666"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStartDateUnadjusted",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40667"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleEndDateUnadjusted",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40668"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentSchedulePaySide",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40669"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleReceiveSide",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40670"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleNotional",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40671"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40672"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40673"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateMultiplier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40674"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateSpread",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40675"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41883"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateUnitOfMeasure",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41884"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateConversionFactor",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41885"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateSpreadType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41886"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateSpreadPositionType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40676"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleRateTreatment",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40677"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixedAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40678"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixedCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40679"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41887"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41888"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleSettlPeriodPriceUnitOfMeasure",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41889"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepUnitOfMeasure",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41890"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepFrequencyPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40680"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepFrequencyUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40681"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepOffsetValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40682"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40683"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepOffsetRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40684"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleStepRelativeTo",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40685"
-         }
-        },
-        {
-         "name": "NoUnderlyingPaymentScheduleRateSources",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "40704"
-         },
-         "item": {
-          "name": "UnderlyingPaymentScheduleRateSource",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingPaymentScheduleRateSource",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40705"
-            }
-           },
-           {
-            "name": "UnderlyingPaymentScheduleRateSourceType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40706"
-            }
-           },
-           {
-            "name": "UnderlyingPaymentScheduleReferencePage",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40707"
-            }
-           }
-          ]
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateUnadjusted",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40686"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleWeight",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40687"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateRelativeTo",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40688"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateBusinessDayCnvtn",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40689"
-         }
-        },
-        {
-         "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "40966"
-         },
-         "item": {
-          "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40690"
-            }
-           }
-          ]
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateOffsetPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40691"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateOffsetUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40692"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateOffsetDayType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40693"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDayDistribution",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41891"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDayCount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41892"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingDateAdjusted",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40694"
-         }
-        },
-        {
-         "name": "NoUnderlyingPaymentScheduleFixingDays",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "41878"
-         },
-         "item": {
-          "name": "UnderlyingPaymentScheduleFixingDay",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41879"
-            }
-           },
-           {
-            "name": "UnderlyingPaymentScheduleFixingDayNumber",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41880"
-            }
-           }
-          ]
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingLagPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41893"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingLagUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41894"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41895"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41896"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingTime",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40695"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleFixingTimeBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40696"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleInterimExchangePaymentDateRelativeTo",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40697"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleInterimExchangeDatesBizDayConvention",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40698"
-         }
-        },
-        {
-         "name": "NoUnderlyingPaymentScheduleInterimExchangeDateBusinessCenters",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "40967"
-         },
-         "item": {
-          "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "40699"
-            }
-           }
-          ]
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40700"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40701"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetDayType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40702"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentScheduleInterimExchangeDateAdjusted",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40703"
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "NoUnderlyingPaymentStubs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "40708"
-      },
-      "item": {
-       "name": "UnderlyingPaymentStub",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "UnderlyingPaymentStubType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40709"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubLength",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40710"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubStartDate",
+         "name": "UnderlyingPaymentSchedule",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "UnderlyingPaymentStubStartDate"
-         },
-         "fields": []
-        },
-        {
-         "name": "UnderlyingPaymentStubEndDate",
-         "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "UnderlyingPaymentStubEndDate"
-         },
-         "fields": []
-        },
-        {
-         "name": "UnderlyingPaymentStubRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40711"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubFixedAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40712"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubFixedCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40713"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40714"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40715"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexCurvePeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40716"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexCurveUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40717"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexRateMultiplier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40718"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexRateSpread",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40719"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexRateSpreadPositionType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40720"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexRateTreatment",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40721"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexCapRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40722"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexCapRateBuySide",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40723"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexCapRateSellSide",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40724"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexFloorRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40725"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexFloorRateBuySide",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40726"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndexFloorRateSellSide",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40727"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40728"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2Source",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40729"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2CurvePeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40730"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2CurveUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40731"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2RateMultiplier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40732"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2RateSpread",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40733"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2RateSpreadPositionType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40734"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2RateTreatment",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40735"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2CapRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40736"
-         }
-        },
-        {
-         "name": "UnderlyingPaymentStubIndex2FloorRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40737"
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "UnderlyingDeliveryStream",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingDeliveryStream"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoUnderlyingDeliverySchedules",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "41756"
-      },
-      "item": {
-       "name": "UnderlyingDeliverySchedule",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "UnderlyingDeliveryScheduleType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41757"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleXID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41758"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleNotional",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41759"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleNotionalUnitOfMeasure",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41760"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleNotionalCommodityFrequency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41761"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleNegativeTolerance",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41762"
-         }
-        },
-        {
-         "name": "UnderlyingDeliverySchedulePositiveTolerance",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41763"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleToleranceUnitOfMeasure",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41764"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleToleranceType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41765"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleSettlCountry",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41766"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleSettlTimeZone",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41767"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleSettlFlowType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41768"
-         }
-        },
-        {
-         "name": "UnderlyingDeliveryScheduleSettlHolidaysProcessingInstruction",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41769"
-         }
-        },
-        {
-         "name": "NoUnderlyingDeliveryScheduleSettlDays",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "41770"
-         },
-         "item": {
-          "name": "UnderlyingDeliveryScheduleSettlDay",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingDeliveryScheduleSettlDay",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41771"
-            }
+         "fields": [
+          {
+           "name": "UnderlyingPaymentScheduleType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40665"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleXID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41881"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleXIDRef",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41882"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStubType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40666"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStartDateUnadjusted",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40667"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleEndDateUnadjusted",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40668"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentSchedulePaySide",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40669"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleReceiveSide",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40670"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleNotional",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40671"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40672"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40673"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateMultiplier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40674"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateSpread",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40675"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41883"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateUnitOfMeasure",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41884"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateConversionFactor",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41885"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateSpreadType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41886"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateSpreadPositionType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40676"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleRateTreatment",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40677"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixedAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40678"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixedCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40679"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41887"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41888"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleSettlPeriodPriceUnitOfMeasure",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41889"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepUnitOfMeasure",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41890"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepFrequencyPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40680"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepFrequencyUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40681"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepOffsetValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40682"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40683"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepOffsetRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40684"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleStepRelativeTo",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40685"
+           }
+          },
+          {
+           "name": "NoUnderlyingPaymentScheduleRateSources",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "40704"
            },
-           {
-            "name": "UnderlyingDeliveryScheduleSettlTotalHours",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "41772"
-            }
-           },
-           {
-            "name": "NoUnderlyingDeliveryScheduleSettlTimes",
-            "type": "list",
-            "nullable": true,
-            "fix": {
-             "tag": "41773"
-            },
-            "item": {
-             "name": "UnderlyingDeliveryScheduleSettlTime",
+           "fields": [
+            {
+             "name": "UnderlyingPaymentScheduleRateSource",
              "type": "struct",
              "fields": [
               {
-               "name": "UnderlyingDeliveryScheduleSettlStart",
+               "name": "UnderlyingPaymentScheduleRateSource",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "41774"
+                "tag": "40705"
                }
               },
               {
-               "name": "UnderlyingDeliveryScheduleSettlEnd",
+               "name": "UnderlyingPaymentScheduleRateSourceType",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "41775"
+                "tag": "40706"
                }
               },
               {
-               "name": "UnderlyingDeliveryScheduleSettlTimeType",
+               "name": "UnderlyingPaymentScheduleReferencePage",
                "type": "string",
                "nullable": true,
                "fix": {
-                "tag": "41776"
+                "tag": "40707"
                }
               }
              ]
             }
+           ]
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateUnadjusted",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40686"
            }
-          ]
-         }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleWeight",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40687"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateRelativeTo",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40688"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateBusinessDayCnvtn",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40689"
+           }
+          },
+          {
+           "name": "NoUnderlyingPaymentScheduleFixingDateBusinessCenters",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "40966"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "40690"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateOffsetPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40691"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateOffsetUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40692"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateOffsetDayType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40693"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDayDistribution",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41891"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDayCount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41892"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingDateAdjusted",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40694"
+           }
+          },
+          {
+           "name": "NoUnderlyingPaymentScheduleFixingDays",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41878"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingPaymentScheduleFixingDay",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41879"
+               }
+              },
+              {
+               "name": "UnderlyingPaymentScheduleFixingDayNumber",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41880"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingLagPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41893"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingLagUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41894"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41895"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41896"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingTime",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40695"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleFixingTimeBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40696"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangePaymentDateRelativeTo",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40697"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangeDatesBizDayConvention",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40698"
+           }
+          },
+          {
+           "name": "NoUnderlyingPaymentScheduleInterimExchangeDateBusinessCenters",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "40967"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingPaymentScheduleInterimExchangeDateBusinessCenter",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingPaymentScheduleInterimExchangeDatesBusinessCenter",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "40699"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40700"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40701"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangeDatesOffsetDayType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40702"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentScheduleInterimExchangeDateAdjusted",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40703"
+           }
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "NoUnderlyingPaymentStubs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "40708"
+       },
+       "fields": [
+        {
+         "name": "UnderlyingPaymentStub",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPaymentStubType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40709"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubLength",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40710"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubStartDate",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "UnderlyingPaymentStubStartDate"
+           },
+           "fields": []
+          },
+          {
+           "name": "UnderlyingPaymentStubEndDate",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "UnderlyingPaymentStubEndDate"
+           },
+           "fields": []
+          },
+          {
+           "name": "UnderlyingPaymentStubRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40711"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubFixedAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40712"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubFixedCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40713"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40714"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40715"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexCurvePeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40716"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexCurveUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40717"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexRateMultiplier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40718"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexRateSpread",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40719"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexRateSpreadPositionType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40720"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexRateTreatment",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40721"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexCapRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40722"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexCapRateBuySide",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40723"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexCapRateSellSide",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40724"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexFloorRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40725"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexFloorRateBuySide",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40726"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndexFloorRateSellSide",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40727"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40728"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2Source",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40729"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2CurvePeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40730"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2CurveUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40731"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2RateMultiplier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40732"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2RateSpread",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40733"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2RateSpreadPositionType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40734"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2RateTreatment",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40735"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2CapRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40736"
+           }
+          },
+          {
+           "name": "UnderlyingPaymentStubIndex2FloorRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40737"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "UnderlyingDeliveryStream",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingDeliveryStream"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoUnderlyingDeliverySchedules",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41756"
+       },
+       "fields": [
+        {
+         "name": "UnderlyingDeliverySchedule",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingDeliveryScheduleType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41757"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleXID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41758"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleNotional",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41759"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleNotionalUnitOfMeasure",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41760"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleNotionalCommodityFrequency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41761"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleNegativeTolerance",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41762"
+           }
+          },
+          {
+           "name": "UnderlyingDeliverySchedulePositiveTolerance",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41763"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleToleranceUnitOfMeasure",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41764"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleToleranceType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41765"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlCountry",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41766"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlTimeZone",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41767"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlFlowType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41768"
+           }
+          },
+          {
+           "name": "UnderlyingDeliveryScheduleSettlHolidaysProcessingInstruction",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41769"
+           }
+          },
+          {
+           "name": "NoUnderlyingDeliveryScheduleSettlDays",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "41770"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingDeliveryScheduleSettlDay",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingDeliveryScheduleSettlDay",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41771"
+               }
+              },
+              {
+               "name": "UnderlyingDeliveryScheduleSettlTotalHours",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "41772"
+               }
+              },
+              {
+               "name": "NoUnderlyingDeliveryScheduleSettlTimes",
+               "type": "list",
+               "nullable": true,
+               "fix": {
+                "tag": "41773"
+               },
+               "fields": [
+                {
+                 "name": "UnderlyingDeliveryScheduleSettlTime",
+                 "type": "struct",
+                 "fields": [
+                  {
+                   "name": "UnderlyingDeliveryScheduleSettlStart",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "41774"
+                   }
+                  },
+                  {
+                   "name": "UnderlyingDeliveryScheduleSettlEnd",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "41775"
+                   }
+                  },
+                  {
+                   "name": "UnderlyingDeliveryScheduleSettlTimeType",
+                   "type": "string",
+                   "nullable": true,
+                   "fix": {
+                    "tag": "41776"
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "UnderlyingStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40547"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingStreamTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40988"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingStreamText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40989"
+       }
       }
-     },
-     {
-      "name": "UnderlyingStreamText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40547"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingStreamTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40988"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingStreamText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40989"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingProvisions",
@@ -3851,364 +3907,372 @@
    "fix": {
     "tag": "42149"
    },
-   "item": {
-    "name": "UnderlyingProvision",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProvisionType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42150"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateUnadjusted",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42151"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateBusinessDayConvention",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42152"
-      }
-     },
-     {
-      "name": "NoUnderlyingProvisionDateBusinessCenters",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42190"
+   "fields": [
+    {
+     "name": "UnderlyingProvision",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProvisionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42150"
+       }
       },
-      "item": {
-       "name": "UnderlyingProvisionDateBusinessCenter",
-       "type": "struct",
+      {
+       "name": "UnderlyingProvisionDateUnadjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42151"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionDateBusinessDayConvention",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42152"
+       }
+      },
+      {
+       "name": "NoUnderlyingProvisionDateBusinessCenters",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42190"
+       },
        "fields": [
         {
          "name": "UnderlyingProvisionDateBusinessCenter",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42191"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingProvisionDateBusinessCenter",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42191"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateAdjusted",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42153"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateTenorPeriod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42154"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionDateTenorUnit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42155"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionBreakFeeElection",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43002"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionBreakFeeRate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "43003"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCalculationAgent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42156"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42157"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionSinglePartySellerSide",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42158"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlValueDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionCashSettlValueDates"
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionOptionExerciseDates"
+      {
+       "name": "UnderlyingProvisionDateAdjusted",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42153"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionExpirationDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionOptionExpirationDate"
+      {
+       "name": "UnderlyingProvisionDateTenorPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42154"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionOptionRelevantUnderlyingDate"
+      {
+       "name": "UnderlyingProvisionDateTenorUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42155"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseStyle",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42159"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42160"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42161"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42162"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionMinimumNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42163"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionMaximumNumber",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42164"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionOptionExerciseConfirmation",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42165"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlPaymentDates",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionCashSettlPaymentDates"
+      {
+       "name": "UnderlyingProvisionBreakFeeElection",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43002"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42166"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42167"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlCurrency2",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42168"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlQuoteType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42169"
-      }
-     },
-     {
-      "name": "UnderlyingProvisionCashSettlQuoteSource",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingProvisionCashSettlQuoteSource"
+      {
+       "name": "UnderlyingProvisionBreakFeeRate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "43003"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingProvisionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42170"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingProvisionTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42171"
-      }
-     },
-     {
-      "name": "EncodedUnderlyingProvisionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42172"
-      }
-     },
-     {
-      "name": "NoUnderlyingProvisionPartyIDs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42173"
+      {
+       "name": "UnderlyingProvisionCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42156"
+       }
       },
-      "item": {
-       "name": "UnderlyingProvisionPartyID",
+      {
+       "name": "UnderlyingProvisionOptionSinglePartyBuyerSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42157"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionSinglePartySellerSide",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42158"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlValueDates",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlValueDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionExerciseDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExpirationDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionExpirationDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionRelevantUnderlyingDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionOptionRelevantUnderlyingDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseStyle",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42159"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMultipleNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42160"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMinimumNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42161"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseMaximumNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42162"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionMinimumNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42163"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionMaximumNumber",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42164"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionOptionExerciseConfirmation",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42165"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlPaymentDates",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlPaymentDates"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42166"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42167"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlCurrency2",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42168"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlQuoteType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42169"
+       }
+      },
+      {
+       "name": "UnderlyingProvisionCashSettlQuoteSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingProvisionCashSettlQuoteSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingProvisionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42170"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingProvisionTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42171"
+       }
+      },
+      {
+       "name": "EncodedUnderlyingProvisionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42172"
+       }
+      },
+      {
+       "name": "NoUnderlyingProvisionPartyIDs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42173"
+       },
        "fields": [
         {
          "name": "UnderlyingProvisionPartyID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42174"
-         }
-        },
-        {
-         "name": "UnderlyingProvisionPartyIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42175"
-         }
-        },
-        {
-         "name": "UnderlyingProvisionPartyRole",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42176"
-         }
-        },
-        {
-         "name": "UnderlyingProvisionPartyRoleQualifier",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "40918"
-         }
-        },
-        {
-         "name": "NoUnderlyingProvisionPartySubIDs",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "42177"
-         },
-         "item": {
-          "name": "UnderlyingProvisionPartySubID",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingProvisionPartySubID",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "42178"
-            }
-           },
-           {
-            "name": "UnderlyingProvisionPartySubIDType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "42179"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingProvisionPartyID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42174"
            }
-          ]
-         }
+          },
+          {
+           "name": "UnderlyingProvisionPartyIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42175"
+           }
+          },
+          {
+           "name": "UnderlyingProvisionPartyRole",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42176"
+           }
+          },
+          {
+           "name": "UnderlyingProvisionPartyRoleQualifier",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "40918"
+           }
+          },
+          {
+           "name": "NoUnderlyingProvisionPartySubIDs",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "42177"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingProvisionPartySubID",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingProvisionPartySubID",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "42178"
+               }
+              },
+              {
+               "name": "UnderlyingProvisionPartySubIDType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "42179"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingAdditionalTerms",
@@ -4217,186 +4281,190 @@
    "fix": {
     "tag": "42036"
    },
-   "item": {
-    "name": "UnderlyingAdditionalTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42037"
-      }
-     },
-     {
-      "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42038"
-      }
-     },
-     {
-      "name": "NoUnderlyingAdditionalTermBondRefs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "41340"
+   "fields": [
+    {
+     "name": "UnderlyingAdditionalTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingAdditionalTermConditionPrecedentBondIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42037"
+       }
       },
-      "item": {
-       "name": "UnderlyingAdditionalTermBondRef",
-       "type": "struct",
+      {
+       "name": "UnderlyingAdditionalTermDiscrepancyClauseIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42038"
+       }
+      },
+      {
+       "name": "NoUnderlyingAdditionalTermBondRefs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41340"
+       },
        "fields": [
         {
-         "name": "UnderlyingAdditionalTermBondSecurityID",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41341"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondSecurityIDSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41701"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41709"
-         }
-        },
-        {
-         "name": "EncodedUnderlyingAdditionalTermBondDescLen",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41710"
-         }
-        },
-        {
-         "name": "EncodedUnderlyingAdditionalTermBondDesc",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41711"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "41712"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondIssuer",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42017"
-         }
-        },
-        {
-         "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42025"
-         }
-        },
-        {
-         "name": "EncodedUnderlyingAdditionalTermBondIssuer",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42026"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondSeniority",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42027"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondCouponType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42028"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondCouponRate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42029"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondMaturityDate",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42030"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondParValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42031"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42032"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42033"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondCouponFrequencyUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42034"
-         }
-        },
-        {
-         "name": "UnderlyingAdditionalTermBondDayCount",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42035"
-         }
+         "name": "UnderlyingAdditionalTermBondRef",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingAdditionalTermBondSecurityID",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41341"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondSecurityIDSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41701"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41709"
+           }
+          },
+          {
+           "name": "EncodedUnderlyingAdditionalTermBondDescLen",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41710"
+           }
+          },
+          {
+           "name": "EncodedUnderlyingAdditionalTermBondDesc",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41711"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "41712"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondIssuer",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42017"
+           }
+          },
+          {
+           "name": "EncodedUnderlyingAdditionalTermBondIssuerLen",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42025"
+           }
+          },
+          {
+           "name": "EncodedUnderlyingAdditionalTermBondIssuer",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42026"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondSeniority",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42027"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondCouponType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42028"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondCouponRate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42029"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondMaturityDate",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42030"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondParValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42031"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondCurrentTotalIssuedAmount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42032"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondCouponFrequencyPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42033"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondCouponFrequencyUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42034"
+           }
+          },
+          {
+           "name": "UnderlyingAdditionalTermBondDayCount",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42035"
+           }
+          }
+         ]
         }
        ]
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingProtectionTerms",
@@ -4405,220 +4473,230 @@
    "fix": {
     "tag": "42068"
    },
-   "item": {
-    "name": "UnderlyingProtectionTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingProtectionTermNotional",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42069"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42070"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermSellerNotifies",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42071"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermBuyerNotifies",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42072"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermEventBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42073"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermStandardSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42074"
-      }
-     },
-     {
-      "name": "UnderlyingProtectionTermEventMinimumSources",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42075"
-      }
-     },
-     {
-      "name": "NoUnderlyingProtectionTermEventNewsSources",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42090"
+   "fields": [
+    {
+     "name": "UnderlyingProtectionTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingProtectionTermNotional",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42069"
+       }
       },
-      "item": {
-       "name": "UnderlyingProtectionTermEventNewsSource",
-       "type": "struct",
+      {
+       "name": "UnderlyingProtectionTermCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42070"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermSellerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42071"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermBuyerNotifies",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42072"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42073"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermStandardSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42074"
+       }
+      },
+      {
+       "name": "UnderlyingProtectionTermEventMinimumSources",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42075"
+       }
+      },
+      {
+       "name": "NoUnderlyingProtectionTermEventNewsSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42090"
+       },
        "fields": [
         {
          "name": "UnderlyingProtectionTermEventNewsSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42091"
-         }
-        }
-       ]
-      }
-     },
-     {
-      "name": "NoUnderlyingProtectionTermEvents",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42077"
-      },
-      "item": {
-       "name": "UnderlyingProtectionTermEvent",
-       "type": "struct",
-       "fields": [
-        {
-         "name": "UnderlyingProtectionTermEventType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42078"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermEventValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42079"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermEventCurrency",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42080"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermEventPeriod",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42081"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermEventUnit",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42082"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermEventDayType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42083"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermEventRateSource",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42084"
-         }
-        },
-        {
-         "name": "NoUnderlyingProtectionTermEventQualifiers",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "42085"
-         },
-         "item": {
-          "name": "UnderlyingProtectionTermEventQualifier",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "UnderlyingProtectionTermEventQualifier",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "42086"
-            }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingProtectionTermEventNewsSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42091"
            }
-          ]
-         }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "NoUnderlyingProtectionTermObligations",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42087"
       },
-      "item": {
-       "name": "UnderlyingProtectionTermObligation",
-       "type": "struct",
+      {
+       "name": "NoUnderlyingProtectionTermEvents",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42077"
+       },
        "fields": [
         {
-         "name": "UnderlyingProtectionTermObligationType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42088"
-         }
-        },
-        {
-         "name": "UnderlyingProtectionTermObligationValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42089"
-         }
+         "name": "UnderlyingProtectionTermEvent",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingProtectionTermEventType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42078"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermEventValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42079"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermEventCurrency",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42080"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermEventPeriod",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42081"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermEventUnit",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42082"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermEventDayType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42083"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermEventRateSource",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42084"
+           }
+          },
+          {
+           "name": "NoUnderlyingProtectionTermEventQualifiers",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "42085"
+           },
+           "fields": [
+            {
+             "name": "UnderlyingProtectionTermEventQualifier",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "UnderlyingProtectionTermEventQualifier",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "42086"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "NoUnderlyingProtectionTermObligations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42087"
+       },
+       "fields": [
+        {
+         "name": "UnderlyingProtectionTermObligation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingProtectionTermObligationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42088"
+           }
+          },
+          {
+           "name": "UnderlyingProtectionTermObligationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42089"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "UnderlyingProtectionTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42076"
+       }
       }
-     },
-     {
-      "name": "UnderlyingProtectionTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42076"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingCashSettlTerms",
@@ -4627,203 +4705,207 @@
    "fix": {
     "tag": "42041"
    },
-   "item": {
-    "name": "UnderlyingCashSettlTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingCashSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42042"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationFirstBusinessDayOffset",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42043"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationSubsequentBusinessDaysOffset",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42044"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlNumOfValuationDates",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42045"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42046"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42047"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlQuoteMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42048"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlQuoteAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42049"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlQuoteCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42050"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlMinimumQuoteAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42051"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlMinimumQuoteCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42052"
-      }
-     },
-     {
-      "name": "NoUnderlyingCashSettlDealers",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42039"
+   "fields": [
+    {
+     "name": "UnderlyingCashSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingCashSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42042"
+       }
       },
-      "item": {
-       "name": "UnderlyingCashSettlDealer",
-       "type": "struct",
+      {
+       "name": "UnderlyingCashSettlValuationFirstBusinessDayOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42043"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlValuationSubsequentBusinessDaysOffset",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42044"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlNumOfValuationDates",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42045"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlValuationTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42046"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42047"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlQuoteMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42048"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlQuoteAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42049"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42050"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlMinimumQuoteAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42051"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlMinimumQuoteCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42052"
+       }
+      },
+      {
+       "name": "NoUnderlyingCashSettlDealers",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42039"
+       },
        "fields": [
         {
          "name": "UnderlyingCashSettlDealer",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42040"
-         }
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingCashSettlDealer",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42040"
+           }
+          }
+         ]
         }
        ]
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlPriceSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42797"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlPriceDefault",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42798"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42053"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlAmount",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42054"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlDate",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingCashSettlDate"
       },
-      "fields": []
-     },
-     {
-      "name": "UnderlyingCashSettlRecoveryFactor",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42055"
+      {
+       "name": "UnderlyingCashSettlPriceSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42797"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlPriceDefault",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42798"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42053"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlAmount",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42054"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlDate",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingCashSettlDate"
+       },
+       "fields": []
+      },
+      {
+       "name": "UnderlyingCashSettlRecoveryFactor",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42055"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlFixedTermIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42056"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlAccruedInterestIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42057"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlValuationMethod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42058"
+       }
+      },
+      {
+       "name": "UnderlyingCashSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42059"
+       }
       }
-     },
-     {
-      "name": "UnderlyingCashSettlFixedTermIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42056"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlAccruedInterestIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42057"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlValuationMethod",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42058"
-      }
-     },
-     {
-      "name": "UnderlyingCashSettlTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42059"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoUnderlyingPhysicalSettlTerms",
@@ -4832,74 +4914,78 @@
    "fix": {
     "tag": "42060"
    },
-   "item": {
-    "name": "UnderlyingPhysicalSettlTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "NoUnderlyingPhysicalSettlDeliverableObligations",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "42065"
-      },
-      "item": {
-       "name": "UnderlyingPhysicalSettlDeliverableObligation",
-       "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingPhysicalSettlTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "NoUnderlyingPhysicalSettlDeliverableObligations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "42065"
+       },
        "fields": [
         {
-         "name": "UnderlyingPhysicalSettlDeliverableObligationType",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42066"
-         }
-        },
-        {
-         "name": "UnderlyingPhysicalSettlDeliverableObligationValue",
-         "type": "string",
-         "nullable": true,
-         "fix": {
-          "tag": "42067"
-         }
+         "name": "UnderlyingPhysicalSettlDeliverableObligation",
+         "type": "struct",
+         "fields": [
+          {
+           "name": "UnderlyingPhysicalSettlDeliverableObligationType",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42066"
+           }
+          },
+          {
+           "name": "UnderlyingPhysicalSettlDeliverableObligationValue",
+           "type": "string",
+           "nullable": true,
+           "fix": {
+            "tag": "42067"
+           }
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "UnderlyingPhysicalSettlCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42061"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42062"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42063"
+       }
+      },
+      {
+       "name": "UnderlyingPhysicalSettlTermXID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42064"
+       }
       }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42061"
-      }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42062"
-      }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlMaximumBusinessDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42063"
-      }
-     },
-     {
-      "name": "UnderlyingPhysicalSettlTermXID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42064"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingRateSpreadSchedule",
@@ -4926,28 +5012,30 @@
    "fix": {
     "tag": "42884"
    },
-   "item": {
-    "name": "UnderlyingExtraordinaryEvent",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingExtraordinaryEventType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42885"
+   "fields": [
+    {
+     "name": "UnderlyingExtraordinaryEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingExtraordinaryEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42885"
+       }
+      },
+      {
+       "name": "UnderlyingExtraordinaryEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42886"
+       }
       }
-     },
-     {
-      "name": "UnderlyingExtraordinaryEventValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42886"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingExtraordinaryEventAdjustmentMethod",

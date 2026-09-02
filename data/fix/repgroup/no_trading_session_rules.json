@@ -9,35 +9,37 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TradingSessionRule",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradingSessionID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "336"
-    }
-   },
-   {
-    "name": "TradingSessionSubID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "625"
-    }
-   },
-   {
-    "name": "TradingSessionRules",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "TradingSessionRules"
+ "fields": [
+  {
+   "name": "TradingSessionRule",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradingSessionID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "336"
+     }
     },
-    "fields": []
-   }
-  ]
- }
+    {
+     "name": "TradingSessionSubID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "625"
+     }
+    },
+    {
+     "name": "TradingSessionRules",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "TradingSessionRules"
+     },
+     "fields": []
+    }
+   ]
+  }
+ ]
 }

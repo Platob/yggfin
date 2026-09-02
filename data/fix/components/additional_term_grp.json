@@ -123,37 +123,39 @@
    "fix": {
     "tag": "40019"
    },
-   "item": {
-    "name": "AdditionalTerm",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "AdditionalTermConditionPrecedentBondIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40020"
-      }
-     },
-     {
-      "name": "AdditionalTermDiscrepancyClauseIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40021"
-      }
-     },
-     {
-      "name": "AdditionalTermBondRefGrp",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "AdditionalTermBondRefGrp"
+   "fields": [
+    {
+     "name": "AdditionalTerm",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "AdditionalTermConditionPrecedentBondIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40020"
+       }
       },
-      "fields": []
-     }
-    ]
-   }
+      {
+       "name": "AdditionalTermDiscrepancyClauseIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40021"
+       }
+      },
+      {
+       "name": "AdditionalTermBondRefGrp",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "AdditionalTermBondRefGrp"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -15,18 +15,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "IOIQualifier",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "IOIQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "104"
+ "fields": [
+  {
+   "name": "IOIQualifier",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "IOIQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "104"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

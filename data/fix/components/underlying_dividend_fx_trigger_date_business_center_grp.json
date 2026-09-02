@@ -104,20 +104,22 @@
    "fix": {
     "tag": "42853"
    },
-   "item": {
-    "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "42854"
+   "fields": [
+    {
+     "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "42854"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

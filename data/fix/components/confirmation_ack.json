@@ -64,60 +64,62 @@
    "fix": {
     "tag": "1907"
    },
-   "item": {
-    "name": "RegulatoryTradeID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "RegulatoryTradeID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1903"
+   "fields": [
+    {
+     "name": "RegulatoryTradeID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RegulatoryTradeID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1903"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1905"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDEvent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1904"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1906"
+       }
+      },
+      {
+       "name": "RegulatoryLegRefID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2411"
+       }
+      },
+      {
+       "name": "RegulatoryTradeIDScope",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2397"
+       }
       }
-     },
-     {
-      "name": "RegulatoryTradeIDSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1905"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDEvent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1904"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1906"
-      }
-     },
-     {
-      "name": "RegulatoryLegRefID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2411"
-      }
-     },
-     {
-      "name": "RegulatoryTradeIDScope",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2397"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "TradeConfirmationReferenceID",
@@ -150,92 +152,94 @@
    "fix": {
     "tag": "2772"
    },
-   "item": {
-    "name": "MatchException",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MatchExceptionType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2773"
+   "fields": [
+    {
+     "name": "MatchException",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchExceptionType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2773"
+       }
+      },
+      {
+       "name": "MatchExceptionElementType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2774"
+       }
+      },
+      {
+       "name": "MatchExceptionElementName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2775"
+       }
+      },
+      {
+       "name": "MatchExceptionAllocValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2776"
+       }
+      },
+      {
+       "name": "MatchExceptionConfirmValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2777"
+       }
+      },
+      {
+       "name": "MatchExceptionToleranceValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2778"
+       }
+      },
+      {
+       "name": "MatchExceptionToleranceValueType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2779"
+       }
+      },
+      {
+       "name": "MatchExceptionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2780"
+       }
+      },
+      {
+       "name": "EncodedMatchExceptionTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2797"
+       }
+      },
+      {
+       "name": "EncodedMatchExceptionText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2798"
+       }
       }
-     },
-     {
-      "name": "MatchExceptionElementType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2774"
-      }
-     },
-     {
-      "name": "MatchExceptionElementName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2775"
-      }
-     },
-     {
-      "name": "MatchExceptionAllocValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2776"
-      }
-     },
-     {
-      "name": "MatchExceptionConfirmValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2777"
-      }
-     },
-     {
-      "name": "MatchExceptionToleranceValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2778"
-      }
-     },
-     {
-      "name": "MatchExceptionToleranceValueType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2779"
-      }
-     },
-     {
-      "name": "MatchExceptionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2780"
-      }
-     },
-     {
-      "name": "EncodedMatchExceptionTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2797"
-      }
-     },
-     {
-      "name": "EncodedMatchExceptionText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2798"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoMatchingDataPoints",
@@ -244,44 +248,46 @@
    "fix": {
     "tag": "2781"
    },
-   "item": {
-    "name": "MatchingDataPoint",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "MatchingDataPointIndicator",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2782"
+   "fields": [
+    {
+     "name": "MatchingDataPoint",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "MatchingDataPointIndicator",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2782"
+       }
+      },
+      {
+       "name": "MatchingDataPointValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2783"
+       }
+      },
+      {
+       "name": "MatchingDataPointType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2784"
+       }
+      },
+      {
+       "name": "MatchingDataPointName",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2785"
+       }
       }
-     },
-     {
-      "name": "MatchingDataPointValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2783"
-      }
-     },
-     {
-      "name": "MatchingDataPointType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2784"
-      }
-     },
-     {
-      "name": "MatchingDataPointName",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2785"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "Text",

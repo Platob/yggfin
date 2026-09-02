@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42189"
+ "fields": [
+  {
+   "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingProvisionOptionRelevantUnderlyingDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42189"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

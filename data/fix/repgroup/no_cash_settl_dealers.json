@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "CashSettlDealer",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "CashSettlDealer",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40032"
+ "fields": [
+  {
+   "name": "CashSettlDealer",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "CashSettlDealer",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40032"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

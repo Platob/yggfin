@@ -12,72 +12,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "InstrumentParty",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "InstrumentPartyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1019"
-    }
-   },
-   {
-    "name": "InstrumentPartyIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1050"
-    }
-   },
-   {
-    "name": "InstrumentPartyRole",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1051"
-    }
-   },
-   {
-    "name": "InstrumentPartyRoleQualifier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2378"
-    }
-   },
-   {
-    "name": "NoInstrumentPartySubIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1052"
+ "fields": [
+  {
+   "name": "InstrumentParty",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "InstrumentPartyID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1019"
+     }
     },
-    "item": {
-     "name": "InstrumentPartySubID",
-     "type": "struct",
+    {
+     "name": "InstrumentPartyIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1050"
+     }
+    },
+    {
+     "name": "InstrumentPartyRole",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1051"
+     }
+    },
+    {
+     "name": "InstrumentPartyRoleQualifier",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "2378"
+     }
+    },
+    {
+     "name": "NoInstrumentPartySubIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "1052"
+     },
      "fields": [
       {
        "name": "InstrumentPartySubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1053"
-       }
-      },
-      {
-       "name": "InstrumentPartySubIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1054"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "InstrumentPartySubID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1053"
+         }
+        },
+        {
+         "name": "InstrumentPartySubIDType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "1054"
+         }
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

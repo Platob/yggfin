@@ -180,9 +180,11 @@
    ],
    "column": "parenthash"
   },
-  "item": {
-   "type": "fixed_size_binary[16]"
-  }
+  "fields": [
+   {
+    "type": "fixed_size_binary[16]"
+   }
+  ]
  },
  {
   "name": "LinkHashes",
@@ -197,9 +199,11 @@
    ],
    "column": "linkhashes"
   },
-  "item": {
-   "type": "fixed_size_binary[16]"
-  }
+  "fields": [
+   {
+    "type": "fixed_size_binary[16]"
+   }
+  ]
  },
  {
   "name": "Version",
@@ -256,12 +260,19 @@
    ],
    "column": "altids"
   },
-  "key": {
-   "type": "string"
-  },
-  "value": {
-   "type": "string"
-  }
+  "fields": [
+   {
+    "type": "struct",
+    "fields": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "string"
+     }
+    ]
+   }
+  ]
  },
  {
   "name": "Reason",
@@ -304,32 +315,34 @@
    ],
    "column": "unmap"
   },
-  "item": {
-   "type": "struct",
-   "fields": [
-    {
-     "name": "tag",
-     "type": "int32",
-     "description": "Numeric identity written or resolved; zero while unresolved."
-    },
-    {
-     "name": "key",
-     "type": "string",
-     "description": "Whole field spelling outside an indexed container."
-    },
-    {
-     "name": "value",
-     "type": "string",
-     "description": "Text after the first equals sign; an empty value is empty text."
-    },
-    {
-     "name": "comp",
-     "type": "string",
-     "nullable": true,
-     "description": "Indexed container prefix."
-    }
-   ]
-  }
+  "fields": [
+   {
+    "type": "struct",
+    "fields": [
+     {
+      "name": "tag",
+      "type": "int32",
+      "description": "Numeric identity written or resolved; zero while unresolved."
+     },
+     {
+      "name": "key",
+      "type": "string",
+      "description": "Whole field spelling outside an indexed container."
+     },
+     {
+      "name": "value",
+      "type": "string",
+      "description": "Text after the first equals sign; an empty value is empty text."
+     },
+     {
+      "name": "comp",
+      "type": "string",
+      "nullable": true,
+      "description": "Indexed container prefix."
+     }
+    ]
+   }
+  ]
  },
  {
   "name": "PxUnit",

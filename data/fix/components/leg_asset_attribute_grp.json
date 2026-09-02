@@ -90,36 +90,38 @@
    "fix": {
     "tag": "2308"
    },
-   "item": {
-    "name": "LegAssetAttribute",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegAssetAttributeType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2309"
+   "fields": [
+    {
+     "name": "LegAssetAttribute",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegAssetAttributeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2309"
+       }
+      },
+      {
+       "name": "LegAssetAttributeValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2310"
+       }
+      },
+      {
+       "name": "LegAssetAttributeLimit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2311"
+       }
       }
-     },
-     {
-      "name": "LegAssetAttributeValue",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2310"
-      }
-     },
-     {
-      "name": "LegAssetAttributeLimit",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2311"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

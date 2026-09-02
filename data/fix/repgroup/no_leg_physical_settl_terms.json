@@ -12,72 +12,76 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegPhysicalSettlTerm",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "NoLegPhysicalSettlDeliverableObligations",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41604"
-    },
-    "item": {
-     "name": "LegPhysicalSettlDeliverableObligation",
-     "type": "struct",
+ "fields": [
+  {
+   "name": "LegPhysicalSettlTerm",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "NoLegPhysicalSettlDeliverableObligations",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "41604"
+     },
      "fields": [
       {
-       "name": "LegPhysicalSettlDeliverableObligationType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41605"
-       }
-      },
-      {
-       "name": "LegPhysicalSettlDeliverableObligationValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41606"
-       }
+       "name": "LegPhysicalSettlDeliverableObligation",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegPhysicalSettlDeliverableObligationType",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41605"
+         }
+        },
+        {
+         "name": "LegPhysicalSettlDeliverableObligationValue",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41606"
+         }
+        }
+       ]
       }
      ]
+    },
+    {
+     "name": "LegPhysicalSettlCurency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41601"
+     }
+    },
+    {
+     "name": "LegPhysicalSettlBusinessDays",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41602"
+     }
+    },
+    {
+     "name": "LegPhysicalSettlMaximumBusinessDays",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41603"
+     }
+    },
+    {
+     "name": "LegPhysicalSettlTermXID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41600"
+     }
     }
-   },
-   {
-    "name": "LegPhysicalSettlCurency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41601"
-    }
-   },
-   {
-    "name": "LegPhysicalSettlBusinessDays",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41602"
-    }
-   },
-   {
-    "name": "LegPhysicalSettlMaximumBusinessDays",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41603"
-    }
-   },
-   {
-    "name": "LegPhysicalSettlTermXID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41600"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

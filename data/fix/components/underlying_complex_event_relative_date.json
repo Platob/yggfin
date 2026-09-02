@@ -153,20 +153,22 @@
    "fix": {
     "tag": "41737"
    },
-   "item": {
-    "name": "UnderlyingComplexEventDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingComplexEventDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41738"
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingComplexEventDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41738"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "UnderlyingComplexEventDateAdjusted",

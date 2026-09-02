@@ -9,26 +9,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingLegSecurityAltID",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingLegSecurityAltID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1335"
+ "fields": [
+  {
+   "name": "UnderlyingLegSecurityAltID",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingLegSecurityAltID",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1335"
+     }
+    },
+    {
+     "name": "UnderlyingLegSecurityAltIDSource",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1336"
+     }
     }
-   },
-   {
-    "name": "UnderlyingLegSecurityAltIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1336"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

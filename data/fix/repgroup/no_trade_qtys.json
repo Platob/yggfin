@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "TradeQty",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "TradeQtyType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1842"
+ "fields": [
+  {
+   "name": "TradeQty",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "TradeQtyType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1842"
+     }
+    },
+    {
+     "name": "TradeQty",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "1843"
+     }
     }
-   },
-   {
-    "name": "TradeQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1843"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

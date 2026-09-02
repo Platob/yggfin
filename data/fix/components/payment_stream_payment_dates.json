@@ -135,20 +135,22 @@
    "fix": {
     "tag": "40947"
    },
-   "item": {
-    "name": "PaymentStreamPaymentDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentStreamPaymentDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40752"
+   "fields": [
+    {
+     "name": "PaymentStreamPaymentDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamPaymentDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40752"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoPaymentStreamPaymentDates",
@@ -157,28 +159,30 @@
    "fix": {
     "tag": "41220"
    },
-   "item": {
-    "name": "PaymentStreamPaymentDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentStreamPaymentDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41221"
+   "fields": [
+    {
+     "name": "PaymentStreamPaymentDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentStreamPaymentDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41221"
+       }
+      },
+      {
+       "name": "PaymentStreamPaymentDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41222"
+       }
       }
-     },
-     {
-      "name": "PaymentStreamPaymentDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41222"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "PaymentStreamPaymentFrequencyPeriod",

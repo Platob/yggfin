@@ -104,20 +104,22 @@
    "fix": {
     "tag": "40966"
    },
-   "item": {
-    "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40690"
+   "fields": [
+    {
+     "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingPaymentScheduleFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40690"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

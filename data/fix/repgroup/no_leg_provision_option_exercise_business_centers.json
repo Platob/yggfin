@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegProvisionOptionExerciseBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegProvisionOptionExerciseBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40477"
+ "fields": [
+  {
+   "name": "LegProvisionOptionExerciseBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionOptionExerciseBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40477"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

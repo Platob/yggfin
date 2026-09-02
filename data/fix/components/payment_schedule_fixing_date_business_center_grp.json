@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40977"
    },
-   "item": {
-    "name": "PaymentScheduleFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "PaymentScheduleFixingDateBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40854"
+   "fields": [
+    {
+     "name": "PaymentScheduleFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "PaymentScheduleFixingDateBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40854"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

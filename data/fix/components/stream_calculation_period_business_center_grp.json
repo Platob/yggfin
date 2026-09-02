@@ -123,20 +123,22 @@
    "fix": {
     "tag": "40958"
    },
-   "item": {
-    "name": "StreamCalculationPeriodBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "StreamCalculationPeriodBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40074"
+   "fields": [
+    {
+     "name": "StreamCalculationPeriodBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StreamCalculationPeriodBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40074"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

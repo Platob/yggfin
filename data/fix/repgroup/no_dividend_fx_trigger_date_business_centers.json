@@ -8,18 +8,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "DividendFXTriggerDateBusinessCenter",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "DividendFXTriggerDateBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42273"
+ "fields": [
+  {
+   "name": "DividendFXTriggerDateBusinessCenter",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "DividendFXTriggerDateBusinessCenter",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42273"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

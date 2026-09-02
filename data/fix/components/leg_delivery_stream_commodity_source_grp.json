@@ -90,20 +90,22 @@
    "fix": {
     "tag": "41460"
    },
-   "item": {
-    "name": "LegDeliveryStreamCommoditySource",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegDeliveryStreamCommoditySource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "41461"
+   "fields": [
+    {
+     "name": "LegDeliveryStreamCommoditySource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegDeliveryStreamCommoditySource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41461"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

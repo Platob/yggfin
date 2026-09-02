@@ -32,29 +32,31 @@
    "fix": {
     "tag": "711"
    },
-   "item": {
-    "name": "Underlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingInstrument"
+   "fields": [
+    {
+     "name": "Underlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingInstrument"
+       },
+       "fields": []
       },
-      "fields": []
-     },
-     {
-      "name": "CollAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "944"
+      {
+       "name": "CollAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "944"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

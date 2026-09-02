@@ -29,21 +29,23 @@
    "fix": {
     "tag": "1342"
    },
-   "item": {
-    "name": "OfLegUnderlying",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "UnderlyingLegInstrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "UnderlyingLegInstrument"
-      },
-      "fields": []
-     }
-    ]
-   }
+   "fields": [
+    {
+     "name": "OfLegUnderlying",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingLegInstrument",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "UnderlyingLegInstrument"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
   }
  ]
 }

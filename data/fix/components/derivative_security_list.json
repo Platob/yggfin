@@ -144,221 +144,227 @@
    "fix": {
     "tag": "146"
    },
-   "item": {
-    "name": "RelatedSym",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "Instrument",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "Instrument"
-      },
-      "fields": []
-     },
-     {
-      "name": "SecondaryPriceLimits",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "SecondaryPriceLimits"
-      },
-      "fields": []
-     },
-     {
-      "name": "Currency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "15"
-      }
-     },
-     {
-      "name": "CurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2897"
-      }
-     },
-     {
-      "name": "CorporateAction",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "292"
-      }
-     },
-     {
-      "name": "InstrumentExtension",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "InstrumentExtension"
-      },
-      "fields": []
-     },
-     {
-      "name": "NoLegs",
-      "type": "list",
-      "nullable": true,
-      "fix": {
-       "tag": "555"
-      },
-      "item": {
-       "name": "Leg",
+   "fields": [
+    {
+     "name": "RelatedSym",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "Instrument",
        "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "Instrument"
+       },
+       "fields": []
+      },
+      {
+       "name": "SecondaryPriceLimits",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "SecondaryPriceLimits"
+       },
+       "fields": []
+      },
+      {
+       "name": "Currency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "15"
+       }
+      },
+      {
+       "name": "CurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2897"
+       }
+      },
+      {
+       "name": "CorporateAction",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "292"
+       }
+      },
+      {
+       "name": "InstrumentExtension",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentExtension"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoLegs",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "555"
+       },
        "fields": [
         {
-         "name": "InstrumentLeg",
+         "name": "Leg",
          "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "InstrumentLeg"
-         },
-         "fields": []
-        },
-        {
-         "name": "LegFinancingDetails",
-         "type": "struct",
-         "nullable": true,
-         "fix": {
-          "component": "LegFinancingDetails"
-         },
-         "fields": []
-        },
-        {
-         "name": "NoLegRateSources",
-         "type": "list",
-         "nullable": true,
-         "fix": {
-          "tag": "3116"
-         },
-         "item": {
-          "name": "LegRateSource",
-          "type": "struct",
-          "fields": [
-           {
-            "name": "LegRateSource",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3117"
-            }
+         "fields": [
+          {
+           "name": "InstrumentLeg",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "InstrumentLeg"
            },
-           {
-            "name": "LegRateSourceType",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3118"
-            }
+           "fields": []
+          },
+          {
+           "name": "LegFinancingDetails",
+           "type": "struct",
+           "nullable": true,
+           "fix": {
+            "component": "LegFinancingDetails"
            },
-           {
-            "name": "LegReferencePage",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3119"
-            }
+           "fields": []
+          },
+          {
+           "name": "NoLegRateSources",
+           "type": "list",
+           "nullable": true,
+           "fix": {
+            "tag": "3116"
            },
-           {
-            "name": "LegRateSourceReferencePageHeading",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3120"
+           "fields": [
+            {
+             "name": "LegRateSource",
+             "type": "struct",
+             "fields": [
+              {
+               "name": "LegRateSource",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3117"
+               }
+              },
+              {
+               "name": "LegRateSourceType",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3118"
+               }
+              },
+              {
+               "name": "LegReferencePage",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3119"
+               }
+              },
+              {
+               "name": "LegRateSourceReferencePageHeading",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3120"
+               }
+              },
+              {
+               "name": "LegRateSourceSymbol",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3121"
+               }
+              },
+              {
+               "name": "LegFXBenchmark",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3122"
+               }
+              },
+              {
+               "name": "LegFXBenchmarkDate",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3123"
+               }
+              },
+              {
+               "name": "LegFXBenchmarkTime",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3124"
+               }
+              },
+              {
+               "name": "LegFXBenchmarkBusinessCenter",
+               "type": "string",
+               "nullable": true,
+               "fix": {
+                "tag": "3125"
+               }
+              }
+             ]
             }
-           },
-           {
-            "name": "LegRateSourceSymbol",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3121"
-            }
-           },
-           {
-            "name": "LegFXBenchmark",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3122"
-            }
-           },
-           {
-            "name": "LegFXBenchmarkDate",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3123"
-            }
-           },
-           {
-            "name": "LegFXBenchmarkTime",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3124"
-            }
-           },
-           {
-            "name": "LegFXBenchmarkBusinessCenter",
-            "type": "string",
-            "nullable": true,
-            "fix": {
-             "tag": "3125"
-            }
-           }
-          ]
-         }
+           ]
+          }
+         ]
         }
        ]
+      },
+      {
+       "name": "RelSymTransactTime",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1504"
+       }
+      },
+      {
+       "name": "NumOfSimpleInstruments",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1606"
+       }
+      },
+      {
+       "name": "Text",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "58"
+       }
+      },
+      {
+       "name": "EncodedTextLen",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "354"
+       }
+      },
+      {
+       "name": "EncodedText",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "355"
+       }
       }
-     },
-     {
-      "name": "RelSymTransactTime",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1504"
-      }
-     },
-     {
-      "name": "NumOfSimpleInstruments",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1606"
-      }
-     },
-     {
-      "name": "Text",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "58"
-      }
-     },
-     {
-      "name": "EncodedTextLen",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "354"
-      }
-     },
-     {
-      "name": "EncodedText",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "355"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "StandardTrailer",

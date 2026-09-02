@@ -12,362 +12,370 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "LegProvision",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "LegProvisionType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40449"
-    }
-   },
-   {
-    "name": "LegProvisionDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40450"
-    }
-   },
-   {
-    "name": "LegProvisionDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40451"
-    }
-   },
-   {
-    "name": "NoLegProvisionDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40939"
+ "fields": [
+  {
+   "name": "LegProvision",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "LegProvisionType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40449"
+     }
     },
-    "item": {
-     "name": "LegProvisionDateBusinessCenter",
-     "type": "struct",
+    {
+     "name": "LegProvisionDateUnadjusted",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40450"
+     }
+    },
+    {
+     "name": "LegProvisionDateBusinessDayConvention",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40451"
+     }
+    },
+    {
+     "name": "NoLegProvisionDateBusinessCenters",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40939"
+     },
      "fields": [
       {
        "name": "LegProvisionDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40452"
-       }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegProvisionDateBusinessCenter",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40452"
+         }
+        }
+       ]
       }
      ]
-    }
-   },
-   {
-    "name": "LegProvisionDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40453"
-    }
-   },
-   {
-    "name": "LegProvisionDateTenorPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40454"
-    }
-   },
-   {
-    "name": "LegProvisionDateTenorUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40455"
-    }
-   },
-   {
-    "name": "LegProvisionBreakFeeElection",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42506"
-    }
-   },
-   {
-    "name": "LegProvisionBreakFeeRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42507"
-    }
-   },
-   {
-    "name": "LegProvisionCalculationAgent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40456"
-    }
-   },
-   {
-    "name": "LegProvisionOptionSinglePartyBuyerSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40457"
-    }
-   },
-   {
-    "name": "LegProvisionOptionSinglePartySellerSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40458"
-    }
-   },
-   {
-    "name": "LegProvisionCashSettlValueDates",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegProvisionCashSettlValueDates"
     },
-    "fields": []
-   },
-   {
-    "name": "LegProvisionOptionExerciseDates",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegProvisionOptionExerciseDates"
+    {
+     "name": "LegProvisionDateAdjusted",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40453"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegProvisionOptionExpirationDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegProvisionOptionExpirationDate"
+    {
+     "name": "LegProvisionDateTenorPeriod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40454"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegProvisionOptionRelevantUnderlyingDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegProvisionOptionRelevantUnderlyingDate"
+    {
+     "name": "LegProvisionDateTenorUnit",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40455"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegProvisionOptionExerciseStyle",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40459"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExerciseMultipleNotional",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40460"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExerciseMinimumNotional",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40461"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExerciseMaximumNotional",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40462"
-    }
-   },
-   {
-    "name": "LegProvisionOptionMinimumNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40463"
-    }
-   },
-   {
-    "name": "LegProvisionOptionMaximumNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40464"
-    }
-   },
-   {
-    "name": "LegProvisionOptionExerciseConfirmation",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40465"
-    }
-   },
-   {
-    "name": "LegProvisionCashSettlPaymentDates",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegProvisionCashSettlPaymentDates"
+    {
+     "name": "LegProvisionBreakFeeElection",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42506"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegProvisionCashSettlMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40466"
-    }
-   },
-   {
-    "name": "LegProvisionCashSettlCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40467"
-    }
-   },
-   {
-    "name": "LegProvisionCashSettlCurrency2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40468"
-    }
-   },
-   {
-    "name": "LegProvisionCashSettlQuoteType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40469"
-    }
-   },
-   {
-    "name": "LegProvisionCashSettlQuoteSource",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "LegProvisionCashSettlQuoteSource"
+    {
+     "name": "LegProvisionBreakFeeRate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "42507"
+     }
     },
-    "fields": []
-   },
-   {
-    "name": "LegProvisionText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40472"
-    }
-   },
-   {
-    "name": "EncodedLegProvisionTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40980"
-    }
-   },
-   {
-    "name": "EncodedLegProvisionText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40981"
-    }
-   },
-   {
-    "name": "NoLegProvisionPartyIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40533"
+    {
+     "name": "LegProvisionCalculationAgent",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40456"
+     }
     },
-    "item": {
-     "name": "LegProvisionPartyID",
+    {
+     "name": "LegProvisionOptionSinglePartyBuyerSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40457"
+     }
+    },
+    {
+     "name": "LegProvisionOptionSinglePartySellerSide",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40458"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlValueDates",
      "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegProvisionCashSettlValueDates"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegProvisionOptionExerciseDates",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegProvisionOptionExerciseDates"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegProvisionOptionExpirationDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegProvisionOptionExpirationDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegProvisionOptionRelevantUnderlyingDate",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegProvisionOptionRelevantUnderlyingDate"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegProvisionOptionExerciseStyle",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40459"
+     }
+    },
+    {
+     "name": "LegProvisionOptionExerciseMultipleNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40460"
+     }
+    },
+    {
+     "name": "LegProvisionOptionExerciseMinimumNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40461"
+     }
+    },
+    {
+     "name": "LegProvisionOptionExerciseMaximumNotional",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40462"
+     }
+    },
+    {
+     "name": "LegProvisionOptionMinimumNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40463"
+     }
+    },
+    {
+     "name": "LegProvisionOptionMaximumNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40464"
+     }
+    },
+    {
+     "name": "LegProvisionOptionExerciseConfirmation",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40465"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlPaymentDates",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegProvisionCashSettlPaymentDates"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegProvisionCashSettlMethod",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40466"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlCurrency",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40467"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlCurrency2",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40468"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlQuoteType",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40469"
+     }
+    },
+    {
+     "name": "LegProvisionCashSettlQuoteSource",
+     "type": "struct",
+     "nullable": true,
+     "fix": {
+      "component": "LegProvisionCashSettlQuoteSource"
+     },
+     "fields": []
+    },
+    {
+     "name": "LegProvisionText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40472"
+     }
+    },
+    {
+     "name": "EncodedLegProvisionTextLen",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40980"
+     }
+    },
+    {
+     "name": "EncodedLegProvisionText",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "40981"
+     }
+    },
+    {
+     "name": "NoLegProvisionPartyIDs",
+     "type": "list",
+     "nullable": true,
+     "fix": {
+      "tag": "40533"
+     },
      "fields": [
       {
        "name": "LegProvisionPartyID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40534"
-       }
-      },
-      {
-       "name": "LegProvisionPartyIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40535"
-       }
-      },
-      {
-       "name": "LegProvisionPartyRole",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40536"
-       }
-      },
-      {
-       "name": "LegProvisionPartyRoleQualifier",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2380"
-       }
-      },
-      {
-       "name": "NoLegProvisionPartySubIDs",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "40537"
-       },
-       "item": {
-        "name": "LegProvisionPartySubID",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegProvisionPartySubID",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40538"
-          }
-         },
-         {
-          "name": "LegProvisionPartySubIDType",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "40539"
-          }
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegProvisionPartyID",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40534"
          }
-        ]
-       }
+        },
+        {
+         "name": "LegProvisionPartyIDSource",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40535"
+         }
+        },
+        {
+         "name": "LegProvisionPartyRole",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "40536"
+         }
+        },
+        {
+         "name": "LegProvisionPartyRoleQualifier",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "2380"
+         }
+        },
+        {
+         "name": "NoLegProvisionPartySubIDs",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "40537"
+         },
+         "fields": [
+          {
+           "name": "LegProvisionPartySubID",
+           "type": "struct",
+           "fields": [
+            {
+             "name": "LegProvisionPartySubID",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "40538"
+             }
+            },
+            {
+             "name": "LegProvisionPartySubIDType",
+             "type": "string",
+             "nullable": true,
+             "fix": {
+              "tag": "40539"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       }
      ]
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

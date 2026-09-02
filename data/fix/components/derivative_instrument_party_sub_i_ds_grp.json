@@ -30,28 +30,30 @@
    "fix": {
     "tag": "1296"
    },
-   "item": {
-    "name": "DerivativeInstrumentPartySubID",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "DerivativeInstrumentPartySubID",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1297"
+   "fields": [
+    {
+     "name": "DerivativeInstrumentPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "DerivativeInstrumentPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1297"
+       }
+      },
+      {
+       "name": "DerivativeInstrumentPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1298"
+       }
       }
-     },
-     {
-      "name": "DerivativeInstrumentPartySubIDType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1298"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

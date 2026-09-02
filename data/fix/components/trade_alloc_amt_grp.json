@@ -32,52 +32,54 @@
    "fix": {
     "tag": "1844"
    },
-   "item": {
-    "name": "TradeAllocAmt",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "TradeAllocAmtType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1845"
+   "fields": [
+    {
+     "name": "TradeAllocAmt",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "TradeAllocAmtType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1845"
+       }
+      },
+      {
+       "name": "TradeAllocAmt",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1846"
+       }
+      },
+      {
+       "name": "TradeAllocCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1847"
+       }
+      },
+      {
+       "name": "TradeAllocCurrencyCodeSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2933"
+       }
+      },
+      {
+       "name": "TradeAllocAmtReason",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1850"
+       }
       }
-     },
-     {
-      "name": "TradeAllocAmt",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1846"
-      }
-     },
-     {
-      "name": "TradeAllocCurrency",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1847"
-      }
-     },
-     {
-      "name": "TradeAllocCurrencyCodeSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "2933"
-      }
-     },
-     {
-      "name": "TradeAllocAmtReason",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "1850"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

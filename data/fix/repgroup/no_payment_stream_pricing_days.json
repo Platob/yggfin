@@ -8,26 +8,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "PaymentStreamPricingDay",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "PaymentStreamPricingDayOfWeek",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41228"
+ "fields": [
+  {
+   "name": "PaymentStreamPricingDay",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "PaymentStreamPricingDayOfWeek",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41228"
+     }
+    },
+    {
+     "name": "PaymentStreamPricingDayNumber",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41229"
+     }
     }
-   },
-   {
-    "name": "PaymentStreamPricingDayNumber",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41229"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

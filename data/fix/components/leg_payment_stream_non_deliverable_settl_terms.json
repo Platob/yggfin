@@ -106,20 +106,22 @@
    "fix": {
     "tag": "40929"
    },
-   "item": {
-    "name": "LegPaymentStreamNonDeliverableFixingDateBusinessCenter",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenter",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40361"
+   "fields": [
+    {
+     "name": "LegPaymentStreamNonDeliverableFixingDateBusinessCenter",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegPaymentStreamNonDeliverableFixingDatesBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40361"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "LegPaymentStreamNonDeliverableFixingDatesRelativeTo",
@@ -169,28 +171,30 @@
    "fix": {
     "tag": "40367"
    },
-   "item": {
-    "name": "LegNonDeliverableFixingDate",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegNonDeliverableFixingDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40368"
+   "fields": [
+    {
+     "name": "LegNonDeliverableFixingDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegNonDeliverableFixingDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40368"
+       }
+      },
+      {
+       "name": "LegNonDeliverableFixingDateType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40369"
+       }
       }
-     },
-     {
-      "name": "LegNonDeliverableFixingDateType",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40369"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoLegSettlRateFallbacks",
@@ -199,45 +203,47 @@
    "fix": {
     "tag": "40902"
    },
-   "item": {
-    "name": "LegSettlRateFallback",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "LegSettlRatePostponementMaximumDays",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40903"
-      }
-     },
-     {
-      "name": "LegSettlRateFallbackRateSource",
-      "type": "struct",
-      "nullable": true,
-      "fix": {
-       "component": "LegSettlRateFallbackRateSource"
+   "fields": [
+    {
+     "name": "LegSettlRateFallback",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegSettlRatePostponementMaximumDays",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40903"
+       }
       },
-      "fields": []
-     },
-     {
-      "name": "LegSettlRatePostponementSurvey",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40905"
+      {
+       "name": "LegSettlRateFallbackRateSource",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegSettlRateFallbackRateSource"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegSettlRatePostponementSurvey",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40905"
+       }
+      },
+      {
+       "name": "LegSettlRatePostponementCalculationAgent",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40906"
+       }
       }
-     },
-     {
-      "name": "LegSettlRatePostponementCalculationAgent",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40906"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   }
  ]
 }

@@ -162,20 +162,22 @@
    "fix": {
     "tag": "40040"
    },
-   "item": {
-    "name": "ContractualDefinition",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ContractualDefinition",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40041"
+   "fields": [
+    {
+     "name": "ContractualDefinition",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualDefinition",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40041"
+       }
       }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoFinancingTermSupplements",
@@ -184,28 +186,30 @@
    "fix": {
     "tag": "40046"
    },
-   "item": {
-    "name": "FinancingTermSupplement",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "FinancingTermSupplementDesc",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40047"
+   "fields": [
+    {
+     "name": "FinancingTermSupplement",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "FinancingTermSupplementDesc",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40047"
+       }
+      },
+      {
+       "name": "FinancingTermSupplementDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40048"
+       }
       }
-     },
-     {
-      "name": "FinancingTermSupplementDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40048"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "NoContractualMatrices",
@@ -214,36 +218,38 @@
    "fix": {
     "tag": "40042"
    },
-   "item": {
-    "name": "ContractualMatrix",
-    "type": "struct",
-    "fields": [
-     {
-      "name": "ContractualMatrixSource",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40043"
+   "fields": [
+    {
+     "name": "ContractualMatrix",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "ContractualMatrixSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40043"
+       }
+      },
+      {
+       "name": "ContractualMatrixDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40044"
+       }
+      },
+      {
+       "name": "ContractualMatrixTerm",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "40045"
+       }
       }
-     },
-     {
-      "name": "ContractualMatrixDate",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40044"
-      }
-     },
-     {
-      "name": "ContractualMatrixTerm",
-      "type": "string",
-      "nullable": true,
-      "fix": {
-       "tag": "40045"
-      }
-     }
-    ]
-   }
+     ]
+    }
+   ]
   },
   {
    "name": "CreditSupportAgreementDesc",

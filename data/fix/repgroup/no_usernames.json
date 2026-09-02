@@ -9,18 +9,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "Username",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "Username",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "553"
+ "fields": [
+  {
+   "name": "Username",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "Username",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "553"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

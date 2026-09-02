@@ -12,26 +12,28 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "UnderlyingComplexEventPeriodDateTime",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "UnderlyingComplexEventPeriodDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41727"
+ "fields": [
+  {
+   "name": "UnderlyingComplexEventPeriodDateTime",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "UnderlyingComplexEventPeriodDate",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41727"
+     }
+    },
+    {
+     "name": "UnderlyingComplexEventPeriodTime",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "41728"
+     }
     }
-   },
-   {
-    "name": "UnderlyingComplexEventPeriodTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41728"
-    }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }

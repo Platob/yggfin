@@ -12,18 +12,20 @@
    "5.0.SP2"
   ]
  },
- "item": {
-  "name": "ClearingInstruction",
-  "type": "struct",
-  "fields": [
-   {
-    "name": "ClearingInstruction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "577"
+ "fields": [
+  {
+   "name": "ClearingInstruction",
+   "type": "struct",
+   "fields": [
+    {
+     "name": "ClearingInstruction",
+     "type": "string",
+     "nullable": true,
+     "fix": {
+      "tag": "577"
+     }
     }
-   }
-  ]
- }
+   ]
+  }
+ ]
 }
