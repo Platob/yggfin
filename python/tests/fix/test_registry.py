@@ -968,6 +968,58 @@ def test_definitions_keep_standard_udf_and_venue_tags_separate(tmp_path: Path) -
     assert (tmp_path / "fix/namespaces/clear-street/fields/000009.json").is_file()
 
 
+def test_a_venue_tag_for_a_standard_field_unifies_into_one_record(tmp_path: Path) -> None:
+    """One identity, every namespace that carries it: the venue's tag becomes
+    another slot to read the field at and its spelling another name for it,
+    rather than a second record a caller has to know to look for."""
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    standard = _definition("SettlDate", 64, "UTCDateOnly", "fix-latest")
+    standard.fix.enumerated = {"0": "Regular"}
+    registry.add_definition(standard, "standard")
+    venue = _definition("TradeDate", 5020, "UTCDateOnly", "fixtrading-udf")
+    venue.fix["replacement-tag"] = "64"
+    venue.fix.enumerated = {"9": "VenueOnly"}
+    registry.add_definition(venue, "fixtrading-udf")
+
+    unified = registry.unified(64)
+
+    assert unified.fix.tag == 64, "the standard tag stays canonical"
+    assert unified.fix.tag_priority == (64, 5020)
+    assert unified.fix.spellings() == ("SettlDate", "TradeDate")
+    assert [(one.name, one.source) for one in unified.fix.named_aliases] == [
+        ("TradeDate", "fixtrading-udf")
+    ]
+    assert unified.fix.meanings == {"0": "Regular", "9": "VenueOnly"}
+    assert registry.unified_records()["SettlDate"] == unified
+
+
+def test_a_venue_reading_that_is_another_identity_is_not_unified(tmp_path: Path) -> None:
+    """Tag 9001 is `MaxShow` to one venue and `TradeType` to another. Folding
+    those together would give one column two shapes, so they stay apart."""
+    registry = FixRegistry(cache_dir=tmp_path / "fix", namespace_priority=("clear-street",))
+    registry.add_definition(_definition("MaxShow", 210, "Qty", "fix-latest"), "standard")
+    registry.add_definition(_definition("MaxShow", 9001, "String", "clear-street"), "clear-street")
+
+    assert registry.standardizes(registry.definition(9001, "clear-street")) is None
+    assert registry.unified(210).fix.tag_priority == (210,)
+    assert [field.fix.get("namespace") for field in registry.definitions(9001)] == ["clear-street"]
+
+
+def test_a_venue_name_the_standard_owns_unifies_without_a_replacement_tag(
+    tmp_path: Path,
+) -> None:
+    """The registry states a standardization two ways, and the common one is
+    simply calling the field what the standard calls it."""
+    registry = FixRegistry(cache_dir=tmp_path / "fix")
+    registry.add_definition(_definition("TimeInForce", 59, "char", "fix-latest"), "standard")
+    registry.add_definition(
+        _definition("TimeInForce", 5251, "char", "fixtrading-udf"), "fixtrading-udf"
+    )
+
+    assert registry.standardizes(registry.definition(5251, "fixtrading-udf")) == 59
+    assert registry.unified(59).fix.tag_priority == (59, 5251)
+
+
 def test_configured_vendor_priority_survives_reopen(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     second = {**_source("second", "venue-second", 10), "lookup_order": 1}

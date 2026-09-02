@@ -62,7 +62,6 @@ FIX = "fix"
 ENUM = "enum"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
-
 #: Iceberg identifies a column by id and never by name, so an id is part of
 #: what a schema *is* once a table exists. It rides under the protocol's own
 #: prefix like every other Iceberg key -- the ecosystem's `PARQUET:field_id`
@@ -118,6 +117,12 @@ _FIELD_CASTS = MappingProxyType(
         pyarrow.ChunkedArray: "arrow_array",
     }
 )
+
+
+def _protocol_keyed(metadata: Mapping[str, Any]) -> bool:
+    """Whether a declaration says anything under the FIX protocol prefix."""
+    prefix = f"{FIX}:"
+    return any(str(key).startswith(prefix) for key in metadata)
 
 
 @dataclasses.dataclass(eq=True)
@@ -339,13 +344,23 @@ class Field(Convertible):
         return self.iceberg.sort_key
 
     def merge(self, other: Field) -> Field:
-        """Combine two declarations, letting `other` win where it says anything."""
-        return Field(
+        """Combine two declarations, letting `other` win where it says anything.
+
+        Winning is per reading, not per key: a later declaration overrides the
+        type or the description it restates, and *adds* to the spellings, tags,
+        versions and values the earlier one gathered. Overwriting those would
+        make an overlay that names one alias drop every other alias the
+        registry holds for the identity.
+        """
+        built = Field(
             name=other.name or self.name,
             dtype=other.dtype if other.dtype is not None else self.dtype,
             nullable=other.nullable if other.nullable is not None else self.nullable,
             metadata={**self.metadata, **other.metadata},
         )
+        if _protocol_keyed(self.metadata) and _protocol_keyed(other.metadata):
+            built.fix.accumulate(self.fix)
+        return built
 
     def with_name(self, name: str) -> Self:
         """A copy carrying `name`, without changing this declaration."""

@@ -1416,6 +1416,78 @@ class FixRegistry(Convertible):
         )
         return MappingProxyType({entry.fix.canonical: entry for entry in records.values()})
 
+    def standardizes(self, record: Field) -> int | str | None:
+        """Which standard identity a namespace record is a venue reading of.
+
+        Two ways a namespace says "this is the standard's field under our own
+        tag": the registry's own `replacement-tag`, which names the tag the
+        UDF was folded into, and a canonical name the standard already owns.
+        Both are only taken when the datatypes agree -- a `char` reading of a
+        `String` field is a different reading, not the same one renumbered.
+        """
+        fix = record.fix
+        replacement = fix.get("replacement-tag")
+        candidates: list[int | str] = []
+        if replacement:
+            candidates.append(int(replacement))
+        if name := fix.get("replacement-name") or fix.canonical:
+            candidates.append(str(name))
+        for candidate in candidates:
+            held = self._record(candidate, namespace=STANDARD_NAMESPACE)
+            if held is None or held.fix.tag == fix.tag:
+                continue
+            if held.fix.type and fix.type and held.fix.type != fix.type:
+                continue
+            return held.fix.key
+        return None
+
+    def unified(self, key: int | str) -> Field | None:
+        """One identity with every namespace reading of it folded in.
+
+        The unique record a caller reads: the standard declaration, carrying
+        each venue's own tag in `fix:tags`, each venue's spelling as an alias
+        attributed to that namespace, and any value only a venue enumerates.
+        A namespace whose reading is a *different* identity -- tag 9001 is
+        `MaxShow` to one venue and `TradeType` to another -- is not folded in
+        and stays reachable through `definitions`.
+        """
+        held = self._record(key, namespace=STANDARD_NAMESPACE)
+        if held is None:
+            return None
+        built = merged_record(record_copy(held), self.versions)
+        for namespace, record in self._standardized.get(built.fix.key, ()):
+            built.fix.merge(merged_record(record, self.versions).fix, source=namespace)
+        return built
+
+    def unified_records(self) -> Mapping[str, Field]:
+        """Every identity as one record, namespace readings folded into each."""
+        standardized = self._standardized
+        found: dict[str, Field] = {}
+        for entry in self._entries[0].values():
+            built = merged_record(record_copy(entry), self.versions)
+            for namespace, record in standardized.get(built.fix.key, ()):
+                built.fix.merge(merged_record(record, self.versions).fix, source=namespace)
+            found[built.fix.canonical] = built
+        return MappingProxyType(found)
+
+    @cached_property
+    def _standardized(self) -> Mapping[int | str, tuple[tuple[str, Field], ...]]:
+        """`{standard key: the namespace readings of it}`, built once.
+
+        Every namespace field is asked once whether it standardizes, because
+        the answer needs a lookup per candidate and a unified read wants them
+        all -- not one scan of every namespace per identity.
+        """
+        found: dict[int | str, list[tuple[str, Field]]] = {}
+        for namespace in self._namespace_order:
+            if namespace == STANDARD_NAMESPACE:
+                continue
+            for record in self._layout.namespace_field_records(namespace).values():
+                target = self.standardizes(record)
+                if target is not None:
+                    found.setdefault(target, []).append((namespace, record))
+        return MappingProxyType({key: tuple(value) for key, value in found.items()})
+
     def source_manifest(self) -> tuple[Mapping[str, Any], ...]:
         """Deterministic complete-source provenance carried by this store."""
         return tuple(MappingProxyType(source) for source in self._layout.source_manifest())
