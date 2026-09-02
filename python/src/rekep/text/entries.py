@@ -694,62 +694,6 @@ def _parse_arrow(messages, with_diagnostics: bool):
     return _parse_generic(text, with_diagnostics)
 
 
-def pop_arrow(
-    stored,
-    names: tuple[str, ...],
-    *,
-    case_sensitive: bool = True,
-):
-    """Return the first named value per row and every other argument."""
-    if isinstance(stored, pyarrow.ChunkedArray):
-        parts = [pop_arrow(chunk, names, case_sensitive=case_sensitive) for chunk in stored.chunks]
-        return (
-            pyarrow.chunked_array([found for found, _ in parts], pyarrow.string()),
-            pyarrow.chunked_array([rest for _, rest in parts], ENTRIES),
-        )
-
-    rows = len(stored)
-    if not rows:
-        return pyarrow.nulls(0, pyarrow.string()), stored
-    compute = pyarrow.compute
-    entries = compute.list_flatten(stored)
-    if not len(entries):
-        return pyarrow.nulls(rows, pyarrow.string()), stored
-    parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
-    keys = compute.struct_field(entries, "key")
-    wanted = pyarrow.array(names, pyarrow.string())
-    if not case_sensitive:
-        keys = column_names(keys)
-        wanted = column_names(wanted)
-    matches = compute.fill_null(compute.is_in(keys, value_set=wanted), False)
-    if not compute.any(matches, min_count=0).as_py():
-        return pyarrow.nulls(rows, pyarrow.string()), stored
-
-    matched_parents = compute.filter(parents, matches)
-    previous = pyarrow.concat_arrays(
-        [
-            pyarrow.array([-1], pyarrow.int64()),
-            matched_parents.slice(0, len(matched_parents) - 1),
-        ]
-    )
-    first = compute.not_equal(matched_parents, previous)
-    found = compute.scatter(
-        compute.filter(compute.struct_field(entries, "value"), matches).filter(first),
-        compute.filter(matched_parents, first),
-        max_index=rows - 1,
-    )
-
-    keep = compute.invert(matches)
-    kept_parents = compute.filter(parents, keep)
-    residual = build_list(
-        ENTRIES,
-        dense_counts(kept_parents, rows),
-        compute.filter(entries, keep),
-        null_mask(stored),
-    )
-    return found, residual
-
-
 def _from_message_start(text: pyarrow.Array) -> pyarrow.Array:
     """Each line from where its message starts, as `parse_pairs` cuts it.
 
