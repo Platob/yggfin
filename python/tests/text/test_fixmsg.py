@@ -239,9 +239,9 @@ ADDED_COLUMNS = [column for column in _FIX_ADDED_COLUMNS if column not in _INSTR
 # Price provenance has no wire tag, so it sits beside the slots it qualifies.
 ADDED_COLUMNS.insert(ADDED_COLUMNS.index("offerpx") + 1, "priceinferred")
 EXPECTED_SESSION_COLUMNS = 33
-EXPECTED_COMMON_COLUMNS = 50
-EXPECTED_FLAT_COLUMNS = 101
-EXPECTED_LOG_COLUMNS = 125
+EXPECTED_COMMON_COLUMNS = 49
+EXPECTED_FLAT_COLUMNS = 100
+EXPECTED_LOG_COLUMNS = 124
 
 
 @pytest.fixture(scope="module")
@@ -888,7 +888,6 @@ def test_malformed_typed_values_report_the_row_without_stopping_its_batch(
 @pytest.mark.parametrize(
     ("tag", "name", "column", "malformed"),
     [
-        (30028, "LastShares", "lastshares", "abc"),
         (30029, "MarketMarker", "marketmarker", "perhaps"),
         (30031, "CreationTime", "creationtime", "not-a-time"),
     ],
@@ -2208,14 +2207,14 @@ def test_wire_lastmkt_precedes_a_stored_message_venue(
     "line",
     (
         (
-            "8=FIX.4.4|35=8|32=2|120=USD|126=20260825-16:30:00|30028=3.5|30029=Y|"
+            "8=FIX.4.4|35=8|32=2|120=USD|126=20260825-16:30:00|30029=Y|"
             "30030=G-1|30031=20260825-09:29:58.123456|30032=prod|30033=R-1|"
             "30034=RO-1|30035=POST_ONLY|30036=ORIGIN-1|30037=CONV-1|"
             "30038=FAKE-BBG|10=000|"
         ),
         (
-            "bridge #BEGINSTRING=FIX.4.4|#MSGTYPE=8|#LASTQTY=2|"
-            "#EXPIRETIME=20260825-16:30:00|#LASTSHARES=3.5|#MARKETMARKER=TRUE|"
+            "bridge #BEGINSTRING=FIX.4.4|#LASTSHARES=2|"
+            "#MSGTYPE=8|#EXPIRETIME=20260825-16:30:00|#MARKETMARKER=TRUE|"
             "#GLOBALORDERID=G-1|#CREATIONTIME=20260825-09:29:58.123456|#ENV=prod|"
             "#ROOTORDERID=R-1|#ROOTORIGINATORORDERID=RO-1|#ORDERFLAGS=POST_ONLY|"
             "#ORDERORIGINATORID=ORIGIN-1|#CONVERSATIONID=CONV-1|"
@@ -2231,7 +2230,7 @@ def test_bridge_fields_are_typed_and_fill_generic_clocks(line: str, codec: FixCo
     parsed = FixMsg.from_message_batch(_raw_batch(Message(body=line)), codec)
     row = parsed.to_pylist()[0]
 
-    assert (row["lastqty"], row["lastshares"]) == (2.0, 3.5)
+    assert row["lastqty"] == 2.0, "`#LASTSHARES` is tag 32 under its pre-4.3 name"
     assert row["marketmarker"] is True
     assert (
         row["globalorderid"],
@@ -2761,7 +2760,7 @@ def test_every_promoted_name_is_the_registrys_exact_spelling_folded() -> None:
     """One name, folded to store and spelled to read: the fold is the column and
     the dictionary's own spelling is what the column says it is called."""
     names = [field.name for field in DECLARATIONS.values()]
-    assert len(names) == 145
+    assert len(names) == 144
     assert all(field.name == column_name(field.fix["name"]) for field in DECLARATIONS.values())
     assert all(field.fix.canonical == field.fix["name"] for field in DECLARATIONS.values())
     assert {tag: COLUMNS[tag] for tag in (6, 35, 41, 461)} == {

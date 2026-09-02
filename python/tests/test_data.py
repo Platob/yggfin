@@ -13,7 +13,6 @@ import json
 import urllib.request
 import zipfile
 from functools import cache
-from importlib.resources import files
 from pathlib import Path
 
 import pyarrow
@@ -31,7 +30,6 @@ from rekep.fix.publish import (
     REQUIRED_FIELDS,
     beyond_baseline,
     missing_from,
-    publish_builtin,
     publish_full,
 )
 from rekep.fix.quickfix import members_of
@@ -127,7 +125,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
 EXPECTED_FIELD_DOCUMENTS = 11
-EXPECTED_FIELD_RECORDS = 6284
+EXPECTED_FIELD_RECORDS = 6283
 EXPECTED_COMPONENT_FILES = 927
 EXPECTED_REPEATING_GROUP_FILES = 525
 #: Of which these are messages: a message is a component that arrives under a MsgType.
@@ -283,7 +281,9 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     assert "encoded" not in stored_fix(msg_type) and "decoded" not in stored_fix(msg_type), (
         "a lookup derived from the values is not stored beside them"
     )
-    assert stored_fix(held["32"]).get("aliases", []) == []
+    assert stored_fix(held["32"])["aliases"] == [
+        {"name": "LastShares", "source": "4.2", "occurrences": 0}
+    ], "tag 32's pre-4.3 name is a spelling of it, sourced to the version that used it"
 
 
 def test_a_component_record_is_one_declaration_and_its_versions() -> None:
@@ -519,9 +519,11 @@ def test_a_projection_refuses_missing_fields_and_its_source(
         registry.into_projection(DATA, ["Side"])
 
 
-def test_the_bundled_registry_matches_the_published_registry(
+def test_the_default_directory_matches_the_published_archive(
     registry: FixRegistry,
 ) -> None:
+    """`data/fix` is what every unconfigured lookup reads, `data/fix.zip` is it
+    packed; the two disagreeing would make a lookup depend on which was open."""
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
     assert builtin.namespaces() == registry.namespaces()
@@ -533,26 +535,14 @@ def test_the_bundled_registry_matches_the_published_registry(
     }
 
 
-def test_full_and_builtin_registries_match_the_rekep_declarations(
+def test_archive_and_default_registries_match_the_rekep_declarations(
     registry: FixRegistry,
 ) -> None:
     assert rekep_is_registered(registry)
     assert rekep_is_registered(FixRegistry.from_builtin())
 
 
-def test_the_bundled_registry_is_what_publishing_it_produces(tmp_path: Path) -> None:
-    """Byte for byte, from the published offline dictionary.
-
-    The wheel's registry is generated, and a generated artifact nobody can
-    regenerate is a hand-edited one. This is the command in `data/README.md`,
-    run against the archive that ships beside it.
-    """
-    rebuilt = publish_builtin(DATA, tmp_path / "registry.zip")
-    packaged = Path(str(files("rekep.fix").joinpath("registry.zip")))
-    assert rebuilt.read_bytes() == packaged.read_bytes()
-
-
-def test_the_bundled_registry_answers_every_key_the_package_looks_up(
+def test_the_default_registry_answers_every_key_the_package_looks_up(
     registry: FixRegistry,
 ) -> None:
     """`publish.REQUIRED_FIELDS` is a hand-written contract coverage list.
@@ -570,7 +560,7 @@ def test_the_bundled_registry_answers_every_key_the_package_looks_up(
     assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"
 
 
-def test_the_bundled_registry_carries_the_component_declarations(
+def test_the_default_registry_carries_the_component_declarations(
     registry: FixRegistry,
 ) -> None:
     """The regression: a projection that drops these extracts no party at all.

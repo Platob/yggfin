@@ -161,7 +161,7 @@ under `tasks/`:
 ```yaml
 # tasks/parse_messages/parse_messages.yml
 source: s3://rekep-capture/2026-08-30
-fix_dictionary: null # Use the registry.zip bundled in the installed wheel.
+fix_dictionary: null # Use the repository's data/fix dictionary.
 catalog:
   name: rekep-production
   properties:
@@ -276,8 +276,9 @@ Successfully built dist/rekep-1.0.0.tar.gz
 Successfully built dist/rekep-1.0.0-py3-none-any.whl
 ```
 
-A pure-Python universal wheel, plus the bundled registry as its one non-Python
-payload (`rekep/fix/registry.zip`).
+A pure-Python universal wheel with no non-Python payload. The FIX dictionary
+is the repository's `data/fix`, named by `fix_dictionary` wherever a process
+runs outside a checkout.
 
 `.github/workflows/release.yml` attaches both artifacts to the GitHub release.
 It also publishes them to Artifactory when that publisher is configured:

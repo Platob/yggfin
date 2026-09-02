@@ -17,7 +17,7 @@ from _bench import best_of, parser  # noqa: E402
 
 from rekep.fix import FixRegistry  # noqa: E402
 from rekep.fix.adapters import ADAPTERS, SourceAdapter  # noqa: E402
-from rekep.fix.publish import publish_builtin, publish_full  # noqa: E402
+from rekep.fix.publish import publish_full  # noqa: E402
 
 #: The published dictionary this sweeps over: the repository's own archive.
 ARCHIVE = pathlib.Path(__file__).resolve().parents[2] / "data" / "fix.zip"
@@ -148,19 +148,12 @@ def sweep_sources(adapters: tuple[SourceAdapter, ...], repeat: int) -> None:
 
 
 def sweep_publication(folder: pathlib.Path, repeat: int, *, warm: bool = True) -> None:
-    """Build the two artifacts callers actually publish."""
+    """Build the offline archive callers publish."""
     with tempfile.TemporaryDirectory() as scratch:
-        root = pathlib.Path(scratch)
-        full = root / "fix.zip"
-        builtin = root / "registry.zip"
+        full = pathlib.Path(scratch) / "fix.zip"
         full_seconds = best_of(lambda: publish_full(folder, full), repeat, warm=warm)
-        builtin_seconds = best_of(lambda: publish_builtin(full, builtin), repeat, warm=warm)
         print(f"\npublication, best of {repeat} (ms)")
         print(f"{'full registry':>32} {full_seconds * 1000:>12.1f} {full.stat().st_size:>12,} B")
-        print(
-            f"{'wheel registry':>32} {builtin_seconds * 1000:>12.1f} "
-            f"{builtin.stat().st_size:>12,} B"
-        )
 
 
 def sweep_quick(folder: pathlib.Path) -> None:

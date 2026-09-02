@@ -32,7 +32,7 @@ from rekep.fix import (
     Rule,
     Rules,
 )
-from rekep.fix.registry import builtin_registry
+from rekep.fix.registry import repository_registry
 
 PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 
@@ -98,9 +98,9 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
     assert dict(Row.into_field().field("hour").metadata)[PARTITION_KEY] == "identity"
 
 
-def test_the_registry_default_is_the_bundled_archive() -> None:
+def test_the_registry_default_is_the_repository_dictionary() -> None:
     registry = FixRegistry()
-    assert str(registry.cache_dir) == builtin_registry()
+    assert str(registry.cache_dir) == repository_registry()
     assert registry.offline
     assert not hasattr(registry, "sources")
     assert not hasattr(rekep.fix, "DEFAULT_SOURCES")
@@ -116,7 +116,7 @@ def test_the_published_column_list_is_the_one_the_parser_lifts_by() -> None:
     not have, and nothing inside would notice.
     """
     assert dict(FLAT) == dict(rekep.fix.columns.COLUMNS)
-    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 50, 18, 101)
+    assert (len(SESSION), len(COMMON), len(QUOTE), len(FLAT)) == (33, 49, 18, 100)
     assert len(dict(FLAT)) == len(FLAT), "one tag, one column"
 
 

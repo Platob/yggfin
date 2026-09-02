@@ -729,9 +729,6 @@ class FixMsg(Message):
     grosstradeamt: Annotated[float | None, DECLARED["GrossTradeAmt"]] = None
     """`GrossTradeAmt <381>`: gross value in the order currency."""
 
-    lastshares: Annotated[float | None, DECLARED["LastShares"]] = None
-    """Vendor share quantity, distinct from `LastQty <32>`."""
-
     marketmarker: Annotated[bool | None, DECLARED["MarketMarker"]] = None
     """Whether the source marks the row as market activity."""
 

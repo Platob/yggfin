@@ -3373,6 +3373,13 @@
     "onixs",
     "quickfix"
    ],
+   "aliases": [
+    {
+     "name": "LastShares",
+     "source": "4.2",
+     "occurrences": 0
+    }
+   ],
    "msgtypes": [
     "AllocationInstruction",
     "AllocationInstructionAlert",

@@ -9,7 +9,7 @@ import pyarrow
 
 from rekep.entries import ENTRIES
 from rekep.fields import Field
-from rekep.fix.entries import ANY_VERSION, STANDARD, ComponentRecord, record_copy
+from rekep.fix.entries import ANY_VERSION, STANDARD, Alias, ComponentRecord, record_copy
 from rekep.fix.fields import fix_field
 from rekep.fix.quickfix import block, field_member, reference_member
 
@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
 # FIX reserves 5000-9999 for users and venues commonly occupy 20000, so 30000+ avoids both.
 REKEP_TAG_OFFSET = 30000
+#: The last FIX version that spelled tag 32 `LastShares`, which is what the
+#: alias is sourced to: a spelling is attributed to where it was read.
+LASTSHARES_VERSION = "4.2"
 # `enums.ascii_codes.PRIVATE_RANK = 9000` is a rank band, not a FIX tag range.
 # Package fields use ordinary FIX names. A custom tag is already a complete
 # identity, so a namespace in its name would give one field two identities.
@@ -130,12 +133,6 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str], ...] = (
         "Producer-computed `lastpx * lastqty * multiplier`.",
     ),
     (
-        "lastshares",
-        "LastShares",
-        "double",
-        "Vendor-reported share quantity, distinct from `LastQty <32>`.",
-    ),
-    (
         "marketmarker",
         "MarketMarker",
         "Boolean",
@@ -194,7 +191,8 @@ REKEP_FIELD_DECLARATIONS: tuple[tuple[str, str, str, str], ...] = (
 
 # Tags are written out because removing a field must not renumber every field
 # after it. LastPx and LastQty use FIX's existing tags 31 and 32, leaving the
-# retired package slots 30022 and 30023 empty.
+# retired package slots 30022, 30023 and 30028 empty -- 30028 held LastShares
+# until it went back to being tag 32's own pre-4.3 spelling.
 REKEP_TAGS: Mapping[str, int] = MappingProxyType(
     {
         "unix": 30000,
@@ -221,7 +219,6 @@ REKEP_TAGS: Mapping[str, int] = MappingProxyType(
         "pxunit": 30024,
         "qtyunit": 30025,
         "notional": 30026,
-        "lastshares": 30028,
         "marketmarker": 30029,
         "globalorderid": 30030,
         "creationtime": 30031,
@@ -279,15 +276,15 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
     """Ensure one registry holds rekep's wildcard-version FIX vocabulary."""
     records = dict(registry.field_records())
     lastqty = records.get("LastQty")
-    if lastqty is not None and any(
+    if lastqty is not None and not any(
         alias.folded == "lastshares" for alias in lastqty.fix.named_aliases
     ):
-        # `LastShares` was tag 32's pre-4.3 name. The package field is a
-        # distinct vendor quantity, and retaining that alias would make one
-        # spelling claim two identities.
+        # `LastShares` is tag 32's own pre-4.3 name, so it is that identity
+        # under an older spelling and not a field of its own.
         lastqty = record_copy(lastqty)
-        lastqty.fix.named_aliases = tuple(
-            alias for alias in lastqty.fix.named_aliases if alias.folded != "lastshares"
+        lastqty.fix.named_aliases = (
+            *lastqty.fix.named_aliases,
+            Alias("LastShares", source=LASTSHARES_VERSION),
         )
         registry.update_field(lastqty)
         records["LastQty"] = lastqty
@@ -348,7 +345,7 @@ def rekep_is_registered(registry: FixRegistry) -> bool:
     """Whether every package-owned declaration is already exact."""
     records = registry.field_records()
     lastqty = records.get("LastQty")
-    if lastqty is not None and any(
+    if lastqty is not None and not any(
         alias.folded == "lastshares" for alias in lastqty.fix.named_aliases
     ):
         return False

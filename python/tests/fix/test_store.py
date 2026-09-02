@@ -875,17 +875,17 @@ def test_a_store_somebody_named_opens_no_socket(
 
     assert registry.offline, "it was pointed at a store"
     assert registry.versions == () and registry._stored_versions() == ()
-    assert registry.lookup("Side") == [], "no packaged registry stood in for it"
+    assert registry.lookup("Side") == [], "no default registry stood in for it"
     assert not registry.fields_available("4.4")
 
 
-def test_the_default_registry_is_the_packaged_archive() -> None:
+def test_the_default_registry_is_the_repository_dictionary() -> None:
     default = FixRegistry()
     builtin = FixRegistry.from_builtin()
 
-    assert default.offline and default.cache_dir == registry_module.builtin_registry()
+    assert default.offline and default.cache_dir == registry_module.repository_registry()
     assert default.field("Side").fix.tag == 54
-    assert builtin.cache_dir == registry_module.builtin_registry()
+    assert builtin.cache_dir == registry_module.repository_registry()
 
 
 # -- a field FIX never numbered, end to end ----------------------------------

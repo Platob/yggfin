@@ -8,7 +8,7 @@ parameters:
   source: logs.messages
   start: null
   end: null
-  # null uses the package's registry.zip; set a directory, zip or bucket URL
+  # null reads the repository's data/fix; set a directory, zip or bucket URL
   # only to pin a separately published dictionary.
   fix_dictionary: null
   null_values: ["", "null", "<null>", "n/a", "none"]

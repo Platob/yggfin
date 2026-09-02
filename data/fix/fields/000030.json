@@ -373,20 +373,6 @@
    "column": "notional"
   }
  },
- "30028": {
-  "name": "LastShares",
-  "type": "double",
-  "nullable": true,
-  "description": "Vendor-reported share quantity, distinct from `LastQty <32>`.",
-  "fix": {
-   "tag": "30028",
-   "type": "double",
-   "versions": [
-    "*"
-   ],
-   "column": "lastshares"
-  }
- },
  "30029": {
   "name": "MarketMarker",
   "type": "bool",

@@ -210,16 +210,11 @@ complete file before selecting it. `sources.json` records the source ID,
 namespace, version, URL, format, checksum, and license or terms URL for every
 artifact that contributed data.
 
-Then rebuild the complete registry bundled in the wheel. It contains the same
-standard, registered-UDF, venue, provenance, component, and message records as
-the published archive:
-
-```bash
-cd python
-uv run python -c "from rekep.fix.publish import publish_builtin; \
-publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
-```
+`data/fix` is itself the dictionary every unconfigured lookup reads, so there
+is nothing further to rebuild: `data/fix.zip` is that directory packed for
+offline distribution, carrying the same standard, registered-UDF, venue,
+provenance, component, and message records.
 
 `python/tests/test_data.py` checks completeness, byte-stable archive
-rebuilding, that both published archives are identical, and that the committed
+rebuilding, that the directory and the archive agree, and that the committed
 conflict report is what the collapse reports.

@@ -147,7 +147,7 @@ fields:
   type: double
   nullable: true
   description: Quantity (e.g. shares) bought/sold on this (last) fill.
-  fix: {tag: '32', type: Qty, name: LastQty}
+  fix: {tag: '32', type: Qty, aliases: '[{"name":"LastShares","source":"4.2","occurrences":0}]', name: LastQty}
 - name: prevqty
   type: double
   nullable: true
