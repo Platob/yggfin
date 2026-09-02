@@ -323,6 +323,33 @@ def test_rendered_header_names_use_the_column_fold_in_scalar_and_arrow(
     assert Message.parse_arrow(pyarrow.array([after]))["msgtype"].to_pylist() == [None]
 
 
+def test_one_batch_mixes_lifted_and_probed_message_types_row_by_row() -> None:
+    """The probe reads the rows that lifted nothing, and answers on their own rows.
+
+    A row spelling `35=` twice keeps both entries and lifts no column, so the
+    probe is what names it -- beside rows that lifted their own, rows that
+    carry no discriminator at all, and a row that carries no payload.
+    """
+    lines = [
+        "8=FIX.4.2|35=D|49=A|56=B|10=203",
+        "8=FIX.4.2|35=8|35=A|49=A|10=203",
+        "After Enrichment -> ACCOUNT=ACCT-000001",
+        "8=FIX.4.4|35=U1|#MSGTYPE=AB|10=1",
+        None,
+    ]
+
+    parsed = Message.parse_arrow(pyarrow.array(lines))
+
+    assert parsed["msgtype"].to_pylist() == ["D", "8", None, "AB", None]
+    assert Message.msg_types_arrow(pyarrow.array(lines)).to_pylist() == [
+        "D",
+        "8",
+        None,
+        "AB",
+        None,
+    ]
+
+
 def test_the_standard_header_lifts_into_columns_of_its_own() -> None:
     """A column each; `entries` keeps the body and the boundary.
 

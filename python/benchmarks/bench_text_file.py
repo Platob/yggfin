@@ -14,6 +14,7 @@ import threading
 import time
 import tracemalloc
 import warnings
+from collections.abc import Sequence
 
 import pyarrow
 
@@ -22,7 +23,7 @@ import pyarrow
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from _bench import best_of, parser  # noqa: E402
+from _bench import accounted_kernels, accounted_stages, best_of, parser  # noqa: E402
 
 from rekep.fix import (  # noqa: E402
     SOH,
@@ -348,17 +349,58 @@ def _listing(folder: pathlib.Path, repeat: int) -> None:
 #: has to be in the mix rather than assumed away.
 CATEGORY_SHARES: tuple[tuple[str, int], ...] = (("OTHER", 60), ("FIX", 25), ("FIXML", 15))
 
+#: The mixes worth pricing apart, `CATEGORY_SHARES` first. The three after it
+#: are the same payloads with one protocol left, because both parsing stages
+#: take a different path for each and an average hides which one moved.
+MIXES: tuple[tuple[str, tuple[tuple[str, int], ...]], ...] = (
+    ("mixed 60/25/15", CATEGORY_SHARES),
+    ("wire FIX only", (("FIX", 1),)),
+    ("bridge FIXML only", (("FIXML", 1),)),
+    ("unparsed text only", (("OTHER", 1),)),
+)
+
 #: The separator the generated messages use, stated rather than detected: a
 #: benchmark that let each implementation sample the column would be timing
 #: `detect_separator` in some of them and not in others.
 CAPTURE_SEPARATOR = "|"
 
+#: What `--only stages` accounts of a capture read end to end, in the order a
+#: line reaches them, as `(label, module[:Class], attribute)`. Every one is
+#: reached through its owner -- a class attribute, or the module its caller
+#: looks the name up in -- so wrapping it there is what the read invokes.
+#:
+#: What is left unaccounted is the read itself: `_iter_lines` is a generator,
+#: so its time is spent in the loop that drives it rather than in a call, and
+#: the remainder of the batch is exactly that plus decompression.
+MESSAGE_STAGES: tuple[tuple[str, str, str], ...] = (
+    ("assemble one batch", "rekep.text.text_file:TextFile", "_batch"),
+    ("header stamps to unix", "rekep.text.text_file", "_local_micros"),
+    ("stamps to a zone", "rekep.text.text_file", "_unix_nanos"),
+    ("decode the payload", "rekep.text.text_file", "_utf8"),
+    ("probe the message types", "rekep.text.message:Message", "msg_types_arrow"),
+    ("parse the payloads", "rekep.text.message:Message", "parse_arrow"),
+    ("tokenize the payload", "rekep.entries:Entry", "payload_arrow_with_diagnostics"),
+    ("normalize the entries", "rekep.entries:Entry", "normalized_arrow"),
+    ("classify protocol", "rekep.fix.rules:Rules", "into_arrow_protocol_array"),
+    ("classify direction", "rekep.fix.rules:Rules", "into_arrow_direction_array"),
+    ("parse XML payloads", "rekep.text.message", "xml_payload_arrow"),
+    ("parse referential payloads", "rekep.text.message", "referential_payload_arrow"),
+    ("lift the session columns", "rekep.text.message", "_session_columns"),
+    ("version the protocols", "rekep.fix.transcribe:FixCodec", "into_versioned_protocols"),
+    ("identify", "rekep.text.message:Message", "identified"),
+)
 
-def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str]]:
-    """Write a mixed capture, and say which protocol each row carries.
 
-    `CATEGORY_SHARES` is dealt out deterministically -- a seeded shuffle of one
-    hundred slots, repeated -- so the mix is exact rather than approximately
+def capture(
+    path: pathlib.Path,
+    rows: int,
+    seed: int = 5,
+    shares: Sequence[tuple[str, int]] = CATEGORY_SHARES,
+) -> tuple[int, list[str]]:
+    """Write a capture of `shares`, and say which protocol each row carries.
+
+    The shares are dealt out deterministically -- a seeded shuffle of one slot
+    per share point, repeated -- so the mix is exact rather than approximately
     right, and two runs of the benchmark read the same file.
 
     **No continuations.** Every line is a record here, so row `i` of the parsed
@@ -367,7 +409,7 @@ def capture(path: pathlib.Path, rows: int, seed: int = 5) -> tuple[int, list[str
     benchmark that had to guess a protocol would be timing that guess too.
     """
     generate = random.Random(seed)
-    slots = [name for name, share in CATEGORY_SHARES for _ in range(share)]
+    slots = [name for name, share in shares for _ in range(share)]
     generate.shuffle(slots)
     protocols: list[str] = []
     with path.open("wb") as out:
@@ -818,16 +860,103 @@ def stamps(rows: int, repeat: int) -> None:
     print(f"{'all eight mixed':>16} {seconds:>9.3f} {len(mixed) / seconds:>12,.0f}")
 
 
+def _read(path: pathlib.Path, batch_row_size: int) -> int:
+    """One whole capture through the text layer; how many `Message` rows it made."""
+    rows = 0
+    with TextFile.from_path(path) as log:
+        for batch in log.into_arrow_batches(batch_row_size=batch_row_size):
+            rows += batch.num_rows
+    return rows
+
+
+def _checked(path: pathlib.Path, rows: int, batch_row_size: int, mixed: bool) -> None:
+    """Every line is one row, and a one-protocol capture parses as one protocol."""
+    with TextFile.from_path(path) as log:
+        batches = list(log.into_arrow_batches(batch_row_size=batch_row_size))
+    assert sum(batch.num_rows for batch in batches) == rows
+    protocols = pyarrow.chunked_array([batch.column("protocol") for batch in batches])
+    distinct = len(pyarrow.compute.unique(protocols.combine_chunks()))
+    assert distinct > 1 if mixed else distinct == 1, distinct
+
+
+def mixes(rows: int, repeat: int, batch_row_size: int) -> None:
+    """What a capture costs between its bytes and its `Message` rows, per mix.
+
+    The same four mixes `bench_fixmsg.py` prices the FIX stage over, so the two
+    boundaries' rows/s are the same rows and add up to what a pipeline pays.
+    """
+    print(f"\ncapture -> Message rows, {rows:,} rows, best of {repeat}")
+    print(f"  {'mix':<22} {'rows/s':>10} {'us/row':>9} {'MiB/s':>9}")
+    with tempfile.TemporaryDirectory() as tmp:
+        for label, shares in MIXES:
+            path = pathlib.Path(tmp) / "capture.txt"
+            nbytes, _ = capture(path, rows, shares=shares)
+            _checked(path, rows, batch_row_size, mixed=len(shares) > 1)
+            seconds = best_of(lambda path=path: _read(path, batch_row_size), repeat)
+            print(
+                f"  {label:<22} {rows / seconds:>10,.0f} {seconds / rows * 1e6:>9.1f} "
+                f"{nbytes / seconds / 2**20:>9.1f}"
+            )
+
+
+def stages(rows: int, repeat: int, batch_row_size: int) -> None:
+    """Where one mixed capture's milliseconds are between its bytes and its rows."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "capture.txt"
+        capture(path, rows)
+        _checked(path, rows, batch_row_size, mixed=True)
+        clean = best_of(lambda: _read(path, batch_row_size), repeat)
+        with accounted_stages(MESSAGE_STAGES) as account:
+            started = time.perf_counter()
+            _read(path, batch_row_size)
+            wall = time.perf_counter() - started
+    print(
+        f"\nstages of one mixed capture, {rows:,} rows, "
+        f"{clean * 1000:.1f} ms clean, {wall * 1000:.1f} ms instrumented"
+    )
+    account.report("stage", wall)
+
+
+def kernels(rows: int, batch_row_size: int, top: int) -> None:
+    """Which Arrow kernels the read is, and which call site each is under."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "capture.txt"
+        capture(path, rows)
+        _checked(path, rows, batch_row_size, mixed=True)
+        clean = best_of(lambda: _read(path, batch_row_size), 1)
+        with accounted_kernels() as (by_kernel, by_site):
+            started = time.perf_counter()
+            _read(path, batch_row_size)
+            wall = time.perf_counter() - started
+    print(
+        f"\nkernels of one mixed capture, {rows:,} rows, "
+        f"{clean * 1000:.1f} ms clean, {wall * 1000:.1f} ms instrumented"
+    )
+    by_kernel.report("kernel", wall, top=top)
+    by_site.report("call site", wall, width=44, top=top)
+
+
 def main() -> int:
     options = parser(__doc__, rows=200_000, repeat=3)
     options.add_argument(
         "--only",
-        choices=("sweep", "variants", "folders", "messages", "stamps"),
+        choices=(
+            "sweep",
+            "variants",
+            "folders",
+            "messages",
+            "stamps",
+            "mixes",
+            "stages",
+            "kernels",
+        ),
         default=None,
     )
+    options.add_argument("--top", type=int, default=15)
     arguments = options.parse_args()
     rows = 50_000 if arguments.quick else arguments.rows
     repeat = 1 if arguments.quick else arguments.repeat
+    batch_row_size = 8_192 if arguments.quick else DEFAULT_BATCH_ROW_SIZE
     if arguments.only in (None, "sweep"):
         sweep(rows, arguments.quick)
     if arguments.only in (None, "variants"):
@@ -838,6 +967,12 @@ def main() -> int:
         stamps(rows, repeat)
     if arguments.only in (None, "messages"):
         messages(rows, repeat, arguments.quick)
+    if arguments.only in (None, "mixes"):
+        mixes(rows, repeat, batch_row_size)
+    if arguments.only in (None, "stages"):
+        stages(rows, repeat, batch_row_size)
+    if arguments.only in (None, "kernels"):
+        kernels(rows, batch_row_size, arguments.top)
     return 0
 
 

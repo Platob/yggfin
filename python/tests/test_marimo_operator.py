@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import stat
+import string
 import subprocess
 import sys
 import threading
@@ -350,6 +351,10 @@ def test_the_parameter_document_is_readable_only_by_the_worker(kept: Held) -> No
     assert stat.S_IMODE(parameters.parent.stat().st_mode) == 0o700
 
 
+#: What `tempfile.mkdtemp` builds its random suffix from.
+_MKDTEMP_ALPHABET = frozenset(string.ascii_lowercase + string.digits + "_")
+
+
 def test_the_attempt_directory_names_the_attempt_that_owns_it(kept: Held) -> None:
     operator().execute(
         context(run_id="scheduled__2026-08-21T10:00:00+00:00", map_index=3, try_number=2)
@@ -360,7 +365,10 @@ def test_the_attempt_directory_names_the_attempt_that_owns_it(kept: Held) -> Non
     stem, _, unique = directory.name.rpartition("-")
     assert stem.endswith("parse_messages-scheduled__2026-08-21T10_00_00_00_00-3-2")
     assert ":" not in directory.name and "+" not in directory.name
-    assert unique and unique.isalnum(), "and a unique suffix nothing else can hold"
+    # `mkdtemp` names its suffix out of lowercase letters, digits and `_`, so
+    # the check is that alphabet and not `isalnum`: one suffix in five holds an
+    # underscore, and the test failed on those.
+    assert unique and set(unique) <= _MKDTEMP_ALPHABET, "and a unique suffix nothing else can hold"
 
 
 def test_two_attempts_of_one_task_never_share_a_directory(kept: Held) -> None:

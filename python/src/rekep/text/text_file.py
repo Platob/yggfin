@@ -744,42 +744,20 @@ class TextFile(Dataset, io.BufferedIOBase):
         if not len(unix):
             return _empty_batch(schema)
 
-        text = pyarrow.compute.fill_null(_utf8(bodies), "")
-        selected = _message_mask(text, include_regexes, exclude_regexes)
+        selected = _message_mask(bodies, include_regexes, exclude_regexes)
         if selected is not None:
-            unix, threads, plugins, levels, bodies, text, rownums_array, reasons = (
+            unix, threads, plugins, levels, bodies, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (
-                    unix,
-                    threads,
-                    plugins,
-                    levels,
-                    bodies,
-                    text,
-                    rownums_array,
-                    reasons,
-                )
+                for values in (unix, threads, plugins, levels, bodies, rownums_array, reasons)
             )
-        count = len(unix)
-        if not count:
+        if not len(unix):
             return _empty_batch(schema)
 
-        selected = _msgtype_mask(
-            Message.msg_types_arrow(bodies), include_msgtypes, exclude_msgtypes
-        )
+        selected = _msgtype_mask(bodies, include_msgtypes, exclude_msgtypes)
         if selected is not None:
-            unix, threads, plugins, levels, bodies, text, rownums_array, reasons = (
+            unix, threads, plugins, levels, bodies, rownums_array, reasons = (
                 pyarrow.compute.filter(values, selected)
-                for values in (
-                    unix,
-                    threads,
-                    plugins,
-                    levels,
-                    bodies,
-                    text,
-                    rownums_array,
-                    reasons,
-                )
+                for values in (unix, threads, plugins, levels, bodies, rownums_array, reasons)
             )
         count = len(unix)
         if not count:
@@ -794,13 +772,13 @@ class TextFile(Dataset, io.BufferedIOBase):
             "snapunix": pyarrow.nulls(count, pyarrow.int64()),
             "version": _zeros(count, pyarrow.int64()),
             "state": _zeros(count, pyarrow.int64()),
-            "code": pyarrow.repeat("", count),
-            "altids": pyarrow.repeat(pyarrow.scalar({}, ALTIDS_TYPE), count),
+            "code": _constant_column(count, ""),
+            "altids": _constant_column(count, pyarrow.scalar({}, ALTIDS_TYPE)),
             "prevunix": pyarrow.nulls(count, pyarrow.int64()),
             "parenthash": pyarrow.nulls(count, PARENTS),
             "lastmkt": pyarrow.nulls(count, pyarrow.int32()),
             "reason": reasons,
-            "sourceurl": pyarrow.repeat(self.url, count),
+            "sourceurl": _constant_column(count, self.url),
             "sourcerownum": rownums_array,
             "threadname": pyarrow.compute.fill_null(_utf8(threads), ""),
             "level": _utf8(levels),
@@ -819,14 +797,14 @@ class TextFile(Dataset, io.BufferedIOBase):
         columns["reason"] = _merge_reasons(columns["reason"], parse_errors)
         columns.update(parsed)
         columns.update(
-            (name, pyarrow.repeat(scalar, count)) for name, scalar in self.static_columns
+            (name, _constant_column(count, scalar)) for name, scalar in self.static_columns
         )
         # `Message.identified` fills these once every raw column is here.
         for name in ("hash", "vhash", "xhash"):
             columns.setdefault(name, pyarrow.nulls(count, schema.field(name).type))
         linkhashes = schema.field("linkhashes")
         columns.setdefault(
-            "linkhashes", pyarrow.repeat(pyarrow.scalar([], type=linkhashes.type), count)
+            "linkhashes", _constant_column(count, pyarrow.scalar([], type=linkhashes.type))
         )
         missing_required = [
             field.name for field in schema if field.name not in columns and not field.nullable
@@ -1126,12 +1104,22 @@ def _plugin_mask(plugins: pyarrow.Array, technical_plugins: Sequence[str]) -> py
 
 
 def _msgtype_mask(
-    msgtypes: pyarrow.Array,
+    bodies: pyarrow.Array,
     include_msgtypes: Sequence[str],
     exclude_msgtypes: Sequence[str],
 ) -> pyarrow.Array | None:
-    """Rows admitted by an exact include and no exact exclude."""
+    """Rows admitted by an exact include and no exact exclude.
+
+    The discriminator is probed here rather than by the caller because it is
+    read for this bound and nothing else: the probe is five RE2 passes over
+    every payload -- 42 to 160 ms of a 65,536-row batch, by how much of it is
+    a message -- and a read that declares no msgtype would pay them for a mask
+    it then discards.
+    """
+    if not include_msgtypes and not exclude_msgtypes:
+        return None
     compute = pyarrow.compute
+    msgtypes = Message.msg_types_arrow(bodies)
     included = (
         None
         if not include_msgtypes
@@ -1153,11 +1141,19 @@ def _msgtype_mask(
 
 
 def _message_mask(
-    messages: pyarrow.Array,
+    bodies: pyarrow.Array,
     include_regexes: Sequence[str],
     exclude_regexes: Sequence[str],
 ) -> pyarrow.Array | None:
-    """Rows admitted by any include and no exclude, matched by Arrow RE2."""
+    """Rows admitted by any include and no exclude, matched by Arrow RE2.
+
+    Decoding the payloads belongs to this bound too: the text it matches over
+    is not a column any row carries, so a read that declares no regex would
+    decode a batch for nothing.
+    """
+    if not include_regexes and not exclude_regexes:
+        return None
+    messages = pyarrow.compute.fill_null(_utf8(bodies), "")
 
     def matches(patterns: Sequence[str]) -> pyarrow.Array | None:
         selected = None
@@ -1636,6 +1632,27 @@ def _datetime_micros(value: datetime.datetime) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000 + delta.microseconds
 
 
+def _constant_column(count: int, value: Any) -> pyarrow.Array:
+    """A column of `count` copies of one value.
+
+    Taken from a one-row array rather than repeated, because `pyarrow.repeat`
+    builds a *nested* value once per row: over a 65,536-row batch an empty
+    `altids` map costs 34 ms repeated against 0.4 ms taken, and an empty
+    `linkhashes` list 8.3 ms against 0.34 ms. A flat value goes the other way,
+    0.10 ms to 0.32 ms, so the seven flat columns here pay about 2 ms for the
+    42 ms the two nested ones save -- and for one implementation of a constant.
+
+    A null has no copies to take: `take` leaves a nested child array one row
+    long where `repeat` leaves it `count`, which is the same column and not
+    the same bytes, and these bytes are written to a store.
+    """
+    if isinstance(value, pyarrow.Scalar) and not value.is_valid:
+        return pyarrow.nulls(count, value.type)
+    return pyarrow.compute.take(
+        pyarrow.repeat(value, 1), pyarrow.repeat(pyarrow.scalar(0, pyarrow.int32()), count)
+    )
+
+
 def _zeros(count: int, dtype: pyarrow.DataType) -> pyarrow.Array:
     """A column of `count` zeros -- the envelope members a parsed line leaves unset.
 
@@ -1643,4 +1660,4 @@ def _zeros(count: int, dtype: pyarrow.DataType) -> pyarrow.Array:
     not have is stated, so a store never has to widen a column for it later,
     and a value repeated down a whole file encodes away to nothing on disk.
     """
-    return pyarrow.repeat(pyarrow.scalar(0, dtype), count)
+    return _constant_column(count, pyarrow.scalar(0, dtype))

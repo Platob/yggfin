@@ -58,9 +58,24 @@ _SEPARATORS = r"\x04\x03|\^A|[\x01|^;#]"
 _TRAILING_SEPARATOR = rf"(?s){_ASSIGNMENT}.*?(?P<sep>{_SEPARATORS}){_WS}*$"
 _STRUCTURED_PAIRS = rf"(?s){_ASSIGNMENT}.*?(?:{_SEPARATORS}){_WS}*{_ASSIGNMENT}"
 _SEPARATOR_BEFORE_ASSIGNMENT = rf"(?:{_PUNCTUATION}){_WS}*{_ASSIGNMENT}"
-_MARKED_BODY = rf"(?s)(?P<body>#{_BARE_KEY}{_WS}*=.*)$"
-_UNMARKED_BODY = rf"(?s)(?:^|[^A-Za-z0-9_.\-\]#])(?P<body>{_BARE_KEY}{_WS}*=.*)$"
-_TOKEN = rf"(?s)^{_WS}*(?P<key>{_KEY}){_WS}*=(?P<value>.*?){_WS}*$"
+#: What cannot stand immediately in front of a key, so a key that follows one
+#: opens a field rather than ending a longer word. Named because `_DIRECT_BODY`
+#: is the union of the two starts below only while all three spell it alike.
+_NOT_KEY = r"[^A-Za-z0-9_.\-\]#]"
+_MARKED_START = rf"#{_BARE_KEY}{_WS}*="
+_UNMARKED_START = rf"(?:^|{_NOT_KEY}){_BARE_KEY}{_WS}*="
+# Either start at position zero: the row opens on its own body. Read with
+# `find_substring_regex`, the kernel `_marked_first` reads the two starts with.
+# `find_substring_regex` walks the column as bytes and `match_substring_regex`
+# walks it as runes, so on `éa=` the negated class matches one lead byte for
+# the first and the whole rune for the second, and the two then disagree about
+# where a row starts.
+_DIRECT_BODY = rf"(?s)^(?:#|{_NOT_KEY})?{_BARE_KEY}{_WS}*="
+_MARKED_BODY = rf"(?s)(?P<body>{_MARKED_START}.*)$"
+_UNMARKED_BODY = rf"(?s)(?:^|{_NOT_KEY})(?P<body>{_BARE_KEY}{_WS}*=.*)$"
+# The value runs to the end of the token: `_parse_style` trims it, and a lazy
+# group with a trailing class instead makes RE2 walk every value twice.
+_TOKEN = rf"(?s)^{_WS}*(?P<key>{_KEY}){_WS}*=(?P<value>.*)$"
 _DEFAULT_SEPARATOR = "\x01"
 _XML_START = re.compile(rb"<(?:\?xml\b|[A-Za-z_:])", re.IGNORECASE)
 _EVENT_XML_START = re.compile(rb"<event(?:\s|>)", re.IGNORECASE)
@@ -743,12 +758,27 @@ def _from_message_start(text: pyarrow.Array) -> pyarrow.Array:
     `>` of `sending >>` as the delimiter and returns the message as one entry.
     A line that names no message keeps all of itself, which is what a generic
     `A=1;B=2` argument list is.
+
+    The first vector to answer a row wins, so each later one reads only the
+    rows the ones in front of it left null. RE2 costs what it scans and all
+    three carry `.*`, so narrowing is 1.5-2x where an earlier vector answers
+    most rows -- and about 5% *slower* below roughly one row in ten, where the
+    filter and the mask copy the column for almost no regex saved.
     """
     compute = pyarrow.compute
-    begun = compute.struct_field(compute.extract_regex(text, BEGIN_VECTOR), "msg")
-    marked = compute.struct_field(compute.extract_regex(text, MARKED_VECTOR), "msg")
-    bare = compute.struct_field(compute.extract_regex(text, BARE_VECTOR), "msg")
-    return compute.coalesce(begun, marked, bare, text)
+    found = compute.struct_field(compute.extract_regex(text, BEGIN_VECTOR), "msg")
+    for pattern in (MARKED_VECTOR, BARE_VECTOR):
+        missing = compute.is_null(found)
+        if not compute.any(missing, min_count=0).as_py():
+            return found
+        if compute.all(missing, min_count=0).as_py():
+            # Nothing is answered, so there is nothing to narrow to and the
+            # filter and `replace_with_mask` would be two copies of the column.
+            found = compute.struct_field(compute.extract_regex(text, pattern), "msg")
+            continue
+        rest = compute.extract_regex(compute.filter(text, missing), pattern)
+        found = compute.replace_with_mask(found, missing, compute.struct_field(rest, "msg"))
+    return compute.coalesce(found, text)
 
 
 def _parse_generic(text: pyarrow.Array, with_diagnostics: bool = False) -> Any:
@@ -826,25 +856,34 @@ def _common_separators(text: pyarrow.Array) -> pyarrow.Array:
     return common
 
 
-def _parse_style(text: Any, separator: str, with_diagnostics: bool = False) -> Any:
-    """Parse one homogeneous separator style in Arrow kernels."""
+def _marked_first(text: pyarrow.Array) -> pyarrow.Array:
+    """Whether a row's first assignment carries the `#` marker."""
     compute = pyarrow.compute
-    marked_at = compute.find_substring_regex(text, rf"#{_BARE_KEY}{_WS}*=")
-    unmarked_at = compute.find_substring_regex(
-        text, rf"(?:^|[^A-Za-z0-9_.\-\]#]){_BARE_KEY}{_WS}*="
-    )
-    use_marked = compute.and_(
+    marked_at = compute.find_substring_regex(text, _MARKED_START)
+    unmarked_at = compute.find_substring_regex(text, _UNMARKED_START)
+    return compute.and_(
         compute.greater_equal(marked_at, 0),
         compute.or_(compute.less(unmarked_at, 0), compute.less(marked_at, unmarked_at)),
     )
-    direct = compute.or_(compute.equal(marked_at, 0), compute.equal(unmarked_at, 0))
-    if compute.all(direct, min_count=0).as_py():
-        body = text
-    else:
+
+
+def _parse_style(text: Any, separator: str, with_diagnostics: bool = False) -> Any:
+    """Parse one homogeneous separator style in Arrow kernels."""
+    compute = pyarrow.compute
+    # A row already standing on its first assignment has no prose in front of
+    # it to cut, and one anchored find answers that over its first few bytes.
+    # Which of the two spellings starts first has to find both, so it is asked
+    # only where the cut or a `#` key spends the answer.
+    direct = compute.equal(compute.find_substring_regex(text, _DIRECT_BODY), 0)
+    cut = not compute.all(direct, min_count=0).as_py()
+    use_marked = _marked_first(text) if cut or separator == "#" else None
+    if cut:
         marked_body = compute.struct_field(compute.extract_regex(text, _MARKED_BODY), "body")
         unmarked_body = compute.struct_field(compute.extract_regex(text, _UNMARKED_BODY), "body")
         extracted = compute.fill_null(compute.if_else(use_marked, marked_body, unmarked_body), "")
         body = compute.if_else(direct, text, extracted)
+    else:
+        body = text
     # Split by the lengths a row declares where it declares one: a FIX `data`
     # value may hold the delimiter, and this stage's arguments are what the FIX
     # stage reads instead of the payload -- so a value cut here is cut for good.

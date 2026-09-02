@@ -397,35 +397,6 @@ class FieldAccess:
                 yield Entry.from_pair(key, value)
 
     @classmethod
-    def first_named(cls, stored: Any, tag: int, name: str, rows: int) -> Any:
-        """First value of one field per row, by its tag *or* by its name.
-
-        What the message stage reads a field with, before anything has resolved
-        a name: a wire message spells the key `35` and a rendered one spells it
-        `MsgType`, and both are the same field. Two comparisons over the child
-        array, and no dictionary -- which is the point, since this runs before
-        one is consulted.
-        """
-        flattened = cls._flattened(stored, rows)
-        if flattened is None:
-            return pyarrow.nulls(rows, pyarrow.string())
-        parents, entries, values = flattened
-        compute = pyarrow.compute
-        numbered = compute.fill_null(
-            compute.equal(compute.struct_field(entries, "tag"), tag), False
-        )
-        named = compute.fill_null(
-            compute.equal(column_names(compute.struct_field(entries, "key")), column_name(name)),
-            False,
-        )
-        matches = compute.or_(numbered, named)
-        if not compute.any(matches, min_count=0).as_py():
-            return pyarrow.nulls(rows, pyarrow.string())
-        return cls._first_per_row(
-            compute.filter(values, matches), compute.filter(parents, matches), sequence(rows)
-        )
-
-    @classmethod
     def first_arrow_tags(cls, stored: Any, wanted: Sequence[int], rows: int) -> dict[int, Any]:
         """First value of each wanted tag out of a stored `entries` column."""
         flattened = cls._flattened(stored, rows)
@@ -462,7 +433,11 @@ class FieldAccess:
         parents, entries, values = flattened
         compute = pyarrow.compute
         tags = compute.struct_field(entries, "tag")
-        keys = column_names(compute.struct_field(entries, "key"))
+        # The fold runs on the batch's distinct spellings and the lookup with
+        # it: a batch writes thirty names over hundreds of thousands of
+        # entries, and folding every one of them back out cost more than the
+        # rest of this scan.
+        keys = compute.dictionary_encode(compute.struct_field(entries, "key"))
         numbered = [(index, tag) for index, (tag, _) in enumerate(wanted) if tag]
         if numbered:
             positions, tag_values = zip(*numbered, strict=True)
@@ -472,9 +447,14 @@ class FieldAccess:
             )
         else:
             by_tag = pyarrow.nulls(len(tags), pyarrow.int32())
-        by_name = compute.index_in(
-            keys,
-            value_set=pyarrow.array([column_name(name) for _, name in wanted], pyarrow.string()),
+        by_name = compute.take(
+            compute.index_in(
+                column_names(keys.dictionary),
+                value_set=pyarrow.array(
+                    [column_name(name) for _, name in wanted], pyarrow.string()
+                ),
+            ),
+            keys.indices,
         )
         matched_positions = compute.coalesce(by_tag, by_name)
         matches = compute.is_valid(matched_positions)

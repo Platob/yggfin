@@ -386,8 +386,51 @@ def test_an_identifier_column_can_itself_be_a_part() -> None:
     assert made[0] == hash_of("Book", hash_bytes_of(hash_of("a")))
 
 
+def test_a_column_that_frames_alike_in_every_row_is_carried_as_one_constant() -> None:
+    """The frame folds such a column into a scalar, and it stays a part of it."""
+    empty = pyarrow.repeat(pyarrow.scalar("", pyarrow.string()), 3)
+    absent = pyarrow.nulls(3, pyarrow.string())
+
+    assert built("Order", empty, pyarrow.array(SYMBOLS[:3])) == [
+        hash_of("Order", "", symbol) for symbol in SYMBOLS[:3]
+    ]
+    assert built("Order", absent, pyarrow.array(SYMBOLS[:3])) == [
+        hash_of("Order", None, symbol) for symbol in SYMBOLS[:3]
+    ]
+    # Every part folded away still frames one row per row of the columns given.
+    assert built(empty, absent) == [hash_of("", None)] * 3
+
+
+def test_a_folded_column_is_read_at_its_own_offset() -> None:
+    """A batch splits by slicing, so a slice decides for itself whether it folds."""
+    column = pyarrow.array(["AAPL", "", ""], pyarrow.string())
+
+    assert built("Order", column.slice(1, 2)) == [hash_of("Order", "")] * 2
+    assert built("Order", column.slice(0, 2)) == [hash_of("Order", "AAPL"), hash_of("Order", "")]
+
+
+def test_an_empty_value_beside_an_absent_one_is_not_folded_away() -> None:
+    mixed = pyarrow.array(["", None, ""], type=pyarrow.string())
+    assert built("Order", mixed) == [
+        hash_of("Order", ""),
+        hash_of("Order", None),
+        hash_of("Order", ""),
+    ]
+
+
+def test_columns_of_different_lengths_are_refused() -> None:
+    """Including where one of them folds, and so never reaches the join."""
+    with pytest.raises(ValueError, match="one length"):
+        hash_arrow(pyarrow.array(["a", "b"]), pyarrow.array(["c"]))
+    with pytest.raises(ValueError, match="one length"):
+        hash_arrow(pyarrow.array(["", ""]), pyarrow.array(["c"]))
+    with pytest.raises(ValueError, match="one length"):
+        hash_arrow(pyarrow.array(["", ""]), pyarrow.array(["", "", ""]))
+
+
 def test_no_rows_is_no_rows() -> None:
     assert built("Order", pyarrow.array([], type=pyarrow.string())) == []
+    assert built("Order", pyarrow.repeat(pyarrow.scalar("", pyarrow.string()), 0)) == []
 
 
 def test_hashing_nothing_is_refused() -> None:

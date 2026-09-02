@@ -185,12 +185,34 @@ def framed_arrow(*columns: Any) -> pyarrow.Array:
     if sys.byteorder != "little":
         raise RuntimeError("framing requires a little-endian Arrow host; use frame")
     framed: list[Any] = []
-    rows = 1
+    # A part that frames the same in every row is a constant, and a run of
+    # consecutive ones is one constant the join writes once instead of once per
+    # part. Most of a lifted FIX row's shape is unset, so this is three quarters
+    # of the parts and most of the join's arity.
+    constant = bytearray()
+    widths: set[int] = set()
     for column in columns:
         binary = _binary(column)
-        if isinstance(binary, pyarrow.Array):
-            rows = len(binary)
+        if isinstance(binary, pyarrow.Scalar):
+            constant += _length(binary).as_py()
+            if (value := binary.as_py()) is not None:
+                constant += value
+            continue
+        widths.add(len(binary))
+        if (fixed := _constant_frame(binary)) is not None:
+            constant += fixed
+            continue
+        if constant:
+            framed.append(pyarrow.scalar(bytes(constant), type=pyarrow.binary()))
+            constant.clear()
         framed += [_length(binary), binary]
+    if constant:
+        framed.append(pyarrow.scalar(bytes(constant), type=pyarrow.binary()))
+    # Two widths were the join's to refuse, and a folded part never reaches it,
+    # so the frame refuses them itself.
+    if len(widths) > 1:
+        raise ValueError(f"identity columns must be one length; got {sorted(widths)}")
+    rows = widths.pop() if widths else 1
     joined = pyarrow.compute.binary_join_element_wise(
         *framed,
         pyarrow.scalar(b"", type=pyarrow.binary()),
@@ -356,6 +378,31 @@ def _length(part: Any) -> Any:
         return _reinterpreted(filled, 8)[0]
     filled = compute.fill_null(length, ABSENT_LENGTH).cast(pyarrow.int64())
     return _reinterpreted(filled, 8)
+
+
+def _constant_frame(binary: pyarrow.Array) -> bytes | None:
+    """The bytes a whole column frames to where every row frames alike, or `None`.
+
+    Two columns frame alike: one absent in every row, which is the `-1` length
+    alone, and one empty in every row, which is the zero length alone. Read
+    from the null count and the column's two edge offsets, so a column that is
+    neither pays a popcount rather than a pass over its values. Equal *values*
+    are not looked for: finding them is the pass the join would have made.
+
+    `_binary` hands back `pyarrow.binary()` for every part it accepts, so the
+    offsets are 32-bit. A wider offset here would be read as two narrow ones
+    and frame a wrong identity in a format other languages read.
+    """
+    rows = len(binary)
+    if not rows:
+        return None
+    if binary.null_count == rows:
+        return ABSENT_FRAME
+    if binary.null_count:
+        return None
+    offsets = memoryview(binary.buffers()[1]).cast("i")
+    start = binary.offset
+    return _PREFIXES[0] if offsets[start] == offsets[start + rows] else None
 
 
 def _reinterpreted(column: pyarrow.Array, width: int) -> pyarrow.Array:

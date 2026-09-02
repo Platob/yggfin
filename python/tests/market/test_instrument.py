@@ -23,7 +23,8 @@ from rekep.market import (
     TickRule,
 )
 from rekep.market.identity import NIL
-from rekep.text import FixMsg, Message
+from rekep.market.instrument import _first_entries_arrow
+from rekep.text import Entry, FixMsg, Message
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
 
@@ -124,6 +125,33 @@ def test_referential_key_and_tick_ladder_use_the_component_api() -> None:
     (stored,) = FixMsg.from_arrow_reader([parsed_batch])
     (stored_update,) = InstUpdate.from_fixmsgs([stored], registry=registry)
     assert stored_update.instrument == scalar
+
+
+def test_referential_entries_answer_for_every_name_in_one_pass() -> None:
+    """Retained entries lead the unmapped ones, and the first of a name wins.
+
+    The residual lists are the batch's largest column, so every name a
+    Referential row carries is read off one walk of them rather than one each.
+    """
+    dtype = Message.into_field().field("entries").dtype
+
+    def entries(*pairs: tuple[str, str]) -> pyarrow.Array:
+        return pyarrow.array(
+            [[Entry(key=key, value=value).into_dict() for key, value in pairs]], dtype
+        )
+
+    found = _first_entries_arrow(
+        (
+            entries(("Instrument.InstrumentKey", "dbi;A_XLON_GBX"), ("InstrumentKey", "dbi;B")),
+            entries(("InstrumentKey", "dbi;C"), ("QuantityType", "shares")),
+        ),
+        ("InstrumentKey", "QuantityType", "AssetClass"),
+        1,
+    )
+
+    assert found["InstrumentKey"].to_pylist() == ["dbi;A_XLON_GBX"]
+    assert found["QuantityType"].to_pylist() == ["shares"]
+    assert found["AssetClass"].to_pylist() == [None]
 
 
 def test_oms_and_referential_share_vectorized_instrument_key_derivation() -> None:
