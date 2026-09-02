@@ -276,10 +276,16 @@ class Entry(Convertible, Mapping[str, Any]):
     def structure_arrow(keys: Any, values: Any) -> tuple[Any, ...]:
         """Split key spellings into the stable entry members."""
         compute = pyarrow.compute
-        keys = compute.replace_substring_regex(keys, pattern=r"^#", replacement="")
         values = compute.fill_null(values, "")
+        # Every spelling rule below reads the dictionary, so the marker comes
+        # off there too: a capture repeats a few hundred spellings over every
+        # entry it holds, and `#A` and `A` folding to one entry buys nothing
+        # that `take` does not already give.
         encoded = keys.dictionary_encode()
-        spellings, indices = encoded.dictionary, encoded.indices
+        indices = encoded.indices
+        spellings = compute.replace_substring_regex(
+            encoded.dictionary, pattern=r"^#", replacement=""
+        )
         parts = compute.extract_regex(spellings, _GROUPED_KEY)
         lead = compute.struct_field(parts, "comp")
         grouped = compute.fill_null(compute.greater(compute.binary_length(lead), 0), False)

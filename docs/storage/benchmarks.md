@@ -171,6 +171,62 @@ Three more were priced and left alone:
 | stop re-inferring versions in `_resolved_batch_columns` | 17.5 ms per mixed 8,000-row batch, and not a duplicate: `_versions_arrow` is passed the newly *versioned* protocols and a `_begin_strings_arrow` rebuilt from them, and the two readings can legitimately disagree. |
 | a direction split on a nearly-homogeneous batch | the per-protocol split reads 0.93x where one anchored protocol takes 90% of the rows and the whole-column shortcut does not fire. Direction is 2% of the boundary, so this is ~0.2% there, and a per-category task batch is exactly that shape. Kept, because the mixed capture it is measured on is the one the pipeline reads. |
 
+### And the text layer in front of it
+
+2026-09-02, same host, over `bench_text_file.py`'s 40,000-row captures.
+Asserted byte-identical first over 72 read shapes: the four mixes at three
+batch sizes, each also unfolded, at a small read size and under a bounded row
+size; an empty file, one line, gzip, CRLF, invalid UTF-8, and a line past the
+row bound; and twelve reads with msgtype, regex, plugin, window, static-value
+and null-value bounds set, including a *null nested* static value, which is the
+one shape where taking a constant column and repeating it differ in bytes.
+
+| mix | before | after |
+| --- | ---: | ---: |
+| mixed 60/25/15 | 39,552–50,153 rows/s | 57,131–73,215 rows/s |
+| wire FIX only | 33,348–38,968 rows/s | 59,804–65,935 rows/s |
+| bridge FIXML only | 28,994–31,335 rows/s | 43,321–54,386 rows/s |
+| unparsed text only | 75,888–80,070 rows/s | 86,465–111,637 rows/s |
+
+Medians **1.35x** mixed, 1.68x wire, 1.73x bridge, 1.33x text. No mix's two
+ranges overlap — on the mixed capture that is nine readings a side, the slowest
+after (704 ms) still ahead of the fastest before (798 ms) — so unlike the FIX
+boundary above, this one is resolvable against the host's spread.
+
+Stage by stage, medians of five alternating pairs over one mixed 40,000-row
+capture, 936 ms to 683 ms:
+
+| stage | before | after | what changed |
+| --- | ---: | ---: | --- |
+| tokenize the payload | 414.1 ms | 340.2 ms | a greedy value group the trim already right-strips; the `#` marker read per distinct spelling; each message-start vector reading only the rows the ones in front left null |
+| lift the session columns | 97.7 ms | 44.6 ms | one code per distinct key spelling, once, instead of a pass over every entry per declared field |
+| parse the payloads | 79.3 ms | 50.2 ms | the discriminator probe reads the rows that lifted none |
+| classify protocol | 68.2 ms | 35.0 ms | rules tried in order over a shrinking column |
+| version the protocols | 59.4 ms | 31.9 ms | one scan of `entries` for all three version fields |
+| assemble one batch | 58.2 ms | 25.6 ms | a constant column is taken from one row, not built per row |
+| probe the message types | 50.1 ms | — | a read declaring no msgtype no longer probes one |
+| classify direction | 37.9 ms | 36.2 ms | unchanged |
+
+RE2 is still what this layer is: `extract_regex` 483.9 ms, `find_substring_regex`
+226.6 ms and `match_substring_regex` 106.9 ms are half of every kernel
+millisecond, and `_parse_style` alone is 251 ms of them. Tokenizing is now
+*half* the read rather than two fifths, because everything around it got
+cheaper and it did not.
+
+Two of these live in `fix/rules.py` and `fix/transcribe.py`, which the FIX
+stage reads too, so the boundary above moved with them without being touched:
+**1.28x** on an all-wire capture and 1.05x on a mixed one, over the same
+alternating runs.
+
+Four more were priced and left alone:
+
+| proposal | what the measurement said |
+| --- | --- |
+| narrow `_parse_generic`'s separator candidates the same way | 1.3–2.0 ms of its 86 ms (mixed) and 123 ms (prose). Only the trailing candidate is ever answered away, because prose settles on the whitespace candidate, which is the last expensive one. |
+| skip `_common_separators`' marker probes where no row is marked | 10.6 ms on wire and 4.4 ms on prose, and exactly 0 on the mixed capture, where 6,000 rows in 40,000 are marked. Recovering those needs a filter and scatter through a comment-dense correctness rule. |
+| the line loop | `_iter_lines` is 26.9 ms of a 2,205 ms read for decompression and splitting, 136.1 ms with the Python header match — which is the whole of the unaccounted remainder, and the loop is already raced against a kernel pass under `--only messages`. |
+| gate `_merge_reasons` on a null count | 3.4 ms per batch over a column that is all-null on every fixture row: 0.25% of the read for a second path. |
+
 ## What moved, and what only looked like it
 
 Collapsing each rule's pattern list into one alternation nearly doubled

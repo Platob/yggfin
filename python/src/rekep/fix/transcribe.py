@@ -660,23 +660,33 @@ class FixCodec(Convertible):
         if not rows:
             empty = pyarrow.array([], pyarrow.string())
             return empty, empty
-        lifted = FieldAccess.first_named(entries, 8, "BeginString", rows)
+        # One scan for the three of them: each is read by tag *or* by rendered
+        # name, and the name fold over a batch's whole child array is the
+        # expensive half -- paid once here where three separate reads paid it
+        # three times.
+        found = FieldAccess.first_arrow_fields(entries, _VERSION_EVIDENCE_FIELDS, rows)
+
+        def lifted(name: str) -> Any:
+            held = found.get(name)
+            return pyarrow.nulls(rows, pyarrow.string()) if held is None else held
+
         begins = (
-            lifted
+            lifted("BeginString")
             if begin_strings is None
             else pyarrow.compute.coalesce(
-                _as_array(begin_strings, rows).cast(pyarrow.string(), safe=False), lifted
+                _as_array(begin_strings, rows).cast(pyarrow.string(), safe=False),
+                lifted("BeginString"),
             )
         )
-        held = FieldAccess.first_named(entries, 1128, "ApplVerID", rows)
         application = (
-            held
+            lifted("ApplVerID")
             if application_versions is None
             else pyarrow.compute.coalesce(
-                _as_array(application_versions, rows).cast(pyarrow.string(), safe=False), held
+                _as_array(application_versions, rows).cast(pyarrow.string(), safe=False),
+                lifted("ApplVerID"),
             )
         )
-        default = FieldAccess.first_named(entries, 1137, "DefaultApplVerID", rows)
+        default = lifted("DefaultApplVerID")
         compute = pyarrow.compute
         version_keys, version_values = self._version_lookup
 
@@ -1678,6 +1688,14 @@ _VERSION_EVIDENCE: Mapping[str, str] = MappingProxyType(
     }
 )
 
+#: The same three fields as `FieldAccess.first_arrow_fields` wants them, which
+#: is how the columnar reading asks for all three in one scan of a batch.
+_VERSION_EVIDENCE_FIELDS: tuple[tuple[int, str], ...] = (
+    (8, "BeginString"),
+    (1128, "ApplVerID"),
+    (1137, "DefaultApplVerID"),
+)
+
 #: Where the header stops: CheckSum <10> ends the message, so nothing after it
 #: is evidence of anything.
 _CHECKSUM_KEYS = frozenset({"10", "checksum"})
@@ -2417,10 +2435,18 @@ def _version_key(spelling: str) -> str:
 
 
 def _version_keys_arrow(spellings: Any) -> Any:
-    """`_version_key` over a string column in Arrow kernels."""
+    """`_version_key` over a string column in Arrow kernels.
+
+    Folded over the column's distinct spellings and taken back, the same shape
+    `column_names` uses: a batch carries two or three version spellings over
+    tens of thousands of rows, and the fold is four RE2 passes.
+    """
     compute = pyarrow.compute
+    if isinstance(spellings, pyarrow.ChunkedArray):
+        spellings = spellings.combine_chunks()
+    encoded = compute.dictionary_encode(spellings)
     keys = compute.replace_substring_regex(
-        compute.utf8_upper(compute.utf8_trim_whitespace(spellings)),
+        compute.utf8_upper(compute.utf8_trim_whitespace(encoded.dictionary)),
         r"[^A-Za-z0-9]",
         "",
     )
@@ -2428,8 +2454,9 @@ def _version_keys_arrow(spellings: Any) -> Any:
     keys = compute.if_else(prefixed, compute.utf8_slice_codeunits(keys, 1), keys)
     transport = compute.fill_null(compute.match_substring_regex(keys, r"^FIXT"), False)
     fix = compute.fill_null(compute.match_substring_regex(keys, r"^FIX"), False)
-    return compute.if_else(
+    folded = compute.if_else(
         transport,
         keys,
         compute.if_else(fix, compute.utf8_slice_codeunits(keys, 3), keys),
     )
+    return compute.take(folded, encoded.indices)

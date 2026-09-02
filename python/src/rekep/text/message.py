@@ -13,8 +13,8 @@ import pyarrow.compute
 
 from rekep import txhash
 from rekep.enums import Direction, EventType, Plugin, Protocol
-from rekep.fields import Field, column_name, column_names, scalar
-from rekep.fields.arrays import build_list, dense_counts, null_mask, sequence
+from rekep.fields import Field, column_name, scalar
+from rekep.fields.arrays import build_list, dense_counts, list_parts, null_mask, sequence
 from rekep.fix.columns import DECLARATIONS, SESSION
 from rekep.fix.message import (
     FIX_MSG_TYPE_PATTERN,
@@ -127,6 +127,26 @@ def _session(name: str) -> Field:
 #: it is the whole reason the rendered spelling is read at all.
 _SESSION_BY_KEY: Mapping[str, str] = MappingProxyType(
     {**{tag: name for name, tag in SESSION_FIELDS}, "msgtype": _MSG_TYPE}
+)
+
+#: The same lookup as a number, which is how a batch answers it: a key column
+#: is read through its distinct spellings, so one `take` off the folded
+#: dictionary gives every entry the code of the field it spells and the
+#: per-field masks below are integer comparisons rather than thirty passes over
+#: the strings. The two negative codes are the answers that are not a column: a
+#: checksum token, which bounds every lift, and everything else.
+_UNCLAIMED = -1
+_CHECKSUM_CODE = -2
+_MSG_TYPE_CODE = next(code for code, (name, _) in enumerate(SESSION_FIELDS) if name == _MSG_TYPE)
+#: The rendered spelling of the discriminator, coded apart from its tag because
+#: each has to agree with itself before the rule between them applies.
+_NAMED_MSG_TYPE_CODE = len(SESSION_FIELDS)
+_SESSION_CODES: Mapping[str, int] = MappingProxyType(
+    {
+        **{tag: code for code, (_, tag) in enumerate(SESSION_FIELDS)},
+        "msgtype": _NAMED_MSG_TYPE_CODE,
+        **dict.fromkeys(_CHECKSUM_KEYS, _CHECKSUM_CODE),
+    }
 )
 
 #: A checksum token, however the trailer spells it: the boundary a promoted
@@ -453,7 +473,7 @@ class Message(Event):
             session.get("applverid"),
             protocols,
         )
-        msg_types = compute.coalesce(session[_MSG_TYPE], _msg_type_probe(text))
+        msg_types = _resolved_msg_types(session[_MSG_TYPE], text)
         event_types = _event_types(msg_types, msg_type_event_types)
         event_types = compute.if_else(
             referential,
@@ -616,57 +636,53 @@ def _scalar_session_values(entries: list[Entry]) -> tuple[dict[str, str], list[E
 def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], pyarrow.Array]:
     """Lift every standard header field out of `entries`, before each checksum.
 
-    One pass for all of them: the eligible window is computed once and each
-    field is a mask over it. A field a row spells twice with two different
-    values is left where it is and its column stays null -- the same rule the
-    FIX stage applies when it lifts, because a bridge that writes one fact
-    twice on purpose is telling the reader something a first-wins pop would
-    throw away.
+    One pass for all of them: every entry gets the code of the field it spells
+    from one `take` off its column's distinct spellings, the entries no field
+    spells leave before any per-field work runs, and each field is then an
+    integer mask over the fifth of the list that is left. A field a row spells
+    twice with two different values is left where it is and its column stays
+    null -- the same rule the FIX stage applies when it lifts, because a bridge
+    that writes one fact twice on purpose is telling the reader something a
+    first-wins pop would throw away.
     """
     rows = len(stored)
     empty = {name: pyarrow.nulls(rows, pyarrow.string()) for name, _ in SESSION_FIELDS}
     if not rows:
         return {name: pyarrow.nulls(0, pyarrow.string()) for name in empty}, stored
     compute = pyarrow.compute
-    entries = compute.list_flatten(stored)
+    sizes, entries = list_parts(stored)
     if not len(entries):
         return empty, stored
 
     parents = compute.list_parent_indices(stored).cast(pyarrow.int64())
     positions = sequence(len(entries))
-    keys = compute.struct_field(entries, "key")
-    values = compute.struct_field(entries, "value")
-    normalized = column_names(keys)
-    # A batch normally carries fewer than ten session identities. Asking
-    # Arrow which keys occur once avoids walking every entry for all thirty
-    # declarations, while the per-column work below remains kernel-only.
-    present = frozenset(compute.unique(normalized).to_pylist())
-    if present.intersection(_CHECKSUM_KEYS):
-        checksums = compute.fill_null(
-            compute.is_in(normalized, value_set=pyarrow.array(_CHECKSUM_KEYS)), False
-        )
-        checksum_at = _first_by_parent(positions, parents, checksums, rows)
-        before_checksum = compute.fill_null(
-            compute.less(positions, compute.take(checksum_at, parents)), True
-        )
-    else:
-        before_checksum = pyarrow.repeat(pyarrow.scalar(True), len(entries))
-    has_msg_type = "35" in present or "msgtype" in present
-    named_values = (
-        compute.fill_null(compute.match_substring_regex(values, _MSG_TYPE_VALUE), False)
-        if has_msg_type
-        else pyarrow.repeat(pyarrow.scalar(False), len(entries))
+    codes = _session_codes(compute.struct_field(entries, "key"))
+    checksum_at = _first_by_parent(positions, parents, compute.equal(codes, _CHECKSUM_CODE), rows)
+    claims = compute.fill_null(compute.greater_equal(codes, 0), False)
+    # Everything below reads only the entries a session field could claim --
+    # a fifth of an ordinary list -- so `positions` doubles as where each of
+    # them came from, which is what puts the claimed ones back at the end.
+    positions = compute.filter(positions, claims)
+    if not len(positions):
+        return empty, stored
+    codes = compute.filter(codes, claims)
+    parents = compute.filter(parents, claims)
+    values = compute.filter(compute.struct_field(entries, "value"), claims)
+    before_checksum = compute.fill_null(
+        compute.less(positions, compute.take(checksum_at, parents)), True
     )
+    present = frozenset(compute.unique(codes).to_pylist())
+    spells_msg_type = _MSG_TYPE_CODE in present or _NAMED_MSG_TYPE_CODE in present
 
     found: dict[str, pyarrow.Array] = {}
-    claimed = pyarrow.repeat(pyarrow.scalar(False), len(entries))
-    for name, tag in SESSION_FIELDS:
-        if tag not in present and (name != _MSG_TYPE or not has_msg_type):
+    claimed = pyarrow.repeat(pyarrow.scalar(False), len(positions))
+    for code, (name, _) in enumerate(SESSION_FIELDS):
+        if code not in present and (name != _MSG_TYPE or not spells_msg_type):
             found[name] = pyarrow.nulls(rows, pyarrow.string())
             continue
-        spelled = compute.equal(normalized, tag)
+        spelled = compute.equal(codes, code)
         if name == _MSG_TYPE:
-            spelled = compute.or_(spelled, compute.equal(normalized, "msgtype"))
+            spelled = compute.or_(spelled, compute.equal(codes, _NAMED_MSG_TYPE_CODE))
         eligible = compute.and_(before_checksum, spelled)
         if name == _MSG_TYPE:
             # The discriminator has a rule of its own for its two spellings --
@@ -676,27 +692,50 @@ def _session_columns(stored: pyarrow.Array) -> tuple[dict[str, pyarrow.Array], p
             # spelling the general rule holds: `35=D` beside `35=8` is two
             # readings of one fact, so neither leaves `entries` and the column
             # falls back to the raw line's own first discriminator.
-            eligible = compute.and_(eligible, named_values)
-            found[name], mask = _wire_or_named(values, parents, normalized, eligible, rows)
+            eligible = compute.and_(
+                eligible,
+                compute.fill_null(compute.match_substring_regex(values, _MSG_TYPE_VALUE), False),
+            )
+            found[name], mask = _wire_or_named(values, parents, codes, eligible, rows)
             claimed = compute.or_(claimed, mask)
             continue
         first, mask = _agreed_by_parent(values, parents, eligible, rows)
         found[name] = first
         claimed = compute.or_(claimed, mask)
-    keep = compute.invert(claimed)
+    # The lifted entries are the only ones that moved, so the list is rebuilt
+    # from what each row had less what it gave up, and nothing counts the
+    # entries no field ever looked at.
+    keep = compute.invert(
+        compute.fill_null(compute.scatter(claimed, positions, max_index=len(entries) - 1), False)
+    )
     residual = build_list(
         ENTRIES,
-        dense_counts(compute.filter(parents, keep), rows),
+        compute.subtract(sizes, dense_counts(compute.filter(parents, claimed), rows)),
         compute.filter(entries, keep),
         null_mask(stored),
     )
     return found, residual
 
 
+def _session_codes(keys: pyarrow.Array) -> pyarrow.Array:
+    """Which session field each entry spells, or a negative code for no field.
+
+    A batch carries a few dozen distinct keys for hundreds of thousands of
+    entries, so the fold and the thirty-way lookup run over the dictionary and
+    one `take` puts the answer on every entry.
+    """
+    encoded = pyarrow.compute.dictionary_encode(keys)
+    spelled = encoded.dictionary.to_pylist()
+    codes = pyarrow.array(
+        [_SESSION_CODES.get(column_name(key), _UNCLAIMED) for key in spelled], pyarrow.int8()
+    )
+    return pyarrow.compute.take(codes, encoded.indices)
+
+
 def _wire_or_named(
     values: pyarrow.Array,
     parents: pyarrow.Array,
-    normalized: pyarrow.Array,
+    codes: pyarrow.Array,
     eligible: pyarrow.Array,
     rows: int,
 ) -> tuple[pyarrow.Array, pyarrow.Array]:
@@ -709,10 +748,10 @@ def _wire_or_named(
     """
     compute = pyarrow.compute
     wire, wire_mask = _agreed_by_parent(
-        values, parents, compute.and_(eligible, compute.equal(normalized, "35")), rows
+        values, parents, compute.and_(eligible, compute.equal(codes, _MSG_TYPE_CODE)), rows
     )
     named, named_mask = _agreed_by_parent(
-        values, parents, compute.and_(eligible, compute.equal(normalized, "msgtype")), rows
+        values, parents, compute.and_(eligible, compute.equal(codes, _NAMED_MSG_TYPE_CODE)), rows
     )
     wrapped = compute.and_(
         compute.fill_null(compute.starts_with(wire, "U"), False),
@@ -795,13 +834,52 @@ def _event_types(
 
 
 def _before_checksum(candidate_at: pyarrow.Array, checksum_at: pyarrow.Array) -> pyarrow.Array:
-    """A discriminator exists and precedes the first checksum token."""
+    """A discriminator exists and precedes the first checksum token.
+
+    Null-free, because this is also the mask the value is extracted under: a
+    row that carries no payload found no discriminator either.
+    """
     compute = pyarrow.compute
     exists = compute.greater_equal(candidate_at, 0)
-    return compute.and_(
-        exists,
-        compute.or_(compute.less(checksum_at, 0), compute.less(candidate_at, checksum_at)),
+    return compute.fill_null(
+        compute.and_(
+            exists,
+            compute.or_(compute.less(checksum_at, 0), compute.less(candidate_at, checksum_at)),
+        ),
+        False,
     )
+
+
+def _resolved_msg_types(stated: pyarrow.Array, text: pyarrow.Array) -> pyarrow.Array:
+    """The lifted discriminator, probed off the raw line only where a row has none.
+
+    The probe is three RE2 scans of whatever column it is given, and its
+    answer survives nowhere a row lifted one of its own -- so it reads the
+    rows that lifted nothing, and none at all when every row lifted a type.
+    """
+    compute = pyarrow.compute
+    if not stated.null_count:
+        return stated
+    missing = compute.is_null(stated)
+    probed = _msg_type_probe(compute.filter(text, missing))
+    return compute.replace_with_mask(stated, missing, probed)
+
+
+def _captured_values(text: pyarrow.Array, pattern: str, found: pyarrow.Array) -> pyarrow.Array:
+    """`pattern`'s captured value where `found`, null everywhere else.
+
+    The find already said which rows can keep an answer, and RE2 costs what it
+    scans -- so the extract reads those rows and not the column. A capture
+    whose lines carry no discriminator at all pays for the find alone.
+    """
+    compute = pyarrow.compute
+    values = pyarrow.nulls(len(text), pyarrow.string())
+    if not compute.any(found, min_count=0).as_py():
+        return values
+    captured = compute.struct_field(
+        compute.extract_regex(compute.filter(text, found), pattern), "value"
+    )
+    return compute.replace_with_mask(values, found, captured)
 
 
 def _msg_type_probe(text: pyarrow.Array) -> pyarrow.Array:
@@ -813,17 +891,10 @@ def _msg_type_probe(text: pyarrow.Array) -> pyarrow.Array:
     """
     compute = pyarrow.compute
     checksum_at = compute.find_substring_regex(text, _CHECKSUM_TOKEN)
-    missing = pyarrow.scalar(None, pyarrow.string())
     values = []
     for pattern in (FIX_MSG_TYPE_PATTERN, NAMED_MSG_TYPE_PATTERN):
         found = _before_checksum(compute.find_substring_regex(text, pattern), checksum_at)
-        values.append(
-            compute.if_else(
-                found,
-                compute.struct_field(compute.extract_regex(text, pattern), "value"),
-                missing,
-            )
-        )
+        values.append(_captured_values(text, pattern, found))
     wire, named = values
     wrapped = compute.and_(
         compute.fill_null(compute.starts_with(wire, "U"), False), compute.is_valid(named)

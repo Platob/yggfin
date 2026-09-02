@@ -278,7 +278,8 @@ class Rules(Convertible):
     for exactly that reason -- an alternation's leftmost match decides by
     position, which would make "the rule I put first" inexpressible whenever
     its token sits later in the line than a general rule's. The cost is one
-    kernel pass per configured rule instead of one in total.
+    kernel pass per configured rule instead of one in total, over the rows no
+    earlier rule has already claimed.
     """
 
     @classmethod
@@ -355,14 +356,23 @@ class Rules(Convertible):
         `entries` is the row's already-parsed key/value pairs, which is what a
         structured rule is decided by -- the message stage hands over the ones
         it just parsed rather than paying for them twice.
+
+        Rules are tried in order over a shrinking column: a row the first rule
+        claims is cut out of the text the second is matched against, so the
+        three RE2 patterns behind the structured rules only ever scan lines
+        still undecided. That is the same "first configured rule wins" answer
+        an overwriting pass in reverse gave, measured 1.41x faster on a mixed
+        capture and 3.81x on a wire one, where the leading rule takes every row.
         """
         compute = pyarrow.compute
         rows = len(messages)
-        found: Any = pyarrow.repeat(
-            pyarrow.scalar(OTHER.protocol.into_stored(), _PROTOCOL_CODE), rows
-        )
+        fallback = pyarrow.scalar(OTHER.protocol.into_stored(), _PROTOCOL_CODE)
         if not rows:
-            return found
+            return pyarrow.repeat(fallback, rows)
+        # One array: the claimed index runs are concatenated below, and a
+        # chunked column would reach `concat_arrays` as its chunks.
+        if isinstance(messages, pyarrow.ChunkedArray):
+            messages = messages.combine_chunks()
         text = messages.cast(pyarrow.string(), safe=False)
         plugin_text = None if plugins is None else Plugin.into_strings_arrow(plugins)
         shapes = (
@@ -370,14 +380,36 @@ class Rules(Convertible):
             if any(rule.codec in SHAPES for rule in self.rules)
             else None
         )
-        for rule in reversed(self.rules):
+        at = sequence(rows)
+        undecided = at
+        claimed: list[Any] = []
+        codes: list[Any] = []
+        for rule in self.rules:
+            if not len(undecided):
+                break
             hit = _hit(rule, text, plugin_text, shapes)
-            found = compute.if_else(
-                hit, pyarrow.scalar(rule.protocol.into_stored(), _PROTOCOL_CODE), found
+            taken = compute.filter(undecided, hit)
+            claimed.append(taken)
+            codes.append(
+                pyarrow.repeat(
+                    pyarrow.scalar(rule.protocol.into_stored(), _PROTOCOL_CODE), len(taken)
+                )
             )
-        # No cast: the seed above and every branch here are already the code the
+            left = compute.invert(hit)
+            undecided = compute.filter(undecided, left)
+            text = compute.filter(text, left)
+            plugin_text = None if plugin_text is None else compute.filter(plugin_text, left)
+            shapes = None if shapes is None else compute.filter(shapes, left)
+        # A row no rule matched is a row whose text was null: every rule's mask
+        # starts at `is_valid`, so those reach here undecided and fall through.
+        claimed.append(undecided)
+        codes.append(pyarrow.repeat(fallback, len(undecided)))
+        # No cast: the fallback and every branch above are already the code the
         # column stores, so there is no width for the loop to have widened.
-        return found
+        return compute.take(
+            pyarrow.concat_arrays(codes),
+            compute.index_in(at, value_set=pyarrow.concat_arrays(claimed)),
+        )
 
     def into_arrow_direction_array(self, messages: Any, protocols: Any) -> pyarrow.Array:
         """Packed transport direction read before the payload.
@@ -499,16 +531,24 @@ def payload_shapes(entries: Any) -> pyarrow.Array:
     # `XmlData <213>` holds a whole message where it holds one, and the FIX
     # stage expands it in the place the tag sat -- so its named keys are the
     # message's own, and a numbered frame carrying one is mixed, not wire.
-    carried = compute.and_(
-        compute.equal(tags, XML_DATA_TAG),
-        carries_message(compute.struct_field(items, "value")),
+    #
+    # Only that tag's values are read: `carries_message` is two RE2 passes, and
+    # asking them of every field of every row cost more than the rest of the
+    # classification put together -- 23 ms of a 40,000-row batch's 67, for a
+    # tag most captures never write.
+    holds = compute.fill_null(compute.equal(tags, XML_DATA_TAG), False)
+    named_parents = pyarrow.concat_arrays(
+        [
+            compute.filter(parents, compute.equal(tags, 0)),
+            compute.filter(
+                compute.filter(parents, holds),
+                carries_message(compute.filter(compute.struct_field(items, "value"), holds)),
+            ),
+        ]
     )
     numbered, named = (
-        compute.is_in(at, value_set=compute.unique(compute.filter(parents, mask)))
-        for mask in (
-            compute.not_equal(tags, 0),
-            compute.or_(compute.equal(tags, 0), carried),
-        )
+        compute.is_in(at, value_set=compute.unique(values))
+        for values in (compute.filter(parents, compute.not_equal(tags, 0)), named_parents)
     )
     return compute.if_else(
         compute.and_(numbered, named),

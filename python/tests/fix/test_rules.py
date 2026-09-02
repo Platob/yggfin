@@ -294,6 +294,13 @@ def test_an_empty_pattern_matches_every_nonnull_message() -> None:
     assert spelled(rules.into_arrow_protocol_array(messages)) == ["OTHER", "ALL"]
 
 
+def test_a_rule_that_claims_every_row_leaves_the_rest_of_the_set_nothing() -> None:
+    """Classification narrows, so the column can run out before the rules do."""
+    rules = Rules(rules=[Rule(protocol="ALL", pattern=r"\bready\b"), *DEFAULT_RULES])
+    messages = pyarrow.array(["ready 8=FIX.4.4|35=D|", "heartbeat ready"])
+    assert spelled(rules.into_arrow_protocol_array(messages)) == ["ALL", "ALL"]
+
+
 def test_no_rows_is_no_rows() -> None:
     protocols = DEFAULT.into_arrow_protocol_array(pyarrow.array([], pyarrow.string()))
     assert len(protocols) == 0
