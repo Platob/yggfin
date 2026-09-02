@@ -280,13 +280,24 @@ def test_merge_unions_the_spellings_tags_and_values_of_one_identity() -> None:
     assert set(held.fix.versions) == {"4.4", "5.0", "4.2"}
 
 
-def test_merge_refuses_two_readings_that_are_not_one_identity() -> None:
+def test_merge_keeps_the_datatype_spelling_it_holds_and_never_compares_it() -> None:
+    """`String` against `Qty` is two dictionaries writing one datatype, not a
+    disagreement. The stored word is descriptive, so the held one survives and
+    only a record carrying none takes the incoming spelling."""
     held = _reading("MaxShow", 210)
     other = _reading("TradeType", 9001)
     other.fix.type = "Qty"
 
-    with pytest.raises(ValueError, match="not one identity"):
-        held.fix.merge(other.fix)
+    held.fix.merge(other.fix)
+
+    assert held.fix.type == "String"
+    assert held.fix.tag_priority == (210, 9001)
+
+    unspelled = _reading("MaxShow", 210)
+    del unspelled.fix["type"]
+    unspelled.fix.merge(other.fix)
+
+    assert unspelled.fix.type == "Qty", "nothing held, so the reading given fills it"
 
 
 def test_merge_keeps_the_first_provenance_of_a_spelling() -> None:

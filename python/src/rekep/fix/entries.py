@@ -86,6 +86,9 @@ def refuse_record(record: Field) -> Field:
     """Refuse a field record no lookup could answer for; return it otherwise.
 
     The presence of a tag determines whether a record is standard or namespaced.
+    A FIX datatype is deliberately not required: the word is descriptive, the
+    Arrow type the record carries is the contract, and a dictionary that omits
+    the word still names a field every lookup can answer for.
     """
     fix = record.fix
     name = fix.canonical

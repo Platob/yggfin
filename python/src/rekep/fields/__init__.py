@@ -1,6 +1,13 @@
 """Fields: a dataclass is its own Arrow schema."""
 
-from rekep.fields.arrow import merge_fields, merge_schemas
+from rekep.fields.arrow import (
+    LeafRule,
+    merge_fields,
+    merge_schemas,
+    promoted_scalar,
+    promoted_type,
+    reconcilable,
+)
 from rekep.fields.builder import FieldBuilder
 from rekep.fields.classes import ClassBuilder
 from rekep.fields.field import (
@@ -72,6 +79,7 @@ __all__ = [
     "IcebergMetadata",
     "LargeListField",
     "LargeListViewField",
+    "LeafRule",
     "ListField",
     "ListViewField",
     "MapField",
@@ -94,6 +102,9 @@ __all__ = [
     "merge_schemas",
     "newest_of",
     "newest_rank",
+    "promoted_scalar",
+    "promoted_type",
+    "reconcilable",
     "scalar",
     "version_rank",
 ]

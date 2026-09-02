@@ -748,16 +748,11 @@ class FixMetadata(ProtocolMetadata):
         values rather than replacing what is here. `source` attributes what
         the other reading brings, defaulting to its own primary source.
 
-        Two readings that disagree on the datatype are not one identity, and
-        merging them would give one column two shapes; that is refused so the
-        caller keeps them apart.
+        The datatype word is not compared: `string`/`String`, `integer`/`int`
+        and `float`/`Price` are one identity written by two dictionaries, so
+        which word is stored settles nothing. The Arrow type the field carries
+        is what says what the column holds.
         """
-        held, incoming = self.type, other.type
-        if held and incoming and held != incoming:
-            raise ValueError(
-                f"FIX field {self.canonical!r} cannot merge a {incoming!r} reading "
-                f"into its {held!r} one: they are not one identity"
-            )
         self.accumulate(other, source=source)
         for key in ("type", "note", "added", "column", "source"):
             if not self.get(key) and other.get(key):

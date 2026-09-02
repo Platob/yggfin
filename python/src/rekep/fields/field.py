@@ -20,7 +20,7 @@ from rekep.annotations import hide_private, restore_private_slots, unwrap_annota
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.convert import Convertible
 from rekep.fields import arrays
-from rekep.fields.arrow import merge_fields
+from rekep.fields.arrow import merge_fields, promoted_type
 from rekep.fields.metadata import (
     ASCENDING as ASCENDING,
 )
@@ -347,14 +347,18 @@ class Field(Convertible):
         """Combine two declarations, letting `other` win where it says anything.
 
         Winning is per reading, not per key: a later declaration overrides the
-        type or the description it restates, and *adds* to the spellings, tags,
-        versions and values the earlier one gathered. Overwriting those would
-        make an overlay that names one alias drop every other alias the
-        registry holds for the identity.
+        description it restates, and *adds* to the spellings, tags, versions
+        and values the earlier one gathered. Overwriting those would make an
+        overlay that names one alias drop every other alias the registry holds
+        for the identity.
+
+        The type is the exception, because it is the one reading a declaration
+        can *lose* rather than restate: two readings of one identity widen into
+        the type that holds both, at every depth.
         """
         built = Field(
             name=other.name or self.name,
-            dtype=other.dtype if other.dtype is not None else self.dtype,
+            dtype=promoted_type(self.dtype, other.dtype),
             nullable=other.nullable if other.nullable is not None else self.nullable,
             metadata={**self.metadata, **other.metadata},
         )

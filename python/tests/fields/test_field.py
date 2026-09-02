@@ -183,12 +183,67 @@ def test_an_unstated_nullability_reads_as_not_null() -> None:
     assert not Field(name="x", dtype=pyarrow.string()).into_arrow_field().nullable
 
 
-def test_merge_lets_the_later_declaration_win() -> None:
+def test_merge_lets_the_later_declaration_win_except_on_the_type() -> None:
+    """Metadata is restated, so the later reading replaces it. A type is not:
+    narrowing to `int32` would drop every `int64` value the first reading
+    described, and neither reading of one identity may be lost."""
     merged = Field(dtype=pyarrow.int64(), metadata={"unit": "lots", "a": "1"}).merge(
         Field(dtype=pyarrow.int32(), metadata={"unit": "bps"})
     )
-    assert merged.dtype == pyarrow.int32()
+    assert merged.dtype == pyarrow.int64()
     assert merged.metadata == {"unit": "bps", "a": "1"}
+
+
+def test_merge_widens_at_every_depth() -> None:
+    """One recursion carries the widening, so a member, a list item and a
+    clock settle the same way whatever they are nested in."""
+    stamp = pyarrow.timestamp
+    held = Field(
+        dtype=pyarrow.struct(
+            [
+                ("size", pyarrow.int32()),
+                ("legs", pyarrow.list_(pyarrow.int32())),
+                ("stamp", stamp("s")),
+                ("desk", pyarrow.string()),
+            ]
+        )
+    )
+    later = Field(
+        dtype=pyarrow.struct(
+            [
+                ("size", pyarrow.int64()),
+                ("legs", pyarrow.list_(pyarrow.int64())),
+                ("stamp", stamp("us", tz="UTC")),
+            ]
+        )
+    )
+
+    merged = held.merge(later).dtype
+
+    assert merged.field("size").type == pyarrow.int64()
+    assert merged.field("legs").type == pyarrow.list_(pyarrow.int64())
+    assert merged.field("stamp").type == stamp("us", tz="UTC"), "the zone is not lost"
+    assert merged.field("desk").type == pyarrow.string(), "a member only one side declares"
+    # The order the corpus actually produces: the reading that states the zone
+    # arrives first and the naive one after it. Narrowing there destroyed
+    # information no other reading could restore.
+    assert Field(dtype=stamp("us", tz="UTC")).merge(Field(dtype=stamp("us"))).dtype == stamp(
+        "us", tz="UTC"
+    )
+
+
+def test_merge_falls_back_to_text_rather_than_refusing() -> None:
+    """A field already known to be one identity must not lose a reading, and
+    every value of either reading is representable as text."""
+    assert Field(dtype=pyarrow.int64()).merge(Field(dtype=pyarrow.string())).dtype == (
+        pyarrow.string()
+    )
+    assert Field(dtype=pyarrow.bool_()).merge(Field(dtype=pyarrow.int32())).dtype == (
+        pyarrow.string()
+    )
+    assert Field(dtype=pyarrow.int32()).merge(Field(dtype=pyarrow.float64())).dtype == (
+        pyarrow.float64()
+    ), "text is the last resort, not the first"
 
 
 @pytest.mark.parametrize(

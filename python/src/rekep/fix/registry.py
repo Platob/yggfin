@@ -25,6 +25,7 @@ from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
 from rekep.fields import Field, ListField, StructField, column_name, newest_rank
+from rekep.fields.arrow import promoted_type, reconcilable
 from rekep.fields.metadata import canonical_versions
 from rekep.filesystems import local_path, resolve, spill_path
 from rekep.fix.entries import (
@@ -39,7 +40,7 @@ from rekep.fix.entries import (
     records_for,
     refuse_record,
 )
-from rekep.fix.fields import cast_arrow_field, datatype_identity, namespaced_field
+from rekep.fix.fields import cast_arrow_field, namespaced_field
 from rekep.fix.quickfix import (
     declared_group,
     entry_of,
@@ -1419,8 +1420,16 @@ class FixRegistry(Convertible):
         Two ways a namespace says "this is the standard's field under our own
         tag": the registry's own `replacement-tag`, which names the tag the
         UDF was folded into, and a canonical name the standard already owns.
-        Both are only taken when the datatypes agree -- a `char` reading of a
-        `String` field is a different reading, not the same one renumbered.
+        Both are only taken when Arrow can hold both readings in one column.
+
+        The datatype *word* used to answer this, and it answered it twice
+        wrong: it called a `Qty` reading of an `int` field a disagreement, and
+        it let a real collision through whenever either side left the word
+        out. Dropping it without putting this in its place is not safe --
+        `Fidessa_GTP_Alloc_FIX44_DropCopy.cfb` alone declares 11 vendor tags
+        whose name the standard owns at a *different* tag, 6442
+        `BenchmarkPrice` against standard 662 and 6871 `DeskID` against
+        standard 284 among them, and none of the 11 folds today.
         """
         fix = record.fix
         replacement = fix.get("replacement-tag")
@@ -1433,7 +1442,7 @@ class FixRegistry(Convertible):
             held = self._record(candidate, namespace=STANDARD_NAMESPACE)
             if held is None or held.fix.tag == fix.tag:
                 continue
-            if held.fix.type and fix.type and held.fix.type != fix.type:
+            if not reconcilable(held.dtype, record.dtype):
                 continue
             return held.fix.key
         return None
@@ -2003,16 +2012,6 @@ class FixRegistry(Convertible):
             dict.fromkeys((*winner.fix.components, *dropped.fix.components))
         )
         built.fix.column = winner.fix.column or dropped.fix.column
-        built_dtype = built.dtype
-        dropped_dtype = dropped.dtype
-        if (
-            isinstance(built_dtype, pyarrow.TimestampType)
-            and isinstance(dropped_dtype, pyarrow.TimestampType)
-            and built_dtype.unit == dropped_dtype.unit
-            and built_dtype.tz is None
-            and dropped_dtype.tz == "UTC"
-        ):
-            built.dtype = dropped_dtype
         if not winner.description and dropped.description:
             built.description = dropped.description
         elif (
@@ -2024,17 +2023,21 @@ class FixRegistry(Convertible):
                 NOTE,
                 dropped_reading=dropped.description,
             )
-        held_types = _definition_types(held)
-        fresh_types = _definition_types(fresh)
-        readings = tuple(dict.fromkeys((*held_types, *fresh_types)))
-        identities = {datatype_identity(reading) for reading in readings if reading}
-        if len(identities) > 1:
+        if reconcilable(dropped.dtype, built.dtype):
+            # Arrow widening is not a dispute, so nothing is recorded for it:
+            # this is where a `UTCTimestamp` reading that states the zone and
+            # one that omits it become the localised column both can fill.
+            built.dtype = promoted_type(dropped.dtype, built.dtype)
+        else:
+            held_types = _definition_types(held)
+            fresh_types = _definition_types(fresh)
+            readings = tuple(dict.fromkeys((*held_types, *fresh_types)))
             built.dtype = pyarrow.string()
             built.fix.type = "String"
             built.fix["disputed_types"] = json.dumps(readings, separators=(",", ":"))
-            held_identities = {datatype_identity(reading) for reading in held_types if reading}
-            fresh_identities = {datatype_identity(reading) for reading in fresh_types if reading}
-            if not fresh_identities.issubset(held_identities):
+            # A reading already in the dispute says nothing new about it, so a
+            # re-read of the same definition does not re-record the conflict.
+            if not set(fresh_types).issubset(held_types):
                 self._record_namespace_conflict(winner, dropped, TYPE, kept_reading="string")
         return built
 
