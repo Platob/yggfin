@@ -621,9 +621,10 @@ def _reparsed_entries(
 
     `if_else` on `ENTRIES` has no all-false short circuit, so a batch the
     protocol never appears in still paid a whole copy of the column to
-    overwrite no row -- 57.94 MB and 44 ms per 200k-row batch, measured, for
-    nothing. The diagnostics stay full length and all-null on the skipped
-    batch, because `_merge_error_columns` reads them beside it either way.
+    overwrite no row: a 200k-row FIX batch peaked at 255.5 MiB of Arrow and
+    4170 ms against 203.6 MiB and 3722 ms once both branches are gated. The
+    diagnostics stay full length and all-null on the skipped batch, because
+    `_merge_error_columns` reads them beside it either way.
     """
     compute = pyarrow.compute
     if not selected.null_count and not compute.any(selected, min_count=0).as_py():
