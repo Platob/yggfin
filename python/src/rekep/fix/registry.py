@@ -1973,7 +1973,6 @@ class FixRegistry(Convertible):
             if kept is None:
                 values[value.value] = value
                 continue
-            value_aliases = tuple(dict.fromkeys((*kept.aliases, *value.aliases)))
             if kept.meaning and value.meaning and kept.meaning != value.meaning:
                 self._record_namespace_conflict(
                     winner,
@@ -1985,7 +1984,8 @@ class FixRegistry(Convertible):
             values[value.value] = dataclasses.replace(
                 kept,
                 meaning=kept.meaning or value.meaning,
-                aliases=value_aliases,
+                aliases=tuple(dict.fromkeys((*kept.aliases, *value.aliases))),
+                namespaces=tuple(dict.fromkeys((*kept.namespaces, *value.namespaces))),
             )
         built.fix.enumerated = tuple(values.values())
         if fold(winner.fix.canonical) != fold(dropped.fix.canonical):

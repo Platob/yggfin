@@ -1210,16 +1210,18 @@ def test_same_value_conflicts_keep_authoritative_meaning_and_all_aliases(
     )
     official = _definition("UDFSupportIndicator", 9003, "Int", "official")
     official.description = "Official description."
-    official.fix.enumerated = (FixFieldValue("1", "Supports UDFs", ("Supports",)),)
+    official.fix.enumerated = (FixFieldValue("1", "Supports UDFs", ("Supports",), ("official",)),)
     vendor = _definition("UDFSupportIndicator", 9003, "Int", "vendor")
     vendor.description = "Vendor description."
-    vendor.fix.enumerated = (FixFieldValue("1", "Enabled", ("Yes",)),)
+    vendor.fix.enumerated = (FixFieldValue("1", "Enabled", ("Yes",), ("vendor",)),)
     registry.add_definition(vendor, "fixtrading-udf")
 
     merged = registry.add_definition(official, "fixtrading-udf")
 
     assert merged.description == "Official description."
-    assert merged.fix.enumerated == (FixFieldValue("1", "Supports UDFs", ("Supports", "Yes")),)
+    assert merged.fix.enumerated == (
+        FixFieldValue("1", "Supports UDFs", ("Supports", "Yes"), ("official", "vendor")),
+    ), "a losing reading still declared the value, and that is what makes it safe to send"
     conflicts = registry.conflicts.collapses
     assert [(conflict.part, conflict.keptsource) for conflict in conflicts] == [
         ("values", "official"),

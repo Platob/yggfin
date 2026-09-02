@@ -40,6 +40,7 @@ from rekep.fix.entries import (
 )
 from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import block, field_member, group_member, members_of
+from rekep.fix.store import field_from_document, field_record_document
 
 
 def _entry(
@@ -455,6 +456,22 @@ def test_a_record_round_trips_through_the_document_it_is_stored_as() -> None:
         note="no longer used",
     )
     assert Field.from_dict(entry.into_dict()) == entry
+
+
+def test_a_stored_value_carries_the_namespaces_that_declare_it() -> None:
+    """Provenance survives the store's string-metadata contract, and empty
+    stays empty: a value nobody attributed must not read back as the
+    standard's, because a union could never tell the two apart afterwards."""
+    document = field_record_document(_entry())
+    document["fix"]["values"] = [
+        {"value": "1", "meaning": "Buy"},
+        {"value": "2", "meaning": "Venue", "namespaces": ["acme"]},
+    ]
+
+    record = field_from_document(document)
+
+    assert {one.value: one.namespaces for one in record.fix.enumerated} == {"1": (), "2": ("acme",)}
+    assert field_record_document(record) == document, "and the document is its own fixed point"
 
 
 def test_a_stored_alias_may_be_a_bare_name_or_carry_its_provenance() -> None:
