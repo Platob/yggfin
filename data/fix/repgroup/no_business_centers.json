@@ -1,28 +1,25 @@
 {
  "name": "NoBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40278"
-  },
-  "item": {
-   "name": "BusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "BusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40471"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40278",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "BusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "BusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40471"
     }
-   ]
-  }
+   }
+  ]
  }
 }

@@ -1,28 +1,25 @@
 {
  "name": "NoDividendPeriodBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoDividendPeriodBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42294"
-  },
-  "item": {
-   "name": "DividendPeriodBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "DividendPeriodBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42295"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42294",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "DividendPeriodBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "DividendPeriodBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42295"
     }
-   ]
-  }
+   }
+  ]
  }
 }

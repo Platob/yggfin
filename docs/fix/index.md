@@ -29,10 +29,11 @@ The separator is detected from SOH, pipe, EOT/ETX, `^A`, `^`, semicolon, or
 marked `#Name=Value` text. The Arrow parser resolves each distinct spelling
 once per batch.
 
-## Packaged registry
+## Default registry
 
-An unconfigured process reads the deterministic `rekep/fix/registry.zip`
-inside the installed package. Construction and lookup never download data.
+An unconfigured process reads the repository's `data/fix` directory, found by
+walking up from the installed module. Construction and lookup never download
+data, and a process running outside a checkout names its own with `cache_dir`.
 
 ```python
 from rekep.fix import FixRegistry

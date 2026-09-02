@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingDividendFXTriggerDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingDividendFXTriggerDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42853"
-  },
-  "item": {
-   "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42854"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42853",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingDividendFXTriggerDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42854"
     }
-   ]
-  }
+   }
+  ]
  }
 }

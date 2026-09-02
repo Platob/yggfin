@@ -1,28 +1,25 @@
 {
  "name": "NoPaymentStreamInitialFixingDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStreamInitialFixingDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40949"
-  },
-  "item": {
-   "name": "PaymentStreamInitialFixingDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStreamInitialFixingDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40769"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40949",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStreamInitialFixingDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStreamInitialFixingDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40769"
     }
-   ]
-  }
+   }
+  ]
  }
 }

@@ -1,8 +1,9 @@
-"""What the published FIX registry holds, and the calls that rebuild it.
+"""What the published FIX registry holds, and the call that rebuilds it.
 
-`data/fix.zip` and `rekep/fix/registry.zip` are byte-identical complete offline
-registries. The field lists below remain reviewable coverage declarations for
-the parsing and market contracts; they no longer decide what a wheel can read.
+`data/fix` is the dictionary every unconfigured lookup reads and `data/fix.zip`
+is that same directory as one offline archive. The field lists below remain
+reviewable coverage declarations for the parsing and market contracts; they do
+not decide what a registry can read.
 """
 
 from __future__ import annotations
@@ -112,7 +113,6 @@ FIXMSG_FIELDS: tuple[str, ...] = (
     "LastPx",
     "LastQty",
     "GrossTradeAmt",
-    "LastShares",
     "LastMkt",
     "MarketMarker",
     "Env",
@@ -267,14 +267,6 @@ NAMESPACE_FIELDS: tuple[str, ...] = ("ISINCODE", "ParentClOrdID", "ParentOrderID
 REQUIRED_FIELDS: tuple[str, ...] = tuple(
     dict.fromkeys((*FIXMSG_FIELDS, *MARKET_FIELDS, *BRIDGE_FIELDS, *NAMESPACE_FIELDS))
 )
-
-
-def publish_builtin(
-    source: str | os.PathLike[str],
-    target: str | os.PathLike[str],
-) -> pathlib.Path | str:
-    """Rebuild the wheel's complete offline registry, and name it."""
-    return publish_full(source, target)
 
 
 def publish_full(

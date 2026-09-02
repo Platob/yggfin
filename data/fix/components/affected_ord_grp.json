@@ -1,69 +1,66 @@
 {
  "name": "AffectedOrdGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "AffectedOrdGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "AffectedOrdGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "OrderMassActionReport",
-    "OrderMassCancelReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoAffectedOrders",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "534"
-    },
-    "item": {
-     "name": "AffectedOrder",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "AffectedOrigClOrdID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1824"
-       }
-      },
-      {
-       "name": "AffectedOrderID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "535"
-       }
-      },
-      {
-       "name": "AffectedSecondaryOrderID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "536"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "AffectedOrdGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "OrderMassActionReport",
+   "OrderMassCancelReport"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoAffectedOrders",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "534"
+   },
+   "item": {
+    "name": "AffectedOrder",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "AffectedOrigClOrdID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1824"
+      }
+     },
+     {
+      "name": "AffectedOrderID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "535"
+      }
+     },
+     {
+      "name": "AffectedSecondaryOrderID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "536"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

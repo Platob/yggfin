@@ -9,12 +9,21 @@ to shard on: they key by their name and share `999999`, the one shard index the
 arithmetic never reaches, so every field document is named the same way and
 nothing has to ask what kind of record it is about to read.
 
+A shard is a *list* of its records. Every record states its own tag or its own
+name, so keying the list by that identity wrote it a second time, and two
+spellings of one fact are one fact that can contradict itself.
+
 Components stay one document per identity under `components/`, because they are
 keyed by name and there is no arithmetic to do.
 
 Repeating groups are derived from those component trees and stored under
 `repgroup/`. Their declaration is the same list `Field` carried by the tree,
 so tools can inspect a group without first finding a component which embeds it.
+
+Every document here is a field document -- a component and a group are the
+`Field` they declare, carrying the versions declaring them in their own `fix`
+metadata exactly as a field record does. One serialization, so a reader that
+can read a field can read the whole dictionary.
 
 A store lives on a directory or inside a zip -- the extension decides -- and
 never reaches the network.
@@ -84,6 +93,12 @@ DOCUMENT_SUFFIX = ".json"
 #: one tuple is what made a store read every document name twice.
 DECLARATION_SUFFIXES: tuple[str, ...] = (".json", ".yaml")
 
+#: What one stored document holds. A mapping where the file is keyed -- the
+#: version list, the source manifest, one component -- and a list of records
+#: where it is a shard, because a shard's records already carry their own key
+#: and writing it twice is a document that can disagree with itself.
+Document = Mapping[str, Any] | Sequence[Mapping[str, Any]]
+
 
 #: Where the layout keeps what belongs to no single identity: the version
 #: list, each version's session layer, and which versions have had their
@@ -116,11 +131,11 @@ class Documents(Protocol):
     below never knows which it has.
     """
 
-    def read(self, name: str) -> dict[str, Any] | None:
+    def read(self, name: str) -> Document | None:
         """One document, or None when the store does not hold it."""
         ...
 
-    def write(self, name: str, payload: Mapping[str, Any]) -> None:
+    def write(self, name: str, payload: Document) -> None:
         """Keep one document, replacing whatever was under that name."""
         ...
 
@@ -132,7 +147,7 @@ class Documents(Protocol):
         """Every document this store holds, as posix-style relative names."""
         ...
 
-    def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
+    def read_many(self, prefix: str) -> dict[str, Document]:
         """Every document under `prefix`, in one pass over the place.
 
         "The fields of 4.4" is a question about every identity, so the shards
@@ -141,7 +156,7 @@ class Documents(Protocol):
         """
         ...
 
-    def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
+    def write_all(self, documents: Mapping[str, Document]) -> None:
         """Replace this store with the complete document mapping."""
         ...
 
@@ -161,7 +176,7 @@ def document_stem(name: str) -> str:
     return name[: -len(DOCUMENT_SUFFIX)] if name.endswith(DOCUMENT_SUFFIX) else name
 
 
-def document_text(payload: Mapping[str, Any]) -> str:
+def document_text(payload: Document) -> str:
     """One stored document's text. The one place the on-disk spelling is decided."""
     return json.dumps(payload, indent=1)
 
@@ -192,7 +207,7 @@ class DirectoryDocuments:
     filesystem: pyarrow.fs.FileSystem
     directory: str
 
-    def read(self, name: str) -> dict[str, Any] | None:
+    def read(self, name: str) -> Document | None:
         """One document, or None for anything that cannot be read as one."""
         try:
             payload = self._path(name).read_bytes()
@@ -202,7 +217,7 @@ class DirectoryDocuments:
             # refuse to run offline forever.
             return None
 
-    def write(self, name: str, payload: Mapping[str, Any]) -> None:
+    def write(self, name: str, payload: Document) -> None:
         """Written beside, then renamed, so a reader never sees half a file."""
         path = self._path(name)
         scratch = path.with_name(f"{path.name}.tmp")
@@ -225,7 +240,7 @@ class DirectoryDocuments:
             found.append(spelled[len(prefix) :] if spelled.startswith(prefix) else spelled)
         return tuple(sorted(found))
 
-    def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
+    def read_many(self, prefix: str) -> dict[str, Document]:
         """Every document under `prefix`, one file open each."""
         return {
             name: document
@@ -233,7 +248,7 @@ class DirectoryDocuments:
             if name.startswith(prefix) and (document := self.read(name)) is not None
         }
 
-    def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
+    def write_all(self, documents: Mapping[str, Document]) -> None:
         """Replace every registry document, dropping identities no longer declared."""
         kept = set(documents)
         stale = [name for name in self.names() if name not in kept]
@@ -259,7 +274,7 @@ class ArchiveDocuments:
     #: Called after a write, to copy a localized archive back where it came from.
     synchronise: Any = None
 
-    def read(self, name: str) -> dict[str, Any] | None:
+    def read(self, name: str) -> Document | None:
         """One member, as the document it holds; None when it is not there."""
         held = self._members()
         if name not in held:
@@ -271,7 +286,7 @@ class ArchiveDocuments:
             # A torn archive is a cold cache, not a dead registry.
             return None
 
-    def write(self, name: str, payload: Mapping[str, Any]) -> None:
+    def write(self, name: str, payload: Document) -> None:
         """Put one member in, replacing what was there under that name."""
         self._rewrite({name: document_text(payload)})
 
@@ -286,7 +301,7 @@ class ArchiveDocuments:
         """Every member, under the name the layout addresses it by."""
         return tuple(sorted(self._members()))
 
-    def read_many(self, prefix: str) -> dict[str, dict[str, Any]]:
+    def read_many(self, prefix: str) -> dict[str, Document]:
         """Every member under `prefix`, opening the archive once.
 
         Once, and that is the whole point: a dictionary is two thousand
@@ -310,7 +325,7 @@ class ArchiveDocuments:
             return {}
         return found
 
-    def write_all(self, documents: Mapping[str, Mapping[str, Any]]) -> None:
+    def write_all(self, documents: Mapping[str, Document]) -> None:
         """Replace the whole archive with `documents`, in one deterministic pass.
 
         Writing a member at a time rebuilds the zip once per member, which for
@@ -570,10 +585,10 @@ class ShardedLayout:
             if name in self.documents.names():
                 self.__dict__.setdefault("_torn", set()).add(name)
             return {}
-        return {
-            _record_key(key): refuse_record(field_from_document(record))
-            for key, record in document.items()
-        }
+        if not isinstance(document, Sequence):
+            raise ValueError(f"the FIX registry shard {name} is not a list of field records")
+        records = (refuse_record(field_from_document(record)) for record in document)
+        return {record.fix.key: record for record in records}
 
     @property
     def field_records(self) -> dict[int | str, Field]:
@@ -1070,26 +1085,16 @@ class ShardedLayout:
         return changed
 
 
-def _record_key(stored: str) -> int | str:
-    """One shard key read back: a tag where it is one, a folded name otherwise."""
-    return int(stored) if str(stored).isdigit() else fold(stored)
-
-
-def _shard_document(shard: Mapping[int | str, Field]) -> dict[str, Any]:
+def _shard_document(shard: Mapping[int | str, Field]) -> list[dict[str, Any]]:
     """One shard as it is written: numeric tag order, then the names.
 
-    Keyed by the tag, or by the *canonical* name for a field FIX never
-    numbered -- the key is what a person reads first, and folding it there
-    would spell `AMON.isincode` in a case nothing else in the document uses.
+    A list of the records themselves. Every record states its own tag or its
+    own name, so a key above it was that identity written a second time --
+    and a second spelling of one fact is a fact that can contradict itself.
     """
     tags = sorted(key for key in shard if isinstance(key, int))
     names = sorted(key for key in shard if not isinstance(key, int))
-    return {
-        (str(key) if isinstance(key, int) else shard[key].fix.canonical): _field_document(
-            shard[key]
-        )
-        for key in (*tags, *names)
-    }
+    return [_field_document(shard[key]) for key in (*tags, *names)]
 
 
 def _field_document(record: Field) -> dict[str, Any]:

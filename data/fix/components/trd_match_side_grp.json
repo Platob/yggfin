@@ -1,461 +1,458 @@
 {
  "name": "TrdMatchSideGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "TrdMatchSideGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "TrdMatchSideGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoTrdMatchSides",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1890"
-    },
-    "item": {
-     "name": "TrdMatchSide",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "Side",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "54"
-       }
-      },
-      {
-       "name": "SideExecID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1427"
-       }
-      },
-      {
-       "name": "SideExecRefID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1900"
-       }
-      },
-      {
-       "name": "SideTradeID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1506"
-       }
-      },
-      {
-       "name": "SideTradeReportID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1005"
-       }
-      },
-      {
-       "name": "OrderDelay",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1428"
-       }
-      },
-      {
-       "name": "OrderDelayUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1429"
-       }
-      },
-      {
-       "name": "SideLastQty",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1009"
-       }
-      },
-      {
-       "name": "SideClearingTradePrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1597"
-       }
-      },
-      {
-       "name": "SidePriceDifferential",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1599"
-       }
-      },
-      {
-       "name": "SideClearingTradePriceType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1598"
-       }
-      },
-      {
-       "name": "SideFillStationCd",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1006"
-       }
-      },
-      {
-       "name": "SideReasonCd",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1007"
-       }
-      },
-      {
-       "name": "SideTrdSubType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1008"
-       }
-      },
-      {
-       "name": "NetGrossInd",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "430"
-       }
-      },
-      {
-       "name": "SideCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1154"
-       }
-      },
-      {
-       "name": "SideCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2901"
-       }
-      },
-      {
-       "name": "SideSettlCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1155"
-       }
-      },
-      {
-       "name": "SideSettlCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2902"
-       }
-      },
-      {
-       "name": "Parties",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "Parties"
-       },
-       "fields": []
-      },
-      {
-       "name": "TradeInputSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "578"
-       }
-      },
-      {
-       "name": "TradeInputDevice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "579"
-       }
-      },
-      {
-       "name": "ComplianceID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "376"
-       }
-      },
-      {
-       "name": "ComplianceText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2404"
-       }
-      },
-      {
-       "name": "EncodedComplianceTextLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2351"
-       }
-      },
-      {
-       "name": "EncodedComplianceText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2352"
-       }
-      },
-      {
-       "name": "SolicitedFlag",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "377"
-       }
-      },
-      {
-       "name": "CustOrderCapacity",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "582"
-       }
-      },
-      {
-       "name": "TimeBracket",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "943"
-       }
-      },
-      {
-       "name": "PositionEffect",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "77"
-       }
-      },
-      {
-       "name": "ExchangeRule",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "825"
-       }
-      },
-      {
-       "name": "TradeAllocIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "826"
-       }
-      },
-      {
-       "name": "PreallocMethod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "591"
-       }
-      },
-      {
-       "name": "AllocID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "70"
-       }
-      },
-      {
-       "name": "TrdAllocGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "TrdAllocGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "SideGrossTradeAmt",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1072"
-       }
-      },
-      {
-       "name": "AggressorIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1057"
-       }
-      },
-      {
-       "name": "ExchangeSpecialInstructions",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1139"
-       }
-      },
-      {
-       "name": "SideShortSaleExemptionReason",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1690"
-       }
-      },
-      {
-       "name": "OrderCategory",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1115"
-       }
-      },
-      {
-       "name": "AvgPxIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "819"
-       }
-      },
-      {
-       "name": "AvgPxGroupID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1731"
-       }
-      },
-      {
-       "name": "SideMarketSegmentID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1898"
-       }
-      },
-      {
-       "name": "SideVenueType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1899"
-       }
-      },
-      {
-       "name": "ClearingFeeIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "635"
-       }
-      },
-      {
-       "name": "TradeReportOrderDetail",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "TradeReportOrderDetail"
-       },
-       "fields": []
-      },
-      {
-       "name": "TrdInstrmtLegExecGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "TrdInstrmtLegExecGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "CustOrderHandlingInst",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1031"
-       }
-      },
-      {
-       "name": "OrderHandlingInstSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1032"
-       }
-      },
-      {
-       "name": "Text",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "58"
-       }
-      },
-      {
-       "name": "EncodedTextLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "354"
-       }
-      },
-      {
-       "name": "EncodedText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "355"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "TrdMatchSideGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoTrdMatchSides",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1890"
+   },
+   "item": {
+    "name": "TrdMatchSide",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "Side",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "54"
+      }
+     },
+     {
+      "name": "SideExecID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1427"
+      }
+     },
+     {
+      "name": "SideExecRefID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1900"
+      }
+     },
+     {
+      "name": "SideTradeID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1506"
+      }
+     },
+     {
+      "name": "SideTradeReportID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1005"
+      }
+     },
+     {
+      "name": "OrderDelay",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1428"
+      }
+     },
+     {
+      "name": "OrderDelayUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1429"
+      }
+     },
+     {
+      "name": "SideLastQty",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1009"
+      }
+     },
+     {
+      "name": "SideClearingTradePrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1597"
+      }
+     },
+     {
+      "name": "SidePriceDifferential",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1599"
+      }
+     },
+     {
+      "name": "SideClearingTradePriceType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1598"
+      }
+     },
+     {
+      "name": "SideFillStationCd",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1006"
+      }
+     },
+     {
+      "name": "SideReasonCd",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1007"
+      }
+     },
+     {
+      "name": "SideTrdSubType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1008"
+      }
+     },
+     {
+      "name": "NetGrossInd",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "430"
+      }
+     },
+     {
+      "name": "SideCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1154"
+      }
+     },
+     {
+      "name": "SideCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2901"
+      }
+     },
+     {
+      "name": "SideSettlCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1155"
+      }
+     },
+     {
+      "name": "SideSettlCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2902"
+      }
+     },
+     {
+      "name": "Parties",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "Parties"
+      },
+      "fields": []
+     },
+     {
+      "name": "TradeInputSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "578"
+      }
+     },
+     {
+      "name": "TradeInputDevice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "579"
+      }
+     },
+     {
+      "name": "ComplianceID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "376"
+      }
+     },
+     {
+      "name": "ComplianceText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2404"
+      }
+     },
+     {
+      "name": "EncodedComplianceTextLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2351"
+      }
+     },
+     {
+      "name": "EncodedComplianceText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2352"
+      }
+     },
+     {
+      "name": "SolicitedFlag",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "377"
+      }
+     },
+     {
+      "name": "CustOrderCapacity",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "582"
+      }
+     },
+     {
+      "name": "TimeBracket",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "943"
+      }
+     },
+     {
+      "name": "PositionEffect",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "77"
+      }
+     },
+     {
+      "name": "ExchangeRule",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "825"
+      }
+     },
+     {
+      "name": "TradeAllocIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "826"
+      }
+     },
+     {
+      "name": "PreallocMethod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "591"
+      }
+     },
+     {
+      "name": "AllocID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "70"
+      }
+     },
+     {
+      "name": "TrdAllocGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "TrdAllocGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "SideGrossTradeAmt",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1072"
+      }
+     },
+     {
+      "name": "AggressorIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1057"
+      }
+     },
+     {
+      "name": "ExchangeSpecialInstructions",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1139"
+      }
+     },
+     {
+      "name": "SideShortSaleExemptionReason",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1690"
+      }
+     },
+     {
+      "name": "OrderCategory",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1115"
+      }
+     },
+     {
+      "name": "AvgPxIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "819"
+      }
+     },
+     {
+      "name": "AvgPxGroupID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1731"
+      }
+     },
+     {
+      "name": "SideMarketSegmentID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1898"
+      }
+     },
+     {
+      "name": "SideVenueType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1899"
+      }
+     },
+     {
+      "name": "ClearingFeeIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "635"
+      }
+     },
+     {
+      "name": "TradeReportOrderDetail",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "TradeReportOrderDetail"
+      },
+      "fields": []
+     },
+     {
+      "name": "TrdInstrmtLegExecGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "TrdInstrmtLegExecGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "CustOrderHandlingInst",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1031"
+      }
+     },
+     {
+      "name": "OrderHandlingInstSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1032"
+      }
+     },
+     {
+      "name": "Text",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "58"
+      }
+     },
+     {
+      "name": "EncodedTextLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "354"
+      }
+     },
+     {
+      "name": "EncodedText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "355"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

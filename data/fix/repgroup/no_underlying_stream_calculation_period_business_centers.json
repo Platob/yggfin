@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingStreamCalculationPeriodBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingStreamCalculationPeriodBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40973"
-  },
-  "item": {
-   "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40557"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40973",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingStreamCalculationPeriodBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40557"
     }
-   ]
-  }
+   }
+  ]
  }
 }

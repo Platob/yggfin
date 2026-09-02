@@ -1,51 +1,48 @@
 {
  "name": "NoStrategyParameters",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoStrategyParameters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "957"
-  },
-  "item": {
-   "name": "StrategyParameter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "StrategyParameterName",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "958"
-     }
-    },
-    {
-     "name": "StrategyParameterType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "959"
-     }
-    },
-    {
-     "name": "StrategyParameterValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "960"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "957",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "StrategyParameter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "StrategyParameterName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "958"
     }
-   ]
-  }
+   },
+   {
+    "name": "StrategyParameterType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "959"
+    }
+   },
+   {
+    "name": "StrategyParameterValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "960"
+    }
+   }
+  ]
  }
 }

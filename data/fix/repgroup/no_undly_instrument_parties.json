@@ -1,86 +1,83 @@
 {
  "name": "NoUndlyInstrumentParties",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUndlyInstrumentParties",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1058"
-  },
-  "item": {
-   "name": "UndlyInstrumentParty",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingInstrumentPartyID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1059"
-     }
-    },
-    {
-     "name": "UnderlyingInstrumentPartyIDSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1060"
-     }
-    },
-    {
-     "name": "UnderlyingInstrumentPartyRole",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1061"
-     }
-    },
-    {
-     "name": "UnderlyingInstrumentPartyRoleQualifier",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2391"
-     }
-    },
-    {
-     "name": "NoUndlyInstrumentPartySubIDs",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "1062"
-     },
-     "item": {
-      "name": "UndlyInstrumentPartySubID",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "UnderlyingInstrumentPartySubID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1063"
-        }
-       },
-       {
-        "name": "UnderlyingInstrumentPartySubIDType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1064"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1058",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UndlyInstrumentParty",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingInstrumentPartyID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1059"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingInstrumentPartyIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1060"
+    }
+   },
+   {
+    "name": "UnderlyingInstrumentPartyRole",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1061"
+    }
+   },
+   {
+    "name": "UnderlyingInstrumentPartyRoleQualifier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2391"
+    }
+   },
+   {
+    "name": "NoUndlyInstrumentPartySubIDs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1062"
+    },
+    "item": {
+     "name": "UndlyInstrumentPartySubID",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "UnderlyingInstrumentPartySubID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1063"
+       }
+      },
+      {
+       "name": "UnderlyingInstrumentPartySubIDType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1064"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

@@ -1,209 +1,206 @@
 {
  "name": "JPMorganChase",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "JPMorganChase",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "JPMorganChase",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "BeneficiaryAcctNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6593"
-    }
-   },
-   {
-    "name": "BeneficiaryCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6581"
-    }
-   },
-   {
-    "name": "BeneficiaryName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6580"
-    }
-   },
-   {
-    "name": "BrokerDealerServiceFee",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6578"
-    }
-   },
-   {
-    "name": "CompetitionStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6704"
-    }
-   },
-   {
-    "name": "CompetitorCount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6703"
-    }
-   },
-   {
-    "name": "CoverPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6705"
-    }
-   },
-   {
-    "name": "GlobalAgentAcctNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6599"
-    }
-   },
-   {
-    "name": "GlobalAgentCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6598"
-    }
-   },
-   {
-    "name": "GlobalAgentName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6597"
-    }
-   },
-   {
-    "name": "Levy",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6576"
-    }
-   },
-   {
-    "name": "LocalAgentAcctNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6596"
-    }
-   },
-   {
-    "name": "LocalAgentCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6595"
-    }
-   },
-   {
-    "name": "LocalAgentName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6594"
-    }
-   },
-   {
-    "name": "SettlCommunicationService",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6579"
-    }
-   },
-   {
-    "name": "SettlText1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6952"
-    }
-   },
-   {
-    "name": "SettlText2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6953"
-    }
-   },
-   {
-    "name": "StampTax",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6575"
-    }
-   },
-   {
-    "name": "Tariff",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6577"
-    }
-   },
-   {
-    "name": "TradeOrigin2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6574"
-    }
-   },
-   {
-    "name": "TrailerCode1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6954"
-    }
-   },
-   {
-    "name": "TrailerCode2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6955"
-    }
-   },
-   {
-    "name": "TrailerCode3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6956"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "JPMorganChase",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "BeneficiaryAcctNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6593"
+   }
+  },
+  {
+   "name": "BeneficiaryCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6581"
+   }
+  },
+  {
+   "name": "BeneficiaryName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6580"
+   }
+  },
+  {
+   "name": "BrokerDealerServiceFee",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6578"
+   }
+  },
+  {
+   "name": "CompetitionStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6704"
+   }
+  },
+  {
+   "name": "CompetitorCount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6703"
+   }
+  },
+  {
+   "name": "CoverPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6705"
+   }
+  },
+  {
+   "name": "GlobalAgentAcctNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6599"
+   }
+  },
+  {
+   "name": "GlobalAgentCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6598"
+   }
+  },
+  {
+   "name": "GlobalAgentName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6597"
+   }
+  },
+  {
+   "name": "Levy",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6576"
+   }
+  },
+  {
+   "name": "LocalAgentAcctNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6596"
+   }
+  },
+  {
+   "name": "LocalAgentCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6595"
+   }
+  },
+  {
+   "name": "LocalAgentName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6594"
+   }
+  },
+  {
+   "name": "SettlCommunicationService",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6579"
+   }
+  },
+  {
+   "name": "SettlText1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6952"
+   }
+  },
+  {
+   "name": "SettlText2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6953"
+   }
+  },
+  {
+   "name": "StampTax",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6575"
+   }
+  },
+  {
+   "name": "Tariff",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6577"
+   }
+  },
+  {
+   "name": "TradeOrigin2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6574"
+   }
+  },
+  {
+   "name": "TrailerCode1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6954"
+   }
+  },
+  {
+   "name": "TrailerCode2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6955"
+   }
+  },
+  {
+   "name": "TrailerCode3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6956"
+   }
+  }
+ ]
 }

@@ -1,612 +1,609 @@
 {
  "name": "LegStreamCommodity",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "LegStreamCommodity",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "LegStreamCommodity",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderMultileg",
-    "News",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "LegStreamCommodityBase",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41648"
-    }
-   },
-   {
-    "name": "LegStreamCommodityType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41649"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySecurityID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41650"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySecurityIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41651"
-    }
-   },
-   {
-    "name": "NoLegStreamCommodityAltIDs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41674"
-    },
-    "item": {
-     "name": "LegStreamCommodityAltID",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegStreamCommodityAltID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41675"
-       }
-      },
-      {
-       "name": "LegStreamCommodityAltIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41676"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegStreamCommodityDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41652"
-    }
-   },
-   {
-    "name": "EncodedLegStreamCommodityDescLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41653"
-    }
-   },
-   {
-    "name": "EncodedLegStreamCommodityDesc",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41654"
-    }
-   },
-   {
-    "name": "LegStreamCommodityDeliveryPricingRegion",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42588"
-    }
-   },
-   {
-    "name": "NoLegStreamAssetAttributes",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41452"
-    },
-    "item": {
-     "name": "LegStreamAssetAttribute",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegStreamAssetAttributeType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41453"
-       }
-      },
-      {
-       "name": "LegStreamAssetAttributeValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41454"
-       }
-      },
-      {
-       "name": "LegStreamAssetAttributeLimit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41455"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegStreamCommodityUnitOfMeasure",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41655"
-    }
-   },
-   {
-    "name": "LegStreamCommodityCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41656"
-    }
-   },
-   {
-    "name": "LegStreamCommodityExchange",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41657"
-    }
-   },
-   {
-    "name": "LegStreamCommodityRateSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41658"
-    }
-   },
-   {
-    "name": "LegStreamCommodityRateReferencePage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41659"
-    }
-   },
-   {
-    "name": "LegStreamCommodityRateReferencePageHeading",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41660"
-    }
-   },
-   {
-    "name": "LegStreamDataProvider",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41661"
-    }
-   },
-   {
-    "name": "NoLegStreamCommodityDataSources",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41677"
-    },
-    "item": {
-     "name": "LegStreamCommodityDataSource",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegStreamCommodityDataSourceID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41678"
-       }
-      },
-      {
-       "name": "LegStreamCommodityDataSourceIDType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41679"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegStreamCommodityPricingType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41662"
-    }
-   },
-   {
-    "name": "LegStreamCommodityNearbySettlDayPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41663"
-    }
-   },
-   {
-    "name": "LegStreamCommodityNearbySettlDayUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41664"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41665"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41666"
-    }
-   },
-   {
-    "name": "NoLegStreamCommoditySettlBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41646"
-    },
-    "item": {
-     "name": "LegStreamCommoditySettlBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegStreamCommoditySettlBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41647"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41667"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlMonth",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41668"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlDateRollPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41669"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlDateRollUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41670"
-    }
-   },
-   {
-    "name": "LegStreamCommoditySettlDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41671"
-    }
-   },
-   {
-    "name": "NoLegStreamCommoditySettlPeriods",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41686"
-    },
-    "item": {
-     "name": "LegStreamCommoditySettlPeriod",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegStreamCommoditySettlCountry",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41687"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlTimeZone",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41688"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlFlowType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41689"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodNotional",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41690"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodNotionalUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41691"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodFrequencyPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41692"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodFrequencyUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41693"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodPrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41694"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodPriceUnitOfMeasure",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41695"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodPriceCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41696"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlHolidaysProcessingInstruction",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41697"
-       }
-      },
-      {
-       "name": "NoLegStreamCommoditySettlDays",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "41680"
-       },
-       "item": {
-        "name": "LegStreamCommoditySettlDay",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "LegStreamCommoditySettlDay",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "41681"
-          }
-         },
-         {
-          "name": "LegStreamCommoditySettlTotalHours",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "41682"
-          }
-         },
-         {
-          "name": "NoLegStreamCommoditySettlTimes",
-          "type": "list",
-          "nullable": true,
-          "fix": {
-           "tag": "41683"
-          },
-          "item": {
-           "name": "LegStreamCommoditySettlTime",
-           "type": "struct",
-           "fields": [
-            {
-             "name": "LegStreamCommoditySettlStart",
-             "type": "string",
-             "nullable": true,
-             "fix": {
-              "tag": "41684"
-             }
-            },
-            {
-             "name": "LegStreamCommoditySettlEnd",
-             "type": "string",
-             "nullable": true,
-             "fix": {
-              "tag": "41685"
-             }
-            },
-            {
-             "name": "LegStreamCommoditySettlTimeType",
-             "type": "string",
-             "nullable": true,
-             "fix": {
-              "tag": "41935"
-             }
-            }
-           ]
-          }
-         }
-        ]
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodXID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41698"
-       }
-      },
-      {
-       "name": "LegStreamCommoditySettlPeriodXIDRef",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41699"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "LegStreamCommodityXID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41672"
-    }
-   },
-   {
-    "name": "LegStreamCommodityXIDRef",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41673"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "LegStreamCommodity",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderMultileg",
+   "News",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "LegStreamCommodityBase",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41648"
+   }
+  },
+  {
+   "name": "LegStreamCommodityType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41649"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySecurityID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41650"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySecurityIDSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41651"
+   }
+  },
+  {
+   "name": "NoLegStreamCommodityAltIDs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41674"
+   },
+   "item": {
+    "name": "LegStreamCommodityAltID",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegStreamCommodityAltID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41675"
+      }
+     },
+     {
+      "name": "LegStreamCommodityAltIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41676"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegStreamCommodityDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41652"
+   }
+  },
+  {
+   "name": "EncodedLegStreamCommodityDescLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41653"
+   }
+  },
+  {
+   "name": "EncodedLegStreamCommodityDesc",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41654"
+   }
+  },
+  {
+   "name": "LegStreamCommodityDeliveryPricingRegion",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42588"
+   }
+  },
+  {
+   "name": "NoLegStreamAssetAttributes",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41452"
+   },
+   "item": {
+    "name": "LegStreamAssetAttribute",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegStreamAssetAttributeType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41453"
+      }
+     },
+     {
+      "name": "LegStreamAssetAttributeValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41454"
+      }
+     },
+     {
+      "name": "LegStreamAssetAttributeLimit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41455"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegStreamCommodityUnitOfMeasure",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41655"
+   }
+  },
+  {
+   "name": "LegStreamCommodityCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41656"
+   }
+  },
+  {
+   "name": "LegStreamCommodityExchange",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41657"
+   }
+  },
+  {
+   "name": "LegStreamCommodityRateSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41658"
+   }
+  },
+  {
+   "name": "LegStreamCommodityRateReferencePage",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41659"
+   }
+  },
+  {
+   "name": "LegStreamCommodityRateReferencePageHeading",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41660"
+   }
+  },
+  {
+   "name": "LegStreamDataProvider",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41661"
+   }
+  },
+  {
+   "name": "NoLegStreamCommodityDataSources",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41677"
+   },
+   "item": {
+    "name": "LegStreamCommodityDataSource",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegStreamCommodityDataSourceID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41678"
+      }
+     },
+     {
+      "name": "LegStreamCommodityDataSourceIDType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41679"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegStreamCommodityPricingType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41662"
+   }
+  },
+  {
+   "name": "LegStreamCommodityNearbySettlDayPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41663"
+   }
+  },
+  {
+   "name": "LegStreamCommodityNearbySettlDayUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41664"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41665"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41666"
+   }
+  },
+  {
+   "name": "NoLegStreamCommoditySettlBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41646"
+   },
+   "item": {
+    "name": "LegStreamCommoditySettlBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegStreamCommoditySettlBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41647"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41667"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlMonth",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41668"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlDateRollPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41669"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlDateRollUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41670"
+   }
+  },
+  {
+   "name": "LegStreamCommoditySettlDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41671"
+   }
+  },
+  {
+   "name": "NoLegStreamCommoditySettlPeriods",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41686"
+   },
+   "item": {
+    "name": "LegStreamCommoditySettlPeriod",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegStreamCommoditySettlCountry",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41687"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlTimeZone",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41688"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlFlowType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41689"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodNotional",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41690"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodNotionalUnitOfMeasure",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41691"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodFrequencyPeriod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41692"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodFrequencyUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41693"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodPrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41694"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodPriceUnitOfMeasure",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41695"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodPriceCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41696"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlHolidaysProcessingInstruction",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41697"
+      }
+     },
+     {
+      "name": "NoLegStreamCommoditySettlDays",
+      "type": "list",
+      "nullable": true,
+      "fix": {
+       "tag": "41680"
+      },
+      "item": {
+       "name": "LegStreamCommoditySettlDay",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "LegStreamCommoditySettlDay",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41681"
+         }
+        },
+        {
+         "name": "LegStreamCommoditySettlTotalHours",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "41682"
+         }
+        },
+        {
+         "name": "NoLegStreamCommoditySettlTimes",
+         "type": "list",
+         "nullable": true,
+         "fix": {
+          "tag": "41683"
+         },
+         "item": {
+          "name": "LegStreamCommoditySettlTime",
+          "type": "struct",
+          "fields": [
+           {
+            "name": "LegStreamCommoditySettlStart",
+            "type": "string",
+            "nullable": true,
+            "fix": {
+             "tag": "41684"
+            }
+           },
+           {
+            "name": "LegStreamCommoditySettlEnd",
+            "type": "string",
+            "nullable": true,
+            "fix": {
+             "tag": "41685"
+            }
+           },
+           {
+            "name": "LegStreamCommoditySettlTimeType",
+            "type": "string",
+            "nullable": true,
+            "fix": {
+             "tag": "41935"
+            }
+           }
+          ]
+         }
+        }
+       ]
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodXID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41698"
+      }
+     },
+     {
+      "name": "LegStreamCommoditySettlPeriodXIDRef",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41699"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "LegStreamCommodityXID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41672"
+   }
+  },
+  {
+   "name": "LegStreamCommodityXIDRef",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41673"
+   }
+  }
+ ]
 }

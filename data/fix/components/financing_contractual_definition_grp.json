@@ -1,93 +1,90 @@
 {
  "name": "FinancingContractualDefinitionGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "FinancingContractualDefinitionGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "FinancingContractualDefinitionGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "Email",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderStatusRequest",
-    "PositionReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoContractualDefinitions",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40040"
-    },
-    "item": {
-     "name": "ContractualDefinition",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ContractualDefinition",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40041"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "FinancingContractualDefinitionGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "Email",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderStatusRequest",
+   "PositionReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoContractualDefinitions",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40040"
+   },
+   "item": {
+    "name": "ContractualDefinition",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ContractualDefinition",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40041"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

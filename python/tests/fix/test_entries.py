@@ -555,10 +555,10 @@ def test_a_message_definition_carries_its_msg_type_and_nothing_else_does() -> No
     declared = block("FakeOrder", members_of(_group()), "D")
     entry = ComponentRecord.from_components([declared], ["4.4"])
     assert entry.msg_type == "D"
-    assert entry.into_dict()["declaration"]["fix"]["msgtype"] == "D"
+    assert entry.into_dict()["fix"]["msgtype"] == "D"
     reusable = ComponentRecord.from_components([_group()], ["4.4"])
     assert reusable.msg_type == ""
-    assert "msgtype" not in reusable.into_dict()["declaration"]["fix"]
+    assert "msgtype" not in reusable.into_dict()["fix"]
 
 
 def test_a_component_declared_for_no_version_is_refused() -> None:

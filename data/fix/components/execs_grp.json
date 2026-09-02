@@ -1,43 +1,40 @@
 {
  "name": "ExecsGrp",
- "versions": [
-  "4.4",
-  "5.0"
- ],
- "declaration": {
-  "name": "ExecsGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "ExecsGrp",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoExecs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "124"
-    },
-    "item": {
-     "name": "Exec",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ExecID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "17"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "ExecsGrp",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "versions": [
+   "4.4",
+   "5.0"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoExecs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "124"
+   },
+   "item": {
+    "name": "Exec",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ExecID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "17"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

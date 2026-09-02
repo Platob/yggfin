@@ -1,44 +1,41 @@
 {
  "name": "NoTestSuiteParameters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTestSuiteParameters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "3126"
-  },
-  "item": {
-   "name": "TestSuiteParameter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TestSuiteParameterName",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3127"
-     }
-    },
-    {
-     "name": "TestSuiteParameterType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3128"
-     }
-    },
-    {
-     "name": "TestSuiteParameterValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3129"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "3126",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TestSuiteParameter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TestSuiteParameterName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3127"
     }
-   ]
-  }
+   },
+   {
+    "name": "TestSuiteParameterType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3128"
+    }
+   },
+   {
+    "name": "TestSuiteParameterValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3129"
+    }
+   }
+  ]
  }
 }

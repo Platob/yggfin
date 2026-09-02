@@ -1,32 +1,29 @@
 {
  "name": "REKEP.Instrument",
- "versions": [
-  "*"
- ],
- "declaration": {
-  "name": "REKEP.Instrument",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "REKEP.Instrument",
-   "msgtype": "URI"
-  },
-  "fields": [
-   {
-    "name": "RekepHeader",
-    "type": "struct",
-    "fix": {
-     "component": "RekepHeader"
-    },
-    "fields": []
-   },
-   {
-    "name": "SymbolTicker",
-    "type": "string",
-    "fix": {
-     "tag": "30020"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "REKEP.Instrument",
+  "msgtype": "URI",
+  "versions": [
+   "*"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "RekepHeader",
+   "type": "struct",
+   "fix": {
+    "component": "RekepHeader"
+   },
+   "fields": []
+  },
+  {
+   "name": "SymbolTicker",
+   "type": "string",
+   "fix": {
+    "tag": "30020"
+   }
+  }
+ ]
 }

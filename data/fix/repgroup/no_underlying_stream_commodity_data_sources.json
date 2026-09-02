@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingStreamCommodityDataSources",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingStreamCommodityDataSources",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41993"
-  },
-  "item": {
-   "name": "UnderlyingStreamCommodityDataSource",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingStreamCommodityDataSourceID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41994"
-     }
-    },
-    {
-     "name": "UnderlyingStreamCommodityDataSourceIDType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41995"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41993",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingStreamCommodityDataSource",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingStreamCommodityDataSourceID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41994"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingStreamCommodityDataSourceIDType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41995"
+    }
+   }
+  ]
  }
 }

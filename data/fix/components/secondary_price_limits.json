@@ -1,61 +1,58 @@
 {
  "name": "SecondaryPriceLimits",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "SecondaryPriceLimits",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "SecondaryPriceLimits",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "SecondaryPriceLimitType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1305"
-    }
-   },
-   {
-    "name": "SecondaryLowLimitPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1221"
-    }
-   },
-   {
-    "name": "SecondaryHighLimitPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1230"
-    }
-   },
-   {
-    "name": "SecondaryTradingReferencePrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1240"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "SecondaryPriceLimits",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport"
+  ],
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "SecondaryPriceLimitType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1305"
+   }
+  },
+  {
+   "name": "SecondaryLowLimitPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1221"
+   }
+  },
+  {
+   "name": "SecondaryHighLimitPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1230"
+   }
+  },
+  {
+   "name": "SecondaryTradingReferencePrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1240"
+   }
+  }
+ ]
 }

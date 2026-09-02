@@ -1,28 +1,25 @@
 {
  "name": "NoLegProvisionOptionExpirationDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegProvisionOptionExpirationDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40937"
-  },
-  "item": {
-   "name": "LegProvisionOptionExpirationDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegProvisionOptionExpirationDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40500"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40937",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegProvisionOptionExpirationDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegProvisionOptionExpirationDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40500"
     }
-   ]
-  }
+   }
+  ]
  }
 }

@@ -1,28 +1,25 @@
 {
  "name": "NoPaymentStubEndDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStubEndDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42696"
-  },
-  "item": {
-   "name": "PaymentStubEndDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStubEndDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42697"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42696",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStubEndDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStubEndDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42697"
     }
-   ]
-  }
+   }
+  ]
  }
 }

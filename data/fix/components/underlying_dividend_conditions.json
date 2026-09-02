@@ -1,480 +1,477 @@
 {
  "name": "UnderlyingDividendConditions",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "UnderlyingDividendConditions",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "UnderlyingDividendConditions",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "UnderlyingDividendReinvestmentIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42826"
-    }
-   },
-   {
-    "name": "UnderlyingDividendEntitlementEvent",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42827"
-    }
-   },
-   {
-    "name": "UnderlyingDividendAmountType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42828"
-    }
-   },
-   {
-    "name": "UnderlyingDividendUnderlierRefID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42829"
-    }
-   },
-   {
-    "name": "NoUnderlyingDividendPeriods",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42862"
-    },
-    "item": {
-     "name": "UnderlyingDividendPeriod",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "UnderlyingDividendPeriodSequence",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42863"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodStartDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42864"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodEndDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42865"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodUnderlierRefID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42866"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodStrikePrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42867"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodBusinessDayConvention",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42868"
-       }
-      },
-      {
-       "name": "NoUnderlyingDividendPeriodBusinessCenters",
-       "type": "list",
-       "nullable": true,
-       "fix": {
-        "tag": "42882"
-       },
-       "item": {
-        "name": "UnderlyingDividendPeriodBusinessCenter",
-        "type": "struct",
-        "fields": [
-         {
-          "name": "UnderlyingDividendPeriodBusinessCenter",
-          "type": "string",
-          "nullable": true,
-          "fix": {
-           "tag": "42883"
-          }
-         }
-        ]
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodValuationDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42869"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodValuationDateRelativeTo",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42870"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodValuationDateOffsetPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42871"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodValuationDateOffsetUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42872"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodValuationDateOffsetDayType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42873"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodValuationDateAdjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42874"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodPaymentDateUnadjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42875"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodPaymentDateRelativeTo",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42876"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodPaymentDateOffsetPeriod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42877"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodPaymentDateOffsetUnit",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42878"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodPaymentDateOffsetDayType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42879"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodPaymentDateAdjusted",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42880"
-       }
-      },
-      {
-       "name": "UnderlyingDividendPeriodXID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42881"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "UnderlyingExtraordinaryDividendPartySide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42830"
-    }
-   },
-   {
-    "name": "UnderlyingExtraordinaryDividendAmountType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42831"
-    }
-   },
-   {
-    "name": "UnderlyingExtraordinaryDividendCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42832"
-    }
-   },
-   {
-    "name": "UnderlyingExtraordinaryDividendDeterminationMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42833"
-    }
-   },
-   {
-    "name": "UnderlyingDividendFXTriggerDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingDividendFXTriggerDate"
-    },
-    "fields": []
-   },
-   {
-    "name": "UnderlyingDividendAccrualFloatingRate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingDividendAccrualFloatingRate"
-    },
-    "fields": []
-   },
-   {
-    "name": "UnderlyingDividendAccrualFixedRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42834"
-    }
-   },
-   {
-    "name": "UnderlyingDividendAccrualPaymentDate",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "UnderlyingDividendAccrualPaymentDate"
-    },
-    "fields": []
-   },
-   {
-    "name": "UnderlyingDividendCompoundingMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42835"
-    }
-   },
-   {
-    "name": "UnderlyingDividendNumOfIndexUnits",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42836"
-    }
-   },
-   {
-    "name": "UnderlyingDividendCashPercentage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42837"
-    }
-   },
-   {
-    "name": "UnderlyingDividendCashEquivalentPercentage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42838"
-    }
-   },
-   {
-    "name": "UnderlyingNonCashDividendTreatment",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42839"
-    }
-   },
-   {
-    "name": "UnderlyingDividendComposition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42840"
-    }
-   },
-   {
-    "name": "UnderlyingSpecialDividendsIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42841"
-    }
-   },
-   {
-    "name": "UnderlyingMaterialDividendsIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42842"
-    }
-   },
-   {
-    "name": "UnderlyingOptionsExchangeDividendsIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42843"
-    }
-   },
-   {
-    "name": "UnderlyingAdditionalDividendsIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42844"
-    }
-   },
-   {
-    "name": "UnderlyingAllDividendsIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42845"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "UnderlyingDividendConditions",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "UnderlyingDividendReinvestmentIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42826"
+   }
+  },
+  {
+   "name": "UnderlyingDividendEntitlementEvent",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42827"
+   }
+  },
+  {
+   "name": "UnderlyingDividendAmountType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42828"
+   }
+  },
+  {
+   "name": "UnderlyingDividendUnderlierRefID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42829"
+   }
+  },
+  {
+   "name": "NoUnderlyingDividendPeriods",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42862"
+   },
+   "item": {
+    "name": "UnderlyingDividendPeriod",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "UnderlyingDividendPeriodSequence",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42863"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodStartDateUnadjusted",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42864"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodEndDateUnadjusted",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42865"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodUnderlierRefID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42866"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodStrikePrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42867"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodBusinessDayConvention",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42868"
+      }
+     },
+     {
+      "name": "NoUnderlyingDividendPeriodBusinessCenters",
+      "type": "list",
+      "nullable": true,
+      "fix": {
+       "tag": "42882"
+      },
+      "item": {
+       "name": "UnderlyingDividendPeriodBusinessCenter",
+       "type": "struct",
+       "fields": [
+        {
+         "name": "UnderlyingDividendPeriodBusinessCenter",
+         "type": "string",
+         "nullable": true,
+         "fix": {
+          "tag": "42883"
+         }
+        }
+       ]
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodValuationDateUnadjusted",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42869"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodValuationDateRelativeTo",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42870"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodValuationDateOffsetPeriod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42871"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodValuationDateOffsetUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42872"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodValuationDateOffsetDayType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42873"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodValuationDateAdjusted",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42874"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodPaymentDateUnadjusted",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42875"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodPaymentDateRelativeTo",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42876"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodPaymentDateOffsetPeriod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42877"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodPaymentDateOffsetUnit",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42878"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodPaymentDateOffsetDayType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42879"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodPaymentDateAdjusted",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42880"
+      }
+     },
+     {
+      "name": "UnderlyingDividendPeriodXID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42881"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "UnderlyingExtraordinaryDividendPartySide",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42830"
+   }
+  },
+  {
+   "name": "UnderlyingExtraordinaryDividendAmountType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42831"
+   }
+  },
+  {
+   "name": "UnderlyingExtraordinaryDividendCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42832"
+   }
+  },
+  {
+   "name": "UnderlyingExtraordinaryDividendDeterminationMethod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42833"
+   }
+  },
+  {
+   "name": "UnderlyingDividendFXTriggerDate",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "UnderlyingDividendFXTriggerDate"
+   },
+   "fields": []
+  },
+  {
+   "name": "UnderlyingDividendAccrualFloatingRate",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "UnderlyingDividendAccrualFloatingRate"
+   },
+   "fields": []
+  },
+  {
+   "name": "UnderlyingDividendAccrualFixedRate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42834"
+   }
+  },
+  {
+   "name": "UnderlyingDividendAccrualPaymentDate",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "UnderlyingDividendAccrualPaymentDate"
+   },
+   "fields": []
+  },
+  {
+   "name": "UnderlyingDividendCompoundingMethod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42835"
+   }
+  },
+  {
+   "name": "UnderlyingDividendNumOfIndexUnits",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42836"
+   }
+  },
+  {
+   "name": "UnderlyingDividendCashPercentage",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42837"
+   }
+  },
+  {
+   "name": "UnderlyingDividendCashEquivalentPercentage",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42838"
+   }
+  },
+  {
+   "name": "UnderlyingNonCashDividendTreatment",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42839"
+   }
+  },
+  {
+   "name": "UnderlyingDividendComposition",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42840"
+   }
+  },
+  {
+   "name": "UnderlyingSpecialDividendsIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42841"
+   }
+  },
+  {
+   "name": "UnderlyingMaterialDividendsIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42842"
+   }
+  },
+  {
+   "name": "UnderlyingOptionsExchangeDividendsIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42843"
+   }
+  },
+  {
+   "name": "UnderlyingAdditionalDividendsIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42844"
+   }
+  },
+  {
+   "name": "UnderlyingAllDividendsIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42845"
+   }
+  }
+ ]
 }

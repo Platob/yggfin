@@ -1,28 +1,25 @@
 {
  "name": "NoDividendAccrualPaymentDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoDividendAccrualPaymentDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42236"
-  },
-  "item": {
-   "name": "DividendAccrualPaymentDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "DividendAccrualPaymentDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42237"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42236",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "DividendAccrualPaymentDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "DividendAccrualPaymentDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42237"
     }
-   ]
-  }
+   }
+  ]
  }
 }

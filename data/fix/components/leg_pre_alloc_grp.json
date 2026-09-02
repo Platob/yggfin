@@ -1,139 +1,136 @@
 {
  "name": "LegPreAllocGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "LegPreAllocGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "LegPreAllocGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "CrossOrderCancelReplaceRequest",
-    "ExecutionReport",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderMultileg",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoLegAllocs",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "670"
-    },
-    "item": {
-     "name": "LegAlloc",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "LegAllocAccount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "671"
-       }
-      },
-      {
-       "name": "LegIndividualAllocID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "672"
-       }
-      },
-      {
-       "name": "NestedParties2",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "NestedParties2"
-       },
-       "fields": []
-      },
-      {
-       "name": "LegAllocQty",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "673"
-       }
-      },
-      {
-       "name": "LegAllocAcctIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "674"
-       }
-      },
-      {
-       "name": "LegAllocSettlCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1367"
-       }
-      },
-      {
-       "name": "LegAllocSettlCurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2928"
-       }
-      },
-      {
-       "name": "LegCustodialLotID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1756"
-       }
-      },
-      {
-       "name": "LegVersusPurchaseDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1757"
-       }
-      },
-      {
-       "name": "LegVersusPurchasePrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1758"
-       }
-      },
-      {
-       "name": "LegCurrentCostBasis",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1759"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "LegPreAllocGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "CrossOrderCancelReplaceRequest",
+   "ExecutionReport",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderMultileg",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoLegAllocs",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "670"
+   },
+   "item": {
+    "name": "LegAlloc",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "LegAllocAccount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "671"
+      }
+     },
+     {
+      "name": "LegIndividualAllocID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "672"
+      }
+     },
+     {
+      "name": "NestedParties2",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "NestedParties2"
+      },
+      "fields": []
+     },
+     {
+      "name": "LegAllocQty",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "673"
+      }
+     },
+     {
+      "name": "LegAllocAcctIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "674"
+      }
+     },
+     {
+      "name": "LegAllocSettlCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1367"
+      }
+     },
+     {
+      "name": "LegAllocSettlCurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2928"
+      }
+     },
+     {
+      "name": "LegCustodialLotID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1756"
+      }
+     },
+     {
+      "name": "LegVersusPurchaseDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1757"
+      }
+     },
+     {
+      "name": "LegVersusPurchasePrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1758"
+      }
+     },
+     {
+      "name": "LegCurrentCostBasis",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1759"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

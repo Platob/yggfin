@@ -1,45 +1,42 @@
 {
  "name": "NoCapacities",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoCapacities",
-  "type": "list",
-  "fix": {
-   "tag": "862"
-  },
-  "item": {
-   "name": "Capacity",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "OrderCapacity",
-     "type": "string",
-     "fix": {
-      "tag": "528"
-     }
-    },
-    {
-     "name": "OrderRestrictions",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "529"
-     }
-    },
-    {
-     "name": "OrderCapacityQty",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "863"
-     }
+ "type": "list",
+ "fix": {
+  "tag": "862",
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "Capacity",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "OrderCapacity",
+    "type": "string",
+    "fix": {
+     "tag": "528"
     }
-   ]
-  }
+   },
+   {
+    "name": "OrderRestrictions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "529"
+    }
+   },
+   {
+    "name": "OrderCapacityQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "863"
+    }
+   }
+  ]
  }
 }

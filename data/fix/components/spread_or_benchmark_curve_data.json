@@ -1,132 +1,129 @@
 {
  "name": "SpreadOrBenchmarkCurveData",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "SpreadOrBenchmarkCurveData",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "SpreadOrBenchmarkCurveData",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "CrossOrderCancelReplaceRequest",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest",
-    "Quote",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListUpdateReport",
-    "TradeCaptureReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "Spread",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "218"
-    }
-   },
-   {
-    "name": "BenchmarkCurveCurrency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "220"
-    }
-   },
-   {
-    "name": "BenchmarkCurveCurrencyCodeSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2950"
-    }
-   },
-   {
-    "name": "BenchmarkCurveName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "221"
-    }
-   },
-   {
-    "name": "BenchmarkCurvePoint",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "222"
-    }
-   },
-   {
-    "name": "BenchmarkPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "662"
-    }
-   },
-   {
-    "name": "BenchmarkPriceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "663"
-    }
-   },
-   {
-    "name": "BenchmarkSecurityID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "699"
-    }
-   },
-   {
-    "name": "BenchmarkSecurityIDSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "761"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "SpreadOrBenchmarkCurveData",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "CrossOrderCancelReplaceRequest",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest",
+   "Quote",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListUpdateReport",
+   "TradeCaptureReport"
+  ],
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "Spread",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "218"
+   }
+  },
+  {
+   "name": "BenchmarkCurveCurrency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "220"
+   }
+  },
+  {
+   "name": "BenchmarkCurveCurrencyCodeSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2950"
+   }
+  },
+  {
+   "name": "BenchmarkCurveName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "221"
+   }
+  },
+  {
+   "name": "BenchmarkCurvePoint",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "222"
+   }
+  },
+  {
+   "name": "BenchmarkPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "662"
+   }
+  },
+  {
+   "name": "BenchmarkPriceType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "663"
+   }
+  },
+  {
+   "name": "BenchmarkSecurityID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "699"
+   }
+  },
+  {
+   "name": "BenchmarkSecurityIDSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "761"
+   }
+  }
+ ]
 }

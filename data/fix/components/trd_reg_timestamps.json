@@ -1,154 +1,151 @@
 {
  "name": "TrdRegTimestamps",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "TrdRegTimestamps",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "TrdRegTimestamps",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ExecutionReport",
-    "MarginRequirementReport",
-    "NewOrderSingle",
-    "OrderCancelReplaceRequest",
-    "PositionReport",
-    "Quote",
-    "QuoteStatusReport",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoTrdRegTimestamps",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "768"
-    },
-    "item": {
-     "name": "TrdRegTimestamp",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "TrdRegTimestamp",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "769"
-       }
-      },
-      {
-       "name": "TrdRegTimestampType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "770"
-       }
-      },
-      {
-       "name": "TrdRegTimestampOrigin",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "771"
-       }
-      },
-      {
-       "name": "TrdRegTimestampManualIndicator",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2839"
-       }
-      },
-      {
-       "name": "DeskType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1033"
-       }
-      },
-      {
-       "name": "DeskTypeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1034"
-       }
-      },
-      {
-       "name": "DeskOrderHandlingInst",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1035"
-       }
-      },
-      {
-       "name": "InformationBarrierID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1727"
-       }
-      },
-      {
-       "name": "NBBOEntryType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2831"
-       }
-      },
-      {
-       "name": "NBBOPrice",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2832"
-       }
-      },
-      {
-       "name": "NBBOQty",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2833"
-       }
-      },
-      {
-       "name": "NBBOSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2834"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "TrdRegTimestamps",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ExecutionReport",
+   "MarginRequirementReport",
+   "NewOrderSingle",
+   "OrderCancelReplaceRequest",
+   "PositionReport",
+   "Quote",
+   "QuoteStatusReport",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoTrdRegTimestamps",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "768"
+   },
+   "item": {
+    "name": "TrdRegTimestamp",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "TrdRegTimestamp",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "769"
+      }
+     },
+     {
+      "name": "TrdRegTimestampType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "770"
+      }
+     },
+     {
+      "name": "TrdRegTimestampOrigin",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "771"
+      }
+     },
+     {
+      "name": "TrdRegTimestampManualIndicator",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2839"
+      }
+     },
+     {
+      "name": "DeskType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1033"
+      }
+     },
+     {
+      "name": "DeskTypeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1034"
+      }
+     },
+     {
+      "name": "DeskOrderHandlingInst",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1035"
+      }
+     },
+     {
+      "name": "InformationBarrierID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1727"
+      }
+     },
+     {
+      "name": "NBBOEntryType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2831"
+      }
+     },
+     {
+      "name": "NBBOPrice",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2832"
+      }
+     },
+     {
+      "name": "NBBOQty",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2833"
+      }
+     },
+     {
+      "name": "NBBOSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2834"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

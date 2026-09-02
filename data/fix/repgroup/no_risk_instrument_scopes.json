@@ -1,45 +1,42 @@
 {
  "name": "NoRiskInstrumentScopes",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoRiskInstrumentScopes",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1534"
-  },
-  "item": {
-   "name": "RiskInstrumentScope",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "InstrumentScopeOperator",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1535"
-     }
-    },
-    {
-     "name": "InstrumentScope",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "InstrumentScope"
-     },
-     "fields": []
-    },
-    {
-     "name": "RiskInstrumentMultiplier",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1558"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1534",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "RiskInstrumentScope",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "InstrumentScopeOperator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1535"
     }
-   ]
-  }
+   },
+   {
+    "name": "InstrumentScope",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScope"
+    },
+    "fields": []
+   },
+   {
+    "name": "RiskInstrumentMultiplier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1558"
+    }
+   }
+  ]
  }
 }

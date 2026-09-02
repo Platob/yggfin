@@ -1,36 +1,33 @@
 {
  "name": "NoLegMarketDisruptionFallbacks",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegMarketDisruptionFallbacks",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41469"
-  },
-  "item": {
-   "name": "LegMarketDisruptionFallback",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegMarketDisruptionFallbackType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41470"
-     }
-    },
-    {
-     "name": "LegMarketDisruptionFallbackValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40990"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41469",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegMarketDisruptionFallback",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegMarketDisruptionFallbackType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41470"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegMarketDisruptionFallbackValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40990"
+    }
+   }
+  ]
  }
 }

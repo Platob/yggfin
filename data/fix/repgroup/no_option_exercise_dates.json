@@ -1,36 +1,33 @@
 {
  "name": "NoOptionExerciseDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoOptionExerciseDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41137"
-  },
-  "item": {
-   "name": "OptionExerciseDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "OptionExerciseDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41138"
-     }
-    },
-    {
-     "name": "OptionExerciseDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41139"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41137",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "OptionExerciseDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "OptionExerciseDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41138"
     }
-   ]
-  }
+   },
+   {
+    "name": "OptionExerciseDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41139"
+    }
+   }
+  ]
  }
 }

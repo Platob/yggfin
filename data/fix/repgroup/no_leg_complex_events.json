@@ -1,701 +1,698 @@
 {
  "name": "NoLegComplexEvents",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegComplexEvents",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2218"
-  },
-  "item": {
-   "name": "LegComplexEvent",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegComplexEventType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2219"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutPaySide",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2220"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutReceiveSide",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2221"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutUnderlier",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2222"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2223"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutPercentage",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2224"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2225"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2226"
-     }
-    },
-    {
-     "name": "LegComplexOptPayoutCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2944"
-     }
-    },
-    {
-     "name": "LegComplexEventPrice",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2227"
-     }
-    },
-    {
-     "name": "LegComplexEventPricePercentage",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2228"
-     }
-    },
-    {
-     "name": "LegComplexEventPriceBoundaryMethod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2229"
-     }
-    },
-    {
-     "name": "LegComplexEventPriceBoundaryPrecision",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2230"
-     }
-    },
-    {
-     "name": "LegComplexEventPriceTimeType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2231"
-     }
-    },
-    {
-     "name": "LegComplexEventCondition",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2232"
-     }
-    },
-    {
-     "name": "NoLegComplexEventDates",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "2250"
-     },
-     "item": {
-      "name": "LegComplexEventDate",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegComplexEventStartDate",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2251"
-        }
-       },
-       {
-        "name": "LegComplexEventEndDate",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2252"
-        }
-       },
-       {
-        "name": "NoLegComplexEventTimes",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "2253"
-        },
-        "item": {
-         "name": "LegComplexEventTime",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "LegComplexEventStartTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "2204"
-           }
-          },
-          {
-           "name": "LegComplexEventEndTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "2247"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "LegComplexEventCurrencyOne",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2233"
-     }
-    },
-    {
-     "name": "LegComplexEventCurrencyOneCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2945"
-     }
-    },
-    {
-     "name": "LegComplexEventCurrencyTwo",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2234"
-     }
-    },
-    {
-     "name": "LegComplexEventCurrencyTwoCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2946"
-     }
-    },
-    {
-     "name": "LegComplexEventQuoteBasis",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2235"
-     }
-    },
-    {
-     "name": "LegComplexEventFixedFXRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2236"
-     }
-    },
-    {
-     "name": "LegComplexEventSpotRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2409"
-     }
-    },
-    {
-     "name": "LegComplexEventForwardPoints",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2410"
-     }
-    },
-    {
-     "name": "LegComplexEventDeterminationMethod",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2237"
-     }
-    },
-    {
-     "name": "LegComplexEventCalculationAgent",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2238"
-     }
-    },
-    {
-     "name": "LegComplexEventStrikePrice",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2239"
-     }
-    },
-    {
-     "name": "LegComplexEventStrikeFactor",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2240"
-     }
-    },
-    {
-     "name": "LegComplexEventStrikeNumberOfOptions",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2241"
-     }
-    },
-    {
-     "name": "NoLegComplexEventRateSources",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41382"
-     },
-     "item": {
-      "name": "LegComplexEventRateSource",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegComplexEventRateSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41383"
-        }
-       },
-       {
-        "name": "LegComplexEventRateSourceType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41384"
-        }
-       },
-       {
-        "name": "LegComplexEventReferencePage",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41385"
-        }
-       },
-       {
-        "name": "LegComplexEvenReferencePageHeading",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41386"
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "LegComplexEventRelativeDate",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "LegComplexEventRelativeDate"
-     },
-     "fields": []
-    },
-    {
-     "name": "NoLegComplexEventPeriods",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41379"
-     },
-     "item": {
-      "name": "LegComplexEventPeriod",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegComplexEventPeriodType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41380"
-        }
-       },
-       {
-        "name": "LegComplexEventBusinessCenter",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41381"
-        }
-       },
-       {
-        "name": "NoLegComplexEventSchedules",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41400"
-        },
-        "item": {
-         "name": "LegComplexEventSchedule",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "LegComplexEventScheduleStartDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41401"
-           }
-          },
-          {
-           "name": "LegComplexEventScheduleEndDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41402"
-           }
-          },
-          {
-           "name": "LegComplexEventScheduleFrequencyPeriod",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41403"
-           }
-          },
-          {
-           "name": "LegComplexEventScheduleFrequencyUnit",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41404"
-           }
-          },
-          {
-           "name": "LegComplexEventScheduleRollConvention",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41405"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoLegComplexEventPeriodDateTimes",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41376"
-        },
-        "item": {
-         "name": "LegComplexEventPeriodDateTime",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "LegComplexEventPeriodDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41377"
-           }
-          },
-          {
-           "name": "LegComplexEventPeriodTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41378"
-           }
-          }
-         ]
-        }
-       },
-       {
-        "name": "NoLegComplexEventAveragingObservations",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41363"
-        },
-        "item": {
-         "name": "LegComplexEventAveragingObservation",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "LegComplexEventAveragingObservationNumber",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41364"
-           }
-          },
-          {
-           "name": "LegComplexEventAveragingWeight",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41365"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventsXIDRef",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2242"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventNotifyingParty",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2243"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2244"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventStandardSources",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2245"
-     }
-    },
-    {
-     "name": "LegComplexEventCreditEventMinimumSources",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2246"
-     }
-    },
-    {
-     "name": "NoLegComplexEventCreditEventSources",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41398"
-     },
-     "item": {
-      "name": "LegComplexEventCreditEventSource",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegComplexEventCreditEventSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41399"
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "NoLegComplexEventCreditEvents",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41366"
-     },
-     "item": {
-      "name": "LegComplexEventCreditEvent",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "LegComplexEventCreditEventType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41367"
-        }
-       },
-       {
-        "name": "LegComplexEventCreditEventValue",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41368"
-        }
-       },
-       {
-        "name": "LegComplexEventCreditEventCurrency",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41369"
-        }
-       },
-       {
-        "name": "LegComplexEventCreditEventPeriod",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41370"
-        }
-       },
-       {
-        "name": "LegComplexEventCreditEventUnit",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41371"
-        }
-       },
-       {
-        "name": "LegComplexEventCreditEventDayType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41372"
-        }
-       },
-       {
-        "name": "LegComplexEventCreditEventRateSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41373"
-        }
-       },
-       {
-        "name": "NoLegComplexEventCreditEventQualifiers",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "41374"
-        },
-        "item": {
-         "name": "LegComplexEventCreditEventQualifier",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "LegComplexEventCreditEventQualifier",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "41375"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "LegComplexEventFuturesPriceValuation",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2608"
-     }
-    },
-    {
-     "name": "LegComplexEventOptionsPriceValuation",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2609"
-     }
-    },
-    {
-     "name": "LegComplexEventPVFinalPriceElectionFallback",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2610"
-     }
-    },
-    {
-     "name": "LegComplexEventXID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2248"
-     }
-    },
-    {
-     "name": "LegComplexEventXIDRef",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2249"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2218",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegComplexEvent",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegComplexEventType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2219"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegComplexOptPayoutPaySide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2220"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutReceiveSide",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2221"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutUnderlier",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2222"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2223"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutPercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2224"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2225"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2226"
+    }
+   },
+   {
+    "name": "LegComplexOptPayoutCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2944"
+    }
+   },
+   {
+    "name": "LegComplexEventPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2227"
+    }
+   },
+   {
+    "name": "LegComplexEventPricePercentage",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2228"
+    }
+   },
+   {
+    "name": "LegComplexEventPriceBoundaryMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2229"
+    }
+   },
+   {
+    "name": "LegComplexEventPriceBoundaryPrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2230"
+    }
+   },
+   {
+    "name": "LegComplexEventPriceTimeType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2231"
+    }
+   },
+   {
+    "name": "LegComplexEventCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2232"
+    }
+   },
+   {
+    "name": "NoLegComplexEventDates",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "2250"
+    },
+    "item": {
+     "name": "LegComplexEventDate",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventStartDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2251"
+       }
+      },
+      {
+       "name": "LegComplexEventEndDate",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2252"
+       }
+      },
+      {
+       "name": "NoLegComplexEventTimes",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "2253"
+       },
+       "item": {
+        "name": "LegComplexEventTime",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegComplexEventStartTime",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2204"
+          }
+         },
+         {
+          "name": "LegComplexEventEndTime",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "2247"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "LegComplexEventCurrencyOne",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2233"
+    }
+   },
+   {
+    "name": "LegComplexEventCurrencyOneCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2945"
+    }
+   },
+   {
+    "name": "LegComplexEventCurrencyTwo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2234"
+    }
+   },
+   {
+    "name": "LegComplexEventCurrencyTwoCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2946"
+    }
+   },
+   {
+    "name": "LegComplexEventQuoteBasis",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2235"
+    }
+   },
+   {
+    "name": "LegComplexEventFixedFXRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2236"
+    }
+   },
+   {
+    "name": "LegComplexEventSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2409"
+    }
+   },
+   {
+    "name": "LegComplexEventForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2410"
+    }
+   },
+   {
+    "name": "LegComplexEventDeterminationMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2237"
+    }
+   },
+   {
+    "name": "LegComplexEventCalculationAgent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2238"
+    }
+   },
+   {
+    "name": "LegComplexEventStrikePrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2239"
+    }
+   },
+   {
+    "name": "LegComplexEventStrikeFactor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2240"
+    }
+   },
+   {
+    "name": "LegComplexEventStrikeNumberOfOptions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2241"
+    }
+   },
+   {
+    "name": "NoLegComplexEventRateSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41382"
+    },
+    "item": {
+     "name": "LegComplexEventRateSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41383"
+       }
+      },
+      {
+       "name": "LegComplexEventRateSourceType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41384"
+       }
+      },
+      {
+       "name": "LegComplexEventReferencePage",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41385"
+       }
+      },
+      {
+       "name": "LegComplexEvenReferencePageHeading",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41386"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "LegComplexEventRelativeDate",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "LegComplexEventRelativeDate"
+    },
+    "fields": []
+   },
+   {
+    "name": "NoLegComplexEventPeriods",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41379"
+    },
+    "item": {
+     "name": "LegComplexEventPeriod",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventPeriodType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41380"
+       }
+      },
+      {
+       "name": "LegComplexEventBusinessCenter",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41381"
+       }
+      },
+      {
+       "name": "NoLegComplexEventSchedules",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41400"
+       },
+       "item": {
+        "name": "LegComplexEventSchedule",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegComplexEventScheduleStartDate",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41401"
+          }
+         },
+         {
+          "name": "LegComplexEventScheduleEndDate",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41402"
+          }
+         },
+         {
+          "name": "LegComplexEventScheduleFrequencyPeriod",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41403"
+          }
+         },
+         {
+          "name": "LegComplexEventScheduleFrequencyUnit",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41404"
+          }
+         },
+         {
+          "name": "LegComplexEventScheduleRollConvention",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41405"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "NoLegComplexEventPeriodDateTimes",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41376"
+       },
+       "item": {
+        "name": "LegComplexEventPeriodDateTime",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegComplexEventPeriodDate",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41377"
+          }
+         },
+         {
+          "name": "LegComplexEventPeriodTime",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41378"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "name": "NoLegComplexEventAveragingObservations",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41363"
+       },
+       "item": {
+        "name": "LegComplexEventAveragingObservation",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegComplexEventAveragingObservationNumber",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41364"
+          }
+         },
+         {
+          "name": "LegComplexEventAveragingWeight",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41365"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventsXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2242"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventNotifyingParty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2243"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2244"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventStandardSources",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2245"
+    }
+   },
+   {
+    "name": "LegComplexEventCreditEventMinimumSources",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2246"
+    }
+   },
+   {
+    "name": "NoLegComplexEventCreditEventSources",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41398"
+    },
+    "item": {
+     "name": "LegComplexEventCreditEventSource",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventCreditEventSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41399"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "NoLegComplexEventCreditEvents",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41366"
+    },
+    "item": {
+     "name": "LegComplexEventCreditEvent",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "LegComplexEventCreditEventType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41367"
+       }
+      },
+      {
+       "name": "LegComplexEventCreditEventValue",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41368"
+       }
+      },
+      {
+       "name": "LegComplexEventCreditEventCurrency",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41369"
+       }
+      },
+      {
+       "name": "LegComplexEventCreditEventPeriod",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41370"
+       }
+      },
+      {
+       "name": "LegComplexEventCreditEventUnit",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41371"
+       }
+      },
+      {
+       "name": "LegComplexEventCreditEventDayType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41372"
+       }
+      },
+      {
+       "name": "LegComplexEventCreditEventRateSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41373"
+       }
+      },
+      {
+       "name": "NoLegComplexEventCreditEventQualifiers",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "41374"
+       },
+       "item": {
+        "name": "LegComplexEventCreditEventQualifier",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegComplexEventCreditEventQualifier",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "41375"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "LegComplexEventFuturesPriceValuation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2608"
+    }
+   },
+   {
+    "name": "LegComplexEventOptionsPriceValuation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2609"
+    }
+   },
+   {
+    "name": "LegComplexEventPVFinalPriceElectionFallback",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2610"
+    }
+   },
+   {
+    "name": "LegComplexEventXID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2248"
+    }
+   },
+   {
+    "name": "LegComplexEventXIDRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2249"
+    }
+   }
+  ]
  }
 }

@@ -1,28 +1,25 @@
 {
  "name": "NoPaymentStreamPricingBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoPaymentStreamPricingBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41192"
-  },
-  "item": {
-   "name": "PaymentStreamPricingBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "PaymentStreamPricingBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41193"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41192",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "PaymentStreamPricingBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "PaymentStreamPricingBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41193"
     }
-   ]
-  }
+   }
+  ]
  }
 }

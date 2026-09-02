@@ -1,32 +1,29 @@
 {
  "name": "NoLegProtectionTermEventNewsSources",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegProtectionTermEventNewsSources",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41614"
-  },
-  "item": {
-   "name": "LegProtectionTermEventNewsSource",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegProtectionTermEventNewsSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41615"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41614",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegProtectionTermEventNewsSource",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegProtectionTermEventNewsSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41615"
     }
-   ]
-  }
+   }
+  ]
  }
 }

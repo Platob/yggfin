@@ -1,54 +1,51 @@
 {
  "name": "ThrottleResponse",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "ThrottleResponse",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "ThrottleResponse",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "ExecutionReport",
-    "MassOrderAck",
-    "MassQuoteAck",
-    "QuoteStatusReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "ThrottleInst",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1685"
-    }
-   },
-   {
-    "name": "ThrottleStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1609"
-    }
-   },
-   {
-    "name": "ThrottleCountIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "1686"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "ThrottleResponse",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "ExecutionReport",
+   "MassOrderAck",
+   "MassQuoteAck",
+   "QuoteStatusReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ThrottleInst",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1685"
+   }
+  },
+  {
+   "name": "ThrottleStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1609"
+   }
+  },
+  {
+   "name": "ThrottleCountIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "1686"
+   }
+  }
+ ]
 }

@@ -1,377 +1,374 @@
 {
  "name": "StandardChartered",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "StandardChartered",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "StandardChartered",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "ClientTier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7533"
-    }
-   },
-   {
-    "name": "FIXreserved1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7030"
-    }
-   },
-   {
-    "name": "FIXreserved2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7031"
-    }
-   },
-   {
-    "name": "FIXreserved3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7032"
-    }
-   },
-   {
-    "name": "FIXreserved4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7033"
-    }
-   },
-   {
-    "name": "FIXreserved5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7034"
-    }
-   },
-   {
-    "name": "FIXreserved6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7035"
-    }
-   },
-   {
-    "name": "FIXreserved7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7036"
-    }
-   },
-   {
-    "name": "FIXreserved8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7037"
-    }
-   },
-   {
-    "name": "FIXreserved9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7038"
-    }
-   },
-   {
-    "name": "FIXreserved10",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7039"
-    }
-   },
-   {
-    "name": "FIXreserved11",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7040"
-    }
-   },
-   {
-    "name": "FIXreserved12",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7041"
-    }
-   },
-   {
-    "name": "FIXreserved13",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7042"
-    }
-   },
-   {
-    "name": "FIXreserved14",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7043"
-    }
-   },
-   {
-    "name": "FIXreserved15",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7044"
-    }
-   },
-   {
-    "name": "FIXreserved16",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7045"
-    }
-   },
-   {
-    "name": "LegBidSize1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7253"
-    }
-   },
-   {
-    "name": "LegMinBidSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7252"
-    }
-   },
-   {
-    "name": "LegMinOfferSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7254"
-    }
-   },
-   {
-    "name": "LegOfferSize1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7255"
-    }
-   },
-   {
-    "name": "LegTenorCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7251"
-    }
-   },
-   {
-    "name": "SCBFIXParameter1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7256"
-    }
-   },
-   {
-    "name": "SCBFIXParameter2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7257"
-    }
-   },
-   {
-    "name": "SCBFIXParameter3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7258"
-    }
-   },
-   {
-    "name": "SCBFIXParameter4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7259"
-    }
-   },
-   {
-    "name": "SCBFIXParameter5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7260"
-    }
-   },
-   {
-    "name": "SCBFIXParameter6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7261"
-    }
-   },
-   {
-    "name": "SCBFIXParameter7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7262"
-    }
-   },
-   {
-    "name": "SCBFIXParameter8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7263"
-    }
-   },
-   {
-    "name": "SCBFIXParameter9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7264"
-    }
-   },
-   {
-    "name": "SCBFIXParameter10",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7265"
-    }
-   },
-   {
-    "name": "SCBFIXParameter11",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7266"
-    }
-   },
-   {
-    "name": "SCBFIXParameter12",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7267"
-    }
-   },
-   {
-    "name": "SCBFIXParameter13",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7268"
-    }
-   },
-   {
-    "name": "SCBFIXParameter14",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7269"
-    }
-   },
-   {
-    "name": "SCBFIXParameter15",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7270"
-    }
-   },
-   {
-    "name": "SCBFIXParameter16",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7271"
-    }
-   },
-   {
-    "name": "SCBFIXParameter17",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7272"
-    }
-   },
-   {
-    "name": "SCBFIXParameter18",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7273"
-    }
-   },
-   {
-    "name": "SCBFIXParameter19",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7274"
-    }
-   },
-   {
-    "name": "SCBFIXParameter20",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7275"
-    }
-   },
-   {
-    "name": "TenorCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7250"
-    }
-   },
-   {
-    "name": "TimeSpanStartTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7046"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "StandardChartered",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ClientTier",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7533"
+   }
+  },
+  {
+   "name": "FIXreserved1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7030"
+   }
+  },
+  {
+   "name": "FIXreserved2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7031"
+   }
+  },
+  {
+   "name": "FIXreserved3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7032"
+   }
+  },
+  {
+   "name": "FIXreserved4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7033"
+   }
+  },
+  {
+   "name": "FIXreserved5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7034"
+   }
+  },
+  {
+   "name": "FIXreserved6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7035"
+   }
+  },
+  {
+   "name": "FIXreserved7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7036"
+   }
+  },
+  {
+   "name": "FIXreserved8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7037"
+   }
+  },
+  {
+   "name": "FIXreserved9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7038"
+   }
+  },
+  {
+   "name": "FIXreserved10",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7039"
+   }
+  },
+  {
+   "name": "FIXreserved11",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7040"
+   }
+  },
+  {
+   "name": "FIXreserved12",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7041"
+   }
+  },
+  {
+   "name": "FIXreserved13",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7042"
+   }
+  },
+  {
+   "name": "FIXreserved14",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7043"
+   }
+  },
+  {
+   "name": "FIXreserved15",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7044"
+   }
+  },
+  {
+   "name": "FIXreserved16",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7045"
+   }
+  },
+  {
+   "name": "LegBidSize1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7253"
+   }
+  },
+  {
+   "name": "LegMinBidSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7252"
+   }
+  },
+  {
+   "name": "LegMinOfferSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7254"
+   }
+  },
+  {
+   "name": "LegOfferSize1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7255"
+   }
+  },
+  {
+   "name": "LegTenorCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7251"
+   }
+  },
+  {
+   "name": "SCBFIXParameter1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7256"
+   }
+  },
+  {
+   "name": "SCBFIXParameter2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7257"
+   }
+  },
+  {
+   "name": "SCBFIXParameter3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7258"
+   }
+  },
+  {
+   "name": "SCBFIXParameter4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7259"
+   }
+  },
+  {
+   "name": "SCBFIXParameter5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7260"
+   }
+  },
+  {
+   "name": "SCBFIXParameter6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7261"
+   }
+  },
+  {
+   "name": "SCBFIXParameter7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7262"
+   }
+  },
+  {
+   "name": "SCBFIXParameter8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7263"
+   }
+  },
+  {
+   "name": "SCBFIXParameter9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7264"
+   }
+  },
+  {
+   "name": "SCBFIXParameter10",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7265"
+   }
+  },
+  {
+   "name": "SCBFIXParameter11",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7266"
+   }
+  },
+  {
+   "name": "SCBFIXParameter12",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7267"
+   }
+  },
+  {
+   "name": "SCBFIXParameter13",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7268"
+   }
+  },
+  {
+   "name": "SCBFIXParameter14",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7269"
+   }
+  },
+  {
+   "name": "SCBFIXParameter15",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7270"
+   }
+  },
+  {
+   "name": "SCBFIXParameter16",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7271"
+   }
+  },
+  {
+   "name": "SCBFIXParameter17",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7272"
+   }
+  },
+  {
+   "name": "SCBFIXParameter18",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7273"
+   }
+  },
+  {
+   "name": "SCBFIXParameter19",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7274"
+   }
+  },
+  {
+   "name": "SCBFIXParameter20",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7275"
+   }
+  },
+  {
+   "name": "TenorCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7250"
+   }
+  },
+  {
+   "name": "TimeSpanStartTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7046"
+   }
+  }
+ ]
 }

@@ -1,29 +1,26 @@
 {
  "name": "NoExecInstRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoExecInstRules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1232"
-  },
-  "item": {
-   "name": "ExecInstRule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ExecInstValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1308"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1232",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ExecInstRule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ExecInstValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1308"
     }
-   ]
-  }
+   }
+  ]
  }
 }

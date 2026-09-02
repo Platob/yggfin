@@ -1,161 +1,158 @@
 {
  "name": "IndusValleyPartners",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "IndusValleyPartners",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "IndusValleyPartners",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "IsSLMessage",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5270"
-    }
-   },
-   {
-    "name": "SLBasis",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5272"
-    }
-   },
-   {
-    "name": "SLCptyGrossCredit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5259"
-    }
-   },
-   {
-    "name": "SLCptyID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5260"
-    }
-   },
-   {
-    "name": "SLCptyNetCredit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5258"
-    }
-   },
-   {
-    "name": "SLFee",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5273"
-    }
-   },
-   {
-    "name": "SLLocateID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5266"
-    }
-   },
-   {
-    "name": "SLMargin",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5264"
-    }
-   },
-   {
-    "name": "SLMsgID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5275"
-    }
-   },
-   {
-    "name": "SLMsgType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5271"
-    }
-   },
-   {
-    "name": "SLOfferID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5274"
-    }
-   },
-   {
-    "name": "SLPositionID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5267"
-    }
-   },
-   {
-    "name": "SLQuoteType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5276"
-    }
-   },
-   {
-    "name": "SLRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5262"
-    }
-   },
-   {
-    "name": "SLRnd",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5265"
-    }
-   },
-   {
-    "name": "SLSecClassification",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5261"
-    }
-   },
-   {
-    "name": "SLTerm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5263"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "IndusValleyPartners",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "IsSLMessage",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5270"
+   }
+  },
+  {
+   "name": "SLBasis",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5272"
+   }
+  },
+  {
+   "name": "SLCptyGrossCredit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5259"
+   }
+  },
+  {
+   "name": "SLCptyID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5260"
+   }
+  },
+  {
+   "name": "SLCptyNetCredit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5258"
+   }
+  },
+  {
+   "name": "SLFee",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5273"
+   }
+  },
+  {
+   "name": "SLLocateID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5266"
+   }
+  },
+  {
+   "name": "SLMargin",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5264"
+   }
+  },
+  {
+   "name": "SLMsgID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5275"
+   }
+  },
+  {
+   "name": "SLMsgType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5271"
+   }
+  },
+  {
+   "name": "SLOfferID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5274"
+   }
+  },
+  {
+   "name": "SLPositionID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5267"
+   }
+  },
+  {
+   "name": "SLQuoteType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5276"
+   }
+  },
+  {
+   "name": "SLRate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5262"
+   }
+  },
+  {
+   "name": "SLRnd",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5265"
+   }
+  },
+  {
+   "name": "SLSecClassification",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5261"
+   }
+  },
+  {
+   "name": "SLTerm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5263"
+   }
+  }
+ ]
 }

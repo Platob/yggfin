@@ -95,7 +95,7 @@ best-effort basis.
 The one task document owns the shared parsing and commit rules:
 
 ```yaml
-fix_dictionary: null # Packaged registry.zip; set a path or URL to override it.
+fix_dictionary: null # The repository's data/fix; set a path or URL to override it.
 null_values: ["", "null", "<null>", "n/a", "none"]
 exclude_msgtypes: ["0", "1"] # Heartbeat and TestRequest stay in logs.messages.
 protocols: null

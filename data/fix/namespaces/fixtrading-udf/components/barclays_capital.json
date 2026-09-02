@@ -1,169 +1,166 @@
 {
  "name": "BarclaysCapital",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "BarclaysCapital",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "BarclaysCapital",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "BidPx2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6050"
-    }
-   },
-   {
-    "name": "BidSize2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6052"
-    }
-   },
-   {
-    "name": "CombinedPointsBid",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6056"
-    }
-   },
-   {
-    "name": "CombinedPointsOffer",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6057"
-    }
-   },
-   {
-    "name": "Contributor",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5111"
-    }
-   },
-   {
-    "name": "EndpointExchangeExecutionId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5785"
-    }
-   },
-   {
-    "name": "EndPointExchangeOrderId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5784"
-    }
-   },
-   {
-    "name": "ExchangeGatewayID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5783"
-    }
-   },
-   {
-    "name": "ExecutedQuantityLeg2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5687"
-    }
-   },
-   {
-    "name": "IssueDenomination",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5112"
-    }
-   },
-   {
-    "name": "OfferPx2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6051"
-    }
-   },
-   {
-    "name": "OfferSize2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6053"
-    }
-   },
-   {
-    "name": "OrderedQuantityLeg2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5685"
-    }
-   },
-   {
-    "name": "QuoteDepthOfMarket",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5110"
-    }
-   },
-   {
-    "name": "SecondaryQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6054"
-    }
-   },
-   {
-    "name": "SecondaryQty2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6055"
-    }
-   },
-   {
-    "name": "TenorValue",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6215"
-    }
-   },
-   {
-    "name": "TenorValue2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6216"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "BarclaysCapital",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "BidPx2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6050"
+   }
+  },
+  {
+   "name": "BidSize2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6052"
+   }
+  },
+  {
+   "name": "CombinedPointsBid",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6056"
+   }
+  },
+  {
+   "name": "CombinedPointsOffer",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6057"
+   }
+  },
+  {
+   "name": "Contributor",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5111"
+   }
+  },
+  {
+   "name": "EndpointExchangeExecutionId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5785"
+   }
+  },
+  {
+   "name": "EndPointExchangeOrderId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5784"
+   }
+  },
+  {
+   "name": "ExchangeGatewayID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5783"
+   }
+  },
+  {
+   "name": "ExecutedQuantityLeg2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5687"
+   }
+  },
+  {
+   "name": "IssueDenomination",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5112"
+   }
+  },
+  {
+   "name": "OfferPx2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6051"
+   }
+  },
+  {
+   "name": "OfferSize2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6053"
+   }
+  },
+  {
+   "name": "OrderedQuantityLeg2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5685"
+   }
+  },
+  {
+   "name": "QuoteDepthOfMarket",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5110"
+   }
+  },
+  {
+   "name": "SecondaryQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6054"
+   }
+  },
+  {
+   "name": "SecondaryQty2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6055"
+   }
+  },
+  {
+   "name": "TenorValue",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6215"
+   }
+  },
+  {
+   "name": "TenorValue2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6216"
+   }
+  }
+ ]
 }

@@ -1,92 +1,89 @@
 {
  "name": "NoTestMeasures",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTestMeasures",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "3052"
-  },
-  "item": {
-   "name": "TestMeasure",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TestMeasureName",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3053"
-     }
-    },
-    {
-     "name": "TestMeasureDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3054"
-     }
-    },
-    {
-     "name": "TestMeasureType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3055"
-     }
-    },
-    {
-     "name": "TestMeasurePrecision",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3056"
-     }
-    },
-    {
-     "name": "TestMeasureResult",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3057"
-     }
-    },
-    {
-     "name": "TestThresholdType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3058"
-     }
-    },
-    {
-     "name": "TestWarningLevelValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3059"
-     }
-    },
-    {
-     "name": "TestFailLevelValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3060"
-     }
-    },
-    {
-     "name": "TestPeakLevelValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "3061"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "3052",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TestMeasure",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TestMeasureName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3053"
     }
-   ]
-  }
+   },
+   {
+    "name": "TestMeasureDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3054"
+    }
+   },
+   {
+    "name": "TestMeasureType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3055"
+    }
+   },
+   {
+    "name": "TestMeasurePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3056"
+    }
+   },
+   {
+    "name": "TestMeasureResult",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3057"
+    }
+   },
+   {
+    "name": "TestThresholdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3058"
+    }
+   },
+   {
+    "name": "TestWarningLevelValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3059"
+    }
+   },
+   {
+    "name": "TestFailLevelValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3060"
+    }
+   },
+   {
+    "name": "TestPeakLevelValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "3061"
+    }
+   }
+  ]
  }
 }

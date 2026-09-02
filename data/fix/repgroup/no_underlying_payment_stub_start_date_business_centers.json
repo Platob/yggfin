@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingPaymentStubStartDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingPaymentStubStartDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "43000"
-  },
-  "item": {
-   "name": "UnderlyingPaymentStubStartDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingPaymentStubStartDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "43001"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "43000",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingPaymentStubStartDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStubStartDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43001"
     }
-   ]
-  }
+   }
+  ]
  }
 }

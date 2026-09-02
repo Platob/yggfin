@@ -1,60 +1,57 @@
 {
  "name": "NoEntitlementAttrib",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoEntitlementAttrib",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1777"
-  },
-  "item": {
-   "name": "EntitlementAttrib",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "EntitlementAttribType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1778"
-     }
-    },
-    {
-     "name": "EntitlementAttribDatatype",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1779"
-     }
-    },
-    {
-     "name": "EntitlementAttribValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1780"
-     }
-    },
-    {
-     "name": "EntitlementAttribCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1781"
-     }
-    },
-    {
-     "name": "EntitlementAttribCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2940"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1777",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "EntitlementAttrib",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "EntitlementAttribType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1778"
     }
-   ]
-  }
+   },
+   {
+    "name": "EntitlementAttribDatatype",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1779"
+    }
+   },
+   {
+    "name": "EntitlementAttribValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1780"
+    }
+   },
+   {
+    "name": "EntitlementAttribCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1781"
+    }
+   },
+   {
+    "name": "EntitlementAttribCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2940"
+    }
+   }
+  ]
  }
 }

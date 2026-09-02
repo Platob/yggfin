@@ -1,36 +1,33 @@
 {
  "name": "NoLegMarketDisruptionEvents",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegMarketDisruptionEvents",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41467"
-  },
-  "item": {
-   "name": "LegMarketDisruptionEvent",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegMarketDisruptionEvent",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41468"
-     }
-    },
-    {
-     "name": "LegMarketDisruptionValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40223"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41467",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegMarketDisruptionEvent",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegMarketDisruptionEvent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41468"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegMarketDisruptionValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40223"
+    }
+   }
+  ]
  }
 }

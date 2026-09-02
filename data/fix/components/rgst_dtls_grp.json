@@ -1,109 +1,106 @@
 {
  "name": "RgstDtlsGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "RgstDtlsGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "RgstDtlsGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "RegistrationInstructions"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoRegistDtls",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "473"
-    },
-    "item": {
-     "name": "RegistDtl",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "RegistDtls",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "509"
-       }
-      },
-      {
-       "name": "RegistEmail",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "511"
-       }
-      },
-      {
-       "name": "MailingDtls",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "474"
-       }
-      },
-      {
-       "name": "MailingInst",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "482"
-       }
-      },
-      {
-       "name": "NestedParties",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "NestedParties"
-       },
-       "fields": []
-      },
-      {
-       "name": "OwnerType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "522"
-       }
-      },
-      {
-       "name": "DateOfBirth",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "486"
-       }
-      },
-      {
-       "name": "InvestorCountryOfResidence",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "475"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "RgstDtlsGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "RegistrationInstructions"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoRegistDtls",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "473"
+   },
+   "item": {
+    "name": "RegistDtl",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "RegistDtls",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "509"
+      }
+     },
+     {
+      "name": "RegistEmail",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "511"
+      }
+     },
+     {
+      "name": "MailingDtls",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "474"
+      }
+     },
+     {
+      "name": "MailingInst",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "482"
+      }
+     },
+     {
+      "name": "NestedParties",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "NestedParties"
+      },
+      "fields": []
+     },
+     {
+      "name": "OwnerType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "522"
+      }
+     },
+     {
+      "name": "DateOfBirth",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "486"
+      }
+     },
+     {
+      "name": "InvestorCountryOfResidence",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "475"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

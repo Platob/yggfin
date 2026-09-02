@@ -1,5 +1,5 @@
-{
- "5000": {
+[
+ {
   "name": "OrdStatusReqType",
   "type": "bool",
   "nullable": true,
@@ -24,7 +24,7 @@
    ]
   }
  },
- "5001": {
+ {
   "name": "ExchangeQuoteID",
   "type": "string",
   "nullable": true,
@@ -49,7 +49,7 @@
    ]
   }
  },
- "5002": {
+ {
   "name": "BidVolMultiplier",
   "type": "int32",
   "nullable": true,
@@ -74,7 +74,7 @@
    ]
   }
  },
- "5003": {
+ {
   "name": "OfferVolMultiplier",
   "type": "int32",
   "nullable": true,
@@ -99,7 +99,7 @@
    ]
   }
  },
- "5004": {
+ {
   "name": "BidVolLimit",
   "type": "string",
   "nullable": true,
@@ -124,7 +124,7 @@
    ]
   }
  },
- "5005": {
+ {
   "name": "OfferVolLimit",
   "type": "int32",
   "nullable": true,
@@ -149,7 +149,7 @@
    ]
   }
  },
- "5006": {
+ {
   "name": "QuoteStatusReqType1",
   "type": "string",
   "nullable": true,
@@ -174,7 +174,7 @@
    ]
   }
  },
- "5007": {
+ {
   "name": "LockStatus",
   "type": "bool",
   "nullable": true,
@@ -199,7 +199,7 @@
    ]
   }
  },
- "5008": {
+ {
   "name": "DepositoryID",
   "type": "string",
   "nullable": true,
@@ -224,7 +224,7 @@
    ]
   }
  },
- "5009": {
+ {
   "name": "DepositoryIDSource",
   "type": "string",
   "nullable": true,
@@ -249,7 +249,7 @@
    ]
   }
  },
- "5010": {
+ {
   "name": "SecuritySuspended",
   "type": "bool",
   "nullable": true,
@@ -274,7 +274,7 @@
    ]
   }
  },
- "5011": {
+ {
   "name": "OrderMaxValue",
   "type": "double",
   "nullable": true,
@@ -299,7 +299,7 @@
    ]
   }
  },
- "5012": {
+ {
   "name": "OrderMinValue",
   "type": "double",
   "nullable": true,
@@ -324,7 +324,7 @@
    ]
   }
  },
- "5013": {
+ {
   "name": "TradeSequence1",
   "type": "int32",
   "nullable": true,
@@ -349,7 +349,7 @@
    ]
   }
  },
- "5014": {
+ {
   "name": "TradeMode",
   "type": "string",
   "nullable": true,
@@ -374,7 +374,7 @@
    ]
   }
  },
- "5015": {
+ {
   "name": "TickBandLow",
   "type": "double",
   "nullable": true,
@@ -399,7 +399,7 @@
    ]
   }
  },
- "5016": {
+ {
   "name": "TickBandHigh",
   "type": "double",
   "nullable": true,
@@ -424,7 +424,7 @@
    ]
   }
  },
- "5017": {
+ {
   "name": "TickBandType",
   "type": "string",
   "nullable": true,
@@ -449,7 +449,7 @@
    ]
   }
  },
- "5018": {
+ {
   "name": "OrderBookID",
   "type": "string",
   "nullable": true,
@@ -474,7 +474,7 @@
    ]
   }
  },
- "5019": {
+ {
   "name": "TradingSessionID2",
   "type": "string",
   "nullable": true,
@@ -499,7 +499,7 @@
    ]
   }
  },
- "5020": {
+ {
   "name": "SettlDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -524,7 +524,7 @@
    ]
   }
  },
- "5021": {
+ {
   "name": "ReportToOCS",
   "type": "bool",
   "nullable": true,
@@ -549,7 +549,7 @@
    ]
   }
  },
- "5022": {
+ {
   "name": "NoTickBands",
   "type": "int64",
   "nullable": true,
@@ -574,7 +574,7 @@
    ]
   }
  },
- "5023": {
+ {
   "name": "TickSize1",
   "type": "double",
   "nullable": true,
@@ -599,7 +599,7 @@
    ]
   }
  },
- "5024": {
+ {
   "name": "InternalSeqNo",
   "type": "string",
   "nullable": true,
@@ -624,7 +624,7 @@
    ]
   }
  },
- "5025": {
+ {
   "name": "InternalAcknowledgementSw",
   "type": "string",
   "nullable": true,
@@ -649,7 +649,7 @@
    ]
   }
  },
- "5026": {
+ {
   "name": "DaylightSavingSw",
   "type": "string",
   "nullable": true,
@@ -674,7 +674,7 @@
    ]
   }
  },
- "5027": {
+ {
   "name": "ExchangeSymbolName",
   "type": "string",
   "nullable": true,
@@ -699,7 +699,7 @@
    ]
   }
  },
- "5028": {
+ {
   "name": "BlkOrderDesk",
   "type": "string",
   "nullable": true,
@@ -724,7 +724,7 @@
    ]
   }
  },
- "5029": {
+ {
   "name": "BlkOrderDeskNo",
   "type": "int32",
   "nullable": true,
@@ -749,7 +749,7 @@
    ]
   }
  },
- "5030": {
+ {
   "name": "BlockOrderID",
   "type": "string",
   "nullable": true,
@@ -774,7 +774,7 @@
    ]
   }
  },
- "5031": {
+ {
   "name": "ExpireTime1",
   "type": "timestamp[us]",
   "nullable": true,
@@ -799,7 +799,7 @@
    ]
   }
  },
- "5032": {
+ {
   "name": "SecurityType1",
   "type": "string",
   "nullable": true,
@@ -824,7 +824,7 @@
    ]
   }
  },
- "5033": {
+ {
   "name": "IsForeignBroker",
   "type": "bool",
   "nullable": true,
@@ -849,7 +849,7 @@
    ]
   }
  },
- "5034": {
+ {
   "name": "IsTaxable",
   "type": "bool",
   "nullable": true,
@@ -874,7 +874,7 @@
    ]
   }
  },
- "5035": {
+ {
   "name": "CustodianCode",
   "type": "string",
   "nullable": true,
@@ -899,7 +899,7 @@
    ]
   }
  },
- "5036": {
+ {
   "name": "OldQty1",
   "type": "double",
   "nullable": true,
@@ -924,7 +924,7 @@
    ]
   }
  },
- "5037": {
+ {
   "name": "OldPrice1",
   "type": "double",
   "nullable": true,
@@ -949,7 +949,7 @@
    ]
   }
  },
- "5038": {
+ {
   "name": "CMSText",
   "type": "string",
   "nullable": true,
@@ -974,7 +974,7 @@
    ]
   }
  },
- "5039": {
+ {
   "name": "ClientOrderIDFormat",
   "type": "string",
   "nullable": true,
@@ -999,7 +999,7 @@
    ]
   }
  },
- "5040": {
+ {
   "name": "JIWAYTradingStatus",
   "type": "string",
   "nullable": true,
@@ -1024,7 +1024,7 @@
    ]
   }
  },
- "5041": {
+ {
   "name": "ExchangeTradingStatus",
   "type": "string",
   "nullable": true,
@@ -1049,7 +1049,7 @@
    ]
   }
  },
- "5042": {
+ {
   "name": "MatchMultipleQty",
   "type": "double",
   "nullable": true,
@@ -1074,7 +1074,7 @@
    ]
   }
  },
- "5043": {
+ {
   "name": "AltHandlInst",
   "type": "string",
   "nullable": true,
@@ -1099,7 +1099,7 @@
    ]
   }
  },
- "5044": {
+ {
   "name": "LongName1",
   "type": "string",
   "nullable": true,
@@ -1124,7 +1124,7 @@
    ]
   }
  },
- "5045": {
+ {
   "name": "Password1",
   "type": "string",
   "nullable": true,
@@ -1149,7 +1149,7 @@
    ]
   }
  },
- "5046": {
+ {
   "name": "SLEUID",
   "type": "int32",
   "nullable": true,
@@ -1174,7 +1174,7 @@
    ]
   }
  },
- "5047": {
+ {
   "name": "AllocBrokerAccountID",
   "type": "string",
   "nullable": true,
@@ -1199,7 +1199,7 @@
    ]
   }
  },
- "5048": {
+ {
   "name": "OrdSubStatus",
   "type": "string",
   "nullable": true,
@@ -1224,7 +1224,7 @@
    ]
   }
  },
- "5049": {
+ {
   "name": "DealLinkReference",
   "type": "string",
   "nullable": true,
@@ -1249,7 +1249,7 @@
    ]
   }
  },
- "5050": {
+ {
   "name": "TransStampStat",
   "type": "string",
   "nullable": true,
@@ -1274,7 +1274,7 @@
    ]
   }
  },
- "5051": {
+ {
   "name": "InstructNoInstruct",
   "type": "bool",
   "nullable": true,
@@ -1299,7 +1299,7 @@
    ]
   }
  },
- "5052": {
+ {
   "name": "Maturity",
   "type": "timestamp[us]",
   "nullable": true,
@@ -1324,7 +1324,7 @@
    ]
   }
  },
- "5053": {
+ {
   "name": "TradeType2",
   "type": "string",
   "nullable": true,
@@ -1349,7 +1349,7 @@
    ]
   }
  },
- "5054": {
+ {
   "name": "ClientMarketInd",
   "type": "string",
   "nullable": true,
@@ -1374,7 +1374,7 @@
    ]
   }
  },
- "5055": {
+ {
   "name": "TransReport",
   "type": "bool",
   "nullable": true,
@@ -1399,7 +1399,7 @@
    ]
   }
  },
- "5056": {
+ {
   "name": "ClientCharID",
   "type": "int32",
   "nullable": true,
@@ -1424,7 +1424,7 @@
    ]
   }
  },
- "5057": {
+ {
   "name": "AvgPxInd",
   "type": "bool",
   "nullable": true,
@@ -1449,7 +1449,7 @@
    ]
   }
  },
- "5058": {
+ {
   "name": "StampConsid",
   "type": "double",
   "nullable": true,
@@ -1474,7 +1474,7 @@
    ]
   }
  },
- "5059": {
+ {
   "name": "Coupon1",
   "type": "double",
   "nullable": true,
@@ -1499,7 +1499,7 @@
    ]
   }
  },
- "5060": {
+ {
   "name": "PSBidPrice",
   "type": "double",
   "nullable": true,
@@ -1524,7 +1524,7 @@
    ]
   }
  },
- "5061": {
+ {
   "name": "PSOfferPrice",
   "type": "double",
   "nullable": true,
@@ -1549,7 +1549,7 @@
    ]
   }
  },
- "5062": {
+ {
   "name": "PriceSource",
   "type": "string",
   "nullable": true,
@@ -1574,7 +1574,7 @@
    ]
   }
  },
- "5063": {
+ {
   "name": "FundingCharge",
   "type": "double",
   "nullable": true,
@@ -1599,7 +1599,7 @@
    ]
   }
  },
- "5064": {
+ {
   "name": "FundingConsideration",
   "type": "string",
   "nullable": true,
@@ -1624,7 +1624,7 @@
    ]
   }
  },
- "5065": {
+ {
   "name": "BidFundingCharge",
   "type": "string",
   "nullable": true,
@@ -1649,7 +1649,7 @@
    ]
   }
  },
- "5066": {
+ {
   "name": "BidFundingConsideration",
   "type": "string",
   "nullable": true,
@@ -1674,7 +1674,7 @@
    ]
   }
  },
- "5067": {
+ {
   "name": "DropID",
   "type": "string",
   "nullable": true,
@@ -1699,7 +1699,7 @@
    ]
   }
  },
- "5068": {
+ {
   "name": "OfferFundingCharge",
   "type": "string",
   "nullable": true,
@@ -1724,7 +1724,7 @@
    ]
   }
  },
- "5069": {
+ {
   "name": "OfferFundingConsideration",
   "type": "string",
   "nullable": true,
@@ -1749,7 +1749,7 @@
    ]
   }
  },
- "5070": {
+ {
   "name": "UseSettlement",
   "type": "bool",
   "nullable": true,
@@ -1774,7 +1774,7 @@
    ]
   }
  },
- "5071": {
+ {
   "name": "TickBandNoDecPlaces",
   "type": "int32",
   "nullable": true,
@@ -1799,7 +1799,7 @@
    ]
   }
  },
- "5072": {
+ {
   "name": "ExchangeName",
   "type": "string",
   "nullable": true,
@@ -1824,7 +1824,7 @@
    ]
   }
  },
- "5073": {
+ {
   "name": "SpreadMonicker",
   "type": "string",
   "nullable": true,
@@ -1849,7 +1849,7 @@
    ]
   }
  },
- "5074": {
+ {
   "name": "FundCommissionOption",
   "type": "string",
   "nullable": true,
@@ -1874,7 +1874,7 @@
    ]
   }
  },
- "5075": {
+ {
   "name": "FundCommissionWaiver",
   "type": "double",
   "nullable": true,
@@ -1899,7 +1899,7 @@
    ]
   }
  },
- "5076": {
+ {
   "name": "FundReInvestIncome",
   "type": "bool",
   "nullable": true,
@@ -1924,7 +1924,7 @@
    ]
   }
  },
- "5077": {
+ {
   "name": "FundNomineeAccount",
   "type": "string",
   "nullable": true,
@@ -1949,7 +1949,7 @@
    ]
   }
  },
- "5078": {
+ {
   "name": "FundSpecialDealDiscount",
   "type": "bool",
   "nullable": true,
@@ -1974,7 +1974,7 @@
    ]
   }
  },
- "5079": {
+ {
   "name": "FundSellAll",
   "type": "bool",
   "nullable": true,
@@ -1999,7 +1999,7 @@
    ]
   }
  },
- "5080": {
+ {
   "name": "AsOfIndicator1",
   "type": "bool",
   "nullable": true,
@@ -2024,7 +2024,7 @@
    ]
   }
  },
- "5081": {
+ {
   "name": "AsOfTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -2049,7 +2049,7 @@
    ]
   }
  },
- "5082": {
+ {
   "name": "QuoteType1",
   "type": "string",
   "nullable": true,
@@ -2084,7 +2084,7 @@
    ]
   }
  },
- "5083": {
+ {
   "name": "DripInterval",
   "type": "int32",
   "nullable": true,
@@ -2109,7 +2109,7 @@
    ]
   }
  },
- "5084": {
+ {
   "name": "DripQty",
   "type": "int32",
   "nullable": true,
@@ -2134,7 +2134,7 @@
    ]
   }
  },
- "5085": {
+ {
   "name": "FundValuationDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -2159,7 +2159,7 @@
    ]
   }
  },
- "5086": {
+ {
   "name": "FundValuationSSM",
   "type": "timestamp[us]",
   "nullable": true,
@@ -2184,7 +2184,7 @@
    ]
   }
  },
- "5087": {
+ {
   "name": "FundExternalRef",
   "type": "string",
   "nullable": true,
@@ -2209,7 +2209,7 @@
    ]
   }
  },
- "5088": {
+ {
   "name": "BidDelta",
   "type": "double",
   "nullable": true,
@@ -2234,7 +2234,7 @@
    ]
   }
  },
- "5089": {
+ {
   "name": "AskDelta",
   "type": "double",
   "nullable": true,
@@ -2259,7 +2259,7 @@
    ]
   }
  },
- "5090": {
+ {
   "name": "FundInitialCharge",
   "type": "double",
   "nullable": true,
@@ -2284,7 +2284,7 @@
    ]
   }
  },
- "5091": {
+ {
   "name": "AllocationIndicator1",
   "type": "int32",
   "nullable": true,
@@ -2309,7 +2309,7 @@
    ]
   }
  },
- "5092": {
+ {
   "name": "CrossVariant",
   "type": "int32",
   "nullable": true,
@@ -2340,7 +2340,7 @@
    ]
   }
  },
- "5093": {
+ {
   "name": "CrossQualifier",
   "type": "int32",
   "nullable": true,
@@ -2365,7 +2365,7 @@
    ]
   }
  },
- "5094": {
+ {
   "name": "AmntBought",
   "type": "double",
   "nullable": true,
@@ -2390,7 +2390,7 @@
    ]
   }
  },
- "5095": {
+ {
   "name": "AmntSold",
   "type": "double",
   "nullable": true,
@@ -2415,7 +2415,7 @@
    ]
   }
  },
- "5096": {
+ {
   "name": "DeltaAmnt",
   "type": "double",
   "nullable": true,
@@ -2440,7 +2440,7 @@
    ]
   }
  },
- "5097": {
+ {
   "name": "NoParam",
   "type": "int64",
   "nullable": true,
@@ -2465,7 +2465,7 @@
    ]
   }
  },
- "5098": {
+ {
   "name": "ParamType",
   "type": "string",
   "nullable": true,
@@ -2490,7 +2490,7 @@
    ]
   }
  },
- "5099": {
+ {
   "name": "ParamValue",
   "type": "string",
   "nullable": true,
@@ -2515,7 +2515,7 @@
    ]
   }
  },
- "5100": {
+ {
   "name": "FundSecurityType",
   "type": "string",
   "nullable": true,
@@ -2540,7 +2540,7 @@
    ]
   }
  },
- "5101": {
+ {
   "name": "FundManagerName",
   "type": "string",
   "nullable": true,
@@ -2565,7 +2565,7 @@
    ]
   }
  },
- "5102": {
+ {
   "name": "FundUnitType",
   "type": "bool",
   "nullable": true,
@@ -2590,7 +2590,7 @@
    ]
   }
  },
- "5103": {
+ {
   "name": "FundBuyableFromDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -2615,7 +2615,7 @@
    ]
   }
  },
- "5104": {
+ {
   "name": "FundBuyableToDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -2640,7 +2640,7 @@
    ]
   }
  },
- "5105": {
+ {
   "name": "FundValuationPoint",
   "type": "string",
   "nullable": true,
@@ -2665,7 +2665,7 @@
    ]
   }
  },
- "5106": {
+ {
   "name": "FundDesignation",
   "type": "string",
   "nullable": true,
@@ -2690,7 +2690,7 @@
    ]
   }
  },
- "5107": {
+ {
   "name": "FundGroup1Units",
   "type": "double",
   "nullable": true,
@@ -2715,7 +2715,7 @@
    ]
   }
  },
- "5108": {
+ {
   "name": "FundGroup2Units",
   "type": "double",
   "nullable": true,
@@ -2740,7 +2740,7 @@
    ]
   }
  },
- "5109": {
+ {
   "name": "WaitPrimaryExchange",
   "type": "bool",
   "nullable": true,
@@ -2765,7 +2765,7 @@
    ]
   }
  },
- "5110": {
+ {
   "name": "QuoteDepthOfMarket",
   "type": "int32",
   "nullable": true,
@@ -2790,7 +2790,7 @@
    ]
   }
  },
- "5111": {
+ {
   "name": "Contributor",
   "type": "string",
   "nullable": true,
@@ -2815,7 +2815,7 @@
    ]
   }
  },
- "5112": {
+ {
   "name": "IssueDenomination",
   "type": "double",
   "nullable": true,
@@ -2840,7 +2840,7 @@
    ]
   }
  },
- "5113": {
+ {
   "name": "CreditRatingAgency",
   "type": "int32",
   "nullable": true,
@@ -2865,7 +2865,7 @@
    ]
   }
  },
- "5114": {
+ {
   "name": "NoCreditRating",
   "type": "int64",
   "nullable": true,
@@ -2890,7 +2890,7 @@
    ]
   }
  },
- "5115": {
+ {
   "name": "UnderlyingCreditRatingAgency",
   "type": "int32",
   "nullable": true,
@@ -2915,7 +2915,7 @@
    ]
   }
  },
- "5116": {
+ {
   "name": "NoUnderlyingCreditRating",
   "type": "int64",
   "nullable": true,
@@ -2940,7 +2940,7 @@
    ]
   }
  },
- "5117": {
+ {
   "name": "LegCreditRatingAgency",
   "type": "int32",
   "nullable": true,
@@ -2965,7 +2965,7 @@
    ]
   }
  },
- "5118": {
+ {
   "name": "NoLegCreditRating",
   "type": "int64",
   "nullable": true,
@@ -2990,7 +2990,7 @@
    ]
   }
  },
- "5119": {
+ {
   "name": "NoRFQs",
   "type": "int64",
   "nullable": true,
@@ -3015,7 +3015,7 @@
    ]
   }
  },
- "5120": {
+ {
   "name": "FilterSource",
   "type": "string",
   "nullable": true,
@@ -3040,7 +3040,7 @@
    ]
   }
  },
- "5121": {
+ {
   "name": "Filter",
   "type": "string",
   "nullable": true,
@@ -3065,7 +3065,7 @@
    ]
   }
  },
- "5122": {
+ {
   "name": "FilterReqID",
   "type": "int32",
   "nullable": true,
@@ -3090,7 +3090,7 @@
    ]
   }
  },
- "5123": {
+ {
   "name": "FilterID",
   "type": "int32",
   "nullable": true,
@@ -3115,7 +3115,7 @@
    ]
   }
  },
- "5124": {
+ {
   "name": "ConversionTick",
   "type": "string",
   "nullable": true,
@@ -3140,7 +3140,7 @@
    ]
   }
  },
- "5125": {
+ {
   "name": "TradeNotificationID",
   "type": "string",
   "nullable": true,
@@ -3165,7 +3165,7 @@
    ]
   }
  },
- "5126": {
+ {
   "name": "CMSInternalData",
   "type": "string",
   "nullable": true,
@@ -3190,7 +3190,7 @@
    ]
   }
  },
- "5127": {
+ {
   "name": "Post",
   "type": "string",
   "nullable": true,
@@ -3215,7 +3215,7 @@
    ]
   }
  },
- "5128": {
+ {
   "name": "TurnAroundNumber",
   "type": "string",
   "nullable": true,
@@ -3240,7 +3240,7 @@
    ]
   }
  },
- "5129": {
+ {
   "name": "NoIOIs",
   "type": "int64",
   "nullable": true,
@@ -3265,7 +3265,7 @@
    ]
   }
  },
- "5130": {
+ {
   "name": "TotNoIOIs",
   "type": "int32",
   "nullable": true,
@@ -3290,7 +3290,7 @@
    ]
   }
  },
- "5131": {
+ {
   "name": "PendingAllocation",
   "type": "bool",
   "nullable": true,
@@ -3315,7 +3315,7 @@
    ]
   }
  },
- "5132": {
+ {
   "name": "ContraOrderOrigin",
   "type": "string",
   "nullable": true,
@@ -3340,7 +3340,7 @@
    ]
   }
  },
- "5133": {
+ {
   "name": "Omnibus",
   "type": "bool",
   "nullable": true,
@@ -3365,7 +3365,7 @@
    ]
   }
  },
- "5134": {
+ {
   "name": "MaxBestBidSize",
   "type": "double",
   "nullable": true,
@@ -3390,7 +3390,7 @@
    ]
   }
  },
- "5135": {
+ {
   "name": "MaxBestOfferSize",
   "type": "double",
   "nullable": true,
@@ -3415,7 +3415,7 @@
    ]
   }
  },
- "5136": {
+ {
   "name": "MaxQuotableBidSize",
   "type": "double",
   "nullable": true,
@@ -3440,7 +3440,7 @@
    ]
   }
  },
- "5137": {
+ {
   "name": "MaxQuotableOfferSize",
   "type": "double",
   "nullable": true,
@@ -3465,7 +3465,7 @@
    ]
   }
  },
- "5138": {
+ {
   "name": "SingleConversionQty",
   "type": "double",
   "nullable": true,
@@ -3490,7 +3490,7 @@
    ]
   }
  },
- "5139": {
+ {
   "name": "AggregateConversionQty",
   "type": "double",
   "nullable": true,
@@ -3515,7 +3515,7 @@
    ]
   }
  },
- "5140": {
+ {
   "name": "ExecBy",
   "type": "string",
   "nullable": true,
@@ -3540,7 +3540,7 @@
    ]
   }
  },
- "5141": {
+ {
   "name": "PriceImprovementSide",
   "type": "string",
   "nullable": true,
@@ -3565,7 +3565,7 @@
    ]
   }
  },
- "5142": {
+ {
   "name": "AltRule80A",
   "type": "string",
   "nullable": true,
@@ -3590,7 +3590,7 @@
    ]
   }
  },
- "5143": {
+ {
   "name": "CCPTradeSuffixNumber",
   "type": "string",
   "nullable": true,
@@ -3615,7 +3615,7 @@
    ]
   }
  },
- "5144": {
+ {
   "name": "CCPOrderCompletionFlag",
   "type": "string",
   "nullable": true,
@@ -3640,7 +3640,7 @@
    ]
   }
  },
- "5145": {
+ {
   "name": "NettingLevel",
   "type": "string",
   "nullable": true,
@@ -3665,7 +3665,7 @@
    ]
   }
  },
- "5146": {
+ {
   "name": "DealInstBroker",
   "type": "string",
   "nullable": true,
@@ -3690,7 +3690,7 @@
    ]
   }
  },
- "5147": {
+ {
   "name": "NumExec",
   "type": "int32",
   "nullable": true,
@@ -3715,7 +3715,7 @@
    ]
   }
  },
- "5148": {
+ {
   "name": "TradOrdNum",
   "type": "string",
   "nullable": true,
@@ -3740,7 +3740,7 @@
    ]
   }
  },
- "5149": {
+ {
   "name": "Memo",
   "type": "string",
   "nullable": true,
@@ -3765,7 +3765,7 @@
    ]
   }
  },
- "5150": {
+ {
   "name": "UserIDCmd",
   "type": "string",
   "nullable": true,
@@ -3790,7 +3790,7 @@
    ]
   }
  },
- "5151": {
+ {
   "name": "TickSizeDenominator",
   "type": "double",
   "nullable": true,
@@ -3815,7 +3815,7 @@
    ]
   }
  },
- "5152": {
+ {
   "name": "BoothID",
   "type": "string",
   "nullable": true,
@@ -3840,7 +3840,7 @@
    ]
   }
  },
- "5153": {
+ {
   "name": "SalesInstBroker",
   "type": "string",
   "nullable": true,
@@ -3865,7 +3865,7 @@
    ]
   }
  },
- "5154": {
+ {
   "name": "CXFlag",
   "type": "bool",
   "nullable": true,
@@ -3890,7 +3890,7 @@
    ]
   }
  },
- "5155": {
+ {
   "name": "InstitutionID",
   "type": "string",
   "nullable": true,
@@ -3915,7 +3915,7 @@
    ]
   }
  },
- "5156": {
+ {
   "name": "UnreleasedDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -3940,7 +3940,7 @@
    ]
   }
  },
- "5157": {
+ {
   "name": "UnreleasedTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -3965,7 +3965,7 @@
    ]
   }
  },
- "5158": {
+ {
   "name": "UnreleasedText",
   "type": "string",
   "nullable": true,
@@ -3990,7 +3990,7 @@
    ]
   }
  },
- "5159": {
+ {
   "name": "ClearingCode",
   "type": "string",
   "nullable": true,
@@ -4015,7 +4015,7 @@
    ]
   }
  },
- "5160": {
+ {
   "name": "ClearingAccountNDS",
   "type": "string",
   "nullable": true,
@@ -4040,7 +4040,7 @@
    ]
   }
  },
- "5161": {
+ {
   "name": "AccountNDS",
   "type": "string",
   "nullable": true,
@@ -4065,7 +4065,7 @@
    ]
   }
  },
- "5162": {
+ {
   "name": "TriggerType",
   "type": "string",
   "nullable": true,
@@ -4090,7 +4090,7 @@
    ]
   }
  },
- "5163": {
+ {
   "name": "StabilisationPx",
   "type": "double",
   "nullable": true,
@@ -4115,7 +4115,7 @@
    ]
   }
  },
- "5164": {
+ {
   "name": "SecondaryTransactTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -4140,7 +4140,7 @@
    ]
   }
  },
- "5165": {
+ {
   "name": "SettlInstBroker",
   "type": "string",
   "nullable": true,
@@ -4165,7 +4165,7 @@
    ]
   }
  },
- "5166": {
+ {
   "name": "NoTriggers",
   "type": "int64",
   "nullable": true,
@@ -4190,7 +4190,7 @@
    ]
   }
  },
- "5167": {
+ {
   "name": "TriggerPrice1",
   "type": "double",
   "nullable": true,
@@ -4215,7 +4215,7 @@
    ]
   }
  },
- "5168": {
+ {
   "name": "TriggerMaxFloor",
   "type": "double",
   "nullable": true,
@@ -4240,7 +4240,7 @@
    ]
   }
  },
- "5169": {
+ {
   "name": "TriggerDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -4265,7 +4265,7 @@
    ]
   }
  },
- "5170": {
+ {
   "name": "TriggerDelay",
   "type": "timestamp[us]",
   "nullable": true,
@@ -4290,7 +4290,7 @@
    ]
   }
  },
- "5171": {
+ {
   "name": "TriggerTradSesStat",
   "type": "string",
   "nullable": true,
@@ -4315,7 +4315,7 @@
    ]
   }
  },
- "5172": {
+ {
   "name": "TriggerSymbol",
   "type": "string",
   "nullable": true,
@@ -4340,7 +4340,7 @@
    ]
   }
  },
- "5173": {
+ {
   "name": "TriggerIDSource",
   "type": "string",
   "nullable": true,
@@ -4365,7 +4365,7 @@
    ]
   }
  },
- "5174": {
+ {
   "name": "TriggerSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -4390,7 +4390,7 @@
    ]
   }
  },
- "5175": {
+ {
   "name": "Recycle",
   "type": "string",
   "nullable": true,
@@ -4415,7 +4415,7 @@
    ]
   }
  },
- "5176": {
+ {
   "name": "ExTransactionType",
   "type": "string",
   "nullable": true,
@@ -4440,7 +4440,7 @@
    ]
   }
  },
- "5177": {
+ {
   "name": "Source",
   "type": "string",
   "nullable": true,
@@ -4465,7 +4465,7 @@
    ]
   }
  },
- "5178": {
+ {
   "name": "Dealer",
   "type": "string",
   "nullable": true,
@@ -4490,7 +4490,7 @@
    ]
   }
  },
- "5179": {
+ {
   "name": "TradeTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -4515,7 +4515,7 @@
    ]
   }
  },
- "5180": {
+ {
   "name": "CATStrategy",
   "type": "int32",
   "nullable": true,
@@ -4540,7 +4540,7 @@
    ]
   }
  },
- "5181": {
+ {
   "name": "CATExecStyle",
   "type": "string",
   "nullable": true,
@@ -4565,7 +4565,7 @@
    ]
   }
  },
- "5182": {
+ {
   "name": "MaxPercentVol",
   "type": "int32",
   "nullable": true,
@@ -4590,7 +4590,7 @@
    ]
   }
  },
- "5183": {
+ {
   "name": "MinPercentVol",
   "type": "int32",
   "nullable": true,
@@ -4615,7 +4615,7 @@
    ]
   }
  },
- "5184": {
+ {
   "name": "PingAllECN",
   "type": "bool",
   "nullable": true,
@@ -4640,7 +4640,7 @@
    ]
   }
  },
- "5185": {
+ {
   "name": "AutoReplace1",
   "type": "bool",
   "nullable": true,
@@ -4665,7 +4665,7 @@
    ]
   }
  },
- "5186": {
+ {
   "name": "CheapECN",
   "type": "bool",
   "nullable": true,
@@ -4690,7 +4690,7 @@
    ]
   }
  },
- "5187": {
+ {
   "name": "Reserved1",
   "type": "string",
   "nullable": true,
@@ -4715,7 +4715,7 @@
    ]
   }
  },
- "5188": {
+ {
   "name": "BidForwardPointsDelta",
   "type": "string",
   "nullable": true,
@@ -4740,7 +4740,7 @@
    ]
   }
  },
- "5189": {
+ {
   "name": "OfferForwardPointsDelta",
   "type": "string",
   "nullable": true,
@@ -4765,7 +4765,7 @@
    ]
   }
  },
- "5190": {
+ {
   "name": "LegLastSpotRate",
   "type": "double",
   "nullable": true,
@@ -4790,7 +4790,7 @@
    ]
   }
  },
- "5191": {
+ {
   "name": "LegLastForwardPoints",
   "type": "double",
   "nullable": true,
@@ -4815,7 +4815,7 @@
    ]
   }
  },
- "5192": {
+ {
   "name": "LegSplitTradeFlag",
   "type": "bool",
   "nullable": true,
@@ -4840,7 +4840,7 @@
    ]
   }
  },
- "5193": {
+ {
   "name": "LegMarketType",
   "type": "string",
   "nullable": true,
@@ -4865,7 +4865,7 @@
    ]
   }
  },
- "5194": {
+ {
   "name": "NYSEDirectPlus",
   "type": "bool",
   "nullable": true,
@@ -4890,7 +4890,7 @@
    ]
   }
  },
- "5195": {
+ {
   "name": "FMCNOE",
   "type": "string",
   "nullable": true,
@@ -4915,7 +4915,7 @@
    ]
   }
  },
- "5196": {
+ {
   "name": "PrevFMCNOE",
   "type": "string",
   "nullable": true,
@@ -4940,7 +4940,7 @@
    ]
   }
  },
- "5197": {
+ {
   "name": "GUID",
   "type": "string",
   "nullable": true,
@@ -4965,7 +4965,7 @@
    ]
   }
  },
- "5198": {
+ {
   "name": "FMCTradeBlocknumber",
   "type": "string",
   "nullable": true,
@@ -4990,7 +4990,7 @@
    ]
   }
  },
- "5199": {
+ {
   "name": "FMCSettlementBlock",
   "type": "string",
   "nullable": true,
@@ -5015,7 +5015,7 @@
    ]
   }
  },
- "5200": {
+ {
   "name": "IOIAvailQty",
   "type": "double",
   "nullable": true,
@@ -5040,7 +5040,7 @@
    ]
   }
  },
- "5201": {
+ {
   "name": "AutoExSize",
   "type": "double",
   "nullable": true,
@@ -5065,7 +5065,7 @@
    ]
   }
  },
- "5202": {
+ {
   "name": "TradeThruTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5090,7 +5090,7 @@
    ]
   }
  },
- "5203": {
+ {
   "name": "TradeThruSize",
   "type": "double",
   "nullable": true,
@@ -5115,7 +5115,7 @@
    ]
   }
  },
- "5204": {
+ {
   "name": "TradeThruPrice",
   "type": "double",
   "nullable": true,
@@ -5140,7 +5140,7 @@
    ]
   }
  },
- "5205": {
+ {
   "name": "AdjustedPriceInd",
   "type": "bool",
   "nullable": true,
@@ -5165,7 +5165,7 @@
    ]
   }
  },
- "5206": {
+ {
   "name": "SatisfactionOrdDisp",
   "type": "string",
   "nullable": true,
@@ -5204,7 +5204,7 @@
    ]
   }
  },
- "5207": {
+ {
   "name": "ExecReceiptTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5229,7 +5229,7 @@
    ]
   }
  },
- "5208": {
+ {
   "name": "OriginalOrderTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5254,7 +5254,7 @@
    ]
   }
  },
- "5209": {
+ {
   "name": "OLAOrdRejReason",
   "type": "string",
   "nullable": true,
@@ -5279,7 +5279,7 @@
    ]
   }
  },
- "5210": {
+ {
   "name": "NonDirectedBrokerFINS1",
   "type": "string",
   "nullable": true,
@@ -5304,7 +5304,7 @@
    ]
   }
  },
- "5211": {
+ {
   "name": "NonDirectedBrokerFINS2",
   "type": "string",
   "nullable": true,
@@ -5329,7 +5329,7 @@
    ]
   }
  },
- "5212": {
+ {
   "name": "ExecBrokerFINS",
   "type": "string",
   "nullable": true,
@@ -5354,7 +5354,7 @@
    ]
   }
  },
- "5213": {
+ {
   "name": "OrderOrigin1",
   "type": "string",
   "nullable": true,
@@ -5379,7 +5379,7 @@
    ]
   }
  },
- "5214": {
+ {
   "name": "MKTXTargetLevel",
   "type": "double",
   "nullable": true,
@@ -5404,7 +5404,7 @@
    ]
   }
  },
- "5215": {
+ {
   "name": "MKTXAllowPartialFill",
   "type": "bool",
   "nullable": true,
@@ -5429,7 +5429,7 @@
    ]
   }
  },
- "5216": {
+ {
   "name": "MKTXSpottingProcess",
   "type": "string",
   "nullable": true,
@@ -5454,7 +5454,7 @@
    ]
   }
  },
- "5217": {
+ {
   "name": "StateSecurityID",
   "type": "string",
   "nullable": true,
@@ -5479,7 +5479,7 @@
    ]
   }
  },
- "5218": {
+ {
   "name": "MKTXInquiryTimerDuration",
   "type": "int32",
   "nullable": true,
@@ -5504,7 +5504,7 @@
    ]
   }
  },
- "5219": {
+ {
   "name": "MKTXRevealNumberOfDealers",
   "type": "bool",
   "nullable": true,
@@ -5529,7 +5529,7 @@
    ]
   }
  },
- "5220": {
+ {
   "name": "ValidateOrd",
   "type": "bool",
   "nullable": true,
@@ -5554,7 +5554,7 @@
    ]
   }
  },
- "5221": {
+ {
   "name": "MKTXDesiredDueAtTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5579,7 +5579,7 @@
    ]
   }
  },
- "5222": {
+ {
   "name": "MKTXActualDueAtTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5604,7 +5604,7 @@
    ]
   }
  },
- "5223": {
+ {
   "name": "ApplyIOIEdits",
   "type": "string",
   "nullable": true,
@@ -5629,7 +5629,7 @@
    ]
   }
  },
- "5224": {
+ {
   "name": "CircleInd",
   "type": "bool",
   "nullable": true,
@@ -5654,7 +5654,7 @@
    ]
   }
  },
- "5225": {
+ {
   "name": "SACrossType",
   "type": "string",
   "nullable": true,
@@ -5679,7 +5679,7 @@
    ]
   }
  },
- "5226": {
+ {
   "name": "FutSettDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5704,7 +5704,7 @@
    ]
   }
  },
- "5227": {
+ {
   "name": "FutSettDate2",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5729,7 +5729,7 @@
    ]
   }
  },
- "5228": {
+ {
   "name": "BidForwardPoints",
   "type": "double",
   "nullable": true,
@@ -5754,7 +5754,7 @@
    ]
   }
  },
- "5229": {
+ {
   "name": "OfferForwardPoints",
   "type": "double",
   "nullable": true,
@@ -5779,7 +5779,7 @@
    ]
   }
  },
- "5230": {
+ {
   "name": "BidForwardPoints2",
   "type": "double",
   "nullable": true,
@@ -5804,7 +5804,7 @@
    ]
   }
  },
- "5231": {
+ {
   "name": "OfferForwardPoints2",
   "type": "double",
   "nullable": true,
@@ -5829,7 +5829,7 @@
    ]
   }
  },
- "5232": {
+ {
   "name": "Currency",
   "type": "string",
   "nullable": true,
@@ -5854,7 +5854,7 @@
    ]
   }
  },
- "5233": {
+ {
   "name": "OrderQty",
   "type": "double",
   "nullable": true,
@@ -5879,7 +5879,7 @@
    ]
   }
  },
- "5234": {
+ {
   "name": "OrderQty2",
   "type": "double",
   "nullable": true,
@@ -5904,7 +5904,7 @@
    ]
   }
  },
- "5235": {
+ {
   "name": "SpotRate",
   "type": "double",
   "nullable": true,
@@ -5929,7 +5929,7 @@
    ]
   }
  },
- "5236": {
+ {
   "name": "MKTXLegBenchmarkSecurityID",
   "type": "string",
   "nullable": true,
@@ -5954,7 +5954,7 @@
    ]
   }
  },
- "5237": {
+ {
   "name": "MKTXLegBenchmarkSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -5979,7 +5979,7 @@
    ]
   }
  },
- "5238": {
+ {
   "name": "MKTXLegTargetLevel",
   "type": "double",
   "nullable": true,
@@ -6004,7 +6004,7 @@
    ]
   }
  },
- "5239": {
+ {
   "name": "Reserved2",
   "type": "string",
   "nullable": true,
@@ -6029,7 +6029,7 @@
    ]
   }
  },
- "5240": {
+ {
   "name": "OrderSequence",
   "type": "int32",
   "nullable": true,
@@ -6054,7 +6054,7 @@
    ]
   }
  },
- "5241": {
+ {
   "name": "Reserved3",
   "type": "string",
   "nullable": true,
@@ -6079,7 +6079,7 @@
    ]
   }
  },
- "5242": {
+ {
   "name": "Reserved4",
   "type": "string",
   "nullable": true,
@@ -6104,7 +6104,7 @@
    ]
   }
  },
- "5243": {
+ {
   "name": "Reserved5",
   "type": "string",
   "nullable": true,
@@ -6129,7 +6129,7 @@
    ]
   }
  },
- "5244": {
+ {
   "name": "Reserved6",
   "type": "string",
   "nullable": true,
@@ -6154,7 +6154,7 @@
    ]
   }
  },
- "5245": {
+ {
   "name": "Reserved7",
   "type": "string",
   "nullable": true,
@@ -6179,7 +6179,7 @@
    ]
   }
  },
- "5246": {
+ {
   "name": "Reserved8",
   "type": "string",
   "nullable": true,
@@ -6204,7 +6204,7 @@
    ]
   }
  },
- "5247": {
+ {
   "name": "Reserved9",
   "type": "string",
   "nullable": true,
@@ -6229,7 +6229,7 @@
    ]
   }
  },
- "5248": {
+ {
   "name": "Reserved10",
   "type": "string",
   "nullable": true,
@@ -6254,7 +6254,7 @@
    ]
   }
  },
- "5249": {
+ {
   "name": "SpotOptions",
   "type": "string",
   "nullable": true,
@@ -6279,7 +6279,7 @@
    ]
   }
  },
- "5250": {
+ {
   "name": "CustomerType",
   "type": "int32",
   "nullable": true,
@@ -6304,7 +6304,7 @@
    ]
   }
  },
- "5251": {
+ {
   "name": "TimeInForce",
   "type": "string",
   "nullable": true,
@@ -6387,7 +6387,7 @@
    ]
   }
  },
- "5252": {
+ {
   "name": "QtyParam",
   "type": "string",
   "nullable": true,
@@ -6412,7 +6412,7 @@
    ]
   }
  },
- "5253": {
+ {
   "name": "OrdTypeExt",
   "type": "string",
   "nullable": true,
@@ -6479,7 +6479,7 @@
    ]
   }
  },
- "5254": {
+ {
   "name": "OrigOrderID1",
   "type": "string",
   "nullable": true,
@@ -6504,7 +6504,7 @@
    ]
   }
  },
- "5255": {
+ {
   "name": "StopPxCondition",
   "type": "string",
   "nullable": true,
@@ -6529,7 +6529,7 @@
    ]
   }
  },
- "5256": {
+ {
   "name": "AccountOriginType",
   "type": "string",
   "nullable": true,
@@ -6554,7 +6554,7 @@
    ]
   }
  },
- "5257": {
+ {
   "name": "NoPrompts",
   "type": "int32",
   "nullable": true,
@@ -6579,7 +6579,7 @@
    ]
   }
  },
- "5258": {
+ {
   "name": "SLCptyNetCredit",
   "type": "string",
   "nullable": true,
@@ -6604,7 +6604,7 @@
    ]
   }
  },
- "5259": {
+ {
   "name": "SLCptyGrossCredit",
   "type": "string",
   "nullable": true,
@@ -6629,7 +6629,7 @@
    ]
   }
  },
- "5260": {
+ {
   "name": "SLCptyID",
   "type": "string",
   "nullable": true,
@@ -6654,7 +6654,7 @@
    ]
   }
  },
- "5261": {
+ {
   "name": "SLSecClassification",
   "type": "string",
   "nullable": true,
@@ -6679,7 +6679,7 @@
    ]
   }
  },
- "5262": {
+ {
   "name": "SLRate",
   "type": "double",
   "nullable": true,
@@ -6704,7 +6704,7 @@
    ]
   }
  },
- "5263": {
+ {
   "name": "SLTerm",
   "type": "string",
   "nullable": true,
@@ -6729,7 +6729,7 @@
    ]
   }
  },
- "5264": {
+ {
   "name": "SLMargin",
   "type": "string",
   "nullable": true,
@@ -6754,7 +6754,7 @@
    ]
   }
  },
- "5265": {
+ {
   "name": "SLRnd",
   "type": "string",
   "nullable": true,
@@ -6779,7 +6779,7 @@
    ]
   }
  },
- "5266": {
+ {
   "name": "SLLocateID",
   "type": "string",
   "nullable": true,
@@ -6804,7 +6804,7 @@
    ]
   }
  },
- "5267": {
+ {
   "name": "SLPositionID",
   "type": "string",
   "nullable": true,
@@ -6829,7 +6829,7 @@
    ]
   }
  },
- "5268": {
+ {
   "name": "Reserved11",
   "type": "string",
   "nullable": true,
@@ -6854,7 +6854,7 @@
    ]
   }
  },
- "5269": {
+ {
   "name": "Reserved12",
   "type": "string",
   "nullable": true,
@@ -6879,7 +6879,7 @@
    ]
   }
  },
- "5270": {
+ {
   "name": "IsSLMessage",
   "type": "string",
   "nullable": true,
@@ -6904,7 +6904,7 @@
    ]
   }
  },
- "5271": {
+ {
   "name": "SLMsgType",
   "type": "string",
   "nullable": true,
@@ -6929,7 +6929,7 @@
    ]
   }
  },
- "5272": {
+ {
   "name": "SLBasis",
   "type": "string",
   "nullable": true,
@@ -6954,7 +6954,7 @@
    ]
   }
  },
- "5273": {
+ {
   "name": "SLFee",
   "type": "string",
   "nullable": true,
@@ -6979,7 +6979,7 @@
    ]
   }
  },
- "5274": {
+ {
   "name": "SLOfferID",
   "type": "string",
   "nullable": true,
@@ -7004,7 +7004,7 @@
    ]
   }
  },
- "5275": {
+ {
   "name": "SLMsgID",
   "type": "string",
   "nullable": true,
@@ -7029,7 +7029,7 @@
    ]
   }
  },
- "5276": {
+ {
   "name": "SLQuoteType",
   "type": "string",
   "nullable": true,
@@ -7054,7 +7054,7 @@
    ]
   }
  },
- "5277": {
+ {
   "name": "Reserved13",
   "type": "string",
   "nullable": true,
@@ -7079,7 +7079,7 @@
    ]
   }
  },
- "5278": {
+ {
   "name": "Reserved14",
   "type": "string",
   "nullable": true,
@@ -7104,7 +7104,7 @@
    ]
   }
  },
- "5279": {
+ {
   "name": "Reserved15",
   "type": "string",
   "nullable": true,
@@ -7129,7 +7129,7 @@
    ]
   }
  },
- "5280": {
+ {
   "name": "FXallMDFilterInd1",
   "type": "bool",
   "nullable": true,
@@ -7154,7 +7154,7 @@
    ]
   }
  },
- "5281": {
+ {
   "name": "FXallMDFilterInd2",
   "type": "bool",
   "nullable": true,
@@ -7179,7 +7179,7 @@
    ]
   }
  },
- "5282": {
+ {
   "name": "FXallCrossExclusionInd",
   "type": "bool",
   "nullable": true,
@@ -7204,7 +7204,7 @@
    ]
   }
  },
- "5283": {
+ {
   "name": "FXallContingentInd",
   "type": "bool",
   "nullable": true,
@@ -7229,7 +7229,7 @@
    ]
   }
  },
- "5284": {
+ {
   "name": "FXallIndicator4",
   "type": "string",
   "nullable": true,
@@ -7254,7 +7254,7 @@
    ]
   }
  },
- "5285": {
+ {
   "name": "FXallIndicator5",
   "type": "string",
   "nullable": true,
@@ -7279,7 +7279,7 @@
    ]
   }
  },
- "5286": {
+ {
   "name": "FXallIndicator6",
   "type": "string",
   "nullable": true,
@@ -7304,7 +7304,7 @@
    ]
   }
  },
- "5287": {
+ {
   "name": "FXallIndicator7",
   "type": "string",
   "nullable": true,
@@ -7329,7 +7329,7 @@
    ]
   }
  },
- "5288": {
+ {
   "name": "FXallIndicator8",
   "type": "string",
   "nullable": true,
@@ -7354,7 +7354,7 @@
    ]
   }
  },
- "5289": {
+ {
   "name": "FXallIndicator9",
   "type": "string",
   "nullable": true,
@@ -7379,7 +7379,7 @@
    ]
   }
  },
- "5290": {
+ {
   "name": "ShortCode",
   "type": "string",
   "nullable": true,
@@ -7404,7 +7404,7 @@
    ]
   }
  },
- "5291": {
+ {
   "name": "FXallIndicator11",
   "type": "string",
   "nullable": true,
@@ -7429,7 +7429,7 @@
    ]
   }
  },
- "5292": {
+ {
   "name": "BidMarketSize",
   "type": "double",
   "nullable": true,
@@ -7454,7 +7454,7 @@
    ]
   }
  },
- "5293": {
+ {
   "name": "AskMarketSize",
   "type": "double",
   "nullable": true,
@@ -7479,7 +7479,7 @@
    ]
   }
  },
- "5294": {
+ {
   "name": "NoOfMarketMakers",
   "type": "int64",
   "nullable": true,
@@ -7504,7 +7504,7 @@
    ]
   }
  },
- "5295": {
+ {
   "name": "UnderlyingNumber",
   "type": "int32",
   "nullable": true,
@@ -7529,7 +7529,7 @@
    ]
   }
  },
- "5296": {
+ {
   "name": "SeriesNumber",
   "type": "int32",
   "nullable": true,
@@ -7554,7 +7554,7 @@
    ]
   }
  },
- "5297": {
+ {
   "name": "SendingTimeJavaEpoch",
   "type": "int32",
   "nullable": true,
@@ -7579,7 +7579,7 @@
    ]
   }
  },
- "5298": {
+ {
   "name": "FourWayAgreement",
   "type": "bool",
   "nullable": true,
@@ -7604,7 +7604,7 @@
    ]
   }
  },
- "5299": {
+ {
   "name": "MustRefresh",
   "type": "bool",
   "nullable": true,
@@ -7629,7 +7629,7 @@
    ]
   }
  },
- "5300": {
+ {
   "name": "ContraID",
   "type": "string",
   "nullable": true,
@@ -7654,7 +7654,7 @@
    ]
   }
  },
- "5301": {
+ {
   "name": "PSMMFlag",
   "type": "bool",
   "nullable": true,
@@ -7679,7 +7679,7 @@
    ]
   }
  },
- "5302": {
+ {
   "name": "MMQuoteOpenTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -7704,7 +7704,7 @@
    ]
   }
  },
- "5303": {
+ {
   "name": "MMQuoteCloseTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -7729,7 +7729,7 @@
    ]
   }
  },
- "5304": {
+ {
   "name": "MMFirstEffectiveDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -7754,7 +7754,7 @@
    ]
   }
  },
- "5305": {
+ {
   "name": "MMLastEffectiveDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -7779,7 +7779,7 @@
    ]
   }
  },
- "5306": {
+ {
   "name": "MMAutoQuoteRefreshParameter",
   "type": "string",
   "nullable": true,
@@ -7804,7 +7804,7 @@
    ]
   }
  },
- "5307": {
+ {
   "name": "LockOrCrossIndicator",
   "type": "bool",
   "nullable": true,
@@ -7829,7 +7829,7 @@
    ]
   }
  },
- "5308": {
+ {
   "name": "Reserved16",
   "type": "string",
   "nullable": true,
@@ -7854,7 +7854,7 @@
    ]
   }
  },
- "5309": {
+ {
   "name": "Reserved17",
   "type": "string",
   "nullable": true,
@@ -7879,7 +7879,7 @@
    ]
   }
  },
- "5310": {
+ {
   "name": "MMBidSize1",
   "type": "double",
   "nullable": true,
@@ -7904,7 +7904,7 @@
    ]
   }
  },
- "5311": {
+ {
   "name": "MMOfferSize1",
   "type": "double",
   "nullable": true,
@@ -7929,7 +7929,7 @@
    ]
   }
  },
- "5312": {
+ {
   "name": "MMBidSizeType",
   "type": "bool",
   "nullable": true,
@@ -7964,7 +7964,7 @@
    ]
   }
  },
- "5313": {
+ {
   "name": "MMOfferSizeType",
   "type": "bool",
   "nullable": true,
@@ -7999,7 +7999,7 @@
    ]
   }
  },
- "5314": {
+ {
   "name": "BDBidSize",
   "type": "double",
   "nullable": true,
@@ -8024,7 +8024,7 @@
    ]
   }
  },
- "5315": {
+ {
   "name": "BDBidSizeType",
   "type": "bool",
   "nullable": true,
@@ -8049,7 +8049,7 @@
    ]
   }
  },
- "5316": {
+ {
   "name": "BDOfferSize",
   "type": "double",
   "nullable": true,
@@ -8074,7 +8074,7 @@
    ]
   }
  },
- "5317": {
+ {
   "name": "BDOfferSizeType",
   "type": "bool",
   "nullable": true,
@@ -8109,7 +8109,7 @@
    ]
   }
  },
- "5318": {
+ {
   "name": "Branch",
   "type": "string",
   "nullable": true,
@@ -8134,7 +8134,7 @@
    ]
   }
  },
- "5319": {
+ {
   "name": "CrossMktProtection",
   "type": "bool",
   "nullable": true,
@@ -8169,7 +8169,7 @@
    ]
   }
  },
- "5320": {
+ {
   "name": "CustBidSizeType",
   "type": "bool",
   "nullable": true,
@@ -8204,7 +8204,7 @@
    ]
   }
  },
- "5321": {
+ {
   "name": "CustOfferSizeType",
   "type": "bool",
   "nullable": true,
@@ -8239,7 +8239,7 @@
    ]
   }
  },
- "5322": {
+ {
   "name": "FirmID1",
   "type": "string",
   "nullable": true,
@@ -8264,7 +8264,7 @@
    ]
   }
  },
- "5323": {
+ {
   "name": "IssueID",
   "type": "int32",
   "nullable": true,
@@ -8289,7 +8289,7 @@
    ]
   }
  },
- "5324": {
+ {
   "name": "IsVolOnePct",
   "type": "bool",
   "nullable": true,
@@ -8314,7 +8314,7 @@
    ]
   }
  },
- "5325": {
+ {
   "name": "IsVolTwoPct",
   "type": "bool",
   "nullable": true,
@@ -8349,7 +8349,7 @@
    ]
   }
  },
- "5326": {
+ {
   "name": "LockMktProtection",
   "type": "bool",
   "nullable": true,
@@ -8380,7 +8380,7 @@
    ]
   }
  },
- "5327": {
+ {
   "name": "AORThreshold",
   "type": "int32",
   "nullable": true,
@@ -8405,7 +8405,7 @@
    ]
   }
  },
- "5328": {
+ {
   "name": "AutoReplace2",
   "type": "bool",
   "nullable": true,
@@ -8440,7 +8440,7 @@
    ]
   }
  },
- "5329": {
+ {
   "name": "MinPxVar",
   "type": "int32",
   "nullable": true,
@@ -8465,7 +8465,7 @@
    ]
   }
  },
- "5330": {
+ {
   "name": "OrigQuoteID",
   "type": "int32",
   "nullable": true,
@@ -8490,7 +8490,7 @@
    ]
   }
  },
- "5331": {
+ {
   "name": "OwnerID",
   "type": "string",
   "nullable": true,
@@ -8515,7 +8515,7 @@
    ]
   }
  },
- "5332": {
+ {
   "name": "ScriptLevel",
   "type": "int32",
   "nullable": true,
@@ -8540,7 +8540,7 @@
    ]
   }
  },
- "5333": {
+ {
   "name": "SeriesID",
   "type": "int32",
   "nullable": true,
@@ -8565,7 +8565,7 @@
    ]
   }
  },
- "5334": {
+ {
   "name": "IssueStatus",
   "type": "int32",
   "nullable": true,
@@ -8628,7 +8628,7 @@
    ]
   }
  },
- "5335": {
+ {
   "name": "Tick",
   "type": "int32",
   "nullable": true,
@@ -8653,7 +8653,7 @@
    ]
   }
  },
- "5336": {
+ {
   "name": "UnderlyingID",
   "type": "int32",
   "nullable": true,
@@ -8678,7 +8678,7 @@
    ]
   }
  },
- "5337": {
+ {
   "name": "UpperLimit",
   "type": "int32",
   "nullable": true,
@@ -8703,7 +8703,7 @@
    ]
   }
  },
- "5338": {
+ {
   "name": "OPRAClassCode",
   "type": "string",
   "nullable": true,
@@ -8728,7 +8728,7 @@
    ]
   }
  },
- "5339": {
+ {
   "name": "OriginalSize",
   "type": "int32",
   "nullable": true,
@@ -8753,7 +8753,7 @@
    ]
   }
  },
- "5340": {
+ {
   "name": "NBBOStepUpMode",
   "type": "string",
   "nullable": true,
@@ -8796,7 +8796,7 @@
    ]
   }
  },
- "5341": {
+ {
   "name": "MPRequestID",
   "type": "string",
   "nullable": true,
@@ -8821,7 +8821,7 @@
    ]
   }
  },
- "5342": {
+ {
   "name": "NoSteps",
   "type": "int64",
   "nullable": true,
@@ -8846,7 +8846,7 @@
    ]
   }
  },
- "5343": {
+ {
   "name": "DisseminatedStatus",
   "type": "bool",
   "nullable": true,
@@ -8881,7 +8881,7 @@
    ]
   }
  },
- "5344": {
+ {
   "name": "StepPosition",
   "type": "int32",
   "nullable": true,
@@ -8906,7 +8906,7 @@
    ]
   }
  },
- "5345": {
+ {
   "name": "SecDefnReqType",
   "type": "string",
   "nullable": true,
@@ -8949,7 +8949,7 @@
    ]
   }
  },
- "5346": {
+ {
   "name": "NonCustSize",
   "type": "double",
   "nullable": true,
@@ -8974,7 +8974,7 @@
    ]
   }
  },
- "5347": {
+ {
   "name": "NoExchanges",
   "type": "int64",
   "nullable": true,
@@ -8999,7 +8999,7 @@
    ]
   }
  },
- "5348": {
+ {
   "name": "QuoteScriptDataType",
   "type": "string",
   "nullable": true,
@@ -9034,7 +9034,7 @@
    ]
   }
  },
- "5349": {
+ {
   "name": "QuoteStatusRequestType",
   "type": "string",
   "nullable": true,
@@ -9069,7 +9069,7 @@
    ]
   }
  },
- "5350": {
+ {
   "name": "ReinitiateConfig",
   "type": "bool",
   "nullable": true,
@@ -9104,7 +9104,7 @@
    ]
   }
  },
- "5351": {
+ {
   "name": "OPRAStrikeCode",
   "type": "string",
   "nullable": true,
@@ -9129,7 +9129,7 @@
    ]
   }
  },
- "5352": {
+ {
   "name": "PCXQuoteID",
   "type": "int32",
   "nullable": true,
@@ -9154,7 +9154,7 @@
    ]
   }
  },
- "5353": {
+ {
   "name": "IsFastFirm",
   "type": "bool",
   "nullable": true,
@@ -9189,7 +9189,7 @@
    ]
   }
  },
- "5354": {
+ {
   "name": "OptPxDenominator",
   "type": "int32",
   "nullable": true,
@@ -9214,7 +9214,7 @@
    ]
   }
  },
- "5355": {
+ {
   "name": "NoTick",
   "type": "int64",
   "nullable": true,
@@ -9239,7 +9239,7 @@
    ]
   }
  },
- "5356": {
+ {
   "name": "OrderReqType",
   "type": "string",
   "nullable": true,
@@ -9274,7 +9274,7 @@
    ]
   }
  },
- "5357": {
+ {
   "name": "NoQuoteSizes",
   "type": "int64",
   "nullable": true,
@@ -9299,7 +9299,7 @@
    ]
   }
  },
- "5358": {
+ {
   "name": "ResponseID",
   "type": "string",
   "nullable": true,
@@ -9324,7 +9324,7 @@
    ]
   }
  },
- "5359": {
+ {
   "name": "MktSize",
   "type": "double",
   "nullable": true,
@@ -9349,7 +9349,7 @@
    ]
   }
  },
- "5360": {
+ {
   "name": "OrigOwnerID",
   "type": "string",
   "nullable": true,
@@ -9374,7 +9374,7 @@
    ]
   }
  },
- "5361": {
+ {
   "name": "NoScriptLevel",
   "type": "int32",
   "nullable": true,
@@ -9399,7 +9399,7 @@
    ]
   }
  },
- "5362": {
+ {
   "name": "FMCNETTradeNumber",
   "type": "string",
   "nullable": true,
@@ -9424,7 +9424,7 @@
    ]
   }
  },
- "5363": {
+ {
   "name": "PrevFMCNETTradeNumber",
   "type": "string",
   "nullable": true,
@@ -9449,7 +9449,7 @@
    ]
   }
  },
- "5364": {
+ {
   "name": "MemberName",
   "type": "string",
   "nullable": true,
@@ -9474,7 +9474,7 @@
    ]
   }
  },
- "5365": {
+ {
   "name": "MemberAddress",
   "type": "string",
   "nullable": true,
@@ -9499,7 +9499,7 @@
    ]
   }
  },
- "5366": {
+ {
   "name": "ContactFax",
   "type": "string",
   "nullable": true,
@@ -9524,7 +9524,7 @@
    ]
   }
  },
- "5367": {
+ {
   "name": "AltPhone1",
   "type": "string",
   "nullable": true,
@@ -9549,7 +9549,7 @@
    ]
   }
  },
- "5368": {
+ {
   "name": "AltPhone2",
   "type": "string",
   "nullable": true,
@@ -9574,7 +9574,7 @@
    ]
   }
  },
- "5369": {
+ {
   "name": "NoBranch",
   "type": "int64",
   "nullable": true,
@@ -9599,7 +9599,7 @@
    ]
   }
  },
- "5370": {
+ {
   "name": "BranchID",
   "type": "string",
   "nullable": true,
@@ -9624,7 +9624,7 @@
    ]
   }
  },
- "5371": {
+ {
   "name": "Reserved18",
   "type": "string",
   "nullable": true,
@@ -9649,7 +9649,7 @@
    ]
   }
  },
- "5372": {
+ {
   "name": "Reserved19",
   "type": "string",
   "nullable": true,
@@ -9674,7 +9674,7 @@
    ]
   }
  },
- "5373": {
+ {
   "name": "Reserved20",
   "type": "string",
   "nullable": true,
@@ -9699,7 +9699,7 @@
    ]
   }
  },
- "5374": {
+ {
   "name": "Reserved21",
   "type": "string",
   "nullable": true,
@@ -9724,7 +9724,7 @@
    ]
   }
  },
- "5375": {
+ {
   "name": "Reserved22",
   "type": "string",
   "nullable": true,
@@ -9749,7 +9749,7 @@
    ]
   }
  },
- "5376": {
+ {
   "name": "Reserved23",
   "type": "string",
   "nullable": true,
@@ -9774,7 +9774,7 @@
    ]
   }
  },
- "5377": {
+ {
   "name": "Reserved24",
   "type": "string",
   "nullable": true,
@@ -9799,7 +9799,7 @@
    ]
   }
  },
- "5378": {
+ {
   "name": "Reserved25",
   "type": "string",
   "nullable": true,
@@ -9824,7 +9824,7 @@
    ]
   }
  },
- "5379": {
+ {
   "name": "Reserved26",
   "type": "string",
   "nullable": true,
@@ -9849,7 +9849,7 @@
    ]
   }
  },
- "5380": {
+ {
   "name": "Reserved27",
   "type": "string",
   "nullable": true,
@@ -9874,7 +9874,7 @@
    ]
   }
  },
- "5381": {
+ {
   "name": "ShortSecurityDesc",
   "type": "string",
   "nullable": true,
@@ -9899,7 +9899,7 @@
    ]
   }
  },
- "5382": {
+ {
   "name": "EncodedShortSecurityDescLen",
   "type": "int32",
   "nullable": true,
@@ -9924,7 +9924,7 @@
    ]
   }
  },
- "5383": {
+ {
   "name": "EncodedShortSecurityDesc",
   "type": "string",
   "nullable": true,
@@ -9949,7 +9949,7 @@
    ]
   }
  },
- "5384": {
+ {
   "name": "AccruedInterestAmt",
   "type": "double",
   "nullable": true,
@@ -9974,7 +9974,7 @@
    ]
   }
  },
- "5385": {
+ {
   "name": "MarketCode",
   "type": "string",
   "nullable": true,
@@ -9999,7 +9999,7 @@
    ]
   }
  },
- "5386": {
+ {
   "name": "MinPriceIncrement",
   "type": "double",
   "nullable": true,
@@ -10024,7 +10024,7 @@
    ]
   }
  },
- "5387": {
+ {
   "name": "MktShareLimit",
   "type": "string",
   "nullable": true,
@@ -10049,7 +10049,7 @@
    ]
   }
  },
- "5388": {
+ {
   "name": "MktShareThreshold",
   "type": "double",
   "nullable": true,
@@ -10074,7 +10074,7 @@
    ]
   }
  },
- "5389": {
+ {
   "name": "MaxOrdersVolume",
   "type": "double",
   "nullable": true,
@@ -10099,7 +10099,7 @@
    ]
   }
  },
- "5390": {
+ {
   "name": "SettlVenue",
   "type": "string",
   "nullable": true,
@@ -10124,7 +10124,7 @@
    ]
   }
  },
- "5391": {
+ {
   "name": "SettlAccType1",
   "type": "string",
   "nullable": true,
@@ -10163,7 +10163,7 @@
    ]
   }
  },
- "5392": {
+ {
   "name": "SenderGroupID",
   "type": "string",
   "nullable": true,
@@ -10188,7 +10188,7 @@
    ]
   }
  },
- "5393": {
+ {
   "name": "Reserved28",
   "type": "string",
   "nullable": true,
@@ -10213,7 +10213,7 @@
    ]
   }
  },
- "5394": {
+ {
   "name": "Reserved29",
   "type": "string",
   "nullable": true,
@@ -10238,7 +10238,7 @@
    ]
   }
  },
- "5395": {
+ {
   "name": "Reserved30",
   "type": "string",
   "nullable": true,
@@ -10263,7 +10263,7 @@
    ]
   }
  },
- "5396": {
+ {
   "name": "Reserved31",
   "type": "string",
   "nullable": true,
@@ -10288,7 +10288,7 @@
    ]
   }
  },
- "5397": {
+ {
   "name": "Reserved32",
   "type": "string",
   "nullable": true,
@@ -10313,7 +10313,7 @@
    ]
   }
  },
- "5398": {
+ {
   "name": "Reserved33",
   "type": "string",
   "nullable": true,
@@ -10338,7 +10338,7 @@
    ]
   }
  },
- "5399": {
+ {
   "name": "Reserved34",
   "type": "string",
   "nullable": true,
@@ -10363,7 +10363,7 @@
    ]
   }
  },
- "5400": {
+ {
   "name": "CashOrCredit",
   "type": "string",
   "nullable": true,
@@ -10388,7 +10388,7 @@
    ]
   }
  },
- "5401": {
+ {
   "name": "TradeType",
   "type": "string",
   "nullable": true,
@@ -10413,7 +10413,7 @@
    ]
   }
  },
- "5402": {
+ {
   "name": "LocalOrForeign",
   "type": "string",
   "nullable": true,
@@ -10438,7 +10438,7 @@
    ]
   }
  },
- "5403": {
+ {
   "name": "ForeignerID",
   "type": "string",
   "nullable": true,
@@ -10463,7 +10463,7 @@
    ]
   }
  },
- "5404": {
+ {
   "name": "ClassiOfForInv",
   "type": "string",
   "nullable": true,
@@ -10488,7 +10488,7 @@
    ]
   }
  },
- "5405": {
+ {
   "name": "ExecPrice",
   "type": "string",
   "nullable": true,
@@ -10513,7 +10513,7 @@
    ]
   }
  },
- "5406": {
+ {
   "name": "InvestorCode",
   "type": "string",
   "nullable": true,
@@ -10538,7 +10538,7 @@
    ]
   }
  },
- "5407": {
+ {
   "name": "NonMemberID",
   "type": "string",
   "nullable": true,
@@ -10563,7 +10563,7 @@
    ]
   }
  },
- "5408": {
+ {
   "name": "ProgramTrade1",
   "type": "string",
   "nullable": true,
@@ -10588,7 +10588,7 @@
    ]
   }
  },
- "5409": {
+ {
   "name": "ShortSaleType",
   "type": "string",
   "nullable": true,
@@ -10613,7 +10613,7 @@
    ]
   }
  },
- "5410": {
+ {
   "name": "OrderRoutingMethod",
   "type": "string",
   "nullable": true,
@@ -10638,7 +10638,7 @@
    ]
   }
  },
- "5411": {
+ {
   "name": "PriceIndi",
   "type": "string",
   "nullable": true,
@@ -10663,7 +10663,7 @@
    ]
   }
  },
- "5412": {
+ {
   "name": "TradePurpose",
   "type": "string",
   "nullable": true,
@@ -10688,7 +10688,7 @@
    ]
   }
  },
- "5413": {
+ {
   "name": "ReceiptTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -10713,7 +10713,7 @@
    ]
   }
  },
- "5414": {
+ {
   "name": "NearestSeriesPrice",
   "type": "double",
   "nullable": true,
@@ -10738,7 +10738,7 @@
    ]
   }
  },
- "5415": {
+ {
   "name": "FurthestSeriesPrice",
   "type": "double",
   "nullable": true,
@@ -10763,7 +10763,7 @@
    ]
   }
  },
- "5416": {
+ {
   "name": "OrderDate1",
   "type": "timestamp[us]",
   "nullable": true,
@@ -10788,7 +10788,7 @@
    ]
   }
  },
- "5417": {
+ {
   "name": "AccountType1",
   "type": "string",
   "nullable": true,
@@ -10813,7 +10813,7 @@
    ]
   }
  },
- "5418": {
+ {
   "name": "ContractTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -10838,7 +10838,7 @@
    ]
   }
  },
- "5419": {
+ {
   "name": "BasketID1",
   "type": "string",
   "nullable": true,
@@ -10863,7 +10863,7 @@
    ]
   }
  },
- "5420": {
+ {
   "name": "CouponFrequency",
   "type": "string",
   "nullable": true,
@@ -10888,7 +10888,7 @@
    ]
   }
  },
- "5421": {
+ {
   "name": "CallDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -10913,7 +10913,7 @@
    ]
   }
  },
- "5422": {
+ {
   "name": "ReliabilityIndicator",
   "type": "bool",
   "nullable": true,
@@ -10938,7 +10938,7 @@
    ]
   }
  },
- "5423": {
+ {
   "name": "ModelType",
   "type": "string",
   "nullable": true,
@@ -10963,7 +10963,7 @@
    ]
   }
  },
- "5424": {
+ {
   "name": "PortfolioID",
   "type": "string",
   "nullable": true,
@@ -10988,7 +10988,7 @@
    ]
   }
  },
- "5425": {
+ {
   "name": "SerialNo",
   "type": "string",
   "nullable": true,
@@ -11013,7 +11013,7 @@
    ]
   }
  },
- "5426": {
+ {
   "name": "BrokerSeqNo",
   "type": "int64",
   "nullable": true,
@@ -11038,7 +11038,7 @@
    ]
   }
  },
- "5427": {
+ {
   "name": "InstrAttribType",
   "type": "string",
   "nullable": true,
@@ -11063,7 +11063,7 @@
    ]
   }
  },
- "5428": {
+ {
   "name": "AdjTargetLevel",
   "type": "double",
   "nullable": true,
@@ -11088,7 +11088,7 @@
    ]
   }
  },
- "5429": {
+ {
   "name": "NumberItems",
   "type": "int32",
   "nullable": true,
@@ -11113,7 +11113,7 @@
    ]
   }
  },
- "5430": {
+ {
   "name": "SpotPrice",
   "type": "double",
   "nullable": true,
@@ -11138,7 +11138,7 @@
    ]
   }
  },
- "5431": {
+ {
   "name": "SpotYield",
   "type": "double",
   "nullable": true,
@@ -11163,7 +11163,7 @@
    ]
   }
  },
- "5432": {
+ {
   "name": "CurveName",
   "type": "string",
   "nullable": true,
@@ -11188,7 +11188,7 @@
    ]
   }
  },
- "5433": {
+ {
   "name": "CurvePoint",
   "type": "double",
   "nullable": true,
@@ -11213,7 +11213,7 @@
    ]
   }
  },
- "5434": {
+ {
   "name": "AdjSpread",
   "type": "double",
   "nullable": true,
@@ -11238,7 +11238,7 @@
    ]
   }
  },
- "5435": {
+ {
   "name": "FeeAdjToSpread",
   "type": "double",
   "nullable": true,
@@ -11263,7 +11263,7 @@
    ]
   }
  },
- "5436": {
+ {
   "name": "AdjYield",
   "type": "double",
   "nullable": true,
@@ -11288,7 +11288,7 @@
    ]
   }
  },
- "5437": {
+ {
   "name": "OldPrice2",
   "type": "double",
   "nullable": true,
@@ -11313,7 +11313,7 @@
    ]
   }
  },
- "5438": {
+ {
   "name": "ReferenceID",
   "type": "string",
   "nullable": true,
@@ -11338,7 +11338,7 @@
    ]
   }
  },
- "5439": {
+ {
   "name": "OldReferenceID",
   "type": "string",
   "nullable": true,
@@ -11363,7 +11363,7 @@
    ]
   }
  },
- "5440": {
+ {
   "name": "ClearingStatus",
   "type": "string",
   "nullable": true,
@@ -11388,7 +11388,7 @@
    ]
   }
  },
- "5441": {
+ {
   "name": "ClearingMatchID",
   "type": "string",
   "nullable": true,
@@ -11413,7 +11413,7 @@
    ]
   }
  },
- "5442": {
+ {
   "name": "MatchingSlipID",
   "type": "string",
   "nullable": true,
@@ -11438,7 +11438,7 @@
    ]
   }
  },
- "5443": {
+ {
   "name": "ClearingSlipID",
   "type": "string",
   "nullable": true,
@@ -11463,7 +11463,7 @@
    ]
   }
  },
- "5444": {
+ {
   "name": "LegReport",
   "type": "string",
   "nullable": true,
@@ -11488,7 +11488,7 @@
    ]
   }
  },
- "5445": {
+ {
   "name": "DownloadRequestID",
   "type": "string",
   "nullable": true,
@@ -11513,7 +11513,7 @@
    ]
   }
  },
- "5446": {
+ {
   "name": "RequestType",
   "type": "string",
   "nullable": true,
@@ -11538,7 +11538,7 @@
    ]
   }
  },
- "5447": {
+ {
   "name": "RequestID",
   "type": "string",
   "nullable": true,
@@ -11563,7 +11563,7 @@
    ]
   }
  },
- "5448": {
+ {
   "name": "NumMsg",
   "type": "int32",
   "nullable": true,
@@ -11588,7 +11588,7 @@
    ]
   }
  },
- "5449": {
+ {
   "name": "ReqResponseTo",
   "type": "string",
   "nullable": true,
@@ -11613,7 +11613,7 @@
    ]
   }
  },
- "5450": {
+ {
   "name": "MDElementName",
   "type": "string",
   "nullable": true,
@@ -11638,7 +11638,7 @@
    ]
   }
  },
- "5451": {
+ {
   "name": "MDStatScope",
   "type": "int32",
   "nullable": true,
@@ -11663,7 +11663,7 @@
    ]
   }
  },
- "5452": {
+ {
   "name": "MDCountType",
   "type": "string",
   "nullable": true,
@@ -11688,7 +11688,7 @@
    ]
   }
  },
- "5453": {
+ {
   "name": "TraderCount",
   "type": "int32",
   "nullable": true,
@@ -11713,7 +11713,7 @@
    ]
   }
  },
- "5454": {
+ {
   "name": "MarketZone",
   "type": "string",
   "nullable": true,
@@ -11738,7 +11738,7 @@
    ]
   }
  },
- "5455": {
+ {
   "name": "SmoothRateSrc",
   "type": "string",
   "nullable": true,
@@ -11763,7 +11763,7 @@
    ]
   }
  },
- "5456": {
+ {
   "name": "MDStdDeviation",
   "type": "double",
   "nullable": true,
@@ -11788,7 +11788,7 @@
    ]
   }
  },
- "5457": {
+ {
   "name": "PriceTimestamp",
   "type": "timestamp[us]",
   "nullable": true,
@@ -11813,7 +11813,7 @@
    ]
   }
  },
- "5458": {
+ {
   "name": "MDDelayed",
   "type": "bool",
   "nullable": true,
@@ -11838,7 +11838,7 @@
    ]
   }
  },
- "5459": {
+ {
   "name": "SettlType",
   "type": "string",
   "nullable": true,
@@ -11863,7 +11863,7 @@
    ]
   }
  },
- "5460": {
+ {
   "name": "AggressorIndicator",
   "type": "bool",
   "nullable": true,
@@ -11888,7 +11888,7 @@
    ]
   }
  },
- "5461": {
+ {
   "name": "TicketStatus1",
   "type": "string",
   "nullable": true,
@@ -11913,7 +11913,7 @@
    ]
   }
  },
- "5462": {
+ {
   "name": "PrimeDealIndicator",
   "type": "string",
   "nullable": true,
@@ -11938,7 +11938,7 @@
    ]
   }
  },
- "5463": {
+ {
   "name": "TradeID",
   "type": "string",
   "nullable": true,
@@ -11963,7 +11963,7 @@
    ]
   }
  },
- "5464": {
+ {
   "name": "SecondaryTradeID1",
   "type": "string",
   "nullable": true,
@@ -11988,7 +11988,7 @@
    ]
   }
  },
- "5465": {
+ {
   "name": "CstmApplVerID",
   "type": "string",
   "nullable": true,
@@ -12013,7 +12013,7 @@
    ]
   }
  },
- "5466": {
+ {
   "name": "MDBookType",
   "type": "int32",
   "nullable": true,
@@ -12038,7 +12038,7 @@
    ]
   }
  },
- "5467": {
+ {
   "name": "MDPriceLevel",
   "type": "int32",
   "nullable": true,
@@ -12063,7 +12063,7 @@
    ]
   }
  },
- "5468": {
+ {
   "name": "MDCount",
   "type": "string",
   "nullable": true,
@@ -12088,7 +12088,7 @@
    ]
   }
  },
- "5469": {
+ {
   "name": "ReqResponseStatus",
   "type": "string",
   "nullable": true,
@@ -12113,7 +12113,7 @@
    ]
   }
  },
- "5470": {
+ {
   "name": "PriceMvmLimit",
   "type": "string",
   "nullable": true,
@@ -12138,7 +12138,7 @@
    ]
   }
  },
- "5471": {
+ {
   "name": "CalculatedCcyLastQty1",
   "type": "double",
   "nullable": true,
@@ -12163,7 +12163,7 @@
    ]
   }
  },
- "5472": {
+ {
   "name": "PriceMvmLimitT1",
   "type": "double",
   "nullable": true,
@@ -12188,7 +12188,7 @@
    ]
   }
  },
- "5473": {
+ {
   "name": "MguIndicator",
   "type": "bool",
   "nullable": true,
@@ -12213,7 +12213,7 @@
    ]
   }
  },
- "5474": {
+ {
   "name": "AbbreviatedPrice",
   "type": "double",
   "nullable": true,
@@ -12238,7 +12238,7 @@
    ]
   }
  },
- "5475": {
+ {
   "name": "PromptDate",
   "type": "string",
   "nullable": true,
@@ -12263,7 +12263,7 @@
    ]
   }
  },
- "5476": {
+ {
   "name": "PrivateReference",
   "type": "string",
   "nullable": true,
@@ -12288,7 +12288,7 @@
    ]
   }
  },
- "5477": {
+ {
   "name": "PublicReferece",
   "type": "string",
   "nullable": true,
@@ -12313,7 +12313,7 @@
    ]
   }
  },
- "5478": {
+ {
   "name": "CrossIndicator",
   "type": "bool",
   "nullable": true,
@@ -12338,7 +12338,7 @@
    ]
   }
  },
- "5479": {
+ {
   "name": "CarryIndicator",
   "type": "bool",
   "nullable": true,
@@ -12363,7 +12363,7 @@
    ]
   }
  },
- "5480": {
+ {
   "name": "YieldTo",
   "type": "string",
   "nullable": true,
@@ -12388,7 +12388,7 @@
    ]
   }
  },
- "5481": {
+ {
   "name": "CleanPx",
   "type": "double",
   "nullable": true,
@@ -12413,7 +12413,7 @@
    ]
   }
  },
- "5482": {
+ {
   "name": "GrossPx",
   "type": "double",
   "nullable": true,
@@ -12438,7 +12438,7 @@
    ]
   }
  },
- "5483": {
+ {
   "name": "ProceedsCalBy",
   "type": "string",
   "nullable": true,
@@ -12463,7 +12463,7 @@
    ]
   }
  },
- "5484": {
+ {
   "name": "Principal1",
   "type": "double",
   "nullable": true,
@@ -12488,7 +12488,7 @@
    ]
   }
  },
- "5485": {
+ {
   "name": "DealerPrincipal",
   "type": "double",
   "nullable": true,
@@ -12513,7 +12513,7 @@
    ]
   }
  },
- "5486": {
+ {
   "name": "dealerNetMoney",
   "type": "double",
   "nullable": true,
@@ -12538,7 +12538,7 @@
    ]
   }
  },
- "5487": {
+ {
   "name": "NoDealers",
   "type": "int64",
   "nullable": true,
@@ -12563,7 +12563,7 @@
    ]
   }
  },
- "5488": {
+ {
   "name": "ListID1",
   "type": "string",
   "nullable": true,
@@ -12588,7 +12588,7 @@
    ]
   }
  },
- "5489": {
+ {
   "name": "Direction",
   "type": "string",
   "nullable": true,
@@ -12613,7 +12613,7 @@
    ]
   }
  },
- "5490": {
+ {
   "name": "LongName2",
   "type": "string",
   "nullable": true,
@@ -12638,7 +12638,7 @@
    ]
   }
  },
- "5491": {
+ {
   "name": "YieldAdjustment",
   "type": "double",
   "nullable": true,
@@ -12663,7 +12663,7 @@
    ]
   }
  },
- "5492": {
+ {
   "name": "QuoteYieldTo",
   "type": "string",
   "nullable": true,
@@ -12688,7 +12688,7 @@
    ]
   }
  },
- "5493": {
+ {
   "name": "GrossCover",
   "type": "double",
   "nullable": true,
@@ -12713,7 +12713,7 @@
    ]
   }
  },
- "5494": {
+ {
   "name": "LastTrader",
   "type": "string",
   "nullable": true,
@@ -12738,7 +12738,7 @@
    ]
   }
  },
- "5495": {
+ {
   "name": "STATE",
   "type": "string",
   "nullable": true,
@@ -12763,7 +12763,7 @@
    ]
   }
  },
- "5496": {
+ {
   "name": "LastYield",
   "type": "double",
   "nullable": true,
@@ -12788,7 +12788,7 @@
    ]
   }
  },
- "5497": {
+ {
   "name": "DaysToSettlement",
   "type": "int32",
   "nullable": true,
@@ -12813,7 +12813,7 @@
    ]
   }
  },
- "5498": {
+ {
   "name": "BindIndicator",
   "type": "string",
   "nullable": true,
@@ -12838,7 +12838,7 @@
    ]
   }
  },
- "5499": {
+ {
   "name": "OrdStatus",
   "type": "string",
   "nullable": true,
@@ -12863,7 +12863,7 @@
    ]
   }
  },
- "5500": {
+ {
   "name": "DivReinvest",
   "type": "bool",
   "nullable": true,
@@ -12888,7 +12888,7 @@
    ]
   }
  },
- "5501": {
+ {
   "name": "TransFeeIncluded",
   "type": "bool",
   "nullable": true,
@@ -12913,7 +12913,7 @@
    ]
   }
  },
- "5502": {
+ {
   "name": "DIVINST",
   "type": "string",
   "nullable": true,
@@ -12938,7 +12938,7 @@
    ]
   }
  },
- "5503": {
+ {
   "name": "NumLinks",
   "type": "int32",
   "nullable": true,
@@ -12963,7 +12963,7 @@
    ]
   }
  },
- "5504": {
+ {
   "name": "LinkSymbol",
   "type": "string",
   "nullable": true,
@@ -12988,7 +12988,7 @@
    ]
   }
  },
- "5505": {
+ {
   "name": "LinkPercent1",
   "type": "double",
   "nullable": true,
@@ -13013,7 +13013,7 @@
    ]
   }
  },
- "5506": {
+ {
   "name": "LinkPercent2",
   "type": "double",
   "nullable": true,
@@ -13038,7 +13038,7 @@
    ]
   }
  },
- "5507": {
+ {
   "name": "TrdMatchTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13063,7 +13063,7 @@
    ]
   }
  },
- "5508": {
+ {
   "name": "FaceValue",
   "type": "double",
   "nullable": true,
@@ -13088,7 +13088,7 @@
    ]
   }
  },
- "5509": {
+ {
   "name": "AuctionIndicator",
   "type": "bool",
   "nullable": true,
@@ -13113,7 +13113,7 @@
    ]
   }
  },
- "5510": {
+ {
   "name": "ChgFromWAPrice",
   "type": "double",
   "nullable": true,
@@ -13138,7 +13138,7 @@
    ]
   }
  },
- "5511": {
+ {
   "name": "ChgOpenInterest",
   "type": "double",
   "nullable": true,
@@ -13163,7 +13163,7 @@
    ]
   }
  },
- "5512": {
+ {
   "name": "FirstEligibleTradeDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13188,7 +13188,7 @@
    ]
   }
  },
- "5513": {
+ {
   "name": "LastEligibleTradeDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13213,7 +13213,7 @@
    ]
   }
  },
- "5514": {
+ {
   "name": "InstrumentPricePrecision",
   "type": "string",
   "nullable": true,
@@ -13238,7 +13238,7 @@
    ]
   }
  },
- "5515": {
+ {
   "name": "CounterpartyAccount",
   "type": "string",
   "nullable": true,
@@ -13263,7 +13263,7 @@
    ]
   }
  },
- "5516": {
+ {
   "name": "MemberVolume",
   "type": "double",
   "nullable": true,
@@ -13288,7 +13288,7 @@
    ]
   }
  },
- "5517": {
+ {
   "name": "MasterAccount",
   "type": "string",
   "nullable": true,
@@ -13313,7 +13313,7 @@
    ]
   }
  },
- "5518": {
+ {
   "name": "AssumedCoupon",
   "type": "double",
   "nullable": true,
@@ -13338,7 +13338,7 @@
    ]
   }
  },
- "5519": {
+ {
   "name": "PrepaymentSpeed",
   "type": "string",
   "nullable": true,
@@ -13363,7 +13363,7 @@
    ]
   }
  },
- "5520": {
+ {
   "name": "BenchmarkOfferPx",
   "type": "double",
   "nullable": true,
@@ -13388,7 +13388,7 @@
    ]
   }
  },
- "5521": {
+ {
   "name": "BenchmarkBidYield",
   "type": "double",
   "nullable": true,
@@ -13413,7 +13413,7 @@
    ]
   }
  },
- "5522": {
+ {
   "name": "BenchmarkOfferYield",
   "type": "double",
   "nullable": true,
@@ -13438,7 +13438,7 @@
    ]
   }
  },
- "5523": {
+ {
   "name": "BenchmarkOfferSpread",
   "type": "double",
   "nullable": true,
@@ -13463,7 +13463,7 @@
    ]
   }
  },
- "5524": {
+ {
   "name": "OriginalDestination",
   "type": "string",
   "nullable": true,
@@ -13488,7 +13488,7 @@
    ]
   }
  },
- "5525": {
+ {
   "name": "Haircut",
   "type": "string",
   "nullable": true,
@@ -13513,7 +13513,7 @@
    ]
   }
  },
- "5526": {
+ {
   "name": "AllInPrice",
   "type": "double",
   "nullable": true,
@@ -13538,7 +13538,7 @@
    ]
   }
  },
- "5527": {
+ {
   "name": "AllocationIndicator2",
   "type": "string",
   "nullable": true,
@@ -13563,7 +13563,7 @@
    ]
   }
  },
- "5528": {
+ {
   "name": "SalesBook",
   "type": "string",
   "nullable": true,
@@ -13588,7 +13588,7 @@
    ]
   }
  },
- "5529": {
+ {
   "name": "NoInvPositions",
   "type": "int64",
   "nullable": true,
@@ -13613,7 +13613,7 @@
    ]
   }
  },
- "5530": {
+ {
   "name": "InvPositionDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13638,7 +13638,7 @@
    ]
   }
  },
- "5531": {
+ {
   "name": "InvPositionQty",
   "type": "double",
   "nullable": true,
@@ -13663,7 +13663,7 @@
    ]
   }
  },
- "5532": {
+ {
   "name": "RateEffectiveDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13688,7 +13688,7 @@
    ]
   }
  },
- "5533": {
+ {
   "name": "TradeCorrectType",
   "type": "string",
   "nullable": true,
@@ -13713,7 +13713,7 @@
    ]
   }
  },
- "5534": {
+ {
   "name": "AllocAccountSubID1",
   "type": "string",
   "nullable": true,
@@ -13738,7 +13738,7 @@
    ]
   }
  },
- "5535": {
+ {
   "name": "AllocAccountSubID2",
   "type": "string",
   "nullable": true,
@@ -13763,7 +13763,7 @@
    ]
   }
  },
- "5536": {
+ {
   "name": "AllocAccountSubID3",
   "type": "string",
   "nullable": true,
@@ -13788,7 +13788,7 @@
    ]
   }
  },
- "5537": {
+ {
   "name": "CurrentFace",
   "type": "string",
   "nullable": true,
@@ -13813,7 +13813,7 @@
    ]
   }
  },
- "5538": {
+ {
   "name": "AllocCurrentFace",
   "type": "string",
   "nullable": true,
@@ -13838,7 +13838,7 @@
    ]
   }
  },
- "5539": {
+ {
   "name": "AllocGrossTradeAmt1",
   "type": "double",
   "nullable": true,
@@ -13863,7 +13863,7 @@
    ]
   }
  },
- "5540": {
+ {
   "name": "CurveDateRate1",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13888,7 +13888,7 @@
    ]
   }
  },
- "5541": {
+ {
   "name": "CurveDateRate2",
   "type": "timestamp[us]",
   "nullable": true,
@@ -13913,7 +13913,7 @@
    ]
   }
  },
- "5542": {
+ {
   "name": "AllocGrossTradeAmt2",
   "type": "double",
   "nullable": true,
@@ -13938,7 +13938,7 @@
    ]
   }
  },
- "5543": {
+ {
   "name": "FirmAmount",
   "type": "double",
   "nullable": true,
@@ -13963,7 +13963,7 @@
    ]
   }
  },
- "5544": {
+ {
   "name": "SecondaryCurrency",
   "type": "string",
   "nullable": true,
@@ -13988,7 +13988,7 @@
    ]
   }
  },
- "5545": {
+ {
   "name": "BWitemID",
   "type": "string",
   "nullable": true,
@@ -14013,7 +14013,7 @@
    ]
   }
  },
- "5546": {
+ {
   "name": "AllocGrossTradeAmtNew",
   "type": "string",
   "nullable": true,
@@ -14038,7 +14038,7 @@
    ]
   }
  },
- "5547": {
+ {
   "name": "AllocCurrentFaceNew",
   "type": "string",
   "nullable": true,
@@ -14063,7 +14063,7 @@
    ]
   }
  },
- "5548": {
+ {
   "name": "AdjustedSwapPoints",
   "type": "double",
   "nullable": true,
@@ -14088,7 +14088,7 @@
    ]
   }
  },
- "5549": {
+ {
   "name": "ClientFullName",
   "type": "string",
   "nullable": true,
@@ -14113,7 +14113,7 @@
    ]
   }
  },
- "5550": {
+ {
   "name": "BalanceGroupID",
   "type": "string",
   "nullable": true,
@@ -14138,7 +14138,7 @@
    ]
   }
  },
- "5551": {
+ {
   "name": "BuyLimit",
   "type": "string",
   "nullable": true,
@@ -14163,7 +14163,7 @@
    ]
   }
  },
- "5552": {
+ {
   "name": "SellLimit",
   "type": "string",
   "nullable": true,
@@ -14188,7 +14188,7 @@
    ]
   }
  },
- "5553": {
+ {
   "name": "MinimumValueType",
   "type": "string",
   "nullable": true,
@@ -14213,7 +14213,7 @@
    ]
   }
  },
- "5554": {
+ {
   "name": "RolloverFlag",
   "type": "string",
   "nullable": true,
@@ -14238,7 +14238,7 @@
    ]
   }
  },
- "5555": {
+ {
   "name": "ReturnCode",
   "type": "string",
   "nullable": true,
@@ -14263,7 +14263,7 @@
    ]
   }
  },
- "5556": {
+ {
   "name": "BaseSwapPx",
   "type": "double",
   "nullable": true,
@@ -14288,7 +14288,7 @@
    ]
   }
  },
- "5557": {
+ {
   "name": "AggregatedOrderExecRefIDs",
   "type": "string",
   "nullable": true,
@@ -14313,7 +14313,7 @@
    ]
   }
  },
- "5558": {
+ {
   "name": "BuyBackPx",
   "type": "double",
   "nullable": true,
@@ -14338,7 +14338,7 @@
    ]
   }
  },
- "5559": {
+ {
   "name": "BuyBackDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -14363,7 +14363,7 @@
    ]
   }
  },
- "5560": {
+ {
   "name": "Reserved35",
   "type": "string",
   "nullable": true,
@@ -14388,7 +14388,7 @@
    ]
   }
  },
- "5561": {
+ {
   "name": "Reserved36",
   "type": "string",
   "nullable": true,
@@ -14413,7 +14413,7 @@
    ]
   }
  },
- "5562": {
+ {
   "name": "Reserved37",
   "type": "string",
   "nullable": true,
@@ -14438,7 +14438,7 @@
    ]
   }
  },
- "5563": {
+ {
   "name": "Reserved38",
   "type": "string",
   "nullable": true,
@@ -14463,7 +14463,7 @@
    ]
   }
  },
- "5564": {
+ {
   "name": "Reserved39",
   "type": "string",
   "nullable": true,
@@ -14488,7 +14488,7 @@
    ]
   }
  },
- "5565": {
+ {
   "name": "Reserved40",
   "type": "string",
   "nullable": true,
@@ -14513,7 +14513,7 @@
    ]
   }
  },
- "5566": {
+ {
   "name": "Reserved41",
   "type": "string",
   "nullable": true,
@@ -14538,7 +14538,7 @@
    ]
   }
  },
- "5567": {
+ {
   "name": "Reserved42",
   "type": "string",
   "nullable": true,
@@ -14563,7 +14563,7 @@
    ]
   }
  },
- "5568": {
+ {
   "name": "Reserved43",
   "type": "string",
   "nullable": true,
@@ -14588,7 +14588,7 @@
    ]
   }
  },
- "5569": {
+ {
   "name": "Reserved44",
   "type": "string",
   "nullable": true,
@@ -14613,7 +14613,7 @@
    ]
   }
  },
- "5570": {
+ {
   "name": "Reserved45",
   "type": "string",
   "nullable": true,
@@ -14638,7 +14638,7 @@
    ]
   }
  },
- "5571": {
+ {
   "name": "Reserved46",
   "type": "string",
   "nullable": true,
@@ -14663,7 +14663,7 @@
    ]
   }
  },
- "5572": {
+ {
   "name": "Reserved47",
   "type": "string",
   "nullable": true,
@@ -14688,7 +14688,7 @@
    ]
   }
  },
- "5573": {
+ {
   "name": "Reserved48",
   "type": "string",
   "nullable": true,
@@ -14713,7 +14713,7 @@
    ]
   }
  },
- "5574": {
+ {
   "name": "Reserved49",
   "type": "string",
   "nullable": true,
@@ -14738,7 +14738,7 @@
    ]
   }
  },
- "5575": {
+ {
   "name": "Reserved50",
   "type": "string",
   "nullable": true,
@@ -14763,7 +14763,7 @@
    ]
   }
  },
- "5576": {
+ {
   "name": "Reserved51",
   "type": "string",
   "nullable": true,
@@ -14788,7 +14788,7 @@
    ]
   }
  },
- "5577": {
+ {
   "name": "Reserved52",
   "type": "string",
   "nullable": true,
@@ -14813,7 +14813,7 @@
    ]
   }
  },
- "5578": {
+ {
   "name": "Reserved53",
   "type": "string",
   "nullable": true,
@@ -14838,7 +14838,7 @@
    ]
   }
  },
- "5579": {
+ {
   "name": "Reserved54",
   "type": "string",
   "nullable": true,
@@ -14863,7 +14863,7 @@
    ]
   }
  },
- "5580": {
+ {
   "name": "Reserved55",
   "type": "string",
   "nullable": true,
@@ -14888,7 +14888,7 @@
    ]
   }
  },
- "5581": {
+ {
   "name": "Reserved56",
   "type": "string",
   "nullable": true,
@@ -14913,7 +14913,7 @@
    ]
   }
  },
- "5582": {
+ {
   "name": "Reserved57",
   "type": "string",
   "nullable": true,
@@ -14938,7 +14938,7 @@
    ]
   }
  },
- "5583": {
+ {
   "name": "Reserved58",
   "type": "string",
   "nullable": true,
@@ -14963,7 +14963,7 @@
    ]
   }
  },
- "5584": {
+ {
   "name": "Reserved59",
   "type": "string",
   "nullable": true,
@@ -14988,7 +14988,7 @@
    ]
   }
  },
- "5585": {
+ {
   "name": "Reserved60",
   "type": "string",
   "nullable": true,
@@ -15013,7 +15013,7 @@
    ]
   }
  },
- "5586": {
+ {
   "name": "Reserved61",
   "type": "string",
   "nullable": true,
@@ -15038,7 +15038,7 @@
    ]
   }
  },
- "5587": {
+ {
   "name": "Reserved62",
   "type": "string",
   "nullable": true,
@@ -15063,7 +15063,7 @@
    ]
   }
  },
- "5588": {
+ {
   "name": "Reserved63",
   "type": "string",
   "nullable": true,
@@ -15088,7 +15088,7 @@
    ]
   }
  },
- "5589": {
+ {
   "name": "Reserved64",
   "type": "string",
   "nullable": true,
@@ -15113,7 +15113,7 @@
    ]
   }
  },
- "5590": {
+ {
   "name": "Reserved65",
   "type": "string",
   "nullable": true,
@@ -15138,7 +15138,7 @@
    ]
   }
  },
- "5591": {
+ {
   "name": "Reserved66",
   "type": "string",
   "nullable": true,
@@ -15163,7 +15163,7 @@
    ]
   }
  },
- "5592": {
+ {
   "name": "Reserved67",
   "type": "string",
   "nullable": true,
@@ -15188,7 +15188,7 @@
    ]
   }
  },
- "5593": {
+ {
   "name": "Reserved68",
   "type": "string",
   "nullable": true,
@@ -15213,7 +15213,7 @@
    ]
   }
  },
- "5594": {
+ {
   "name": "Reserved69",
   "type": "string",
   "nullable": true,
@@ -15238,7 +15238,7 @@
    ]
   }
  },
- "5595": {
+ {
   "name": "Reserved70",
   "type": "string",
   "nullable": true,
@@ -15263,7 +15263,7 @@
    ]
   }
  },
- "5596": {
+ {
   "name": "Reserved71",
   "type": "string",
   "nullable": true,
@@ -15288,7 +15288,7 @@
    ]
   }
  },
- "5597": {
+ {
   "name": "Reserved72",
   "type": "string",
   "nullable": true,
@@ -15313,7 +15313,7 @@
    ]
   }
  },
- "5598": {
+ {
   "name": "Reserved73",
   "type": "string",
   "nullable": true,
@@ -15338,7 +15338,7 @@
    ]
   }
  },
- "5599": {
+ {
   "name": "Reserved74",
   "type": "string",
   "nullable": true,
@@ -15363,7 +15363,7 @@
    ]
   }
  },
- "5600": {
+ {
   "name": "ThomsonUDF1",
   "type": "string",
   "nullable": true,
@@ -15388,7 +15388,7 @@
    ]
   }
  },
- "5601": {
+ {
   "name": "ThomsonUDF2",
   "type": "string",
   "nullable": true,
@@ -15413,7 +15413,7 @@
    ]
   }
  },
- "5602": {
+ {
   "name": "ThomsonUDF3",
   "type": "string",
   "nullable": true,
@@ -15438,7 +15438,7 @@
    ]
   }
  },
- "5603": {
+ {
   "name": "ThomsonUDF4",
   "type": "string",
   "nullable": true,
@@ -15463,7 +15463,7 @@
    ]
   }
  },
- "5604": {
+ {
   "name": "ThomsonUDF5",
   "type": "string",
   "nullable": true,
@@ -15488,7 +15488,7 @@
    ]
   }
  },
- "5605": {
+ {
   "name": "ThomsonUDF6",
   "type": "string",
   "nullable": true,
@@ -15513,7 +15513,7 @@
    ]
   }
  },
- "5606": {
+ {
   "name": "ThomsonUDF7",
   "type": "string",
   "nullable": true,
@@ -15538,7 +15538,7 @@
    ]
   }
  },
- "5607": {
+ {
   "name": "ThomsonUDF8",
   "type": "string",
   "nullable": true,
@@ -15563,7 +15563,7 @@
    ]
   }
  },
- "5608": {
+ {
   "name": "ThomsonUDF9",
   "type": "string",
   "nullable": true,
@@ -15588,7 +15588,7 @@
    ]
   }
  },
- "5609": {
+ {
   "name": "ThomsonUDF10",
   "type": "string",
   "nullable": true,
@@ -15613,7 +15613,7 @@
    ]
   }
  },
- "5610": {
+ {
   "name": "ThomsonUDF11",
   "type": "string",
   "nullable": true,
@@ -15638,7 +15638,7 @@
    ]
   }
  },
- "5611": {
+ {
   "name": "StartTime1",
   "type": "timestamp[us]",
   "nullable": true,
@@ -15663,7 +15663,7 @@
    ]
   }
  },
- "5612": {
+ {
   "name": "EndTime1",
   "type": "timestamp[us]",
   "nullable": true,
@@ -15688,7 +15688,7 @@
    ]
   }
  },
- "5613": {
+ {
   "name": "Urgency1",
   "type": "string",
   "nullable": true,
@@ -15713,7 +15713,7 @@
    ]
   }
  },
- "5614": {
+ {
   "name": "NumberOfSlices",
   "type": "int32",
   "nullable": true,
@@ -15738,7 +15738,7 @@
    ]
   }
  },
- "5615": {
+ {
   "name": "IncludeMarketOpen",
   "type": "bool",
   "nullable": true,
@@ -15763,7 +15763,7 @@
    ]
   }
  },
- "5616": {
+ {
   "name": "IncludeMarketClose",
   "type": "bool",
   "nullable": true,
@@ -15788,7 +15788,7 @@
    ]
   }
  },
- "5617": {
+ {
   "name": "MinPctParticipation",
   "type": "double",
   "nullable": true,
@@ -15813,7 +15813,7 @@
    ]
   }
  },
- "5618": {
+ {
   "name": "TgtPctParticipation",
   "type": "double",
   "nullable": true,
@@ -15838,7 +15838,7 @@
    ]
   }
  },
- "5619": {
+ {
   "name": "MaxPctParticipation",
   "type": "double",
   "nullable": true,
@@ -15863,7 +15863,7 @@
    ]
   }
  },
- "5620": {
+ {
   "name": "TargetPrice",
   "type": "double",
   "nullable": true,
@@ -15888,7 +15888,7 @@
    ]
   }
  },
- "5621": {
+ {
   "name": "DisplaySize1",
   "type": "double",
   "nullable": true,
@@ -15913,7 +15913,7 @@
    ]
   }
  },
- "5622": {
+ {
   "name": "SweepType",
   "type": "string",
   "nullable": true,
@@ -15938,7 +15938,7 @@
    ]
   }
  },
- "5623": {
+ {
   "name": "SweepPriceEnum",
   "type": "string",
   "nullable": true,
@@ -15963,7 +15963,7 @@
    ]
   }
  },
- "5624": {
+ {
   "name": "SuppTacticsFlag",
   "type": "bool",
   "nullable": true,
@@ -15988,7 +15988,7 @@
    ]
   }
  },
- "5625": {
+ {
   "name": "MKTXInquiryType",
   "type": "string",
   "nullable": true,
@@ -16013,7 +16013,7 @@
    ]
   }
  },
- "5626": {
+ {
   "name": "MKTXPricingProcess",
   "type": "string",
   "nullable": true,
@@ -16038,7 +16038,7 @@
    ]
   }
  },
- "5627": {
+ {
   "name": "MKTXInquiryState",
   "type": "string",
   "nullable": true,
@@ -16063,7 +16063,7 @@
    ]
   }
  },
- "5628": {
+ {
   "name": "MKTXReleaseTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -16088,7 +16088,7 @@
    ]
   }
  },
- "5629": {
+ {
   "name": "MKTXQuoteReponseRejectReason",
   "type": "string",
   "nullable": true,
@@ -16113,7 +16113,7 @@
    ]
   }
  },
- "5630": {
+ {
   "name": "MKTXAvailableActions",
   "type": "string",
   "nullable": true,
@@ -16138,7 +16138,7 @@
    ]
   }
  },
- "5631": {
+ {
   "name": "MKTXListType",
   "type": "string",
   "nullable": true,
@@ -16185,7 +16185,7 @@
    ]
   }
  },
- "5632": {
+ {
   "name": "MKTXListComment",
   "type": "string",
   "nullable": true,
@@ -16210,7 +16210,7 @@
    ]
   }
  },
- "5633": {
+ {
   "name": "MKTXListRejectMode",
   "type": "string",
   "nullable": true,
@@ -16235,7 +16235,7 @@
    ]
   }
  },
- "5634": {
+ {
   "name": "MKTXListName",
   "type": "string",
   "nullable": true,
@@ -16260,7 +16260,7 @@
    ]
   }
  },
- "5635": {
+ {
   "name": "MADataID",
   "type": "int32",
   "nullable": true,
@@ -16285,7 +16285,7 @@
    ]
   }
  },
- "5636": {
+ {
   "name": "DataSource",
   "type": "string",
   "nullable": true,
@@ -16310,7 +16310,7 @@
    ]
   }
  },
- "5637": {
+ {
   "name": "MDEntryTransType",
   "type": "string",
   "nullable": true,
@@ -16335,7 +16335,7 @@
    ]
   }
  },
- "5638": {
+ {
   "name": "BTDSSaleCondition",
   "type": "string",
   "nullable": true,
@@ -16360,7 +16360,7 @@
    ]
   }
  },
- "5639": {
+ {
   "name": "BTDSCommissionIndicator",
   "type": "bool",
   "nullable": true,
@@ -16385,7 +16385,7 @@
    ]
   }
  },
- "5640": {
+ {
   "name": "BTDSQuantityIndicator",
   "type": "string",
   "nullable": true,
@@ -16410,7 +16410,7 @@
    ]
   }
  },
- "5641": {
+ {
   "name": "BTDSSecondModifier",
   "type": "string",
   "nullable": true,
@@ -16435,7 +16435,7 @@
    ]
   }
  },
- "5642": {
+ {
   "name": "BTDSPriceChangeCode",
   "type": "string",
   "nullable": true,
@@ -16460,7 +16460,7 @@
    ]
   }
  },
- "5643": {
+ {
   "name": "BTDSSpecialPriceIndicator",
   "type": "bool",
   "nullable": true,
@@ -16485,7 +16485,7 @@
    ]
   }
  },
- "5644": {
+ {
   "name": "BTDSReportingPartySide",
   "type": "string",
   "nullable": true,
@@ -16510,7 +16510,7 @@
    ]
   }
  },
- "5645": {
+ {
   "name": "OASSpread",
   "type": "double",
   "nullable": true,
@@ -16535,7 +16535,7 @@
    ]
   }
  },
- "5646": {
+ {
   "name": "ParSpread",
   "type": "double",
   "nullable": true,
@@ -16560,7 +16560,7 @@
    ]
   }
  },
- "5647": {
+ {
   "name": "MktSpread",
   "type": "double",
   "nullable": true,
@@ -16585,7 +16585,7 @@
    ]
   }
  },
- "5648": {
+ {
   "name": "SuspectTradeIndicator",
   "type": "bool",
   "nullable": true,
@@ -16610,7 +16610,7 @@
    ]
   }
  },
- "5649": {
+ {
   "name": "OrigBCastSeqNo",
   "type": "int64",
   "nullable": true,
@@ -16635,7 +16635,7 @@
    ]
   }
  },
- "5650": {
+ {
   "name": "MKTXEstimatedQuantity",
   "type": "double",
   "nullable": true,
@@ -16660,7 +16660,7 @@
    ]
   }
  },
- "5651": {
+ {
   "name": "MKTXDeltaDaySpread",
   "type": "double",
   "nullable": true,
@@ -16685,7 +16685,7 @@
    ]
   }
  },
- "5652": {
+ {
   "name": "MKTXDeltaWeekSpread",
   "type": "double",
   "nullable": true,
@@ -16710,7 +16710,7 @@
    ]
   }
  },
- "5653": {
+ {
   "name": "MKTXDeltaMtdSpread",
   "type": "double",
   "nullable": true,
@@ -16735,7 +16735,7 @@
    ]
   }
  },
- "5654": {
+ {
   "name": "MKTXDeltaWeekPrice",
   "type": "double",
   "nullable": true,
@@ -16760,7 +16760,7 @@
    ]
   }
  },
- "5655": {
+ {
   "name": "MKTXDeltaDayPrice",
   "type": "double",
   "nullable": true,
@@ -16785,7 +16785,7 @@
    ]
   }
  },
- "5656": {
+ {
   "name": "MKTXDeltaMtdPrice",
   "type": "double",
   "nullable": true,
@@ -16810,7 +16810,7 @@
    ]
   }
  },
- "5657": {
+ {
   "name": "MKTXDeltaDayYield",
   "type": "double",
   "nullable": true,
@@ -16835,7 +16835,7 @@
    ]
   }
  },
- "5658": {
+ {
   "name": "MKTXDeltaWeekYield",
   "type": "double",
   "nullable": true,
@@ -16860,7 +16860,7 @@
    ]
   }
  },
- "5659": {
+ {
   "name": "MKTXDeltaMtdYield",
   "type": "double",
   "nullable": true,
@@ -16885,7 +16885,7 @@
    ]
   }
  },
- "5660": {
+ {
   "name": "IncludeSIs",
   "type": "bool",
   "nullable": true,
@@ -16910,7 +16910,7 @@
    ]
   }
  },
- "5661": {
+ {
   "name": "NoMKTXCostAnalysis",
   "type": "int64",
   "nullable": true,
@@ -16935,7 +16935,7 @@
    ]
   }
  },
- "5662": {
+ {
   "name": "MKTXAnalysisTo",
   "type": "string",
   "nullable": true,
@@ -16960,7 +16960,7 @@
    ]
   }
  },
- "5663": {
+ {
   "name": "MKTXBenefit",
   "type": "double",
   "nullable": true,
@@ -16985,7 +16985,7 @@
    ]
   }
  },
- "5664": {
+ {
   "name": "MKTXComparisonPrice",
   "type": "double",
   "nullable": true,
@@ -17010,7 +17010,7 @@
    ]
   }
  },
- "5665": {
+ {
   "name": "MKTXPriceDiff",
   "type": "double",
   "nullable": true,
@@ -17035,7 +17035,7 @@
    ]
   }
  },
- "5666": {
+ {
   "name": "MaturitySize",
   "type": "double",
   "nullable": true,
@@ -17060,7 +17060,7 @@
    ]
   }
  },
- "5667": {
+ {
   "name": "MatDatStartYield",
   "type": "double",
   "nullable": true,
@@ -17085,7 +17085,7 @@
    ]
   }
  },
- "5668": {
+ {
   "name": "MatDatEndYield",
   "type": "double",
   "nullable": true,
@@ -17110,7 +17110,7 @@
    ]
   }
  },
- "5669": {
+ {
   "name": "FillOrKillAmount",
   "type": "double",
   "nullable": true,
@@ -17135,7 +17135,7 @@
    ]
   }
  },
- "5670": {
+ {
   "name": "PositionAccount",
   "type": "string",
   "nullable": true,
@@ -17160,7 +17160,7 @@
    ]
   }
  },
- "5671": {
+ {
   "name": "FOKPosition",
   "type": "double",
   "nullable": true,
@@ -17185,7 +17185,7 @@
    ]
   }
  },
- "5672": {
+ {
   "name": "SecondaryIndividualAllocID",
   "type": "string",
   "nullable": true,
@@ -17210,7 +17210,7 @@
    ]
   }
  },
- "5673": {
+ {
   "name": "SettlCurrAccruedInterestAmt",
   "type": "double",
   "nullable": true,
@@ -17235,7 +17235,7 @@
    ]
   }
  },
- "5674": {
+ {
   "name": "SettlCurrNetMoney",
   "type": "double",
   "nullable": true,
@@ -17260,7 +17260,7 @@
    ]
   }
  },
- "5675": {
+ {
   "name": "TaxRate",
   "type": "double",
   "nullable": true,
@@ -17285,7 +17285,7 @@
    ]
   }
  },
- "5676": {
+ {
   "name": "Reserved75",
   "type": "string",
   "nullable": true,
@@ -17310,7 +17310,7 @@
    ]
   }
  },
- "5677": {
+ {
   "name": "Repo2Px",
   "type": "double",
   "nullable": true,
@@ -17335,7 +17335,7 @@
    ]
   }
  },
- "5678": {
+ {
   "name": "ReceivePendings",
   "type": "string",
   "nullable": true,
@@ -17360,7 +17360,7 @@
    ]
   }
  },
- "5679": {
+ {
   "name": "FixEngineName",
   "type": "string",
   "nullable": true,
@@ -17385,7 +17385,7 @@
    ]
   }
  },
- "5680": {
+ {
   "name": "ProprietaryFixProtocolVersion",
   "type": "string",
   "nullable": true,
@@ -17410,7 +17410,7 @@
    ]
   }
  },
- "5681": {
+ {
   "name": "ExchangeTradeType",
   "type": "string",
   "nullable": true,
@@ -17435,7 +17435,7 @@
    ]
   }
  },
- "5682": {
+ {
   "name": "NewSecuritySubscription",
   "type": "string",
   "nullable": true,
@@ -17460,7 +17460,7 @@
    ]
   }
  },
- "5683": {
+ {
   "name": "SecondaryConfirmStatus",
   "type": "string",
   "nullable": true,
@@ -17485,7 +17485,7 @@
    ]
   }
  },
- "5684": {
+ {
   "name": "TotalBustedQty",
   "type": "double",
   "nullable": true,
@@ -17510,7 +17510,7 @@
    ]
   }
  },
- "5685": {
+ {
   "name": "OrderedQuantityLeg2",
   "type": "double",
   "nullable": true,
@@ -17535,7 +17535,7 @@
    ]
   }
  },
- "5686": {
+ {
   "name": "InWorkup",
   "type": "bool",
   "nullable": true,
@@ -17560,7 +17560,7 @@
    ]
   }
  },
- "5687": {
+ {
   "name": "ExecutedQuantityLeg2",
   "type": "double",
   "nullable": true,
@@ -17585,7 +17585,7 @@
    ]
   }
  },
- "5688": {
+ {
   "name": "DraftAlgoFlag",
   "type": "bool",
   "nullable": true,
@@ -17610,7 +17610,7 @@
    ]
   }
  },
- "5689": {
+ {
   "name": "VersionID1",
   "type": "string",
   "nullable": true,
@@ -17635,7 +17635,7 @@
    ]
   }
  },
- "5690": {
+ {
   "name": "TargetStrategy1",
   "type": "string",
   "nullable": true,
@@ -17660,7 +17660,7 @@
    ]
   }
  },
- "5691": {
+ {
   "name": "ReferencePrice1",
   "type": "double",
   "nullable": true,
@@ -17685,7 +17685,7 @@
    ]
   }
  },
- "5692": {
+ {
   "name": "ReferenceVolume",
   "type": "string",
   "nullable": true,
@@ -17710,7 +17710,7 @@
    ]
   }
  },
- "5693": {
+ {
   "name": "PegTo",
   "type": "string",
   "nullable": true,
@@ -17735,7 +17735,7 @@
    ]
   }
  },
- "5694": {
+ {
   "name": "CatchUp1",
   "type": "string",
   "nullable": true,
@@ -17760,7 +17760,7 @@
    ]
   }
  },
- "5695": {
+ {
   "name": "LimitWRT",
   "type": "string",
   "nullable": true,
@@ -17785,7 +17785,7 @@
    ]
   }
  },
- "5696": {
+ {
   "name": "SoftLimit",
   "type": "bool",
   "nullable": true,
@@ -17810,7 +17810,7 @@
    ]
   }
  },
- "5697": {
+ {
   "name": "IPOSubscriptionVenue",
   "type": "string",
   "nullable": true,
@@ -17835,7 +17835,7 @@
    ]
   }
  },
- "5698": {
+ {
   "name": "Desk",
   "type": "string",
   "nullable": true,
@@ -17860,7 +17860,7 @@
    ]
   }
  },
- "5699": {
+ {
   "name": "RestrictedBrokers",
   "type": "string",
   "nullable": true,
@@ -17885,7 +17885,7 @@
    ]
   }
  },
- "5700": {
+ {
   "name": "LocateBroker",
   "type": "string",
   "nullable": true,
@@ -17910,7 +17910,7 @@
    ]
   }
  },
- "5701": {
+ {
   "name": "LocateIdentifier",
   "type": "string",
   "nullable": true,
@@ -17935,7 +17935,7 @@
    ]
   }
  },
- "5702": {
+ {
   "name": "PreBorrowQty",
   "type": "double",
   "nullable": true,
@@ -17960,7 +17960,7 @@
    ]
   }
  },
- "5703": {
+ {
   "name": "OriginalSource",
   "type": "string",
   "nullable": true,
@@ -17985,7 +17985,7 @@
    ]
   }
  },
- "5704": {
+ {
   "name": "BusinessLine",
   "type": "string",
   "nullable": true,
@@ -18010,7 +18010,7 @@
    ]
   }
  },
- "5705": {
+ {
   "name": "NIMAllowed",
   "type": "bool",
   "nullable": true,
@@ -18035,7 +18035,7 @@
    ]
   }
  },
- "5706": {
+ {
   "name": "FixedRate",
   "type": "double",
   "nullable": true,
@@ -18060,7 +18060,7 @@
    ]
   }
  },
- "5707": {
+ {
   "name": "PayPeriodMultiplier",
   "type": "int32",
   "nullable": true,
@@ -18085,7 +18085,7 @@
    ]
   }
  },
- "5708": {
+ {
   "name": "AdjDayRegion",
   "type": "string",
   "nullable": true,
@@ -18110,7 +18110,7 @@
    ]
   }
  },
- "5709": {
+ {
   "name": "ADJSDT",
   "type": "timestamp[us]",
   "nullable": true,
@@ -18135,7 +18135,7 @@
    ]
   }
  },
- "5710": {
+ {
   "name": "PnlLocation",
   "type": "string",
   "nullable": true,
@@ -18160,7 +18160,7 @@
    ]
   }
  },
- "5711": {
+ {
   "name": "AckStatus",
   "type": "string",
   "nullable": true,
@@ -18185,7 +18185,7 @@
    ]
   }
  },
- "5712": {
+ {
   "name": "AckType",
   "type": "string",
   "nullable": true,
@@ -18210,7 +18210,7 @@
    ]
   }
  },
- "5713": {
+ {
   "name": "TicketStatus2",
   "type": "string",
   "nullable": true,
@@ -18235,7 +18235,7 @@
    ]
   }
  },
- "5714": {
+ {
   "name": "TicketTraders",
   "type": "string",
   "nullable": true,
@@ -18260,7 +18260,7 @@
    ]
   }
  },
- "5715": {
+ {
   "name": "TicketOwner",
   "type": "string",
   "nullable": true,
@@ -18285,7 +18285,7 @@
    ]
   }
  },
- "5716": {
+ {
   "name": "TimespanToQuote",
   "type": "int32",
   "nullable": true,
@@ -18310,7 +18310,7 @@
    ]
   }
  },
- "5717": {
+ {
   "name": "ExpireBy",
   "type": "string",
   "nullable": true,
@@ -18335,7 +18335,7 @@
    ]
   }
  },
- "5718": {
+ {
   "name": "BBRespType",
   "type": "int32",
   "nullable": true,
@@ -18360,7 +18360,7 @@
    ]
   }
  },
- "5719": {
+ {
   "name": "StartPaymentDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -18385,7 +18385,7 @@
    ]
   }
  },
- "5720": {
+ {
   "name": "EndPaymentDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -18410,7 +18410,7 @@
    ]
   }
  },
- "5721": {
+ {
   "name": "FloatingPaymentFreq",
   "type": "int32",
   "nullable": true,
@@ -18435,7 +18435,7 @@
    ]
   }
  },
- "5722": {
+ {
   "name": "FixedPaymentFreq",
   "type": "int32",
   "nullable": true,
@@ -18460,7 +18460,7 @@
    ]
   }
  },
- "5723": {
+ {
   "name": "Behaviour",
   "type": "string",
   "nullable": true,
@@ -18485,7 +18485,7 @@
    ]
   }
  },
- "5724": {
+ {
   "name": "ReadyToPrice",
   "type": "int32",
   "nullable": true,
@@ -18510,7 +18510,7 @@
    ]
   }
  },
- "5725": {
+ {
   "name": "ReadyToTrade",
   "type": "bool",
   "nullable": true,
@@ -18535,7 +18535,7 @@
    ]
   }
  },
- "5726": {
+ {
   "name": "UQuoteRespType",
   "type": "int32",
   "nullable": true,
@@ -18560,7 +18560,7 @@
    ]
   }
  },
- "5727": {
+ {
   "name": "PPTOverride",
   "type": "bool",
   "nullable": true,
@@ -18585,7 +18585,7 @@
    ]
   }
  },
- "5728": {
+ {
   "name": "BenchmarkSecurityAltID",
   "type": "string",
   "nullable": true,
@@ -18610,7 +18610,7 @@
    ]
   }
  },
- "5729": {
+ {
   "name": "AuctionDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -18635,7 +18635,7 @@
    ]
   }
  },
- "5730": {
+ {
   "name": "CompQuote",
   "type": "double",
   "nullable": true,
@@ -18660,7 +18660,7 @@
    ]
   }
  },
- "5731": {
+ {
   "name": "DV01",
   "type": "double",
   "nullable": true,
@@ -18685,7 +18685,7 @@
    ]
   }
  },
- "5732": {
+ {
   "name": "AdjMidPx",
   "type": "double",
   "nullable": true,
@@ -18710,7 +18710,7 @@
    ]
   }
  },
- "5733": {
+ {
   "name": "Requotable",
   "type": "string",
   "nullable": true,
@@ -18735,7 +18735,7 @@
    ]
   }
  },
- "5734": {
+ {
   "name": "MrkupQuote",
   "type": "string",
   "nullable": true,
@@ -18760,7 +18760,7 @@
    ]
   }
  },
- "5735": {
+ {
   "name": "BAMT",
   "type": "double",
   "nullable": true,
@@ -18785,7 +18785,7 @@
    ]
   }
  },
- "5736": {
+ {
   "name": "PBRKR",
   "type": "string",
   "nullable": true,
@@ -18810,7 +18810,7 @@
    ]
   }
  },
- "5737": {
+ {
   "name": "PBSVC",
   "type": "string",
   "nullable": true,
@@ -18835,7 +18835,7 @@
    ]
   }
  },
- "5738": {
+ {
   "name": "PBRESP",
   "type": "string",
   "nullable": true,
@@ -18860,7 +18860,7 @@
    ]
   }
  },
- "5739": {
+ {
   "name": "BoblBid",
   "type": "double",
   "nullable": true,
@@ -18885,7 +18885,7 @@
    ]
   }
  },
- "5740": {
+ {
   "name": "BoblAsk",
   "type": "double",
   "nullable": true,
@@ -18910,7 +18910,7 @@
    ]
   }
  },
- "5741": {
+ {
   "name": "BundsBid",
   "type": "double",
   "nullable": true,
@@ -18935,7 +18935,7 @@
    ]
   }
  },
- "5742": {
+ {
   "name": "BundsAsk",
   "type": "double",
   "nullable": true,
@@ -18960,7 +18960,7 @@
    ]
   }
  },
- "5743": {
+ {
   "name": "SchatzBid",
   "type": "double",
   "nullable": true,
@@ -18985,7 +18985,7 @@
    ]
   }
  },
- "5744": {
+ {
   "name": "SchatzAsk",
   "type": "double",
   "nullable": true,
@@ -19010,7 +19010,7 @@
    ]
   }
  },
- "5745": {
+ {
   "name": "MTKT",
   "type": "int32",
   "nullable": true,
@@ -19035,7 +19035,7 @@
    ]
   }
  },
- "5746": {
+ {
   "name": "IRSTYPE",
   "type": "string",
   "nullable": true,
@@ -19060,7 +19060,7 @@
    ]
   }
  },
- "5747": {
+ {
   "name": "IRSEOM",
   "type": "string",
   "nullable": true,
@@ -19085,7 +19085,7 @@
    ]
   }
  },
- "5748": {
+ {
   "name": "ROLLSON",
   "type": "string",
   "nullable": true,
@@ -19110,7 +19110,7 @@
    ]
   }
  },
- "5749": {
+ {
   "name": "ADJDT",
   "type": "string",
   "nullable": true,
@@ -19135,7 +19135,7 @@
    ]
   }
  },
- "5750": {
+ {
   "name": "MATDTADJ",
   "type": "timestamp[us]",
   "nullable": true,
@@ -19160,7 +19160,7 @@
    ]
   }
  },
- "5751": {
+ {
   "name": "VSPDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -19185,7 +19185,7 @@
    ]
   }
  },
- "5752": {
+ {
   "name": "VSPPrice",
   "type": "double",
   "nullable": true,
@@ -19210,7 +19210,7 @@
    ]
   }
  },
- "5753": {
+ {
   "name": "DECPLCS",
   "type": "string",
   "nullable": true,
@@ -19235,7 +19235,7 @@
    ]
   }
  },
- "5754": {
+ {
   "name": "DECRND",
   "type": "string",
   "nullable": true,
@@ -19260,7 +19260,7 @@
    ]
   }
  },
- "5755": {
+ {
   "name": "CMPND",
   "type": "string",
   "nullable": true,
@@ -19285,7 +19285,7 @@
    ]
   }
  },
- "5756": {
+ {
   "name": "CMPB",
   "type": "double",
   "nullable": true,
@@ -19310,7 +19310,7 @@
    ]
   }
  },
- "5757": {
+ {
   "name": "CMPA",
   "type": "double",
   "nullable": true,
@@ -19335,7 +19335,7 @@
    ]
   }
  },
- "5758": {
+ {
   "name": "CMPM",
   "type": "double",
   "nullable": true,
@@ -19360,7 +19360,7 @@
    ]
   }
  },
- "5759": {
+ {
   "name": "CMPSP",
   "type": "double",
   "nullable": true,
@@ -19385,7 +19385,7 @@
    ]
   }
  },
- "5760": {
+ {
   "name": "ADJDTCP",
   "type": "string",
   "nullable": true,
@@ -19410,7 +19410,7 @@
    ]
   }
  },
- "5761": {
+ {
   "name": "ADJDTPD",
   "type": "string",
   "nullable": true,
@@ -19435,7 +19435,7 @@
    ]
   }
  },
- "5762": {
+ {
   "name": "ADJDTRES",
   "type": "string",
   "nullable": true,
@@ -19460,7 +19460,7 @@
    ]
   }
  },
- "5763": {
+ {
   "name": "DYCTBAS",
   "type": "string",
   "nullable": true,
@@ -19485,7 +19485,7 @@
    ]
   }
  },
- "5764": {
+ {
   "name": "FRREF",
   "type": "string",
   "nullable": true,
@@ -19510,7 +19510,7 @@
    ]
   }
  },
- "5765": {
+ {
   "name": "FRESDAYS",
   "type": "int32",
   "nullable": true,
@@ -19535,7 +19535,7 @@
    ]
   }
  },
- "5766": {
+ {
   "name": "IRSSWTYPE",
   "type": "string",
   "nullable": true,
@@ -19560,7 +19560,7 @@
    ]
   }
  },
- "5767": {
+ {
   "name": "SWSPRD",
   "type": "string",
   "nullable": true,
@@ -19585,7 +19585,7 @@
    ]
   }
  },
- "5768": {
+ {
   "name": "CNFCO",
   "type": "string",
   "nullable": true,
@@ -19610,7 +19610,7 @@
    ]
   }
  },
- "5769": {
+ {
   "name": "Fe",
   "type": "string",
   "nullable": true,
@@ -19635,7 +19635,7 @@
    ]
   }
  },
- "5770": {
+ {
   "name": "PriceRatio",
   "type": "double",
   "nullable": true,
@@ -19660,7 +19660,7 @@
    ]
   }
  },
- "5771": {
+ {
   "name": "ECV",
   "type": "string",
   "nullable": true,
@@ -19685,7 +19685,7 @@
    ]
   }
  },
- "5772": {
+ {
   "name": "ISMN",
   "type": "string",
   "nullable": true,
@@ -19710,7 +19710,7 @@
    ]
   }
  },
- "5773": {
+ {
   "name": "ISDY",
   "type": "int32",
   "nullable": true,
@@ -19735,7 +19735,7 @@
    ]
   }
  },
- "5774": {
+ {
   "name": "Reserved",
   "type": "string",
   "nullable": true,
@@ -19760,7 +19760,7 @@
    ]
   }
  },
- "5775": {
+ {
   "name": "FixedLegDayCount",
   "type": "string",
   "nullable": true,
@@ -19785,7 +19785,7 @@
    ]
   }
  },
- "5776": {
+ {
   "name": "FloatingLegDayCount",
   "type": "string",
   "nullable": true,
@@ -19810,7 +19810,7 @@
    ]
   }
  },
- "5777": {
+ {
   "name": "CUSTPRC",
   "type": "string",
   "nullable": true,
@@ -19835,7 +19835,7 @@
    ]
   }
  },
- "5778": {
+ {
   "name": "AORGID1",
   "type": "string",
   "nullable": true,
@@ -19860,7 +19860,7 @@
    ]
   }
  },
- "5779": {
+ {
   "name": "AORGID2",
   "type": "string",
   "nullable": true,
@@ -19885,7 +19885,7 @@
    ]
   }
  },
- "5780": {
+ {
   "name": "ACODE",
   "type": "string",
   "nullable": true,
@@ -19910,7 +19910,7 @@
    ]
   }
  },
- "5781": {
+ {
   "name": "ACCTACR",
   "type": "string",
   "nullable": true,
@@ -19935,7 +19935,7 @@
    ]
   }
  },
- "5782": {
+ {
   "name": "BRKNA",
   "type": "string",
   "nullable": true,
@@ -19960,7 +19960,7 @@
    ]
   }
  },
- "5783": {
+ {
   "name": "ExchangeGatewayID",
   "type": "string",
   "nullable": true,
@@ -19985,7 +19985,7 @@
    ]
   }
  },
- "5784": {
+ {
   "name": "EndPointExchangeOrderId",
   "type": "string",
   "nullable": true,
@@ -20010,7 +20010,7 @@
    ]
   }
  },
- "5785": {
+ {
   "name": "EndpointExchangeExecutionId",
   "type": "string",
   "nullable": true,
@@ -20035,7 +20035,7 @@
    ]
   }
  },
- "5786": {
+ {
   "name": "NIMTimeRemaining",
   "type": "int32",
   "nullable": true,
@@ -20060,7 +20060,7 @@
    ]
   }
  },
- "5787": {
+ {
   "name": "ClearingQType",
   "type": "string",
   "nullable": true,
@@ -20085,7 +20085,7 @@
    ]
   }
  },
- "5788": {
+ {
   "name": "QueryToken",
   "type": "string",
   "nullable": true,
@@ -20110,7 +20110,7 @@
    ]
   }
  },
- "5789": {
+ {
   "name": "ClientInfo",
   "type": "string",
   "nullable": true,
@@ -20135,7 +20135,7 @@
    ]
   }
  },
- "5790": {
+ {
   "name": "FixingBraket",
   "type": "string",
   "nullable": true,
@@ -20160,7 +20160,7 @@
    ]
   }
  },
- "5791": {
+ {
   "name": "TotalVolume",
   "type": "double",
   "nullable": true,
@@ -20185,7 +20185,7 @@
    ]
   }
  },
- "5792": {
+ {
   "name": "OpenInterestQty",
   "type": "double",
   "nullable": true,
@@ -20210,7 +20210,7 @@
    ]
   }
  },
- "5793": {
+ {
   "name": "MassQuoteMessagesCount",
   "type": "int32",
   "nullable": true,
@@ -20235,7 +20235,7 @@
    ]
   }
  },
- "5794": {
+ {
   "name": "QuoteEntriesCount",
   "type": "int32",
   "nullable": true,
@@ -20260,7 +20260,7 @@
    ]
   }
  },
- "5795": {
+ {
   "name": "LegSecurityGroup",
   "type": "string",
   "nullable": true,
@@ -20285,7 +20285,7 @@
    ]
   }
  },
- "5796": {
+ {
   "name": "TradingReferenceDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -20310,7 +20310,7 @@
    ]
   }
  },
- "5797": {
+ {
   "name": "AggressorSide",
   "type": "string",
   "nullable": true,
@@ -20335,7 +20335,7 @@
    ]
   }
  },
- "5798": {
+ {
   "name": "DayCount1",
   "type": "int32",
   "nullable": true,
@@ -20360,7 +20360,7 @@
    ]
   }
  },
- "5799": {
+ {
   "name": "MatchEventStartIndicator",
   "type": "bool",
   "nullable": true,
@@ -20385,7 +20385,7 @@
    ]
   }
  },
- "5800": {
+ {
   "name": "CDNAccountType",
   "type": "string",
   "nullable": true,
@@ -20416,7 +20416,7 @@
    ]
   }
  },
- "5801": {
+ {
   "name": "CDNAnonymous",
   "type": "bool",
   "nullable": true,
@@ -20441,7 +20441,7 @@
    ]
   }
  },
- "5802": {
+ {
   "name": "CDNInternalCross",
   "type": "bool",
   "nullable": true,
@@ -20466,7 +20466,7 @@
    ]
   }
  },
- "5803": {
+ {
   "name": "CDNLotsOf",
   "type": "double",
   "nullable": true,
@@ -20491,7 +20491,7 @@
    ]
   }
  },
- "5804": {
+ {
   "name": "CDNNonResident",
   "type": "bool",
   "nullable": true,
@@ -20516,7 +20516,7 @@
    ]
   }
  },
- "5805": {
+ {
   "name": "CDNPrincipalTrade",
   "type": "bool",
   "nullable": true,
@@ -20541,7 +20541,7 @@
    ]
   }
  },
- "5806": {
+ {
   "name": "CDNUserId",
   "type": "string",
   "nullable": true,
@@ -20566,7 +20566,7 @@
    ]
   }
  },
- "5807": {
+ {
   "name": "CDNBasketTrade",
   "type": "bool",
   "nullable": true,
@@ -20591,7 +20591,7 @@
    ]
   }
  },
- "5808": {
+ {
   "name": "CDNSettlementTerm",
   "type": "string",
   "nullable": true,
@@ -20616,7 +20616,7 @@
    ]
   }
  },
- "5809": {
+ {
   "name": "CDNShortExempt",
   "type": "bool",
   "nullable": true,
@@ -20641,7 +20641,7 @@
    ]
   }
  },
- "5810": {
+ {
   "name": "CDNRTAutoFill",
   "type": "bool",
   "nullable": true,
@@ -20666,7 +20666,7 @@
    ]
   }
  },
- "5811": {
+ {
   "name": "CDNProgramTrade",
   "type": "bool",
   "nullable": true,
@@ -20691,7 +20691,7 @@
    ]
   }
  },
- "5812": {
+ {
   "name": "CDNMGFCandidate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -20716,7 +20716,7 @@
    ]
   }
  },
- "5813": {
+ {
   "name": "CDNJitney",
   "type": "bool",
   "nullable": true,
@@ -20741,7 +20741,7 @@
    ]
   }
  },
- "5814": {
+ {
   "name": "CDNMarketOnClose",
   "type": "bool",
   "nullable": true,
@@ -20766,7 +20766,7 @@
    ]
   }
  },
- "5815": {
+ {
   "name": "SubMkt",
   "type": "string",
   "nullable": true,
@@ -20791,7 +20791,7 @@
    ]
   }
  },
- "5816": {
+ {
   "name": "ClearingVenue",
   "type": "string",
   "nullable": true,
@@ -20816,7 +20816,7 @@
    ]
   }
  },
- "5817": {
+ {
   "name": "ContraOrderRestrictions",
   "type": "string",
   "nullable": true,
@@ -20841,7 +20841,7 @@
    ]
   }
  },
- "5818": {
+ {
   "name": "DecayQuantity",
   "type": "double",
   "nullable": true,
@@ -20866,7 +20866,7 @@
    ]
   }
  },
- "5819": {
+ {
   "name": "DecayStartDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -20891,7 +20891,7 @@
    ]
   }
  },
- "5820": {
+ {
   "name": "LekSecuritiesCustomField1",
   "type": "string",
   "nullable": true,
@@ -20916,7 +20916,7 @@
    ]
   }
  },
- "5821": {
+ {
   "name": "LekSecuritiesCustomField2",
   "type": "string",
   "nullable": true,
@@ -20941,7 +20941,7 @@
    ]
   }
  },
- "5822": {
+ {
   "name": "LekSecuritiesCustomField3",
   "type": "string",
   "nullable": true,
@@ -20966,7 +20966,7 @@
    ]
   }
  },
- "5823": {
+ {
   "name": "CounterParty",
   "type": "string",
   "nullable": true,
@@ -20991,7 +20991,7 @@
    ]
   }
  },
- "5824": {
+ {
   "name": "CounterParty1",
   "type": "string",
   "nullable": true,
@@ -21016,7 +21016,7 @@
    ]
   }
  },
- "5825": {
+ {
   "name": "RemainingParty",
   "type": "string",
   "nullable": true,
@@ -21041,7 +21041,7 @@
    ]
   }
  },
- "5826": {
+ {
   "name": "ClTrdIDRefType",
   "type": "string",
   "nullable": true,
@@ -21066,7 +21066,7 @@
    ]
   }
  },
- "5827": {
+ {
   "name": "OutstandingQty",
   "type": "double",
   "nullable": true,
@@ -21091,7 +21091,7 @@
    ]
   }
  },
- "5828": {
+ {
   "name": "RemainingParty1",
   "type": "string",
   "nullable": true,
@@ -21116,7 +21116,7 @@
    ]
   }
  },
- "5829": {
+ {
   "name": "RESERVED15829",
   "type": "string",
   "nullable": true,
@@ -21142,7 +21142,7 @@
    ]
   }
  },
- "5830": {
+ {
   "name": "MiscFeeCCY",
   "type": "string",
   "nullable": true,
@@ -21167,7 +21167,7 @@
    ]
   }
  },
- "5831": {
+ {
   "name": "StAllocType",
   "type": "string",
   "nullable": true,
@@ -21192,7 +21192,7 @@
    ]
   }
  },
- "5832": {
+ {
   "name": "StraddleInd",
   "type": "string",
   "nullable": true,
@@ -21217,7 +21217,7 @@
    ]
   }
  },
- "5833": {
+ {
   "name": "ThirdPartyFullCalcPeriod",
   "type": "string",
   "nullable": true,
@@ -21242,7 +21242,7 @@
    ]
   }
  },
- "5834": {
+ {
   "name": "FirstPaymentDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -21267,7 +21267,7 @@
    ]
   }
  },
- "5835": {
+ {
   "name": "MiscFeeReceiver",
   "type": "string",
   "nullable": true,
@@ -21292,7 +21292,7 @@
    ]
   }
  },
- "5836": {
+ {
   "name": "MiscFeePayer",
   "type": "string",
   "nullable": true,
@@ -21317,7 +21317,7 @@
    ]
   }
  },
- "5837": {
+ {
   "name": "RiskID",
   "type": "string",
   "nullable": true,
@@ -21342,7 +21342,7 @@
    ]
   }
  },
- "5838": {
+ {
   "name": "RESERVED25838",
   "type": "string",
   "nullable": true,
@@ -21368,7 +21368,7 @@
    ]
   }
  },
- "5839": {
+ {
   "name": "AllocRefEventID",
   "type": "string",
   "nullable": true,
@@ -21393,7 +21393,7 @@
    ]
   }
  },
- "5840": {
+ {
   "name": "RESERVED35840",
   "type": "string",
   "nullable": true,
@@ -21419,7 +21419,7 @@
    ]
   }
  },
- "5841": {
+ {
   "name": "RESERVED45841",
   "type": "string",
   "nullable": true,
@@ -21445,7 +21445,7 @@
    ]
   }
  },
- "5842": {
+ {
   "name": "RESERVED55842",
   "type": "string",
   "nullable": true,
@@ -21471,7 +21471,7 @@
    ]
   }
  },
- "5843": {
+ {
   "name": "RemainingParty2",
   "type": "string",
   "nullable": true,
@@ -21496,7 +21496,7 @@
    ]
   }
  },
- "5844": {
+ {
   "name": "PremiumFee",
   "type": "double",
   "nullable": true,
@@ -21521,7 +21521,7 @@
    ]
   }
  },
- "5845": {
+ {
   "name": "PremiumPayer",
   "type": "string",
   "nullable": true,
@@ -21546,7 +21546,7 @@
    ]
   }
  },
- "5846": {
+ {
   "name": "CreditRating",
   "type": "string",
   "nullable": true,
@@ -21571,7 +21571,7 @@
    ]
   }
  },
- "5847": {
+ {
   "name": "TargetStrategy2",
   "type": "int32",
   "nullable": true,
@@ -21596,7 +21596,7 @@
    ]
   }
  },
- "5848": {
+ {
   "name": "TargetStrategyParameters1",
   "type": "string",
   "nullable": true,
@@ -21621,7 +21621,7 @@
    ]
   }
  },
- "5849": {
+ {
   "name": "OriginalContractSize",
   "type": "double",
   "nullable": true,
@@ -21646,7 +21646,7 @@
    ]
   }
  },
- "5850": {
+ {
   "name": "OrigIssueAmt",
   "type": "double",
   "nullable": true,
@@ -21671,7 +21671,7 @@
    ]
   }
  },
- "5851": {
+ {
   "name": "DBAlgo1",
   "type": "string",
   "nullable": true,
@@ -21696,7 +21696,7 @@
    ]
   }
  },
- "5852": {
+ {
   "name": "InsuranceCode",
   "type": "string",
   "nullable": true,
@@ -21721,7 +21721,7 @@
    ]
   }
  },
- "5853": {
+ {
   "name": "NewIssueIndicator",
   "type": "bool",
   "nullable": true,
@@ -21746,7 +21746,7 @@
    ]
   }
  },
- "5854": {
+ {
   "name": "DBAlgo2",
   "type": "string",
   "nullable": true,
@@ -21771,7 +21771,7 @@
    ]
   }
  },
- "5855": {
+ {
   "name": "QueryDirection",
   "type": "string",
   "nullable": true,
@@ -21796,7 +21796,7 @@
    ]
   }
  },
- "5856": {
+ {
   "name": "DBAlgo3",
   "type": "string",
   "nullable": true,
@@ -21821,7 +21821,7 @@
    ]
   }
  },
- "5857": {
+ {
   "name": "DBAlgo4",
   "type": "string",
   "nullable": true,
@@ -21846,7 +21846,7 @@
    ]
   }
  },
- "5858": {
+ {
   "name": "DBAlgo5",
   "type": "string",
   "nullable": true,
@@ -21871,7 +21871,7 @@
    ]
   }
  },
- "5859": {
+ {
   "name": "BidPostedQty",
   "type": "double",
   "nullable": true,
@@ -21896,7 +21896,7 @@
    ]
   }
  },
- "5860": {
+ {
   "name": "DBAlgo6",
   "type": "string",
   "nullable": true,
@@ -21921,7 +21921,7 @@
    ]
   }
  },
- "5861": {
+ {
   "name": "OfrPostedQty",
   "type": "double",
   "nullable": true,
@@ -21946,7 +21946,7 @@
    ]
   }
  },
- "5862": {
+ {
   "name": "UpdateReason1",
   "type": "string",
   "nullable": true,
@@ -21971,7 +21971,7 @@
    ]
   }
  },
- "5863": {
+ {
   "name": "DBAlgo7",
   "type": "string",
   "nullable": true,
@@ -21996,7 +21996,7 @@
    ]
   }
  },
- "5864": {
+ {
   "name": "DBAlgo8",
   "type": "string",
   "nullable": true,
@@ -22021,7 +22021,7 @@
    ]
   }
  },
- "5865": {
+ {
   "name": "Testingselecttag",
   "type": "string",
   "nullable": true,
@@ -22046,7 +22046,7 @@
    ]
   }
  },
- "5866": {
+ {
   "name": "DBAlgo9",
   "type": "string",
   "nullable": true,
@@ -22071,7 +22071,7 @@
    ]
   }
  },
- "5867": {
+ {
   "name": "DBAlgo10",
   "type": "string",
   "nullable": true,
@@ -22096,7 +22096,7 @@
    ]
   }
  },
- "5868": {
+ {
   "name": "DBAlgo11",
   "type": "string",
   "nullable": true,
@@ -22121,7 +22121,7 @@
    ]
   }
  },
- "5869": {
+ {
   "name": "DBAlgo12",
   "type": "string",
   "nullable": true,
@@ -22146,7 +22146,7 @@
    ]
   }
  },
- "5870": {
+ {
   "name": "DBAlgo13",
   "type": "string",
   "nullable": true,
@@ -22171,7 +22171,7 @@
    ]
   }
  },
- "5871": {
+ {
   "name": "DBAlgo14",
   "type": "string",
   "nullable": true,
@@ -22196,7 +22196,7 @@
    ]
   }
  },
- "5872": {
+ {
   "name": "DBAlgo15",
   "type": "string",
   "nullable": true,
@@ -22221,7 +22221,7 @@
    ]
   }
  },
- "5873": {
+ {
   "name": "DBAlgo16",
   "type": "string",
   "nullable": true,
@@ -22246,7 +22246,7 @@
    ]
   }
  },
- "5874": {
+ {
   "name": "DBAlgo17",
   "type": "string",
   "nullable": true,
@@ -22271,7 +22271,7 @@
    ]
   }
  },
- "5875": {
+ {
   "name": "DBAlgo18",
   "type": "string",
   "nullable": true,
@@ -22296,7 +22296,7 @@
    ]
   }
  },
- "5876": {
+ {
   "name": "DBAlgo19",
   "type": "string",
   "nullable": true,
@@ -22321,7 +22321,7 @@
    ]
   }
  },
- "5877": {
+ {
   "name": "DBAlgo20",
   "type": "string",
   "nullable": true,
@@ -22346,7 +22346,7 @@
    ]
   }
  },
- "5878": {
+ {
   "name": "DBAlgo21",
   "type": "string",
   "nullable": true,
@@ -22371,7 +22371,7 @@
    ]
   }
  },
- "5879": {
+ {
   "name": "DBAlgo22",
   "type": "string",
   "nullable": true,
@@ -22396,7 +22396,7 @@
    ]
   }
  },
- "5880": {
+ {
   "name": "DBAlgo23",
   "type": "string",
   "nullable": true,
@@ -22421,7 +22421,7 @@
    ]
   }
  },
- "5881": {
+ {
   "name": "DBAlgo24",
   "type": "string",
   "nullable": true,
@@ -22446,7 +22446,7 @@
    ]
   }
  },
- "5882": {
+ {
   "name": "DBAlgo25",
   "type": "string",
   "nullable": true,
@@ -22471,7 +22471,7 @@
    ]
   }
  },
- "5883": {
+ {
   "name": "PackageID",
   "type": "string",
   "nullable": true,
@@ -22496,7 +22496,7 @@
    ]
   }
  },
- "5884": {
+ {
   "name": "Target",
   "type": "string",
   "nullable": true,
@@ -22521,7 +22521,7 @@
    ]
   }
  },
- "5885": {
+ {
   "name": "DBAlgo26",
   "type": "string",
   "nullable": true,
@@ -22546,7 +22546,7 @@
    ]
   }
  },
- "5886": {
+ {
   "name": "DBAlgo27",
   "type": "string",
   "nullable": true,
@@ -22571,7 +22571,7 @@
    ]
   }
  },
- "5887": {
+ {
   "name": "DBAlgo28",
   "type": "string",
   "nullable": true,
@@ -22596,7 +22596,7 @@
    ]
   }
  },
- "5888": {
+ {
   "name": "DBAlgo29",
   "type": "string",
   "nullable": true,
@@ -22621,7 +22621,7 @@
    ]
   }
  },
- "5889": {
+ {
   "name": "DBAlgo30",
   "type": "string",
   "nullable": true,
@@ -22646,7 +22646,7 @@
    ]
   }
  },
- "5890": {
+ {
   "name": "DBAlgo31",
   "type": "string",
   "nullable": true,
@@ -22671,7 +22671,7 @@
    ]
   }
  },
- "5891": {
+ {
   "name": "DBAlgo32",
   "type": "string",
   "nullable": true,
@@ -22696,7 +22696,7 @@
    ]
   }
  },
- "5892": {
+ {
   "name": "DBAlgo33",
   "type": "string",
   "nullable": true,
@@ -22721,7 +22721,7 @@
    ]
   }
  },
- "5893": {
+ {
   "name": "ExecutionReportDetail",
   "type": "string",
   "nullable": true,
@@ -22746,7 +22746,7 @@
    ]
   }
  },
- "5894": {
+ {
   "name": "Reserved76",
   "type": "string",
   "nullable": true,
@@ -22771,7 +22771,7 @@
    ]
   }
  },
- "5899": {
+ {
   "name": "SpotDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -22796,7 +22796,7 @@
    ]
   }
  },
- "5900": {
+ {
   "name": "TargetStrategy3",
   "type": "string",
   "nullable": true,
@@ -22821,7 +22821,7 @@
    ]
   }
  },
- "5901": {
+ {
   "name": "TargetStrategyParameters2",
   "type": "string",
   "nullable": true,
@@ -22846,7 +22846,7 @@
    ]
   }
  },
- "5902": {
+ {
   "name": "EffectiveTime1",
   "type": "timestamp[us]",
   "nullable": true,
@@ -22871,7 +22871,7 @@
    ]
   }
  },
- "5903": {
+ {
   "name": "ExpireTime2",
   "type": "timestamp[us]",
   "nullable": true,
@@ -22896,7 +22896,7 @@
    ]
   }
  },
- "5904": {
+ {
   "name": "Duration1",
   "type": "int32",
   "nullable": true,
@@ -22921,7 +22921,7 @@
    ]
   }
  },
- "5905": {
+ {
   "name": "ParticipationRate1",
   "type": "double",
   "nullable": true,
@@ -22946,7 +22946,7 @@
    ]
   }
  },
- "5906": {
+ {
   "name": "ExecutionMode",
   "type": "string",
   "nullable": true,
@@ -22971,7 +22971,7 @@
    ]
   }
  },
- "5907": {
+ {
   "name": "LEKInternationalOrderTypes",
   "type": "string",
   "nullable": true,
@@ -22996,7 +22996,7 @@
    ]
   }
  },
- "5908": {
+ {
   "name": "LEKInternationalOrderParams1",
   "type": "string",
   "nullable": true,
@@ -23021,7 +23021,7 @@
    ]
   }
  },
- "5909": {
+ {
   "name": "LEKInternationalOrderParams2",
   "type": "string",
   "nullable": true,
@@ -23046,7 +23046,7 @@
    ]
   }
  },
- "5910": {
+ {
   "name": "TriggerStopGap",
   "type": "int32",
   "nullable": true,
@@ -23071,7 +23071,7 @@
    ]
   }
  },
- "5911": {
+ {
   "name": "TriggerLimitGap",
   "type": "int32",
   "nullable": true,
@@ -23096,7 +23096,7 @@
    ]
   }
  },
- "5912": {
+ {
   "name": "TriggerMinQty",
   "type": "double",
   "nullable": true,
@@ -23121,7 +23121,7 @@
    ]
   }
  },
- "5913": {
+ {
   "name": "AllowHiddenSize",
   "type": "bool",
   "nullable": true,
@@ -23146,7 +23146,7 @@
    ]
   }
  },
- "5914": {
+ {
   "name": "MinNoDecimals",
   "type": "int32",
   "nullable": true,
@@ -23171,7 +23171,7 @@
    ]
   }
  },
- "5915": {
+ {
   "name": "MaxNoDecimals",
   "type": "int32",
   "nullable": true,
@@ -23196,7 +23196,7 @@
    ]
   }
  },
- "5916": {
+ {
   "name": "NIMPrivateDuration",
   "type": "int32",
   "nullable": true,
@@ -23221,7 +23221,7 @@
    ]
   }
  },
- "5917": {
+ {
   "name": "NIMPublicDuration",
   "type": "int32",
   "nullable": true,
@@ -23246,7 +23246,7 @@
    ]
   }
  },
- "5918": {
+ {
   "name": "TradeConvention",
   "type": "string",
   "nullable": true,
@@ -23271,7 +23271,7 @@
    ]
   }
  },
- "5919": {
+ {
   "name": "LastFragment",
   "type": "bool",
   "nullable": true,
@@ -23296,7 +23296,7 @@
    ]
   }
  },
- "5920": {
+ {
   "name": "ExclusiveFlag",
   "type": "string",
   "nullable": true,
@@ -23321,7 +23321,7 @@
    ]
   }
  },
- "5921": {
+ {
   "name": "ExternalMarkUp",
   "type": "double",
   "nullable": true,
@@ -23346,7 +23346,7 @@
    ]
   }
  },
- "5922": {
+ {
   "name": "AllowLimits",
   "type": "bool",
   "nullable": true,
@@ -23371,7 +23371,7 @@
    ]
   }
  },
- "5923": {
+ {
   "name": "BidPriceForDiscountQuotes",
   "type": "double",
   "nullable": true,
@@ -23396,7 +23396,7 @@
    ]
   }
  },
- "5924": {
+ {
   "name": "OfferPriceForDiscountQuotes",
   "type": "double",
   "nullable": true,
@@ -23421,7 +23421,7 @@
    ]
   }
  },
- "5925": {
+ {
   "name": "IndexRatio",
   "type": "double",
   "nullable": true,
@@ -23446,7 +23446,7 @@
    ]
   }
  },
- "5926": {
+ {
   "name": "OfferYTC",
   "type": "double",
   "nullable": true,
@@ -23471,7 +23471,7 @@
    ]
   }
  },
- "5927": {
+ {
   "name": "BidYTM",
   "type": "double",
   "nullable": true,
@@ -23496,7 +23496,7 @@
    ]
   }
  },
- "5928": {
+ {
   "name": "OfferYTM",
   "type": "double",
   "nullable": true,
@@ -23521,7 +23521,7 @@
    ]
   }
  },
- "5929": {
+ {
   "name": "YieldFlag",
   "type": "bool",
   "nullable": true,
@@ -23546,7 +23546,7 @@
    ]
   }
  },
- "5930": {
+ {
   "name": "StoryField",
   "type": "string",
   "nullable": true,
@@ -23571,7 +23571,7 @@
    ]
   }
  },
- "5931": {
+ {
   "name": "MinAnytimeQty",
   "type": "double",
   "nullable": true,
@@ -23596,7 +23596,7 @@
    ]
   }
  },
- "5932": {
+ {
   "name": "MinLeavesQty",
   "type": "double",
   "nullable": true,
@@ -23621,7 +23621,7 @@
    ]
   }
  },
- "5933": {
+ {
   "name": "GeneralLedgerAccount",
   "type": "string",
   "nullable": true,
@@ -23646,7 +23646,7 @@
    ]
   }
  },
- "5934": {
+ {
   "name": "ClearingRefNo",
   "type": "string",
   "nullable": true,
@@ -23671,7 +23671,7 @@
    ]
   }
  },
- "5935": {
+ {
   "name": "MatchRefNo",
   "type": "string",
   "nullable": true,
@@ -23696,7 +23696,7 @@
    ]
   }
  },
- "5936": {
+ {
   "name": "ExplicitPromptDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -23721,7 +23721,7 @@
    ]
   }
  },
- "5937": {
+ {
   "name": "PriceCode",
   "type": "string",
   "nullable": true,
@@ -23746,7 +23746,7 @@
    ]
   }
  },
- "5938": {
+ {
   "name": "TradeOrigin1",
   "type": "string",
   "nullable": true,
@@ -23771,7 +23771,7 @@
    ]
   }
  },
- "5939": {
+ {
   "name": "Reserved77",
   "type": "string",
   "nullable": true,
@@ -23796,7 +23796,7 @@
    ]
   }
  },
- "5940": {
+ {
   "name": "Reserved78",
   "type": "string",
   "nullable": true,
@@ -23821,7 +23821,7 @@
    ]
   }
  },
- "5941": {
+ {
   "name": "DPIFirm",
   "type": "bool",
   "nullable": true,
@@ -23846,7 +23846,7 @@
    ]
   }
  },
- "5942": {
+ {
   "name": "MinDeltaNeutrality",
   "type": "double",
   "nullable": true,
@@ -23871,7 +23871,7 @@
    ]
   }
  },
- "5943": {
+ {
   "name": "MaxDeltaNeutrality",
   "type": "double",
   "nullable": true,
@@ -23896,7 +23896,7 @@
    ]
   }
  },
- "5944": {
+ {
   "name": "InitialDisplayQty",
   "type": "double",
   "nullable": true,
@@ -23921,7 +23921,7 @@
    ]
   }
  },
- "5945": {
+ {
   "name": "TargetVolumeReference",
   "type": "double",
   "nullable": true,
@@ -23946,7 +23946,7 @@
    ]
   }
  },
- "5946": {
+ {
   "name": "PendingReason",
   "type": "string",
   "nullable": true,
@@ -23971,7 +23971,7 @@
    ]
   }
  },
- "5947": {
+ {
   "name": "ExecInst",
   "type": "string",
   "nullable": true,
@@ -23996,7 +23996,7 @@
    ]
   }
  },
- "5948": {
+ {
   "name": "PartitionID",
   "type": "string",
   "nullable": true,
@@ -24021,7 +24021,7 @@
    ]
   }
  },
- "5949": {
+ {
   "name": "BinID",
   "type": "string",
   "nullable": true,
@@ -24046,7 +24046,7 @@
    ]
   }
  },
- "5950": {
+ {
   "name": "Slope",
   "type": "bool",
   "nullable": true,
@@ -24071,7 +24071,7 @@
    ]
   }
  },
- "5951": {
+ {
   "name": "RemainingPortfolioNetDeltaMin",
   "type": "int32",
   "nullable": true,
@@ -24096,7 +24096,7 @@
    ]
   }
  },
- "5952": {
+ {
   "name": "RemainingPortfolioNetDeltaMax",
   "type": "int32",
   "nullable": true,
@@ -24121,7 +24121,7 @@
    ]
   }
  },
- "5953": {
+ {
   "name": "TradingPortfolioNetDeltaMin",
   "type": "int32",
   "nullable": true,
@@ -24146,7 +24146,7 @@
    ]
   }
  },
- "5954": {
+ {
   "name": "TradingPortfolioNetDeltaMax",
   "type": "int32",
   "nullable": true,
@@ -24171,7 +24171,7 @@
    ]
   }
  },
- "5955": {
+ {
   "name": "SchedulingDays",
   "type": "int32",
   "nullable": true,
@@ -24196,7 +24196,7 @@
    ]
   }
  },
- "5956": {
+ {
   "name": "DarkBlockLimitPrice",
   "type": "double",
   "nullable": true,
@@ -24221,7 +24221,7 @@
    ]
   }
  },
- "5957": {
+ {
   "name": "NoStrategyParameters",
   "type": "int64",
   "nullable": true,
@@ -24246,7 +24246,7 @@
    ]
   }
  },
- "5958": {
+ {
   "name": "StrategyParameterName",
   "type": "string",
   "nullable": true,
@@ -24271,7 +24271,7 @@
    ]
   }
  },
- "5959": {
+ {
   "name": "StrategyParameterType",
   "type": "string",
   "nullable": true,
@@ -24296,7 +24296,7 @@
    ]
   }
  },
- "5960": {
+ {
   "name": "StrategyParameterValue",
   "type": "string",
   "nullable": true,
@@ -24321,7 +24321,7 @@
    ]
   }
  },
- "5961": {
+ {
   "name": "TradingProtocol",
   "type": "string",
   "nullable": true,
@@ -24346,7 +24346,7 @@
    ]
   }
  },
- "5962": {
+ {
   "name": "BidActivity",
   "type": "bool",
   "nullable": true,
@@ -24371,7 +24371,7 @@
    ]
   }
  },
- "5963": {
+ {
   "name": "OfferActivity",
   "type": "bool",
   "nullable": true,
@@ -24396,7 +24396,7 @@
    ]
   }
  },
- "5964": {
+ {
   "name": "NoPartitionIDs",
   "type": "int64",
   "nullable": true,
@@ -24421,7 +24421,7 @@
    ]
   }
  },
- "5965": {
+ {
   "name": "LocateSource",
   "type": "string",
   "nullable": true,
@@ -24446,7 +24446,7 @@
    ]
   }
  },
- "5966": {
+ {
   "name": "AllocQty2",
   "type": "double",
   "nullable": true,
@@ -24471,7 +24471,7 @@
    ]
   }
  },
- "5967": {
+ {
   "name": "CalculatedAllocQty",
   "type": "double",
   "nullable": true,
@@ -24496,7 +24496,7 @@
    ]
   }
  },
- "5968": {
+ {
   "name": "CalculatedAllocQty2",
   "type": "double",
   "nullable": true,
@@ -24521,7 +24521,7 @@
    ]
   }
  },
- "5969": {
+ {
   "name": "PartitionStatus",
   "type": "string",
   "nullable": true,
@@ -24546,7 +24546,7 @@
    ]
   }
  },
- "5970": {
+ {
   "name": "LegCalculatedCcyLastQty",
   "type": "double",
   "nullable": true,
@@ -24571,7 +24571,7 @@
    ]
   }
  },
- "5971": {
+ {
   "name": "CalculatedCcyLastQty2",
   "type": "double",
   "nullable": true,
@@ -24596,7 +24596,7 @@
    ]
   }
  },
- "5972": {
+ {
   "name": "STPOrderType",
   "type": "string",
   "nullable": true,
@@ -24621,7 +24621,7 @@
    ]
   }
  },
- "5973": {
+ {
   "name": "STPExecType",
   "type": "string",
   "nullable": true,
@@ -24646,7 +24646,7 @@
    ]
   }
  },
- "5974": {
+ {
   "name": "STPFixingName",
   "type": "string",
   "nullable": true,
@@ -24671,7 +24671,7 @@
    ]
   }
  },
- "5975": {
+ {
   "name": "OrderLinkID",
   "type": "string",
   "nullable": true,
@@ -24696,7 +24696,7 @@
    ]
   }
  },
- "5976": {
+ {
   "name": "NoUserData",
   "type": "int64",
   "nullable": true,
@@ -24721,7 +24721,7 @@
    ]
   }
  },
- "5977": {
+ {
   "name": "UserDataName",
   "type": "string",
   "nullable": true,
@@ -24746,7 +24746,7 @@
    ]
   }
  },
- "5978": {
+ {
   "name": "UserDataValue",
   "type": "string",
   "nullable": true,
@@ -24771,7 +24771,7 @@
    ]
   }
  },
- "5979": {
+ {
   "name": "RequestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -24796,7 +24796,7 @@
    ]
   }
  },
- "5980": {
+ {
   "name": "AltExDestination",
   "type": "string",
   "nullable": true,
@@ -24821,7 +24821,7 @@
    ]
   }
  },
- "5981": {
+ {
   "name": "IOILink",
   "type": "string",
   "nullable": true,
@@ -24846,7 +24846,7 @@
    ]
   }
  },
- "5982": {
+ {
   "name": "GroupID",
   "type": "string",
   "nullable": true,
@@ -24871,7 +24871,7 @@
    ]
   }
  },
- "5983": {
+ {
   "name": "InstrumentID1",
   "type": "string",
   "nullable": true,
@@ -24896,7 +24896,7 @@
    ]
   }
  },
- "5984": {
+ {
   "name": "QuoteID",
   "type": "string",
   "nullable": true,
@@ -24921,7 +24921,7 @@
    ]
   }
  },
- "5985": {
+ {
   "name": "LegOrdStatus",
   "type": "string",
   "nullable": true,
@@ -24946,7 +24946,7 @@
    ]
   }
  },
- "5986": {
+ {
   "name": "LegErrorCode",
   "type": "string",
   "nullable": true,
@@ -24971,7 +24971,7 @@
    ]
   }
  },
- "5987": {
+ {
   "name": "LegErrorMsg",
   "type": "string",
   "nullable": true,
@@ -24996,7 +24996,7 @@
    ]
   }
  },
- "5988": {
+ {
   "name": "QuantitySign",
   "type": "string",
   "nullable": true,
@@ -25021,7 +25021,7 @@
    ]
   }
  },
- "5989": {
+ {
   "name": "AllinPriceFlag",
   "type": "bool",
   "nullable": true,
@@ -25046,7 +25046,7 @@
    ]
   }
  },
- "5990": {
+ {
   "name": "PriceActivity",
   "type": "string",
   "nullable": true,
@@ -25071,7 +25071,7 @@
    ]
   }
  },
- "5991": {
+ {
   "name": "SumBidQuantity",
   "type": "double",
   "nullable": true,
@@ -25096,7 +25096,7 @@
    ]
   }
  },
- "5992": {
+ {
   "name": "SumOfferQuantity",
   "type": "double",
   "nullable": true,
@@ -25121,7 +25121,7 @@
    ]
   }
  },
- "5993": {
+ {
   "name": "UpperVolatilityBand",
   "type": "double",
   "nullable": true,
@@ -25146,7 +25146,7 @@
    ]
   }
  },
- "5994": {
+ {
   "name": "LowerVolatilityBand",
   "type": "double",
   "nullable": true,
@@ -25171,7 +25171,7 @@
    ]
   }
  },
- "5995": {
+ {
   "name": "ExtendedVolatilityBand",
   "type": "double",
   "nullable": true,
@@ -25196,7 +25196,7 @@
    ]
   }
  },
- "5996": {
+ {
   "name": "TradingMethod",
   "type": "string",
   "nullable": true,
@@ -25221,7 +25221,7 @@
    ]
   }
  },
- "5997": {
+ {
   "name": "NoTradePriceConditions",
   "type": "int64",
   "nullable": true,
@@ -25246,7 +25246,7 @@
    ]
   }
  },
- "5998": {
+ {
   "name": "TradePriceCondition",
   "type": "int32",
   "nullable": true,
@@ -25271,7 +25271,7 @@
    ]
   }
  },
- "5999": {
+ {
   "name": "EaseBaseTag",
   "type": "string",
   "nullable": true,
@@ -25296,4 +25296,4 @@
    ]
   }
  }
-}
+]

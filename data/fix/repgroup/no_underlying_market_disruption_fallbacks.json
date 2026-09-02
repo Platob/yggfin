@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingMarketDisruptionFallbacks",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingMarketDisruptionFallbacks",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41866"
-  },
-  "item": {
-   "name": "UnderlyingMarketDisruptionFallback",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingMarketDisruptionFallbackType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41867"
-     }
-    },
-    {
-     "name": "UnderlyingMarketDisruptionFallbackValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41339"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41866",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingMarketDisruptionFallback",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingMarketDisruptionFallbackType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41867"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingMarketDisruptionFallbackValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41339"
+    }
+   }
+  ]
  }
 }

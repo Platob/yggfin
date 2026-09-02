@@ -1,99 +1,96 @@
 {
  "name": "AllocationAck",
- "versions": [
-  "4.3"
- ],
- "declaration": {
-  "name": "AllocationAck",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "AllocationAck",
-   "msgtype": "P",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ]
-  },
-  "fields": [
-   {
-    "name": "Parties",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "Parties"
-    },
-    "fields": []
-   },
-   {
-    "name": "AllocID",
-    "type": "string",
-    "fix": {
-     "tag": "70"
-    }
-   },
-   {
-    "name": "TradeDate",
-    "type": "string",
-    "fix": {
-     "tag": "75"
-    }
-   },
-   {
-    "name": "TransactTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "60"
-    }
-   },
-   {
-    "name": "AllocStatus",
-    "type": "string",
-    "fix": {
-     "tag": "87"
-    }
-   },
-   {
-    "name": "AllocRejCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "88"
-    }
-   },
-   {
-    "name": "Text",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "58"
-    }
-   },
-   {
-    "name": "EncodedTextLen",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "354"
-    }
-   },
-   {
-    "name": "EncodedText",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "355"
-    }
-   },
-   {
-    "name": "LegalConfirm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "650"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "AllocationAck",
+  "msgtype": "P",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "versions": [
+   "4.3"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "Parties",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "Parties"
+   },
+   "fields": []
+  },
+  {
+   "name": "AllocID",
+   "type": "string",
+   "fix": {
+    "tag": "70"
+   }
+  },
+  {
+   "name": "TradeDate",
+   "type": "string",
+   "fix": {
+    "tag": "75"
+   }
+  },
+  {
+   "name": "TransactTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "60"
+   }
+  },
+  {
+   "name": "AllocStatus",
+   "type": "string",
+   "fix": {
+    "tag": "87"
+   }
+  },
+  {
+   "name": "AllocRejCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "88"
+   }
+  },
+  {
+   "name": "Text",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "58"
+   }
+  },
+  {
+   "name": "EncodedTextLen",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "354"
+   }
+  },
+  {
+   "name": "EncodedText",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "355"
+   }
+  },
+  {
+   "name": "LegalConfirm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "650"
+   }
+  }
+ ]
 }

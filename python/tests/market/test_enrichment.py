@@ -132,8 +132,10 @@ def test_the_security_type_map_only_holds_values_the_dictionary_defines() -> Non
         # SecurityType is tag 167, so it is in the shard holding tags 0 to 499.
         shard = json.loads(opened.read("fields/000000.json"))
     # The field shard is the readable boundary: Arrow's compact metadata
-    # strings are nested JSON values here and restored only when loaded.
-    values = shard["167"]["fix"].get("values", [])
+    # strings are nested JSON values here and restored only when loaded. A
+    # shard is a list of records, each stating the tag it is.
+    record = next(one for one in shard if one["fix"].get("tag") == "167")
+    values = record["fix"].get("values", [])
     published = {one["value"] for one in values}
     unknown = sorted(set(SECURITY_TYPES) - published)
     assert not unknown, f"no FIX version defines SecurityType {unknown}"

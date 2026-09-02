@@ -1,36 +1,33 @@
 {
  "name": "NoStreamCalculationPeriodDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoStreamCalculationPeriodDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41241"
-  },
-  "item": {
-   "name": "StreamCalculationPeriodDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "StreamCalculationPeriodDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41242"
-     }
-    },
-    {
-     "name": "StreamCalculationPeriodDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41243"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41241",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "StreamCalculationPeriodDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "StreamCalculationPeriodDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41242"
     }
-   ]
-  }
+   },
+   {
+    "name": "StreamCalculationPeriodDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41243"
+    }
+   }
+  ]
  }
 }

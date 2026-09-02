@@ -1,313 +1,310 @@
 {
  "name": "CreditSuisse",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "CreditSuisse",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "CreditSuisse",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "Algotag1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6088"
-    }
-   },
-   {
-    "name": "Algotag2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6089"
-    }
-   },
-   {
-    "name": "Alsotag3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6090"
-    }
-   },
-   {
-    "name": "Algotag4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6091"
-    }
-   },
-   {
-    "name": "Algotag5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6092"
-    }
-   },
-   {
-    "name": "Algotag6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6093"
-    }
-   },
-   {
-    "name": "Algotag7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6094"
-    }
-   },
-   {
-    "name": "Algotag8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6095"
-    }
-   },
-   {
-    "name": "Algotag9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6096"
-    }
-   },
-   {
-    "name": "Algotag10",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6097"
-    }
-   },
-   {
-    "name": "BuytoCoverIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6098"
-    }
-   },
-   {
-    "name": "DisplaySize2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6066"
-    }
-   },
-   {
-    "name": "Duration2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6082"
-    }
-   },
-   {
-    "name": "EndTime2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6063"
-    }
-   },
-   {
-    "name": "ExecServProduct",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6061"
-    }
-   },
-   {
-    "name": "ExecutionStyle1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6065"
-    }
-   },
-   {
-    "name": "LongMoneyLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6068"
-    }
-   },
-   {
-    "name": "MaxPctVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6064"
-    }
-   },
-   {
-    "name": "MinPctVolume",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6067"
-    }
-   },
-   {
-    "name": "PortfolioTactic",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6072"
-    }
-   },
-   {
-    "name": "PriceIntercept1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6071"
-    }
-   },
-   {
-    "name": "PriceMultiplier1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6070"
-    }
-   },
-   {
-    "name": "ShortMoneyLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6069"
-    }
-   },
-   {
-    "name": "StartTime2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6062"
-    }
-   },
-   {
-    "name": "StopLossLimit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6074"
-    }
-   },
-   {
-    "name": "Time0",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6060"
-    }
-   },
-   {
-    "name": "Time2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6075"
-    }
-   },
-   {
-    "name": "Time3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6076"
-    }
-   },
-   {
-    "name": "Time4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6077"
-    }
-   },
-   {
-    "name": "Time5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6078"
-    }
-   },
-   {
-    "name": "Time6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6079"
-    }
-   },
-   {
-    "name": "Time7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6080"
-    }
-   },
-   {
-    "name": "Time71",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6081"
-    }
-   },
-   {
-    "name": "Time8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6083"
-    }
-   },
-   {
-    "name": "Time9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6084"
-    }
-   },
-   {
-    "name": "TrackingIndex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6073"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "CreditSuisse",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "Algotag1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6088"
+   }
+  },
+  {
+   "name": "Algotag2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6089"
+   }
+  },
+  {
+   "name": "Alsotag3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6090"
+   }
+  },
+  {
+   "name": "Algotag4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6091"
+   }
+  },
+  {
+   "name": "Algotag5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6092"
+   }
+  },
+  {
+   "name": "Algotag6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6093"
+   }
+  },
+  {
+   "name": "Algotag7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6094"
+   }
+  },
+  {
+   "name": "Algotag8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6095"
+   }
+  },
+  {
+   "name": "Algotag9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6096"
+   }
+  },
+  {
+   "name": "Algotag10",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6097"
+   }
+  },
+  {
+   "name": "BuytoCoverIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6098"
+   }
+  },
+  {
+   "name": "DisplaySize2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6066"
+   }
+  },
+  {
+   "name": "Duration2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6082"
+   }
+  },
+  {
+   "name": "EndTime2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6063"
+   }
+  },
+  {
+   "name": "ExecServProduct",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6061"
+   }
+  },
+  {
+   "name": "ExecutionStyle1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6065"
+   }
+  },
+  {
+   "name": "LongMoneyLimit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6068"
+   }
+  },
+  {
+   "name": "MaxPctVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6064"
+   }
+  },
+  {
+   "name": "MinPctVolume",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6067"
+   }
+  },
+  {
+   "name": "PortfolioTactic",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6072"
+   }
+  },
+  {
+   "name": "PriceIntercept1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6071"
+   }
+  },
+  {
+   "name": "PriceMultiplier1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6070"
+   }
+  },
+  {
+   "name": "ShortMoneyLimit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6069"
+   }
+  },
+  {
+   "name": "StartTime2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6062"
+   }
+  },
+  {
+   "name": "StopLossLimit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6074"
+   }
+  },
+  {
+   "name": "Time0",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6060"
+   }
+  },
+  {
+   "name": "Time2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6075"
+   }
+  },
+  {
+   "name": "Time3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6076"
+   }
+  },
+  {
+   "name": "Time4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6077"
+   }
+  },
+  {
+   "name": "Time5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6078"
+   }
+  },
+  {
+   "name": "Time6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6079"
+   }
+  },
+  {
+   "name": "Time7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6080"
+   }
+  },
+  {
+   "name": "Time71",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6081"
+   }
+  },
+  {
+   "name": "Time8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6083"
+   }
+  },
+  {
+   "name": "Time9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6084"
+   }
+  },
+  {
+   "name": "TrackingIndex",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6073"
+   }
+  }
+ ]
 }

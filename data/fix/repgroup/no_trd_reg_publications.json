@@ -1,43 +1,40 @@
 {
  "name": "NoTrdRegPublications",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTrdRegPublications",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2668"
-  },
-  "item": {
-   "name": "TrdRegPublication",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TrdRegPublicationType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2669"
-     }
-    },
-    {
-     "name": "TrdRegPublicationReason",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2670"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2668",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TrdRegPublication",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TrdRegPublicationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2669"
     }
-   ]
-  }
+   },
+   {
+    "name": "TrdRegPublicationReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2670"
+    }
+   }
+  ]
  }
 }

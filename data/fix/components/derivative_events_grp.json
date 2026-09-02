@@ -1,84 +1,81 @@
 {
  "name": "DerivativeEventsGrp",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "DerivativeEventsGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "DerivativeEventsGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoDerivativeEvents",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "1286"
-    },
-    "item": {
-     "name": "DerivativeEvent",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "DerivativeEventType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1287"
-       }
-      },
-      {
-       "name": "DerivativeEventDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1288"
-       }
-      },
-      {
-       "name": "DerivativeEventTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1289"
-       }
-      },
-      {
-       "name": "DerivativeEventPx",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1290"
-       }
-      },
-      {
-       "name": "DerivativeEventText",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1291"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "DerivativeEventsGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport"
+  ],
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoDerivativeEvents",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "1286"
+   },
+   "item": {
+    "name": "DerivativeEvent",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "DerivativeEventType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1287"
+      }
+     },
+     {
+      "name": "DerivativeEventDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1288"
+      }
+     },
+     {
+      "name": "DerivativeEventTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1289"
+      }
+     },
+     {
+      "name": "DerivativeEventPx",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1290"
+      }
+     },
+     {
+      "name": "DerivativeEventText",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1291"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

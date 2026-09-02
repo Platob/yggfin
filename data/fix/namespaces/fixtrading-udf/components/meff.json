@@ -1,73 +1,70 @@
 {
  "name": "MEFF",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "MEFF",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "MEFF",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "ExchangeTradeType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5681"
-    }
-   },
-   {
-    "name": "FixEngineName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5679"
-    }
-   },
-   {
-    "name": "NewSecuritySubscription",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5682"
-    }
-   },
-   {
-    "name": "ProprietaryFixProtocolVersion",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5680"
-    }
-   },
-   {
-    "name": "ReceivePendings",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5678"
-    }
-   },
-   {
-    "name": "SecondaryConfirmStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5683"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "MEFF",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ExchangeTradeType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5681"
+   }
+  },
+  {
+   "name": "FixEngineName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5679"
+   }
+  },
+  {
+   "name": "NewSecuritySubscription",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5682"
+   }
+  },
+  {
+   "name": "ProprietaryFixProtocolVersion",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5680"
+   }
+  },
+  {
+   "name": "ReceivePendings",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5678"
+   }
+  },
+  {
+   "name": "SecondaryConfirmStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5683"
+   }
+  }
+ ]
 }

@@ -102,7 +102,6 @@ _COMMON_FIELDS: tuple[str, ...] = (
     "LastPx",
     "LastQty",
     "GrossTradeAmt",
-    "LastShares",
     "LastMkt",
     "MarketMarker",
     "Env",

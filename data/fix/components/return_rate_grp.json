@@ -1,373 +1,370 @@
 {
  "name": "ReturnRateGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "ReturnRateGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "ReturnRateGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "Allocation",
-    "AllocationInstruction",
-    "AllocationInstructionAck",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AllocationReportAck",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "CrossRequest",
-    "CrossRequestAck",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarginRequirementInquiry",
-    "MarginRequirementInquiryAck",
-    "MarginRequirementReport",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassOrder",
-    "MassOrderAck",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "SettlementObligationReport",
-    "StreamAssignmentReport",
-    "StreamAssignmentRequest",
-    "TradeAggregationReport",
-    "TradeAggregationRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport",
-    "TradingSessionStatus"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoReturnRates",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42735"
-    },
-    "item": {
-     "name": "ReturnRate",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ReturnRatePriceSequence",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42736"
-       }
-      },
-      {
-       "name": "ReturnRateCommissionBasis",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42737"
-       }
-      },
-      {
-       "name": "ReturnRateCommissionAmount",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42738"
-       }
-      },
-      {
-       "name": "ReturnRateCommissionCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42739"
-       }
-      },
-      {
-       "name": "ReturnRateTotalCommissionPerTrade",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42740"
-       }
-      },
-      {
-       "name": "ReturnRateDeterminationMethod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42741"
-       }
-      },
-      {
-       "name": "ReturnRatePriceGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "ReturnRatePriceGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "ReturnRateFXConversionGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "ReturnRateFXConversionGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "ReturnRateAmountRelativeTo",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42742"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteMeasureType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42743"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteUnits",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42744"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteMethod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42745"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteCurrency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42746"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteCurrencyType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42747"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteTimeType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42748"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42749"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42750"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteExpirationTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42751"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42752"
-       }
-      },
-      {
-       "name": "ReturnRateQuoteExchange",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42753"
-       }
-      },
-      {
-       "name": "ReturnRateInformationSourceGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "ReturnRateInformationSourceGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "ReturnRateQuotePricingModel",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42754"
-       }
-      },
-      {
-       "name": "ReturnRateCashFlowType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42755"
-       }
-      },
-      {
-       "name": "ReturnRateDateGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "ReturnRateDateGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "ReturnRateValuationTimeType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42756"
-       }
-      },
-      {
-       "name": "ReturnRateValuationTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42757"
-       }
-      },
-      {
-       "name": "ReturnRateValuationTimeBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42758"
-       }
-      },
-      {
-       "name": "ReturnRateValuationPriceOption",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42759"
-       }
-      },
-      {
-       "name": "ReturnRateFinalPriceFallback",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42760"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "ReturnRateGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "Allocation",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "CrossRequest",
+   "CrossRequestAck",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarginRequirementInquiry",
+   "MarginRequirementInquiryAck",
+   "MarginRequirementReport",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassOrder",
+   "MassOrderAck",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "SettlementObligationReport",
+   "StreamAssignmentReport",
+   "StreamAssignmentRequest",
+   "TradeAggregationReport",
+   "TradeAggregationRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport",
+   "TradingSessionStatus"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoReturnRates",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42735"
+   },
+   "item": {
+    "name": "ReturnRate",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ReturnRatePriceSequence",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42736"
+      }
+     },
+     {
+      "name": "ReturnRateCommissionBasis",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42737"
+      }
+     },
+     {
+      "name": "ReturnRateCommissionAmount",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42738"
+      }
+     },
+     {
+      "name": "ReturnRateCommissionCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42739"
+      }
+     },
+     {
+      "name": "ReturnRateTotalCommissionPerTrade",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42740"
+      }
+     },
+     {
+      "name": "ReturnRateDeterminationMethod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42741"
+      }
+     },
+     {
+      "name": "ReturnRatePriceGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "ReturnRatePriceGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "ReturnRateFXConversionGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "ReturnRateFXConversionGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "ReturnRateAmountRelativeTo",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42742"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteMeasureType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42743"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteUnits",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42744"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteMethod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42745"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteCurrency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42746"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteCurrencyType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42747"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteTimeType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42748"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42749"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42750"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteExpirationTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42751"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42752"
+      }
+     },
+     {
+      "name": "ReturnRateQuoteExchange",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42753"
+      }
+     },
+     {
+      "name": "ReturnRateInformationSourceGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "ReturnRateInformationSourceGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "ReturnRateQuotePricingModel",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42754"
+      }
+     },
+     {
+      "name": "ReturnRateCashFlowType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42755"
+      }
+     },
+     {
+      "name": "ReturnRateDateGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "ReturnRateDateGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "ReturnRateValuationTimeType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42756"
+      }
+     },
+     {
+      "name": "ReturnRateValuationTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42757"
+      }
+     },
+     {
+      "name": "ReturnRateValuationTimeBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42758"
+      }
+     },
+     {
+      "name": "ReturnRateValuationPriceOption",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42759"
+      }
+     },
+     {
+      "name": "ReturnRateFinalPriceFallback",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42760"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

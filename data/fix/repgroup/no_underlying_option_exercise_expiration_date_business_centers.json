@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingOptionExerciseExpirationDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingOptionExerciseExpirationDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41844"
-  },
-  "item": {
-   "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41845"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41844",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41845"
     }
-   ]
-  }
+   }
+  ]
  }
 }

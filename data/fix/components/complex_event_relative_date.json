@@ -1,221 +1,218 @@
 {
  "name": "ComplexEventRelativeDate",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "ComplexEventRelativeDate",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "ComplexEventRelativeDate",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "Allocation",
-    "AllocationInstruction",
-    "AllocationInstructionAck",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AllocationReportAck",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "CrossRequest",
-    "CrossRequestAck",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarginRequirementInquiry",
-    "MarginRequirementInquiryAck",
-    "MarginRequirementReport",
-    "MarketDataAck",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassOrder",
-    "MassOrderAck",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "SettlementObligationReport",
-    "SettlementStatusReport",
-    "SettlementStatusRequest",
-    "StreamAssignmentReport",
-    "StreamAssignmentRequest",
-    "TradeAggregationReport",
-    "TradeAggregationRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport",
-    "TradingSessionStatus"
-   ]
-  },
-  "fields": [
-   {
-    "name": "ComplexEventDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41020"
-    }
-   },
-   {
-    "name": "ComplexEventDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41021"
-    }
-   },
-   {
-    "name": "ComplexEventDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41022"
-    }
-   },
-   {
-    "name": "ComplexEventDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41023"
-    }
-   },
-   {
-    "name": "ComplexEventDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41024"
-    }
-   },
-   {
-    "name": "ComplexEventDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41025"
-    }
-   },
-   {
-    "name": "NoComplexEventDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "41018"
-    },
-    "item": {
-     "name": "ComplexEventDateBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ComplexEventDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "41019"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "ComplexEventDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41026"
-    }
-   },
-   {
-    "name": "ComplexEventFixingTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41027"
-    }
-   },
-   {
-    "name": "ComplexEventFixingTimeBusinessCenter",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "41028"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "ComplexEventRelativeDate",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "Allocation",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "CrossRequest",
+   "CrossRequestAck",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarginRequirementInquiry",
+   "MarginRequirementInquiryAck",
+   "MarginRequirementReport",
+   "MarketDataAck",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassOrder",
+   "MassOrderAck",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "SettlementObligationReport",
+   "SettlementStatusReport",
+   "SettlementStatusRequest",
+   "StreamAssignmentReport",
+   "StreamAssignmentRequest",
+   "TradeAggregationReport",
+   "TradeAggregationRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport",
+   "TradingSessionStatus"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ComplexEventDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41020"
+   }
+  },
+  {
+   "name": "ComplexEventDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41021"
+   }
+  },
+  {
+   "name": "ComplexEventDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41022"
+   }
+  },
+  {
+   "name": "ComplexEventDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41023"
+   }
+  },
+  {
+   "name": "ComplexEventDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41024"
+   }
+  },
+  {
+   "name": "ComplexEventDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41025"
+   }
+  },
+  {
+   "name": "NoComplexEventDateBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "41018"
+   },
+   "item": {
+    "name": "ComplexEventDateBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ComplexEventDateBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "41019"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "ComplexEventDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41026"
+   }
+  },
+  {
+   "name": "ComplexEventFixingTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41027"
+   }
+  },
+  {
+   "name": "ComplexEventFixingTimeBusinessCenter",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "41028"
+   }
+  }
+ ]
 }

@@ -1,28 +1,25 @@
 {
  "name": "NoLegDividendFXTriggerDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegDividendFXTriggerDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42364"
-  },
-  "item": {
-   "name": "LegDividendFXTriggerDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegDividendFXTriggerDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42365"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42364",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegDividendFXTriggerDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegDividendFXTriggerDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42365"
     }
-   ]
-  }
+   }
+  ]
  }
 }

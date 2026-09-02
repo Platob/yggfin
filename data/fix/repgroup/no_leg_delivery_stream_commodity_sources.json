@@ -1,28 +1,25 @@
 {
  "name": "NoLegDeliveryStreamCommoditySources",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegDeliveryStreamCommoditySources",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41460"
-  },
-  "item": {
-   "name": "LegDeliveryStreamCommoditySource",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegDeliveryStreamCommoditySource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41461"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41460",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegDeliveryStreamCommoditySource",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegDeliveryStreamCommoditySource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41461"
     }
-   ]
-  }
+   }
+  ]
  }
 }

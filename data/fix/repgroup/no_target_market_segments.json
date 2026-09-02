@@ -1,29 +1,26 @@
 {
  "name": "NoTargetMarketSegments",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoTargetMarketSegments",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1789"
-  },
-  "item": {
-   "name": "TargetMarketSegment",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "TargetMarketSegmentID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1790"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1789",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "TargetMarketSegment",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "TargetMarketSegmentID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1790"
     }
-   ]
-  }
+   }
+  ]
  }
 }

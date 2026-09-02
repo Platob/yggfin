@@ -593,17 +593,12 @@ fields:
   type: double
   nullable: true
   description: Quantity (e.g. shares) bought/sold on this (last) fill.
-  fix: {tag: '32', type: Qty, name: LastQty}
+  fix: {tag: '32', type: Qty, aliases: '[{"name":"LastShares","source":"4.2","occurrences":0}]', name: LastQty}
 - name: grosstradeamt
   type: double
   nullable: true
   description: Total amount traded expressed in units of currency - usually quantity * price. For FX Futures this is used to express the notional value of a fill when quantity fields are expressed in terms of contract size (i.e. quantity * price * contract size).
   fix: {tag: '381', type: Amt, name: GrossTradeAmt}
-- name: lastshares
-  type: double
-  nullable: true
-  description: Vendor-reported share quantity, distinct from `LastQty <32>`.
-  fix: {tag: '30028', type: double, name: LastShares}
 - name: marketmarker
   type: bool
   nullable: true
@@ -1077,7 +1072,7 @@ fields:
       type: double
       nullable: true
       description: Quantity (e.g. shares) bought/sold on this (last) fill.
-      fix: {tag: '32', type: Qty, name: LastQty}
+      fix: {tag: '32', type: Qty, aliases: '[{"name":"LastShares","source":"4.2","occurrences":0}]', name: LastQty}
     - name: grosstradeamt
       type: double
       nullable: true
@@ -1151,7 +1146,7 @@ fields:
           type: double
           nullable: true
           description: Quantity (e.g. shares) bought/sold on this (last) fill.
-          fix: {tag: '32', type: Qty, name: LastQty}
+          fix: {tag: '32', type: Qty, aliases: '[{"name":"LastShares","source":"4.2","occurrences":0}]', name: LastQty}
         - name: price
           type: double
           nullable: true

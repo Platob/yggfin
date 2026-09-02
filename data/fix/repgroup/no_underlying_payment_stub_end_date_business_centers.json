@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingPaymentStubEndDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingPaymentStubEndDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42991"
-  },
-  "item": {
-   "name": "UnderlyingPaymentStubEndDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingPaymentStubEndDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42992"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42991",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingPaymentStubEndDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStubEndDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42992"
     }
-   ]
-  }
+   }
+  ]
  }
 }

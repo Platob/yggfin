@@ -1,177 +1,174 @@
 {
  "name": "DeutscheBourse360T",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "DeutscheBourse360T",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "DeutscheBourse360T",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "DayCount2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7072"
-    }
-   },
-   {
-    "name": "Fiduciary2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7073"
-    }
-   },
-   {
-    "name": "IsInCompetition",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7074"
-    }
-   },
-   {
-    "name": "NoCompetitiveQuotes",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7541"
-    }
-   },
-   {
-    "name": "ProductType2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7071"
-    }
-   },
-   {
-    "name": "RefSpotDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7070"
-    }
-   },
-   {
-    "name": "Reserved360T1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7075"
-    }
-   },
-   {
-    "name": "Reserved360T2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7076"
-    }
-   },
-   {
-    "name": "Reserved360T3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7077"
-    }
-   },
-   {
-    "name": "Reserved360T4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7078"
-    }
-   },
-   {
-    "name": "Reserved360T5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7079"
-    }
-   },
-   {
-    "name": "Reserved360T6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7542"
-    }
-   },
-   {
-    "name": "Reserved360T7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7543"
-    }
-   },
-   {
-    "name": "Reserved360T8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7544"
-    }
-   },
-   {
-    "name": "Reserved360T9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7545"
-    }
-   },
-   {
-    "name": "Reserved360T10",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7546"
-    }
-   },
-   {
-    "name": "Reserved360T11",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7547"
-    }
-   },
-   {
-    "name": "Reserved360T12",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7548"
-    }
-   },
-   {
-    "name": "Reserved360T13",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7549"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "DeutscheBourse360T",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "DayCount2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7072"
+   }
+  },
+  {
+   "name": "Fiduciary2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7073"
+   }
+  },
+  {
+   "name": "IsInCompetition",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7074"
+   }
+  },
+  {
+   "name": "NoCompetitiveQuotes",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7541"
+   }
+  },
+  {
+   "name": "ProductType2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7071"
+   }
+  },
+  {
+   "name": "RefSpotDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7070"
+   }
+  },
+  {
+   "name": "Reserved360T1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7075"
+   }
+  },
+  {
+   "name": "Reserved360T2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7076"
+   }
+  },
+  {
+   "name": "Reserved360T3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7077"
+   }
+  },
+  {
+   "name": "Reserved360T4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7078"
+   }
+  },
+  {
+   "name": "Reserved360T5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7079"
+   }
+  },
+  {
+   "name": "Reserved360T6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7542"
+   }
+  },
+  {
+   "name": "Reserved360T7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7543"
+   }
+  },
+  {
+   "name": "Reserved360T8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7544"
+   }
+  },
+  {
+   "name": "Reserved360T9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7545"
+   }
+  },
+  {
+   "name": "Reserved360T10",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7546"
+   }
+  },
+  {
+   "name": "Reserved360T11",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7547"
+   }
+  },
+  {
+   "name": "Reserved360T12",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7548"
+   }
+  },
+  {
+   "name": "Reserved360T13",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7549"
+   }
+  }
+ ]
 }

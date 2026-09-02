@@ -1,38 +1,35 @@
 {
  "name": "NoInstrumentScopes",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoInstrumentScopes",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "1656"
-  },
-  "item": {
-   "name": "InstrumentScope",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "InstrumentScopeOperator",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1535"
-     }
-    },
-    {
-     "name": "InstrumentScope",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "InstrumentScope"
-     },
-     "fields": []
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "1656",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "InstrumentScope",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "InstrumentScopeOperator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1535"
     }
-   ]
-  }
+   },
+   {
+    "name": "InstrumentScope",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentScope"
+    },
+    "fields": []
+   }
+  ]
  }
 }

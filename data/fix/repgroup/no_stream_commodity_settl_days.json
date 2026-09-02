@@ -1,74 +1,71 @@
 {
  "name": "NoStreamCommoditySettlDays",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoStreamCommoditySettlDays",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41283"
-  },
-  "item": {
-   "name": "StreamCommoditySettlDay",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "StreamCommoditySettlDay",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41284"
-     }
-    },
-    {
-     "name": "StreamCommoditySettlTotalHours",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41285"
-     }
-    },
-    {
-     "name": "NoStreamCommoditySettlTimes",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "41286"
-     },
-     "item": {
-      "name": "StreamCommoditySettlTime",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "StreamCommoditySettlStart",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41287"
-        }
-       },
-       {
-        "name": "StreamCommoditySettlEnd",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41288"
-        }
-       },
-       {
-        "name": "StreamCommoditySettlTimeType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "41588"
-        }
-       }
-      ]
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41283",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "StreamCommoditySettlDay",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "StreamCommoditySettlDay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41284"
     }
-   ]
-  }
+   },
+   {
+    "name": "StreamCommoditySettlTotalHours",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41285"
+    }
+   },
+   {
+    "name": "NoStreamCommoditySettlTimes",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "41286"
+    },
+    "item": {
+     "name": "StreamCommoditySettlTime",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "StreamCommoditySettlStart",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41287"
+       }
+      },
+      {
+       "name": "StreamCommoditySettlEnd",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41288"
+       }
+      },
+      {
+       "name": "StreamCommoditySettlTimeType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "41588"
+       }
+      }
+     ]
+    }
+   }
+  ]
  }
 }

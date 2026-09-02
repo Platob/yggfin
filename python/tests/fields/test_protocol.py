@@ -242,3 +242,75 @@ def test_an_identity_fix_value_mapping_skips_arrow_work() -> None:
     source = pyarrow.array(["A", None])
     assert built.fix.arrow_encode(source) is source
     assert built.fix.arrow_decode(source) is source
+
+
+# -- one identity read twice -------------------------------------------------
+
+
+def _reading(name: str, tag: int, **fix: str) -> Field:
+    built = Field(name=name.lower(), dtype=pyarrow.string(), nullable=True)
+    built.fix.name = name
+    built.fix.tag = tag
+    built.fix.type = "String"
+    for key, value in fix.items():
+        built.fix[key] = value
+    return built
+
+
+def test_merge_unions_the_spellings_tags_and_values_of_one_identity() -> None:
+    """A venue's own tag for a standard field is another slot to read it at,
+    and its own name another spelling -- neither replaces what is held."""
+    held = _reading("SettlDate", 64)
+    held.fix.versions = ("4.4", "5.0")
+    held.fix.sources = ("fix-latest",)
+    held.fix.enumerated = {"0": "Regular"}
+    other = _reading("TradeDate", 5020)
+    other.fix.versions = ("4.2",)
+    other.fix.sources = ("venue",)
+    other.fix.enumerated = {"9": "Venue"}
+
+    held.fix.merge(other.fix, source="venue")
+
+    assert held.fix.tag == 64, "the canonical tag does not move"
+    assert held.fix.tag_priority == (64, 5020)
+    assert held.fix.spellings() == ("SettlDate", "TradeDate")
+    assert [(one.name, one.source) for one in held.fix.named_aliases] == [("TradeDate", "venue")]
+    assert held.fix.meanings == {"0": "Regular", "9": "Venue"}
+    assert held.fix.sources == ("fix-latest", "venue")
+    assert set(held.fix.versions) == {"4.4", "5.0", "4.2"}
+
+
+def test_merge_refuses_two_readings_that_are_not_one_identity() -> None:
+    held = _reading("MaxShow", 210)
+    other = _reading("TradeType", 9001)
+    other.fix.type = "Qty"
+
+    with pytest.raises(ValueError, match="not one identity"):
+        held.fix.merge(other.fix)
+
+
+def test_merge_keeps_the_first_provenance_of_a_spelling() -> None:
+    held = _reading("SettlDate", 64)
+    held.fix.named_aliases = [{"name": "FutSettDate", "source": "4.0", "occurrences": 3}]
+    other = _reading("FutSettDate", 5020)
+
+    held.fix.merge(other.fix, source="venue")
+
+    assert [(one.name, one.source, one.occurrences) for one in held.fix.named_aliases] == [
+        ("FutSettDate", "4.0", 3)
+    ], "a later sighting of a known spelling says nothing new about where it came from"
+
+
+def test_field_merge_adds_to_the_spellings_it_does_not_replace_them() -> None:
+    """The overlay case: a declaration naming a type must not silence the
+    aliases the registry gathered for the same identity."""
+    registry = _reading("SettlDate", 64)
+    registry.fix.named_aliases = [{"name": "FutSettDate", "source": "4.0"}]
+    override = _reading("SettlDate", 64)
+    override.fix.type = "UTCDateOnly"
+    override.fix.named_aliases = [{"name": "TradeDate", "source": "venue"}]
+
+    merged = registry.merge(override)
+
+    assert merged.fix.type == "UTCDateOnly", "the later declaration still wins a scalar"
+    assert merged.fix.spellings() == ("SettlDate", "TradeDate", "FutSettDate")

@@ -1,113 +1,110 @@
 {
  "name": "FXall",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "FXall",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "FXall",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "FXallContingentInd",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5283"
-    }
-   },
-   {
-    "name": "FXallCrossExclusionInd",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5282"
-    }
-   },
-   {
-    "name": "FXallIndicator4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5284"
-    }
-   },
-   {
-    "name": "FXallIndicator5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5285"
-    }
-   },
-   {
-    "name": "FXallIndicator6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5286"
-    }
-   },
-   {
-    "name": "FXallIndicator7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5287"
-    }
-   },
-   {
-    "name": "FXallIndicator8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5288"
-    }
-   },
-   {
-    "name": "FXallIndicator9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5289"
-    }
-   },
-   {
-    "name": "FXallIndicator11",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5291"
-    }
-   },
-   {
-    "name": "FXallMDFilterInd1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5280"
-    }
-   },
-   {
-    "name": "FXallMDFilterInd2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5281"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "FXall",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "FXallContingentInd",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5283"
+   }
+  },
+  {
+   "name": "FXallCrossExclusionInd",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5282"
+   }
+  },
+  {
+   "name": "FXallIndicator4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5284"
+   }
+  },
+  {
+   "name": "FXallIndicator5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5285"
+   }
+  },
+  {
+   "name": "FXallIndicator6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5286"
+   }
+  },
+  {
+   "name": "FXallIndicator7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5287"
+   }
+  },
+  {
+   "name": "FXallIndicator8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5288"
+   }
+  },
+  {
+   "name": "FXallIndicator9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5289"
+   }
+  },
+  {
+   "name": "FXallIndicator11",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5291"
+   }
+  },
+  {
+   "name": "FXallMDFilterInd1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5280"
+   }
+  },
+  {
+   "name": "FXallMDFilterInd2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5281"
+   }
+  }
+ ]
 }

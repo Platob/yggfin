@@ -1,52 +1,49 @@
 {
  "name": "NoUnderlyingDividendPayments",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingDividendPayments",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42855"
-  },
-  "item": {
-   "name": "UnderlyingDividendPayment",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingDividendPaymentDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42856"
-     }
-    },
-    {
-     "name": "UnderlyingDividendPaymentAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42857"
-     }
-    },
-    {
-     "name": "UnderlyingDividendPaymentCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42858"
-     }
-    },
-    {
-     "name": "UnderlyingDividendAccruedInterest",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42859"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42855",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingDividendPayment",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingDividendPaymentDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42856"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingDividendPaymentAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42857"
+    }
+   },
+   {
+    "name": "UnderlyingDividendPaymentCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42858"
+    }
+   },
+   {
+    "name": "UnderlyingDividendAccruedInterest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42859"
+    }
+   }
+  ]
  }
 }

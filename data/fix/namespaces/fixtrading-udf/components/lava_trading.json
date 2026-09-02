@@ -1,417 +1,414 @@
 {
  "name": "LavaTrading",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "LavaTrading",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "LavaTrading",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "AlgorithmicField1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6271"
-    }
-   },
-   {
-    "name": "AlgorithmicField2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6272"
-    }
-   },
-   {
-    "name": "AlgorithmicField3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6273"
-    }
-   },
-   {
-    "name": "AlgorithmicField4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6274"
-    }
-   },
-   {
-    "name": "AlgorithmicField5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6275"
-    }
-   },
-   {
-    "name": "AlgorithmicField6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6276"
-    }
-   },
-   {
-    "name": "AlgorithmicField7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6277"
-    }
-   },
-   {
-    "name": "AlgorithmicField8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6278"
-    }
-   },
-   {
-    "name": "AlgorithmicField9",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6279"
-    }
-   },
-   {
-    "name": "AlgorithmicField10",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6280"
-    }
-   },
-   {
-    "name": "AlgorithmicField11",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6281"
-    }
-   },
-   {
-    "name": "AlgorithmicField12",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6282"
-    }
-   },
-   {
-    "name": "AlgorithmicField13",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6283"
-    }
-   },
-   {
-    "name": "AlgorithmicField14",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6284"
-    }
-   },
-   {
-    "name": "AlgorithmicField15",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6285"
-    }
-   },
-   {
-    "name": "BrokerOrderReceiveTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6286"
-    }
-   },
-   {
-    "name": "CancelPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6263"
-    }
-   },
-   {
-    "name": "ConfigSet",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6250"
-    }
-   },
-   {
-    "name": "CustomerDirectedOrder",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6287"
-    }
-   },
-   {
-    "name": "CustomerDirectedOrderClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6829"
-    }
-   },
-   {
-    "name": "CustOrderHandlingInstClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6831"
-    }
-   },
-   {
-    "name": "DeskOrderHandlingInstClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6835"
-    }
-   },
-   {
-    "name": "DeskTypeClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6833"
-    }
-   },
-   {
-    "name": "DeskTypeSourceClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6834"
-    }
-   },
-   {
-    "name": "Duration3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6256"
-    }
-   },
-   {
-    "name": "EndTime3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6255"
-    }
-   },
-   {
-    "name": "ExecutionStyle2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6261"
-    }
-   },
-   {
-    "name": "LastMkt2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6292"
-    }
-   },
-   {
-    "name": "ManualOrderIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6289"
-    }
-   },
-   {
-    "name": "ManualOrderIndicatorClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6828"
-    }
-   },
-   {
-    "name": "MaxPctVol1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6260"
-    }
-   },
-   {
-    "name": "MinPctVol1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6259"
-    }
-   },
-   {
-    "name": "NoTrdRegTimestampsClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6868"
-    }
-   },
-   {
-    "name": "OrderHandlingInstSourceClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6832"
-    }
-   },
-   {
-    "name": "PriceBenchmark",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6262"
-    }
-   },
-   {
-    "name": "PriceInstruction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6252"
-    }
-   },
-   {
-    "name": "PriceOffset1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6253"
-    }
-   },
-   {
-    "name": "ReceivedDeptIDClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6830"
-    }
-   },
-   {
-    "name": "RefreshQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6251"
-    }
-   },
-   {
-    "name": "StartTime3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6254"
-    }
-   },
-   {
-    "name": "Strategy1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6258"
-    }
-   },
-   {
-    "name": "ToleranceLimit1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6264"
-    }
-   },
-   {
-    "name": "ToleranceLimit2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6265"
-    }
-   },
-   {
-    "name": "ToleranceLimit3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6266"
-    }
-   },
-   {
-    "name": "TrdRegTimestamp",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6869"
-    }
-   },
-   {
-    "name": "TrdRegTimestampClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6836"
-    }
-   },
-   {
-    "name": "TrdRegTimestampOriginClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6871"
-    }
-   },
-   {
-    "name": "TrdRegTimestampTypeClone",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6870"
-    }
-   },
-   {
-    "name": "WorkDuration",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6257"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "LavaTrading",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "AlgorithmicField1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6271"
+   }
+  },
+  {
+   "name": "AlgorithmicField2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6272"
+   }
+  },
+  {
+   "name": "AlgorithmicField3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6273"
+   }
+  },
+  {
+   "name": "AlgorithmicField4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6274"
+   }
+  },
+  {
+   "name": "AlgorithmicField5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6275"
+   }
+  },
+  {
+   "name": "AlgorithmicField6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6276"
+   }
+  },
+  {
+   "name": "AlgorithmicField7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6277"
+   }
+  },
+  {
+   "name": "AlgorithmicField8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6278"
+   }
+  },
+  {
+   "name": "AlgorithmicField9",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6279"
+   }
+  },
+  {
+   "name": "AlgorithmicField10",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6280"
+   }
+  },
+  {
+   "name": "AlgorithmicField11",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6281"
+   }
+  },
+  {
+   "name": "AlgorithmicField12",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6282"
+   }
+  },
+  {
+   "name": "AlgorithmicField13",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6283"
+   }
+  },
+  {
+   "name": "AlgorithmicField14",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6284"
+   }
+  },
+  {
+   "name": "AlgorithmicField15",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6285"
+   }
+  },
+  {
+   "name": "BrokerOrderReceiveTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6286"
+   }
+  },
+  {
+   "name": "CancelPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6263"
+   }
+  },
+  {
+   "name": "ConfigSet",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6250"
+   }
+  },
+  {
+   "name": "CustomerDirectedOrder",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6287"
+   }
+  },
+  {
+   "name": "CustomerDirectedOrderClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6829"
+   }
+  },
+  {
+   "name": "CustOrderHandlingInstClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6831"
+   }
+  },
+  {
+   "name": "DeskOrderHandlingInstClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6835"
+   }
+  },
+  {
+   "name": "DeskTypeClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6833"
+   }
+  },
+  {
+   "name": "DeskTypeSourceClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6834"
+   }
+  },
+  {
+   "name": "Duration3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6256"
+   }
+  },
+  {
+   "name": "EndTime3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6255"
+   }
+  },
+  {
+   "name": "ExecutionStyle2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6261"
+   }
+  },
+  {
+   "name": "LastMkt2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6292"
+   }
+  },
+  {
+   "name": "ManualOrderIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6289"
+   }
+  },
+  {
+   "name": "ManualOrderIndicatorClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6828"
+   }
+  },
+  {
+   "name": "MaxPctVol1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6260"
+   }
+  },
+  {
+   "name": "MinPctVol1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6259"
+   }
+  },
+  {
+   "name": "NoTrdRegTimestampsClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6868"
+   }
+  },
+  {
+   "name": "OrderHandlingInstSourceClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6832"
+   }
+  },
+  {
+   "name": "PriceBenchmark",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6262"
+   }
+  },
+  {
+   "name": "PriceInstruction",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6252"
+   }
+  },
+  {
+   "name": "PriceOffset1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6253"
+   }
+  },
+  {
+   "name": "ReceivedDeptIDClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6830"
+   }
+  },
+  {
+   "name": "RefreshQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6251"
+   }
+  },
+  {
+   "name": "StartTime3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6254"
+   }
+  },
+  {
+   "name": "Strategy1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6258"
+   }
+  },
+  {
+   "name": "ToleranceLimit1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6264"
+   }
+  },
+  {
+   "name": "ToleranceLimit2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6265"
+   }
+  },
+  {
+   "name": "ToleranceLimit3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6266"
+   }
+  },
+  {
+   "name": "TrdRegTimestamp",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6869"
+   }
+  },
+  {
+   "name": "TrdRegTimestampClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6836"
+   }
+  },
+  {
+   "name": "TrdRegTimestampOriginClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6871"
+   }
+  },
+  {
+   "name": "TrdRegTimestampTypeClone",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6870"
+   }
+  },
+  {
+   "name": "WorkDuration",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6257"
+   }
+  }
+ ]
 }

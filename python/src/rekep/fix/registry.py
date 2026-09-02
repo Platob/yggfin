@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-import importlib.resources
 import json
 import os
 import pathlib
@@ -14,7 +13,7 @@ import sys
 import tempfile
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, Sequence
-from functools import cached_property
+from functools import cache, cached_property
 from types import MappingProxyType
 from typing import Any, Self, cast
 
@@ -171,10 +170,28 @@ def remote_cache() -> pathlib.Path:
     return CACHE_DIRECTORY.with_name(f"{CACHE_DIRECTORY.name}-remote")
 
 
-def builtin_registry() -> str:
-    """Where the complete packaged offline registry lives."""
-    resource = importlib.resources.files(__package__).joinpath("registry.zip")
-    return os.fspath(cast(os.PathLike[str], resource))
+#: The dictionary's path inside the repository, relative to its root.
+REPOSITORY_REGISTRY = ("data", "fix")
+
+
+@cache
+def repository_registry() -> str:
+    """Where the repository's FIX dictionary lives.
+
+    Walked up from this module rather than bundled into the wheel, so the
+    checked-in `data/fix` is the one dictionary every unconfigured lookup
+    reads and there is no second copy to keep byte-identical. A package
+    installed away from its repository has no default and must be told.
+    """
+    for parent in pathlib.Path(__file__).resolve().parents:
+        found = parent.joinpath(*REPOSITORY_REGISTRY)
+        if found.is_dir():
+            return os.fspath(found)
+    raise RuntimeError(
+        "no FIX dictionary above "
+        f"{pathlib.Path(__file__).resolve()}: name one with `cache_dir`, or run "
+        f"inside a checkout carrying {'/'.join(REPOSITORY_REGISTRY)}"
+    )
 
 
 _DEFAULT = object()
@@ -190,7 +207,7 @@ class FixRegistry(Convertible):
     namespace_priority: tuple[str, ...] = ()
 
     #: A directory of JSON, or a `.zip` of the same files. `None` names the
-    #: bundled registry; only `scrape` writes or refreshes a registry.
+    #: repository's `data/fix`; only `scrape` writes or refreshes a registry.
     cache_dir: str | os.PathLike[str] | None = None
 
     #: Optional filesystem for `cache_dir`, whose value is then a path on it.
@@ -219,7 +236,7 @@ class FixRegistry(Convertible):
         ):
             raise ValueError("configured FIX venue namespaces must be lowercase path-safe names")
         if self.cache_dir is None:
-            self.cache_dir = builtin_registry()
+            self.cache_dir = repository_registry()
 
     @property
     def offline(self) -> bool:
@@ -235,7 +252,7 @@ class FixRegistry(Convertible):
     def from_builtin(cls) -> Self:
         """The default dictionary every unconfigured lookup resolves through.
 
-        The complete packaged registry, unless `set_builtin` installed another.
+        The repository's dictionary, unless `set_builtin` installed another.
         """
         held = _BUILTIN
         if held is not None and isinstance(held, cls):
@@ -246,7 +263,7 @@ class FixRegistry(Convertible):
     def set_builtin(cls, registry: Self | None = None) -> Self:
         """Install the default `from_builtin` hands back, and return it.
 
-        None restores the packaged registry. The registry has to carry
+        None restores the repository's dictionary. The registry has to carry
         rekep's own vocabulary -- the 36 identities every product
         contract is declared against -- so an installed one that does not is
         refused here rather than reported as a missing field halfway through a
@@ -275,12 +292,12 @@ class FixRegistry(Convertible):
 
     @classmethod
     def _checked_builtin(cls) -> Self:
-        """The packaged registry, refusing one that lost rekep's vocabulary."""
+        """The repository's registry, refusing one that lost rekep's vocabulary."""
         from rekep.fix.rekep import rekep_is_registered
 
-        registry = cls(cache_dir=builtin_registry())
+        registry = cls(cache_dir=repository_registry())
         if not rekep_is_registered(registry):
-            raise RuntimeError("the packaged FIX registry lacks rekep's declared vocabulary")
+            raise RuntimeError("the repository FIX registry lacks rekep's declared vocabulary")
         return registry
 
     @classmethod
@@ -414,9 +431,11 @@ class FixRegistry(Convertible):
             if name == VERSIONS_FILE:
                 continue
             document = place.read(name)
-            if not isinstance(document, Mapping) or not document:
+            if not document or not isinstance(document, Mapping | list):
                 raise ValueError(f"FIX registry document {name!r} is empty or unreadable")
             if name == SOURCES_FILE:
+                if not isinstance(document, Mapping):
+                    raise ValueError("the FIX registry source manifest is invalid")
                 sources = document.get("sources")
                 required = {
                     "source_id",
@@ -438,9 +457,12 @@ class FixRegistry(Convertible):
             )
             if name.startswith(f"{FIELDS}/") or namespaced:
                 namespace = namespaced.group(1) if namespaced else ""
-                for stored, record in document.items():
+                if not isinstance(document, list):
+                    raise ValueError(f"FIX registry shard {name!r} is not a list of records")
+                for record in document:
                     if not isinstance(record, Mapping):
-                        raise ValueError(f"FIX field {stored!r} in {name!r} is not an object")
+                        raise ValueError(f"a FIX field in {name!r} is not an object")
+                    stored = record.get("name")
                     # A record validates by being read, the way a component's
                     # declaration does: a document `Field` cannot parse is not
                     # one, and `refuse_record` says the rest.
@@ -457,14 +479,7 @@ class FixRegistry(Convertible):
                             f"FIX field {stored!r} in {name!r} names a version this store "
                             "does not declare"
                         )
-                    declared_tag = entry.fix.tag
-                    expected_key = (
-                        str(declared_tag) if declared_tag is not None else entry.fix.canonical
-                    )
-                    if (
-                        str(stored) != expected_key
-                        or field_document(entry.fix.key, namespace) != name
-                    ):
+                    if field_document(entry.fix.key, namespace) != name:
                         raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
                     identity = (namespace, entry.fix.key)
                     if identity in fields:
@@ -485,10 +500,11 @@ class FixRegistry(Convertible):
             )
             if not component_file and not group_file:
                 raise ValueError(f"unexpected FIX registry document {name!r}")
-            unknown = sorted(set(document) - {"name", "versions", "declaration", "aliases"})
-            component_versions = document.get("versions")
+            component_versions = (
+                document.get("fix", {}).get("versions") if isinstance(document, Mapping) else None
+            )
             if (
-                unknown
+                not isinstance(document, Mapping)
                 or type(document.get("name")) is not str
                 or not isinstance(component_versions, list)
                 or any(type(version) is not str for version in component_versions)
@@ -497,8 +513,6 @@ class FixRegistry(Convertible):
                     not namespace
                     and not set(component_versions).issubset(known_versions | {ANY_VERSION})
                 )
-                or not isinstance(document.get("declaration"), Mapping)
-                or not isinstance(document.get("aliases", []), list)
             ):
                 kind = "repeating group" if group_file else "component"
                 raise ValueError(f"FIX {kind} in {name!r} has invalid metadata")
@@ -1398,6 +1412,78 @@ class FixRegistry(Convertible):
             else self._layout.namespace_field_records(normalized)
         )
         return MappingProxyType({entry.fix.canonical: entry for entry in records.values()})
+
+    def standardizes(self, record: Field) -> int | str | None:
+        """Which standard identity a namespace record is a venue reading of.
+
+        Two ways a namespace says "this is the standard's field under our own
+        tag": the registry's own `replacement-tag`, which names the tag the
+        UDF was folded into, and a canonical name the standard already owns.
+        Both are only taken when the datatypes agree -- a `char` reading of a
+        `String` field is a different reading, not the same one renumbered.
+        """
+        fix = record.fix
+        replacement = fix.get("replacement-tag")
+        candidates: list[int | str] = []
+        if replacement:
+            candidates.append(int(replacement))
+        if name := fix.get("replacement-name") or fix.canonical:
+            candidates.append(str(name))
+        for candidate in candidates:
+            held = self._record(candidate, namespace=STANDARD_NAMESPACE)
+            if held is None or held.fix.tag == fix.tag:
+                continue
+            if held.fix.type and fix.type and held.fix.type != fix.type:
+                continue
+            return held.fix.key
+        return None
+
+    def unified(self, key: int | str) -> Field | None:
+        """One identity with every namespace reading of it folded in.
+
+        The unique record a caller reads: the standard declaration, carrying
+        each venue's own tag in `fix:tags`, each venue's spelling as an alias
+        attributed to that namespace, and any value only a venue enumerates.
+        A namespace whose reading is a *different* identity -- tag 9001 is
+        `MaxShow` to one venue and `TradeType` to another -- is not folded in
+        and stays reachable through `definitions`.
+        """
+        held = self._record(key, namespace=STANDARD_NAMESPACE)
+        if held is None:
+            return None
+        built = merged_record(record_copy(held), self.versions)
+        for namespace, record in self._standardized.get(built.fix.key, ()):
+            built.fix.merge(merged_record(record, self.versions).fix, source=namespace)
+        return built
+
+    def unified_records(self) -> Mapping[str, Field]:
+        """Every identity as one record, namespace readings folded into each."""
+        standardized = self._standardized
+        found: dict[str, Field] = {}
+        for entry in self._entries[0].values():
+            built = merged_record(record_copy(entry), self.versions)
+            for namespace, record in standardized.get(built.fix.key, ()):
+                built.fix.merge(merged_record(record, self.versions).fix, source=namespace)
+            found[built.fix.canonical] = built
+        return MappingProxyType(found)
+
+    @cached_property
+    def _standardized(self) -> Mapping[int | str, tuple[tuple[str, Field], ...]]:
+        """`{standard key: the namespace readings of it}`, built once.
+
+        Every namespace field is asked once whether it standardizes, because
+        the answer needs a lookup per candidate and a unified read wants them
+        all -- not one scan of every namespace per identity.
+        """
+        found: dict[int | str, list[tuple[str, Field]]] = {}
+        for namespace in self._namespace_order:
+            if namespace == STANDARD_NAMESPACE:
+                continue
+            for record in self._layout.namespace_field_records(namespace).values():
+                target = self.standardizes(record)
+                if target is not None:
+                    found.setdefault(target, []).append((namespace, record))
+        return MappingProxyType({key: tuple(value) for key, value in found.items()})
 
     def source_manifest(self) -> tuple[Mapping[str, Any], ...]:
         """Deterministic complete-source provenance carried by this store."""

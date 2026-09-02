@@ -1,249 +1,246 @@
 {
  "name": "BootComputers",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "BootComputers",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "BootComputers",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "BidFundingCharge",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5065"
-    }
-   },
-   {
-    "name": "BidFundingConsideration",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5066"
-    }
-   },
-   {
-    "name": "FundBuyableFromDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5103"
-    }
-   },
-   {
-    "name": "FundBuyableToDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5104"
-    }
-   },
-   {
-    "name": "FundCommissionOption",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5074"
-    }
-   },
-   {
-    "name": "FundCommissionWaiver",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5075"
-    }
-   },
-   {
-    "name": "FundDesignation",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5106"
-    }
-   },
-   {
-    "name": "FundExternalRef",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5087"
-    }
-   },
-   {
-    "name": "FundGroup1Units",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5107"
-    }
-   },
-   {
-    "name": "FundGroup2Units",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5108"
-    }
-   },
-   {
-    "name": "FundingCharge",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5063"
-    }
-   },
-   {
-    "name": "FundingConsideration",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5064"
-    }
-   },
-   {
-    "name": "FundInitialCharge",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5090"
-    }
-   },
-   {
-    "name": "FundManagerName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5101"
-    }
-   },
-   {
-    "name": "FundNomineeAccount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5077"
-    }
-   },
-   {
-    "name": "FundReInvestIncome",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5076"
-    }
-   },
-   {
-    "name": "FundSecurityType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5100"
-    }
-   },
-   {
-    "name": "FundSellAll",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5079"
-    }
-   },
-   {
-    "name": "FundSpecialDealDiscount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5078"
-    }
-   },
-   {
-    "name": "FundUnitType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5102"
-    }
-   },
-   {
-    "name": "FundValuationDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5085"
-    }
-   },
-   {
-    "name": "FundValuationPoint",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5105"
-    }
-   },
-   {
-    "name": "FundValuationSSM",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5086"
-    }
-   },
-   {
-    "name": "OfferFundingCharge",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5068"
-    }
-   },
-   {
-    "name": "OfferFundingConsideration",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5069"
-    }
-   },
-   {
-    "name": "PriceSource",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5062"
-    }
-   },
-   {
-    "name": "PSBidPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5060"
-    }
-   },
-   {
-    "name": "PSOfferPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5061"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "BootComputers",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "BidFundingCharge",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5065"
+   }
+  },
+  {
+   "name": "BidFundingConsideration",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5066"
+   }
+  },
+  {
+   "name": "FundBuyableFromDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5103"
+   }
+  },
+  {
+   "name": "FundBuyableToDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5104"
+   }
+  },
+  {
+   "name": "FundCommissionOption",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5074"
+   }
+  },
+  {
+   "name": "FundCommissionWaiver",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5075"
+   }
+  },
+  {
+   "name": "FundDesignation",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5106"
+   }
+  },
+  {
+   "name": "FundExternalRef",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5087"
+   }
+  },
+  {
+   "name": "FundGroup1Units",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5107"
+   }
+  },
+  {
+   "name": "FundGroup2Units",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5108"
+   }
+  },
+  {
+   "name": "FundingCharge",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5063"
+   }
+  },
+  {
+   "name": "FundingConsideration",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5064"
+   }
+  },
+  {
+   "name": "FundInitialCharge",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5090"
+   }
+  },
+  {
+   "name": "FundManagerName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5101"
+   }
+  },
+  {
+   "name": "FundNomineeAccount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5077"
+   }
+  },
+  {
+   "name": "FundReInvestIncome",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5076"
+   }
+  },
+  {
+   "name": "FundSecurityType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5100"
+   }
+  },
+  {
+   "name": "FundSellAll",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5079"
+   }
+  },
+  {
+   "name": "FundSpecialDealDiscount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5078"
+   }
+  },
+  {
+   "name": "FundUnitType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5102"
+   }
+  },
+  {
+   "name": "FundValuationDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5085"
+   }
+  },
+  {
+   "name": "FundValuationPoint",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5105"
+   }
+  },
+  {
+   "name": "FundValuationSSM",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5086"
+   }
+  },
+  {
+   "name": "OfferFundingCharge",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5068"
+   }
+  },
+  {
+   "name": "OfferFundingConsideration",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5069"
+   }
+  },
+  {
+   "name": "PriceSource",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5062"
+   }
+  },
+  {
+   "name": "PSBidPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5060"
+   }
+  },
+  {
+   "name": "PSOfferPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5061"
+   }
+  }
+ ]
 }

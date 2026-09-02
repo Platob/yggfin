@@ -1,390 +1,387 @@
 {
  "name": "NoQuoteEntries",
- "versions": [
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoQuoteEntries",
-  "type": "list",
-  "fix": {
-   "tag": "295"
-  },
-  "item": {
-   "name": "QuoteEntry",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "QuoteEntryID",
-     "type": "string",
-     "fix": {
-      "tag": "299"
-     }
-    },
-    {
-     "name": "Instrument",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "Instrument"
-     },
-     "fields": []
-    },
-    {
-     "name": "NoLegs",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "555"
-     },
-     "item": {
-      "name": "Leg",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "InstrumentLeg",
-        "type": "struct",
-        "nullable": true,
-        "fix": {
-         "component": "InstrumentLeg"
-        },
-        "fields": []
-       },
-       {
-        "name": "LegFinancingDetails",
-        "type": "struct",
-        "nullable": true,
-        "fix": {
-         "component": "LegFinancingDetails"
-        },
-        "fields": []
-       },
-       {
-        "name": "NoLegRateSources",
-        "type": "list",
-        "nullable": true,
-        "fix": {
-         "tag": "3116"
-        },
-        "item": {
-         "name": "LegRateSource",
-         "type": "struct",
-         "fields": [
-          {
-           "name": "LegRateSource",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3117"
-           }
-          },
-          {
-           "name": "LegRateSourceType",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3118"
-           }
-          },
-          {
-           "name": "LegReferencePage",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3119"
-           }
-          },
-          {
-           "name": "LegRateSourceReferencePageHeading",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3120"
-           }
-          },
-          {
-           "name": "LegRateSourceSymbol",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3121"
-           }
-          },
-          {
-           "name": "LegFXBenchmark",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3122"
-           }
-          },
-          {
-           "name": "LegFXBenchmarkDate",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3123"
-           }
-          },
-          {
-           "name": "LegFXBenchmarkTime",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3124"
-           }
-          },
-          {
-           "name": "LegFXBenchmarkBusinessCenter",
-           "type": "string",
-           "nullable": true,
-           "fix": {
-            "tag": "3125"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     }
-    },
-    {
-     "name": "BidPx",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "132"
-     }
-    },
-    {
-     "name": "OfferPx",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "133"
-     }
-    },
-    {
-     "name": "TotalBidSize",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1749"
-     }
-    },
-    {
-     "name": "TotalOfferSize",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1750"
-     }
-    },
-    {
-     "name": "BidSize",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "134"
-     }
-    },
-    {
-     "name": "OfferSize",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "135"
-     }
-    },
-    {
-     "name": "ValidUntilTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "62"
-     }
-    },
-    {
-     "name": "BidSpotRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "188"
-     }
-    },
-    {
-     "name": "OfferSpotRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "190"
-     }
-    },
-    {
-     "name": "BidForwardPoints",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "189"
-     }
-    },
-    {
-     "name": "OfferForwardPoints",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "191"
-     }
-    },
-    {
-     "name": "MidPx",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "631"
-     }
-    },
-    {
-     "name": "BidYield",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "632"
-     }
-    },
-    {
-     "name": "MidYield",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "633"
-     }
-    },
-    {
-     "name": "OfferYield",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "634"
-     }
-    },
-    {
-     "name": "TransactTime",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "60"
-     }
-    },
-    {
-     "name": "TradingSessionID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "336"
-     }
-    },
-    {
-     "name": "TradingSessionSubID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "625"
-     }
-    },
-    {
-     "name": "SettlDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "64"
-     }
-    },
-    {
-     "name": "OrdType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40"
-     }
-    },
-    {
-     "name": "SettlDate2",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "193"
-     }
-    },
-    {
-     "name": "OrderQty2",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "192"
-     }
-    },
-    {
-     "name": "BidForwardPoints2",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "642"
-     }
-    },
-    {
-     "name": "OfferForwardPoints2",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "643"
-     }
-    },
-    {
-     "name": "Currency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "15"
-     }
-    },
-    {
-     "name": "CurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2897"
-     }
-    },
-    {
-     "name": "BookingType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "775"
-     }
-    },
-    {
-     "name": "OrderCapacity",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "528"
-     }
-    },
-    {
-     "name": "OrderRestrictions",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "529"
-     }
+ "type": "list",
+ "fix": {
+  "tag": "295",
+  "versions": [
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "QuoteEntry",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "QuoteEntryID",
+    "type": "string",
+    "fix": {
+     "tag": "299"
     }
-   ]
-  }
+   },
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
+    },
+    "fields": []
+   },
+   {
+    "name": "NoLegs",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "555"
+    },
+    "item": {
+     "name": "Leg",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "InstrumentLeg",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "InstrumentLeg"
+       },
+       "fields": []
+      },
+      {
+       "name": "LegFinancingDetails",
+       "type": "struct",
+       "nullable": true,
+       "fix": {
+        "component": "LegFinancingDetails"
+       },
+       "fields": []
+      },
+      {
+       "name": "NoLegRateSources",
+       "type": "list",
+       "nullable": true,
+       "fix": {
+        "tag": "3116"
+       },
+       "item": {
+        "name": "LegRateSource",
+        "type": "struct",
+        "fields": [
+         {
+          "name": "LegRateSource",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3117"
+          }
+         },
+         {
+          "name": "LegRateSourceType",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3118"
+          }
+         },
+         {
+          "name": "LegReferencePage",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3119"
+          }
+         },
+         {
+          "name": "LegRateSourceReferencePageHeading",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3120"
+          }
+         },
+         {
+          "name": "LegRateSourceSymbol",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3121"
+          }
+         },
+         {
+          "name": "LegFXBenchmark",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3122"
+          }
+         },
+         {
+          "name": "LegFXBenchmarkDate",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3123"
+          }
+         },
+         {
+          "name": "LegFXBenchmarkTime",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3124"
+          }
+         },
+         {
+          "name": "LegFXBenchmarkBusinessCenter",
+          "type": "string",
+          "nullable": true,
+          "fix": {
+           "tag": "3125"
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "name": "BidPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "132"
+    }
+   },
+   {
+    "name": "OfferPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "133"
+    }
+   },
+   {
+    "name": "TotalBidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1749"
+    }
+   },
+   {
+    "name": "TotalOfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1750"
+    }
+   },
+   {
+    "name": "BidSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "134"
+    }
+   },
+   {
+    "name": "OfferSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "135"
+    }
+   },
+   {
+    "name": "ValidUntilTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "62"
+    }
+   },
+   {
+    "name": "BidSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "188"
+    }
+   },
+   {
+    "name": "OfferSpotRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "190"
+    }
+   },
+   {
+    "name": "BidForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "189"
+    }
+   },
+   {
+    "name": "OfferForwardPoints",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "191"
+    }
+   },
+   {
+    "name": "MidPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "631"
+    }
+   },
+   {
+    "name": "BidYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "632"
+    }
+   },
+   {
+    "name": "MidYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "633"
+    }
+   },
+   {
+    "name": "OfferYield",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "634"
+    }
+   },
+   {
+    "name": "TransactTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "60"
+    }
+   },
+   {
+    "name": "TradingSessionID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "336"
+    }
+   },
+   {
+    "name": "TradingSessionSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "625"
+    }
+   },
+   {
+    "name": "SettlDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "64"
+    }
+   },
+   {
+    "name": "OrdType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40"
+    }
+   },
+   {
+    "name": "SettlDate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "193"
+    }
+   },
+   {
+    "name": "OrderQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "192"
+    }
+   },
+   {
+    "name": "BidForwardPoints2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "642"
+    }
+   },
+   {
+    "name": "OfferForwardPoints2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "643"
+    }
+   },
+   {
+    "name": "Currency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "15"
+    }
+   },
+   {
+    "name": "CurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2897"
+    }
+   },
+   {
+    "name": "BookingType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "775"
+    }
+   },
+   {
+    "name": "OrderCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "528"
+    }
+   },
+   {
+    "name": "OrderRestrictions",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "529"
+    }
+   }
+  ]
  }
 }

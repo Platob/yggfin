@@ -1,36 +1,33 @@
 {
  "name": "NoOptionExerciseExpirationDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoOptionExerciseExpirationDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41152"
-  },
-  "item": {
-   "name": "OptionExerciseExpirationDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "OptionExerciseExpirationDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41153"
-     }
-    },
-    {
-     "name": "OptionExerciseExpirationDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41154"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41152",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "OptionExerciseExpirationDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "OptionExerciseExpirationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41153"
     }
-   ]
-  }
+   },
+   {
+    "name": "OptionExerciseExpirationDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41154"
+    }
+   }
+  ]
  }
 }

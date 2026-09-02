@@ -8,9 +8,9 @@ import pyarrow
 import pytest
 
 from rekep.fields import Field
-from rekep.fix import ANY_VERSION, Alias, fix_field
+from rekep.fix import ANY_VERSION, fix_field
 from rekep.fix.quickfix import members_of
-from rekep.fix.registry import FixRegistry, builtin_registry
+from rekep.fix.registry import FixRegistry, repository_registry
 from rekep.fix.rekep import (
     REKEP_COMPONENT_NAMES,
     REKEP_MSG_TYPES,
@@ -47,7 +47,6 @@ EXPECTED_FIELDS: tuple[tuple[str, str, int], ...] = (
     ("pxunit", "PxUnit", 30024),
     ("qtyunit", "QtyUnit", 30025),
     ("notional", "Notional", 30026),
-    ("lastshares", "LastShares", 30028),
     ("marketmarker", "MarketMarker", 30029),
     ("globalorderid", "GlobalOrderId", 30030),
     ("creationtime", "CreationTime", 30031),
@@ -115,10 +114,11 @@ def test_rekep_field_tags_are_frozen_and_round_trip_through_the_registry() -> No
     assert registry.field(30023) is None
     assert registry.resolve("Price").fix.tag == 44
     assert registry.resolve("LastQty").fix.tag == 32
-    assert registry.resolve("LastShares").fix.tag == 30028
-    assert all(
-        alias.folded != "lastshares" for alias in registry.resolve("LastQty").fix.named_aliases
+    assert registry.resolve("LastShares").fix.tag == 32, "tag 32's own pre-4.3 spelling"
+    assert any(
+        alias.folded == "lastshares" for alias in registry.resolve("LastQty").fix.named_aliases
     )
+    assert registry.field(30028) is None, "the package slot LastShares held is retired"
     lastmkt = registry.resolve("LastMkt")
     assert lastmkt is not None
     assert (lastmkt.fix.tag, lastmkt.fix.type, lastmkt.dtype) == (
@@ -149,9 +149,8 @@ def test_rekep_field_tags_are_frozen_and_round_trip_through_the_registry() -> No
     )
     assert {
         column: registry.resolve(canonical).dtype
-        for column, canonical, _tag in EXPECTED_FIELDS[-11:]
+        for column, canonical, _tag in EXPECTED_FIELDS[-10:]
     } == {
-        "lastshares": pyarrow.float64(),
         "marketmarker": pyarrow.bool_(),
         "globalorderid": pyarrow.string(),
         "creationtime": pyarrow.timestamp("us", tz="UTC"),
@@ -244,17 +243,19 @@ def test_registering_rekep_twice_does_not_mutate_the_store(tmp_path: Path) -> No
     assert registry.revision == revision
 
 
-def test_registration_retires_lastqtys_legacy_lastshares_alias(tmp_path: Path) -> None:
+def test_registration_restores_lastqtys_legacy_lastshares_alias(tmp_path: Path) -> None:
+    """`LastShares` is what tag 32 was called before FIX 4.3, so it resolves to
+    tag 32 whether or not the scraped source recorded the older spelling."""
     registry = FixRegistry(cache_dir=tmp_path / "registry")
     lastqty = fix_field("LastQty", 32, "Qty")
     lastqty.fix.versions = (ANY_VERSION,)
-    lastqty.fix.named_aliases = (Alias("LastShares", source="4.0"),)
     registry.add_field(lastqty)
 
     register_rekep(registry)
 
     assert registry.resolve("LastQty").fix.tag == 32
-    assert registry.resolve("LastShares").fix.tag == 30028
+    assert registry.resolve("LastShares").fix.tag == 32
+    assert registry.resolve("LASTSHARES").fix.tag == 32
     assert registry.alias_conflicts() == {}
 
 
@@ -280,13 +281,15 @@ def test_registration_refuses_changed_versions(tmp_path: Path) -> None:
         register_rekep(registry)
 
 
-def test_the_builtin_registry_is_read_without_rewriting_its_archive() -> None:
-    archive = Path(builtin_registry())
-    before = archive.read_bytes(), archive.stat().st_mtime_ns
+def test_the_builtin_registry_is_read_without_rewriting_its_documents() -> None:
+    root = Path(repository_registry())
+    stored = sorted(path for path in root.rglob("*.json"))
+    before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in stored}
     FixMsg.into_registry.cache_clear()
     try:
         FixRegistry.set_builtin(None)
         FixRegistry.from_builtin()
-        assert (archive.read_bytes(), archive.stat().st_mtime_ns) == before
+        after = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in stored}
+        assert after == before
     finally:
         FixMsg.into_registry.cache_clear()

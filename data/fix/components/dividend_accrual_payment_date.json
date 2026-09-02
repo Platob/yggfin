@@ -1,205 +1,202 @@
 {
  "name": "DividendAccrualPaymentDate",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "DividendAccrualPaymentDate",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "DividendAccrualPaymentDate",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "Allocation",
-    "AllocationInstruction",
-    "AllocationInstructionAck",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AllocationReportAck",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "CrossRequest",
-    "CrossRequestAck",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarginRequirementInquiry",
-    "MarginRequirementInquiryAck",
-    "MarginRequirementReport",
-    "MarketDataAck",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassOrder",
-    "MassOrderAck",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "SettlementObligationReport",
-    "SettlementStatusReport",
-    "SettlementStatusRequest",
-    "StreamAssignmentReport",
-    "StreamAssignmentRequest",
-    "TradeAggregationReport",
-    "TradeAggregationRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport",
-    "TradingSessionStatus"
-   ]
-  },
-  "fields": [
-   {
-    "name": "DividendAccrualPaymentDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42238"
-    }
-   },
-   {
-    "name": "DividendAccrualPaymentDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42239"
-    }
-   },
-   {
-    "name": "DividendAccrualPaymentDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42240"
-    }
-   },
-   {
-    "name": "DividendAccrualPaymentDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42241"
-    }
-   },
-   {
-    "name": "DividendAccrualPaymentDateUnadjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42242"
-    }
-   },
-   {
-    "name": "DividendAccrualPaymeentDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42243"
-    }
-   },
-   {
-    "name": "NoDividendAccrualPaymentDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42236"
-    },
-    "item": {
-     "name": "DividendAccrualPaymentDateBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "DividendAccrualPaymentDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42237"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "DividendAccrualPaymentDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42244"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "DividendAccrualPaymentDate",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "Allocation",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "CrossRequest",
+   "CrossRequestAck",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarginRequirementInquiry",
+   "MarginRequirementInquiryAck",
+   "MarginRequirementReport",
+   "MarketDataAck",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassOrder",
+   "MassOrderAck",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "SettlementObligationReport",
+   "SettlementStatusReport",
+   "SettlementStatusRequest",
+   "StreamAssignmentReport",
+   "StreamAssignmentRequest",
+   "TradeAggregationReport",
+   "TradeAggregationRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport",
+   "TradingSessionStatus"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "DividendAccrualPaymentDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42238"
+   }
+  },
+  {
+   "name": "DividendAccrualPaymentDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42239"
+   }
+  },
+  {
+   "name": "DividendAccrualPaymentDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42240"
+   }
+  },
+  {
+   "name": "DividendAccrualPaymentDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42241"
+   }
+  },
+  {
+   "name": "DividendAccrualPaymentDateUnadjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42242"
+   }
+  },
+  {
+   "name": "DividendAccrualPaymeentDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42243"
+   }
+  },
+  {
+   "name": "NoDividendAccrualPaymentDateBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42236"
+   },
+   "item": {
+    "name": "DividendAccrualPaymentDateBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "DividendAccrualPaymentDateBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42237"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "DividendAccrualPaymentDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42244"
+   }
+  }
+ ]
 }

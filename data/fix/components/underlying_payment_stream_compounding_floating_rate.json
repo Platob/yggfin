@@ -1,249 +1,246 @@
 {
  "name": "UnderlyingPaymentStreamCompoundingFloatingRate",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "UnderlyingPaymentStreamCompoundingFloatingRate",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "UnderlyingPaymentStreamCompoundingFloatingRate",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListRequest",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateIndex",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42923"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateIndexCurvePeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42924"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateIndexCurveUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42925"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateMultiplier",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42926"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateSpread",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42927"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateSpreadPositionType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42928"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingRateTreatment",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42929"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingCapRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42930"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingCapRateBuySide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42931"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingCapRateSellSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42932"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFloorRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42933"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFloorRateBuySide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42934"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFloorRateSellSide",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42935"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingInitialRate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42936"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFinalRateRoundingDirection",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42937"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingFinalRatePrecision",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42938"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingAveragingMethod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42939"
-    }
-   },
-   {
-    "name": "UnderlyingPaymentStreamCompoundingNegativeRateTreatment",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "42940"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "UnderlyingPaymentStreamCompoundingFloatingRate",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListRequest",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateIndex",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42923"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateIndexCurvePeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42924"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateIndexCurveUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42925"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateMultiplier",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42926"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateSpread",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42927"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateSpreadPositionType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42928"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingRateTreatment",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42929"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingCapRate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42930"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingCapRateBuySide",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42931"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingCapRateSellSide",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42932"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFloorRate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42933"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFloorRateBuySide",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42934"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFloorRateSellSide",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42935"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingInitialRate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42936"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFinalRateRoundingDirection",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42937"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingFinalRatePrecision",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42938"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingAveragingMethod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42939"
+   }
+  },
+  {
+   "name": "UnderlyingPaymentStreamCompoundingNegativeRateTreatment",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "42940"
+   }
+  }
+ ]
 }

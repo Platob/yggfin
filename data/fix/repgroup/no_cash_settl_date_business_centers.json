@@ -1,28 +1,25 @@
 {
  "name": "NoCashSettlDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoCashSettlDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42214"
-  },
-  "item": {
-   "name": "CashSettlDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "CashSettlDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42215"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42214",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "CashSettlDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "CashSettlDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42215"
     }
-   ]
-  }
+   }
+  ]
  }
 }

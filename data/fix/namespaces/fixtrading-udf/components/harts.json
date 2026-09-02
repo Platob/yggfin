@@ -1,97 +1,94 @@
 {
  "name": "Harts",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "Harts",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "Harts",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "Delta2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7538"
-    }
-   },
-   {
-    "name": "IntentToCross",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7539"
-    }
-   },
-   {
-    "name": "LegRatio1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7535"
-    }
-   },
-   {
-    "name": "OptionStrategyType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7534"
-    }
-   },
-   {
-    "name": "OriginatorType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7530"
-    }
-   },
-   {
-    "name": "PricePctFixed",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7531"
-    }
-   },
-   {
-    "name": "RefHedgePrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7537"
-    }
-   },
-   {
-    "name": "RefHedgePriceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7536"
-    }
-   },
-   {
-    "name": "SettlementTime",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7532"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "Harts",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "Delta2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7538"
+   }
+  },
+  {
+   "name": "IntentToCross",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7539"
+   }
+  },
+  {
+   "name": "LegRatio1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7535"
+   }
+  },
+  {
+   "name": "OptionStrategyType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7534"
+   }
+  },
+  {
+   "name": "OriginatorType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7530"
+   }
+  },
+  {
+   "name": "PricePctFixed",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7531"
+   }
+  },
+  {
+   "name": "RefHedgePrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7537"
+   }
+  },
+  {
+   "name": "RefHedgePriceType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7536"
+   }
+  },
+  {
+   "name": "SettlementTime",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7532"
+   }
+  }
+ ]
 }

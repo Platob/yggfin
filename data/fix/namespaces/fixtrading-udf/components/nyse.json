@@ -1,113 +1,110 @@
 {
  "name": "NYSE",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NYSE",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "NYSE",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "ARCAExNewsType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9797"
-    }
-   },
-   {
-    "name": "AttributedQuote",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9793"
-    }
-   },
-   {
-    "name": "BrokerFirmID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9529"
-    }
-   },
-   {
-    "name": "DbExecID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9792"
-    }
-   },
-   {
-    "name": "DoNotArb",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9796"
-    }
-   },
-   {
-    "name": "EndTime5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9594"
-    }
-   },
-   {
-    "name": "ExtendedExecInst",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9416"
-    }
-   },
-   {
-    "name": "ExtendedPNP",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9417"
-    }
-   },
-   {
-    "name": "ProactiveifLocked",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9794"
-    }
-   },
-   {
-    "name": "ProspectusIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9795"
-    }
-   },
-   {
-    "name": "StartTime6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9593"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "NYSE",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ARCAExNewsType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9797"
+   }
+  },
+  {
+   "name": "AttributedQuote",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9793"
+   }
+  },
+  {
+   "name": "BrokerFirmID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9529"
+   }
+  },
+  {
+   "name": "DbExecID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9792"
+   }
+  },
+  {
+   "name": "DoNotArb",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9796"
+   }
+  },
+  {
+   "name": "EndTime5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9594"
+   }
+  },
+  {
+   "name": "ExtendedExecInst",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9416"
+   }
+  },
+  {
+   "name": "ExtendedPNP",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9417"
+   }
+  },
+  {
+   "name": "ProactiveifLocked",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9794"
+   }
+  },
+  {
+   "name": "ProspectusIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9795"
+   }
+  },
+  {
+   "name": "StartTime6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9593"
+   }
+  }
+ ]
 }

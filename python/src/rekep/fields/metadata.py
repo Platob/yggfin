@@ -493,6 +493,66 @@ def enum_map(enum_type: Any, declared: Any, keyed: str) -> dict[str, Any]:
     return found
 
 
+def _merged_aliases(held: Any, other: Any, source: str) -> tuple[Alias, ...]:
+    """Both records' spellings, and the other's own name where it differs.
+
+    A venue calling tag 64 `TradeDate` says the identity answers to that too,
+    so its canonical name is an alias here attributed to where it was read.
+    First reading of a spelling keeps its provenance: a later duplicate says
+    nothing new about where the name came from.
+    """
+    found: dict[str, Alias] = {alias.folded: alias for alias in held.named_aliases}
+    incoming = list(other.named_aliases)
+    if (name := other.canonical) and column_name(name) != held.folded:
+        incoming.append(Alias(name=name, source=source))
+    for alias in incoming:
+        if alias.folded == held.folded:
+            continue
+        found.setdefault(
+            alias.folded,
+            Alias(alias.name, source=alias.source or source, occurrences=alias.occurrences),
+        )
+    return tuple(found.values())
+
+
+def _merged_tags(held: Any, other: Any) -> tuple[int, ...]:
+    """Every numeric tag the identity is carried under, canonical excluded.
+
+    The canonical tag is this record's and does not move: a venue's own
+    numbering is an equivalent slot to read the field at, not a renumbering
+    of the standard.
+    """
+    canonical = held.tag
+    ordered = dict.fromkeys(
+        tag for tag in (*held.tags, other.tag, *other.tags) if tag is not None and tag != canonical
+    )
+    return tuple(ordered)
+
+
+def _merged_values(
+    held: tuple[FixFieldValue, ...], other: tuple[FixFieldValue, ...]
+) -> tuple[FixFieldValue, ...]:
+    """Both readings' enumerated values, this record's meaning winning a tie.
+
+    A namespace that adds one code to a standard field is the case this
+    exists for; a namespace that spells an existing code differently adds
+    that spelling to the value's own aliases rather than a second entry.
+    """
+    found: dict[str, FixFieldValue] = {one.value: one for one in held}
+    for one in other:
+        current = found.get(one.value)
+        if current is None:
+            found[one.value] = one
+            continue
+        spellings = dict.fromkeys((*current.aliases, *one.aliases))
+        found[one.value] = dataclasses.replace(
+            current,
+            meaning=current.meaning or one.meaning,
+            aliases=tuple(spellings),
+        )
+    return tuple(found.values())
+
+
 class FixMetadata(ProtocolMetadata):
     """The FIX protocol's keys, typed: `field.fix.tag`, `field.fix.enumerated`.
 
@@ -670,6 +730,66 @@ class FixMetadata(ProtocolMetadata):
             (one if isinstance(one, Alias) else Alias.from_dict(one)).into_dict()
             for one in (value or ())
         ]
+
+    # -- one identity read twice --------------------------------------------
+
+    #: Keys whose value is a set of readings rather than one reading, so two
+    #: records of one identity union them instead of the later erasing the
+    #: earlier. `values` and `aliases` are keyed documents and merge by their
+    #: own key; the rest are ordered name lists.
+    ACCUMULATED: tuple[str, ...] = ("versions", "sources", "msgtypes", "components")
+
+    def merge(self, other: FixMetadata, *, source: str = "") -> None:
+        """Fold another reading of this same identity into this one, in place.
+
+        What a unified registry is made of: one record per identity, and a
+        second reading of it -- an older version, a venue's own tag, a
+        namespace that renamed it -- contributes its spelling, its tag and its
+        values rather than replacing what is here. `source` attributes what
+        the other reading brings, defaulting to its own primary source.
+
+        Two readings that disagree on the datatype are not one identity, and
+        merging them would give one column two shapes; that is refused so the
+        caller keeps them apart.
+        """
+        held, incoming = self.type, other.type
+        if held and incoming and held != incoming:
+            raise ValueError(
+                f"FIX field {self.canonical!r} cannot merge a {incoming!r} reading "
+                f"into its {held!r} one: they are not one identity"
+            )
+        self.accumulate(other, source=source)
+        for key in ("type", "note", "added", "column", "source"):
+            if not self.get(key) and other.get(key):
+                self[key] = other[key]
+        origins = {**other.origins, **self.origins}
+        if origins:
+            self.origins = origins
+
+    def accumulate(self, other: FixMetadata, *, source: str = "") -> None:
+        """Union every key that holds a set of readings, leaving the rest alone.
+
+        The half of `merge` that only ever adds: the spellings, tags, versions
+        and values `other` knows about join this record's, in this record's
+        order. What an overlay wants -- a later declaration overriding a type
+        should not also silence the aliases the earlier one gathered.
+        """
+        attributed = str(source or other.source or "")
+        for key in self.ACCUMULATED:
+            merged = dict.fromkeys((*self.get_list(key), *other.get_list(key)))
+            if merged:
+                self[key] = json.dumps(list(merged), separators=(",", ":"))
+        self.named_aliases = _merged_aliases(self, other, attributed)
+        self.tags = _merged_tags(self, other)
+        self.enumerated = _merged_values(self.enumerated, other.enumerated)
+
+    def get_list(self, key: str) -> tuple[str, ...]:
+        """One stored name list, empty where the record carries none."""
+        declared = self.get(key)
+        if not declared:
+            return ()
+        parsed = json.loads(declared)
+        return tuple(str(one) for one in parsed) if isinstance(parsed, list) else ()
 
     # -- what the record answers --------------------------------------------
 

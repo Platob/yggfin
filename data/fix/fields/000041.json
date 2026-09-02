@@ -1,5 +1,5 @@
-{
- "41000": {
+[
+ {
   "name": "ComplexEventCreditEventCurrency",
   "type": "string",
   "nullable": true,
@@ -154,7 +154,7 @@
    ]
   }
  },
- "41001": {
+ {
   "name": "ComplexEventCreditEventPeriod",
   "type": "int32",
   "nullable": true,
@@ -309,7 +309,7 @@
    ]
   }
  },
- "41002": {
+ {
   "name": "ComplexEventCreditEventUnit",
   "type": "string",
   "nullable": true,
@@ -494,7 +494,7 @@
    ]
   }
  },
- "41003": {
+ {
   "name": "ComplexEventCreditEventDayType",
   "type": "int32",
   "nullable": true,
@@ -693,7 +693,7 @@
    ]
   }
  },
- "41004": {
+ {
   "name": "ComplexEventCreditEventRateSource",
   "type": "int32",
   "nullable": true,
@@ -850,7 +850,7 @@
    ]
   }
  },
- "41005": {
+ {
   "name": "NoComplexEventCreditEventQualifiers",
   "type": "int64",
   "nullable": true,
@@ -1006,7 +1006,7 @@
    ]
   }
  },
- "41006": {
+ {
   "name": "ComplexEventCreditEventQualifier",
   "type": "string",
   "nullable": true,
@@ -1185,7 +1185,7 @@
    ]
   }
  },
- "41007": {
+ {
   "name": "NoComplexEventPeriodDateTimes",
   "type": "int64",
   "nullable": true,
@@ -1341,7 +1341,7 @@
    ]
   }
  },
- "41008": {
+ {
   "name": "ComplexEventPeriodDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -1497,7 +1497,7 @@
    ]
   }
  },
- "41009": {
+ {
   "name": "ComplexEventPeriodTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -1653,7 +1653,7 @@
    ]
   }
  },
- "41010": {
+ {
   "name": "NoComplexEventPeriods",
   "type": "int64",
   "nullable": true,
@@ -1808,7 +1808,7 @@
    ]
   }
  },
- "41011": {
+ {
   "name": "ComplexEventPeriodType",
   "type": "int32",
   "nullable": true,
@@ -2013,7 +2013,7 @@
    ]
   }
  },
- "41012": {
+ {
   "name": "ComplexEventBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -2170,7 +2170,7 @@
    ]
   }
  },
- "41013": {
+ {
   "name": "NoComplexEventRateSources",
   "type": "int64",
   "nullable": true,
@@ -2325,7 +2325,7 @@
    ]
   }
  },
- "41014": {
+ {
   "name": "ComplexEventRateSource",
   "type": "int32",
   "nullable": true,
@@ -2517,7 +2517,7 @@
    ]
   }
  },
- "41015": {
+ {
   "name": "ComplexEventRateSourceType",
   "type": "int32",
   "nullable": true,
@@ -2688,7 +2688,7 @@
    ]
   }
  },
- "41016": {
+ {
   "name": "ComplexEventReferencePage",
   "type": "string",
   "nullable": true,
@@ -2845,7 +2845,7 @@
    ]
   }
  },
- "41017": {
+ {
   "name": "ComplexEventReferencePageHeading",
   "type": "string",
   "nullable": true,
@@ -3000,7 +3000,7 @@
    ]
   }
  },
- "41018": {
+ {
   "name": "NoComplexEventDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -3156,7 +3156,7 @@
    ]
   }
  },
- "41019": {
+ {
   "name": "ComplexEventDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -3314,7 +3314,7 @@
    ]
   }
  },
- "41020": {
+ {
   "name": "ComplexEventDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -3471,7 +3471,7 @@
    ]
   }
  },
- "41021": {
+ {
   "name": "ComplexEventDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -3628,7 +3628,7 @@
    ]
   }
  },
- "41022": {
+ {
   "name": "ComplexEventDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -3783,7 +3783,7 @@
    ]
   }
  },
- "41023": {
+ {
   "name": "ComplexEventDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -3968,7 +3968,7 @@
    ]
   }
  },
- "41024": {
+ {
   "name": "ComplexEventDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -4173,7 +4173,7 @@
    ]
   }
  },
- "41025": {
+ {
   "name": "ComplexEventDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -4386,7 +4386,7 @@
    ]
   }
  },
- "41026": {
+ {
   "name": "ComplexEventDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -4541,7 +4541,7 @@
    ]
   }
  },
- "41027": {
+ {
   "name": "ComplexEventFixingTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -4696,7 +4696,7 @@
    ]
   }
  },
- "41028": {
+ {
   "name": "ComplexEventFixingTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -4853,7 +4853,7 @@
    ]
   }
  },
- "41029": {
+ {
   "name": "NoComplexEventCreditEventSources",
   "type": "int64",
   "nullable": true,
@@ -5008,7 +5008,7 @@
    ]
   }
  },
- "41030": {
+ {
   "name": "ComplexEventCreditEventSource",
   "type": "string",
   "nullable": true,
@@ -5163,7 +5163,7 @@
    ]
   }
  },
- "41031": {
+ {
   "name": "NoComplexEventSchedules",
   "type": "int64",
   "nullable": true,
@@ -5319,7 +5319,7 @@
    ]
   }
  },
- "41032": {
+ {
   "name": "ComplexEventScheduleStartDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5475,7 +5475,7 @@
    ]
   }
  },
- "41033": {
+ {
   "name": "ComplexEventScheduleEndDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -5631,7 +5631,7 @@
    ]
   }
  },
- "41034": {
+ {
   "name": "ComplexEventScheduleFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -5787,7 +5787,7 @@
    ]
   }
  },
- "41035": {
+ {
   "name": "ComplexEventScheduleFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -5973,7 +5973,7 @@
    ]
   }
  },
- "41036": {
+ {
   "name": "ComplexEventScheduleRollConvention",
   "type": "string",
   "nullable": true,
@@ -6405,7 +6405,7 @@
    ]
   }
  },
- "41037": {
+ {
   "name": "NoDeliverySchedules",
   "type": "int64",
   "nullable": true,
@@ -6560,7 +6560,7 @@
    ]
   }
  },
- "41038": {
+ {
   "name": "DeliveryScheduleType",
   "type": "int32",
   "nullable": true,
@@ -6741,7 +6741,7 @@
    ]
   }
  },
- "41039": {
+ {
   "name": "DeliveryScheduleXID",
   "type": "string",
   "nullable": true,
@@ -6896,7 +6896,7 @@
    ]
   }
  },
- "41040": {
+ {
   "name": "DeliveryScheduleNotional",
   "type": "double",
   "nullable": true,
@@ -7051,7 +7051,7 @@
    ]
   }
  },
- "41041": {
+ {
   "name": "DeliveryScheduleNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -7768,7 +7768,7 @@
    ]
   }
  },
- "41042": {
+ {
   "name": "DeliveryScheduleNotionalCommodityFrequency",
   "type": "int32",
   "nullable": true,
@@ -7974,7 +7974,7 @@
    ]
   }
  },
- "41043": {
+ {
   "name": "DeliveryScheduleNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -8129,7 +8129,7 @@
    ]
   }
  },
- "41044": {
+ {
   "name": "DeliverySchedulePositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -8284,7 +8284,7 @@
    ]
   }
  },
- "41045": {
+ {
   "name": "DeliveryScheduleToleranceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -9001,7 +9001,7 @@
    ]
   }
  },
- "41046": {
+ {
   "name": "DeliveryScheduleToleranceType",
   "type": "int32",
   "nullable": true,
@@ -9174,7 +9174,7 @@
    ]
   }
  },
- "41047": {
+ {
   "name": "DeliveryScheduleSettlCountry",
   "type": "string",
   "nullable": true,
@@ -9329,7 +9329,7 @@
    ]
   }
  },
- "41048": {
+ {
   "name": "DeliveryScheduleSettlTimeZone",
   "type": "string",
   "nullable": true,
@@ -9486,7 +9486,7 @@
    ]
   }
  },
- "41049": {
+ {
   "name": "DeliveryScheduleSettlFlowType",
   "type": "int32",
   "nullable": true,
@@ -9693,7 +9693,7 @@
    ]
   }
  },
- "41050": {
+ {
   "name": "DeliveryScheduleSettlHolidaysProcessingInstruction",
   "type": "int32",
   "nullable": true,
@@ -9866,7 +9866,7 @@
    ]
   }
  },
- "41051": {
+ {
   "name": "NoDeliveryScheduleSettlDays",
   "type": "int64",
   "nullable": true,
@@ -10022,7 +10022,7 @@
    ]
   }
  },
- "41052": {
+ {
   "name": "DeliveryScheduleSettlDay",
   "type": "int32",
   "nullable": true,
@@ -10260,7 +10260,7 @@
    ]
   }
  },
- "41053": {
+ {
   "name": "DeliveryScheduleSettlTotalHours",
   "type": "int32",
   "nullable": true,
@@ -10416,7 +10416,7 @@
    ]
   }
  },
- "41054": {
+ {
   "name": "NoDeliveryScheduleSettlTimes",
   "type": "int64",
   "nullable": true,
@@ -10573,7 +10573,7 @@
    ]
   }
  },
- "41055": {
+ {
   "name": "DeliveryScheduleSettlStart",
   "type": "string",
   "nullable": true,
@@ -10730,7 +10730,7 @@
    ]
   }
  },
- "41056": {
+ {
   "name": "DeliveryScheduleSettlEnd",
   "type": "string",
   "nullable": true,
@@ -10887,7 +10887,7 @@
    ]
   }
  },
- "41057": {
+ {
   "name": "DeliveryScheduleSettlTimeType",
   "type": "int32",
   "nullable": true,
@@ -11062,7 +11062,7 @@
    ]
   }
  },
- "41058": {
+ {
   "name": "DeliveryStreamType",
   "type": "int32",
   "nullable": true,
@@ -11243,7 +11243,7 @@
    ]
   }
  },
- "41059": {
+ {
   "name": "DeliveryStreamPipeline",
   "type": "string",
   "nullable": true,
@@ -11398,7 +11398,7 @@
    ]
   }
  },
- "41060": {
+ {
   "name": "DeliveryStreamEntryPoint",
   "type": "string",
   "nullable": true,
@@ -11553,7 +11553,7 @@
    ]
   }
  },
- "41061": {
+ {
   "name": "DeliveryStreamWithdrawalPoint",
   "type": "string",
   "nullable": true,
@@ -11708,7 +11708,7 @@
    ]
   }
  },
- "41062": {
+ {
   "name": "DeliveryStreamDeliveryPoint",
   "type": "string",
   "nullable": true,
@@ -11865,7 +11865,7 @@
    ]
   }
  },
- "41063": {
+ {
   "name": "DeliveryStreamDeliveryRestriction",
   "type": "int32",
   "nullable": true,
@@ -12062,7 +12062,7 @@
    ]
   }
  },
- "41064": {
+ {
   "name": "DeliveryStreamDeliveryContingency",
   "type": "string",
   "nullable": true,
@@ -12219,7 +12219,7 @@
    ]
   }
  },
- "41065": {
+ {
   "name": "DeliveryStreamDeliveryContingentPartySide",
   "type": "int32",
   "nullable": true,
@@ -12390,7 +12390,7 @@
    ]
   }
  },
- "41066": {
+ {
   "name": "DeliveryStreamDeliverAtSourceIndicator",
   "type": "bool",
   "nullable": true,
@@ -12545,7 +12545,7 @@
    ]
   }
  },
- "41067": {
+ {
   "name": "DeliveryStreamRiskApportionment",
   "type": "string",
   "nullable": true,
@@ -12702,7 +12702,7 @@
    ]
   }
  },
- "41068": {
+ {
   "name": "DeliveryStreamTitleTransferLocation",
   "type": "string",
   "nullable": true,
@@ -12857,7 +12857,7 @@
    ]
   }
  },
- "41069": {
+ {
   "name": "DeliveryStreamTitleTransferCondition",
   "type": "int32",
   "nullable": true,
@@ -13030,7 +13030,7 @@
    ]
   }
  },
- "41070": {
+ {
   "name": "DeliveryStreamImporterOfRecord",
   "type": "string",
   "nullable": true,
@@ -13185,7 +13185,7 @@
    ]
   }
  },
- "41071": {
+ {
   "name": "DeliveryStreamNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -13340,7 +13340,7 @@
    ]
   }
  },
- "41072": {
+ {
   "name": "DeliveryStreamPositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -13495,7 +13495,7 @@
    ]
   }
  },
- "41073": {
+ {
   "name": "DeliveryStreamToleranceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -14212,7 +14212,7 @@
    ]
   }
  },
- "41074": {
+ {
   "name": "DeliveryStreamToleranceType",
   "type": "int32",
   "nullable": true,
@@ -14383,7 +14383,7 @@
    ]
   }
  },
- "41075": {
+ {
   "name": "DeliveryStreamToleranceOptionSide",
   "type": "int32",
   "nullable": true,
@@ -14556,7 +14556,7 @@
    ]
   }
  },
- "41076": {
+ {
   "name": "DeliveryStreamTotalPositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -14711,7 +14711,7 @@
    ]
   }
  },
- "41077": {
+ {
   "name": "DeliveryStreamTotalNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -14866,7 +14866,7 @@
    ]
   }
  },
- "41078": {
+ {
   "name": "DeliveryStreamNotionalConversionFactor",
   "type": "double",
   "nullable": true,
@@ -15021,7 +15021,7 @@
    ]
   }
  },
- "41079": {
+ {
   "name": "DeliveryStreamTransportEquipment",
   "type": "string",
   "nullable": true,
@@ -15176,7 +15176,7 @@
    ]
   }
  },
- "41080": {
+ {
   "name": "DeliveryStreamElectingPartySide",
   "type": "int32",
   "nullable": true,
@@ -15349,7 +15349,7 @@
    ]
   }
  },
- "41081": {
+ {
   "name": "NoDeliveryStreamCycles",
   "type": "int64",
   "nullable": true,
@@ -15505,7 +15505,7 @@
    ]
   }
  },
- "41082": {
+ {
   "name": "DeliveryStreamCycleDesc",
   "type": "string",
   "nullable": true,
@@ -15661,7 +15661,7 @@
    ]
   }
  },
- "41083": {
+ {
   "name": "EncodedDeliveryStreamCycleDescLen",
   "type": "int64",
   "nullable": true,
@@ -15817,7 +15817,7 @@
    ]
   }
  },
- "41084": {
+ {
   "name": "EncodedDeliveryStreamCycleDesc",
   "type": "binary",
   "nullable": true,
@@ -15973,7 +15973,7 @@
    ]
   }
  },
- "41085": {
+ {
   "name": "NoDeliveryStreamCommoditySources",
   "type": "int64",
   "nullable": true,
@@ -16129,7 +16129,7 @@
    ]
   }
  },
- "41086": {
+ {
   "name": "DeliveryStreamCommoditySource",
   "type": "string",
   "nullable": true,
@@ -16287,7 +16287,7 @@
    ]
   }
  },
- "41087": {
+ {
   "name": "MarketDisruptionProvision",
   "type": "int32",
   "nullable": true,
@@ -16475,7 +16475,7 @@
    ]
   }
  },
- "41088": {
+ {
   "name": "MarketDisruptionFallbackProvision",
   "type": "int32",
   "nullable": true,
@@ -16647,7 +16647,7 @@
    ]
   }
  },
- "41089": {
+ {
   "name": "MarketDisruptionMaximumDays",
   "type": "int32",
   "nullable": true,
@@ -16801,7 +16801,7 @@
    ]
   }
  },
- "41090": {
+ {
   "name": "MarketDisruptionMaterialityPercentage",
   "type": "double",
   "nullable": true,
@@ -16955,7 +16955,7 @@
    ]
   }
  },
- "41091": {
+ {
   "name": "MarketDisruptionMinimumFuturesContracts",
   "type": "int32",
   "nullable": true,
@@ -17109,7 +17109,7 @@
    ]
   }
  },
- "41092": {
+ {
   "name": "NoMarketDisruptionEvents",
   "type": "int64",
   "nullable": true,
@@ -17264,7 +17264,7 @@
    ]
   }
  },
- "41093": {
+ {
   "name": "MarketDisruptionEvent",
   "type": "string",
   "nullable": true,
@@ -17421,7 +17421,7 @@
    ]
   }
  },
- "41094": {
+ {
   "name": "NoMarketDisruptionFallbacks",
   "type": "int64",
   "nullable": true,
@@ -17576,7 +17576,7 @@
    ]
   }
  },
- "41095": {
+ {
   "name": "MarketDisruptionFallbackType",
   "type": "string",
   "nullable": true,
@@ -17733,7 +17733,7 @@
    ]
   }
  },
- "41096": {
+ {
   "name": "NoMarketDisruptionFallbackReferencePrices",
   "type": "int64",
   "nullable": true,
@@ -17888,7 +17888,7 @@
    ]
   }
  },
- "41097": {
+ {
   "name": "MarketDisruptionFallbackUnderlierType",
   "type": "int32",
   "nullable": true,
@@ -18141,7 +18141,7 @@
    ]
   }
  },
- "41098": {
+ {
   "name": "MarketDisruptionFallbackUnderlierSecurityID",
   "type": "string",
   "nullable": true,
@@ -18296,7 +18296,7 @@
    ]
   }
  },
- "41099": {
+ {
   "name": "MarketDisruptionFallbackUnderlierSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -18686,7 +18686,7 @@
    ]
   }
  },
- "41100": {
+ {
   "name": "MarketDisruptionFallbackUnderlierSecurityDesc",
   "type": "string",
   "nullable": true,
@@ -18841,7 +18841,7 @@
    ]
   }
  },
- "41101": {
+ {
   "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDescLen",
   "type": "int64",
   "nullable": true,
@@ -18996,7 +18996,7 @@
    ]
   }
  },
- "41102": {
+ {
   "name": "EncodedMarketDisruptionFallbackUnderlierSecurityDesc",
   "type": "binary",
   "nullable": true,
@@ -19151,7 +19151,7 @@
    ]
   }
  },
- "41103": {
+ {
   "name": "MarketDisruptionFallbackOpenUnits",
   "type": "double",
   "nullable": true,
@@ -19306,7 +19306,7 @@
    ]
   }
  },
- "41104": {
+ {
   "name": "MarketDisruptionFallbackBasketCurrency",
   "type": "string",
   "nullable": true,
@@ -19461,7 +19461,7 @@
    ]
   }
  },
- "41105": {
+ {
   "name": "MarketDisruptionFallbackBasketDivisor",
   "type": "double",
   "nullable": true,
@@ -19616,7 +19616,7 @@
    ]
   }
  },
- "41106": {
+ {
   "name": "ExerciseDesc",
   "type": "string",
   "nullable": true,
@@ -19770,7 +19770,7 @@
    ]
   }
  },
- "41107": {
+ {
   "name": "EncodedExerciseDescLen",
   "type": "int64",
   "nullable": true,
@@ -19924,7 +19924,7 @@
    ]
   }
  },
- "41108": {
+ {
   "name": "EncodedExerciseDesc",
   "type": "binary",
   "nullable": true,
@@ -20078,7 +20078,7 @@
    ]
   }
  },
- "41109": {
+ {
   "name": "AutomaticExerciseIndicator",
   "type": "bool",
   "nullable": true,
@@ -20232,7 +20232,7 @@
    ]
   }
  },
- "41110": {
+ {
   "name": "AutomaticExerciseThresholdRate",
   "type": "double",
   "nullable": true,
@@ -20386,7 +20386,7 @@
    ]
   }
  },
- "41111": {
+ {
   "name": "ExerciseConfirmationMethod",
   "type": "int32",
   "nullable": true,
@@ -20574,7 +20574,7 @@
    ]
   }
  },
- "41112": {
+ {
   "name": "ManualNoticeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -20730,7 +20730,7 @@
    ]
   }
  },
- "41113": {
+ {
   "name": "FallbackExerciseIndicator",
   "type": "bool",
   "nullable": true,
@@ -20884,7 +20884,7 @@
    ]
   }
  },
- "41114": {
+ {
   "name": "LimitedRightToConfirmIndicator",
   "type": "bool",
   "nullable": true,
@@ -21038,7 +21038,7 @@
    ]
   }
  },
- "41115": {
+ {
   "name": "ExerciseSplitTicketIndicator",
   "type": "bool",
   "nullable": true,
@@ -21192,7 +21192,7 @@
    ]
   }
  },
- "41116": {
+ {
   "name": "NoOptionExerciseBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -21348,7 +21348,7 @@
    ]
   }
  },
- "41117": {
+ {
   "name": "OptionExerciseBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -21506,7 +21506,7 @@
    ]
   }
  },
- "41118": {
+ {
   "name": "OptionExerciseBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -21719,7 +21719,7 @@
    ]
   }
  },
- "41119": {
+ {
   "name": "OptionExerciseEarliestDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -21920,7 +21920,7 @@
    ]
   }
  },
- "41120": {
+ {
   "name": "OptionExerciseEarliestDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -22075,7 +22075,7 @@
    ]
   }
  },
- "41121": {
+ {
   "name": "OptionExerciseEarliestDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -22260,7 +22260,7 @@
    ]
   }
  },
- "41122": {
+ {
   "name": "OptionExerciseFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -22415,7 +22415,7 @@
    ]
   }
  },
- "41123": {
+ {
   "name": "OptionExerciseFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -22600,7 +22600,7 @@
    ]
   }
  },
- "41124": {
+ {
   "name": "OptionExerciseStartDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -22755,7 +22755,7 @@
    ]
   }
  },
- "41125": {
+ {
   "name": "OptionExerciseStartDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -22912,7 +22912,7 @@
    ]
   }
  },
- "41126": {
+ {
   "name": "OptionExerciseStartDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -23067,7 +23067,7 @@
    ]
   }
  },
- "41127": {
+ {
   "name": "OptionExerciseStartDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -23252,7 +23252,7 @@
    ]
   }
  },
- "41128": {
+ {
   "name": "OptionExerciseStartDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -23453,7 +23453,7 @@
    ]
   }
  },
- "41129": {
+ {
   "name": "OptionExerciseStartDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -23608,7 +23608,7 @@
    ]
   }
  },
- "41130": {
+ {
   "name": "OptionExerciseSkip",
   "type": "int32",
   "nullable": true,
@@ -23763,7 +23763,7 @@
    ]
   }
  },
- "41131": {
+ {
   "name": "OptionExerciseNominationDeadline",
   "type": "timestamp[us]",
   "nullable": true,
@@ -23918,7 +23918,7 @@
    ]
   }
  },
- "41132": {
+ {
   "name": "OptionExerciseFirstDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -24073,7 +24073,7 @@
    ]
   }
  },
- "41133": {
+ {
   "name": "OptionExerciseLastDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -24228,7 +24228,7 @@
    ]
   }
  },
- "41134": {
+ {
   "name": "OptionExerciseEarliestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -24383,7 +24383,7 @@
    ]
   }
  },
- "41135": {
+ {
   "name": "OptionExerciseLatestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -24538,7 +24538,7 @@
    ]
   }
  },
- "41136": {
+ {
   "name": "OptionExerciseTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -24695,7 +24695,7 @@
    ]
   }
  },
- "41137": {
+ {
   "name": "NoOptionExerciseDates",
   "type": "int64",
   "nullable": true,
@@ -24851,7 +24851,7 @@
    ]
   }
  },
- "41138": {
+ {
   "name": "OptionExerciseDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -25007,7 +25007,7 @@
    ]
   }
  },
- "41139": {
+ {
   "name": "OptionExerciseDateType",
   "type": "int32",
   "nullable": true,
@@ -25181,7 +25181,7 @@
    ]
   }
  },
- "41140": {
+ {
   "name": "NoOptionExerciseExpirationDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -25337,7 +25337,7 @@
    ]
   }
  },
- "41141": {
+ {
   "name": "OptionExerciseExpirationDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -25495,7 +25495,7 @@
    ]
   }
  },
- "41142": {
+ {
   "name": "OptionExerciseExpirationDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -25708,7 +25708,7 @@
    ]
   }
  },
- "41143": {
+ {
   "name": "OptionExerciseExpirationDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -25865,7 +25865,7 @@
    ]
   }
  },
- "41144": {
+ {
   "name": "OptionExerciseExpirationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -26020,7 +26020,7 @@
    ]
   }
  },
- "41145": {
+ {
   "name": "OptionExerciseExpirationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -26205,7 +26205,7 @@
    ]
   }
  },
- "41146": {
+ {
   "name": "OptionExerciseExpirationFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -26360,7 +26360,7 @@
    ]
   }
  },
- "41147": {
+ {
   "name": "OptionExerciseExpirationFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -26545,7 +26545,7 @@
    ]
   }
  },
- "41148": {
+ {
   "name": "OptionExerciseExpirationRollConvention",
   "type": "string",
   "nullable": true,
@@ -26976,7 +26976,7 @@
    ]
   }
  },
- "41149": {
+ {
   "name": "OptionExerciseExpirationDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -27177,7 +27177,7 @@
    ]
   }
  },
- "41150": {
+ {
   "name": "OptionExerciseExpirationTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -27332,7 +27332,7 @@
    ]
   }
  },
- "41151": {
+ {
   "name": "OptionExerciseExpirationTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -27489,7 +27489,7 @@
    ]
   }
  },
- "41152": {
+ {
   "name": "NoOptionExerciseExpirationDates",
   "type": "int64",
   "nullable": true,
@@ -27645,7 +27645,7 @@
    ]
   }
  },
- "41153": {
+ {
   "name": "OptionExerciseExpirationDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -27801,7 +27801,7 @@
    ]
   }
  },
- "41154": {
+ {
   "name": "OptionExerciseExpirationDateType",
   "type": "int32",
   "nullable": true,
@@ -27973,7 +27973,7 @@
    ]
   }
  },
- "41155": {
+ {
   "name": "PaymentUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -28573,7 +28573,7 @@
    ]
   }
  },
- "41156": {
+ {
   "name": "PaymentDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -28613,7 +28613,7 @@
    ]
   }
  },
- "41157": {
+ {
   "name": "PaymentDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -28651,7 +28651,7 @@
    ]
   }
  },
- "41158": {
+ {
   "name": "PaymentDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -28719,7 +28719,7 @@
    ]
   }
  },
- "41159": {
+ {
   "name": "PaymentDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -28809,7 +28809,7 @@
    ]
   }
  },
- "41160": {
+ {
   "name": "PaymentForwardStartType",
   "type": "int32",
   "nullable": true,
@@ -28881,7 +28881,7 @@
    ]
   }
  },
- "41161": {
+ {
   "name": "NoPaymentScheduleFixingDays",
   "type": "int64",
   "nullable": true,
@@ -29037,7 +29037,7 @@
    ]
   }
  },
- "41162": {
+ {
   "name": "PaymentScheduleFixingDayOfWeek",
   "type": "int32",
   "nullable": true,
@@ -29251,7 +29251,7 @@
    ]
   }
  },
- "41163": {
+ {
   "name": "PaymentScheduleFixingDayNumber",
   "type": "int32",
   "nullable": true,
@@ -29407,7 +29407,7 @@
    ]
   }
  },
- "41164": {
+ {
   "name": "PaymentScheduleXID",
   "type": "string",
   "nullable": true,
@@ -29562,7 +29562,7 @@
    ]
   }
  },
- "41165": {
+ {
   "name": "PaymentScheduleXIDRef",
   "type": "string",
   "nullable": true,
@@ -29717,7 +29717,7 @@
    ]
   }
  },
- "41166": {
+ {
   "name": "PaymentScheduleRateCurrency",
   "type": "string",
   "nullable": true,
@@ -29872,7 +29872,7 @@
    ]
   }
  },
- "41167": {
+ {
   "name": "PaymentScheduleRateUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -30589,7 +30589,7 @@
    ]
   }
  },
- "41168": {
+ {
   "name": "PaymentScheduleRateConversionFactor",
   "type": "double",
   "nullable": true,
@@ -30744,7 +30744,7 @@
    ]
   }
  },
- "41169": {
+ {
   "name": "PaymentScheduleRateSpreadType",
   "type": "int32",
   "nullable": true,
@@ -30915,7 +30915,7 @@
    ]
   }
  },
- "41170": {
+ {
   "name": "PaymentScheduleSettlPeriodPrice",
   "type": "double",
   "nullable": true,
@@ -31070,7 +31070,7 @@
    ]
   }
  },
- "41171": {
+ {
   "name": "PaymentScheduleSettlPeriodPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -31225,7 +31225,7 @@
    ]
   }
  },
- "41172": {
+ {
   "name": "PaymentScheduleSettlPeriodPriceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -31942,7 +31942,7 @@
    ]
   }
  },
- "41173": {
+ {
   "name": "PaymentScheduleStepUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -32659,7 +32659,7 @@
    ]
   }
  },
- "41174": {
+ {
   "name": "PaymentScheduleFixingDayDistribution",
   "type": "int32",
   "nullable": true,
@@ -32844,7 +32844,7 @@
    ]
   }
  },
- "41175": {
+ {
   "name": "PaymentScheduleFixingDayCount",
   "type": "int32",
   "nullable": true,
@@ -32999,7 +32999,7 @@
    ]
   }
  },
- "41176": {
+ {
   "name": "PaymentScheduleFixingLagPeriod",
   "type": "int32",
   "nullable": true,
@@ -33154,7 +33154,7 @@
    ]
   }
  },
- "41177": {
+ {
   "name": "PaymentScheduleFixingLagUnit",
   "type": "string",
   "nullable": true,
@@ -33339,7 +33339,7 @@
    ]
   }
  },
- "41178": {
+ {
   "name": "PaymentScheduleFixingFirstObservationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -33496,7 +33496,7 @@
    ]
   }
  },
- "41179": {
+ {
   "name": "PaymentScheduleFixingFirstObservationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -33683,7 +33683,7 @@
    ]
   }
  },
- "41180": {
+ {
   "name": "PaymentStreamFlatRateIndicator",
   "type": "bool",
   "nullable": true,
@@ -33840,7 +33840,7 @@
    ]
   }
  },
- "41181": {
+ {
   "name": "PaymentStreamFlatRateAmount",
   "type": "double",
   "nullable": true,
@@ -33995,7 +33995,7 @@
    ]
   }
  },
- "41182": {
+ {
   "name": "PaymentStreamFlatRateCurrency",
   "type": "string",
   "nullable": true,
@@ -34150,7 +34150,7 @@
    ]
   }
  },
- "41183": {
+ {
   "name": "PaymentStreamMaximumPaymentAmount",
   "type": "double",
   "nullable": true,
@@ -34305,7 +34305,7 @@
    ]
   }
  },
- "41184": {
+ {
   "name": "PaymentStreamMaximumPaymentCurrency",
   "type": "string",
   "nullable": true,
@@ -34460,7 +34460,7 @@
    ]
   }
  },
- "41185": {
+ {
   "name": "PaymentStreamMaximumTransactionAmount",
   "type": "double",
   "nullable": true,
@@ -34615,7 +34615,7 @@
    ]
   }
  },
- "41186": {
+ {
   "name": "PaymentStreamMaximumTransactionCurrency",
   "type": "string",
   "nullable": true,
@@ -34770,7 +34770,7 @@
    ]
   }
  },
- "41187": {
+ {
   "name": "PaymentStreamFixedAmountUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -35488,7 +35488,7 @@
    ]
   }
  },
- "41188": {
+ {
   "name": "PaymentStreamTotalFixedAmount",
   "type": "double",
   "nullable": true,
@@ -35644,7 +35644,7 @@
    ]
   }
  },
- "41189": {
+ {
   "name": "PaymentStreamWorldScaleRate",
   "type": "double",
   "nullable": true,
@@ -35800,7 +35800,7 @@
    ]
   }
  },
- "41190": {
+ {
   "name": "PaymentStreamContractPrice",
   "type": "double",
   "nullable": true,
@@ -35956,7 +35956,7 @@
    ]
   }
  },
- "41191": {
+ {
   "name": "PaymentStreamContractPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -36112,7 +36112,7 @@
    ]
   }
  },
- "41192": {
+ {
   "name": "NoPaymentStreamPricingBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -36269,7 +36269,7 @@
    ]
   }
  },
- "41193": {
+ {
   "name": "PaymentStreamPricingBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -36428,7 +36428,7 @@
    ]
   }
  },
- "41194": {
+ {
   "name": "PaymentStreamRateIndex2CurvePeriod",
   "type": "int32",
   "nullable": true,
@@ -36584,7 +36584,7 @@
    ]
   }
  },
- "41195": {
+ {
   "name": "PaymentStreamRateIndex2CurveUnit",
   "type": "string",
   "nullable": true,
@@ -36770,7 +36770,7 @@
    ]
   }
  },
- "41196": {
+ {
   "name": "PaymentStreamRateIndexLocation",
   "type": "string",
   "nullable": true,
@@ -36926,7 +36926,7 @@
    ]
   }
  },
- "41197": {
+ {
   "name": "PaymentStreamRateIndexLevel",
   "type": "double",
   "nullable": true,
@@ -37082,7 +37082,7 @@
    ]
   }
  },
- "41198": {
+ {
   "name": "PaymentStreamRateIndexUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -37800,7 +37800,7 @@
    ]
   }
  },
- "41199": {
+ {
   "name": "PaymentStreamSettlLevel",
   "type": "int32",
   "nullable": true,
@@ -37990,7 +37990,7 @@
    ]
   }
  },
- "41200": {
+ {
   "name": "PaymentStreamReferenceLevel",
   "type": "double",
   "nullable": true,
@@ -38146,7 +38146,7 @@
    ]
   }
  },
- "41201": {
+ {
   "name": "PaymentStreamReferenceLevelUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -38864,7 +38864,7 @@
    ]
   }
  },
- "41202": {
+ {
   "name": "PaymentStreamReferenceLevelEqualsZeroIndicator",
   "type": "bool",
   "nullable": true,
@@ -39020,7 +39020,7 @@
    ]
   }
  },
- "41203": {
+ {
   "name": "PaymentStreamRateSpreadCurrency",
   "type": "string",
   "nullable": true,
@@ -39176,7 +39176,7 @@
    ]
   }
  },
- "41204": {
+ {
   "name": "PaymentStreamRateSpreadUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -39894,7 +39894,7 @@
    ]
   }
  },
- "41205": {
+ {
   "name": "PaymentStreamRateConversionFactor",
   "type": "double",
   "nullable": true,
@@ -40050,7 +40050,7 @@
    ]
   }
  },
- "41206": {
+ {
   "name": "PaymentStreamRateSpreadType",
   "type": "int32",
   "nullable": true,
@@ -40224,7 +40224,7 @@
    ]
   }
  },
- "41207": {
+ {
   "name": "PaymentStreamLastResetRate",
   "type": "double",
   "nullable": true,
@@ -40380,7 +40380,7 @@
    ]
   }
  },
- "41208": {
+ {
   "name": "PaymentStreamFinalRate",
   "type": "double",
   "nullable": true,
@@ -40536,7 +40536,7 @@
    ]
   }
  },
- "41209": {
+ {
   "name": "PaymentStreamCalculationLagPeriod",
   "type": "int32",
   "nullable": true,
@@ -40692,7 +40692,7 @@
    ]
   }
  },
- "41210": {
+ {
   "name": "PaymentStreamCalculationLagUnit",
   "type": "string",
   "nullable": true,
@@ -40878,7 +40878,7 @@
    ]
   }
  },
- "41211": {
+ {
   "name": "PaymentStreamFirstObservationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -41036,7 +41036,7 @@
    ]
   }
  },
- "41212": {
+ {
   "name": "PaymentStreamFirstObservationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -41224,7 +41224,7 @@
    ]
   }
  },
- "41213": {
+ {
   "name": "PaymentStreamPricingDayType",
   "type": "int32",
   "nullable": true,
@@ -41424,7 +41424,7 @@
    ]
   }
  },
- "41214": {
+ {
   "name": "PaymentStreamPricingDayDistribution",
   "type": "int32",
   "nullable": true,
@@ -41614,7 +41614,7 @@
    ]
   }
  },
- "41215": {
+ {
   "name": "PaymentStreamPricingDayCount",
   "type": "int32",
   "nullable": true,
@@ -41770,7 +41770,7 @@
    ]
   }
  },
- "41216": {
+ {
   "name": "PaymentStreamPricingBusinessCalendar",
   "type": "string",
   "nullable": true,
@@ -41928,7 +41928,7 @@
    ]
   }
  },
- "41217": {
+ {
   "name": "PaymentStreamPricingBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -42142,7 +42142,7 @@
    ]
   }
  },
- "41218": {
+ {
   "name": "DeliveryStreamRiskApportionmentSource",
   "type": "string",
   "nullable": true,
@@ -42299,7 +42299,7 @@
    ]
   }
  },
- "41219": {
+ {
   "name": "LegDeliveryStreamRiskApportionmentSource",
   "type": "string",
   "nullable": true,
@@ -42424,7 +42424,7 @@
    ]
   }
  },
- "41220": {
+ {
   "name": "NoPaymentStreamPaymentDates",
   "type": "int64",
   "nullable": true,
@@ -42581,7 +42581,7 @@
    ]
   }
  },
- "41221": {
+ {
   "name": "PaymentStreamPaymentDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -42738,7 +42738,7 @@
    ]
   }
  },
- "41222": {
+ {
   "name": "PaymentStreamPaymentDateType",
   "type": "int32",
   "nullable": true,
@@ -42911,7 +42911,7 @@
    ]
   }
  },
- "41223": {
+ {
   "name": "PaymentStreamMasterAgreementPaymentDatesIndicator",
   "type": "bool",
   "nullable": true,
@@ -43067,7 +43067,7 @@
    ]
   }
  },
- "41224": {
+ {
   "name": "NoPaymentStreamPricingDates",
   "type": "int64",
   "nullable": true,
@@ -43224,7 +43224,7 @@
    ]
   }
  },
- "41225": {
+ {
   "name": "PaymentStreamPricingDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -43381,7 +43381,7 @@
    ]
   }
  },
- "41226": {
+ {
   "name": "PaymentStreamPricingDateType",
   "type": "int32",
   "nullable": true,
@@ -43554,7 +43554,7 @@
    ]
   }
  },
- "41227": {
+ {
   "name": "NoPaymentStreamPricingDays",
   "type": "int64",
   "nullable": true,
@@ -43711,7 +43711,7 @@
    ]
   }
  },
- "41228": {
+ {
   "name": "PaymentStreamPricingDayOfWeek",
   "type": "int32",
   "nullable": true,
@@ -43934,7 +43934,7 @@
    ]
   }
  },
- "41229": {
+ {
   "name": "PaymentStreamPricingDayNumber",
   "type": "int32",
   "nullable": true,
@@ -44091,7 +44091,7 @@
    ]
   }
  },
- "41230": {
+ {
   "name": "NoPricingDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -44246,7 +44246,7 @@
    ]
   }
  },
- "41231": {
+ {
   "name": "PricingDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -44403,7 +44403,7 @@
    ]
   }
  },
- "41232": {
+ {
   "name": "PricingDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -44557,7 +44557,7 @@
    ]
   }
  },
- "41233": {
+ {
   "name": "PricingDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -44769,7 +44769,7 @@
    ]
   }
  },
- "41234": {
+ {
   "name": "PricingDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -44923,7 +44923,7 @@
    ]
   }
  },
- "41235": {
+ {
   "name": "PricingTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -45077,7 +45077,7 @@
    ]
   }
  },
- "41236": {
+ {
   "name": "PricingTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -45233,7 +45233,7 @@
    ]
   }
  },
- "41237": {
+ {
   "name": "NoStreamAssetAttributes",
   "type": "int64",
   "nullable": true,
@@ -45389,7 +45389,7 @@
    ]
   }
  },
- "41238": {
+ {
   "name": "StreamAssetAttributeType",
   "type": "string",
   "nullable": true,
@@ -45547,7 +45547,7 @@
    ]
   }
  },
- "41239": {
+ {
   "name": "StreamAssetAttributeValue",
   "type": "string",
   "nullable": true,
@@ -45703,7 +45703,7 @@
    ]
   }
  },
- "41240": {
+ {
   "name": "StreamAssetAttributeLimit",
   "type": "string",
   "nullable": true,
@@ -45859,7 +45859,7 @@
    ]
   }
  },
- "41241": {
+ {
   "name": "NoStreamCalculationPeriodDates",
   "type": "int64",
   "nullable": true,
@@ -46015,7 +46015,7 @@
    ]
   }
  },
- "41242": {
+ {
   "name": "StreamCalculationPeriodDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -46171,7 +46171,7 @@
    ]
   }
  },
- "41243": {
+ {
   "name": "StreamCalculationPeriodDateType",
   "type": "int32",
   "nullable": true,
@@ -46343,7 +46343,7 @@
    ]
   }
  },
- "41244": {
+ {
   "name": "StreamCalculationPeriodDatesXID",
   "type": "string",
   "nullable": true,
@@ -46498,7 +46498,7 @@
    ]
   }
  },
- "41245": {
+ {
   "name": "StreamCalculationPeriodDatesXIDRef",
   "type": "string",
   "nullable": true,
@@ -46653,7 +46653,7 @@
    ]
   }
  },
- "41246": {
+ {
   "name": "StreamCalculationBalanceOfFirstPeriod",
   "type": "bool",
   "nullable": true,
@@ -46808,7 +46808,7 @@
    ]
   }
  },
- "41247": {
+ {
   "name": "StreamCalculationCorrectionPeriod",
   "type": "int32",
   "nullable": true,
@@ -46963,7 +46963,7 @@
    ]
   }
  },
- "41248": {
+ {
   "name": "StreamCalculationCorrectionUnit",
   "type": "string",
   "nullable": true,
@@ -47148,7 +47148,7 @@
    ]
   }
  },
- "41249": {
+ {
   "name": "NoStreamCommoditySettlBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -47304,7 +47304,7 @@
    ]
   }
  },
- "41250": {
+ {
   "name": "StreamCommoditySettlBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -47462,7 +47462,7 @@
    ]
   }
  },
- "41251": {
+ {
   "name": "StreamCommodityBase",
   "type": "string",
   "nullable": true,
@@ -47617,7 +47617,7 @@
    ]
   }
  },
- "41252": {
+ {
   "name": "StreamCommodityType",
   "type": "string",
   "nullable": true,
@@ -47774,7 +47774,7 @@
    ]
   }
  },
- "41253": {
+ {
   "name": "StreamCommoditySecurityID",
   "type": "string",
   "nullable": true,
@@ -47929,7 +47929,7 @@
    ]
   }
  },
- "41254": {
+ {
   "name": "StreamCommoditySecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -48319,7 +48319,7 @@
    ]
   }
  },
- "41255": {
+ {
   "name": "StreamCommodityDesc",
   "type": "string",
   "nullable": true,
@@ -48474,7 +48474,7 @@
    ]
   }
  },
- "41256": {
+ {
   "name": "EncodedStreamCommodityDescLen",
   "type": "int64",
   "nullable": true,
@@ -48629,7 +48629,7 @@
    ]
   }
  },
- "41257": {
+ {
   "name": "EncodedStreamCommodityDesc",
   "type": "binary",
   "nullable": true,
@@ -48784,7 +48784,7 @@
    ]
   }
  },
- "41258": {
+ {
   "name": "StreamCommodityUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -49501,7 +49501,7 @@
    ]
   }
  },
- "41259": {
+ {
   "name": "StreamCommodityCurrency",
   "type": "string",
   "nullable": true,
@@ -49656,7 +49656,7 @@
    ]
   }
  },
- "41260": {
+ {
   "name": "StreamCommodityExchange",
   "type": "string",
   "nullable": true,
@@ -49811,7 +49811,7 @@
    ]
   }
  },
- "41261": {
+ {
   "name": "StreamCommodityRateSource",
   "type": "int32",
   "nullable": true,
@@ -49968,7 +49968,7 @@
    ]
   }
  },
- "41262": {
+ {
   "name": "StreamCommodityRateReferencePage",
   "type": "string",
   "nullable": true,
@@ -50123,7 +50123,7 @@
    ]
   }
  },
- "41263": {
+ {
   "name": "StreamCommodityRateReferencePageHeading",
   "type": "string",
   "nullable": true,
@@ -50278,7 +50278,7 @@
    ]
   }
  },
- "41264": {
+ {
   "name": "StreamDataProvider",
   "type": "string",
   "nullable": true,
@@ -50435,7 +50435,7 @@
    ]
   }
  },
- "41265": {
+ {
   "name": "StreamCommodityPricingType",
   "type": "string",
   "nullable": true,
@@ -50592,7 +50592,7 @@
    ]
   }
  },
- "41266": {
+ {
   "name": "StreamCommodityNearbySettlDayPeriod",
   "type": "int32",
   "nullable": true,
@@ -50747,7 +50747,7 @@
    ]
   }
  },
- "41267": {
+ {
   "name": "StreamCommodityNearbySettlDayUnit",
   "type": "string",
   "nullable": true,
@@ -50920,7 +50920,7 @@
    ]
   }
  },
- "41268": {
+ {
   "name": "StreamCommoditySettlDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -51075,7 +51075,7 @@
    ]
   }
  },
- "41269": {
+ {
   "name": "StreamCommoditySettlDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -51288,7 +51288,7 @@
    ]
   }
  },
- "41270": {
+ {
   "name": "StreamCommoditySettlDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -51443,7 +51443,7 @@
    ]
   }
  },
- "41271": {
+ {
   "name": "StreamCommoditySettlMonth",
   "type": "int32",
   "nullable": true,
@@ -51598,7 +51598,7 @@
    ]
   }
  },
- "41272": {
+ {
   "name": "StreamCommoditySettlDateRollPeriod",
   "type": "int32",
   "nullable": true,
@@ -51753,7 +51753,7 @@
    ]
   }
  },
- "41273": {
+ {
   "name": "StreamCommoditySettlDateRollUnit",
   "type": "string",
   "nullable": true,
@@ -51918,7 +51918,7 @@
    ]
   }
  },
- "41274": {
+ {
   "name": "StreamCommoditySettlDayType",
   "type": "int32",
   "nullable": true,
@@ -52117,7 +52117,7 @@
    ]
   }
  },
- "41275": {
+ {
   "name": "StreamCommodityXID",
   "type": "string",
   "nullable": true,
@@ -52272,7 +52272,7 @@
    ]
   }
  },
- "41276": {
+ {
   "name": "StreamCommodityXIDRef",
   "type": "string",
   "nullable": true,
@@ -52427,7 +52427,7 @@
    ]
   }
  },
- "41277": {
+ {
   "name": "NoStreamCommodityAltIDs",
   "type": "int64",
   "nullable": true,
@@ -52583,7 +52583,7 @@
    ]
   }
  },
- "41278": {
+ {
   "name": "StreamCommodityAltID",
   "type": "string",
   "nullable": true,
@@ -52739,7 +52739,7 @@
    ]
   }
  },
- "41279": {
+ {
   "name": "StreamCommodityAltIDSource",
   "type": "string",
   "nullable": true,
@@ -52895,7 +52895,7 @@
    ]
   }
  },
- "41280": {
+ {
   "name": "NoStreamCommodityDataSources",
   "type": "int64",
   "nullable": true,
@@ -53051,7 +53051,7 @@
    ]
   }
  },
- "41281": {
+ {
   "name": "StreamCommodityDataSourceID",
   "type": "string",
   "nullable": true,
@@ -53207,7 +53207,7 @@
    ]
   }
  },
- "41282": {
+ {
   "name": "StreamCommodityDataSourceIDType",
   "type": "int32",
   "nullable": true,
@@ -53397,7 +53397,7 @@
    ]
   }
  },
- "41283": {
+ {
   "name": "NoStreamCommoditySettlDays",
   "type": "int64",
   "nullable": true,
@@ -53554,7 +53554,7 @@
    ]
   }
  },
- "41284": {
+ {
   "name": "StreamCommoditySettlDay",
   "type": "int32",
   "nullable": true,
@@ -53783,7 +53783,7 @@
    ]
   }
  },
- "41285": {
+ {
   "name": "StreamCommoditySettlTotalHours",
   "type": "int32",
   "nullable": true,
@@ -53940,7 +53940,7 @@
    ]
   }
  },
- "41286": {
+ {
   "name": "NoStreamCommoditySettlTimes",
   "type": "int64",
   "nullable": true,
@@ -54098,7 +54098,7 @@
    ]
   }
  },
- "41287": {
+ {
   "name": "StreamCommoditySettlStart",
   "type": "string",
   "nullable": true,
@@ -54256,7 +54256,7 @@
    ]
   }
  },
- "41288": {
+ {
   "name": "StreamCommoditySettlEnd",
   "type": "string",
   "nullable": true,
@@ -54414,7 +54414,7 @@
    ]
   }
  },
- "41289": {
+ {
   "name": "NoStreamCommoditySettlPeriods",
   "type": "int64",
   "nullable": true,
@@ -54570,7 +54570,7 @@
    ]
   }
  },
- "41290": {
+ {
   "name": "StreamCommoditySettlCountry",
   "type": "string",
   "nullable": true,
@@ -54726,7 +54726,7 @@
    ]
   }
  },
- "41291": {
+ {
   "name": "StreamCommoditySettlTimeZone",
   "type": "string",
   "nullable": true,
@@ -54884,7 +54884,7 @@
    ]
   }
  },
- "41292": {
+ {
   "name": "StreamCommoditySettlFlowType",
   "type": "int32",
   "nullable": true,
@@ -55086,7 +55086,7 @@
    ]
   }
  },
- "41293": {
+ {
   "name": "StreamCommoditySettlPeriodNotional",
   "type": "double",
   "nullable": true,
@@ -55242,7 +55242,7 @@
    ]
   }
  },
- "41294": {
+ {
   "name": "StreamCommoditySettlPeriodNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -55960,7 +55960,7 @@
    ]
   }
  },
- "41295": {
+ {
   "name": "StreamCommoditySettlPeriodFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -56116,7 +56116,7 @@
    ]
   }
  },
- "41296": {
+ {
   "name": "StreamCommoditySettlPeriodFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -56302,7 +56302,7 @@
    ]
   }
  },
- "41297": {
+ {
   "name": "StreamCommoditySettlPeriodPrice",
   "type": "double",
   "nullable": true,
@@ -56458,7 +56458,7 @@
    ]
   }
  },
- "41298": {
+ {
   "name": "StreamCommoditySettlPeriodPriceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -57176,7 +57176,7 @@
    ]
   }
  },
- "41299": {
+ {
   "name": "StreamCommoditySettlPeriodPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -57332,7 +57332,7 @@
    ]
   }
  },
- "41300": {
+ {
   "name": "StreamCommoditySettlHolidaysProcessingInstruction",
   "type": "int32",
   "nullable": true,
@@ -57504,7 +57504,7 @@
    ]
   }
  },
- "41301": {
+ {
   "name": "StreamCommoditySettlPeriodXID",
   "type": "string",
   "nullable": true,
@@ -57660,7 +57660,7 @@
    ]
   }
  },
- "41302": {
+ {
   "name": "StreamCommoditySettlPeriodXIDRef",
   "type": "string",
   "nullable": true,
@@ -57816,7 +57816,7 @@
    ]
   }
  },
- "41303": {
+ {
   "name": "StreamXID",
   "type": "string",
   "nullable": true,
@@ -57970,7 +57970,7 @@
    ]
   }
  },
- "41304": {
+ {
   "name": "PaymentLegRefID",
   "type": "string",
   "nullable": true,
@@ -58008,7 +58008,7 @@
    ]
   }
  },
- "41305": {
+ {
   "name": "StreamNotionalXIDRef",
   "type": "string",
   "nullable": true,
@@ -58162,7 +58162,7 @@
    ]
   }
  },
- "41306": {
+ {
   "name": "StreamNotionalFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -58316,7 +58316,7 @@
    ]
   }
  },
- "41307": {
+ {
   "name": "StreamNotionalFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -58542,7 +58542,7 @@
    ]
   }
  },
- "41308": {
+ {
   "name": "StreamNotionalCommodityFrequency",
   "type": "int32",
   "nullable": true,
@@ -58754,7 +58754,7 @@
    ]
   }
  },
- "41309": {
+ {
   "name": "StreamNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -59470,7 +59470,7 @@
    ]
   }
  },
- "41310": {
+ {
   "name": "StreamTotalNotional",
   "type": "double",
   "nullable": true,
@@ -59624,7 +59624,7 @@
    ]
   }
  },
- "41311": {
+ {
   "name": "StreamTotalNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -60340,7 +60340,7 @@
    ]
   }
  },
- "41312": {
+ {
   "name": "NoMandatoryClearingJurisdictions",
   "type": "int64",
   "nullable": true,
@@ -60375,7 +60375,7 @@
    ]
   }
  },
- "41313": {
+ {
   "name": "MandatoryClearingJurisdiction",
   "type": "string",
   "nullable": true,
@@ -60410,7 +60410,7 @@
    ]
   }
  },
- "41314": {
+ {
   "name": "UnderlyingProtectionTermXIDRef",
   "type": "string",
   "nullable": true,
@@ -60537,7 +60537,7 @@
    ]
   }
  },
- "41315": {
+ {
   "name": "UnderlyingSettlTermXIDRef",
   "type": "string",
   "nullable": true,
@@ -60664,7 +60664,7 @@
    ]
   }
  },
- "41316": {
+ {
   "name": "NoLegAdditionalTermBondRefs",
   "type": "int64",
   "nullable": true,
@@ -60787,7 +60787,7 @@
    ]
   }
  },
- "41317": {
+ {
   "name": "LegAdditionalTermBondSecurityID",
   "type": "string",
   "nullable": true,
@@ -60910,7 +60910,7 @@
    ]
   }
  },
- "41318": {
+ {
   "name": "LegAdditionalTermBondSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -61266,7 +61266,7 @@
    ]
   }
  },
- "41319": {
+ {
   "name": "LegAdditionalTermBondDesc",
   "type": "string",
   "nullable": true,
@@ -61389,7 +61389,7 @@
    ]
   }
  },
- "41320": {
+ {
   "name": "EncodedLegAdditionalTermBondDescLen",
   "type": "int64",
   "nullable": true,
@@ -61512,7 +61512,7 @@
    ]
   }
  },
- "41321": {
+ {
   "name": "EncodedLegAdditionalTermBondDesc",
   "type": "binary",
   "nullable": true,
@@ -61635,7 +61635,7 @@
    ]
   }
  },
- "41322": {
+ {
   "name": "LegAdditionalTermBondCurrency",
   "type": "string",
   "nullable": true,
@@ -61758,7 +61758,7 @@
    ]
   }
  },
- "41323": {
+ {
   "name": "LegAdditionalTermBondIssuer",
   "type": "string",
   "nullable": true,
@@ -61881,7 +61881,7 @@
    ]
   }
  },
- "41324": {
+ {
   "name": "EncodedLegAdditionalTermBondIssuerLen",
   "type": "int64",
   "nullable": true,
@@ -62004,7 +62004,7 @@
    ]
   }
  },
- "41325": {
+ {
   "name": "EncodedLegAdditionalTermBondIssuer",
   "type": "binary",
   "nullable": true,
@@ -62127,7 +62127,7 @@
    ]
   }
  },
- "41326": {
+ {
   "name": "LegAdditionalTermBondSeniority",
   "type": "string",
   "nullable": true,
@@ -62294,7 +62294,7 @@
    ]
   }
  },
- "41327": {
+ {
   "name": "LegAdditionalTermBondCouponType",
   "type": "int32",
   "nullable": true,
@@ -62447,7 +62447,7 @@
    ]
   }
  },
- "41328": {
+ {
   "name": "LegAdditionalTermBondCouponRate",
   "type": "double",
   "nullable": true,
@@ -62570,7 +62570,7 @@
    ]
   }
  },
- "41329": {
+ {
   "name": "LegAdditionalTermBondMaturityDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -62693,7 +62693,7 @@
    ]
   }
  },
- "41330": {
+ {
   "name": "LegAdditionalTermBondParValue",
   "type": "double",
   "nullable": true,
@@ -62816,7 +62816,7 @@
    ]
   }
  },
- "41331": {
+ {
   "name": "LegAdditionalTermBondCurrentTotalIssuedAmount",
   "type": "double",
   "nullable": true,
@@ -62939,7 +62939,7 @@
    ]
   }
  },
- "41332": {
+ {
   "name": "LegAdditionalTermBondCouponFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -63062,7 +63062,7 @@
    ]
   }
  },
- "41333": {
+ {
   "name": "LegAdditionalTermBondCouponFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -63243,7 +63243,7 @@
    ]
   }
  },
- "41334": {
+ {
   "name": "LegAdditionalTermBondDayCount",
   "type": "int32",
   "nullable": true,
@@ -63536,7 +63536,7 @@
    ]
   }
  },
- "41335": {
+ {
   "name": "NoLegAdditionalTerms",
   "type": "int64",
   "nullable": true,
@@ -63658,7 +63658,7 @@
    ]
   }
  },
- "41336": {
+ {
   "name": "LegAdditionalTermConditionPrecedentBondIndicator",
   "type": "bool",
   "nullable": true,
@@ -63780,7 +63780,7 @@
    ]
   }
  },
- "41337": {
+ {
   "name": "LegAdditionalTermDiscrepancyClauseIndicator",
   "type": "bool",
   "nullable": true,
@@ -63902,7 +63902,7 @@
    ]
   }
  },
- "41338": {
+ {
   "name": "UnderlyingMarketDisruptionValue",
   "type": "string",
   "nullable": true,
@@ -64031,7 +64031,7 @@
    ]
   }
  },
- "41339": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackValue",
   "type": "string",
   "nullable": true,
@@ -64160,7 +64160,7 @@
    ]
   }
  },
- "41340": {
+ {
   "name": "NoUnderlyingAdditionalTermBondRefs",
   "type": "int64",
   "nullable": true,
@@ -64289,7 +64289,7 @@
    ]
   }
  },
- "41341": {
+ {
   "name": "UnderlyingAdditionalTermBondSecurityID",
   "type": "string",
   "nullable": true,
@@ -64418,7 +64418,7 @@
    ]
   }
  },
- "41342": {
+ {
   "name": "NoLegCashSettlDealers",
   "type": "int64",
   "nullable": true,
@@ -64541,7 +64541,7 @@
    ]
   }
  },
- "41343": {
+ {
   "name": "LegCashSettlDealer",
   "type": "string",
   "nullable": true,
@@ -64664,7 +64664,7 @@
    ]
   }
  },
- "41344": {
+ {
   "name": "NoLegCashSettlTerms",
   "type": "int64",
   "nullable": true,
@@ -64786,7 +64786,7 @@
    ]
   }
  },
- "41345": {
+ {
   "name": "LegCashSettlCurrency",
   "type": "string",
   "nullable": true,
@@ -64908,7 +64908,7 @@
    ]
   }
  },
- "41346": {
+ {
   "name": "LegCasSettlValuationFirstBusinessDayOffset",
   "type": "int32",
   "nullable": true,
@@ -65030,7 +65030,7 @@
    ]
   }
  },
- "41347": {
+ {
   "name": "LegCashSettlValuationSubsequentBusinessDaysOffset",
   "type": "int32",
   "nullable": true,
@@ -65152,7 +65152,7 @@
    ]
   }
  },
- "41348": {
+ {
   "name": "LegCashSettlNumOfValuationDates",
   "type": "int32",
   "nullable": true,
@@ -65274,7 +65274,7 @@
    ]
   }
  },
- "41349": {
+ {
   "name": "LegCashSettlValuationTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -65396,7 +65396,7 @@
    ]
   }
  },
- "41350": {
+ {
   "name": "LegCashSettlBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -65520,7 +65520,7 @@
    ]
   }
  },
- "41351": {
+ {
   "name": "LegCashSettlQuoteMethod",
   "type": "int32",
   "nullable": true,
@@ -65665,7 +65665,7 @@
    ]
   }
  },
- "41352": {
+ {
   "name": "LegCashSettlQuoteAmount",
   "type": "double",
   "nullable": true,
@@ -65789,7 +65789,7 @@
    ]
   }
  },
- "41353": {
+ {
   "name": "LegCashSettlQuoteCurrency",
   "type": "string",
   "nullable": true,
@@ -65911,7 +65911,7 @@
    ]
   }
  },
- "41354": {
+ {
   "name": "LegCashSettlMinimumQuoteAmount",
   "type": "double",
   "nullable": true,
@@ -66035,7 +66035,7 @@
    ]
   }
  },
- "41355": {
+ {
   "name": "LegCashSettlMinimumQuoteCurrency",
   "type": "string",
   "nullable": true,
@@ -66157,7 +66157,7 @@
    ]
   }
  },
- "41356": {
+ {
   "name": "LegCashSettlBusinessDays",
   "type": "int32",
   "nullable": true,
@@ -66279,7 +66279,7 @@
    ]
   }
  },
- "41357": {
+ {
   "name": "LegCashSettlAmount",
   "type": "double",
   "nullable": true,
@@ -66401,7 +66401,7 @@
    ]
   }
  },
- "41358": {
+ {
   "name": "LegCashSettlRecoveryFactor",
   "type": "double",
   "nullable": true,
@@ -66523,7 +66523,7 @@
    ]
   }
  },
- "41359": {
+ {
   "name": "LegCashSettlFixedTermIndicator",
   "type": "bool",
   "nullable": true,
@@ -66645,7 +66645,7 @@
    ]
   }
  },
- "41360": {
+ {
   "name": "LegCashSettlAccruedInterestIndicator",
   "type": "bool",
   "nullable": true,
@@ -66767,7 +66767,7 @@
    ]
   }
  },
- "41361": {
+ {
   "name": "LegCashSettlValuationMethod",
   "type": "int32",
   "nullable": true,
@@ -66947,7 +66947,7 @@
    ]
   }
  },
- "41362": {
+ {
   "name": "LegCashSettlTermXID",
   "type": "string",
   "nullable": true,
@@ -67069,7 +67069,7 @@
    ]
   }
  },
- "41363": {
+ {
   "name": "NoLegComplexEventAveragingObservations",
   "type": "int64",
   "nullable": true,
@@ -67193,7 +67193,7 @@
    ]
   }
  },
- "41364": {
+ {
   "name": "LegComplexEventAveragingObservationNumber",
   "type": "int32",
   "nullable": true,
@@ -67317,7 +67317,7 @@
    ]
   }
  },
- "41365": {
+ {
   "name": "LegComplexEventAveragingWeight",
   "type": "double",
   "nullable": true,
@@ -67441,7 +67441,7 @@
    ]
   }
  },
- "41366": {
+ {
   "name": "NoLegComplexEventCreditEvents",
   "type": "int64",
   "nullable": true,
@@ -67564,7 +67564,7 @@
    ]
   }
  },
- "41367": {
+ {
   "name": "LegComplexEventCreditEventType",
   "type": "string",
   "nullable": true,
@@ -67689,7 +67689,7 @@
    ]
   }
  },
- "41368": {
+ {
   "name": "LegComplexEventCreditEventValue",
   "type": "string",
   "nullable": true,
@@ -67814,7 +67814,7 @@
    ]
   }
  },
- "41369": {
+ {
   "name": "LegComplexEventCreditEventCurrency",
   "type": "string",
   "nullable": true,
@@ -67937,7 +67937,7 @@
    ]
   }
  },
- "41370": {
+ {
   "name": "LegComplexEventCreditEventPeriod",
   "type": "int32",
   "nullable": true,
@@ -68060,7 +68060,7 @@
    ]
   }
  },
- "41371": {
+ {
   "name": "LegComplexEventCreditEventUnit",
   "type": "string",
   "nullable": true,
@@ -68213,7 +68213,7 @@
    ]
   }
  },
- "41372": {
+ {
   "name": "LegComplexEventCreditEventDayType",
   "type": "int32",
   "nullable": true,
@@ -68380,7 +68380,7 @@
    ]
   }
  },
- "41373": {
+ {
   "name": "LegComplexEventCreditEventRateSource",
   "type": "int32",
   "nullable": true,
@@ -68505,7 +68505,7 @@
    ]
   }
  },
- "41374": {
+ {
   "name": "NoLegComplexEventCreditEventQualifiers",
   "type": "int64",
   "nullable": true,
@@ -68629,7 +68629,7 @@
    ]
   }
  },
- "41375": {
+ {
   "name": "LegComplexEventCreditEventQualifier",
   "type": "string",
   "nullable": true,
@@ -68776,7 +68776,7 @@
    ]
   }
  },
- "41376": {
+ {
   "name": "NoLegComplexEventPeriodDateTimes",
   "type": "int64",
   "nullable": true,
@@ -68900,7 +68900,7 @@
    ]
   }
  },
- "41377": {
+ {
   "name": "LegComplexEventPeriodDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -69024,7 +69024,7 @@
    ]
   }
  },
- "41378": {
+ {
   "name": "LegComplexEventPeriodTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -69148,7 +69148,7 @@
    ]
   }
  },
- "41379": {
+ {
   "name": "NoLegComplexEventPeriods",
   "type": "int64",
   "nullable": true,
@@ -69271,7 +69271,7 @@
    ]
   }
  },
- "41380": {
+ {
   "name": "LegComplexEventPeriodType",
   "type": "int32",
   "nullable": true,
@@ -69438,7 +69438,7 @@
    ]
   }
  },
- "41381": {
+ {
   "name": "LegComplexEventBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -69563,7 +69563,7 @@
    ]
   }
  },
- "41382": {
+ {
   "name": "NoLegComplexEventRateSources",
   "type": "int64",
   "nullable": true,
@@ -69686,7 +69686,7 @@
    ]
   }
  },
- "41383": {
+ {
   "name": "LegComplexEventRateSource",
   "type": "int32",
   "nullable": true,
@@ -69846,7 +69846,7 @@
    ]
   }
  },
- "41384": {
+ {
   "name": "LegComplexEventRateSourceType",
   "type": "int32",
   "nullable": true,
@@ -69985,7 +69985,7 @@
    ]
   }
  },
- "41385": {
+ {
   "name": "LegComplexEventReferencePage",
   "type": "string",
   "nullable": true,
@@ -70110,7 +70110,7 @@
    ]
   }
  },
- "41386": {
+ {
   "name": "LegComplexEvenReferencePageHeading",
   "type": "string",
   "nullable": true,
@@ -70233,7 +70233,7 @@
    ]
   }
  },
- "41387": {
+ {
   "name": "NoLegComplexEventDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -70357,7 +70357,7 @@
    ]
   }
  },
- "41388": {
+ {
   "name": "LegComplexEventDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -70483,7 +70483,7 @@
    ]
   }
  },
- "41389": {
+ {
   "name": "LegComplexEventDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -70606,7 +70606,7 @@
    ]
   }
  },
- "41390": {
+ {
   "name": "LegComplexEventDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -70731,7 +70731,7 @@
    ]
   }
  },
- "41391": {
+ {
   "name": "LegComplexEventDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -70854,7 +70854,7 @@
    ]
   }
  },
- "41392": {
+ {
   "name": "LegComplexEventDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -71007,7 +71007,7 @@
    ]
   }
  },
- "41393": {
+ {
   "name": "LegComplexEventDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -71174,7 +71174,7 @@
    ]
   }
  },
- "41394": {
+ {
   "name": "LegComplexEventDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -71355,7 +71355,7 @@
    ]
   }
  },
- "41395": {
+ {
   "name": "LegComplexEventDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -71478,7 +71478,7 @@
    ]
   }
  },
- "41396": {
+ {
   "name": "LegComplexEventFixingTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -71601,7 +71601,7 @@
    ]
   }
  },
- "41397": {
+ {
   "name": "LegComplexEventFixingTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -71726,7 +71726,7 @@
    ]
   }
  },
- "41398": {
+ {
   "name": "NoLegComplexEventCreditEventSources",
   "type": "int64",
   "nullable": true,
@@ -71849,7 +71849,7 @@
    ]
   }
  },
- "41399": {
+ {
   "name": "LegComplexEventCreditEventSource",
   "type": "string",
   "nullable": true,
@@ -71972,7 +71972,7 @@
    ]
   }
  },
- "41400": {
+ {
   "name": "NoLegComplexEventSchedules",
   "type": "int64",
   "nullable": true,
@@ -72096,7 +72096,7 @@
    ]
   }
  },
- "41401": {
+ {
   "name": "LegComplexEventScheduleStartDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -72220,7 +72220,7 @@
    ]
   }
  },
- "41402": {
+ {
   "name": "LegComplexEventScheduleEndDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -72344,7 +72344,7 @@
    ]
   }
  },
- "41403": {
+ {
   "name": "LegComplexEventScheduleFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -72468,7 +72468,7 @@
    ]
   }
  },
- "41404": {
+ {
   "name": "LegComplexEventScheduleFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -72622,7 +72622,7 @@
    ]
   }
  },
- "41405": {
+ {
   "name": "LegComplexEventScheduleRollConvention",
   "type": "string",
   "nullable": true,
@@ -73022,7 +73022,7 @@
    ]
   }
  },
- "41406": {
+ {
   "name": "ProvisionCashSettlQuoteReferencePage",
   "type": "string",
   "nullable": true,
@@ -73177,7 +73177,7 @@
    ]
   }
  },
- "41407": {
+ {
   "name": "LegProvisionCashSettlQuoteReferencePage",
   "type": "string",
   "nullable": true,
@@ -73300,7 +73300,7 @@
    ]
   }
  },
- "41408": {
+ {
   "name": "NoLegDeliverySchedules",
   "type": "int64",
   "nullable": true,
@@ -73423,7 +73423,7 @@
    ]
   }
  },
- "41409": {
+ {
   "name": "LegDeliveryScheduleType",
   "type": "int32",
   "nullable": true,
@@ -73569,7 +73569,7 @@
    ]
   }
  },
- "41410": {
+ {
   "name": "LegDeliveryScheduleXID",
   "type": "string",
   "nullable": true,
@@ -73692,7 +73692,7 @@
    ]
   }
  },
- "41411": {
+ {
   "name": "LegDeliveryScheduleNotional",
   "type": "double",
   "nullable": true,
@@ -73815,7 +73815,7 @@
    ]
   }
  },
- "41412": {
+ {
   "name": "LegDeliveryScheduleNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -74500,7 +74500,7 @@
    ]
   }
  },
- "41413": {
+ {
   "name": "LegDeliveryScheduleNotionalCommodityFrequency",
   "type": "int32",
   "nullable": true,
@@ -74674,7 +74674,7 @@
    ]
   }
  },
- "41414": {
+ {
   "name": "LegDeliveryScheduleNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -74797,7 +74797,7 @@
    ]
   }
  },
- "41415": {
+ {
   "name": "LegDeliverySchedulePositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -74920,7 +74920,7 @@
    ]
   }
  },
- "41416": {
+ {
   "name": "LegDeliveryScheduleToleranceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -75605,7 +75605,7 @@
    ]
   }
  },
- "41417": {
+ {
   "name": "LegDeliveryScheduleToleranceType",
   "type": "int32",
   "nullable": true,
@@ -75744,7 +75744,7 @@
    ]
   }
  },
- "41418": {
+ {
   "name": "LegDeliveryScheduleSettlCountry",
   "type": "string",
   "nullable": true,
@@ -75867,7 +75867,7 @@
    ]
   }
  },
- "41419": {
+ {
   "name": "LegDeliveryScheduleSettlTimeZone",
   "type": "string",
   "nullable": true,
@@ -75992,7 +75992,7 @@
    ]
   }
  },
- "41420": {
+ {
   "name": "LegDeliveryScheduleSettlFlowType",
   "type": "int32",
   "nullable": true,
@@ -76159,7 +76159,7 @@
    ]
   }
  },
- "41421": {
+ {
   "name": "LegDeliveryScheduleSettlHolidaysProcessingInstruction",
   "type": "int32",
   "nullable": true,
@@ -76298,7 +76298,7 @@
    ]
   }
  },
- "41422": {
+ {
   "name": "NoLegDeliveryScheduleSettlDays",
   "type": "int64",
   "nullable": true,
@@ -76422,7 +76422,7 @@
    ]
   }
  },
- "41423": {
+ {
   "name": "LegDeliveryScheduleSettlDay",
   "type": "int32",
   "nullable": true,
@@ -76618,7 +76618,7 @@
    ]
   }
  },
- "41424": {
+ {
   "name": "LegDeliveryScheduleSettlTotalHours",
   "type": "int32",
   "nullable": true,
@@ -76742,7 +76742,7 @@
    ]
   }
  },
- "41425": {
+ {
   "name": "NoLegDeliveryScheduleSettlTimes",
   "type": "int64",
   "nullable": true,
@@ -76867,7 +76867,7 @@
    ]
   }
  },
- "41426": {
+ {
   "name": "LegDeliveryScheduleSettlStart",
   "type": "string",
   "nullable": true,
@@ -76992,7 +76992,7 @@
    ]
   }
  },
- "41427": {
+ {
   "name": "LegDeliveryScheduleSettlEnd",
   "type": "string",
   "nullable": true,
@@ -77117,7 +77117,7 @@
    ]
   }
  },
- "41428": {
+ {
   "name": "LegDeliveryScheduleSettlTimeType",
   "type": "int32",
   "nullable": true,
@@ -77258,7 +77258,7 @@
    ]
   }
  },
- "41429": {
+ {
   "name": "LegDeliveryStreamType",
   "type": "int32",
   "nullable": true,
@@ -77404,7 +77404,7 @@
    ]
   }
  },
- "41430": {
+ {
   "name": "LegDeliveryStreamPipeline",
   "type": "string",
   "nullable": true,
@@ -77527,7 +77527,7 @@
    ]
   }
  },
- "41431": {
+ {
   "name": "LegDeliveryStreamEntryPoint",
   "type": "string",
   "nullable": true,
@@ -77650,7 +77650,7 @@
    ]
   }
  },
- "41432": {
+ {
   "name": "LegDeliveryStreamWithdrawalPoint",
   "type": "string",
   "nullable": true,
@@ -77773,7 +77773,7 @@
    ]
   }
  },
- "41433": {
+ {
   "name": "LegDeliveryStreamDeliveryPoint",
   "type": "string",
   "nullable": true,
@@ -77898,7 +77898,7 @@
    ]
   }
  },
- "41434": {
+ {
   "name": "LegDeliveryStreamDeliveryRestriction",
   "type": "int32",
   "nullable": true,
@@ -78058,7 +78058,7 @@
    ]
   }
  },
- "41435": {
+ {
   "name": "LegDeliveryStreamDeliveryContingency",
   "type": "string",
   "nullable": true,
@@ -78183,7 +78183,7 @@
    ]
   }
  },
- "41436": {
+ {
   "name": "LegDeliveryStreamDeliveryContingentPartySide",
   "type": "int32",
   "nullable": true,
@@ -78322,7 +78322,7 @@
    ]
   }
  },
- "41437": {
+ {
   "name": "LegDeliveryStreamDeliverAtSourceIndicator",
   "type": "bool",
   "nullable": true,
@@ -78445,7 +78445,7 @@
    ]
   }
  },
- "41438": {
+ {
   "name": "LegDeliveryStreamRiskApportionment",
   "type": "string",
   "nullable": true,
@@ -78570,7 +78570,7 @@
    ]
   }
  },
- "41439": {
+ {
   "name": "LegDeliveryStreamTitleTransferLocation",
   "type": "string",
   "nullable": true,
@@ -78693,7 +78693,7 @@
    ]
   }
  },
- "41440": {
+ {
   "name": "LegDeliveryStreamTitleTransferCondition",
   "type": "int32",
   "nullable": true,
@@ -78832,7 +78832,7 @@
    ]
   }
  },
- "41441": {
+ {
   "name": "LegDeliveryStreamImporterOfRecord",
   "type": "string",
   "nullable": true,
@@ -78955,7 +78955,7 @@
    ]
   }
  },
- "41442": {
+ {
   "name": "LegDeliveryStreamNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -79078,7 +79078,7 @@
    ]
   }
  },
- "41443": {
+ {
   "name": "LegDeliveryStreamPositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -79201,7 +79201,7 @@
    ]
   }
  },
- "41444": {
+ {
   "name": "LegDeliveryStreamToleranceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -79886,7 +79886,7 @@
    ]
   }
  },
- "41445": {
+ {
   "name": "LegDeliveryStreamToleranceType",
   "type": "int32",
   "nullable": true,
@@ -80025,7 +80025,7 @@
    ]
   }
  },
- "41446": {
+ {
   "name": "LegDeliveryStreamToleranceOptionSide",
   "type": "int32",
   "nullable": true,
@@ -80164,7 +80164,7 @@
    ]
   }
  },
- "41447": {
+ {
   "name": "LegDeliveryStreamTotalPositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -80287,7 +80287,7 @@
    ]
   }
  },
- "41448": {
+ {
   "name": "LegDeliveryStreamTotalNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -80410,7 +80410,7 @@
    ]
   }
  },
- "41449": {
+ {
   "name": "LegDeliveryStreamNotionalConversionFactor",
   "type": "double",
   "nullable": true,
@@ -80533,7 +80533,7 @@
    ]
   }
  },
- "41450": {
+ {
   "name": "LegDeliveryStreamTransportEquipment",
   "type": "string",
   "nullable": true,
@@ -80656,7 +80656,7 @@
    ]
   }
  },
- "41451": {
+ {
   "name": "LegDeliveryStreamElectingPartySide",
   "type": "int32",
   "nullable": true,
@@ -80795,7 +80795,7 @@
    ]
   }
  },
- "41452": {
+ {
   "name": "NoLegStreamAssetAttributes",
   "type": "int64",
   "nullable": true,
@@ -80919,7 +80919,7 @@
    ]
   }
  },
- "41453": {
+ {
   "name": "LegStreamAssetAttributeType",
   "type": "string",
   "nullable": true,
@@ -81045,7 +81045,7 @@
    ]
   }
  },
- "41454": {
+ {
   "name": "LegStreamAssetAttributeValue",
   "type": "string",
   "nullable": true,
@@ -81169,7 +81169,7 @@
    ]
   }
  },
- "41455": {
+ {
   "name": "LegStreamAssetAttributeLimit",
   "type": "string",
   "nullable": true,
@@ -81293,7 +81293,7 @@
    ]
   }
  },
- "41456": {
+ {
   "name": "NoLegDeliveryStreamCycles",
   "type": "int64",
   "nullable": true,
@@ -81417,7 +81417,7 @@
    ]
   }
  },
- "41457": {
+ {
   "name": "LegDeliveryStreamCycleDesc",
   "type": "string",
   "nullable": true,
@@ -81541,7 +81541,7 @@
    ]
   }
  },
- "41458": {
+ {
   "name": "EncodedLegDeliveryStreamCycleDescLen",
   "type": "int64",
   "nullable": true,
@@ -81665,7 +81665,7 @@
    ]
   }
  },
- "41459": {
+ {
   "name": "EncodedLegDeliveryStreamCycleDesc",
   "type": "binary",
   "nullable": true,
@@ -81789,7 +81789,7 @@
    ]
   }
  },
- "41460": {
+ {
   "name": "NoLegDeliveryStreamCommoditySources",
   "type": "int64",
   "nullable": true,
@@ -81913,7 +81913,7 @@
    ]
   }
  },
- "41461": {
+ {
   "name": "LegDeliveryStreamCommoditySource",
   "type": "string",
   "nullable": true,
@@ -82039,7 +82039,7 @@
    ]
   }
  },
- "41462": {
+ {
   "name": "LegMarketDisruptionProvision",
   "type": "int32",
   "nullable": true,
@@ -82191,7 +82191,7 @@
    ]
   }
  },
- "41463": {
+ {
   "name": "LegMarketDisruptionFallbackProvision",
   "type": "int32",
   "nullable": true,
@@ -82329,7 +82329,7 @@
    ]
   }
  },
- "41464": {
+ {
   "name": "LegMarketDisruptionMaximumDays",
   "type": "int32",
   "nullable": true,
@@ -82451,7 +82451,7 @@
    ]
   }
  },
- "41465": {
+ {
   "name": "LegMarketDisruptionMaterialityPercentage",
   "type": "double",
   "nullable": true,
@@ -82573,7 +82573,7 @@
    ]
   }
  },
- "41466": {
+ {
   "name": "LegMarketDisruptionMinimumFuturesContracts",
   "type": "int32",
   "nullable": true,
@@ -82695,7 +82695,7 @@
    ]
   }
  },
- "41467": {
+ {
   "name": "NoLegMarketDisruptionEvents",
   "type": "int64",
   "nullable": true,
@@ -82818,7 +82818,7 @@
    ]
   }
  },
- "41468": {
+ {
   "name": "LegMarketDisruptionEvent",
   "type": "string",
   "nullable": true,
@@ -82943,7 +82943,7 @@
    ]
   }
  },
- "41469": {
+ {
   "name": "NoLegMarketDisruptionFallbacks",
   "type": "int64",
   "nullable": true,
@@ -83066,7 +83066,7 @@
    ]
   }
  },
- "41470": {
+ {
   "name": "LegMarketDisruptionFallbackType",
   "type": "string",
   "nullable": true,
@@ -83191,7 +83191,7 @@
    ]
   }
  },
- "41471": {
+ {
   "name": "NoLegMarketDisruptionFallbackReferencePrices",
   "type": "int64",
   "nullable": true,
@@ -83314,7 +83314,7 @@
    ]
   }
  },
- "41472": {
+ {
   "name": "LegMarketDisruptionFallbackUnderlierType",
   "type": "int32",
   "nullable": true,
@@ -83523,7 +83523,7 @@
    ]
   }
  },
- "41473": {
+ {
   "name": "LegMarketDisruptionFallbackUnderlierSecurityID",
   "type": "string",
   "nullable": true,
@@ -83646,7 +83646,7 @@
    ]
   }
  },
- "41474": {
+ {
   "name": "LegMarketDisruptionFallbackUnderlierSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -84004,7 +84004,7 @@
    ]
   }
  },
- "41475": {
+ {
   "name": "LegMarketDisruptionFallbackUnderlierSecurityDesc",
   "type": "string",
   "nullable": true,
@@ -84127,7 +84127,7 @@
    ]
   }
  },
- "41476": {
+ {
   "name": "EncodedLegMarketDisruptionFallbackUnderlierSecurityDescLen",
   "type": "int64",
   "nullable": true,
@@ -84250,7 +84250,7 @@
    ]
   }
  },
- "41477": {
+ {
   "name": "EncodedLegMarketDisruptionFallbackUnderlierSecurityDesc",
   "type": "binary",
   "nullable": true,
@@ -84373,7 +84373,7 @@
    ]
   }
  },
- "41478": {
+ {
   "name": "LegMarketDisruptionFallbackOpenUnits",
   "type": "double",
   "nullable": true,
@@ -84496,7 +84496,7 @@
    ]
   }
  },
- "41479": {
+ {
   "name": "LegMarketDisruptionFallbackBasketCurrency",
   "type": "string",
   "nullable": true,
@@ -84619,7 +84619,7 @@
    ]
   }
  },
- "41480": {
+ {
   "name": "LegMarketDisruptionFallbackBasketDivisor",
   "type": "double",
   "nullable": true,
@@ -84742,7 +84742,7 @@
    ]
   }
  },
- "41481": {
+ {
   "name": "LegExerciseDesc",
   "type": "string",
   "nullable": true,
@@ -84864,7 +84864,7 @@
    ]
   }
  },
- "41482": {
+ {
   "name": "EncodedLegExerciseDescLen",
   "type": "int64",
   "nullable": true,
@@ -84986,7 +84986,7 @@
    ]
   }
  },
- "41483": {
+ {
   "name": "EncodedLegExerciseDesc",
   "type": "binary",
   "nullable": true,
@@ -85108,7 +85108,7 @@
    ]
   }
  },
- "41484": {
+ {
   "name": "LegAutomaticExerciseIndicator",
   "type": "bool",
   "nullable": true,
@@ -85230,7 +85230,7 @@
    ]
   }
  },
- "41485": {
+ {
   "name": "LegAutomaticExerciseThresholdRate",
   "type": "double",
   "nullable": true,
@@ -85352,7 +85352,7 @@
    ]
   }
  },
- "41486": {
+ {
   "name": "LegExerciseConfirmationMethod",
   "type": "int32",
   "nullable": true,
@@ -85504,7 +85504,7 @@
    ]
   }
  },
- "41487": {
+ {
   "name": "LegManualNoticeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -85628,7 +85628,7 @@
    ]
   }
  },
- "41488": {
+ {
   "name": "LegFallbackExerciseIndicator",
   "type": "bool",
   "nullable": true,
@@ -85750,7 +85750,7 @@
    ]
   }
  },
- "41489": {
+ {
   "name": "LegLimitRightToConfirmIndicator",
   "type": "bool",
   "nullable": true,
@@ -85872,7 +85872,7 @@
    ]
   }
  },
- "41490": {
+ {
   "name": "LegExerciseSplitTicketIndicator",
   "type": "bool",
   "nullable": true,
@@ -85994,7 +85994,7 @@
    ]
   }
  },
- "41491": {
+ {
   "name": "NoLegOptionExerciseBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -86118,7 +86118,7 @@
    ]
   }
  },
- "41492": {
+ {
   "name": "LegOptionExerciseBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -86244,7 +86244,7 @@
    ]
   }
  },
- "41493": {
+ {
   "name": "LegOptionExerciseBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -86425,7 +86425,7 @@
    ]
   }
  },
- "41494": {
+ {
   "name": "LegOptionExerciseEarliestDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -86594,7 +86594,7 @@
    ]
   }
  },
- "41495": {
+ {
   "name": "LegOptionExerciseEarliestDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -86717,7 +86717,7 @@
    ]
   }
  },
- "41496": {
+ {
   "name": "LegOptionExerciseEarliestDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -86870,7 +86870,7 @@
    ]
   }
  },
- "41497": {
+ {
   "name": "LegOptionExerciseFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -86993,7 +86993,7 @@
    ]
   }
  },
- "41498": {
+ {
   "name": "LegOptionExerciseFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -87146,7 +87146,7 @@
    ]
   }
  },
- "41499": {
+ {
   "name": "LegOptionExerciseStartDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -87269,7 +87269,7 @@
    ]
   }
  },
- "41500": {
+ {
   "name": "LegOptionExerciseStartDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -87394,7 +87394,7 @@
    ]
   }
  },
- "41501": {
+ {
   "name": "LegOptionExerciseStartDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -87517,7 +87517,7 @@
    ]
   }
  },
- "41502": {
+ {
   "name": "LegOptionExerciseStartDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -87670,7 +87670,7 @@
    ]
   }
  },
- "41503": {
+ {
   "name": "LegOptionExerciseStartDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -87839,7 +87839,7 @@
    ]
   }
  },
- "41504": {
+ {
   "name": "LegOptionExerciseStartDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -87962,7 +87962,7 @@
    ]
   }
  },
- "41505": {
+ {
   "name": "LegOptionExerciseSkip",
   "type": "int32",
   "nullable": true,
@@ -88085,7 +88085,7 @@
    ]
   }
  },
- "41506": {
+ {
   "name": "LegOptionExerciseNominationDeadline",
   "type": "timestamp[us]",
   "nullable": true,
@@ -88208,7 +88208,7 @@
    ]
   }
  },
- "41507": {
+ {
   "name": "LegOptionExerciseFirstDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -88331,7 +88331,7 @@
    ]
   }
  },
- "41508": {
+ {
   "name": "LegOptionExerciseLastDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -88454,7 +88454,7 @@
    ]
   }
  },
- "41509": {
+ {
   "name": "LegOptionExerciseEarliestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -88577,7 +88577,7 @@
    ]
   }
  },
- "41510": {
+ {
   "name": "LegOptionExerciseLatestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -88700,7 +88700,7 @@
    ]
   }
  },
- "41511": {
+ {
   "name": "LegOptionExerciseTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -88825,7 +88825,7 @@
    ]
   }
  },
- "41512": {
+ {
   "name": "NoLegOptionExerciseDates",
   "type": "int64",
   "nullable": true,
@@ -88949,7 +88949,7 @@
    ]
   }
  },
- "41513": {
+ {
   "name": "LegOptionExerciseDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -89073,7 +89073,7 @@
    ]
   }
  },
- "41514": {
+ {
   "name": "LegOptionExerciseDateType",
   "type": "int32",
   "nullable": true,
@@ -89213,7 +89213,7 @@
    ]
   }
  },
- "41515": {
+ {
   "name": "NoLegOptionExerciseExpirationDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -89337,7 +89337,7 @@
    ]
   }
  },
- "41516": {
+ {
   "name": "LegOptionExerciseExpirationDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -89463,7 +89463,7 @@
    ]
   }
  },
- "41517": {
+ {
   "name": "LegOptionExerciseExpirationDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -89644,7 +89644,7 @@
    ]
   }
  },
- "41518": {
+ {
   "name": "LegOptionExerciseExpirationDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -89769,7 +89769,7 @@
    ]
   }
  },
- "41519": {
+ {
   "name": "LegOptionExerciseExpirationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -89892,7 +89892,7 @@
    ]
   }
  },
- "41520": {
+ {
   "name": "LegOptionExerciseExpirationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -90045,7 +90045,7 @@
    ]
   }
  },
- "41521": {
+ {
   "name": "LegOptionExerciseExpirationFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -90168,7 +90168,7 @@
    ]
   }
  },
- "41522": {
+ {
   "name": "LegOptionExerciseExpirationFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -90321,7 +90321,7 @@
    ]
   }
  },
- "41523": {
+ {
   "name": "LegOptionExerciseExpirationRollConvention",
   "type": "string",
   "nullable": true,
@@ -90720,7 +90720,7 @@
    ]
   }
  },
- "41524": {
+ {
   "name": "LegOptionExerciseExpirationDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -90889,7 +90889,7 @@
    ]
   }
  },
- "41525": {
+ {
   "name": "LegOptionExerciseExpirationTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -91012,7 +91012,7 @@
    ]
   }
  },
- "41526": {
+ {
   "name": "LegOptionExerciseExpirationTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -91137,7 +91137,7 @@
    ]
   }
  },
- "41527": {
+ {
   "name": "NoLegOptionExerciseExpirationDates",
   "type": "int64",
   "nullable": true,
@@ -91261,7 +91261,7 @@
    ]
   }
  },
- "41528": {
+ {
   "name": "LegOptionExerciseExpirationDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -91385,7 +91385,7 @@
    ]
   }
  },
- "41529": {
+ {
   "name": "LegOptionExerciseExpirationDateType",
   "type": "int32",
   "nullable": true,
@@ -91525,7 +91525,7 @@
    ]
   }
  },
- "41530": {
+ {
   "name": "NoLegPaymentScheduleFixingDays",
   "type": "int64",
   "nullable": true,
@@ -91649,7 +91649,7 @@
    ]
   }
  },
- "41531": {
+ {
   "name": "LegPaymentScheduleFixingDayOfWeek",
   "type": "int32",
   "nullable": true,
@@ -91831,7 +91831,7 @@
    ]
   }
  },
- "41532": {
+ {
   "name": "LegPaymentScheduleFixingDayNumber",
   "type": "int32",
   "nullable": true,
@@ -91955,7 +91955,7 @@
    ]
   }
  },
- "41533": {
+ {
   "name": "LegPaymentScheduleXID",
   "type": "string",
   "nullable": true,
@@ -92078,7 +92078,7 @@
    ]
   }
  },
- "41534": {
+ {
   "name": "LegPaymentScheduleXIDRef",
   "type": "string",
   "nullable": true,
@@ -92201,7 +92201,7 @@
    ]
   }
  },
- "41535": {
+ {
   "name": "LegPaymentScheduleRateCurrency",
   "type": "string",
   "nullable": true,
@@ -92324,7 +92324,7 @@
    ]
   }
  },
- "41536": {
+ {
   "name": "LegPaymentScheduleRateUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -93009,7 +93009,7 @@
    ]
   }
  },
- "41537": {
+ {
   "name": "LegPaymentScheduleRateConversionFactor",
   "type": "double",
   "nullable": true,
@@ -93132,7 +93132,7 @@
    ]
   }
  },
- "41538": {
+ {
   "name": "LegPaymentScheduleRateSpreadType",
   "type": "int32",
   "nullable": true,
@@ -93271,7 +93271,7 @@
    ]
   }
  },
- "41539": {
+ {
   "name": "LegPaymentScheduleSettlPeriodPrice",
   "type": "double",
   "nullable": true,
@@ -93394,7 +93394,7 @@
    ]
   }
  },
- "41540": {
+ {
   "name": "LegPaymentScheduleSettlPeriodPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -93517,7 +93517,7 @@
    ]
   }
  },
- "41541": {
+ {
   "name": "LegPaymentScheduleSettlPeriodPriceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -94202,7 +94202,7 @@
    ]
   }
  },
- "41542": {
+ {
   "name": "LegPaymentScheduleStepUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -94887,7 +94887,7 @@
    ]
   }
  },
- "41543": {
+ {
   "name": "LegPaymentScheduleFixingDayDistribution",
   "type": "int32",
   "nullable": true,
@@ -95040,7 +95040,7 @@
    ]
   }
  },
- "41544": {
+ {
   "name": "LegPaymentScheduleFixingDayCount",
   "type": "int32",
   "nullable": true,
@@ -95163,7 +95163,7 @@
    ]
   }
  },
- "41545": {
+ {
   "name": "LegPaymentScheduleFixingLagPeriod",
   "type": "int32",
   "nullable": true,
@@ -95286,7 +95286,7 @@
    ]
   }
  },
- "41546": {
+ {
   "name": "LegPaymentScheduleFixingLagUnit",
   "type": "string",
   "nullable": true,
@@ -95439,7 +95439,7 @@
    ]
   }
  },
- "41547": {
+ {
   "name": "LegPaymentScheduleFixingFirstObservationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -95564,7 +95564,7 @@
    ]
   }
  },
- "41548": {
+ {
   "name": "LegPaymentScheduleFixingFirstObservationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -95719,7 +95719,7 @@
    ]
   }
  },
- "41549": {
+ {
   "name": "LegPaymentStreamFlatRateIndicator",
   "type": "bool",
   "nullable": true,
@@ -95842,7 +95842,7 @@
    ]
   }
  },
- "41550": {
+ {
   "name": "LegPaymentStreamFlatRateAmount",
   "type": "double",
   "nullable": true,
@@ -95965,7 +95965,7 @@
    ]
   }
  },
- "41551": {
+ {
   "name": "LegPaymentStreamFlatRateCurrency",
   "type": "string",
   "nullable": true,
@@ -96088,7 +96088,7 @@
    ]
   }
  },
- "41552": {
+ {
   "name": "LegStreamMaximumPaymentAmount",
   "type": "double",
   "nullable": true,
@@ -96211,7 +96211,7 @@
    ]
   }
  },
- "41553": {
+ {
   "name": "LegStreamMaximumPaymentCurrency",
   "type": "string",
   "nullable": true,
@@ -96334,7 +96334,7 @@
    ]
   }
  },
- "41554": {
+ {
   "name": "LegStreamMaximumTransactionAmount",
   "type": "double",
   "nullable": true,
@@ -96457,7 +96457,7 @@
    ]
   }
  },
- "41555": {
+ {
   "name": "LegStreamMaximumTransactionCurrency",
   "type": "string",
   "nullable": true,
@@ -96580,7 +96580,7 @@
    ]
   }
  },
- "41556": {
+ {
   "name": "LegPaymentStreamFixedAmountUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -97266,7 +97266,7 @@
    ]
   }
  },
- "41557": {
+ {
   "name": "LegPaymentStreamTotalFixedAmount",
   "type": "double",
   "nullable": true,
@@ -97390,7 +97390,7 @@
    ]
   }
  },
- "41558": {
+ {
   "name": "LegPaymentStreamWorldScaleRate",
   "type": "double",
   "nullable": true,
@@ -97514,7 +97514,7 @@
    ]
   }
  },
- "41559": {
+ {
   "name": "LegPaymentStreamContractPrice",
   "type": "double",
   "nullable": true,
@@ -97638,7 +97638,7 @@
    ]
   }
  },
- "41560": {
+ {
   "name": "LegPaymentStreamContractPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -97762,7 +97762,7 @@
    ]
   }
  },
- "41561": {
+ {
   "name": "NoLegPaymentStreamPricingBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -97887,7 +97887,7 @@
    ]
   }
  },
- "41562": {
+ {
   "name": "LegPaymentStreamPricingBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -98014,7 +98014,7 @@
    ]
   }
  },
- "41563": {
+ {
   "name": "LegPaymentStreamRateIndex2CurveUnit",
   "type": "string",
   "nullable": true,
@@ -98168,7 +98168,7 @@
    ]
   }
  },
- "41564": {
+ {
   "name": "LegPaymentStreamRateIndex2CurvePeriod",
   "type": "int32",
   "nullable": true,
@@ -98292,7 +98292,7 @@
    ]
   }
  },
- "41565": {
+ {
   "name": "LegPaymentStreamRateIndexLocation",
   "type": "string",
   "nullable": true,
@@ -98416,7 +98416,7 @@
    ]
   }
  },
- "41566": {
+ {
   "name": "LegPaymentStreamRateIndexLevel",
   "type": "double",
   "nullable": true,
@@ -98540,7 +98540,7 @@
    ]
   }
  },
- "41567": {
+ {
   "name": "LegPaymentStreamRateIndexUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -99226,7 +99226,7 @@
    ]
   }
  },
- "41568": {
+ {
   "name": "LegPaymentStreamSettlLevel",
   "type": "int32",
   "nullable": true,
@@ -99380,7 +99380,7 @@
    ]
   }
  },
- "41569": {
+ {
   "name": "LegPaymentStreamReferenceLevel",
   "type": "double",
   "nullable": true,
@@ -99504,7 +99504,7 @@
    ]
   }
  },
- "41570": {
+ {
   "name": "LegPaymentStreamReferenceLevelUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -100190,7 +100190,7 @@
    ]
   }
  },
- "41571": {
+ {
   "name": "LegPaymentStreamReferenceLevelEqualsZeroIndicator",
   "type": "bool",
   "nullable": true,
@@ -100314,7 +100314,7 @@
    ]
   }
  },
- "41572": {
+ {
   "name": "LegPaymentStreamRateSpreadCurrency",
   "type": "string",
   "nullable": true,
@@ -100438,7 +100438,7 @@
    ]
   }
  },
- "41573": {
+ {
   "name": "LegPaymentStreamRateSpreadUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -101124,7 +101124,7 @@
    ]
   }
  },
- "41574": {
+ {
   "name": "LegPaymentStreamRateConversionFactor",
   "type": "double",
   "nullable": true,
@@ -101248,7 +101248,7 @@
    ]
   }
  },
- "41575": {
+ {
   "name": "LegPaymentStreamRateSpreadType",
   "type": "int32",
   "nullable": true,
@@ -101388,7 +101388,7 @@
    ]
   }
  },
- "41576": {
+ {
   "name": "LegPaymentStreamLastResetRate",
   "type": "double",
   "nullable": true,
@@ -101512,7 +101512,7 @@
    ]
   }
  },
- "41577": {
+ {
   "name": "LegPaymentStreamFinalRate",
   "type": "double",
   "nullable": true,
@@ -101636,7 +101636,7 @@
    ]
   }
  },
- "41578": {
+ {
   "name": "LegPaymentStreamCalculationLagPeriod",
   "type": "int32",
   "nullable": true,
@@ -101760,7 +101760,7 @@
    ]
   }
  },
- "41579": {
+ {
   "name": "LegPaymentStreamCalculationLagUnit",
   "type": "string",
   "nullable": true,
@@ -101914,7 +101914,7 @@
    ]
   }
  },
- "41580": {
+ {
   "name": "LegPaymentStreamFirstObservationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -102040,7 +102040,7 @@
    ]
   }
  },
- "41581": {
+ {
   "name": "LegPaymentStreamFirstObservationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -102196,7 +102196,7 @@
    ]
   }
  },
- "41582": {
+ {
   "name": "LegPaymentStreamPricingDayType",
   "type": "int32",
   "nullable": true,
@@ -102364,7 +102364,7 @@
    ]
   }
  },
- "41583": {
+ {
   "name": "LegPaymentStreamPricingDayDistribution",
   "type": "int32",
   "nullable": true,
@@ -102518,7 +102518,7 @@
    ]
   }
  },
- "41584": {
+ {
   "name": "LegPaymentStreamPricingDayCount",
   "type": "int32",
   "nullable": true,
@@ -102642,7 +102642,7 @@
    ]
   }
  },
- "41585": {
+ {
   "name": "LegPaymentStreamPricingBusinessCalendar",
   "type": "string",
   "nullable": true,
@@ -102768,7 +102768,7 @@
    ]
   }
  },
- "41586": {
+ {
   "name": "LegPaymentStreamPricingBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -102950,7 +102950,7 @@
    ]
   }
  },
- "41587": {
+ {
   "name": "UnderlyingDeliveryStreamRiskApportionmentSource",
   "type": "string",
   "nullable": true,
@@ -103081,7 +103081,7 @@
    ]
   }
  },
- "41588": {
+ {
   "name": "StreamCommoditySettlTimeType",
   "type": "int32",
   "nullable": true,
@@ -103255,7 +103255,7 @@
    ]
   }
  },
- "41589": {
+ {
   "name": "NoLegPaymentStreamPaymentDates",
   "type": "int64",
   "nullable": true,
@@ -103380,7 +103380,7 @@
    ]
   }
  },
- "41590": {
+ {
   "name": "LegPaymentStreamPaymentDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -103505,7 +103505,7 @@
    ]
   }
  },
- "41591": {
+ {
   "name": "LegPaymentStreamPaymentDateType",
   "type": "int32",
   "nullable": true,
@@ -103646,7 +103646,7 @@
    ]
   }
  },
- "41592": {
+ {
   "name": "LegPaymentStreamMasterAgreementPaymentDatesIndicator",
   "type": "bool",
   "nullable": true,
@@ -103770,7 +103770,7 @@
    ]
   }
  },
- "41593": {
+ {
   "name": "NoLegPaymentStreamPricingDates",
   "type": "int64",
   "nullable": true,
@@ -103895,7 +103895,7 @@
    ]
   }
  },
- "41594": {
+ {
   "name": "LegPaymentStreamPricingDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -104020,7 +104020,7 @@
    ]
   }
  },
- "41595": {
+ {
   "name": "LegPaymentStreamPricingDateType",
   "type": "int32",
   "nullable": true,
@@ -104161,7 +104161,7 @@
    ]
   }
  },
- "41596": {
+ {
   "name": "NoLegPaymentStreamPricingDays",
   "type": "int64",
   "nullable": true,
@@ -104286,7 +104286,7 @@
    ]
   }
  },
- "41597": {
+ {
   "name": "LegPaymentStreamPricingDayOfWeek",
   "type": "int32",
   "nullable": true,
@@ -104471,7 +104471,7 @@
    ]
   }
  },
- "41598": {
+ {
   "name": "LegPaymentStreamPricingDayNumber",
   "type": "int32",
   "nullable": true,
@@ -104596,7 +104596,7 @@
    ]
   }
  },
- "41599": {
+ {
   "name": "NoLegPhysicalSettlTerms",
   "type": "int64",
   "nullable": true,
@@ -104718,7 +104718,7 @@
    ]
   }
  },
- "41600": {
+ {
   "name": "LegPhysicalSettlTermXID",
   "type": "string",
   "nullable": true,
@@ -104840,7 +104840,7 @@
    ]
   }
  },
- "41601": {
+ {
   "name": "LegPhysicalSettlCurency",
   "type": "string",
   "nullable": true,
@@ -104962,7 +104962,7 @@
    ]
   }
  },
- "41602": {
+ {
   "name": "LegPhysicalSettlBusinessDays",
   "type": "int32",
   "nullable": true,
@@ -105086,7 +105086,7 @@
    ]
   }
  },
- "41603": {
+ {
   "name": "LegPhysicalSettlMaximumBusinessDays",
   "type": "int32",
   "nullable": true,
@@ -105210,7 +105210,7 @@
    ]
   }
  },
- "41604": {
+ {
   "name": "NoLegPhysicalSettlDeliverableObligations",
   "type": "int64",
   "nullable": true,
@@ -105333,7 +105333,7 @@
    ]
   }
  },
- "41605": {
+ {
   "name": "LegPhysicalSettlDeliverableObligationType",
   "type": "string",
   "nullable": true,
@@ -105456,7 +105456,7 @@
    ]
   }
  },
- "41606": {
+ {
   "name": "LegPhysicalSettlDeliverableObligationValue",
   "type": "string",
   "nullable": true,
@@ -105581,7 +105581,7 @@
    ]
   }
  },
- "41607": {
+ {
   "name": "NoLegPricingDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -105704,7 +105704,7 @@
    ]
   }
  },
- "41608": {
+ {
   "name": "LegPricingDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -105829,7 +105829,7 @@
    ]
   }
  },
- "41609": {
+ {
   "name": "LegPricingDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -105951,7 +105951,7 @@
    ]
   }
  },
- "41610": {
+ {
   "name": "LegPricingDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -106131,7 +106131,7 @@
    ]
   }
  },
- "41611": {
+ {
   "name": "LegPricingDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -106253,7 +106253,7 @@
    ]
   }
  },
- "41612": {
+ {
   "name": "LegPricingTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -106375,7 +106375,7 @@
    ]
   }
  },
- "41613": {
+ {
   "name": "LegPricingTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -106499,7 +106499,7 @@
    ]
   }
  },
- "41614": {
+ {
   "name": "NoLegProtectionTermEventNewsSources",
   "type": "int64",
   "nullable": true,
@@ -106622,7 +106622,7 @@
    ]
   }
  },
- "41615": {
+ {
   "name": "LegProtectionTermEventNewsSource",
   "type": "string",
   "nullable": true,
@@ -106745,7 +106745,7 @@
    ]
   }
  },
- "41616": {
+ {
   "name": "NoLegProtectionTerms",
   "type": "int64",
   "nullable": true,
@@ -106867,7 +106867,7 @@
    ]
   }
  },
- "41617": {
+ {
   "name": "LegProtectionTermXID",
   "type": "string",
   "nullable": true,
@@ -106991,7 +106991,7 @@
    ]
   }
  },
- "41618": {
+ {
   "name": "LegProtectionTermNotional",
   "type": "double",
   "nullable": true,
@@ -107113,7 +107113,7 @@
    ]
   }
  },
- "41619": {
+ {
   "name": "LegProtectionTermCurrency",
   "type": "string",
   "nullable": true,
@@ -107235,7 +107235,7 @@
    ]
   }
  },
- "41620": {
+ {
   "name": "LegProtectionTermSellerNotifies",
   "type": "bool",
   "nullable": true,
@@ -107357,7 +107357,7 @@
    ]
   }
  },
- "41621": {
+ {
   "name": "LegProtectionTermBuyerNotifies",
   "type": "bool",
   "nullable": true,
@@ -107479,7 +107479,7 @@
    ]
   }
  },
- "41622": {
+ {
   "name": "LegProtectionTermEventBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -107603,7 +107603,7 @@
    ]
   }
  },
- "41623": {
+ {
   "name": "LegProtectionTermStandardSources",
   "type": "bool",
   "nullable": true,
@@ -107725,7 +107725,7 @@
    ]
   }
  },
- "41624": {
+ {
   "name": "LegProtectionTermEventMinimumSources",
   "type": "int32",
   "nullable": true,
@@ -107847,7 +107847,7 @@
    ]
   }
  },
- "41625": {
+ {
   "name": "NoLegProtectionTermEvents",
   "type": "int64",
   "nullable": true,
@@ -107970,7 +107970,7 @@
    ]
   }
  },
- "41626": {
+ {
   "name": "LegProtectionTermEventType",
   "type": "string",
   "nullable": true,
@@ -108095,7 +108095,7 @@
    ]
   }
  },
- "41627": {
+ {
   "name": "LegProtectionTermEventValue",
   "type": "string",
   "nullable": true,
@@ -108220,7 +108220,7 @@
    ]
   }
  },
- "41628": {
+ {
   "name": "LegProtectionTermEventCurrency",
   "type": "string",
   "nullable": true,
@@ -108343,7 +108343,7 @@
    ]
   }
  },
- "41629": {
+ {
   "name": "LegProtectionTermEventPeriod",
   "type": "int32",
   "nullable": true,
@@ -108466,7 +108466,7 @@
    ]
   }
  },
- "41630": {
+ {
   "name": "LegProtectionTermEventUnit",
   "type": "string",
   "nullable": true,
@@ -108619,7 +108619,7 @@
    ]
   }
  },
- "41631": {
+ {
   "name": "LegProtectionTermEventDayType",
   "type": "int32",
   "nullable": true,
@@ -108788,7 +108788,7 @@
    ]
   }
  },
- "41632": {
+ {
   "name": "LegProtectionTermEventRateSource",
   "type": "string",
   "nullable": true,
@@ -108911,7 +108911,7 @@
    ]
   }
  },
- "41633": {
+ {
   "name": "NoLegProtectionTermEventQualifiers",
   "type": "int64",
   "nullable": true,
@@ -109035,7 +109035,7 @@
    ]
   }
  },
- "41634": {
+ {
   "name": "LegProtectionTermEventQualifier",
   "type": "string",
   "nullable": true,
@@ -109182,7 +109182,7 @@
    ]
   }
  },
- "41635": {
+ {
   "name": "NoLegProtectionTermObligations",
   "type": "int64",
   "nullable": true,
@@ -109305,7 +109305,7 @@
    ]
   }
  },
- "41636": {
+ {
   "name": "LegProtectionTermObligationType",
   "type": "string",
   "nullable": true,
@@ -109430,7 +109430,7 @@
    ]
   }
  },
- "41637": {
+ {
   "name": "LegProtectionTermObligationValue",
   "type": "string",
   "nullable": true,
@@ -109555,7 +109555,7 @@
    ]
   }
  },
- "41638": {
+ {
   "name": "NoLegStreamCalculationPeriodDates",
   "type": "int64",
   "nullable": true,
@@ -109679,7 +109679,7 @@
    ]
   }
  },
- "41639": {
+ {
   "name": "LegStreamCalculationPeriodDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -109803,7 +109803,7 @@
    ]
   }
  },
- "41640": {
+ {
   "name": "LegStreamCalculationPeriodDateType",
   "type": "int32",
   "nullable": true,
@@ -109943,7 +109943,7 @@
    ]
   }
  },
- "41641": {
+ {
   "name": "LegStreamCalculationPeriodDatesXID",
   "type": "string",
   "nullable": true,
@@ -110066,7 +110066,7 @@
    ]
   }
  },
- "41642": {
+ {
   "name": "LegStreamCalculationPeriodDatesXIDRef",
   "type": "string",
   "nullable": true,
@@ -110189,7 +110189,7 @@
    ]
   }
  },
- "41643": {
+ {
   "name": "LegStreamCalculationBalanceOfFirstPeriod",
   "type": "bool",
   "nullable": true,
@@ -110312,7 +110312,7 @@
    ]
   }
  },
- "41644": {
+ {
   "name": "LegStreamCalculationCorrectionPeriod",
   "type": "int32",
   "nullable": true,
@@ -110435,7 +110435,7 @@
    ]
   }
  },
- "41645": {
+ {
   "name": "LegStreamCalculationCorrectionUnit",
   "type": "string",
   "nullable": true,
@@ -110588,7 +110588,7 @@
    ]
   }
  },
- "41646": {
+ {
   "name": "NoLegStreamCommoditySettlBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -110712,7 +110712,7 @@
    ]
   }
  },
- "41647": {
+ {
   "name": "LegStreamCommoditySettlBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -110838,7 +110838,7 @@
    ]
   }
  },
- "41648": {
+ {
   "name": "LegStreamCommodityBase",
   "type": "string",
   "nullable": true,
@@ -110961,7 +110961,7 @@
    ]
   }
  },
- "41649": {
+ {
   "name": "LegStreamCommodityType",
   "type": "string",
   "nullable": true,
@@ -111086,7 +111086,7 @@
    ]
   }
  },
- "41650": {
+ {
   "name": "LegStreamCommoditySecurityID",
   "type": "string",
   "nullable": true,
@@ -111209,7 +111209,7 @@
    ]
   }
  },
- "41651": {
+ {
   "name": "LegStreamCommoditySecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -111567,7 +111567,7 @@
    ]
   }
  },
- "41652": {
+ {
   "name": "LegStreamCommodityDesc",
   "type": "string",
   "nullable": true,
@@ -111690,7 +111690,7 @@
    ]
   }
  },
- "41653": {
+ {
   "name": "EncodedLegStreamCommodityDescLen",
   "type": "int64",
   "nullable": true,
@@ -111813,7 +111813,7 @@
    ]
   }
  },
- "41654": {
+ {
   "name": "EncodedLegStreamCommodityDesc",
   "type": "binary",
   "nullable": true,
@@ -111936,7 +111936,7 @@
    ]
   }
  },
- "41655": {
+ {
   "name": "LegStreamCommodityUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -112621,7 +112621,7 @@
    ]
   }
  },
- "41656": {
+ {
   "name": "LegStreamCommodityCurrency",
   "type": "string",
   "nullable": true,
@@ -112744,7 +112744,7 @@
    ]
   }
  },
- "41657": {
+ {
   "name": "LegStreamCommodityExchange",
   "type": "string",
   "nullable": true,
@@ -112867,7 +112867,7 @@
    ]
   }
  },
- "41658": {
+ {
   "name": "LegStreamCommodityRateSource",
   "type": "int32",
   "nullable": true,
@@ -112992,7 +112992,7 @@
    ]
   }
  },
- "41659": {
+ {
   "name": "LegStreamCommodityRateReferencePage",
   "type": "string",
   "nullable": true,
@@ -113115,7 +113115,7 @@
    ]
   }
  },
- "41660": {
+ {
   "name": "LegStreamCommodityRateReferencePageHeading",
   "type": "string",
   "nullable": true,
@@ -113238,7 +113238,7 @@
    ]
   }
  },
- "41661": {
+ {
   "name": "LegStreamDataProvider",
   "type": "string",
   "nullable": true,
@@ -113363,7 +113363,7 @@
    ]
   }
  },
- "41662": {
+ {
   "name": "LegStreamCommodityPricingType",
   "type": "string",
   "nullable": true,
@@ -113488,7 +113488,7 @@
    ]
   }
  },
- "41663": {
+ {
   "name": "LegStreamCommodityNearbySettlDayPeriod",
   "type": "int32",
   "nullable": true,
@@ -113611,7 +113611,7 @@
    ]
   }
  },
- "41664": {
+ {
   "name": "LegStreamCommodityNearbySettlDayUnit",
   "type": "string",
   "nullable": true,
@@ -113750,7 +113750,7 @@
    ]
   }
  },
- "41665": {
+ {
   "name": "LegStreamCommoditySettlDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -113873,7 +113873,7 @@
    ]
   }
  },
- "41666": {
+ {
   "name": "LegStreamCommoditySettlDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -114054,7 +114054,7 @@
    ]
   }
  },
- "41667": {
+ {
   "name": "LegStreamCommoditySettlDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -114177,7 +114177,7 @@
    ]
   }
  },
- "41668": {
+ {
   "name": "LegStreamCommoditySettlMonth",
   "type": "int32",
   "nullable": true,
@@ -114300,7 +114300,7 @@
    ]
   }
  },
- "41669": {
+ {
   "name": "LegStreamCommoditySettlDateRollPeriod",
   "type": "int32",
   "nullable": true,
@@ -114423,7 +114423,7 @@
    ]
   }
  },
- "41670": {
+ {
   "name": "LegStreamCommoditySettlDateRollUnit",
   "type": "string",
   "nullable": true,
@@ -114555,7 +114555,7 @@
    ]
   }
  },
- "41671": {
+ {
   "name": "LegStreamCommoditySettlDayType",
   "type": "int32",
   "nullable": true,
@@ -114722,7 +114722,7 @@
    ]
   }
  },
- "41672": {
+ {
   "name": "LegStreamCommodityXID",
   "type": "string",
   "nullable": true,
@@ -114845,7 +114845,7 @@
    ]
   }
  },
- "41673": {
+ {
   "name": "LegStreamCommodityXIDRef",
   "type": "string",
   "nullable": true,
@@ -114968,7 +114968,7 @@
    ]
   }
  },
- "41674": {
+ {
   "name": "NoLegStreamCommodityAltIDs",
   "type": "int64",
   "nullable": true,
@@ -115092,7 +115092,7 @@
    ]
   }
  },
- "41675": {
+ {
   "name": "LegStreamCommodityAltID",
   "type": "string",
   "nullable": true,
@@ -115216,7 +115216,7 @@
    ]
   }
  },
- "41676": {
+ {
   "name": "LegStreamCommodityAltIDSource",
   "type": "string",
   "nullable": true,
@@ -115340,7 +115340,7 @@
    ]
   }
  },
- "41677": {
+ {
   "name": "NoLegStreamCommodityDataSources",
   "type": "int64",
   "nullable": true,
@@ -115464,7 +115464,7 @@
    ]
   }
  },
- "41678": {
+ {
   "name": "LegStreamCommodityDataSourceID",
   "type": "string",
   "nullable": true,
@@ -115588,7 +115588,7 @@
    ]
   }
  },
- "41679": {
+ {
   "name": "LegStreamCommodityDataSourceIDType",
   "type": "int32",
   "nullable": true,
@@ -115742,7 +115742,7 @@
    ]
   }
  },
- "41680": {
+ {
   "name": "NoLegStreamCommoditySettlDays",
   "type": "int64",
   "nullable": true,
@@ -115867,7 +115867,7 @@
    ]
   }
  },
- "41681": {
+ {
   "name": "LegStreamCommoditySettlDay",
   "type": "int32",
   "nullable": true,
@@ -116064,7 +116064,7 @@
    ]
   }
  },
- "41682": {
+ {
   "name": "LegStreamCommoditySettlTotalHours",
   "type": "int32",
   "nullable": true,
@@ -116189,7 +116189,7 @@
    ]
   }
  },
- "41683": {
+ {
   "name": "NoLegStreamCommoditySettlTimes",
   "type": "int64",
   "nullable": true,
@@ -116315,7 +116315,7 @@
    ]
   }
  },
- "41684": {
+ {
   "name": "LegStreamCommoditySettlStart",
   "type": "string",
   "nullable": true,
@@ -116441,7 +116441,7 @@
    ]
   }
  },
- "41685": {
+ {
   "name": "LegStreamCommoditySettlEnd",
   "type": "string",
   "nullable": true,
@@ -116567,7 +116567,7 @@
    ]
   }
  },
- "41686": {
+ {
   "name": "NoLegStreamCommoditySettlPeriods",
   "type": "int64",
   "nullable": true,
@@ -116691,7 +116691,7 @@
    ]
   }
  },
- "41687": {
+ {
   "name": "LegStreamCommoditySettlCountry",
   "type": "string",
   "nullable": true,
@@ -116815,7 +116815,7 @@
    ]
   }
  },
- "41688": {
+ {
   "name": "LegStreamCommoditySettlTimeZone",
   "type": "string",
   "nullable": true,
@@ -116941,7 +116941,7 @@
    ]
   }
  },
- "41689": {
+ {
   "name": "LegStreamCommoditySettlFlowType",
   "type": "int32",
   "nullable": true,
@@ -117109,7 +117109,7 @@
    ]
   }
  },
- "41690": {
+ {
   "name": "LegStreamCommoditySettlPeriodNotional",
   "type": "double",
   "nullable": true,
@@ -117233,7 +117233,7 @@
    ]
   }
  },
- "41691": {
+ {
   "name": "LegStreamCommoditySettlPeriodNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -117919,7 +117919,7 @@
    ]
   }
  },
- "41692": {
+ {
   "name": "LegStreamCommoditySettlPeriodFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -118043,7 +118043,7 @@
    ]
   }
  },
- "41693": {
+ {
   "name": "LegStreamCommoditySettlPeriodFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -118197,7 +118197,7 @@
    ]
   }
  },
- "41694": {
+ {
   "name": "LegStreamCommoditySettlPeriodPrice",
   "type": "double",
   "nullable": true,
@@ -118321,7 +118321,7 @@
    ]
   }
  },
- "41695": {
+ {
   "name": "LegStreamCommoditySettlPeriodPriceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -119007,7 +119007,7 @@
    ]
   }
  },
- "41696": {
+ {
   "name": "LegStreamCommoditySettlPeriodPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -119131,7 +119131,7 @@
    ]
   }
  },
- "41697": {
+ {
   "name": "LegStreamCommoditySettlHolidaysProcessingInstruction",
   "type": "int32",
   "nullable": true,
@@ -119271,7 +119271,7 @@
    ]
   }
  },
- "41698": {
+ {
   "name": "LegStreamCommoditySettlPeriodXID",
   "type": "string",
   "nullable": true,
@@ -119395,7 +119395,7 @@
    ]
   }
  },
- "41699": {
+ {
   "name": "LegStreamCommoditySettlPeriodXIDRef",
   "type": "string",
   "nullable": true,
@@ -119519,7 +119519,7 @@
    ]
   }
  },
- "41700": {
+ {
   "name": "LegStreamXID",
   "type": "string",
   "nullable": true,
@@ -119641,7 +119641,7 @@
    ]
   }
  },
- "41701": {
+ {
   "name": "UnderlyingAdditionalTermBondSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -120003,7 +120003,7 @@
    ]
   }
  },
- "41702": {
+ {
   "name": "LegStreamNotionalXIDRef",
   "type": "string",
   "nullable": true,
@@ -120125,7 +120125,7 @@
    ]
   }
  },
- "41703": {
+ {
   "name": "LegStreamNotionalFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -120247,7 +120247,7 @@
    ]
   }
  },
- "41704": {
+ {
   "name": "LegStreamNotionalFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -120441,7 +120441,7 @@
    ]
   }
  },
- "41705": {
+ {
   "name": "LegStreamNotionalCommodityFrequency",
   "type": "int32",
   "nullable": true,
@@ -120614,7 +120614,7 @@
    ]
   }
  },
- "41706": {
+ {
   "name": "LegStreamNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -121298,7 +121298,7 @@
    ]
   }
  },
- "41707": {
+ {
   "name": "LegStreamTotalNotional",
   "type": "double",
   "nullable": true,
@@ -121420,7 +121420,7 @@
    ]
   }
  },
- "41708": {
+ {
   "name": "LegStreamTotalNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -122104,7 +122104,7 @@
    ]
   }
  },
- "41709": {
+ {
   "name": "UnderlyingAdditionalTermBondDesc",
   "type": "string",
   "nullable": true,
@@ -122233,7 +122233,7 @@
    ]
   }
  },
- "41710": {
+ {
   "name": "EncodedUnderlyingAdditionalTermBondDescLen",
   "type": "int64",
   "nullable": true,
@@ -122362,7 +122362,7 @@
    ]
   }
  },
- "41711": {
+ {
   "name": "EncodedUnderlyingAdditionalTermBondDesc",
   "type": "binary",
   "nullable": true,
@@ -122491,7 +122491,7 @@
    ]
   }
  },
- "41712": {
+ {
   "name": "UnderlyingAdditionalTermBondCurrency",
   "type": "string",
   "nullable": true,
@@ -122620,7 +122620,7 @@
    ]
   }
  },
- "41713": {
+ {
   "name": "NoUnderlyingComplexEventAveragingObservations",
   "type": "int64",
   "nullable": true,
@@ -122750,7 +122750,7 @@
    ]
   }
  },
- "41714": {
+ {
   "name": "UnderlyingComplexEventAveragingObservationNumber",
   "type": "int32",
   "nullable": true,
@@ -122880,7 +122880,7 @@
    ]
   }
  },
- "41715": {
+ {
   "name": "UnderlyingComplexEventAveragingWeight",
   "type": "double",
   "nullable": true,
@@ -123010,7 +123010,7 @@
    ]
   }
  },
- "41716": {
+ {
   "name": "NoUnderlyingComplexEventCreditEvents",
   "type": "int64",
   "nullable": true,
@@ -123139,7 +123139,7 @@
    ]
   }
  },
- "41717": {
+ {
   "name": "UnderlyingComplexEventCreditEventType",
   "type": "string",
   "nullable": true,
@@ -123270,7 +123270,7 @@
    ]
   }
  },
- "41718": {
+ {
   "name": "UnderlyingComplexEventCreditEventValue",
   "type": "string",
   "nullable": true,
@@ -123401,7 +123401,7 @@
    ]
   }
  },
- "41719": {
+ {
   "name": "UnderlyingComplexEventCreditEventCurrency",
   "type": "string",
   "nullable": true,
@@ -123530,7 +123530,7 @@
    ]
   }
  },
- "41720": {
+ {
   "name": "UnderlyingComplexEventCreditEventPeriod",
   "type": "int32",
   "nullable": true,
@@ -123659,7 +123659,7 @@
    ]
   }
  },
- "41721": {
+ {
   "name": "UnderlyingComplexEventCreditEventUnit",
   "type": "string",
   "nullable": true,
@@ -123818,7 +123818,7 @@
    ]
   }
  },
- "41722": {
+ {
   "name": "UnderlyingComplexEventCreditEventDayType",
   "type": "int32",
   "nullable": true,
@@ -123991,7 +123991,7 @@
    ]
   }
  },
- "41723": {
+ {
   "name": "UnderlyingComplexEventCreditEventRateSource",
   "type": "int32",
   "nullable": true,
@@ -124122,7 +124122,7 @@
    ]
   }
  },
- "41724": {
+ {
   "name": "NoUnderlyingComplexEventCreditEventQualifiers",
   "type": "int64",
   "nullable": true,
@@ -124252,7 +124252,7 @@
    ]
   }
  },
- "41725": {
+ {
   "name": "UnderlyingComplexEventCreditEventQualifier",
   "type": "string",
   "nullable": true,
@@ -124405,7 +124405,7 @@
    ]
   }
  },
- "41726": {
+ {
   "name": "NoUnderlyingComplexEventPeriodDateTimes",
   "type": "int64",
   "nullable": true,
@@ -124535,7 +124535,7 @@
    ]
   }
  },
- "41727": {
+ {
   "name": "UnderlyingComplexEventPeriodDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -124665,7 +124665,7 @@
    ]
   }
  },
- "41728": {
+ {
   "name": "UnderlyingComplexEventPeriodTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -124795,7 +124795,7 @@
    ]
   }
  },
- "41729": {
+ {
   "name": "NoUnderlyingComplexEventPeriods",
   "type": "int64",
   "nullable": true,
@@ -124924,7 +124924,7 @@
    ]
   }
  },
- "41730": {
+ {
   "name": "UnderlyingComplexEventPeriodType",
   "type": "int32",
   "nullable": true,
@@ -125097,7 +125097,7 @@
    ]
   }
  },
- "41731": {
+ {
   "name": "UnderlyingComplexEventBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -125228,7 +125228,7 @@
    ]
   }
  },
- "41732": {
+ {
   "name": "NoUnderlyingComplexEventRateSources",
   "type": "int64",
   "nullable": true,
@@ -125357,7 +125357,7 @@
    ]
   }
  },
- "41733": {
+ {
   "name": "UnderlyingComplexEventRateSource",
   "type": "int32",
   "nullable": true,
@@ -125523,7 +125523,7 @@
    ]
   }
  },
- "41734": {
+ {
   "name": "UnderlyingComplexEventRateSourceType",
   "type": "int32",
   "nullable": true,
@@ -125668,7 +125668,7 @@
    ]
   }
  },
- "41735": {
+ {
   "name": "UnderlyingComplexEventReferencePage",
   "type": "string",
   "nullable": true,
@@ -125799,7 +125799,7 @@
    ]
   }
  },
- "41736": {
+ {
   "name": "UnderlyingComplexEventReferencePageHeading",
   "type": "string",
   "nullable": true,
@@ -125928,7 +125928,7 @@
    ]
   }
  },
- "41737": {
+ {
   "name": "NoUnderlyingComplexEventDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -126058,7 +126058,7 @@
    ]
   }
  },
- "41738": {
+ {
   "name": "UnderlyingComplexEventDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -126190,7 +126190,7 @@
    ]
   }
  },
- "41739": {
+ {
   "name": "UnderlyingComplexEventDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -126319,7 +126319,7 @@
    ]
   }
  },
- "41740": {
+ {
   "name": "UnderlyingComplexEventDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -126450,7 +126450,7 @@
    ]
   }
  },
- "41741": {
+ {
   "name": "UnderlyingComplexEventDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -126579,7 +126579,7 @@
    ]
   }
  },
- "41742": {
+ {
   "name": "UnderlyingComplexEventDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -126738,7 +126738,7 @@
    ]
   }
  },
- "41743": {
+ {
   "name": "UnderlyingComplexEventDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -126911,7 +126911,7 @@
    ]
   }
  },
- "41744": {
+ {
   "name": "UnderlyingComplexEventDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -127098,7 +127098,7 @@
    ]
   }
  },
- "41745": {
+ {
   "name": "UnderlyingComplexEventDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -127227,7 +127227,7 @@
    ]
   }
  },
- "41746": {
+ {
   "name": "UnderlyingComplexEventFixingTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -127356,7 +127356,7 @@
    ]
   }
  },
- "41747": {
+ {
   "name": "UnderlyingComplexEventFixingTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -127487,7 +127487,7 @@
    ]
   }
  },
- "41748": {
+ {
   "name": "NoUnderlyingComplexEventCreditEventSources",
   "type": "int64",
   "nullable": true,
@@ -127616,7 +127616,7 @@
    ]
   }
  },
- "41749": {
+ {
   "name": "UnderlyingComplexEventCreditEventSource",
   "type": "string",
   "nullable": true,
@@ -127745,7 +127745,7 @@
    ]
   }
  },
- "41750": {
+ {
   "name": "NoUnderlyingComplexEventSchedules",
   "type": "int64",
   "nullable": true,
@@ -127875,7 +127875,7 @@
    ]
   }
  },
- "41751": {
+ {
   "name": "UnderlyingComplexEventScheduleStartDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -128005,7 +128005,7 @@
    ]
   }
  },
- "41752": {
+ {
   "name": "UnderlyingComplexEventScheduleEndDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -128135,7 +128135,7 @@
    ]
   }
  },
- "41753": {
+ {
   "name": "UnderlyingComplexEventScheduleFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -128265,7 +128265,7 @@
    ]
   }
  },
- "41754": {
+ {
   "name": "UnderlyingComplexEventScheduleFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -128425,7 +128425,7 @@
    ]
   }
  },
- "41755": {
+ {
   "name": "UnderlyingComplexEventScheduleRollConvention",
   "type": "string",
   "nullable": true,
@@ -128831,7 +128831,7 @@
    ]
   }
  },
- "41756": {
+ {
   "name": "NoUnderlyingDeliverySchedules",
   "type": "int64",
   "nullable": true,
@@ -128960,7 +128960,7 @@
    ]
   }
  },
- "41757": {
+ {
   "name": "UnderlyingDeliveryScheduleType",
   "type": "int32",
   "nullable": true,
@@ -129112,7 +129112,7 @@
    ]
   }
  },
- "41758": {
+ {
   "name": "UnderlyingDeliveryScheduleXID",
   "type": "string",
   "nullable": true,
@@ -129241,7 +129241,7 @@
    ]
   }
  },
- "41759": {
+ {
   "name": "UnderlyingDeliveryScheduleNotional",
   "type": "double",
   "nullable": true,
@@ -129370,7 +129370,7 @@
    ]
   }
  },
- "41760": {
+ {
   "name": "UnderlyingDeliveryScheduleNotionalUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -130061,7 +130061,7 @@
    ]
   }
  },
- "41761": {
+ {
   "name": "UnderlyingDeliveryScheduleNotionalCommodityFrequency",
   "type": "int32",
   "nullable": true,
@@ -130241,7 +130241,7 @@
    ]
   }
  },
- "41762": {
+ {
   "name": "UnderlyingDeliveryScheduleNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -130370,7 +130370,7 @@
    ]
   }
  },
- "41763": {
+ {
   "name": "UnderlyingDeliverySchedulePositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -130499,7 +130499,7 @@
    ]
   }
  },
- "41764": {
+ {
   "name": "UnderlyingDeliveryScheduleToleranceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -131190,7 +131190,7 @@
    ]
   }
  },
- "41765": {
+ {
   "name": "UnderlyingDeliveryScheduleToleranceType",
   "type": "int32",
   "nullable": true,
@@ -131335,7 +131335,7 @@
    ]
   }
  },
- "41766": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlCountry",
   "type": "string",
   "nullable": true,
@@ -131464,7 +131464,7 @@
    ]
   }
  },
- "41767": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlTimeZone",
   "type": "string",
   "nullable": true,
@@ -131595,7 +131595,7 @@
    ]
   }
  },
- "41768": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlFlowType",
   "type": "int32",
   "nullable": true,
@@ -131768,7 +131768,7 @@
    ]
   }
  },
- "41769": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlHolidaysProcessingInstruction",
   "type": "int32",
   "nullable": true,
@@ -131913,7 +131913,7 @@
    ]
   }
  },
- "41770": {
+ {
   "name": "NoUnderlyingDeliveryScheduleSettlDays",
   "type": "int64",
   "nullable": true,
@@ -132043,7 +132043,7 @@
    ]
   }
  },
- "41771": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlDay",
   "type": "int32",
   "nullable": true,
@@ -132245,7 +132245,7 @@
    ]
   }
  },
- "41772": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlTotalHours",
   "type": "int32",
   "nullable": true,
@@ -132375,7 +132375,7 @@
    ]
   }
  },
- "41773": {
+ {
   "name": "NoUnderlyingDeliveryScheduleSettlTimes",
   "type": "int64",
   "nullable": true,
@@ -132506,7 +132506,7 @@
    ]
   }
  },
- "41774": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlStart",
   "type": "string",
   "nullable": true,
@@ -132637,7 +132637,7 @@
    ]
   }
  },
- "41775": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlEnd",
   "type": "string",
   "nullable": true,
@@ -132768,7 +132768,7 @@
    ]
   }
  },
- "41776": {
+ {
   "name": "UnderlyingDeliveryScheduleSettlTimeType",
   "type": "int32",
   "nullable": true,
@@ -132915,7 +132915,7 @@
    ]
   }
  },
- "41777": {
+ {
   "name": "UnderlyingDeliveryStreamType",
   "type": "int32",
   "nullable": true,
@@ -133067,7 +133067,7 @@
    ]
   }
  },
- "41778": {
+ {
   "name": "UnderlyingDeliveryStreamPipeline",
   "type": "string",
   "nullable": true,
@@ -133196,7 +133196,7 @@
    ]
   }
  },
- "41779": {
+ {
   "name": "UnderlyingDeliveryStreamEntryPoint",
   "type": "string",
   "nullable": true,
@@ -133325,7 +133325,7 @@
    ]
   }
  },
- "41780": {
+ {
   "name": "UnderlyingDeliveryStreamWithdrawalPoint",
   "type": "string",
   "nullable": true,
@@ -133454,7 +133454,7 @@
    ]
   }
  },
- "41781": {
+ {
   "name": "UnderlyingDeliveryStreamDeliveryPoint",
   "type": "string",
   "nullable": true,
@@ -133585,7 +133585,7 @@
    ]
   }
  },
- "41782": {
+ {
   "name": "UnderlyingDeliveryStreamDeliveryRestriction",
   "type": "int32",
   "nullable": true,
@@ -133751,7 +133751,7 @@
    ]
   }
  },
- "41783": {
+ {
   "name": "UnderlyingDeliveryStreamDeliveryContingency",
   "type": "string",
   "nullable": true,
@@ -133882,7 +133882,7 @@
    ]
   }
  },
- "41784": {
+ {
   "name": "UnderlyingDeliveryStreamDeliveryContingentPartySide",
   "type": "int32",
   "nullable": true,
@@ -134027,7 +134027,7 @@
    ]
   }
  },
- "41785": {
+ {
   "name": "UnderlyingDeliveryStreamDeliverAtSourceIndicator",
   "type": "bool",
   "nullable": true,
@@ -134156,7 +134156,7 @@
    ]
   }
  },
- "41786": {
+ {
   "name": "UnderlyingDeliveryStreamRiskApportionment",
   "type": "string",
   "nullable": true,
@@ -134287,7 +134287,7 @@
    ]
   }
  },
- "41787": {
+ {
   "name": "UnderlyingDeliveryStreamTitleTransferLocation",
   "type": "string",
   "nullable": true,
@@ -134416,7 +134416,7 @@
    ]
   }
  },
- "41788": {
+ {
   "name": "UnderlyingDeliveryStreamTitleTransferCondition",
   "type": "int32",
   "nullable": true,
@@ -134561,7 +134561,7 @@
    ]
   }
  },
- "41789": {
+ {
   "name": "UnderlyingDeliveryStreamImporterOfRecord",
   "type": "string",
   "nullable": true,
@@ -134690,7 +134690,7 @@
    ]
   }
  },
- "41790": {
+ {
   "name": "UnderlyingDeliveryStreamNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -134819,7 +134819,7 @@
    ]
   }
  },
- "41791": {
+ {
   "name": "UnderlyingDeliveryStreamPositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -134948,7 +134948,7 @@
    ]
   }
  },
- "41792": {
+ {
   "name": "UnderlyingDeliveryStreamToleranceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -135639,7 +135639,7 @@
    ]
   }
  },
- "41793": {
+ {
   "name": "UnderlyingDeliveryStreamToleranceType",
   "type": "int32",
   "nullable": true,
@@ -135784,7 +135784,7 @@
    ]
   }
  },
- "41794": {
+ {
   "name": "UnderlyingDeliveryStreamToleranceOptionSide",
   "type": "int32",
   "nullable": true,
@@ -135929,7 +135929,7 @@
    ]
   }
  },
- "41795": {
+ {
   "name": "UnderlyingDeliveryStreamTotalPositiveTolerance",
   "type": "double",
   "nullable": true,
@@ -136058,7 +136058,7 @@
    ]
   }
  },
- "41796": {
+ {
   "name": "UnderlyingDeliveryStreamTotalNegativeTolerance",
   "type": "double",
   "nullable": true,
@@ -136187,7 +136187,7 @@
    ]
   }
  },
- "41797": {
+ {
   "name": "UnderlyingDeliveryStreamNotionalConversionFactor",
   "type": "double",
   "nullable": true,
@@ -136316,7 +136316,7 @@
    ]
   }
  },
- "41798": {
+ {
   "name": "UnderlyingDeliveryStreamTransportEquipment",
   "type": "string",
   "nullable": true,
@@ -136445,7 +136445,7 @@
    ]
   }
  },
- "41799": {
+ {
   "name": "UnderlyingDeliveryStreamElectingPartySide",
   "type": "int32",
   "nullable": true,
@@ -136590,7 +136590,7 @@
    ]
   }
  },
- "41800": {
+ {
   "name": "NoUnderlyingStreamAssetAttributes",
   "type": "int64",
   "nullable": true,
@@ -136720,7 +136720,7 @@
    ]
   }
  },
- "41801": {
+ {
   "name": "UnderlyingStreamAssetAttributeType",
   "type": "string",
   "nullable": true,
@@ -136852,7 +136852,7 @@
    ]
   }
  },
- "41802": {
+ {
   "name": "UnderlyingStreamAssetAttributeValue",
   "type": "string",
   "nullable": true,
@@ -136982,7 +136982,7 @@
    ]
   }
  },
- "41803": {
+ {
   "name": "UnderlyingStreamAssetAttributeLimit",
   "type": "string",
   "nullable": true,
@@ -137112,7 +137112,7 @@
    ]
   }
  },
- "41804": {
+ {
   "name": "NoUnderlyingDeliveryStreamCycles",
   "type": "int64",
   "nullable": true,
@@ -137242,7 +137242,7 @@
    ]
   }
  },
- "41805": {
+ {
   "name": "UnderlyingDeliveryStreamCycleDesc",
   "type": "string",
   "nullable": true,
@@ -137372,7 +137372,7 @@
    ]
   }
  },
- "41806": {
+ {
   "name": "EncodedUnderlyingDeliveryStreamCycleDescLen",
   "type": "int64",
   "nullable": true,
@@ -137502,7 +137502,7 @@
    ]
   }
  },
- "41807": {
+ {
   "name": "EncodedUnderlyingDeliveryStreamCycleDesc",
   "type": "binary",
   "nullable": true,
@@ -137632,7 +137632,7 @@
    ]
   }
  },
- "41808": {
+ {
   "name": "NoUnderlyingDeliveryStreamCommoditySources",
   "type": "int64",
   "nullable": true,
@@ -137762,7 +137762,7 @@
    ]
   }
  },
- "41809": {
+ {
   "name": "UnderlyingDeliveryStreamCommoditySource",
   "type": "string",
   "nullable": true,
@@ -137894,7 +137894,7 @@
    ]
   }
  },
- "41810": {
+ {
   "name": "UnderlyingExerciseDesc",
   "type": "string",
   "nullable": true,
@@ -138022,7 +138022,7 @@
    ]
   }
  },
- "41811": {
+ {
   "name": "EncodedUnderlyingExerciseDescLen",
   "type": "int64",
   "nullable": true,
@@ -138150,7 +138150,7 @@
    ]
   }
  },
- "41812": {
+ {
   "name": "EncodedUnderlyingExerciseDesc",
   "type": "binary",
   "nullable": true,
@@ -138278,7 +138278,7 @@
    ]
   }
  },
- "41813": {
+ {
   "name": "UnderlyingAutomaticExerciseIndicator",
   "type": "bool",
   "nullable": true,
@@ -138406,7 +138406,7 @@
    ]
   }
  },
- "41814": {
+ {
   "name": "UnderlyingAutomaticExerciseThresholdRate",
   "type": "double",
   "nullable": true,
@@ -138534,7 +138534,7 @@
    ]
   }
  },
- "41815": {
+ {
   "name": "UnderlyingExerciseConfirmationMethod",
   "type": "int32",
   "nullable": true,
@@ -138692,7 +138692,7 @@
    ]
   }
  },
- "41816": {
+ {
   "name": "UnderlyingManualNoticeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -138822,7 +138822,7 @@
    ]
   }
  },
- "41817": {
+ {
   "name": "UnderlyingFallbackExerciseIndicator",
   "type": "bool",
   "nullable": true,
@@ -138950,7 +138950,7 @@
    ]
   }
  },
- "41818": {
+ {
   "name": "UnderlyingLimitedRightToConfirmIndicator",
   "type": "bool",
   "nullable": true,
@@ -139078,7 +139078,7 @@
    ]
   }
  },
- "41819": {
+ {
   "name": "UnderlyingExerciseSplitTicketIndicator",
   "type": "bool",
   "nullable": true,
@@ -139206,7 +139206,7 @@
    ]
   }
  },
- "41820": {
+ {
   "name": "NoUnderlyingOptionExerciseBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -139336,7 +139336,7 @@
    ]
   }
  },
- "41821": {
+ {
   "name": "UnderlyingOptionExerciseBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -139468,7 +139468,7 @@
    ]
   }
  },
- "41822": {
+ {
   "name": "UnderlyingOptionExerciseBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -139655,7 +139655,7 @@
    ]
   }
  },
- "41823": {
+ {
   "name": "UnderlyingOptionExerciseEarliestDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -139830,7 +139830,7 @@
    ]
   }
  },
- "41824": {
+ {
   "name": "UnderlyingOptionExerciseEarliestDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -139959,7 +139959,7 @@
    ]
   }
  },
- "41825": {
+ {
   "name": "UnderlyingOptionExerciseEarliestDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -140118,7 +140118,7 @@
    ]
   }
  },
- "41826": {
+ {
   "name": "UnderlyingOptionExerciseFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -140247,7 +140247,7 @@
    ]
   }
  },
- "41827": {
+ {
   "name": "UnderlyingOptionExerciseFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -140406,7 +140406,7 @@
    ]
   }
  },
- "41828": {
+ {
   "name": "UnderlyingOptionExerciseStartDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -140535,7 +140535,7 @@
    ]
   }
  },
- "41829": {
+ {
   "name": "UnderlyingOptionExerciseStartDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -140666,7 +140666,7 @@
    ]
   }
  },
- "41830": {
+ {
   "name": "UnderlyingOptionExerciseStartDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -140795,7 +140795,7 @@
    ]
   }
  },
- "41831": {
+ {
   "name": "UnderlyingOptionExerciseStartDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -140954,7 +140954,7 @@
    ]
   }
  },
- "41832": {
+ {
   "name": "UnderlyingOptionExerciseStartDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -141129,7 +141129,7 @@
    ]
   }
  },
- "41833": {
+ {
   "name": "UnderlyingOptionExerciseStartDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -141258,7 +141258,7 @@
    ]
   }
  },
- "41834": {
+ {
   "name": "UnderlyingOptionExerciseSkip",
   "type": "int32",
   "nullable": true,
@@ -141387,7 +141387,7 @@
    ]
   }
  },
- "41835": {
+ {
   "name": "UnderlyingOptionExerciseNominationDeadline",
   "type": "timestamp[us]",
   "nullable": true,
@@ -141516,7 +141516,7 @@
    ]
   }
  },
- "41836": {
+ {
   "name": "UnderlyingOptionExerciseFirstDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -141645,7 +141645,7 @@
    ]
   }
  },
- "41837": {
+ {
   "name": "UnderlyingOptionExerciseLastDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -141774,7 +141774,7 @@
    ]
   }
  },
- "41838": {
+ {
   "name": "UnderlyingOptionExerciseEarliestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -141903,7 +141903,7 @@
    ]
   }
  },
- "41839": {
+ {
   "name": "UnderlyingOptionExerciseLatestTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -142032,7 +142032,7 @@
    ]
   }
  },
- "41840": {
+ {
   "name": "UnderlyingOptionExerciseTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -142163,7 +142163,7 @@
    ]
   }
  },
- "41841": {
+ {
   "name": "NoUnderlyingOptionExerciseDates",
   "type": "int64",
   "nullable": true,
@@ -142293,7 +142293,7 @@
    ]
   }
  },
- "41842": {
+ {
   "name": "UnderlyingOptionExerciseDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -142423,7 +142423,7 @@
    ]
   }
  },
- "41843": {
+ {
   "name": "UnderlyingOptionExerciseDateType",
   "type": "int32",
   "nullable": true,
@@ -142569,7 +142569,7 @@
    ]
   }
  },
- "41844": {
+ {
   "name": "NoUnderlyingOptionExerciseExpirationDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -142699,7 +142699,7 @@
    ]
   }
  },
- "41845": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -142831,7 +142831,7 @@
    ]
   }
  },
- "41846": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -143018,7 +143018,7 @@
    ]
   }
  },
- "41847": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateRelativeTo",
   "type": "int32",
   "nullable": true,
@@ -143149,7 +143149,7 @@
    ]
   }
  },
- "41848": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -143278,7 +143278,7 @@
    ]
   }
  },
- "41849": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -143437,7 +143437,7 @@
    ]
   }
  },
- "41850": {
+ {
   "name": "UnderlyingOptionExerciseExpirationFrequencyPeriod",
   "type": "int32",
   "nullable": true,
@@ -143566,7 +143566,7 @@
    ]
   }
  },
- "41851": {
+ {
   "name": "UnderlyingOptionExerciseExpirationFrequencyUnit",
   "type": "string",
   "nullable": true,
@@ -143725,7 +143725,7 @@
    ]
   }
  },
- "41852": {
+ {
   "name": "UnderlyingOptionExerciseExpirationRollConvention",
   "type": "string",
   "nullable": true,
@@ -144130,7 +144130,7 @@
    ]
   }
  },
- "41853": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateOffsetDayType",
   "type": "int32",
   "nullable": true,
@@ -144305,7 +144305,7 @@
    ]
   }
  },
- "41854": {
+ {
   "name": "UnderlyingOptionExerciseExpirationTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -144434,7 +144434,7 @@
    ]
   }
  },
- "41855": {
+ {
   "name": "UnderlyingOptionExerciseExpirationTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -144565,7 +144565,7 @@
    ]
   }
  },
- "41856": {
+ {
   "name": "NoUnderlyingOptionExerciseExpirationDates",
   "type": "int64",
   "nullable": true,
@@ -144695,7 +144695,7 @@
    ]
   }
  },
- "41857": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -144825,7 +144825,7 @@
    ]
   }
  },
- "41858": {
+ {
   "name": "UnderlyingOptionExerciseExpirationDateType",
   "type": "int32",
   "nullable": true,
@@ -144971,7 +144971,7 @@
    ]
   }
  },
- "41859": {
+ {
   "name": "UnderlyingMarketDisruptionProvision",
   "type": "int32",
   "nullable": true,
@@ -145129,7 +145129,7 @@
    ]
   }
  },
- "41860": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackProvision",
   "type": "int32",
   "nullable": true,
@@ -145273,7 +145273,7 @@
    ]
   }
  },
- "41861": {
+ {
   "name": "UnderlyingMarketDisruptionMaximumDays",
   "type": "int32",
   "nullable": true,
@@ -145401,7 +145401,7 @@
    ]
   }
  },
- "41862": {
+ {
   "name": "UnderlyingMarketDisruptionMaterialityPercentage",
   "type": "double",
   "nullable": true,
@@ -145529,7 +145529,7 @@
    ]
   }
  },
- "41863": {
+ {
   "name": "UnderlyingMarketDisruptionMinimumFuturesContracts",
   "type": "int32",
   "nullable": true,
@@ -145657,7 +145657,7 @@
    ]
   }
  },
- "41864": {
+ {
   "name": "NoUnderlyingMarketDisruptionEvents",
   "type": "int64",
   "nullable": true,
@@ -145786,7 +145786,7 @@
    ]
   }
  },
- "41865": {
+ {
   "name": "UnderlyingMarketDisruptionEvent",
   "type": "string",
   "nullable": true,
@@ -145917,7 +145917,7 @@
    ]
   }
  },
- "41866": {
+ {
   "name": "NoUnderlyingMarketDisruptionFallbacks",
   "type": "int64",
   "nullable": true,
@@ -146046,7 +146046,7 @@
    ]
   }
  },
- "41867": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackType",
   "type": "string",
   "nullable": true,
@@ -146177,7 +146177,7 @@
    ]
   }
  },
- "41868": {
+ {
   "name": "NoUnderlyingMarketDisruptionFallbackReferencePrices",
   "type": "int64",
   "nullable": true,
@@ -146306,7 +146306,7 @@
    ]
   }
  },
- "41869": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackUnderlierType",
   "type": "int32",
   "nullable": true,
@@ -146521,7 +146521,7 @@
    ]
   }
  },
- "41870": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackUnderlierSecurityID",
   "type": "string",
   "nullable": true,
@@ -146650,7 +146650,7 @@
    ]
   }
  },
- "41871": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackUnderlierSecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -147014,7 +147014,7 @@
    ]
   }
  },
- "41872": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackUnderlierSecurityDesc",
   "type": "string",
   "nullable": true,
@@ -147143,7 +147143,7 @@
    ]
   }
  },
- "41873": {
+ {
   "name": "EncodedUnderlyingMarketDisruptionFallbackUnderlierSecDescLen",
   "type": "int64",
   "nullable": true,
@@ -147274,7 +147274,7 @@
    ]
   }
  },
- "41874": {
+ {
   "name": "EncodedUnderlyingMarketDisruptionFallbackUnderlierSecurityDesc",
   "type": "binary",
   "nullable": true,
@@ -147403,7 +147403,7 @@
    ]
   }
  },
- "41875": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackOpenUnits",
   "type": "double",
   "nullable": true,
@@ -147532,7 +147532,7 @@
    ]
   }
  },
- "41876": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackBasketCurrency",
   "type": "string",
   "nullable": true,
@@ -147661,7 +147661,7 @@
    ]
   }
  },
- "41877": {
+ {
   "name": "UnderlyingMarketDisruptionFallbackBasketDivisor",
   "type": "double",
   "nullable": true,
@@ -147790,7 +147790,7 @@
    ]
   }
  },
- "41878": {
+ {
   "name": "NoUnderlyingPaymentScheduleFixingDays",
   "type": "int64",
   "nullable": true,
@@ -147920,7 +147920,7 @@
    ]
   }
  },
- "41879": {
+ {
   "name": "UnderlyingPaymentScheduleFixingDayOfWeek",
   "type": "int32",
   "nullable": true,
@@ -148108,7 +148108,7 @@
    ]
   }
  },
- "41880": {
+ {
   "name": "UnderlyingPaymentScheduleFixingDayNumber",
   "type": "int32",
   "nullable": true,
@@ -148238,7 +148238,7 @@
    ]
   }
  },
- "41881": {
+ {
   "name": "UnderlyingPaymentScheduleXID",
   "type": "string",
   "nullable": true,
@@ -148367,7 +148367,7 @@
    ]
   }
  },
- "41882": {
+ {
   "name": "UnderlyingPaymentScheduleXIDRef",
   "type": "string",
   "nullable": true,
@@ -148496,7 +148496,7 @@
    ]
   }
  },
- "41883": {
+ {
   "name": "UnderlyingPaymentScheduleRateCurrency",
   "type": "string",
   "nullable": true,
@@ -148625,7 +148625,7 @@
    ]
   }
  },
- "41884": {
+ {
   "name": "UnderlyingPaymentScheduleRateUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -149316,7 +149316,7 @@
    ]
   }
  },
- "41885": {
+ {
   "name": "UnderlyingPaymentScheduleRateConversionFactor",
   "type": "double",
   "nullable": true,
@@ -149447,7 +149447,7 @@
    ]
   }
  },
- "41886": {
+ {
   "name": "UnderlyingPaymentScheduleRateSpreadType",
   "type": "int32",
   "nullable": true,
@@ -149592,7 +149592,7 @@
    ]
   }
  },
- "41887": {
+ {
   "name": "UnderlyingPaymentScheduleSettlPeriodPrice",
   "type": "double",
   "nullable": true,
@@ -149721,7 +149721,7 @@
    ]
   }
  },
- "41888": {
+ {
   "name": "UnderlyingPaymentScheduleSettlPeriodPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -149850,7 +149850,7 @@
    ]
   }
  },
- "41889": {
+ {
   "name": "UnderlyingPaymentScheduleSettlPeriodPriceUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -150541,7 +150541,7 @@
    ]
   }
  },
- "41890": {
+ {
   "name": "UnderlyingPaymentScheduleStepUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -151232,7 +151232,7 @@
    ]
   }
  },
- "41891": {
+ {
   "name": "UnderlyingPaymentScheduleFixingDayDistribution",
   "type": "int32",
   "nullable": true,
@@ -151391,7 +151391,7 @@
    ]
   }
  },
- "41892": {
+ {
   "name": "UnderlyingPaymentScheduleFixingDayCount",
   "type": "int32",
   "nullable": true,
@@ -151520,7 +151520,7 @@
    ]
   }
  },
- "41893": {
+ {
   "name": "UnderlyingPaymentScheduleFixingLagPeriod",
   "type": "int32",
   "nullable": true,
@@ -151649,7 +151649,7 @@
    ]
   }
  },
- "41894": {
+ {
   "name": "UnderlyingPaymentScheduleFixingLagUnit",
   "type": "string",
   "nullable": true,
@@ -151808,7 +151808,7 @@
    ]
   }
  },
- "41895": {
+ {
   "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -151939,7 +151939,7 @@
    ]
   }
  },
- "41896": {
+ {
   "name": "UnderlyingPaymentScheduleFixingFirstObservationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -152100,7 +152100,7 @@
    ]
   }
  },
- "41897": {
+ {
   "name": "UnderlyingPaymentStreamFlatRateIndicator",
   "type": "bool",
   "nullable": true,
@@ -152229,7 +152229,7 @@
    ]
   }
  },
- "41898": {
+ {
   "name": "UnderlyingPaymentStreamFlatRateAmount",
   "type": "double",
   "nullable": true,
@@ -152358,7 +152358,7 @@
    ]
   }
  },
- "41899": {
+ {
   "name": "UnderlyingPaymentStreamFlatRateCurrency",
   "type": "string",
   "nullable": true,
@@ -152487,7 +152487,7 @@
    ]
   }
  },
- "41900": {
+ {
   "name": "UnderlyingPaymentStreamMaximumPaymentAmount",
   "type": "double",
   "nullable": true,
@@ -152616,7 +152616,7 @@
    ]
   }
  },
- "41901": {
+ {
   "name": "UnderlyingPaymentStreamMaximumPaymentCurrency",
   "type": "string",
   "nullable": true,
@@ -152745,7 +152745,7 @@
    ]
   }
  },
- "41902": {
+ {
   "name": "UnderlyingPaymentStreamMaximumTransactionAmount",
   "type": "double",
   "nullable": true,
@@ -152874,7 +152874,7 @@
    ]
   }
  },
- "41903": {
+ {
   "name": "UnderlyingPaymentStreamMaximumTransactionCurrency",
   "type": "string",
   "nullable": true,
@@ -153003,7 +153003,7 @@
    ]
   }
  },
- "41904": {
+ {
   "name": "UnderlyingPaymentStreamFixedAmountUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -153695,7 +153695,7 @@
    ]
   }
  },
- "41905": {
+ {
   "name": "UnderlyingPaymentStreamTotalFixedAmount",
   "type": "double",
   "nullable": true,
@@ -153825,7 +153825,7 @@
    ]
   }
  },
- "41906": {
+ {
   "name": "UnderlyingPaymentStreamWorldScaleRate",
   "type": "double",
   "nullable": true,
@@ -153955,7 +153955,7 @@
    ]
   }
  },
- "41907": {
+ {
   "name": "UnderlyingPaymentStreamContractPrice",
   "type": "double",
   "nullable": true,
@@ -154085,7 +154085,7 @@
    ]
   }
  },
- "41908": {
+ {
   "name": "UnderlyingPaymentStreamContractPriceCurrency",
   "type": "string",
   "nullable": true,
@@ -154215,7 +154215,7 @@
    ]
   }
  },
- "41909": {
+ {
   "name": "NoUnderlyingPaymentStreamPricingBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -154346,7 +154346,7 @@
    ]
   }
  },
- "41910": {
+ {
   "name": "UnderlyingPaymentStreamPricingBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -154479,7 +154479,7 @@
    ]
   }
  },
- "41911": {
+ {
   "name": "UnderlyingPaymentStreamRateIndex2CurveUnit",
   "type": "string",
   "nullable": true,
@@ -154639,7 +154639,7 @@
    ]
   }
  },
- "41912": {
+ {
   "name": "UnderlyingPaymentStreamRateIndex2CurvePeriod",
   "type": "int32",
   "nullable": true,
@@ -154769,7 +154769,7 @@
    ]
   }
  },
- "41913": {
+ {
   "name": "UnderlyingPaymentStreamRateIndexLocation",
   "type": "string",
   "nullable": true,
@@ -154899,7 +154899,7 @@
    ]
   }
  },
- "41914": {
+ {
   "name": "UnderlyingPaymentStreamRateIndexLevel",
   "type": "double",
   "nullable": true,
@@ -155029,7 +155029,7 @@
    ]
   }
  },
- "41915": {
+ {
   "name": "UnderlyingPaymentStreamRateIndexUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -155721,7 +155721,7 @@
    ]
   }
  },
- "41916": {
+ {
   "name": "UnderlyingPaymentStreamSettlLevel",
   "type": "int32",
   "nullable": true,
@@ -155881,7 +155881,7 @@
    ]
   }
  },
- "41917": {
+ {
   "name": "UnderlyingPaymentStreamReferenceLevel",
   "type": "double",
   "nullable": true,
@@ -156011,7 +156011,7 @@
    ]
   }
  },
- "41918": {
+ {
   "name": "UnderlyingPaymentStreamReferenceLevelUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -156703,7 +156703,7 @@
    ]
   }
  },
- "41919": {
+ {
   "name": "UnderlyingPaymentStreamReferenceLevelEqualsZeroIndicator",
   "type": "bool",
   "nullable": true,
@@ -156833,7 +156833,7 @@
    ]
   }
  },
- "41920": {
+ {
   "name": "UnderlyingPaymentStreamRateSpreadCurrency",
   "type": "string",
   "nullable": true,
@@ -156963,7 +156963,7 @@
    ]
   }
  },
- "41921": {
+ {
   "name": "UnderlyingPaymentStreamRateSpreadUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -157655,7 +157655,7 @@
    ]
   }
  },
- "41922": {
+ {
   "name": "UnderlyingPaymentStreamRateConversionFactor",
   "type": "double",
   "nullable": true,
@@ -157785,7 +157785,7 @@
    ]
   }
  },
- "41923": {
+ {
   "name": "UnderlyingPaymentStreamRateSpreadType",
   "type": "int32",
   "nullable": true,
@@ -157931,7 +157931,7 @@
    ]
   }
  },
- "41924": {
+ {
   "name": "UnderlyingPaymentStreamLastResetRate",
   "type": "double",
   "nullable": true,
@@ -158061,7 +158061,7 @@
    ]
   }
  },
- "41925": {
+ {
   "name": "UnderlyingPaymentStreamFinalRate",
   "type": "double",
   "nullable": true,
@@ -158191,7 +158191,7 @@
    ]
   }
  },
- "41926": {
+ {
   "name": "UnderlyingPaymentStreamCalculationLagPeriod",
   "type": "int32",
   "nullable": true,
@@ -158321,7 +158321,7 @@
    ]
   }
  },
- "41927": {
+ {
   "name": "UnderlyingPaymentStreamCalculationLagUnit",
   "type": "string",
   "nullable": true,
@@ -158481,7 +158481,7 @@
    ]
   }
  },
- "41928": {
+ {
   "name": "UnderlyingPaymentStreamFirstObservationDateOffsetPeriod",
   "type": "int32",
   "nullable": true,
@@ -158613,7 +158613,7 @@
    ]
   }
  },
- "41929": {
+ {
   "name": "UnderlyingPaymentStreamFirstObservationDateOffsetUnit",
   "type": "string",
   "nullable": true,
@@ -158775,7 +158775,7 @@
    ]
   }
  },
- "41930": {
+ {
   "name": "UnderlyingPaymentStreamPricingDayType",
   "type": "int32",
   "nullable": true,
@@ -158949,7 +158949,7 @@
    ]
   }
  },
- "41931": {
+ {
   "name": "UnderlyingPaymentStreamPricingDayDistribution",
   "type": "int32",
   "nullable": true,
@@ -159109,7 +159109,7 @@
    ]
   }
  },
- "41932": {
+ {
   "name": "UnderlyingPaymentStreamPricingDayCount",
   "type": "int32",
   "nullable": true,
@@ -159239,7 +159239,7 @@
    ]
   }
  },
- "41933": {
+ {
   "name": "UnderlyingPaymentStreamPricingBusinessCalendar",
   "type": "string",
   "nullable": true,
@@ -159371,7 +159371,7 @@
    ]
   }
  },
- "41934": {
+ {
   "name": "UnderlyingPaymentStreamPricingBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -159559,7 +159559,7 @@
    ]
   }
  },
- "41935": {
+ {
   "name": "LegStreamCommoditySettlTimeType",
   "type": "int32",
   "nullable": true,
@@ -159701,7 +159701,7 @@
    ]
   }
  },
- "41936": {
+ {
   "name": "UnderlyingStreamCommoditySettlTimeType",
   "type": "int32",
   "nullable": true,
@@ -159849,7 +159849,7 @@
    ]
   }
  },
- "41937": {
+ {
   "name": "NoUnderlyingPaymentStreamPaymentDates",
   "type": "int64",
   "nullable": true,
@@ -159980,7 +159980,7 @@
    ]
   }
  },
- "41938": {
+ {
   "name": "UnderlyingPaymentStreamPaymentDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -160111,7 +160111,7 @@
    ]
   }
  },
- "41939": {
+ {
   "name": "UnderlyingPaymentStreamPaymentDateType",
   "type": "int32",
   "nullable": true,
@@ -160258,7 +160258,7 @@
    ]
   }
  },
- "41940": {
+ {
   "name": "UnderlyingPaymentStreamMasterAgreementPaymentDatesIndicator",
   "type": "bool",
   "nullable": true,
@@ -160388,7 +160388,7 @@
    ]
   }
  },
- "41941": {
+ {
   "name": "NoUnderlyingPaymentStreamPricingDates",
   "type": "int64",
   "nullable": true,
@@ -160519,7 +160519,7 @@
    ]
   }
  },
- "41942": {
+ {
   "name": "UnderlyingPaymentStreamPricingDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -160650,7 +160650,7 @@
    ]
   }
  },
- "41943": {
+ {
   "name": "UnderlyingPaymentStreamPricingDateType",
   "type": "int32",
   "nullable": true,
@@ -160797,7 +160797,7 @@
    ]
   }
  },
- "41944": {
+ {
   "name": "NoUnderlyingPaymentStreamPricingDays",
   "type": "int64",
   "nullable": true,
@@ -160928,7 +160928,7 @@
    ]
   }
  },
- "41945": {
+ {
   "name": "UnderlyingPaymentStreamPricingDayOfWeek",
   "type": "int32",
   "nullable": true,
@@ -161117,7 +161117,7 @@
    ]
   }
  },
- "41946": {
+ {
   "name": "UnderlyingPaymentStreamPricingDayNumber",
   "type": "int32",
   "nullable": true,
@@ -161248,7 +161248,7 @@
    ]
   }
  },
- "41947": {
+ {
   "name": "NoUnderlyingPricingDateBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -161377,7 +161377,7 @@
    ]
   }
  },
- "41948": {
+ {
   "name": "UnderlyingPricingDateBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -161508,7 +161508,7 @@
    ]
   }
  },
- "41949": {
+ {
   "name": "UnderlyingPricingDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -161636,7 +161636,7 @@
    ]
   }
  },
- "41950": {
+ {
   "name": "UnderlyingPricingDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -161822,7 +161822,7 @@
    ]
   }
  },
- "41951": {
+ {
   "name": "UnderlyingPricingDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -161950,7 +161950,7 @@
    ]
   }
  },
- "41952": {
+ {
   "name": "UnderlyingPricingTime",
   "type": "timestamp[us]",
   "nullable": true,
@@ -162078,7 +162078,7 @@
    ]
   }
  },
- "41953": {
+ {
   "name": "UnderlyingPricingTimeBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -162208,7 +162208,7 @@
    ]
   }
  },
- "41954": {
+ {
   "name": "NoUnderlyingStreamCalculationPeriodDates",
   "type": "int64",
   "nullable": true,
@@ -162338,7 +162338,7 @@
    ]
   }
  },
- "41955": {
+ {
   "name": "UnderlyingStreamCalculationPeriodDate",
   "type": "timestamp[us]",
   "nullable": true,
@@ -162468,7 +162468,7 @@
    ]
   }
  },
- "41956": {
+ {
   "name": "UnderlyingStreamCalculationPeriodDateType",
   "type": "int32",
   "nullable": true,
@@ -162614,7 +162614,7 @@
    ]
   }
  },
- "41957": {
+ {
   "name": "UnderlyingStreamCalculationPeriodDatesXID",
   "type": "string",
   "nullable": true,
@@ -162743,7 +162743,7 @@
    ]
   }
  },
- "41958": {
+ {
   "name": "UnderlyingStreamCalculationPeriodDatesXIDRef",
   "type": "string",
   "nullable": true,
@@ -162872,7 +162872,7 @@
    ]
   }
  },
- "41959": {
+ {
   "name": "UnderlyingStreamCalculationBalanceOfFirstPeriod",
   "type": "bool",
   "nullable": true,
@@ -163001,7 +163001,7 @@
    ]
   }
  },
- "41960": {
+ {
   "name": "UnderlyingStreamCalculationCorrectionPeriod",
   "type": "int32",
   "nullable": true,
@@ -163130,7 +163130,7 @@
    ]
   }
  },
- "41961": {
+ {
   "name": "UnderlyingStreamCalculationCorrectionUnit",
   "type": "string",
   "nullable": true,
@@ -163289,7 +163289,7 @@
    ]
   }
  },
- "41962": {
+ {
   "name": "NoUnderlyingStreamCommoditySettlBusinessCenters",
   "type": "int64",
   "nullable": true,
@@ -163419,7 +163419,7 @@
    ]
   }
  },
- "41963": {
+ {
   "name": "UnderlyingStreamCommoditySettlBusinessCenter",
   "type": "string",
   "nullable": true,
@@ -163551,7 +163551,7 @@
    ]
   }
  },
- "41964": {
+ {
   "name": "UnderlyingStreamCommodityBase",
   "type": "string",
   "nullable": true,
@@ -163680,7 +163680,7 @@
    ]
   }
  },
- "41965": {
+ {
   "name": "UnderlyingStreamCommodityType",
   "type": "string",
   "nullable": true,
@@ -163811,7 +163811,7 @@
    ]
   }
  },
- "41966": {
+ {
   "name": "UnderlyingStreamCommoditySecurityID",
   "type": "string",
   "nullable": true,
@@ -163940,7 +163940,7 @@
    ]
   }
  },
- "41967": {
+ {
   "name": "UnderlyingStreamCommoditySecurityIDSource",
   "type": "string",
   "nullable": true,
@@ -164304,7 +164304,7 @@
    ]
   }
  },
- "41968": {
+ {
   "name": "UnderlyingStreamCommodityDesc",
   "type": "string",
   "nullable": true,
@@ -164433,7 +164433,7 @@
    ]
   }
  },
- "41969": {
+ {
   "name": "EncodedUnderlyingStreamCommodityDescLen",
   "type": "int64",
   "nullable": true,
@@ -164562,7 +164562,7 @@
    ]
   }
  },
- "41970": {
+ {
   "name": "EncodedUnderlyingStreamCommodityDesc",
   "type": "binary",
   "nullable": true,
@@ -164691,7 +164691,7 @@
    ]
   }
  },
- "41971": {
+ {
   "name": "UnderlyingStreamCommodityUnitOfMeasure",
   "type": "string",
   "nullable": true,
@@ -165382,7 +165382,7 @@
    ]
   }
  },
- "41972": {
+ {
   "name": "UnderlyingStreamCommodityCurrency",
   "type": "string",
   "nullable": true,
@@ -165511,7 +165511,7 @@
    ]
   }
  },
- "41973": {
+ {
   "name": "UnderlyingStreamCommodityExchange",
   "type": "string",
   "nullable": true,
@@ -165640,7 +165640,7 @@
    ]
   }
  },
- "41974": {
+ {
   "name": "UnderlyingStreamCommodityRateSource",
   "type": "int32",
   "nullable": true,
@@ -165771,7 +165771,7 @@
    ]
   }
  },
- "41975": {
+ {
   "name": "UnderlyingStreamCommodityRateReferencePage",
   "type": "string",
   "nullable": true,
@@ -165900,7 +165900,7 @@
    ]
   }
  },
- "41976": {
+ {
   "name": "UnderlyingStreamCommodityRateReferencePageHeading",
   "type": "string",
   "nullable": true,
@@ -166029,7 +166029,7 @@
    ]
   }
  },
- "41977": {
+ {
   "name": "UnderlyingStreamDataProvider",
   "type": "string",
   "nullable": true,
@@ -166160,7 +166160,7 @@
    ]
   }
  },
- "41978": {
+ {
   "name": "UnderlyingStreamCommodityPricingType",
   "type": "string",
   "nullable": true,
@@ -166291,7 +166291,7 @@
    ]
   }
  },
- "41979": {
+ {
   "name": "UnderlyingStreamCommodityNearbySettlDayPeriod",
   "type": "int32",
   "nullable": true,
@@ -166420,7 +166420,7 @@
    ]
   }
  },
- "41980": {
+ {
   "name": "UnderlyingStreamCommodityNearbySettlDayUnit",
   "type": "string",
   "nullable": true,
@@ -166565,7 +166565,7 @@
    ]
   }
  },
- "41981": {
+ {
   "name": "UnderlyingStreamCommoditySettlDateUnadjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -166694,7 +166694,7 @@
    ]
   }
  },
- "41982": {
+ {
   "name": "UnderlyingStreamCommoditySettlDateBusinessDayConvention",
   "type": "int32",
   "nullable": true,
@@ -166881,7 +166881,7 @@
    ]
   }
  },
- "41983": {
+ {
   "name": "UnderlyingStreamCommoditySettlDateAdjusted",
   "type": "timestamp[us]",
   "nullable": true,
@@ -167010,7 +167010,7 @@
    ]
   }
  },
- "41984": {
+ {
   "name": "UnderlyingStreamCommoditySettlMonth",
   "type": "int32",
   "nullable": true,
@@ -167139,7 +167139,7 @@
    ]
   }
  },
- "41985": {
+ {
   "name": "UnderlyingStreamCommoditySettlDateRollPeriod",
   "type": "int32",
   "nullable": true,
@@ -167268,7 +167268,7 @@
    ]
   }
  },
- "41986": {
+ {
   "name": "UnderlyingStreamCommoditySettlDateRollUnit",
   "type": "string",
   "nullable": true,
@@ -167406,7 +167406,7 @@
    ]
   }
  },
- "41987": {
+ {
   "name": "UnderlyingStreamCommoditySettlDayType",
   "type": "int32",
   "nullable": true,
@@ -167579,7 +167579,7 @@
    ]
   }
  },
- "41988": {
+ {
   "name": "UnderlyingStreamCommodityXID",
   "type": "string",
   "nullable": true,
@@ -167708,7 +167708,7 @@
    ]
   }
  },
- "41989": {
+ {
   "name": "UnderlyingStreamCommodityXIDRef",
   "type": "string",
   "nullable": true,
@@ -167837,7 +167837,7 @@
    ]
   }
  },
- "41990": {
+ {
   "name": "NoUnderlyingStreamCommodityAltIDs",
   "type": "int64",
   "nullable": true,
@@ -167967,7 +167967,7 @@
    ]
   }
  },
- "41991": {
+ {
   "name": "UnderlyingStreamCommodityAltID",
   "type": "string",
   "nullable": true,
@@ -168097,7 +168097,7 @@
    ]
   }
  },
- "41992": {
+ {
   "name": "UnderlyingStreamCommodityAltIDSource",
   "type": "string",
   "nullable": true,
@@ -168227,7 +168227,7 @@
    ]
   }
  },
- "41993": {
+ {
   "name": "NoUnderlyingStreamCommodityDataSources",
   "type": "int64",
   "nullable": true,
@@ -168357,7 +168357,7 @@
    ]
   }
  },
- "41994": {
+ {
   "name": "UnderlyingStreamCommodityDataSourceID",
   "type": "string",
   "nullable": true,
@@ -168487,7 +168487,7 @@
    ]
   }
  },
- "41995": {
+ {
   "name": "UnderlyingStreamCommodityDataSourceIDType",
   "type": "int32",
   "nullable": true,
@@ -168647,7 +168647,7 @@
    ]
   }
  },
- "41996": {
+ {
   "name": "NoUnderlyingStreamCommoditySettlDays",
   "type": "int64",
   "nullable": true,
@@ -168778,7 +168778,7 @@
    ]
   }
  },
- "41997": {
+ {
   "name": "UnderlyingStreamCommoditySettlDay",
   "type": "int32",
   "nullable": true,
@@ -168981,7 +168981,7 @@
    ]
   }
  },
- "41998": {
+ {
   "name": "UnderlyingStreamCommoditySettlTotalHours",
   "type": "int32",
   "nullable": true,
@@ -169112,7 +169112,7 @@
    ]
   }
  },
- "41999": {
+ {
   "name": "NoUnderlyingStreamCommoditySettlTimes",
   "type": "int64",
   "nullable": true,
@@ -169244,4 +169244,4 @@
    ]
   }
  }
-}
+]

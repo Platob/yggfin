@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingStreamCalculationPeriodDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingStreamCalculationPeriodDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "41954"
-  },
-  "item": {
-   "name": "UnderlyingStreamCalculationPeriodDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingStreamCalculationPeriodDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41955"
-     }
-    },
-    {
-     "name": "UnderlyingStreamCalculationPeriodDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "41956"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "41954",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingStreamCalculationPeriodDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingStreamCalculationPeriodDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41955"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingStreamCalculationPeriodDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "41956"
+    }
+   }
+  ]
  }
 }

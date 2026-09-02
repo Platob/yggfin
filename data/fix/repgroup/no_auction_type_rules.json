@@ -1,37 +1,34 @@
 {
  "name": "NoAuctionTypeRules",
- "versions": [
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoAuctionTypeRules",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2548"
-  },
-  "item": {
-   "name": "AuctionTypeRule",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "AuctionType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "1803"
-     }
-    },
-    {
-     "name": "AuctionTypeProductComplex",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2549"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2548",
+  "versions": [
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "AuctionTypeRule",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "AuctionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "1803"
     }
-   ]
-  }
+   },
+   {
+    "name": "AuctionTypeProductComplex",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2549"
+    }
+   }
+  ]
  }
 }

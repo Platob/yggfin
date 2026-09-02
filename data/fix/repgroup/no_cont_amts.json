@@ -1,51 +1,48 @@
 {
  "name": "NoContAmts",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoContAmts",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "518"
-  },
-  "item": {
-   "name": "ContAmt",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "ContAmtType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "519"
-     }
-    },
-    {
-     "name": "ContAmtValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "520"
-     }
-    },
-    {
-     "name": "ContAmtCurr",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "521"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "518",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "ContAmt",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "ContAmtType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "519"
     }
-   ]
-  }
+   },
+   {
+    "name": "ContAmtValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "520"
+    }
+   },
+   {
+    "name": "ContAmtCurr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "521"
+    }
+   }
+  ]
  }
 }

@@ -1,155 +1,152 @@
 {
  "name": "NoCommissions",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoCommissions",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2639"
-  },
-  "item": {
-   "name": "Commission",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "CommissionAmount",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2640"
-     }
-    },
-    {
-     "name": "CommissionAmountType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2641"
-     }
-    },
-    {
-     "name": "CommissionAmountSubType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2725"
-     }
-    },
-    {
-     "name": "CommissionBasis",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2642"
-     }
-    },
-    {
-     "name": "CommissionCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2643"
-     }
-    },
-    {
-     "name": "CommissionCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2923"
-     }
-    },
-    {
-     "name": "CommissionUnitOfMeasure",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2644"
-     }
-    },
-    {
-     "name": "CommissionUnitOfMeasureCurrency",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2645"
-     }
-    },
-    {
-     "name": "CommissionUnitOfMeasureCurrencyCodeSource",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2924"
-     }
-    },
-    {
-     "name": "CommissionRate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2646"
-     }
-    },
-    {
-     "name": "CommissionSharedIndicator",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2647"
-     }
-    },
-    {
-     "name": "CommissionAmountShared",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2648"
-     }
-    },
-    {
-     "name": "CommissionLegRefID",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2649"
-     }
-    },
-    {
-     "name": "CommissionDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2650"
-     }
-    },
-    {
-     "name": "EncodedCommissionDescLen",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2651"
-     }
-    },
-    {
-     "name": "EncodedCommissionDesc",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2652"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2639",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "Commission",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "CommissionAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2640"
     }
-   ]
-  }
+   },
+   {
+    "name": "CommissionAmountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2641"
+    }
+   },
+   {
+    "name": "CommissionAmountSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2725"
+    }
+   },
+   {
+    "name": "CommissionBasis",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2642"
+    }
+   },
+   {
+    "name": "CommissionCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2643"
+    }
+   },
+   {
+    "name": "CommissionCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2923"
+    }
+   },
+   {
+    "name": "CommissionUnitOfMeasure",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2644"
+    }
+   },
+   {
+    "name": "CommissionUnitOfMeasureCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2645"
+    }
+   },
+   {
+    "name": "CommissionUnitOfMeasureCurrencyCodeSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2924"
+    }
+   },
+   {
+    "name": "CommissionRate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2646"
+    }
+   },
+   {
+    "name": "CommissionSharedIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2647"
+    }
+   },
+   {
+    "name": "CommissionAmountShared",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2648"
+    }
+   },
+   {
+    "name": "CommissionLegRefID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2649"
+    }
+   },
+   {
+    "name": "CommissionDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2650"
+    }
+   },
+   {
+    "name": "EncodedCommissionDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2651"
+    }
+   },
+   {
+    "name": "EncodedCommissionDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2652"
+    }
+   }
+  ]
  }
 }

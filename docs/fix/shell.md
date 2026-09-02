@@ -93,12 +93,10 @@ rekep fix registry scrape --output data/fix
 cd python
 uv run python -c "from rekep.fix.publish import publish_full; \
 publish_full('../data/fix', '../data/fix.zip')"
-uv run python -c "from rekep.fix.publish import publish_builtin; \
-publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
 ```
 
 `scrape` is the only command that reads source dictionaries. Ordinary
-construction opens the complete packaged registry and never refreshes or
+construction opens the repository's `data/fix` and never refreshes or
 downloads it.
 
 See the [registry guide](registry.md) for sources and storage rules, or

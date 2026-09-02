@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingProvisionOptionExerciseFixedDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingProvisionOptionExerciseFixedDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42112"
-  },
-  "item": {
-   "name": "UnderlyingProvisionOptionExerciseFixedDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingProvisionOptionExerciseFixedDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42113"
-     }
-    },
-    {
-     "name": "UnderlyingProvisionOptionExerciseFixedDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42114"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42112",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingProvisionOptionExerciseFixedDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingProvisionOptionExerciseFixedDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42113"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingProvisionOptionExerciseFixedDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42114"
+    }
+   }
+  ]
  }
 }

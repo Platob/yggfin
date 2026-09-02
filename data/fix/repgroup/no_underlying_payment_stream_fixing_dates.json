@@ -1,36 +1,33 @@
 {
  "name": "NoUnderlyingPaymentStreamFixingDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingPaymentStreamFixingDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42955"
-  },
-  "item": {
-   "name": "UnderlyingPaymentStreamFixingDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingPaymentStreamFixingDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42956"
-     }
-    },
-    {
-     "name": "UnderlyingPaymentStreamFixingDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42957"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42955",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingPaymentStreamFixingDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingPaymentStreamFixingDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42956"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingPaymentStreamFixingDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42957"
+    }
+   }
+  ]
  }
 }

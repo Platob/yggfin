@@ -1,54 +1,51 @@
 {
  "name": "RekepMarket",
- "versions": [
-  "*"
- ],
- "declaration": {
-  "name": "RekepMarket",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "RekepMarket"
-  },
-  "fields": [
-   {
-    "name": "LastPx",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "31"
-    }
-   },
-   {
-    "name": "LastQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "32"
-    }
-   },
-   {
-    "name": "PxUnit",
-    "type": "string",
-    "fix": {
-     "tag": "30024"
-    }
-   },
-   {
-    "name": "QtyUnit",
-    "type": "string",
-    "fix": {
-     "tag": "30025"
-    }
-   },
-   {
-    "name": "Notional",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "30026"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "RekepMarket",
+  "versions": [
+   "*"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "LastPx",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "31"
+   }
+  },
+  {
+   "name": "LastQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "32"
+   }
+  },
+  {
+   "name": "PxUnit",
+   "type": "string",
+   "fix": {
+    "tag": "30024"
+   }
+  },
+  {
+   "name": "QtyUnit",
+   "type": "string",
+   "fix": {
+    "tag": "30025"
+   }
+  },
+  {
+   "name": "Notional",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "30026"
+   }
+  }
+ ]
 }

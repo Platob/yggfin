@@ -1,28 +1,25 @@
 {
  "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingReturnRateValuationDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "43069"
-  },
-  "item": {
-   "name": "UnderlyingReturnRateValuationDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingReturnRateValuationDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "43070"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "43069",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingReturnRateValuationDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "43070"
     }
-   ]
-  }
+   }
+  ]
  }
 }

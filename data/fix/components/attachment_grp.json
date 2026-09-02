@@ -1,115 +1,112 @@
 {
  "name": "AttachmentGrp",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "AttachmentGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "AttachmentGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "Email",
-    "TradeCaptureReport"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoAttachments",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2104"
-    },
-    "item": {
-     "name": "Attachment",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "AttachmentName",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2105"
-       }
-      },
-      {
-       "name": "AttachmentMediaType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2106"
-       }
-      },
-      {
-       "name": "AttachmentClassification",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2107"
-       }
-      },
-      {
-       "name": "AttachmentExternalURL",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2108"
-       }
-      },
-      {
-       "name": "AttachmentEncodingType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2109"
-       }
-      },
-      {
-       "name": "UnencodedAttachmentLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2110"
-       }
-      },
-      {
-       "name": "EncodedAttachmentLen",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2111"
-       }
-      },
-      {
-       "name": "EncodedAttachment",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2112"
-       }
-      },
-      {
-       "name": "AttachmentKeywordGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "AttachmentKeywordGrp"
-       },
-       "fields": []
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "AttachmentGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "Email",
+   "TradeCaptureReport"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoAttachments",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2104"
+   },
+   "item": {
+    "name": "Attachment",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "AttachmentName",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2105"
+      }
+     },
+     {
+      "name": "AttachmentMediaType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2106"
+      }
+     },
+     {
+      "name": "AttachmentClassification",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2107"
+      }
+     },
+     {
+      "name": "AttachmentExternalURL",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2108"
+      }
+     },
+     {
+      "name": "AttachmentEncodingType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2109"
+      }
+     },
+     {
+      "name": "UnencodedAttachmentLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2110"
+      }
+     },
+     {
+      "name": "EncodedAttachmentLen",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2111"
+      }
+     },
+     {
+      "name": "EncodedAttachment",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2112"
+      }
+     },
+     {
+      "name": "AttachmentKeywordGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "AttachmentKeywordGrp"
+      },
+      "fields": []
+     }
+    ]
+   }
+  }
+ ]
 }

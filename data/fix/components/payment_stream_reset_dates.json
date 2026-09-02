@@ -1,383 +1,380 @@
 {
  "name": "PaymentStreamResetDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "PaymentStreamResetDates",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "PaymentStreamResetDates",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "Allocation",
-    "AllocationInstruction",
-    "AllocationInstructionAck",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "AllocationReportAck",
-    "AssignmentReport",
-    "CollateralAssignment",
-    "CollateralInquiry",
-    "CollateralInquiryAck",
-    "CollateralReport",
-    "CollateralRequest",
-    "CollateralResponse",
-    "Confirmation",
-    "ContraryIntentionReport",
-    "CrossOrderCancelReplaceRequest",
-    "CrossOrderCancelRequest",
-    "CrossRequest",
-    "CrossRequestAck",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "DontKnowTrade",
-    "Email",
-    "ExecutionAck",
-    "ExecutionAcknowledgement",
-    "ExecutionReport",
-    "IOI",
-    "ListStrikePrice",
-    "MarginRequirementInquiry",
-    "MarginRequirementInquiryAck",
-    "MarginRequirementReport",
-    "MarketDataAck",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "MassOrder",
-    "MassOrderAck",
-    "MassQuote",
-    "MassQuoteAck",
-    "MassQuoteAcknowledgement",
-    "MultilegOrderCancelReplace",
-    "MultilegOrderCancelReplaceRequest",
-    "NewOrderCross",
-    "NewOrderList",
-    "NewOrderMultileg",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "OrderCancelRequest",
-    "OrderMassActionReport",
-    "OrderMassActionRequest",
-    "OrderMassCancelReport",
-    "OrderMassCancelRequest",
-    "OrderMassStatusRequest",
-    "OrderStatusRequest",
-    "PartyRiskLimitCheckRequest",
-    "PartyRiskLimitCheckRequestAck",
-    "PayManagementReport",
-    "PayManagementRequest",
-    "PositionMaintenanceReport",
-    "PositionMaintenanceRequest",
-    "PositionReport",
-    "PositionTransferInstruction",
-    "PositionTransferReport",
-    "Quote",
-    "QuoteCancel",
-    "QuoteRequest",
-    "QuoteRequestReject",
-    "QuoteResponse",
-    "QuoteStatusReport",
-    "QuoteStatusRequest",
-    "RFQRequest",
-    "RequestForPositions",
-    "RequestForPositionsAck",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityRiskMetricsReport",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "SettlementObligationReport",
-    "SettlementStatusReport",
-    "SettlementStatusRequest",
-    "StreamAssignmentReport",
-    "StreamAssignmentRequest",
-    "TradeAggregationReport",
-    "TradeAggregationRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck",
-    "TradeMatchReport",
-    "TradingSessionStatus"
-   ]
-  },
-  "fields": [
-   {
-    "name": "PaymentStreamResetDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40761"
-    }
-   },
-   {
-    "name": "PaymentStreamResetDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40762"
-    }
-   },
-   {
-    "name": "NoPaymentStreamResetDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40948"
-    },
-    "item": {
-     "name": "PaymentStreamResetDateBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "PaymentStreamResetDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40763"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "PaymentStreamResetFrequencyPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40764"
-    }
-   },
-   {
-    "name": "PaymentStreamResetFrequencyUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40765"
-    }
-   },
-   {
-    "name": "PaymentStreamResetWeeklyRollConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40766"
-    }
-   },
-   {
-    "name": "PaymentStreamInitialFixingDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40767"
-    }
-   },
-   {
-    "name": "PaymentStreamInitialFixingDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40768"
-    }
-   },
-   {
-    "name": "NoPaymentStreamInitialFixingDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40949"
-    },
-    "item": {
-     "name": "PaymentStreamInitialFixingDateBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "PaymentStreamInitialFixingDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40769"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "PaymentStreamInitialFixingDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40770"
-    }
-   },
-   {
-    "name": "PaymentStreamInitialFixingDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40771"
-    }
-   },
-   {
-    "name": "PaymentStreamInitialFixingDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40772"
-    }
-   },
-   {
-    "name": "PaymentStreamInitialFixingDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40773"
-    }
-   },
-   {
-    "name": "PaymentStreamFixingDateRelativeTo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40774"
-    }
-   },
-   {
-    "name": "PaymentStreamFixingDateBusinessDayConvention",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40775"
-    }
-   },
-   {
-    "name": "NoPaymentStreamFixingDateBusinessCenters",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "40950"
-    },
-    "item": {
-     "name": "PaymentStreamFixingDateBusinessCenter",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "PaymentStreamFixingDateBusinessCenter",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40776"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "PaymentStreamFixingDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40777"
-    }
-   },
-   {
-    "name": "PaymentStreamFixingDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40778"
-    }
-   },
-   {
-    "name": "PaymentStreamFixingDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40779"
-    }
-   },
-   {
-    "name": "PaymentStreamFixingDateAdjusted",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40780"
-    }
-   },
-   {
-    "name": "PaymentStreamRateCutoffDateOffsetPeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40781"
-    }
-   },
-   {
-    "name": "PaymentStreamRateCutoffDateOffsetUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40782"
-    }
-   },
-   {
-    "name": "PaymentStreamRateCutoffDateOffsetDayType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "40783"
-    }
-   },
-   {
-    "name": "NoPaymentStreamFixingDates",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "42660"
-    },
-    "item": {
-     "name": "PaymentStreamFixingDate",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "PaymentStreamFixingDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42661"
-       }
-      },
-      {
-       "name": "PaymentStreamFixingDateType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "42662"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "PaymentStreamResetDates",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "Allocation",
+   "AllocationInstruction",
+   "AllocationInstructionAck",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "AllocationReportAck",
+   "AssignmentReport",
+   "CollateralAssignment",
+   "CollateralInquiry",
+   "CollateralInquiryAck",
+   "CollateralReport",
+   "CollateralRequest",
+   "CollateralResponse",
+   "Confirmation",
+   "ContraryIntentionReport",
+   "CrossOrderCancelReplaceRequest",
+   "CrossOrderCancelRequest",
+   "CrossRequest",
+   "CrossRequestAck",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "DontKnowTrade",
+   "Email",
+   "ExecutionAck",
+   "ExecutionAcknowledgement",
+   "ExecutionReport",
+   "IOI",
+   "ListStrikePrice",
+   "MarginRequirementInquiry",
+   "MarginRequirementInquiryAck",
+   "MarginRequirementReport",
+   "MarketDataAck",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "MassOrder",
+   "MassOrderAck",
+   "MassQuote",
+   "MassQuoteAck",
+   "MassQuoteAcknowledgement",
+   "MultilegOrderCancelReplace",
+   "MultilegOrderCancelReplaceRequest",
+   "NewOrderCross",
+   "NewOrderList",
+   "NewOrderMultileg",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "OrderCancelRequest",
+   "OrderMassActionReport",
+   "OrderMassActionRequest",
+   "OrderMassCancelReport",
+   "OrderMassCancelRequest",
+   "OrderMassStatusRequest",
+   "OrderStatusRequest",
+   "PartyRiskLimitCheckRequest",
+   "PartyRiskLimitCheckRequestAck",
+   "PayManagementReport",
+   "PayManagementRequest",
+   "PositionMaintenanceReport",
+   "PositionMaintenanceRequest",
+   "PositionReport",
+   "PositionTransferInstruction",
+   "PositionTransferReport",
+   "Quote",
+   "QuoteCancel",
+   "QuoteRequest",
+   "QuoteRequestReject",
+   "QuoteResponse",
+   "QuoteStatusReport",
+   "QuoteStatusRequest",
+   "RFQRequest",
+   "RequestForPositions",
+   "RequestForPositionsAck",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityRiskMetricsReport",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "SettlementObligationReport",
+   "SettlementStatusReport",
+   "SettlementStatusRequest",
+   "StreamAssignmentReport",
+   "StreamAssignmentRequest",
+   "TradeAggregationReport",
+   "TradeAggregationRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck",
+   "TradeMatchReport",
+   "TradingSessionStatus"
+  ],
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "PaymentStreamResetDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40761"
+   }
+  },
+  {
+   "name": "PaymentStreamResetDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40762"
+   }
+  },
+  {
+   "name": "NoPaymentStreamResetDateBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40948"
+   },
+   "item": {
+    "name": "PaymentStreamResetDateBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "PaymentStreamResetDateBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40763"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "PaymentStreamResetFrequencyPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40764"
+   }
+  },
+  {
+   "name": "PaymentStreamResetFrequencyUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40765"
+   }
+  },
+  {
+   "name": "PaymentStreamResetWeeklyRollConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40766"
+   }
+  },
+  {
+   "name": "PaymentStreamInitialFixingDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40767"
+   }
+  },
+  {
+   "name": "PaymentStreamInitialFixingDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40768"
+   }
+  },
+  {
+   "name": "NoPaymentStreamInitialFixingDateBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40949"
+   },
+   "item": {
+    "name": "PaymentStreamInitialFixingDateBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "PaymentStreamInitialFixingDateBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40769"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "PaymentStreamInitialFixingDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40770"
+   }
+  },
+  {
+   "name": "PaymentStreamInitialFixingDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40771"
+   }
+  },
+  {
+   "name": "PaymentStreamInitialFixingDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40772"
+   }
+  },
+  {
+   "name": "PaymentStreamInitialFixingDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40773"
+   }
+  },
+  {
+   "name": "PaymentStreamFixingDateRelativeTo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40774"
+   }
+  },
+  {
+   "name": "PaymentStreamFixingDateBusinessDayConvention",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40775"
+   }
+  },
+  {
+   "name": "NoPaymentStreamFixingDateBusinessCenters",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "40950"
+   },
+   "item": {
+    "name": "PaymentStreamFixingDateBusinessCenter",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "PaymentStreamFixingDateBusinessCenter",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40776"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "PaymentStreamFixingDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40777"
+   }
+  },
+  {
+   "name": "PaymentStreamFixingDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40778"
+   }
+  },
+  {
+   "name": "PaymentStreamFixingDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40779"
+   }
+  },
+  {
+   "name": "PaymentStreamFixingDateAdjusted",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40780"
+   }
+  },
+  {
+   "name": "PaymentStreamRateCutoffDateOffsetPeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40781"
+   }
+  },
+  {
+   "name": "PaymentStreamRateCutoffDateOffsetUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40782"
+   }
+  },
+  {
+   "name": "PaymentStreamRateCutoffDateOffsetDayType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "40783"
+   }
+  },
+  {
+   "name": "NoPaymentStreamFixingDates",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "42660"
+   },
+   "item": {
+    "name": "PaymentStreamFixingDate",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "PaymentStreamFixingDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42661"
+      }
+     },
+     {
+      "name": "PaymentStreamFixingDateType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "42662"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

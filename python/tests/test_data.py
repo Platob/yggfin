@@ -13,7 +13,6 @@ import json
 import urllib.request
 import zipfile
 from functools import cache
-from importlib.resources import files
 from pathlib import Path
 
 import pyarrow
@@ -31,7 +30,6 @@ from rekep.fix.publish import (
     REQUIRED_FIELDS,
     beyond_baseline,
     missing_from,
-    publish_builtin,
     publish_full,
 )
 from rekep.fix.quickfix import members_of
@@ -74,8 +72,18 @@ def members(folder: str) -> dict[str, dict[str, object]]:
 
 @cache
 def records() -> dict[str, dict[str, object]]:
-    """Every field record in the archive, by the key its shard files it under."""
-    return {key: record for shard in members("fields").values() for key, record in shard.items()}
+    """Every field record in the archive, by the identity it states.
+
+    A shard is a list of records, so the key here is read *off* each record --
+    its tag, or its canonical name where FIX never numbered it -- rather than
+    from a mapping above it that could disagree with what it keys.
+    """
+    found: dict[str, dict[str, object]] = {}
+    for shard in members("fields").values():
+        for record in shard:
+            fix = record["fix"]
+            found[str(fix["tag"]) if "tag" in fix else str(record["name"])] = record
+    return found
 
 
 #: Every key one stored field record carries at its top level: the Arrow
@@ -127,7 +135,7 @@ VERSIONS: list[str] = INDEX["versions"]
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
 EXPECTED_FIELD_DOCUMENTS = 11
-EXPECTED_FIELD_RECORDS = 6284
+EXPECTED_FIELD_RECORDS = 6283
 EXPECTED_COMPONENT_FILES = 927
 EXPECTED_REPEATING_GROUP_FILES = 525
 #: Of which these are messages: a message is a component that arrives under a MsgType.
@@ -202,8 +210,11 @@ def test_every_field_is_in_the_document_the_arithmetic_names() -> None:
             if name.startswith("fields/")
         }
     for name, shard in shards.items():
-        for key in shard:
-            assert field_document(int(key) if key.isdigit() else key) == name, key
+        assert isinstance(shard, list), name
+        for record in shard:
+            fix = record["fix"]
+            key = int(fix["tag"]) if "tag" in fix else record["name"]
+            assert field_document(key) == name, key
     populated = {int(name[len("fields/") : -len(".json")]) for name in shards}
     assert len(populated) == EXPECTED_FIELD_DOCUMENTS
     assert NAMED_SHARD in populated, "the fields with no tag are one shard among them"
@@ -283,17 +294,42 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     assert "encoded" not in stored_fix(msg_type) and "decoded" not in stored_fix(msg_type), (
         "a lookup derived from the values is not stored beside them"
     )
-    assert stored_fix(held["32"]).get("aliases", []) == []
+    assert stored_fix(held["32"])["aliases"] == [
+        {"name": "LastShares", "source": "4.2", "occurrences": 0}
+    ], "tag 32's pre-4.3 name is a spelling of it, sourced to the version that used it"
+
+
+def test_every_stored_document_is_a_field_document() -> None:
+    """One serialization for the whole dictionary.
+
+    A shard is a list of field records and a component is the `Field` it
+    declares, so nothing here needs a second codec, and a key above a record
+    is that record's own identity written twice.
+    """
+    with zipfile.ZipFile(DATA) as archive:
+        for name in sorted(archive.namelist()):
+            document = json.loads(archive.read(name).decode("utf-8"))
+            if name.startswith("fields/") or "/fields/" in name:
+                assert isinstance(document, list), name
+                for record in document:
+                    assert set(record) <= FIELD_KEYS, name
+                    assert record["name"] and record["fix"]["versions"], name
+            elif name.startswith(("components/", "repgroup/")) or "/components/" in name:
+                assert isinstance(document, dict), name
+                assert set(document) <= FIELD_KEYS, name
+                assert document["fix"]["versions"], "the versions ride in its own fix"
+                assert "declaration" not in document, "a component is its declaration"
 
 
 def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     """The same for a component, and its declaration is a Field document: a
     struct of members, a list where one of them repeats, and `fix` at every
     level -- the shape every other declaration in this package is stored as."""
-    parties = members("components")["parties"]
-    assert parties["name"] == "Parties"
-    assert parties["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"]
-    declared = parties["declaration"]
+    declared = members("components")["parties"]
+    assert declared["name"] == "Parties"
+    assert declared["fix"]["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"], (
+        "the versions declaring it ride in its own `fix`, as a field record's do"
+    )
     assert declared["type"] == "struct" and declared["fix"]["component"] == "Parties"
     assert "msgtype" not in declared["fix"], "a reusable block is not a message definition"
     carried = declared["fix"]["msgtypes"]
@@ -306,10 +342,8 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
 
 
 def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None:
-    group = members("repgroup")["no_party_i_ds"]
-    declared = group["declaration"]
+    declared = members("repgroup")["no_party_i_ds"]
 
-    assert group["name"] == "NoPartyIDs"
     assert declared["name"] == "NoPartyIDs"
     assert declared["type"] == "list" and declared["fix"]["tag"] == "453"
     assert declared["item"]["type"] == "struct"
@@ -318,7 +352,7 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
         "PartyIDSource",
         "PartyRole",
     ]
-    embedded = members("components")["parties"]["declaration"]["fields"][0]
+    embedded = members("components")["parties"]["fields"][0]
     assert (embedded["name"], embedded["fix"]["tag"]) == ("NoPartyIDs", "453")
     assert embedded["item"]["fields"][-1] == {
         "name": "PtysSubGrp",
@@ -334,9 +368,8 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
 
 def test_a_message_is_stored_as_the_component_it_is() -> None:
     """One folder, one record shape: the MsgType is the whole difference."""
-    single = members("components")["new_order_single"]
-    assert single["name"] == "NewOrderSingle"
-    declared = single["declaration"]
+    declared = members("components")["new_order_single"]
+    assert declared["name"] == "NewOrderSingle"
     assert declared["fix"]["msgtype"] == "D"
     assert "msgtypes" not in declared["fix"], "a message is not carried by a message"
     assert declared["fields"][0] == {
@@ -352,7 +385,7 @@ def test_a_message_is_stored_as_the_component_it_is() -> None:
         "ClOrdLinkID",
     ], "the newest tree, as every record here keeps"
     stored = members("components")
-    messages = [one for one in stored.values() if one["declaration"]["fix"].get("msgtype")]
+    messages = [one for one in stored.values() if one["fix"].get("msgtype")]
     assert len(messages) == EXPECTED_MESSAGE_FILES
     assert len(stored) == EXPECTED_COMPONENT_FILES
 
@@ -519,9 +552,11 @@ def test_a_projection_refuses_missing_fields_and_its_source(
         registry.into_projection(DATA, ["Side"])
 
 
-def test_the_bundled_registry_matches_the_published_registry(
+def test_the_default_directory_matches_the_published_archive(
     registry: FixRegistry,
 ) -> None:
+    """`data/fix` is what every unconfigured lookup reads, `data/fix.zip` is it
+    packed; the two disagreeing would make a lookup depend on which was open."""
     builtin = FixRegistry.from_builtin()
     assert builtin.versions == registry.versions
     assert builtin.namespaces() == registry.namespaces()
@@ -533,26 +568,14 @@ def test_the_bundled_registry_matches_the_published_registry(
     }
 
 
-def test_full_and_builtin_registries_match_the_rekep_declarations(
+def test_archive_and_default_registries_match_the_rekep_declarations(
     registry: FixRegistry,
 ) -> None:
     assert rekep_is_registered(registry)
     assert rekep_is_registered(FixRegistry.from_builtin())
 
 
-def test_the_bundled_registry_is_what_publishing_it_produces(tmp_path: Path) -> None:
-    """Byte for byte, from the published offline dictionary.
-
-    The wheel's registry is generated, and a generated artifact nobody can
-    regenerate is a hand-edited one. This is the command in `data/README.md`,
-    run against the archive that ships beside it.
-    """
-    rebuilt = publish_builtin(DATA, tmp_path / "registry.zip")
-    packaged = Path(str(files("rekep.fix").joinpath("registry.zip")))
-    assert rebuilt.read_bytes() == packaged.read_bytes()
-
-
-def test_the_bundled_registry_answers_every_key_the_package_looks_up(
+def test_the_default_registry_answers_every_key_the_package_looks_up(
     registry: FixRegistry,
 ) -> None:
     """`publish.REQUIRED_FIELDS` is a hand-written contract coverage list.
@@ -570,7 +593,7 @@ def test_the_bundled_registry_answers_every_key_the_package_looks_up(
     assert not missing_from(builtin, tuple(market_tags())), "every tag translation reads"
 
 
-def test_the_bundled_registry_carries_the_component_declarations(
+def test_the_default_registry_carries_the_component_declarations(
     registry: FixRegistry,
 ) -> None:
     """The regression: a projection that drops these extracts no party at all.

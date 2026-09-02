@@ -1,184 +1,181 @@
 {
  "name": "InstrumentExtension",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "InstrumentExtension",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "InstrumentExtension",
-   "version": "5.0.SP2",
-   "source": "fix-latest",
-   "sources": [
-    "fix-latest"
-   ],
-   "source-version": "FIX.5.0SP2_EP309",
-   "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
-   "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
-   "msgtypes": [
-    "AdjustedPositionReport",
-    "Advertisement",
-    "AllocationInstruction",
-    "AllocationInstructionAlert",
-    "AllocationReport",
-    "Confirmation",
-    "DerivativeSecurityList",
-    "DerivativeSecurityListUpdateReport",
-    "Email",
-    "ExecutionReport",
-    "IOI",
-    "MarketDataIncrementalRefresh",
-    "MarketDataRequest",
-    "MarketDataSnapshotFullRefresh",
-    "MarketDataStatisticsReport",
-    "MarketDataStatisticsRequest",
-    "NewOrderSingle",
-    "News",
-    "OrderCancelReplaceRequest",
-    "SecurityDefinition",
-    "SecurityDefinitionRequest",
-    "SecurityDefinitionUpdateReport",
-    "SecurityList",
-    "SecurityListRequest",
-    "SecurityListUpdateReport",
-    "SecurityMassStatus",
-    "SecurityStatus",
-    "SecurityStatusRequest",
-    "TradeCaptureReport",
-    "TradeCaptureReportAck",
-    "TradeCaptureReportRequest",
-    "TradeCaptureReportRequestAck"
-   ]
-  },
-  "fields": [
-   {
-    "name": "DeliveryForm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "668"
-    }
-   },
-   {
-    "name": "PctAtRisk",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "869"
-    }
-   },
-   {
-    "name": "NoInstrAttrib",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "870"
-    },
-    "item": {
-     "name": "InstrAttrib",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "InstrAttribType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "871"
-       }
-      },
-      {
-       "name": "InstrAttribValue",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "872"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "CommodityFinalPriceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2736"
-    }
-   },
-   {
-    "name": "NoIndexRollMonths",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2734"
-    },
-    "item": {
-     "name": "IndexRollMonth",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "IndexRollMonth",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2733"
-       }
-      }
-     ]
-    }
-   },
-   {
-    "name": "NextIndexRollDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "2738"
-    }
-   },
-   {
-    "name": "FloatingRateIndex",
-    "type": "struct",
-    "nullable": true,
-    "fix": {
-     "component": "FloatingRateIndex"
-    },
-    "fields": []
-   },
-   {
-    "name": "NoReferenceDataDates",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "2746"
-    },
-    "item": {
-     "name": "ReferenceDataDate",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "ReferenceDataDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2747"
-       }
-      },
-      {
-       "name": "ReferenceDataDateType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2748"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "InstrumentExtension",
+  "version": "5.0.SP2",
+  "source": "fix-latest",
+  "sources": [
+   "fix-latest"
+  ],
+  "source-version": "FIX.5.0SP2_EP309",
+  "source-url": "https://raw.githubusercontent.com/FIXTradingCommunity/orchestrations/099914dd0edd49a699326f0441776d6e21cfaf93/FIX%20Standard/OrchestraFIXLatest.xml",
+  "source-checksum": "sha256:9ea5ee01a90019eb2d307cdd91e3fbec0b4a9249bc196da62d08417c9df3da07",
+  "msgtypes": [
+   "AdjustedPositionReport",
+   "Advertisement",
+   "AllocationInstruction",
+   "AllocationInstructionAlert",
+   "AllocationReport",
+   "Confirmation",
+   "DerivativeSecurityList",
+   "DerivativeSecurityListUpdateReport",
+   "Email",
+   "ExecutionReport",
+   "IOI",
+   "MarketDataIncrementalRefresh",
+   "MarketDataRequest",
+   "MarketDataSnapshotFullRefresh",
+   "MarketDataStatisticsReport",
+   "MarketDataStatisticsRequest",
+   "NewOrderSingle",
+   "News",
+   "OrderCancelReplaceRequest",
+   "SecurityDefinition",
+   "SecurityDefinitionRequest",
+   "SecurityDefinitionUpdateReport",
+   "SecurityList",
+   "SecurityListRequest",
+   "SecurityListUpdateReport",
+   "SecurityMassStatus",
+   "SecurityStatus",
+   "SecurityStatusRequest",
+   "TradeCaptureReport",
+   "TradeCaptureReportAck",
+   "TradeCaptureReportRequest",
+   "TradeCaptureReportRequestAck"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "DeliveryForm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "668"
+   }
+  },
+  {
+   "name": "PctAtRisk",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "869"
+   }
+  },
+  {
+   "name": "NoInstrAttrib",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "870"
+   },
+   "item": {
+    "name": "InstrAttrib",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "InstrAttribType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "871"
+      }
+     },
+     {
+      "name": "InstrAttribValue",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "872"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "CommodityFinalPriceType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2736"
+   }
+  },
+  {
+   "name": "NoIndexRollMonths",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2734"
+   },
+   "item": {
+    "name": "IndexRollMonth",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "IndexRollMonth",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2733"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "NextIndexRollDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "2738"
+   }
+  },
+  {
+   "name": "FloatingRateIndex",
+   "type": "struct",
+   "nullable": true,
+   "fix": {
+    "component": "FloatingRateIndex"
+   },
+   "fields": []
+  },
+  {
+   "name": "NoReferenceDataDates",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "2746"
+   },
+   "item": {
+    "name": "ReferenceDataDate",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "ReferenceDataDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2747"
+      }
+     },
+     {
+      "name": "ReferenceDataDateType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2748"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

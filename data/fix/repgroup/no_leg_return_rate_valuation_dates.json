@@ -1,36 +1,33 @@
 {
  "name": "NoLegReturnRateValuationDates",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegReturnRateValuationDates",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "42571"
-  },
-  "item": {
-   "name": "LegReturnRateValuationDate",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegReturnRateValuationDate",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42572"
-     }
-    },
-    {
-     "name": "LegReturnRateValuationDateType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "42573"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "42571",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegReturnRateValuationDate",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegReturnRateValuationDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42572"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegReturnRateValuationDateType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "42573"
+    }
+   }
+  ]
  }
 }

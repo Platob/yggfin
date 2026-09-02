@@ -1,56 +1,53 @@
 {
  "name": "NoLegSecondaryAssetClasses",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegSecondaryAssetClasses",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "2076"
-  },
-  "item": {
-   "name": "LegSecondaryAssetClass",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegSecondaryAssetClass",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2077"
-     }
-    },
-    {
-     "name": "LegSecondaryAssetSubClass",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2078"
-     }
-    },
-    {
-     "name": "LegSecondaryAssetType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2079"
-     }
-    },
-    {
-     "name": "LegSecondaryAssetSubType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "2743"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "2076",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegSecondaryAssetClass",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegSecondaryAssetClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2077"
     }
-   ]
-  }
+   },
+   {
+    "name": "LegSecondaryAssetSubClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2078"
+    }
+   },
+   {
+    "name": "LegSecondaryAssetType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2079"
+    }
+   },
+   {
+    "name": "LegSecondaryAssetSubType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "2743"
+    }
+   }
+  ]
  }
 }

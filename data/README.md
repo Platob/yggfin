@@ -29,6 +29,22 @@ by its name and lands in `999999`, the one index no tag reaches. The tag space
 is sparse, so eleven files hold the populated ranges and named fields. Empty
 ranges are absent, and a lookup reads one shard.
 
+Every document here is a field document, and a shard is a JSON *list* of them:
+
+```json
+[
+ {"name": "LastQty", "type": "double", "nullable": true,
+  "fix": {"tag": "32", "type": "Qty", "versions": ["4.4", "5.0"]}}
+]
+```
+
+A record states the tag or the name it is, so a key above it would be that
+identity written twice -- and two spellings of one fact are one fact that can
+contradict itself. A component and a repeating group are stored the same way:
+the `Field` they declare, carrying the versions declaring them and the names
+they answer to in their own `fix`, exactly as a field record does. One
+serialization, so a reader that can read a field can read the dictionary.
+
 FIX Latest Orchestra is the standard authority. Its datatypes, code sets,
 messages, components, nested groups, pedigree, and deprecation metadata are
 read from one complete XML file. QuickFIX and the existing standard shards
@@ -210,16 +226,11 @@ complete file before selecting it. `sources.json` records the source ID,
 namespace, version, URL, format, checksum, and license or terms URL for every
 artifact that contributed data.
 
-Then rebuild the complete registry bundled in the wheel. It contains the same
-standard, registered-UDF, venue, provenance, component, and message records as
-the published archive:
-
-```bash
-cd python
-uv run python -c "from rekep.fix.publish import publish_builtin; \
-publish_builtin('../data/fix.zip', 'src/rekep/fix/registry.zip')"
-```
+`data/fix` is itself the dictionary every unconfigured lookup reads, so there
+is nothing further to rebuild: `data/fix.zip` is that directory packed for
+offline distribution, carrying the same standard, registered-UDF, venue,
+provenance, component, and message records.
 
 `python/tests/test_data.py` checks completeness, byte-stable archive
-rebuilding, that both published archives are identical, and that the committed
+rebuilding, that the directory and the archive agree, and that the committed
 conflict report is what the collapse reports.

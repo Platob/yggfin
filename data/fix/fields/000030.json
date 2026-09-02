@@ -1,5 +1,5 @@
-{
- "30000": {
+[
+ {
   "name": "Unix",
   "type": "int64",
   "nullable": true,
@@ -13,7 +13,7 @@
    "column": "unix"
   }
  },
- "30001": {
+ {
   "name": "UnixPartition",
   "type": "int32",
   "nullable": true,
@@ -27,7 +27,7 @@
    "column": "unixpartition"
   }
  },
- "30002": {
+ {
   "name": "MarketEventType",
   "type": "int64",
   "nullable": true,
@@ -41,7 +41,7 @@
    "column": "eventtype"
   }
  },
- "30003": {
+ {
   "name": "CreaUnix",
   "type": "int64",
   "nullable": true,
@@ -55,7 +55,7 @@
    "column": "creaunix"
   }
  },
- "30004": {
+ {
   "name": "RecUnix",
   "type": "int64",
   "nullable": true,
@@ -69,7 +69,7 @@
    "column": "recunix"
   }
  },
- "30005": {
+ {
   "name": "ExpUnix",
   "type": "int64",
   "nullable": true,
@@ -83,7 +83,7 @@
    "column": "expunix"
   }
  },
- "30006": {
+ {
   "name": "SnapUnix",
   "type": "int64",
   "nullable": true,
@@ -97,7 +97,7 @@
    "column": "snapunix"
   }
  },
- "30007": {
+ {
   "name": "Hash",
   "type": "fixed_size_binary[16]",
   "nullable": true,
@@ -111,7 +111,7 @@
    "column": "hash"
   }
  },
- "30008": {
+ {
   "name": "VHash",
   "type": "int64",
   "nullable": true,
@@ -125,7 +125,7 @@
    "column": "vhash"
   }
  },
- "30009": {
+ {
   "name": "XHash",
   "type": "fixed_size_binary[16]",
   "nullable": true,
@@ -139,7 +139,7 @@
    "column": "xhash"
   }
  },
- "30010": {
+ {
   "name": "PrevHash",
   "type": "fixed_size_binary[16]",
   "nullable": true,
@@ -153,7 +153,7 @@
    "column": "prevhash"
   }
  },
- "30011": {
+ {
   "name": "PrevUnix",
   "type": "int64",
   "nullable": true,
@@ -167,7 +167,7 @@
    "column": "prevunix"
   }
  },
- "30012": {
+ {
   "name": "ParentHash",
   "type": "list",
   "nullable": true,
@@ -184,7 +184,7 @@
    "type": "fixed_size_binary[16]"
   }
  },
- "30013": {
+ {
   "name": "LinkHashes",
   "type": "list",
   "nullable": true,
@@ -201,7 +201,7 @@
    "type": "fixed_size_binary[16]"
   }
  },
- "30014": {
+ {
   "name": "Version",
   "type": "int64",
   "nullable": true,
@@ -215,7 +215,7 @@
    "column": "version"
   }
  },
- "30015": {
+ {
   "name": "State",
   "type": "int64",
   "nullable": true,
@@ -229,7 +229,7 @@
    "column": "state"
   }
  },
- "30016": {
+ {
   "name": "Code",
   "type": "string",
   "nullable": true,
@@ -243,7 +243,7 @@
    "column": "code"
   }
  },
- "30017": {
+ {
   "name": "AltIDs",
   "type": "map",
   "nullable": true,
@@ -263,7 +263,7 @@
    "type": "string"
   }
  },
- "30019": {
+ {
   "name": "Reason",
   "type": "string",
   "nullable": true,
@@ -277,7 +277,7 @@
    "column": "reason"
   }
  },
- "30020": {
+ {
   "name": "SymbolTicker",
   "type": "string",
   "nullable": true,
@@ -291,7 +291,7 @@
    "column": "symbolticker"
   }
  },
- "30021": {
+ {
   "name": "Unmap",
   "type": "list",
   "nullable": true,
@@ -331,7 +331,7 @@
    ]
   }
  },
- "30024": {
+ {
   "name": "PxUnit",
   "type": "string",
   "nullable": true,
@@ -345,7 +345,7 @@
    "column": "pxunit"
   }
  },
- "30025": {
+ {
   "name": "QtyUnit",
   "type": "string",
   "nullable": true,
@@ -359,7 +359,7 @@
    "column": "qtyunit"
   }
  },
- "30026": {
+ {
   "name": "Notional",
   "type": "double",
   "nullable": true,
@@ -373,21 +373,7 @@
    "column": "notional"
   }
  },
- "30028": {
-  "name": "LastShares",
-  "type": "double",
-  "nullable": true,
-  "description": "Vendor-reported share quantity, distinct from `LastQty <32>`.",
-  "fix": {
-   "tag": "30028",
-   "type": "double",
-   "versions": [
-    "*"
-   ],
-   "column": "lastshares"
-  }
- },
- "30029": {
+ {
   "name": "MarketMarker",
   "type": "bool",
   "nullable": true,
@@ -401,7 +387,7 @@
    "column": "marketmarker"
   }
  },
- "30030": {
+ {
   "name": "GlobalOrderId",
   "type": "string",
   "nullable": true,
@@ -415,7 +401,7 @@
    "column": "globalorderid"
   }
  },
- "30031": {
+ {
   "name": "CreationTime",
   "type": "timestamp[us, tz=UTC]",
   "nullable": true,
@@ -429,7 +415,7 @@
    "column": "creationtime"
   }
  },
- "30032": {
+ {
   "name": "Env",
   "type": "string",
   "nullable": true,
@@ -443,7 +429,7 @@
    "column": "env"
   }
  },
- "30033": {
+ {
   "name": "RootOrderId",
   "type": "string",
   "nullable": true,
@@ -457,7 +443,7 @@
    "column": "rootorderid"
   }
  },
- "30034": {
+ {
   "name": "RootOriginatorOrderId",
   "type": "string",
   "nullable": true,
@@ -471,7 +457,7 @@
    "column": "rootoriginatororderid"
   }
  },
- "30035": {
+ {
   "name": "OrderFlags",
   "type": "string",
   "nullable": true,
@@ -485,7 +471,7 @@
    "column": "orderflags"
   }
  },
- "30036": {
+ {
   "name": "OrderOriginatorId",
   "type": "string",
   "nullable": true,
@@ -499,7 +485,7 @@
    "column": "orderoriginatorid"
   }
  },
- "30037": {
+ {
   "name": "ConversationId",
   "type": "string",
   "nullable": true,
@@ -513,7 +499,7 @@
    "column": "conversationid"
   }
  },
- "30038": {
+ {
   "name": "BloombergCode",
   "type": "string",
   "nullable": true,
@@ -527,4 +513,4 @@
    "column": "bloombergcode"
   }
  }
-}
+]

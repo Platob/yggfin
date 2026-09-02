@@ -1,148 +1,145 @@
 {
  "name": "NoRelatedSym",
- "versions": [
-  "4.0",
-  "4.1",
-  "4.2",
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoRelatedSym",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "146"
-  },
-  "item": {
-   "name": "RelatedSym",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "Instrument",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "Instrument"
-     },
-     "fields": []
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "146",
+  "versions": [
+   "4.0",
+   "4.1",
+   "4.2",
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "RelatedSym",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "Instrument",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "Instrument"
     },
-    {
-     "name": "InstrumentExtension",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "InstrumentExtension"
-     },
-     "fields": []
+    "fields": []
+   },
+   {
+    "name": "InstrumentExtension",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "InstrumentExtension"
     },
-    {
-     "name": "FinancingDetails",
-     "type": "struct",
-     "nullable": true,
-     "fix": {
-      "component": "FinancingDetails"
-     },
-     "fields": []
+    "fields": []
+   },
+   {
+    "name": "FinancingDetails",
+    "type": "struct",
+    "nullable": true,
+    "fix": {
+     "component": "FinancingDetails"
     },
-    {
-     "name": "NoRelatedInstruments",
-     "type": "list",
-     "nullable": true,
-     "fix": {
-      "tag": "1647"
-     },
-     "item": {
-      "name": "RelatedInstrument",
-      "type": "struct",
-      "fields": [
-       {
-        "name": "RelatedInstrumentType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1648"
-        }
-       },
-       {
-        "name": "RelatedSymbol",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1649"
-        }
-       },
-       {
-        "name": "RelatedSecurityID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1650"
-        }
-       },
-       {
-        "name": "RelatedSecurityIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1651"
-        }
-       },
-       {
-        "name": "RelatedSecurityType",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1652"
-        }
-       },
-       {
-        "name": "RelatedMaturityMonthYear",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "1653"
-        }
-       },
-       {
-        "name": "RelatedToSecurityID",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2413"
-        }
-       },
-       {
-        "name": "RelatedToSecurityIDSource",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2414"
-        }
-       },
-       {
-        "name": "RelatedToStreamXIDRef",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2415"
-        }
-       },
-       {
-        "name": "RelatedToDividendPeriodXIDRef",
-        "type": "string",
-        "nullable": true,
-        "fix": {
-         "tag": "2417"
-        }
+    "fields": []
+   },
+   {
+    "name": "NoRelatedInstruments",
+    "type": "list",
+    "nullable": true,
+    "fix": {
+     "tag": "1647"
+    },
+    "item": {
+     "name": "RelatedInstrument",
+     "type": "struct",
+     "fields": [
+      {
+       "name": "RelatedInstrumentType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1648"
        }
-      ]
-     }
+      },
+      {
+       "name": "RelatedSymbol",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1649"
+       }
+      },
+      {
+       "name": "RelatedSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1650"
+       }
+      },
+      {
+       "name": "RelatedSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1651"
+       }
+      },
+      {
+       "name": "RelatedSecurityType",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1652"
+       }
+      },
+      {
+       "name": "RelatedMaturityMonthYear",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "1653"
+       }
+      },
+      {
+       "name": "RelatedToSecurityID",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2413"
+       }
+      },
+      {
+       "name": "RelatedToSecurityIDSource",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2414"
+       }
+      },
+      {
+       "name": "RelatedToStreamXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2415"
+       }
+      },
+      {
+       "name": "RelatedToDividendPeriodXIDRef",
+       "type": "string",
+       "nullable": true,
+       "fix": {
+        "tag": "2417"
+       }
+      }
+     ]
     }
-   ]
-  }
+   }
+  ]
  }
 }

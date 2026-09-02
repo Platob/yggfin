@@ -1,40 +1,37 @@
 {
  "name": "NoUnderlyingStips",
- "versions": [
-  "4.3",
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoUnderlyingStips",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "887"
-  },
-  "item": {
-   "name": "UnderlyingStip",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "UnderlyingStipType",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "888"
-     }
-    },
-    {
-     "name": "UnderlyingStipValue",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "889"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "887",
+  "versions": [
+   "4.3",
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "UnderlyingStip",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "UnderlyingStipType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "888"
     }
-   ]
-  }
+   },
+   {
+    "name": "UnderlyingStipValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "889"
+    }
+   }
+  ]
  }
 }

@@ -1,281 +1,278 @@
 {
  "name": "FIXProtocolLtd",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "FIXProtocolLtd",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "FIXProtocolLtd",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "ShortSaleRestriction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8000"
-    }
-   },
-   {
-    "name": "ShortSaleExemptionReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8001"
-    }
-   },
-   {
-    "name": "LegShortSaleExemptionReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8002"
-    }
-   },
-   {
-    "name": "SideShortSaleExemptionReason",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8003"
-    }
-   },
-   {
-    "name": "CustodialLotID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8004"
-    }
-   },
-   {
-    "name": "CurrentCostBasis",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8005"
-    }
-   },
-   {
-    "name": "LegCustodialLotID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8006"
-    }
-   },
-   {
-    "name": "LegVSPDate",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8007"
-    }
-   },
-   {
-    "name": "LegVSPPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8008"
-    }
-   },
-   {
-    "name": "LegCurrentCostBasis",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8009"
-    }
-   },
-   {
-    "name": "LastLiquidityInd",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8010"
-    }
-   },
-   {
-    "name": "EventTimeUnit",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8011"
-    }
-   },
-   {
-    "name": "EventTimePeriod",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8012"
-    }
-   },
-   {
-    "name": "TrdRegPublicationReasons",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8013"
-    }
-   },
-   {
-    "name": "TradePriceConditions",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8014"
-    }
-   },
-   {
-    "name": "OrderAttributeTypes",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8015"
-    }
-   },
-   {
-    "name": "TradingVenueRegulatoryTradeID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8016"
-    }
-   },
-   {
-    "name": "ValueCheckTypes",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8017"
-    }
-   },
-   {
-    "name": "BCANID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8018"
-    }
-   },
-   {
-    "name": "SPSAID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8019"
-    }
-   },
-   {
-    "name": "FDID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8020"
-    }
-   },
-   {
-    "name": "NewFDID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8021"
-    }
-   },
-   {
-    "name": "SIJurisdiction",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8022"
-    }
-   },
-   {
-    "name": "ReportedJurisdictions",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8023"
-    }
-   },
-   {
-    "name": "VenueOrderTypes",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8024"
-    }
-   },
-   {
-    "name": "CustomerAccount",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8025"
-    }
-   },
-   {
-    "name": "AlgorithmID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8026"
-    }
-   },
-   {
-    "name": "CustomerLEI",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8027"
-    }
-   },
-   {
-    "name": "BrokerLEI",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8028"
-    }
-   },
-   {
-    "name": "MasterSPSAID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8029"
-    }
-   },
-   {
-    "name": "KRShortSellRegNum",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8030"
-    }
-   },
-   {
-    "name": "MMTCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "8031"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "FIXProtocolLtd",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "ShortSaleRestriction",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8000"
+   }
+  },
+  {
+   "name": "ShortSaleExemptionReason",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8001"
+   }
+  },
+  {
+   "name": "LegShortSaleExemptionReason",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8002"
+   }
+  },
+  {
+   "name": "SideShortSaleExemptionReason",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8003"
+   }
+  },
+  {
+   "name": "CustodialLotID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8004"
+   }
+  },
+  {
+   "name": "CurrentCostBasis",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8005"
+   }
+  },
+  {
+   "name": "LegCustodialLotID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8006"
+   }
+  },
+  {
+   "name": "LegVSPDate",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8007"
+   }
+  },
+  {
+   "name": "LegVSPPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8008"
+   }
+  },
+  {
+   "name": "LegCurrentCostBasis",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8009"
+   }
+  },
+  {
+   "name": "LastLiquidityInd",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8010"
+   }
+  },
+  {
+   "name": "EventTimeUnit",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8011"
+   }
+  },
+  {
+   "name": "EventTimePeriod",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8012"
+   }
+  },
+  {
+   "name": "TrdRegPublicationReasons",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8013"
+   }
+  },
+  {
+   "name": "TradePriceConditions",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8014"
+   }
+  },
+  {
+   "name": "OrderAttributeTypes",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8015"
+   }
+  },
+  {
+   "name": "TradingVenueRegulatoryTradeID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8016"
+   }
+  },
+  {
+   "name": "ValueCheckTypes",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8017"
+   }
+  },
+  {
+   "name": "BCANID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8018"
+   }
+  },
+  {
+   "name": "SPSAID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8019"
+   }
+  },
+  {
+   "name": "FDID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8020"
+   }
+  },
+  {
+   "name": "NewFDID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8021"
+   }
+  },
+  {
+   "name": "SIJurisdiction",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8022"
+   }
+  },
+  {
+   "name": "ReportedJurisdictions",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8023"
+   }
+  },
+  {
+   "name": "VenueOrderTypes",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8024"
+   }
+  },
+  {
+   "name": "CustomerAccount",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8025"
+   }
+  },
+  {
+   "name": "AlgorithmID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8026"
+   }
+  },
+  {
+   "name": "CustomerLEI",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8027"
+   }
+  },
+  {
+   "name": "BrokerLEI",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8028"
+   }
+  },
+  {
+   "name": "MasterSPSAID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8029"
+   }
+  },
+  {
+   "name": "KRShortSellRegNum",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8030"
+   }
+  },
+  {
+   "name": "MMTCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "8031"
+   }
+  }
+ ]
 }

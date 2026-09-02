@@ -1,577 +1,574 @@
 {
  "name": "CBOE",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "CBOE",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "CBOE",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "AllocPositionEffect",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7047"
-    }
-   },
-   {
-    "name": "AuctionContingency",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9384"
-    }
-   },
-   {
-    "name": "AuctionID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9385"
-    }
-   },
-   {
-    "name": "AuctionType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9383"
-    }
-   },
-   {
-    "name": "AuxAuctionInfo",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9221"
-    }
-   },
-   {
-    "name": "CancelOpenQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9310"
-    }
-   },
-   {
-    "name": "CFICode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9364"
-    }
-   },
-   {
-    "name": "ClearingOptionalData",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9324"
-    }
-   },
-   {
-    "name": "CustomerId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7048"
-    }
-   },
-   {
-    "name": "CustomerSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9004"
-    }
-   },
-   {
-    "name": "CustOrderCapacity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6582"
-    }
-   },
-   {
-    "name": "DPIFirm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5941"
-    }
-   },
-   {
-    "name": "EnhancedCxlRe",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7025"
-    }
-   },
-   {
-    "name": "EnhancedQuoteBehavior",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9192"
-    }
-   },
-   {
-    "name": "EquitySession",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9467"
-    }
-   },
-   {
-    "name": "ExtendedPriceType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9469"
-    }
-   },
-   {
-    "name": "InternalOrderStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9317"
-    }
-   },
-   {
-    "name": "LastBustShares",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9368"
-    }
-   },
-   {
-    "name": "LegalMarket",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9316"
-    }
-   },
-   {
-    "name": "LegCoveredUncoveredList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6720"
-    }
-   },
-   {
-    "name": "LegMaturityDayList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6708"
-    }
-   },
-   {
-    "name": "LegMaturityMonthYearList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6717"
-    }
-   },
-   {
-    "name": "LegOptAttributeList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6719"
-    }
-   },
-   {
-    "name": "LegPositionEffectList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6721"
-    }
-   },
-   {
-    "name": "LegPriceList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6716"
-    }
-   },
-   {
-    "name": "LegRatioQtyList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6715"
-    }
-   },
-   {
-    "name": "LegRefIdList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6722"
-    }
-   },
-   {
-    "name": "LegSecurityIdList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6713"
-    }
-   },
-   {
-    "name": "LegSecurityTypeList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6711"
-    }
-   },
-   {
-    "name": "LegSideList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6714"
-    }
-   },
-   {
-    "name": "LegStrikePriceList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6718"
-    }
-   },
-   {
-    "name": "LegSymbolList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6712"
-    }
-   },
-   {
-    "name": "MatchType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9382"
-    }
-   },
-   {
-    "name": "MDCustomerSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6709"
-    }
-   },
-   {
-    "name": "MDProcessIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6710"
-    }
-   },
-   {
-    "name": "MDScope",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9315"
-    }
-   },
-   {
-    "name": "MulitiLegPrice",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9379"
-    }
-   },
-   {
-    "name": "MultilegCoveredOrUncovered",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9371"
-    }
-   },
-   {
-    "name": "MultilegMonthIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9323"
-    }
-   },
-   {
-    "name": "MultilegPositionEffects",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9370"
-    }
-   },
-   {
-    "name": "MultilegPriceIncrement",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9322"
-    }
-   },
-   {
-    "name": "MultilegStockClearingFirm",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9372"
-    }
-   },
-   {
-    "name": "NestedPartyIdList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6707"
-    }
-   },
-   {
-    "name": "NoOfLegsList",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6706"
-    }
-   },
-   {
-    "name": "OpenInterest",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9314"
-    }
-   },
-   {
-    "name": "OrderCapacity",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6528"
-    }
-   },
-   {
-    "name": "OrderOrigin2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9465"
-    }
-   },
-   {
-    "name": "OrderRejectReasonTxt",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9320"
-    }
-   },
-   {
-    "name": "OrderRestrictions",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6529"
-    }
-   },
-   {
-    "name": "OriginalEmailThreadID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9791"
-    }
-   },
-   {
-    "name": "PremPriceTickAbove",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9366"
-    }
-   },
-   {
-    "name": "PremPriceTickBelow",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9367"
-    }
-   },
-   {
-    "name": "PremPriceTickBreakPoint",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9365"
-    }
-   },
-   {
-    "name": "PriceProtectionScope",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9369"
-    }
-   },
-   {
-    "name": "ProfessionalSize",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9005"
-    }
-   },
-   {
-    "name": "PublishOrderStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9363"
-    }
-   },
-   {
-    "name": "QuoteRequestSubscription",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9313"
-    }
-   },
-   {
-    "name": "QuoteStatus2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9312"
-    }
-   },
-   {
-    "name": "QuoteUpdateControlId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9006"
-    }
-   },
-   {
-    "name": "RejectReasonCode",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9466"
-    }
-   },
-   {
-    "name": "ResponseRequested",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9790"
-    }
-   },
-   {
-    "name": "RoutingAwayBroker",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6818"
-    }
-   },
-   {
-    "name": "SecondaryClOrdID",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9321"
-    }
-   },
-   {
-    "name": "StockFirmName",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9380"
-    }
-   },
-   {
-    "name": "StockFirmNameKey",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9381"
-    }
-   },
-   {
-    "name": "SubscriptionRequestType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9463"
-    }
-   },
-   {
-    "name": "SuppressOrderStatus",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9191"
-    }
-   },
-   {
-    "name": "TLCQty",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9311"
-    }
-   },
-   {
-    "name": "UDFSupportIndicator",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "9003"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "CBOE",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "AllocPositionEffect",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7047"
+   }
+  },
+  {
+   "name": "AuctionContingency",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9384"
+   }
+  },
+  {
+   "name": "AuctionID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9385"
+   }
+  },
+  {
+   "name": "AuctionType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9383"
+   }
+  },
+  {
+   "name": "AuxAuctionInfo",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9221"
+   }
+  },
+  {
+   "name": "CancelOpenQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9310"
+   }
+  },
+  {
+   "name": "CFICode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9364"
+   }
+  },
+  {
+   "name": "ClearingOptionalData",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9324"
+   }
+  },
+  {
+   "name": "CustomerId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7048"
+   }
+  },
+  {
+   "name": "CustomerSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9004"
+   }
+  },
+  {
+   "name": "CustOrderCapacity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6582"
+   }
+  },
+  {
+   "name": "DPIFirm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5941"
+   }
+  },
+  {
+   "name": "EnhancedCxlRe",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7025"
+   }
+  },
+  {
+   "name": "EnhancedQuoteBehavior",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9192"
+   }
+  },
+  {
+   "name": "EquitySession",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9467"
+   }
+  },
+  {
+   "name": "ExtendedPriceType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9469"
+   }
+  },
+  {
+   "name": "InternalOrderStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9317"
+   }
+  },
+  {
+   "name": "LastBustShares",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9368"
+   }
+  },
+  {
+   "name": "LegalMarket",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9316"
+   }
+  },
+  {
+   "name": "LegCoveredUncoveredList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6720"
+   }
+  },
+  {
+   "name": "LegMaturityDayList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6708"
+   }
+  },
+  {
+   "name": "LegMaturityMonthYearList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6717"
+   }
+  },
+  {
+   "name": "LegOptAttributeList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6719"
+   }
+  },
+  {
+   "name": "LegPositionEffectList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6721"
+   }
+  },
+  {
+   "name": "LegPriceList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6716"
+   }
+  },
+  {
+   "name": "LegRatioQtyList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6715"
+   }
+  },
+  {
+   "name": "LegRefIdList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6722"
+   }
+  },
+  {
+   "name": "LegSecurityIdList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6713"
+   }
+  },
+  {
+   "name": "LegSecurityTypeList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6711"
+   }
+  },
+  {
+   "name": "LegSideList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6714"
+   }
+  },
+  {
+   "name": "LegStrikePriceList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6718"
+   }
+  },
+  {
+   "name": "LegSymbolList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6712"
+   }
+  },
+  {
+   "name": "MatchType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9382"
+   }
+  },
+  {
+   "name": "MDCustomerSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6709"
+   }
+  },
+  {
+   "name": "MDProcessIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6710"
+   }
+  },
+  {
+   "name": "MDScope",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9315"
+   }
+  },
+  {
+   "name": "MulitiLegPrice",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9379"
+   }
+  },
+  {
+   "name": "MultilegCoveredOrUncovered",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9371"
+   }
+  },
+  {
+   "name": "MultilegMonthIncrement",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9323"
+   }
+  },
+  {
+   "name": "MultilegPositionEffects",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9370"
+   }
+  },
+  {
+   "name": "MultilegPriceIncrement",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9322"
+   }
+  },
+  {
+   "name": "MultilegStockClearingFirm",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9372"
+   }
+  },
+  {
+   "name": "NestedPartyIdList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6707"
+   }
+  },
+  {
+   "name": "NoOfLegsList",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6706"
+   }
+  },
+  {
+   "name": "OpenInterest",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9314"
+   }
+  },
+  {
+   "name": "OrderCapacity",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6528"
+   }
+  },
+  {
+   "name": "OrderOrigin2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9465"
+   }
+  },
+  {
+   "name": "OrderRejectReasonTxt",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9320"
+   }
+  },
+  {
+   "name": "OrderRestrictions",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6529"
+   }
+  },
+  {
+   "name": "OriginalEmailThreadID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9791"
+   }
+  },
+  {
+   "name": "PremPriceTickAbove",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9366"
+   }
+  },
+  {
+   "name": "PremPriceTickBelow",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9367"
+   }
+  },
+  {
+   "name": "PremPriceTickBreakPoint",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9365"
+   }
+  },
+  {
+   "name": "PriceProtectionScope",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9369"
+   }
+  },
+  {
+   "name": "ProfessionalSize",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9005"
+   }
+  },
+  {
+   "name": "PublishOrderStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9363"
+   }
+  },
+  {
+   "name": "QuoteRequestSubscription",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9313"
+   }
+  },
+  {
+   "name": "QuoteStatus2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9312"
+   }
+  },
+  {
+   "name": "QuoteUpdateControlId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9006"
+   }
+  },
+  {
+   "name": "RejectReasonCode",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9466"
+   }
+  },
+  {
+   "name": "ResponseRequested",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9790"
+   }
+  },
+  {
+   "name": "RoutingAwayBroker",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6818"
+   }
+  },
+  {
+   "name": "SecondaryClOrdID",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9321"
+   }
+  },
+  {
+   "name": "StockFirmName",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9380"
+   }
+  },
+  {
+   "name": "StockFirmNameKey",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9381"
+   }
+  },
+  {
+   "name": "SubscriptionRequestType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9463"
+   }
+  },
+  {
+   "name": "SuppressOrderStatus",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9191"
+   }
+  },
+  {
+   "name": "TLCQty",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9311"
+   }
+  },
+  {
+   "name": "UDFSupportIndicator",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "9003"
+   }
+  }
+ ]
 }

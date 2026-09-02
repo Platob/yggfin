@@ -1,350 +1,347 @@
 {
  "name": "QuotReqRjctGrp",
- "versions": [
-  "4.4",
-  "5.0",
-  "5.0.SP1",
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "QuotReqRjctGrp",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "QuotReqRjctGrp",
-   "version": "5.0.SP2",
-   "source": "quickfix",
-   "sources": [
-    "quickfix"
-   ],
-   "source-version": "FIX.5.0SP2_EP280",
-   "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
-   "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
-   "msgtypes": [
-    "QuoteRequestReject"
-   ]
-  },
-  "fields": [
-   {
-    "name": "NoRelatedSym",
-    "type": "list",
-    "nullable": true,
-    "fix": {
-     "tag": "146"
-    },
-    "item": {
-     "name": "RelatedSym",
-     "type": "struct",
-     "fields": [
-      {
-       "name": "Instrument",
-       "type": "struct",
-       "fix": {
-        "component": "Instrument"
-       },
-       "fields": []
-      },
-      {
-       "name": "FinancingDetails",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "FinancingDetails"
-       },
-       "fields": []
-      },
-      {
-       "name": "UndInstrmtGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "UndInstrmtGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "PrevClosePx",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "140"
-       }
-      },
-      {
-       "name": "QuoteRequestType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "303"
-       }
-      },
-      {
-       "name": "QuoteType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "537"
-       }
-      },
-      {
-       "name": "TradingSessionID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "336"
-       }
-      },
-      {
-       "name": "TradingSessionSubID",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "625"
-       }
-      },
-      {
-       "name": "TradeOriginationDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "229"
-       }
-      },
-      {
-       "name": "Side",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "54"
-       }
-      },
-      {
-       "name": "QtyType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "854"
-       }
-      },
-      {
-       "name": "OrderQtyData",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "OrderQtyData"
-       },
-       "fields": []
-      },
-      {
-       "name": "SettlType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "63"
-       }
-      },
-      {
-       "name": "SettlDate",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "64"
-       }
-      },
-      {
-       "name": "SettlDate2",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "193"
-       }
-      },
-      {
-       "name": "OrderQty2",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "192"
-       }
-      },
-      {
-       "name": "Currency",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "15"
-       }
-      },
-      {
-       "name": "CurrencyCodeSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2897"
-       }
-      },
-      {
-       "name": "Stipulations",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "Stipulations"
-       },
-       "fields": []
-      },
-      {
-       "name": "Account",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "1"
-       }
-      },
-      {
-       "name": "AcctIDSource",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "660"
-       }
-      },
-      {
-       "name": "AccountType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "581"
-       }
-      },
-      {
-       "name": "QuotReqLegsGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "QuotReqLegsGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "QuotQualGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "QuotQualGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "NegotiationMethod",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "2115"
-       }
-      },
-      {
-       "name": "QuotePriceType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "692"
-       }
-      },
-      {
-       "name": "PriceQualifierGrp",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "PriceQualifierGrp"
-       },
-       "fields": []
-      },
-      {
-       "name": "OrdType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "40"
-       }
-      },
-      {
-       "name": "ExpireTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "126"
-       }
-      },
-      {
-       "name": "TransactTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "60"
-       }
-      },
-      {
-       "name": "SpreadOrBenchmarkCurveData",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "SpreadOrBenchmarkCurveData"
-       },
-       "fields": []
-      },
-      {
-       "name": "PriceType",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "423"
-       }
-      },
-      {
-       "name": "Price",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "44"
-       }
-      },
-      {
-       "name": "Price2",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "640"
-       }
-      },
-      {
-       "name": "YieldData",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "YieldData"
-       },
-       "fields": []
-      },
-      {
-       "name": "Parties",
-       "type": "struct",
-       "nullable": true,
-       "fix": {
-        "component": "Parties"
-       },
-       "fields": []
-      },
-      {
-       "name": "StrikeTime",
-       "type": "string",
-       "nullable": true,
-       "fix": {
-        "tag": "443"
-       }
-      }
-     ]
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "QuotReqRjctGrp",
+  "version": "5.0.SP2",
+  "source": "quickfix",
+  "sources": [
+   "quickfix"
+  ],
+  "source-version": "FIX.5.0SP2_EP280",
+  "source-url": "https://raw.githubusercontent.com/quickfix/quickfix/3536699e830e65f875df4a50b647a6d3bad3b884/spec/FIX50SP2.xml",
+  "source-checksum": "sha256:7d34e565586dd4096a08691d10e415b5a2fd531a8dadfcfc831daea419d3c3f3",
+  "msgtypes": [
+   "QuoteRequestReject"
+  ],
+  "versions": [
+   "4.4",
+   "5.0",
+   "5.0.SP1",
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "NoRelatedSym",
+   "type": "list",
+   "nullable": true,
+   "fix": {
+    "tag": "146"
+   },
+   "item": {
+    "name": "RelatedSym",
+    "type": "struct",
+    "fields": [
+     {
+      "name": "Instrument",
+      "type": "struct",
+      "fix": {
+       "component": "Instrument"
+      },
+      "fields": []
+     },
+     {
+      "name": "FinancingDetails",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "FinancingDetails"
+      },
+      "fields": []
+     },
+     {
+      "name": "UndInstrmtGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "UndInstrmtGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "PrevClosePx",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "140"
+      }
+     },
+     {
+      "name": "QuoteRequestType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "303"
+      }
+     },
+     {
+      "name": "QuoteType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "537"
+      }
+     },
+     {
+      "name": "TradingSessionID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "336"
+      }
+     },
+     {
+      "name": "TradingSessionSubID",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "625"
+      }
+     },
+     {
+      "name": "TradeOriginationDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "229"
+      }
+     },
+     {
+      "name": "Side",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "54"
+      }
+     },
+     {
+      "name": "QtyType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "854"
+      }
+     },
+     {
+      "name": "OrderQtyData",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "OrderQtyData"
+      },
+      "fields": []
+     },
+     {
+      "name": "SettlType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "63"
+      }
+     },
+     {
+      "name": "SettlDate",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "64"
+      }
+     },
+     {
+      "name": "SettlDate2",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "193"
+      }
+     },
+     {
+      "name": "OrderQty2",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "192"
+      }
+     },
+     {
+      "name": "Currency",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "15"
+      }
+     },
+     {
+      "name": "CurrencyCodeSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2897"
+      }
+     },
+     {
+      "name": "Stipulations",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "Stipulations"
+      },
+      "fields": []
+     },
+     {
+      "name": "Account",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "1"
+      }
+     },
+     {
+      "name": "AcctIDSource",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "660"
+      }
+     },
+     {
+      "name": "AccountType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "581"
+      }
+     },
+     {
+      "name": "QuotReqLegsGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "QuotReqLegsGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "QuotQualGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "QuotQualGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "NegotiationMethod",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "2115"
+      }
+     },
+     {
+      "name": "QuotePriceType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "692"
+      }
+     },
+     {
+      "name": "PriceQualifierGrp",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "PriceQualifierGrp"
+      },
+      "fields": []
+     },
+     {
+      "name": "OrdType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "40"
+      }
+     },
+     {
+      "name": "ExpireTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "126"
+      }
+     },
+     {
+      "name": "TransactTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "60"
+      }
+     },
+     {
+      "name": "SpreadOrBenchmarkCurveData",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "SpreadOrBenchmarkCurveData"
+      },
+      "fields": []
+     },
+     {
+      "name": "PriceType",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "423"
+      }
+     },
+     {
+      "name": "Price",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "44"
+      }
+     },
+     {
+      "name": "Price2",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "640"
+      }
+     },
+     {
+      "name": "YieldData",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "YieldData"
+      },
+      "fields": []
+     },
+     {
+      "name": "Parties",
+      "type": "struct",
+      "nullable": true,
+      "fix": {
+       "component": "Parties"
+      },
+      "fields": []
+     },
+     {
+      "name": "StrikeTime",
+      "type": "string",
+      "nullable": true,
+      "fix": {
+       "tag": "443"
+      }
+     }
+    ]
+   }
+  }
+ ]
 }

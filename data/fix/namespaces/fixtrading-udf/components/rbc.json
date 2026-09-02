@@ -1,225 +1,222 @@
 {
  "name": "RBC",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "RBC",
-  "type": "struct",
-  "nullable": true,
-  "fix": {
-   "component": "RBC",
-   "version": "5.0.SP2",
-   "source": "fixtrading-udf",
-   "sources": [
-    "fixtrading-udf"
-   ],
-   "namespace": "fixtrading-udf",
-   "source-version": "1.0",
-   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
-   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5"
-  },
-  "fields": [
-   {
-    "name": "AggressiveInTheMoney",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6908"
-    }
-   },
-   {
-    "name": "AltExDestination",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5980"
-    }
-   },
-   {
-    "name": "CDNAccountType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5800"
-    }
-   },
-   {
-    "name": "CDNAnonymous",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5801"
-    }
-   },
-   {
-    "name": "CDNInternalCross",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5802"
-    }
-   },
-   {
-    "name": "CDNLotsOf",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5803"
-    }
-   },
-   {
-    "name": "CDNNonResident",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5804"
-    }
-   },
-   {
-    "name": "CDNPrincipalTrade",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5805"
-    }
-   },
-   {
-    "name": "CDNUserId",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5806"
-    }
-   },
-   {
-    "name": "IOILink",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5981"
-    }
-   },
-   {
-    "name": "LocateBroker",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5700"
-    }
-   },
-   {
-    "name": "ParticipationRate3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7094"
-    }
-   },
-   {
-    "name": "ParticipationRate4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7095"
-    }
-   },
-   {
-    "name": "ParticipationRate5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7096"
-    }
-   },
-   {
-    "name": "ParticipationRate6",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7097"
-    }
-   },
-   {
-    "name": "ParticipationRate7",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7098"
-    }
-   },
-   {
-    "name": "ParticipationRate8",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7099"
-    }
-   },
-   {
-    "name": "Price1",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7089"
-    }
-   },
-   {
-    "name": "Price2",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7090"
-    }
-   },
-   {
-    "name": "Price3",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7091"
-    }
-   },
-   {
-    "name": "Price4",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7092"
-    }
-   },
-   {
-    "name": "Price5",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7093"
-    }
-   },
-   {
-    "name": "SaleCrdtType",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "7504"
-    }
-   },
-   {
-    "name": "Slope",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "5950"
-    }
-   },
-   {
-    "name": "SuppressOatsReport",
-    "type": "string",
-    "nullable": true,
-    "fix": {
-     "tag": "6907"
-    }
-   }
+ "type": "struct",
+ "nullable": true,
+ "fix": {
+  "component": "RBC",
+  "version": "5.0.SP2",
+  "source": "fixtrading-udf",
+  "sources": [
+   "fixtrading-udf"
+  ],
+  "namespace": "fixtrading-udf",
+  "source-version": "1.0",
+  "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+  "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+  "versions": [
+   "5.0.SP2"
   ]
- }
+ },
+ "fields": [
+  {
+   "name": "AggressiveInTheMoney",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6908"
+   }
+  },
+  {
+   "name": "AltExDestination",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5980"
+   }
+  },
+  {
+   "name": "CDNAccountType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5800"
+   }
+  },
+  {
+   "name": "CDNAnonymous",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5801"
+   }
+  },
+  {
+   "name": "CDNInternalCross",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5802"
+   }
+  },
+  {
+   "name": "CDNLotsOf",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5803"
+   }
+  },
+  {
+   "name": "CDNNonResident",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5804"
+   }
+  },
+  {
+   "name": "CDNPrincipalTrade",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5805"
+   }
+  },
+  {
+   "name": "CDNUserId",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5806"
+   }
+  },
+  {
+   "name": "IOILink",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5981"
+   }
+  },
+  {
+   "name": "LocateBroker",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5700"
+   }
+  },
+  {
+   "name": "ParticipationRate3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7094"
+   }
+  },
+  {
+   "name": "ParticipationRate4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7095"
+   }
+  },
+  {
+   "name": "ParticipationRate5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7096"
+   }
+  },
+  {
+   "name": "ParticipationRate6",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7097"
+   }
+  },
+  {
+   "name": "ParticipationRate7",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7098"
+   }
+  },
+  {
+   "name": "ParticipationRate8",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7099"
+   }
+  },
+  {
+   "name": "Price1",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7089"
+   }
+  },
+  {
+   "name": "Price2",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7090"
+   }
+  },
+  {
+   "name": "Price3",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7091"
+   }
+  },
+  {
+   "name": "Price4",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7092"
+   }
+  },
+  {
+   "name": "Price5",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7093"
+   }
+  },
+  {
+   "name": "SaleCrdtType",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "7504"
+   }
+  },
+  {
+   "name": "Slope",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "5950"
+   }
+  },
+  {
+   "name": "SuppressOatsReport",
+   "type": "string",
+   "nullable": true,
+   "fix": {
+    "tag": "6907"
+   }
+  }
+ ]
 }

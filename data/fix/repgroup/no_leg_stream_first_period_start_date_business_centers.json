@@ -1,28 +1,25 @@
 {
  "name": "NoLegStreamFirstPeriodStartDateBusinessCenters",
- "versions": [
-  "5.0.SP2"
- ],
- "declaration": {
-  "name": "NoLegStreamFirstPeriodStartDateBusinessCenters",
-  "type": "list",
-  "nullable": true,
-  "fix": {
-   "tag": "40941"
-  },
-  "item": {
-   "name": "LegStreamFirstPeriodStartDateBusinessCenter",
-   "type": "struct",
-   "fields": [
-    {
-     "name": "LegStreamFirstPeriodStartDateBusinessCenter",
-     "type": "string",
-     "nullable": true,
-     "fix": {
-      "tag": "40269"
-     }
+ "type": "list",
+ "nullable": true,
+ "fix": {
+  "tag": "40941",
+  "versions": [
+   "5.0.SP2"
+  ]
+ },
+ "item": {
+  "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+  "type": "struct",
+  "fields": [
+   {
+    "name": "LegStreamFirstPeriodStartDateBusinessCenter",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "40269"
     }
-   ]
-  }
+   }
+  ]
  }
 }
