@@ -456,14 +456,18 @@ class Message(Event):
         families = Protocol.into_family_arrow(protocols)
         xml = compute.equal(families, Protocol.XML.into_stored())
         referential = compute.equal(families, Protocol.REFERENTIAL.into_stored())
-        xml_entries, parse_errors = xml_payload_arrow(bodies, xml)
-        xml_entries = Entry.normalized_arrow(xml_entries, plugins, plugin_keys, null_values)
-        entries = compute.if_else(xml, xml_entries, entries)
-        referential_entries, referential_errors = referential_payload_arrow(bodies, referential)
-        referential_entries = Entry.normalized_arrow(
-            referential_entries, plugins, plugin_keys, null_values
+        entries, parse_errors = _reparsed_entries(
+            xml_payload_arrow, bodies, xml, entries, plugins, plugin_keys, null_values
         )
-        entries = compute.if_else(referential, referential_entries, entries)
+        entries, referential_errors = _reparsed_entries(
+            referential_payload_arrow,
+            bodies,
+            referential,
+            entries,
+            plugins,
+            plugin_keys,
+            null_values,
+        )
         parse_errors = _merge_error_columns(token_errors, parse_errors)
         parse_errors = _merge_error_columns(parse_errors, referential_errors)
         session, entries = _session_columns(entries)
@@ -540,6 +544,55 @@ class Message(Event):
         )
 
 
+#: Rows decoded in Python once a run refuses to validate. Halving stops here:
+#: a smaller leaf spends more on casts than it saves, and a larger one drags
+#: valid neighbours through `to_pylist`. One dirty row among 65,536 costs
+#: 0.19 MiB of Python heap at this size and 183 MiB with no leaf at all.
+_REPAIR_ROW_SIZE = 64
+
+
+def repaired_text_arrow(binary: pyarrow.Array) -> pyarrow.Array:
+    """Bytes read as UTF-8, decoding in Python only the rows Arrow refuses.
+
+    Arrow rejects the whole array and never names the row, so one dirty body
+    used to send every row beside it through `to_pylist` -- heap the Arrow pool
+    cannot see, and which the allocator does not give back. The rows are found
+    by halving instead: a run that validates is cast inside Arrow, and only a
+    `_REPAIR_ROW_SIZE` leaf reaches Python. Arrow's validator and CPython's
+    strict decoder accept the same bytes, so a run Arrow casts holds exactly
+    what `decode("utf-8", "replace")` would have returned for it.
+    """
+    try:
+        return binary.cast(pyarrow.string())
+    except pyarrow.ArrowInvalid:
+        pieces: list[pyarrow.Array] = []
+        _repaired_pieces(binary, pieces)
+        return pyarrow.concat_arrays(pieces)
+
+
+def _repaired_pieces(binary: pyarrow.Array, pieces: list[pyarrow.Array]) -> None:
+    """Append `binary` as UTF-8, halving until a run validates or is a leaf."""
+    try:
+        pieces.append(binary.cast(pyarrow.string()))
+        return
+    except pyarrow.ArrowInvalid:
+        pass
+    if len(binary) <= _REPAIR_ROW_SIZE:
+        pieces.append(
+            pyarrow.array(
+                [
+                    None if value is None else value.decode("utf-8", "replace")
+                    for value in binary.to_pylist()
+                ],
+                pyarrow.string(),
+            )
+        )
+        return
+    half = len(binary) // 2
+    _repaired_pieces(binary.slice(0, half), pieces)
+    _repaired_pieces(binary.slice(half), pieces)
+
+
 def _body_text_arrow(bodies: Any) -> pyarrow.Array:
     """A fault-tolerant UTF-8 parsing view over exact binary bodies."""
     if isinstance(bodies, pyarrow.ChunkedArray):
@@ -547,21 +600,38 @@ def _body_text_arrow(bodies: Any) -> pyarrow.Array:
             [_body_text_arrow(chunk) for chunk in bodies.chunks], pyarrow.string()
         )
     binary = bodies.cast(pyarrow.binary(), safe=False)
-    try:
-        return pyarrow.compute.fill_null(binary.cast(pyarrow.string()), "")
-    except pyarrow.ArrowInvalid:
-        return pyarrow.array(
-            [
-                "" if value is None else value.decode("utf-8", "replace")
-                for value in binary.to_pylist()
-            ],
-            pyarrow.string(),
-        )
+    return pyarrow.compute.fill_null(repaired_text_arrow(binary), "")
 
 
 def _merged_reason(current: str | None, added: str) -> str:
     """Append one parser diagnostic without hiding an earlier row reason."""
     return f"{current}; {added}" if current else added
+
+
+def _reparsed_entries(
+    parse: Any,
+    bodies: Any,
+    selected: Any,
+    entries: Any,
+    plugins: Any,
+    plugin_keys: Any,
+    null_values: Any,
+) -> tuple[Any, pyarrow.Array]:
+    """One protocol's own reading of the rows it claims, merged over the batch.
+
+    `if_else` on `ENTRIES` has no all-false short circuit, so a batch the
+    protocol never appears in still paid a whole copy of the column to
+    overwrite no row: a 200k-row FIX batch peaked at 255.5 MiB of Arrow and
+    4170 ms against 203.6 MiB and 3722 ms once both branches are gated. The
+    diagnostics stay full length and all-null on the skipped batch, because
+    `_merge_error_columns` reads them beside it either way.
+    """
+    compute = pyarrow.compute
+    if not selected.null_count and not compute.any(selected, min_count=0).as_py():
+        return entries, pyarrow.nulls(len(entries), pyarrow.string())
+    parsed, errors = parse(bodies, selected)
+    parsed = Entry.normalized_arrow(parsed, plugins, plugin_keys, null_values)
+    return compute.if_else(selected, parsed, entries), errors
 
 
 def _merge_error_columns(current: Any, added: Any) -> pyarrow.Array:

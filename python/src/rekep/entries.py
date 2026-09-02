@@ -219,13 +219,6 @@ class Entry(Convertible, Mapping[str, Any]):
     # -- whole columns -------------------------------------------------------
 
     @classmethod
-    def looks_structured_arrow(cls, messages: Any) -> Any:
-        """Which rows contain two delimiter-separated assignments."""
-        from rekep.text.entries import looks_structured_arrow
-
-        return looks_structured_arrow(messages)
-
-    @classmethod
     def parse_arrow(cls, messages: Any) -> Any:
         """Split text into ordered entries without protocol interpretation."""
         from rekep.text.entries import parse_arrow
@@ -258,19 +251,6 @@ class Entry(Convertible, Mapping[str, Any]):
         from rekep.text.entries import normalized_arrow
 
         return normalized_arrow(stored, plugins, plugin_keys, null_values)
-
-    @classmethod
-    def pop_arrow(
-        cls,
-        stored: Any,
-        names: tuple[str, ...],
-        *,
-        case_sensitive: bool = True,
-    ) -> tuple[Any, Any]:
-        """Return the first named value per row and every other entry."""
-        from rekep.text.entries import pop_arrow
-
-        return pop_arrow(stored, names, case_sensitive=case_sensitive)
 
     @staticmethod
     def structure_arrow(keys: Any, values: Any) -> tuple[Any, ...]:

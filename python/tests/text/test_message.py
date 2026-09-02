@@ -6,6 +6,7 @@ import pyarrow
 import pytest
 
 import rekep.text.entries as entries_module
+import rekep.text.message as message_module
 from rekep import Entry, FixRegistry, Message, TextFile, txhash
 from rekep.enums import Direction, EventType, Plugin, Protocol
 from rekep.market import Event, hash_bytes
@@ -991,3 +992,49 @@ def test_the_two_discriminator_spellings_still_have_their_own_rule() -> None:
 
     assert message.msgtype == "D"
     assert [(entry.key, entry.value) for entry in message.entries] == [("55", "A"), ("10", "1")]
+
+
+#: Bytes no UTF-8 decoder accepts, one per rule that rejects them: a lone
+#: continuation, an overlong encoding, a truncated sequence, a surrogate, and a
+#: code point past U+10FFFF.
+INVALID_UTF8 = (b"\x80", b"\xc0\x80", b"\xe2\x82", b"\xed\xa0\x80", b"\xf4\x90\x80\x80")
+
+
+@pytest.mark.parametrize("position", [0, 1, 63, 64, 65, 127, 128, 4095])
+def test_one_invalid_body_repairs_without_decoding_its_neighbours(position: int) -> None:
+    """A dirty row is decoded; the rows beside it stay inside Arrow.
+
+    Pinned at the boundaries of the halving leaf, because a run that validates
+    is cast whole and only the leaf holding the bad row reaches Python -- so
+    the row's offset inside that leaf is the one thing that can go wrong.
+    """
+    bodies: list[bytes] = [b"8=FIX.4.2|35=D|55=TTF|10=203|"] * 4096
+    bodies[position] = b"\xff" + bodies[position]
+    found = message_module._body_text_arrow(pyarrow.array(bodies, pyarrow.binary()))
+
+    assert found.to_pylist() == [body.decode("utf-8", "replace") for body in bodies]
+
+
+def test_every_invalid_shape_reads_as_the_replacement_decoder_reads_it() -> None:
+    """The repair is `errors="replace"`, whatever made the bytes invalid."""
+    bodies = [*INVALID_UTF8, b"caf\xc3\xa9", b"", b"\xff\xfe\xfd"]
+    found = message_module._body_text_arrow(pyarrow.array(bodies, pyarrow.binary()))
+
+    assert found.to_pylist() == [body.decode("utf-8", "replace") for body in bodies]
+
+
+def test_a_null_body_reads_as_empty_text_whether_or_not_the_batch_is_dirty() -> None:
+    """`body` is never null downstream, and a repair does not change that."""
+    clean = pyarrow.array([b"35=D", None], pyarrow.binary())
+    dirty = pyarrow.array([b"\xff", None], pyarrow.binary())
+
+    assert message_module._body_text_arrow(clean).to_pylist() == ["35=D", ""]
+    assert message_module._body_text_arrow(dirty).to_pylist() == ["�", ""]
+
+
+def test_a_wholly_invalid_batch_still_returns_every_row() -> None:
+    """Halving reaches a leaf on every path, so no row is dropped."""
+    bodies = [b"\xff\xfe"] * 300
+    found = message_module._body_text_arrow(pyarrow.array(bodies, pyarrow.binary()))
+
+    assert found.to_pylist() == [b"\xff\xfe".decode("utf-8", "replace")] * 300
