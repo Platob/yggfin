@@ -25,7 +25,7 @@ from rekep.fields.arrays import groups_of, scattered
 from rekep.filesystems import ArrowFile
 from rekep.market.event import ALTIDS_TYPE, unix_partition_arrow
 from rekep.market.identity import HASH
-from rekep.text.message import Message
+from rekep.text.message import Message, repaired_text_arrow
 from rekep.times import COMPACT, SHAPES, Stamp
 from rekep.urls import Url
 
@@ -1391,19 +1391,9 @@ def _empty_batch(schema: pyarrow.Schema) -> pyarrow.RecordBatch:
 
 
 def _utf8(values: Sequence[bytes | None] | pyarrow.Array) -> pyarrow.Array:
-    """Cast raw bytes to a string array, falling back when the payload is dirty."""
+    """Cast raw bytes to a string array, repairing only the rows that are dirty."""
     array = values if isinstance(values, pyarrow.Array) else pyarrow.array(values)
-    array = array.cast(pyarrow.binary())
-    try:
-        return array.cast(pyarrow.string())
-    except pyarrow.ArrowInvalid:
-        return pyarrow.array(
-            [
-                None if value is None else value.decode("utf-8", "replace")
-                for value in array.to_pylist()
-            ],
-            type=pyarrow.string(),
-        )
+    return repaired_text_arrow(array.cast(pyarrow.binary()))
 
 
 def _local_micros(timestamps: Sequence[bytes] | pyarrow.Array) -> pyarrow.Array:

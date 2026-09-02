@@ -544,6 +544,55 @@ class Message(Event):
         )
 
 
+#: Rows decoded in Python once a run refuses to validate. Halving stops here:
+#: a smaller leaf spends more on casts than it saves, and a larger one drags
+#: valid neighbours through `to_pylist`. One dirty row among 65,536 costs
+#: 0.19 MiB of Python heap at this size and 183 MiB with no leaf at all.
+_REPAIR_ROW_SIZE = 64
+
+
+def repaired_text_arrow(binary: pyarrow.Array) -> pyarrow.Array:
+    """Bytes read as UTF-8, decoding in Python only the rows Arrow refuses.
+
+    Arrow rejects the whole array and never names the row, so one dirty body
+    used to send every row beside it through `to_pylist` -- heap the Arrow pool
+    cannot see, and which the allocator does not give back. The rows are found
+    by halving instead: a run that validates is cast inside Arrow, and only a
+    `_REPAIR_ROW_SIZE` leaf reaches Python. Arrow's validator and CPython's
+    strict decoder accept the same bytes, so a run Arrow casts holds exactly
+    what `decode("utf-8", "replace")` would have returned for it.
+    """
+    try:
+        return binary.cast(pyarrow.string())
+    except pyarrow.ArrowInvalid:
+        pieces: list[pyarrow.Array] = []
+        _repaired_pieces(binary, pieces)
+        return pyarrow.concat_arrays(pieces)
+
+
+def _repaired_pieces(binary: pyarrow.Array, pieces: list[pyarrow.Array]) -> None:
+    """Append `binary` as UTF-8, halving until a run validates or is a leaf."""
+    try:
+        pieces.append(binary.cast(pyarrow.string()))
+        return
+    except pyarrow.ArrowInvalid:
+        pass
+    if len(binary) <= _REPAIR_ROW_SIZE:
+        pieces.append(
+            pyarrow.array(
+                [
+                    None if value is None else value.decode("utf-8", "replace")
+                    for value in binary.to_pylist()
+                ],
+                pyarrow.string(),
+            )
+        )
+        return
+    half = len(binary) // 2
+    _repaired_pieces(binary.slice(0, half), pieces)
+    _repaired_pieces(binary.slice(half), pieces)
+
+
 def _body_text_arrow(bodies: Any) -> pyarrow.Array:
     """A fault-tolerant UTF-8 parsing view over exact binary bodies."""
     if isinstance(bodies, pyarrow.ChunkedArray):
@@ -551,16 +600,7 @@ def _body_text_arrow(bodies: Any) -> pyarrow.Array:
             [_body_text_arrow(chunk) for chunk in bodies.chunks], pyarrow.string()
         )
     binary = bodies.cast(pyarrow.binary(), safe=False)
-    try:
-        return pyarrow.compute.fill_null(binary.cast(pyarrow.string()), "")
-    except pyarrow.ArrowInvalid:
-        return pyarrow.array(
-            [
-                "" if value is None else value.decode("utf-8", "replace")
-                for value in binary.to_pylist()
-            ],
-            pyarrow.string(),
-        )
+    return pyarrow.compute.fill_null(repaired_text_arrow(binary), "")
 
 
 def _merged_reason(current: str | None, added: str) -> str:
