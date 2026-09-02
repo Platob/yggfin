@@ -750,6 +750,9 @@ class IcebergDataset(Dataset):
                             snapshot_properties=dict(summary),
                         ),
                     )
+                # `arrow_chunks` accumulates the next chunk while this name
+                # still holds the last one.
+                del chunk
         finally:
             if not delegated:
                 _close_write_source(source, reader)
@@ -1277,12 +1280,16 @@ class IcebergDataset(Dataset):
                 for chunk in arrow_chunks(reader, rows, batches):
                     table = self._append_chunk(table, chunk, reference, snapshot)
                     inserted += chunk.num_rows
+                    # `arrow_chunks` accumulates the next chunk while this name
+                    # still holds the last one.
+                    del chunk
                 return inserted
             inserted = 0
             for chunk in arrow_chunks(reader, rows, batches):
                 inserted += self.insert_arrow_table(
                     chunk, join, branch=reference, properties=properties
                 )
+                del chunk
             return inserted
         finally:
             _close_write_source(source, reader)

@@ -443,6 +443,9 @@ class TextFile(Dataset, io.BufferedIOBase):
         for chunk in arrow_chunks(reader, commit_row_size):
             self._append(_rendered(chunk, self.timezone))
             inserted += chunk.num_rows
+            # `arrow_chunks` accumulates the next chunk while this name still
+            # holds the last one.
+            del chunk
         return inserted
 
     def _append(self, payload: bytes) -> None:
