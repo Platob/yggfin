@@ -2250,9 +2250,11 @@ class IcebergDataset(Dataset):
         from yggdryl import IOBase
 
         for filesystem, path, _, _ in orphans:
-            # Yggdryl deletion is missing-safe, so concurrent sweepers both
-            # finish and the caller still receives the complete report.
-            IOBase.from_fs(filesystem, path).unlink()
+            # Another sweeper may delete the listed file before this one.
+            try:
+                IOBase.from_fs(filesystem, path).unlink()
+            except FileNotFoundError:
+                pass
 
     def _data_path(self, table: Any) -> str:
         """Where this table's data files live, as Iceberg decides it."""

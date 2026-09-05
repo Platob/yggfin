@@ -432,6 +432,27 @@ def test_the_sweep_deletes_through_yggdryl_and_tolerates_absence(tmp_path: Path)
     assert not orphan.exists()
 
 
+def test_the_sweep_propagates_nonabsence_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    import yggdryl
+
+    from rekep.iceberg.dataset import IcebergDataset
+
+    class Refused:
+        @staticmethod
+        def unlink() -> None:
+            raise PermissionError("refused")
+
+    class IOBase:
+        @staticmethod
+        def from_fs(_filesystem: object, _path: str) -> Refused:
+            return Refused()
+
+    monkeypatch.setattr(yggdryl, "IOBase", IOBase)
+    dataset = object.__new__(IcebergDataset)
+    with pytest.raises(PermissionError, match="refused"):
+        dataset._sweep([(object(), "orphan.avro", "mock://bound/orphan.avro", 3)])
+
+
 def test_an_unknown_mtime_is_spared_by_the_orphan_grace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

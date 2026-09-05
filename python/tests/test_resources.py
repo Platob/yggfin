@@ -29,7 +29,8 @@ def test_an_injected_filesystem_owns_the_resource_path() -> None:
 
     opened = resource("payload.bin", filesystem, root="bucket")
     try:
-        assert str(opened.url) == "mock://bucket/payload.bin"
+        assert opened.filesystem is filesystem
+        assert opened.path == "bucket/payload.bin"
     finally:
         opened.close()
     assert read_bytes("bucket/payload.bin", filesystem) == b"payload"
