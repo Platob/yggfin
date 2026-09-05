@@ -1,310 +1,37 @@
 name: Message
 type: struct
-description: One log header, its provenance, and its protocol-neutral payload.
-metadata: {namespace: rekep.text.message, version: '1'}
+description: One source line and the header fields yggdryl captured from it.
+metadata: {namespace: rekep.text.message, version: '2'}
 fields:
-- name: unix
-  type: int64
-  description: When the event happened, in whole nanoseconds since the epoch.
-  metadata: {unit: ns, epoch: '1970-01-01'}
-  iceberg: {primary_key: 'true'}
-- name: unixpartition
-  type: int32
-  description: '`unix`''s hour boundary in whole epoch seconds; the partition value.'
-  metadata: {unit: second, epoch: '1970-01-01'}
-  iceberg: {partition_key: identity, derived_from: unix}
-  fix: {name: UnixPartition}
-- name: eventtype
-  type: int64
-  description: Which kind of event this is -- the one column a union of the tables needs.
-  fix: {name: EventType}
-  enum: {name: EventType, key_type: int64, values: '{"0":"UNKNOWN","5569073961448243200":"MISC","6000293695718379008":"SESSION","5282252069595774976":"INTENT","5715705941605744640":"ORDER","5860677713446043648":"QUOTE","5282234494403826757":"INDICATION","4705219614009807941":"ALLOCATION","6000294799574630400":"SETTLEMENT","5062401484197462016":"FACT","4996819942064276804":"EXECUTION","5282251034575328256":"INSTRUMENT","4850181387486121216":"CONFIRMATION","5640010122345316352":"NEWS","6004496033382400000":"STATE","4778124913204527104":"BOOK","5786935620606185294":"POSITION","4850179214098584140":"COLLATERAL","5782993918744330240":"PARTY"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ALLOCATION":"ALLOCATE","COLLATERAL":"COLLATRL","CONFIRMATION":"CONFIRM","EXECUTION":"EXECUTED","INDICATION":"INDICATE","INSTRUMENT":"INSTRMT","SETTLEMENT":"SETTLE"}'}
-- name: plugin
-  type: fixed_size_binary[16]
-  description: Source plugin; UNKNOWN when missing or longer than 16 ASCII bytes.
-  fix: {name: Plugin}
-  enum: {name: Plugin, key_type: 'fixed_size_binary[16]', values: '{"00000000000000000000000000000000":"UNKNOWN"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '16', padding: nul-right}
-- name: creaunix
-  type: int64
-  description: When the event was created, upstream of anything that carried it.
-  metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {name: CreaUnix}
-- name: recunix
-  type: int64
-  description: When the event was written down here; deliberately not part of `hash`.
-  metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {name: RecUnix}
-- name: expunix
-  type: int64
-  nullable: true
-  description: When the event stops being true -- an order's expiry, a quote's staleness.
-  metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {name: ExpUnix}
-- name: snapunix
-  type: int64
-  nullable: true
-  description: '`unix` of the event this is a snapshot of; null when it is not one.'
-  metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {name: SnapUnix}
-- name: hash
-  type: fixed_size_binary[16]
-  description: Time-anchored composition of `unix` and `vhash`.
-  iceberg: {primary_key: 'true'}
-- name: vhash
-  type: int64
-  description: XXH3-64 of the framed value parts, with every clock excluded.
-  fix: {name: ValueHash}
-- name: xhash
-  type: fixed_size_binary[16]
-  description: Direct XXH3-128 digest of `code`; all-zero when no readable code exists.
-  fix: {name: XHash}
-- name: linkhashes
-  type: list
-  description: Related exact event `hash` values, with the primary match first.
-  fix: {name: LinkHashes}
-  fields:
-  - type: fixed_size_binary[16]
-- name: version
-  type: int64
-  description: Which version of `xhash` this is, counting up from the first.
-- name: state
-  type: int64
-  description: 'Where the lifecycle stands, as a ranked code: `is_terminal` is over.'
-  enum: {name: State, key_type: int64, values: '{"0":"UNKNOWN","3544421165336645191":"PENDING","3544702678800942423":"PENDING_NEW","3544985283371287876":"QUEUED","3616477706957225984":"OPEN","3616758035474546688":"NEW","3617025207879159892":"ACCEPTED","3617323222792556620":"PENDING_REPLACE","3617604697768283724":"PENDING_CANCEL","3617889501597158980":"SUSPENDED","3618170972211793988":"STOPPED","3618451351954607687":"RUNNING","3688536336300788736":"PARTIAL","3688817884324579660":"PARTIALLY_FILLED","3760580796260614144":"DONE","3760864444457698628":"FILLED","3761143746214052953":"DONE_FOR_DAY","3761424061515908096":"CALCULATED","3761723214427014468":"SUCCEEDED","3832637277919724868":"CLOSED","3832918705633971268":"CANCELLED","3833216690499109700":"REPLACED","3833483953428845124":"EXPIRED","3833769783569242192":"INTERNAL_EXPIRED","3904698123146773828":"FAILED","3904992809459078212":"REJECTED","3905264427654595914":"INTERNAL_REJECTED"}', value_type: utf8, fix_values: '{"35":{"D":3544702678800942423,"F":3617604697768283724,"G":3617323222792556620,"9":0},"39":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"D":3617025207879159892,"E":3617323222792556620},"150":{"0":3616758035474546688,"1":3688817884324579660,"2":3760864444457698628,"3":3761143746214052953,"4":3832918705633971268,"5":3833216690499109700,"6":3617604697768283724,"7":3618170972211793988,"8":3904992809459078212,"9":3617889501597158980,"A":3544702678800942423,"B":3761424061515908096,"C":3833483953428845124,"E":3617323222792556620,"F":3688817884324579660,"G":3833216690499109700,"H":3832918705633971268},"279":{"0":3616758035474546688,"1":3616477706957225984,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3616477706957225984},"297":{"0":3617025207879159892,"1":3832918705633971268,"2":3832918705633971268,"3":3832918705633971268,"4":3832918705633971268,"5":3904992809459078212,"6":3832918705633971268,"7":3833483953428845124,"9":3904992809459078212,"10":3544421165336645191,"11":3832918705633971268,"12":3616477706957225984,"13":3616477706957225984,"14":3832918705633971268,"15":3832918705633971268,"16":3616477706957225984,"17":3832918705633971268,"18":3616477706957225984,"19":3617604697768283724,"21":3760864444457698628,"22":3760864444457698628,"23":3833483953428845124},"694":{"1":3760864444457698628,"2":3616477706957225984,"3":3833483953428845124,"4":3616477706957225984,"5":3832918705633971268,"6":3832918705633971268,"7":3832918705633971268,"8":3832918705633971268,"9":3616477706957225984,"10":3616477706957225984,"11":3617025207879159892,"12":3832918705633971268}}', encoding: ascii-big-endian, byte_width: '8', padding: nul-right, aliases: '{"ACCEPTED":"22ACCEPT","CALCULATED":"43CALCD","CANCELLED":"51CANCLD","CLOSED":"50CLOSED","DONE":"40DONE","DONE_FOR_DAY":"42DONEDY","EXPIRED":"53EXPIRD","FAILED":"60FAILED","FILLED":"41FILLED","INTERNAL_EXPIRED":"54INTEXP","INTERNAL_REJECTED":"62INTREJ","NEW":"21NEW","OPEN":"20OPEN","PARTIAL":"30PARTL","PARTIALLY_FILLED":"31PRTFIL","PENDING":"10PENDNG","PENDING_CANCEL":"24PNDCNL","PENDING_NEW":"11PNDNEW","PENDING_REPLACE":"23PNDRPL","QUEUED":"12QUEUED","REJECTED":"61REJCTD","REPLACED":"52REPLCD","RUNNING":"27RUNING","STOPPED":"26STOPPD","SUCCEEDED":"44SUCCED","SUSPENDED":"25SUSPND"}'}
-- name: code
-  type: string
-  description: Readable identifier of this lifecycle, shared by every version of it.
-- name: altids
-  type: map
-  description: Other identifiers keyed by reference scheme or lifecycle field name.
-  fix: {name: AltIDs}
-  fields:
-  - type: struct
-    fields:
-    - type: string
-    - type: string
-- name: prevunix
-  type: int64
-  nullable: true
-  description: When the previous version happened, so dwell time is a subtraction.
-  metadata: {unit: ns, epoch: '1970-01-01'}
-  fix: {name: PrevUnix}
-- name: prevhash
-  type: fixed_size_binary[16]
-  nullable: true
-  description: The previous version's hash; null on the first version.
-  fix: {name: PrevHash}
-- name: parenthash
-  type: list
-  nullable: true
-  description: Every event this one was built from, in the order they were combined.
-  fix: {name: ParentHash}
-  fields:
-  - type: fixed_size_binary[16]
-- name: lastmkt
-  type: int32
-  nullable: true
-  description: Market of execution for last fill, or an indication of the market where an order was routed
-  fix: {tag: '30', type: Exchange, name: LastMkt}
-  enum: {name: MIC, key_type: int32, values: '{"0":"UNKNOWN","1481590342":"XOFF","1482184792":"XXXX","1481654610":"XPAR","1480674643":"XAMS","1480741461":"XBRU","1481394515":"XLIS","1481460044":"XMIL","1480873282":"XDUB","1481593676":"XOSL","1480938578":"XETR","1481003585":"XFRA","1481396046":"XLON","1481856856":"XSWX","1481457988":"XMAD","1481856079":"XSTO","1480807237":"XCSE","1481131340":"XHEL","1482113615":"XWBO","1480938834":"XEUR","1481395525":"XLME","1229342037":"IFEU","1481529683":"XNYS","1481523539":"XNAS","1095910232":"ARCX","1111577683":"BATS","1480802895":"XCBO","1229281351":"IEXG","1480805701":"XCME","1480802900":"XCBT","1481529677":"XNYM","1480803651":"XCEC","1229346131":"IFUS","1481921349":"XTSE","1481919315":"XTKS","1481132871":"XHKG","1481852243":"XSES","1480676184":"XASX","1481852999":"XSHG","1481852997":"XSHE","1481331288":"XKRX","1481528133":"XNSE","1480740685":"XBOM","1481265989":"XJSE"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '4', padding: nul-right, pattern: '[A-Z0-9]{4}'}
-- name: reason
-  type: string
-  nullable: true
-  description: Why this event was rejected or could not be interpreted, when known.
 - name: sourceurl
   type: string
-  description: Normalized absolute URI of the log the row came from.
+  description: Absolute URI of the source text object.
+  iceberg: {primary_key: 'true'}
   fix: {name: SourceURL}
 - name: sourcerownum
   type: int64
-  description: 1-based physical line number of the header; 0 when not read from a file.
+  description: 1-based physical line number within the source object.
+  iceberg: {primary_key: 'true'}
   fix: {name: SourceRownum}
+- name: timestamp
+  type: string
+  nullable: true
+  description: Timestamp spelling captured from the line header.
 - name: threadname
   type: string
-  description: Contents of the first bracketed header field.
+  nullable: true
+  description: Thread spelling captured from the line header.
   fix: {name: ThreadName}
+- name: plugin
+  type: string
+  nullable: true
+  description: Plugin spelling captured from the line header.
+  fix: {name: Plugin}
 - name: level
   type: string
   nullable: true
-  description: Severity in the parenthesized header token; null when omitted.
+  description: Severity spelling captured from the line header.
   fix: {name: Level}
 - name: body
   type: binary
-  description: Payload after the fixed log header, with continuation lines folded in.
-- name: protocol
-  type: fixed_size_binary[16]
-  description: Protocol grammar and resolved registry version; OTHER carries neither.
-  enum: {name: Protocol, key_type: 'fixed_size_binary[16]', values: '{"00000000000000000000000000000000":"UNKNOWN","46495800000000000000000000000000":"FIX","4649584d4c0000000000000000000000":"FIXML","584d4c00000000000000000000000000":"XML","554c0000000000000000000000000000":"UL","52454645520000000000000000000000":"REFERENTIAL","4d495343000000000000000000000000":"MISC","4f544845520000000000000000000000":"OTHER"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '16', padding: nul-right, aliases: '{"REFERENTIAL":"REFER"}', pattern: '[A-Z0-9._-]{1,16}'}
-- name: beginstring
-  type: string
-  nullable: true
-  description: Protocol the session negotiated, as the payload spells it.
-  fix: {name: BeginString}
-- name: bodylength
-  type: string
-  nullable: true
-  description: 'Declared body length, kept as text: this stage reads no numbers.'
-  fix: {name: BodyLength}
-- name: msgtype
-  type: string
-  nullable: true
-  description: First FIX message discriminator when the payload names one.
-  fix: {name: MsgType}
-- name: sendercompid
-  type: string
-  nullable: true
-  description: Who the payload says sent it.
-  fix: {name: SenderCompID}
-- name: sendersubid
-  type: string
-  nullable: true
-  description: Which desk or trader of the sender the payload names.
-  fix: {name: SenderSubID}
-- name: senderlocationid
-  type: string
-  nullable: true
-  description: Where the payload says the sender sent it from.
-  fix: {name: SenderLocationID}
-- name: targetcompid
-  type: string
-  nullable: true
-  description: Who the payload says it was for.
-  fix: {name: TargetCompID}
-- name: targetsubid
-  type: string
-  nullable: true
-  description: Which desk or trader of the target the payload names.
-  fix: {name: TargetSubID}
-- name: targetlocationid
-  type: string
-  nullable: true
-  description: Where the payload says the target is.
-  fix: {name: TargetLocationID}
-- name: onbehalfofcompid
-  type: string
-  nullable: true
-  description: Firm the message originated with, where a hub relayed it.
-  fix: {name: OnBehalfOfCompID}
-- name: onbehalfofsubid
-  type: string
-  nullable: true
-  description: Which desk or trader of that originating firm the payload names.
-  fix: {name: OnBehalfOfSubID}
-- name: onbehalfoflocationid
-  type: string
-  nullable: true
-  description: Where the payload says that originating firm sent it from.
-  fix: {name: OnBehalfOfLocationID}
-- name: delivertocompid
-  type: string
-  nullable: true
-  description: Firm the message is ultimately for, where a hub is to relay it.
-  fix: {name: DeliverToCompID}
-- name: delivertosubid
-  type: string
-  nullable: true
-  description: Which desk or trader of that firm the payload names.
-  fix: {name: DeliverToSubID}
-- name: delivertolocationid
-  type: string
-  nullable: true
-  description: Where the payload says that firm is.
-  fix: {name: DeliverToLocationID}
-- name: msgseqnum
-  type: string
-  nullable: true
-  description: Sequence number the payload states, as text.
-  fix: {name: MsgSeqNum}
-- name: lastmsgseqnumprocessed
-  type: string
-  nullable: true
-  description: Last sequence number the sender says it had processed, as text.
-  fix: {name: LastMsgSeqNumProcessed}
-- name: possdupflag
-  type: string
-  nullable: true
-  description: Whether the payload flags itself a possible retransmission, as spelled.
-  fix: {name: PossDupFlag}
-- name: possresend
-  type: string
-  nullable: true
-  description: Whether the payload flags itself a possible resend, as spelled.
-  fix: {name: PossResend}
-- name: sendingtime
-  type: string
-  nullable: true
-  description: When the payload says it was sent, in the payload's own spelling.
-  fix: {name: SendingTime}
-- name: origsendingtime
-  type: string
-  nullable: true
-  description: When a resent payload says it first went out, as spelled.
-  fix: {name: OrigSendingTime}
-- name: onbehalfofsendingtime
-  type: string
-  nullable: true
-  description: When the originating firm sent it, where a relayed payload says.
-  fix: {name: OnBehalfOfSendingTime}
-- name: applverid
-  type: string
-  nullable: true
-  description: Application version a FIXT session names for this message.
-  fix: {name: ApplVerID}
-- name: cstmapplverid
-  type: string
-  nullable: true
-  description: Custom application extension the payload names, where it names one.
-  fix: {name: CstmApplVerID}
-- name: applextid
-  type: string
-  nullable: true
-  description: Extension pack the payload names, as text.
-  fix: {name: ApplExtID}
-- name: messageencoding
-  type: string
-  nullable: true
-  description: Encoding the payload declares for its `Encoded*` fields.
-  fix: {name: MessageEncoding}
-- name: securedatalen
-  type: string
-  nullable: true
-  description: Declared length of `securedata`, kept as the text in front of it.
-  fix: {name: SecureDataLen}
-- name: securedata
-  type: string
-  nullable: true
-  description: Encrypted block the payload carried, taken by the length in front of it.
-  fix: {name: SecureData}
-- name: signaturelength
-  type: string
-  nullable: true
-  description: Declared length of `signature`, kept as the text in front of it.
-  fix: {name: SignatureLength}
-- name: signature
-  type: string
-  nullable: true
-  description: Signature the payload carried, taken by the length in front of it.
-  fix: {name: Signature}
-- name: entries
-  type: list
-  description: Ordered payload arguments other than the promoted message discriminator.
-  fields:
-  - type: struct
-    fields:
-    - name: tag
-      type: int32
-      description: Numeric identity written or resolved; zero while unresolved.
-    - name: key
-      type: string
-      description: Whole field spelling outside an indexed container.
-    - name: value
-      type: string
-      description: Text after the first equals sign; an empty value is empty text.
-    - name: comp
-      type: string
-      nullable: true
-      description: Indexed container prefix.
-- name: direction
-  type: int32
-  description: SENT or RECV when stated by the transport prefix; UNKNOWN otherwise.
-  enum: {name: Direction, key_type: int32, values: '{"0":"UNKNOWN","1397050964":"SENT","1380270934":"RECV"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '4', padding: nul-right}
+  description: Exact bytes after the matched line-header prefix.

@@ -37,16 +37,16 @@ altids            {'orderid': 'O1', 'clordid': 'C1', 'execid': 'E1', 'code': 'O1
 instrument.symbol 'BTC-USD'
 ```
 
-!!! note "Batch transcribes; scalar lifts"
+!!! note "One parsing boundary"
 
-    `from_message_batch` is where a payload becomes columns.
-    `FixMsg.from_text` lifts the same standard header the raw stage does --
-    reading it off those columns rather than walking the list again -- and
-    leaves the body in `entries`, which is what `into_market_events` reads.
+    `from_message_batch` is where raw `Message.body` becomes typed columns.
+    `FixMsg.from_text` first builds that same raw envelope and passes through
+    the batch parser. Session fields and components lift there; `entries`
+    retains only ordered residual fields, and the raw body is not persisted.
 
     ```python
     FixMsg.from_text(line).msgtype              # '8'
-    FixMsg.from_text(line).instrument.symbol    # '' -- body stays in entries
+    FixMsg.from_text(line).instrument.symbol    # 'BTC-USD'
     ```
 
 `unixsource` names which rung answered, so a transaction time and a print

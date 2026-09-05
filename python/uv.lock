@@ -2508,6 +2508,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "xxhash" },
+    { name = "yggdryl" },
 ]
 
 [package.optional-dependencies]
@@ -2561,6 +2562,7 @@ requires-dist = [
     { name = "rekep", extras = ["glue", "iceberg", "polars", "yaml"], marker = "extra == 'all'" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "xxhash", specifier = ">=3.4" },
+    { name = "yggdryl", editable = "../../yggdryl/python" },
 ]
 provides-extras = ["yaml", "iceberg", "glue", "polars", "all"]
 
@@ -3544,6 +3546,26 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ad/23/2d549e5d5d7759eaf9ac2d2d2ab81ff60f1bb2b52cdaae8e5ec5c6524354/xxhash-4.0.1-graalpy312-graalpy250_312_native-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:deca2a30d983d240b8375ec2ee0a4288e72042827fc61df2f7671f8467e4cb2f", size = 38206, upload-time = "2026-08-17T08:36:32.193Z" },
     { url = "https://files.pythonhosted.org/packages/79/98/1ee576b27f78e6107ee4ea8ac03e8a52888dff256e57d560f8282c195563/xxhash-4.0.1-graalpy312-graalpy250_312_native-win_amd64.whl", hash = "sha256:7c343ee174d417a44d0c3355602c0cbbfa52a04d1bbbf1723378c7d2c8f60626", size = 37127, upload-time = "2026-08-17T08:23:42.705Z" },
 ]
+
+[[package]]
+name = "yggdryl"
+version = "0.1.1"
+source = { editable = "../../yggdryl/python" }
+dependencies = [
+    { name = "pyarrow" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mypy", marker = "extra == 'test'", specifier = ">=1.15" },
+    { name = "pandas", marker = "extra == 'test'", specifier = ">=2" },
+    { name = "polars", marker = "extra == 'test'", specifier = ">=1" },
+    { name = "pyarrow", specifier = ">=18" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.4" },
+    { name = "tzdata", marker = "extra == 'test'" },
+]
+provides-extras = ["test"]
 
 [[package]]
 name = "zipp"

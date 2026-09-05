@@ -12,14 +12,15 @@ import pytest
 
 from rekep.enums import EventType, State
 from rekep.fields import Field
+from rekep.fields.metadata import values_of
 from rekep.fix import (
     Alias,
     FixFieldValue,
     FixRegistry,
 )
 from rekep.fix import registry as registry_source
-from rekep.fix.entries import record_copy
-from rekep.fix.fields import fix_field
+from rekep.fix.entries import ANY_VERSION, record_copy
+from rekep.fix.fields import fix_field, namespaced_field
 from rekep.fix.quickfix import (
     SPEC_VERSIONS,
     is_group,
@@ -31,14 +32,19 @@ from rekep.fix.quickfix import (
 from rekep.fix.registry import (
     _levenshtein,
 )
-from rekep.fix.store import SOURCES_FILE, VERSIONS_FILE, DirectoryDocuments
+from rekep.fix.store import (
+    SOURCES_FILE,
+    VERSIONS_FILE,
+    DirectoryDocuments,
+    record_document,
+)
 
 from .conftest import FIXTURES
 
 PUBLISHED = Path(__file__).resolve().parents[3] / "data"
 EXPECTED_FIELDS = 11
 EXPECTED_DOCUMENTS = 7
-SIDE_SHARD = "fields/000000.json"
+SIDE_SHARD = "records/000000.json"
 
 
 class FixtureRegistry(FixRegistry):
@@ -75,6 +81,7 @@ def _fixture_registry(
                     value=value,
                     meaning=symbol.replace("_", " ").title(),
                     aliases=(symbol,),
+                    namespaces=("standard",),
                 )
                 for value, symbol in known.values.items()
             ),
@@ -143,13 +150,11 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
         members = {name: opened.read(name) for name in opened.namelist()}
     assert files == members
     assert {name.split("/")[0] for name in members} == {
-        "fields",
-        "components",
+        "records",
         "namespaces",
-        "repgroup",
         "sources.json",
         "versions.json",
-    }, "standard and namespaced identities beside version and source indexes"
+    }, "one keyspace, the namespaces beside it, and the version and source indexes"
     unpacked = FixRegistry(cache_dir=folder)
     zipped = FixRegistry(cache_dir=archive)
     assert unpacked.fields_available("4.4") and zipped.fields_available("4.4")
@@ -160,14 +165,19 @@ def test_the_published_folder_is_the_archive_uncompressed() -> None:
 
 def test_registry_validation_refuses_duplicate_component_versions(dumped: Path) -> None:
     documents = FixRegistry(cache_dir=dumped)._documents
-    name = "components/parties.json"
-    document = documents.read(name)
-    assert document is not None
-    fix = document["fix"]
-    versions = fix["versions"]
-    documents.write(name, {**document, "fix": {**fix, "versions": [*versions, versions[0]]}})
+    name = record_document("parties")
+    shard = documents.read(name)
+    assert isinstance(shard, list)
+    rewritten = []
+    for document in shard:
+        if document.get("name") == "Parties":
+            fix = document["fix"]
+            versions = fix["versions"]
+            document = {**document, "fix": {**fix, "versions": [*versions, versions[0]]}}
+        rewritten.append(document)
+    documents.write(name, rewritten)
 
-    with pytest.raises(ValueError, match="component.*invalid metadata"):
+    with pytest.raises(ValueError, match="record.*invalid metadata"):
         FixRegistry._validate_registry_store(documents)
 
 
@@ -182,7 +192,7 @@ def test_a_file_url_reads_the_original_archive_without_materializing() -> None:
 def test_an_arrow_filesystem_directory_is_a_registry_store() -> None:
     filesystem = pyarrow.fs._MockFileSystem()
     folder = PUBLISHED / "fix"
-    for name in ("registry", "registry/fields", "registry/components", "registry/repgroup"):
+    for name in ("registry", "registry/records"):
         filesystem.create_dir(name)
     for source in folder.rglob("*.json"):
         name = source.relative_to(folder).as_posix()
@@ -280,7 +290,7 @@ def test_a_store_lands_in_the_archive_it_was_pointed_at(tmp_path: Path) -> None:
     with zipfile.ZipFile(tmp_path / "fix.zip") as opened:
         names = opened.namelist()
     assert SIDE_SHARD in names
-    assert "components/parties.json" in names
+    assert record_document("parties") in names
     assert not [name for name in names if name.count("/") > 1], "no member nested twice"
     reopened = OfflineRegistry(cache_dir=tmp_path / "fix.zip")
     assert len(reopened.fields("4.4")) == EXPECTED_FIELDS, "and read back without a fetch"
@@ -309,8 +319,8 @@ def test_a_member_written_into_a_prefixed_zip_joins_its_neighbours(
     registry._store_fields("9.9", [fix_field("Marvellous", 9999, "char", version="9.9")])
     with zipfile.ZipFile(rooted) as opened:
         names = opened.namelist()
-    assert "fix/fields/000009.json" in names, "tag 9999 shards into 9999 // 1000"
-    assert not [name for name in names if name.startswith("fields/")], "never at the root"
+    assert "fix/records/000009.json" in names, "tag 9999 shards into 9999 // 1000"
+    assert not [name for name in names if name.startswith("records/")], "never at the root"
     reopened = OfflineRegistry(cache_dir=rooted)
     assert [member.name for member in reopened.fields("9.9")] == ["Marvellous"]
 
@@ -814,14 +824,14 @@ def test_the_spec_components_travel_with_a_scraped_version(tmp_path: Path) -> No
 def test_a_message_is_declared_and_found_by_its_msgtype(tmp_path: Path) -> None:
     """One record, one folder, two ways in: the name, and the wire code."""
     registry = _fixture_registry(tmp_path / "fix")
-    report = registry.merged_component("AE")
+    report = registry.component_of("AE")
     assert report.name == "TradeCaptureReport" and report.msg_type == "AE"
-    assert registry.merged_component("tradecapturereport") is report
+    assert registry.component_of("tradecapturereport") is report
     assert registry.message_records() == {"AE": report}
     assert [member.name for member in report.members] == ["TrdType", "Parties"]
     # And the block it carries knows it is carried by it.
-    assert registry.merged_component("Parties").msgtypes == ("TradeCaptureReport",)
-    assert registry.merged_component("PtysSubGrp").msgtypes == ("TradeCaptureReport",)
+    assert registry.component_of("Parties").msgtypes == ("TradeCaptureReport",)
+    assert registry.component_of("PtysSubGrp").msgtypes == ("TradeCaptureReport",)
 
 
 def test_group_delimiters_come_off_the_declared_components() -> None:
@@ -947,26 +957,26 @@ def _source(source_id: str, namespace: str, priority: int) -> dict[str, object]:
 
 def test_definitions_keep_standard_udf_and_venue_tags_separate(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix", namespace_priority=("clear-street",))
-    registry.add_definition(_definition("MaxShow", 210, "Qty", "fix-latest"), "standard")
-    registry.add_definition(
-        _definition("MaxShow1", 9001, "Qty", "fixtrading-udf", aliases=("MaxShow",)),
+    registry.add_fields((_definition("MaxShow", 210, "Qty", "fix-latest"),), "standard")
+    registry.add_fields(
+        (_definition("MaxShow1", 9001, "Qty", "fixtrading-udf", aliases=("MaxShow",)),),
         "fixtrading-udf",
     )
-    registry.add_definition(
-        _definition("VenueMaximumShow", 9001, "String", "clear-street"), "clear-street"
+    registry.add_fields(
+        (_definition("VenueMaximumShow", 9001, "String", "clear-street"),), "clear-street"
     )
 
     assert registry.field(210).fix.canonical == "MaxShow"
     assert registry.field(9001).fix.canonical == "MaxShow1"
     assert registry.lookup(9001)[0].fix.canonical == "MaxShow1"
-    assert registry.definition(9001, "clear-street").fix.canonical == "VenueMaximumShow"
+    assert registry.field(9001, namespace="clear-street").fix.canonical == "VenueMaximumShow"
     assert [field.fix.get("namespace") for field in registry.definitions(9001)] == [
         "fixtrading-udf",
         "clear-street",
     ]
     assert [field.fix.tag for field in registry.definitions("MaxShow")] == [210, 9001]
-    assert (tmp_path / "fix/namespaces/fixtrading-udf/fields/000009.json").is_file()
-    assert (tmp_path / "fix/namespaces/clear-street/fields/000009.json").is_file()
+    assert (tmp_path / "fix/namespaces/fixtrading-udf/records/000009.json").is_file()
+    assert (tmp_path / "fix/namespaces/clear-street/records/000009.json").is_file()
 
 
 def test_a_venue_tag_for_a_standard_field_unifies_into_one_record(tmp_path: Path) -> None:
@@ -975,50 +985,48 @@ def test_a_venue_tag_for_a_standard_field_unifies_into_one_record(tmp_path: Path
     rather than a second record a caller has to know to look for."""
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     standard = _definition("SettlDate", 64, "UTCDateOnly", "fix-latest")
-    standard.fix.enumerated = {"0": "Regular"}
-    registry.add_definition(standard, "standard")
+    standard.fix.enumerated = values_of({"0": "Regular"}, namespace="standard")
+    registry.add_fields((standard,), "standard")
     venue = _definition("TradeDate", 5020, "UTCDateOnly", "fixtrading-udf")
     venue.fix["replacement-tag"] = "64"
-    venue.fix.enumerated = {"9": "VenueOnly"}
-    registry.add_definition(venue, "fixtrading-udf")
+    venue.fix.enumerated = values_of({"9": "VenueOnly"}, namespace="standard")
+    registry.add_fields((venue,), "fixtrading-udf")
 
-    unified = registry.unified(64)
-
-    assert unified.fix.tag == 64, "the standard tag stays canonical"
-    assert unified.fix.tag_priority == (64, 5020)
-    assert unified.fix.spellings() == ("SettlDate", "TradeDate")
-    assert [(one.name, one.source) for one in unified.fix.named_aliases] == [
-        ("TradeDate", "fixtrading-udf")
-    ]
-    assert unified.fix.meanings == {"0": "Regular", "9": "VenueOnly"}
-    assert registry.unified_records()["SettlDate"] == unified
+    # Two tags are two fields, however a venue spells them and whatever
+    # `replacement-tag` claims. Folding them was a second identity rule with a
+    # second answer; the one rule is the tag, and a venue's own tag is its own.
+    assert registry.field(64).fix.canonical == "SettlDate"
+    assert registry.field(64).fix.tag_priority == (64,)
+    assert registry.field(5020, namespace="fixtrading-udf").fix.canonical == "TradeDate"
+    assert registry.field(64).fix.meanings == {"0": "Regular"}
 
 
 def test_a_venue_reading_that_is_another_identity_is_not_unified(tmp_path: Path) -> None:
     """Tag 9001 is `MaxShow` to one venue and `TradeType` to another. Folding
     those together would give one column two shapes, so they stay apart."""
     registry = FixRegistry(cache_dir=tmp_path / "fix", namespace_priority=("clear-street",))
-    registry.add_definition(_definition("MaxShow", 210, "Qty", "fix-latest"), "standard")
-    registry.add_definition(_definition("MaxShow", 9001, "String", "clear-street"), "clear-street")
+    registry.add_fields((_definition("MaxShow", 210, "Qty", "fix-latest"),), "standard")
+    registry.add_fields((_definition("MaxShow", 9001, "String", "clear-street"),), "clear-street")
 
-    assert registry.standardizes(registry.definition(9001, "clear-street")) is None
-    assert registry.unified(210).fix.tag_priority == (210,)
+    assert registry.field(210).fix.tag_priority == (210,)
+    assert registry.field(9001, namespace="clear-street").fix.canonical == "MaxShow"
     assert [field.fix.get("namespace") for field in registry.definitions(9001)] == ["clear-street"]
 
 
-def test_a_venue_name_the_standard_owns_unifies_without_a_replacement_tag(
+def test_a_venue_name_the_standard_owns_is_still_the_venue_s_own_tag(
     tmp_path: Path,
 ) -> None:
-    """The registry states a standardization two ways, and the common one is
-    simply calling the field what the standard calls it."""
+    """A venue calling its tag `TimeInForce` does not make it tag 59."""
     registry = FixRegistry(cache_dir=tmp_path / "fix")
-    registry.add_definition(_definition("TimeInForce", 59, "char", "fix-latest"), "standard")
-    registry.add_definition(
-        _definition("TimeInForce", 5251, "char", "fixtrading-udf"), "fixtrading-udf"
+    registry.add_fields((_definition("TimeInForce", 59, "char", "fix-latest"),), "standard")
+    registry.add_fields(
+        (_definition("TimeInForce", 5251, "char", "fixtrading-udf"),), "fixtrading-udf"
     )
 
-    assert registry.standardizes(registry.definition(5251, "fixtrading-udf")) == 59
-    assert registry.unified(59).fix.tag_priority == (59, 5251)
+    # One name at two tags is two fields: the name is how a bridge spelled a
+    # tag, not the identity of one.
+    assert registry.field(59).fix.tag_priority == (59,)
+    assert registry.field(5251, namespace="fixtrading-udf").fix.tag == 5251
 
 
 def test_configured_vendor_priority_survives_reopen(tmp_path: Path) -> None:
@@ -1026,8 +1034,8 @@ def test_configured_vendor_priority_survives_reopen(tmp_path: Path) -> None:
     second = {**_source("second", "venue-second", 10), "lookup_order": 1}
     first = {**_source("first", "venue-first", 10), "lookup_order": 0}
     registry.store_source_manifest((second, first))
-    registry.add_definition(_definition("SecondCode", 9005, "String", "second"), "venue-second")
-    registry.add_definition(_definition("FirstCode", 9005, "String", "first"), "venue-first")
+    registry.add_fields((_definition("SecondCode", 9005, "String", "second"),), "venue-second")
+    registry.add_fields((_definition("FirstCode", 9005, "String", "first"),), "venue-first")
 
     reopened = FixRegistry(cache_dir=tmp_path / "fix")
 
@@ -1047,12 +1055,15 @@ def test_same_namespace_type_conflicts_fall_back_to_string(tmp_path: Path) -> No
             _source("enrichment", "fixtrading-udf", 10),
         )
     )
-    registry.add_definition(
-        _definition("UDFSupportIndicator", 9003, "Int", "official"), "fixtrading-udf"
+    registry.add_fields(
+        (_definition("UDFSupportIndicator", 9003, "Int", "official"),), "fixtrading-udf"
     )
-    merged = registry.add_definition(
-        _definition("UDFSupportIndicator", 9003, "String", "enrichment"),
-        "fixtrading-udf",
+    registry.add_fields(
+        (_definition("UDFSupportIndicator", 9003, "String", "enrichment"),), "fixtrading-udf"
+    )
+    merged = registry.field(
+        _definition("UDFSupportIndicator", 9003, "String", "enrichment").fix.key,
+        namespace="fixtrading-udf",
     )
 
     assert merged.dtype == pyarrow.string()
@@ -1114,9 +1125,12 @@ def test_official_orchestra_precedes_legacy_enrichment_in_standard(tmp_path: Pat
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry.store_source_manifest((_source("fix-latest", "standard", 0),))
     legacy = _definition("OldMaximumShow", 210, "Qty", "nanoconda")
-    registry.add_field(legacy)
+    registry.add_fields((legacy,))
 
-    merged = registry.add_definition(_definition("MaxShow", 210, "Qty", "fix-latest"), "standard")
+    registry.add_fields((_definition("MaxShow", 210, "Qty", "fix-latest"),), "standard")
+    merged = registry.field(
+        _definition("MaxShow", 210, "Qty", "fix-latest").fix.key, namespace="standard"
+    )
 
     assert merged.fix.canonical == "MaxShow"
     assert merged.fix.source == "fix-latest"
@@ -1128,10 +1142,11 @@ def test_latest_merge_preserves_the_legacy_fut_sett_date_alias(tmp_path: Path) -
     registry.store_source_manifest((_source("fix-latest", "standard", 0),))
     legacy = _definition("SettlDate", 64, "LocalMktDate", "nanoconda")
     legacy.fix.named_aliases = (Alias("FutSettDate", source="4.3"),)
-    registry.add_field(legacy)
+    registry.add_fields((legacy,))
 
-    merged = registry.add_definition(
-        _definition("SettlDate", 64, "LocalMktDate", "fix-latest"), "standard"
+    registry.add_fields((_definition("SettlDate", 64, "LocalMktDate", "fix-latest"),), "standard")
+    merged = registry.field(
+        _definition("SettlDate", 64, "LocalMktDate", "fix-latest").fix.key, namespace="standard"
     )
 
     assert merged.fix.source == "fix-latest"
@@ -1146,15 +1161,13 @@ def test_new_canonical_name_shadows_only_the_legacy_alias(tmp_path: Path) -> Non
         Alias("TradeType", source="FIX.4.4"),
         Alias("BidType", source="onixs"),
     )
-    registry.add_field(legacy)
+    registry.add_fields((legacy,))
 
-    changes = registry.add_definitions(
-        (_definition("TradeType", 828, "Int", "fix-latest"),), "standard"
-    )
+    changes = registry.add_fields((_definition("TradeType", 828, "Int", "fix-latest"),), "standard")
 
     assert changes == {"additions": 1, "updates": 1}
-    assert registry.definition("TradeType", "standard").fix.tag == 828
-    assert registry.definition(418, "standard").fix.named_aliases == (
+    assert registry.field("TradeType", namespace="standard").fix.tag == 828
+    assert registry.field(418, namespace="standard").fix.named_aliases == (
         Alias("BidType", source="onixs"),
     )
     conflict = registry.conflicts.collapses[-1]
@@ -1164,15 +1177,22 @@ def test_new_canonical_name_shadows_only_the_legacy_alias(tmp_path: Path) -> Non
     assert conflict.dropped[0].source == "FIX.4.4"
 
 
-def test_same_name_different_tags_follow_source_priority_in_either_order(
+def test_two_tags_sharing_a_name_stay_two_fields_in_either_order(
     tmp_path: Path,
 ) -> None:
+    """The name is how a bridge spelled a tag, not the identity of one.
+
+    A tag decides on its own and nothing else is consulted, so two bridges
+    both writing `Collision` at two numbers have declared two fields. Folding
+    them by name was a second identity rule with a second answer, and it lost
+    whichever tag the priority happened to drop.
+    """
     sources = (
         _source("official", "fixtrading-udf", 0),
         _source("vendor", "fixtrading-udf", 100),
     )
 
-    def built(path: Path, order: tuple[str, ...]) -> Field:
+    def built(path: Path, order: tuple[str, ...]) -> tuple[Field, Field]:
         registry = FixRegistry(cache_dir=path)
         registry.store_source_manifest(sources)
         definitions = {
@@ -1180,22 +1200,17 @@ def test_same_name_different_tags_follow_source_priority_in_either_order(
             "vendor": _definition("Collision", 9_001, "String", "vendor"),
         }
         for source in order:
-            registry.add_definition(definitions[source], "fixtrading-udf")
-        assert registry.definition(9_001, "fixtrading-udf") is None
-        winner = registry.definition(10_001, "fixtrading-udf")
-        assert winner is not None
-        assert json.loads(winner.fix["disputed_keys"]) == [
-            {"key": "10001", "source": "official"},
-            {"key": "9001", "source": "vendor"},
-        ]
-        assert registry.conflicts.collapses[-1].keptsource == "official"
-        assert registry.conflicts.collapses[-1].dropped[0].source == "vendor"
-        return winner
+            registry.add_fields((definitions[source],), "fixtrading-udf")
+        low = registry.field(9_001, namespace="fixtrading-udf")
+        high = registry.field(10_001, namespace="fixtrading-udf")
+        assert low is not None and high is not None, "neither tag is dropped"
+        assert (low.fix.canonical, high.fix.canonical) == ("Collision", "Collision")
+        assert "disputed_keys" not in low.fix and "disputed_keys" not in high.fix
+        return low, high
 
-    low_first = built(tmp_path / "low-first", ("vendor", "official"))
-    high_first = built(tmp_path / "high-first", ("official", "vendor"))
-
-    assert low_first == high_first
+    assert built(tmp_path / "low-first", ("vendor", "official")) == built(
+        tmp_path / "high-first", ("official", "vendor")
+    ), "and the reading order does not change either of them"
 
 
 def test_same_value_conflicts_keep_authoritative_meaning_and_all_aliases(
@@ -1214,14 +1229,20 @@ def test_same_value_conflicts_keep_authoritative_meaning_and_all_aliases(
     vendor = _definition("UDFSupportIndicator", 9003, "Int", "vendor")
     vendor.description = "Vendor description."
     vendor.fix.enumerated = (FixFieldValue("1", "Enabled", ("Yes",), ("vendor",)),)
-    registry.add_definition(vendor, "fixtrading-udf")
+    registry.add_fields((vendor,), "fixtrading-udf")
 
-    merged = registry.add_definition(official, "fixtrading-udf")
+    registry.add_fields((official,), "fixtrading-udf")
+    merged = registry.field(official.fix.key, namespace="fixtrading-udf")
 
     assert merged.description == "Official description."
     assert merged.fix.enumerated == (
-        FixFieldValue("1", "Supports UDFs", ("Supports", "Yes"), ("official", "vendor")),
-    ), "a losing reading still declared the value, and that is what makes it safe to send"
+        FixFieldValue(
+            "1",
+            "Supports UDFs",
+            ("Yes", "Supports"),
+            ("vendor", "official"),
+        ),
+    ), "both declared it, in the order they did: authority decides the prose, not who was first"
     conflicts = registry.conflicts.collapses
     assert [(conflict.part, conflict.keptsource) for conflict in conflicts] == [
         ("values", "official"),
@@ -1242,16 +1263,18 @@ def test_latest_merge_preserves_local_field_overlays_and_utc_refinement(
     msgtype.fix.msgtypes = ("D",)
     msgtype.fix.components = ("StandardHeader",)
     msgtype.fix.column = "bodytype"
-    registry.add_field(msgtype)
+    registry.add_fields((msgtype,))
     origtime = _definition("OrigTime", 42, "UTCTimestamp", "nanoconda")
     origtime.dtype = pyarrow.timestamp("us", tz="UTC")
-    registry.add_field(origtime)
+    registry.add_fields((origtime,))
 
-    merged_msgtype = registry.add_definition(
-        _definition("MsgType", 35, "String", "fix-latest"), "standard"
+    registry.add_fields((_definition("MsgType", 35, "String", "fix-latest"),), "standard")
+    merged_msgtype = registry.field(
+        _definition("MsgType", 35, "String", "fix-latest").fix.key, namespace="standard"
     )
-    merged_origtime = registry.add_definition(
-        _definition("OrigTime", 42, "UTCTimestamp", "fix-latest"), "standard"
+    registry.add_fields((_definition("OrigTime", 42, "UTCTimestamp", "fix-latest"),), "standard")
+    merged_origtime = registry.field(
+        _definition("OrigTime", 42, "UTCTimestamp", "fix-latest").fix.key, namespace="standard"
     )
 
     assert merged_msgtype.fix.event_types == {"D": EventType.ORDER}
@@ -1267,32 +1290,35 @@ def test_authoritative_enum_merge_is_stable_on_replay(tmp_path: Path) -> None:
     registry.store_source_manifest((_source("fix-latest", "standard", 0),))
     legacy = _definition("Side", 54, "Char", "nanoconda")
     legacy.fix.enumerated = (
-        FixFieldValue("2", aliases=("Sell",)),
-        FixFieldValue("1", aliases=("Buy",)),
-        FixFieldValue("Z", aliases=("Legacy",)),
+        FixFieldValue("2", aliases=("Sell",), namespaces=("standard",)),
+        FixFieldValue("1", aliases=("Buy",), namespaces=("standard",)),
+        FixFieldValue("Z", aliases=("Legacy",), namespaces=("standard",)),
     )
     official = _definition("Side", 54, "Char", "fix-latest")
     official.fix.enumerated = (
-        FixFieldValue("1", aliases=("Buy",)),
-        FixFieldValue("2", aliases=("Sell",)),
+        FixFieldValue("1", aliases=("Buy",), namespaces=("standard",)),
+        FixFieldValue("2", aliases=("Sell",), namespaces=("standard",)),
     )
-    registry.add_field(legacy)
+    registry.add_fields((legacy,))
 
-    first = registry.add_definitions((official,), "standard")
-    record = registry.definition(54, "standard")
-    second = registry.add_definitions((official,), "standard")
+    first = registry.add_fields((official,), "standard")
+    record = registry.field(54, namespace="standard")
+    second = registry.add_fields((official,), "standard")
 
     assert first == {"additions": 0, "updates": 1}
     assert second == {"additions": 0, "updates": 0}
-    assert registry.definition(54, "standard") == record
-    assert [value.value for value in record.fix.enumerated] == ["1", "2", "Z"]
+    assert registry.field(54, namespace="standard") == record
+    # Declaration order: the legacy reading declared these first, `2` before
+    # `1`, and the official one restating them changes what they mean, not
+    # when they were first said.
+    assert [value.value for value in record.fix.enumerated] == ["2", "1", "Z"]
 
 
 def test_source_manifest_and_namespaced_archives_are_deterministic(tmp_path: Path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     registry._store_versions(())
     registry.store_source_manifest((_source("udf", "fixtrading-udf", 0),))
-    registry.add_definition(_definition("CrossSeqNum", 9002, "SeqNum", "udf"), "fixtrading-udf")
+    registry.add_fields((_definition("CrossSeqNum", 9002, "SeqNum", "udf"),), "fixtrading-udf")
 
     first = tmp_path / "first.zip"
     second = tmp_path / "second.zip"
@@ -1302,7 +1328,7 @@ def test_source_manifest_and_namespaced_archives_are_deterministic(tmp_path: Pat
     assert first.read_bytes() == second.read_bytes()
     with zipfile.ZipFile(first) as archive:
         names = archive.namelist()
-    assert "namespaces/fixtrading-udf/fields/000009.json" in names
+    assert "namespaces/fixtrading-udf/records/000009.json" in names
     assert "sources.json" in names
     reopened = FixRegistry(cache_dir=first)
     assert reopened.field(9002).fix.canonical == "CrossSeqNum"
@@ -1525,13 +1551,13 @@ def test_cached_refresh_reconciles_when_source_priority_changes(
         {"fix-latest": dataclasses.replace(fixture_source, priority=0)},
     )
     reconciled: list[str] = []
-    add_definitions = FixRegistry.add_definitions
+    add_fields = FixRegistry.add_fields
 
     def tracked(self: FixRegistry, entries: tuple[Field, ...], namespace: str) -> Mapping[str, int]:
         reconciled.append(namespace)
-        return add_definitions(self, entries, namespace)
+        return add_fields(self, entries, namespace)
 
-    monkeypatch.setattr(FixRegistry, "add_definitions", tracked)
+    monkeypatch.setattr(FixRegistry, "add_fields", tracked)
 
     refreshed = FixRegistry.scrape(
         target,
@@ -1561,13 +1587,13 @@ def test_bulk_namespace_ingestion_writes_once_per_tag_shard(
         for tag in range(5_000, 7_500)
     )
 
-    changes = registry.add_definitions(definitions, "fixtrading-udf")
+    changes = registry.add_fields(definitions, "fixtrading-udf")
 
     assert changes == {"additions": 2_500, "updates": 0}
     assert written == [
-        "namespaces/fixtrading-udf/fields/000005.json",
-        "namespaces/fixtrading-udf/fields/000006.json",
-        "namespaces/fixtrading-udf/fields/000007.json",
+        "namespaces/fixtrading-udf/records/000005.json",
+        "namespaces/fixtrading-udf/records/000006.json",
+        "namespaces/fixtrading-udf/records/000007.json",
     ]
 
 
@@ -1608,3 +1634,34 @@ def test_partial_offline_refresh_copies_the_store_without_parsing_every_document
     assert len(refreshed.field_records("fixtrading-udf")) == 12
     assert len(refreshed.component_records("fixtrading-udf")) == 2
     assert len(refreshed.repeating_group_records("fixtrading-udf")) == 1
+
+
+def test_identity_is_the_tag_first_and_a_name_only_where_neither_side_has_one() -> None:
+    """Two indexes consulted in order, never one predicate with an `or` in it.
+
+    Where both readings carry a tag the tag is the whole answer. Where only
+    one does, they are never the same thing -- 273 of the derived item names
+    are already a field's name, and a name match that ignored the tag would
+    fuse a component with a scalar 273 times over, every fusion looking like
+    a successful merge. Only where *neither* has a tag does the name decide,
+    exact after `casefold()`: no whitespace stripping, no underscore removal.
+    """
+    tagged = fix_field("QuoteID", 117, "String")
+    tagged.fix.versions = ("4.4",)
+    other_tag = fix_field("QuoteID", 5984, "String")
+    other_tag.fix.versions = ("4.4",)
+    same_tag = fix_field("QUOTEID", 117, "String")
+    same_tag.fix.versions = ("4.4",)
+    untagged = namespaced_field("QuoteID", "String")
+    untagged.fix.versions = (ANY_VERSION,)
+    recased = namespaced_field("quoteid", "String")
+    recased.fix.versions = (ANY_VERSION,)
+    spaced = namespaced_field("Quote ID", "String")
+    spaced.fix.versions = (ANY_VERSION,)
+
+    assert registry_source._same_identity(tagged, same_tag), "one tag, however spelled"
+    assert not registry_source._same_identity(tagged, other_tag), "two tags, however alike"
+    assert not registry_source._same_identity(tagged, untagged), "a tag on one side ends it"
+    assert not registry_source._same_identity(untagged, tagged)
+    assert registry_source._same_identity(untagged, recased), "tagless: casefold, exactly"
+    assert not registry_source._same_identity(untagged, spaced), "and not one step looser"

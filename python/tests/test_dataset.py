@@ -580,15 +580,6 @@ def test_an_overwrite_of_something_unwritable_is_refused(dataset: MemoryDataset)
 # -- reading one out of a document -------------------------------------------
 
 
-def test_a_document_says_which_store_it_names() -> None:
-    """The same dispatch a task's `kind` gets: one lookup, keyed by what each
-    implementation declares, so a scheduler reads a document for a class it has
-    never imported by name."""
-    built = Dataset.from_dict({"kind": "text_file", "url": "a.log"})
-    assert type(built).into_kind() == "text_file"
-    assert built.url.endswith("a.log")
-
-
 def test_an_implementation_behind_an_optional_dependency_is_imported_by_the_document() -> None:
     """And by nothing else, which is what keeps the dependency optional."""
     pytest.importorskip("pyiceberg")
@@ -623,28 +614,11 @@ def test_a_kind_nothing_implements_lists_what_does() -> None:
         Dataset.from_dict({"kind": "parquet"})
 
 
-def test_a_concrete_class_still_reads_its_own_document_with_no_kind_in_it() -> None:
-    """Which is what keeps `IcebergDataset.from_yaml(...)` working unchanged."""
-    from rekep.text import TextFile
-
-    assert TextFile.from_dict({"url": "a.log"}).url.endswith("a.log")
-
-
-def test_a_concrete_class_refuses_a_document_naming_a_different_store() -> None:
-    """Rather than quietly building the wrong store from the right fields."""
-    from rekep.text import TextFile
-
-    with pytest.raises(ValueError, match="text_file"):
-        TextFile.from_dict({"kind": "text_files", "url": "a.log"})
-
-
 def test_every_shipped_kind_is_reachable_from_a_document() -> None:
     """Every lazy module registers the kind its document names."""
-    for kind in ("iceberg", "text_file", "text_files"):
-        if kind == "iceberg":
-            pytest.importorskip("pyiceberg")
-        built = Dataset._imported(kind)
-        assert built is not None and built.into_kind() == kind
+    pytest.importorskip("pyiceberg")
+    built = Dataset._imported("iceberg")
+    assert built is not None and built.into_kind() == "iceberg"
 
 
 # -- what a join hands back --------------------------------------------------

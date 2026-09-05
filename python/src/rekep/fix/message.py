@@ -48,7 +48,7 @@ MARKER = "#"
 #: candidate and not whitespace -- so the value stops exactly where the
 #: separator starts. Spelled out for `_WS`'s reason, and shared, because the
 #: scalar reading of a separator and the vectorised one are one rule -- and
-#: with the raw stage, whose syntax probe reads a BeginString the same way.
+#: with `MessageParser`, whose syntax probe reads a BeginString the same way.
 NOT_SEPARATOR = r"[^\x01\x03\x04|;^ \t\r\n\f\x0b]"
 
 #: The guard that keeps the `8=` inside tag 18 or 58 from reading as a
@@ -122,7 +122,7 @@ FIX_MSG_TYPE_PATTERN = (
 #: cuts the log's own prefix off a line. `(?s)`, or a message holding a
 #: newline would end at it here where the scalar slice keeps it.
 #:
-#: Public because the raw stage cuts with it too: a log writes its own prose in
+#: Public because `MessageParser` cuts with it too: a log writes its own prose in
 #: front of the payload, and `seq=1092` in that prose is an assignment -- so a
 #: separator inferred from the whole line reads the `>` of `sending >>` as the
 #: delimiter and collapses the message into one entry.
@@ -1457,8 +1457,7 @@ def _tag_numbers(keys: Any, names: Mapping[str, int | str] | None, key_type: Any
     column before it raises -- so the head is cast first and only a head that
     reads as tags is worth casting the rest of. A column of names then
     resolves through its *distinct* spellings, once each, and is `take`n back
-    across the rows: twelve times what a failed full cast then cost
-    (benchmarks/bench_text_file.py).
+    across the rows: twelve times what a failed full cast then cost.
     """
     try:
         keys.slice(0, _TAG_PROBE).cast(key_type)

@@ -73,7 +73,7 @@ catalog:
   properties:
     type: sql
     uri: sqlite:///data/catalog.db
-    warehouse: file://data/warehouse
+    warehouse: data/warehouse
 ```
 
 Namespaces and tables are created on first commit; nothing else to bootstrap.

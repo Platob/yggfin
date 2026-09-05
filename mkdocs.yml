@@ -106,6 +106,7 @@ nav:
           - Fields: fix/fields.md
           - Components: fix/components.md
           - Repeating groups: fix/repeating-groups.md
+          - Bridge configurations: fix/cfb.md
           - Encode values: fix/encode.md
           - Decode values: fix/decode.md
           - Registry CLI: fix/shell.md
@@ -115,7 +116,6 @@ nav:
       - Lifecycle: market/index.md
   - Storage:
       - Iceberg: storage/iceberg.md
-      - Arrow paths and FileIO: storage/arrow-files.md
       - Benchmarks: storage/benchmarks.md
   - Pipeline:
       - Overview: pipeline/index.md

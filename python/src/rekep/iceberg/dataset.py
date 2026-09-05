@@ -23,7 +23,6 @@ from typing import Any
 import pyarrow
 import pyarrow.fs
 
-from rekep.arrow_path import ArrowPath
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import (
     SOURCE_INDEX,
@@ -37,10 +36,8 @@ from rekep.dataset import (
     semi_join,
 )
 from rekep.fields import Field, StructField, arrays
-from rekep.filesystems import openable_parts, resolve
-from rekep.iceberg.catalog import IcebergCatalog
+from rekep.iceberg.catalog import IcebergCatalog, _file_location
 from rekep.iceberg.fields import metrics_for
-from rekep.urls import S3, Url
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +65,9 @@ _NO_GRACE = datetime.timedelta(0)
 #: `commit_row_size`, and `compact` are the levers on file count; this one
 #: decides how a large commit is sliced.
 TARGET_FILE_SIZE = "write.target-file-size-bytes"
+
+#: Table properties that are physical file locations rather than ordinary values.
+STORAGE_PATHS = ("write.data.path", "write.metadata.path")
 
 #: Lets Iceberg merge small manifests as it commits. **Inert on its own**:
 #: pyiceberg only merges once a snapshot has more than `MIN_MANIFESTS_TO_MERGE`
@@ -288,6 +288,12 @@ class IcebergDataset(Dataset):
             raise ValueError("retry backoff must be non-negative and capped above its start")
         if self.branch in ROOT_BRANCHES:
             self.branch = None
+        if self.location is not None:
+            self.location = _file_location(self.location)
+        self.table_properties = {
+            name: _file_location(value) if name in STORAGE_PATHS and value else value
+            for name, value in self.table_properties.items()
+        }
         configured_expiry = self.table_properties.get(SNAPSHOT_MAX_AGE)
         if configured_expiry is None:
             configured_expiry = self.catalog_properties.get(SNAPSHOT_MAX_AGE)
@@ -303,11 +309,6 @@ class IcebergDataset(Dataset):
             self.snapshot_expiry = None
         elif self.snapshot_expiry is None and configured_expiry is not None:
             self.__dict__["_snapshot_expiry"] = _expiry_delta(configured_expiry)
-        properties, self.location, self.table_properties = _canonicalized(
-            self.catalog_properties, self.location, self.table_properties
-        )
-        if properties is not None:
-            self.catalog_properties = properties
 
     @property
     def identifier(self) -> str:
@@ -379,20 +380,14 @@ class IcebergDataset(Dataset):
         with it, because a table is not a thing you can have without one.
         """
         location = kwargs.pop("location", self.location)
+        if location is not None:
+            location = _file_location(location)
         creation_properties = dict(kwargs.pop("properties", {}))
-        properties, location, creation_properties = _canonicalized(
-            self.catalog_properties,
-            location,
-            {**self.table_properties, **creation_properties},
-        )
-        if properties is not None:
-            self.catalog_properties = properties
-            store = self.__dict__.get("store")
-            if store is not None:
-                store.properties = properties
-                loaded = store.__dict__.get("catalog")
-                if loaded is not None:
-                    loaded.properties.update(store._tracked_file_io_properties(properties))
+        creation_properties = {**self.table_properties, **creation_properties}
+        creation_properties = {
+            name: _file_location(value) if name in STORAGE_PATHS and value else value
+            for name, value in creation_properties.items()
+        }
         if self.exists:
             return self
         field = field.with_name(self.name)
@@ -408,7 +403,7 @@ class IcebergDataset(Dataset):
             # table and every writer through it honours it -- a shape that says
             # how it is read is a shape that says how it should be laid out.
             sort_order=field.into_iceberg_sort_order(schema, self.sort_by),
-            properties={**defaults, **self.table_properties, **creation_properties},
+            properties={**defaults, **creation_properties},
         )
         self.field = field
         self.__dict__["iceberg_table"] = table
@@ -523,8 +518,8 @@ class IcebergDataset(Dataset):
         the first interval of a fresh catalog every stage reads an upstream
         that its own upstream has not created yet, and "nothing there" is the
         true answer to that -- so it is answered once here rather than by an
-        `exists` guard at each call site. A source root under `TextFiles`
-        refuses instead, because nothing in the pipeline creates one.
+        `exists` guard at each call site. `parse_messages` refuses a missing
+        yggdryl text source instead, because nothing in the pipeline creates one.
         """
         if isinstance(order_by, str):
             requested_order = (order_by,)
@@ -2215,8 +2210,8 @@ class IcebergDataset(Dataset):
                 (relative if reduced is not None else by_name).add(
                     reduced if reduced is not None else path.rsplit("/", 1)[-1]
                 )
-            root = ArrowPath(directory, filesystem, filesystem_path=base)
-            for _, info in root.ls_with_info(recursive=True):
+            selector = pyarrow.fs.FileSelector(base, recursive=True, allow_not_found=True)
+            for info in sorted(filesystem.get_file_info(selector), key=lambda item: item.path):
                 if info.type != pyarrow.fs.FileType.File:
                     continue
                 name = _relative(info.path, bases)
@@ -2237,8 +2232,11 @@ class IcebergDataset(Dataset):
                 # from its own clock and the two need not agree. Comparing
                 # anyway spared a file the caller had just asked to have taken,
                 # on whichever run the two clocks happened to disagree.
-                if older_than > _NO_GRACE and info.mtime and info.mtime > cutoff:
-                    continue
+                if older_than > _NO_GRACE:
+                    # A missing timestamp cannot prove that another writer's
+                    # uncommitted file is old enough to delete.
+                    if info.mtime is None or info.mtime > cutoff:
+                        continue
                 # Keyed by path, because one nested directory inside another is
                 # listed under both and a file deleted twice raises the second
                 # time -- which would abort the sweep and lose its report.
@@ -2248,20 +2246,13 @@ class IcebergDataset(Dataset):
         return list(found.values())
 
     def _sweep(self, orphans: Sequence[tuple[Any, str, str, int]]) -> None:
-        """Delete what the sweep found -- from the store, and from the cache."""
-        # At the point of use, like every other pyiceberg import here: the
-        # module has to import without the extra installed.
-        from rekep.arrow_file_io import CONTENT_CACHE
+        """Delete what the sweep found through each listing's exact store."""
+        from yggdryl import IOBase
 
-        # Evicted by the key the FileIO stored under, which on an object store
-        # is not the location: a cached copy of a file the sweep just deleted
-        # is the copy that lies about the file still being there.
-        identity = getattr(self.iceberg_table.io, "content_identity", None)
-        for filesystem, path, location, _ in orphans:
-            CONTENT_CACHE.evict(identity(location) if identity else location)
-            # Already gone means another sweeper reached it first. Missing-safe
-            # deletion keeps processing and preserves the full sweep report.
-            ArrowPath(path, filesystem).delete()
+        for filesystem, path, _, _ in orphans:
+            # Yggdryl deletion is missing-safe, so concurrent sweepers both
+            # finish and the caller still receives the complete report.
+            IOBase.from_fs(filesystem, path).unlink()
 
     def _data_path(self, table: Any) -> str:
         """Where this table's data files live, as Iceberg decides it."""
@@ -4058,7 +4049,7 @@ class _PartitionStager:
 
 def _track_outputs() -> Any:
     """One lazy output tracker, keeping PyIceberg an optional import extra."""
-    from rekep.arrow_file_io import track_outputs
+    from rekep.iceberg.file_io import track_outputs
 
     return track_outputs()
 
@@ -4508,21 +4499,13 @@ def _always_true() -> Any:
 
 
 def _store_of(table: Any, directory: str) -> tuple[Any, str]:
-    """The store the table's own FileIO reaches, and the directory on it.
+    """The exact configured Arrow store and path used by this table's FileIO."""
+    from rekep.iceberg.file_io import configured_store
 
-    Not `resolve`: that reads the location and the process environment, and a
-    location this package canonicalized has had the endpoint and the
-    credentials taken out of it -- so a maintenance sweep resolved that way
-    looks on AWS for a bucket that lives on the store the catalog was
-    configured with. A FileIO that is not Arrow-backed has nothing to read
-    here, and the location is then all there is.
-    """
     file_io = getattr(table, "io", None)
-    if file_io is not None:
-        parts = openable_parts(file_io.new_input(directory))
-        if parts is not None:
-            return parts
-    return resolve(directory)
+    if file_io is None:
+        raise TypeError("Iceberg maintenance requires a table FileIO")
+    return configured_store(file_io, directory)
 
 
 def _path_of(location: str) -> str:
@@ -4551,46 +4534,6 @@ def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int
     if isinstance(older_than, datetime.timedelta):
         older_than = datetime.datetime.now(datetime.UTC) - older_than
     return int(older_than.timestamp() * 1000)
-
-
-def _canonicalized(
-    properties: Mapping[str, Any],
-    location: str | None,
-    storage: Mapping[str, Any],
-) -> tuple[dict[str, str] | None, str | None, dict[str, Any]]:
-    """A table's locations with their store settings moved onto the catalog.
-
-    An S3 location may carry an endpoint and credentials; those belong to the
-    catalog, and what a table records is the store and the object alone --
-    otherwise a secret reaches metadata every reader keeps. The properties come
-    back None where no location named an object store and nothing moves.
-    """
-    from rekep.arrow_file_io import (
-        LOCATION_PROPERTIES,
-        STORAGE_PROPERTIES,
-        canonical_location,
-        location_properties,
-    )
-
-    def named(source: Mapping[str, Any], names: Iterable[str]) -> list[str]:
-        return [str(value) for name in names if (value := source.get(name))]
-
-    locations = ([str(location)] if location is not None else []) + named(
-        storage, STORAGE_PROPERTIES
-    )
-    if not any(
-        Url.from_string(one).scheme in S3
-        for one in (*named(properties, LOCATION_PROPERTIES), *locations)
-    ):
-        return None, location, dict(storage)
-    return (
-        dict(location_properties(properties, locations=locations)),
-        None if location is None else canonical_location(str(location)),
-        {
-            name: canonical_location(str(value)) if name in STORAGE_PROPERTIES and value else value
-            for name, value in storage.items()
-        },
-    )
 
 
 def _expiry_delta(value: Any) -> datetime.timedelta:

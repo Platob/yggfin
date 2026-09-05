@@ -14,7 +14,7 @@ from xml.etree import ElementTree
 import pyarrow
 
 from rekep.fields import Field, column_name
-from rekep.fields.metadata import Alias, FixFieldValue
+from rekep.fields.metadata import STANDARD_NAMESPACE, Alias, FixFieldValue
 from rekep.fix import quickfix
 from rekep.fix.fields import FIX_SCALARS, arrow_type_of, documented_utc, fix_field
 
@@ -61,7 +61,7 @@ class SourceProvenance:
         content: bytes,
         *,
         source_id: str = "memory",
-        namespace: str = "standard",
+        namespace: str = STANDARD_NAMESPACE,
         version: str = "",
         url: str = "",
         format: str = "orchestra",
@@ -242,11 +242,19 @@ class SourceField:
         if pyarrow.types.is_timestamp(dtype) and documented_utc(self.description):
             dtype = pyarrow.timestamp(dtype.unit, tz="UTC")
         built = dataclasses.replace(built, dtype=dtype)
+        # Naming the vocabulary here is what keeps an empty `namespaces` meaning
+        # *unstated*: this is the reader every published dictionary arrives
+        # through, the standard's included, so a value that reaches a record
+        # without a namespace is one no reader ever saw. Named the way the store
+        # names it -- a declarer spelled `ACME` beside a namespace stored `acme`
+        # would be one vocabulary that no lookup could match to itself.
+        declaring = str(self.provenance.namespace).strip().lower() or STANDARD_NAMESPACE
         built.fix.enumerated = tuple(
             FixFieldValue(
                 value=value.value,
                 meaning=value.description,
                 aliases=(value.name,) if value.name and value.name != value.value else (),
+                namespaces=(declaring,),
             )
             for value in self.values
         )

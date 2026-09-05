@@ -4,19 +4,95 @@ __generated_with = "0.24.0"
 app = marimo.App(width="medium")
 
 with app.setup:
+    import datetime
+    import itertools
     import pathlib
+    import re
+    from collections.abc import Iterable, Iterator
+    from typing import Any
 
     import marimo as mo
+    import pyarrow
+    from yggdryl import IOBase, TextOptions
 
-    from rekep import ArrowPath
-    from rekep.fix import FixCodec, FixRegistry
-    from rekep.fix.rules import Rules
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
+    from rekep.resources import resource
     from rekep.tasks import Task
-    from rekep.text import TextFiles
-    from rekep.times import unix_of
-    from rekep.urls import Url
+    from rekep.text import Message
+    from rekep.times import MESSAGE_HEADER, datetime_of, unix_of
+
+    source_names = {"url": "sourceurl", "rownum": "sourcerownum"}
+    time_pattern = re.compile(r"(?:\{(?:year|month|day)\}|%7[bB](?:year|month|day)%7[dD])")
+
+    def source_roots(
+        location: str, start: Any | None, end: Any | None
+    ) -> tuple[str, ...]:
+        """Expand calendar tokens before binding the source filesystem."""
+        if time_pattern.search(location) is None:
+            return (location,)
+        if start is None or end is None:
+            raise ValueError("a {year}, {month}, or {day} source requires start and end")
+        lower = datetime_of(start)
+        upper = datetime_of(end, upper=True)
+        if lower is None or upper is None:
+            raise ValueError("a time-pattern source requires valid start and end instants")
+        if upper < lower:
+            raise ValueError("end must not precede start")
+        if upper == lower:
+            return ()
+        last = upper - datetime.timedelta(microseconds=1)
+        roots: list[str] = []
+        day = lower.date()
+        while day <= last.date():
+            rendered = location
+            for name, value in {
+                "year": f"{day.year:04d}",
+                "month": f"{day.month:02d}",
+                "day": f"{day.day:02d}",
+            }.items():
+                rendered = re.sub(rf"(?:\{{{name}\}}|%7[bB]{name}%7[dD])", value, rendered)
+            if rendered not in roots:
+                roots.append(rendered)
+            day += datetime.timedelta(days=1)
+        return tuple(roots)
+
+    def message_sources(
+        roots: Iterable[IOBase], pattern: str, recursive: bool
+    ) -> Iterator[IOBase]:
+        """Yield selected yggdryl handles, preserving root and listing order."""
+        for root in roots:
+            if root.is_file():
+                yield root
+                continue
+            if not root.is_dir():
+                raise FileNotFoundError(str(root.url))
+            listing = root.rglob(pattern) if recursive else root.glob(pattern)
+            for source in sorted(listing, key=str):
+                if source.is_file():
+                    yield source
+
+    def text_options(header: str | None, batch_row_size: int) -> TextOptions:
+        """Configure raw physical-line records and their optional header captures."""
+        options = TextOptions()
+        options.with_rownum = 1
+        options.rowheader = MESSAGE_HEADER if header is None else header
+        options.autotype = False
+        options.batch_row_size = batch_row_size
+        return options
+
+    def message_batches(
+        sources: Iterable[IOBase], options: TextOptions, field: Any
+    ) -> Iterator[pyarrow.RecordBatch]:
+        """Read one text object at a time into the raw Message contract."""
+        for source in sources:
+            reader = source.into_text(options).read_arrow_reader()
+            try:
+                for batch in reader:
+                    names = [source_names.get(name, name) for name in batch.schema.names]
+                    yield field.cast_arrow_batch(batch.rename_columns(names))
+            finally:
+                reader.close()
 
 
 @app.cell(hide_code=True)
@@ -24,9 +100,8 @@ def _():
     mo.md("""
     # Parse messages
 
-    Split text records into classified, protocol-neutral message rows.
+    Read physical text records into raw message rows.
     """)
-    return
 
 
 @app.cell
@@ -36,67 +111,41 @@ def parameters():
     _defaults = Task.from_yaml(str(pathlib.Path(__file__).with_suffix(".yml"))).parameters
     project_root = _defaults["project_root"]
     source = _defaults["source"]
-    fix_dictionary = _defaults["fix_dictionary"]
-    protocols = _defaults["protocols"]
+    filesystem = _defaults["filesystem"]
     pattern = _defaults["pattern"]
     header = _defaults["header"]
     recursive = _defaults["recursive"]
-    spill = _defaults["spill"]
-    timezone = _defaults["timezone"]
-    include_regexes = _defaults["include_regexes"]
-    exclude_regexes = _defaults["exclude_regexes"]
-    include_msgtypes = _defaults["include_msgtypes"]
-    exclude_msgtypes = _defaults["exclude_msgtypes"]
-    technical_plugins = _defaults["technical_plugins"]
-    plugin_keys = _defaults["plugin_keys"]
-    null_values = _defaults["null_values"]
     start = _defaults["start"]
     end = _defaults["end"]
-    duration_ns = _defaults["duration_ns"]
     catalog = _defaults["catalog"]
     table_properties = _defaults["table_properties"]
     branch = _defaults["branch"]
     target = _defaults["target"]
     merge_by = _defaults["merge_by"]
     batch_row_size = _defaults["batch_row_size"]
-    batch_byte_size = _defaults["batch_byte_size"]
-    max_row_byte_size = _defaults["max_row_byte_size"]
     commit_batch_num = _defaults["commit_batch_num"]
     commit_row_size = _defaults["commit_row_size"]
     limit = _defaults["limit"]
     log_level = _defaults["log_level"]
     return (
-        batch_byte_size,
         batch_row_size,
         branch,
         catalog,
         commit_batch_num,
         commit_row_size,
-        duration_ns,
         end,
-        exclude_msgtypes,
-        exclude_regexes,
-        fix_dictionary,
+        filesystem,
         header,
-        include_msgtypes,
-        include_regexes,
         limit,
         log_level,
-        max_row_byte_size,
         merge_by,
-        null_values,
         pattern,
-        plugin_keys,
         project_root,
-        protocols,
         recursive,
         source,
-        spill,
         start,
         table_properties,
         target,
-        technical_plugins,
-        timezone,
     )
 
 
@@ -116,72 +165,40 @@ def _(end, start):
 
 
 @app.cell
-def _(fix_dictionary, project_root, records):
-    # Read, not merely named: this is the edge that puts the level in force
-    # before this cell can emit a record.
-    _ = records
-    registry = (
-        FixRegistry()
-        if fix_dictionary is None
-        else FixRegistry(cache_dir=Url.from_string(str(fix_dictionary)).resolve(project_root))
-    )
-    return (registry,)
-
-
-@app.cell
 def _(
+    batch_row_size,
     end,
     header,
-    null_values,
     pattern,
-    plugin_keys,
     project_root,
-    protocols,
     recursive,
-    registry,
+    records,
     source,
-    spill,
     start,
-    timezone,
+    filesystem,
 ):
-    _protocol_rules = (
-        Rules.into_default() if protocols is None else Rules.from_dict(protocols)
+    _ = records
+    root_names = source_roots(str(source), start, end)
+    _source_root = None if filesystem is not None else project_root
+    roots = tuple(resource(name, filesystem, root=_source_root) for name in root_names)
+    _sources = message_sources(roots, pattern, recursive)
+    _first = next(_sources, None)
+    if _first is None:
+        raise FileNotFoundError(source)
+    sources = itertools.chain((_first,), _sources)
+    field = Message.into_field()
+    options = text_options(header, batch_row_size)
+    source_location = (
+        str(roots[0].url) if not time_pattern.search(str(source)) else str(source)
     )
-    declared = {
-        "timezone": timezone,
-        "protocol_codec": FixCodec(
-            registry=registry,
-            rules=_protocol_rules,
-            null_values=frozenset(null_values),
-        ),
-        "msg_type_event_types": registry.msg_type_event_types(),
-        "plugin_keys": plugin_keys,
-        "null_values": null_values,
-        "spill": spill,
-        **({} if header is None else {"header_pattern": header}),
-    }
-    location = ArrowPath(str(source)).resolve(project_root)
-    rows = TextFiles.from_folder(
-        location,
-        start=start,
-        end=end,
-        pattern=pattern,
-        recursive=recursive,
-        **declared,
-    )
-    if not rows.exists:
-        raise FileNotFoundError(location)
-    field = rows.into_struct_field()
-    return field, location, rows
+    return field, options, source_location, sources
 
 
 @app.cell
-def _(location, lower, target, upper):
+def _(lower, source_location, target, upper):
     stage = Stage(
         "parse_messages",
-        # Masked, not spelled: a capture prefix may carry a key pair, and this
-        # string reaches the task log, the result document and XCom.
-        sources={"capture": location.url.masked},
+        sources={"capture": source_location},
         targets={"messages": target},
         window=(lower, upper),
     )
@@ -224,43 +241,21 @@ def _(
 
 @app.cell
 def _(
-    batch_byte_size,
-    batch_row_size,
     commit_batch_num,
     commit_row_size,
-    duration_ns,
-    exclude_msgtypes,
-    exclude_regexes,
     field,
-    include_msgtypes,
-    include_regexes,
     limit,
-    lower,
-    max_row_byte_size,
     merge_by,
     messages,
-    rows,
-    technical_plugins,
-    upper,
+    options,
+    sources,
 ):
     counts = {"read": 0}
 
     def _batches():
-        reader = rows.read_arrow_reader(
-            batch_row_size=batch_row_size,
-            batch_byte_size=batch_byte_size,
-            max_row_byte_size=max_row_byte_size,
-            include_regexes=include_regexes,
-            exclude_regexes=exclude_regexes,
-            include_msgtypes=include_msgtypes,
-            exclude_msgtypes=exclude_msgtypes,
-            technical_plugins=technical_plugins,
-            start_unix=lower,
-            end_unix=upper,
-            duration_ns=duration_ns,
-        )
+        batches = message_batches(sources, options, field)
         try:
-            for batch in reader:
+            for batch in batches:
                 if limit is not None and counts["read"] + batch.num_rows > limit:
                     batch = batch.slice(0, max(0, limit - counts["read"]))
                 if batch.num_rows:
@@ -269,7 +264,7 @@ def _(
                 if limit is not None and counts["read"] >= limit:
                     break
         finally:
-            reader.close()
+            batches.close()
 
     written = messages.append_arrow_reader(
         _batches(),

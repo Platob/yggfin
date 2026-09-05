@@ -54,9 +54,9 @@ rekep fix registry remove-component --store data/fix --name VenueOrder
 ```
 
 These commands are the supported writers. Do not edit files under
-`data/fix/fields`, `data/fix/components`, or `data/fix/repgroup`;
-`FixRegistry` validates the whole post-change store before replacing a shard.
-The repeating-group folder is regenerated from component trees.
+`data/fix/records`; `FixRegistry` validates the whole post-change store before
+replacing a shard. The repeating groups are derived from the component trees,
+and each one is stored beside the item block it repeats.
 
 ## Interactive shell
 

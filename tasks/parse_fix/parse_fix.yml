@@ -4,7 +4,7 @@ parameters:
   # Airflow overrides this one value for each parallel category run.
   category: market
   project_root: .
-  # Protocol-neutral message rows written by `parse_messages`.
+  # Raw message rows written by `parse_messages`.
   source: logs.messages
   start: null
   end: null
@@ -12,10 +12,14 @@ parameters:
   # only to pin a separately published dictionary.
   fix_dictionary: null
   null_values: ["", "null", "<null>", "n/a", "none"]
+  # Plugin-owned rendered keys become canonical at the FIX parsing boundary.
+  # plugin_keys: {XmlApi: {clientid: ClOrdID, type: MsgType}}
+  plugin_keys: {}
+  # IANA zone of offset-free timestamps captured in the raw log header.
+  timezone: Europe/Paris
   # Heartbeat and TestRequest remain in logs.messages; FIX tables carry facts.
   exclude_msgtypes: ["0", "1"]
-  # Rules may extend indexed-group delimiter detection; keep this document
-  # aligned with parse_messages.yml.
+  # Rules classify and split raw bodies before the selected category is written.
   protocols: null
   # Registry field overrides for facts a private feed spells differently.
   #
@@ -42,7 +46,7 @@ parameters:
     properties:
       type: sql
       uri: sqlite:///data/catalog.db
-      warehouse: file://data/warehouse
+      warehouse: data/warehouse
   table_properties:
     history.expire.max-snapshot-age-ms: "604800000"
     # Bound metadata from the first commit; maintenance applies the same values.

@@ -22,7 +22,7 @@ from rekep.fields import StructField, encoded_key
 from rekep.fix.access import Entry, FieldAccess
 from rekep.fix.columns import IDENTIFIER_FIELDS, UNKNOWN_SCHEME, id_scheme, identifier_altids
 from rekep.fix.fields import EPOCH_ORDINAL, NANOS, SECONDS_A_DAY, unix_of
-from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs
+from rekep.fix.message import group_pairs, group_segment_pairs, indexed_group_pairs, parse_pairs
 from rekep.fix.registry import FixRegistry
 from rekep.market.event import MarketEvent
 from rekep.market.instrument import Instrument, Leg
@@ -606,7 +606,7 @@ class FixEvents(Convertible):
     def from_text(cls, text: str | bytes, **carried: Any) -> FixEvents:
         """Events out of one log line, however it spells its separator."""
         return cls(
-            message=FixMsg.from_text(text, registry=carried.get("registry")),
+            message=FixMsg.from_pairs(parse_pairs(text), registry=carried.get("registry")),
             **carried,
         )
 

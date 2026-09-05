@@ -659,12 +659,12 @@ def test_registry_find_and_definitions_accept_namespaces(
     udf.fix.versions = ("1.0",)
     udf.fix.source = "fixtrading-udf"
     udf.fix.sources = ("fixtrading-udf",)
-    registry.add_definition(udf, "fixtrading-udf")
+    registry.add_fields((udf,), "fixtrading-udf")
     venue = fix_field("VenueMaximumShow", 9001, "String")
     venue.fix.versions = ("1.0",)
     venue.fix.source = "clear-street"
     venue.fix.sources = ("clear-street",)
-    registry.add_definition(venue, "clear-street")
+    registry.add_fields((venue,), "clear-street")
 
     assert (
         run(
@@ -704,7 +704,7 @@ def test_registry_find_and_definitions_accept_namespaces(
 def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: Path) -> None:
     declaration = tmp_path / "vendor.json"
     declared = namespaced_field("FAKE.VENUE.CODE", "String", column="fake_venue_code")
-    declared.fix.enumerated = {"A": "Alpha"}
+    declared.fix.enumerated = values_of({"A": "Alpha"}, namespace="standard")
     declaration.write_text(json.dumps(declared.into_dict()))
     assert (
         run(
@@ -719,7 +719,7 @@ def test_a_complete_field_declaration_can_be_registered(store: Path, tmp_path: P
         == 0
     )
     stored = reopened(store).resolve("FAKE.VENUE.CODE")
-    assert stored.fix.enumerated == values_of({"A": "Alpha"})
+    assert stored.fix.enumerated == values_of({"A": "Alpha"}, namespace="standard")
     assert stored.fix.column == "fakevenuecode"
 
 
@@ -822,14 +822,14 @@ def test_a_message_uses_component_crud(
         )
         == 0
     )
-    assert reopened(store).merged_component("FakeMessage").msg_type == "Y"
+    assert reopened(store).component_of("FakeMessage").msg_type == "Y"
 
     assert (
         run("fix", "registry", "remove-component", "--store", str(store), "--name", "FakeMessage")
         == 0
     )
     with pytest.raises(KeyError, match="FakeMessage"):
-        reopened(store).merged_component("FakeMessage")
+        reopened(store).component_of("FakeMessage")
 
 
 def test_scrape_forwards_adapter_configuration(

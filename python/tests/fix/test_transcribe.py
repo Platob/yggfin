@@ -1647,14 +1647,11 @@ def test_the_packaged_registry_declares_the_components_it_needs(packaged: FixCod
             component.name not in package_components for component in registry.components(version)
         )
     ]
-    assert declared == [
-        "5.0.SP2",
-        "5.0.SP1",
-        "5.0",
-        "4.4",
-        "4.3",
-        "FIXT1.1",
-    ]
+    assert declared == list(registry.versions), (
+        "4.3 is where the dictionary first named a reusable component, but a "
+        "repeating group is older, and every group carries the item block it "
+        "repeats -- so no version is left declaring none"
+    )
     assert members_of(registry.component("Parties", "4.4"))[0].fix.tag == 453
 
 
@@ -1714,7 +1711,9 @@ def test_a_version_that_declares_no_parties_component_extracts_nothing_quietly(
     registry = packaged.registry
     package_components = set(REKEP_COMPONENT_NAMES[:2])
     assert registry.components_available("4.2")
-    assert {component.name for component in registry.components("4.2")} == package_components
+    named = {component.name for component in registry.components("4.2")}
+    assert "Parties" not in named, "4.2 predates the component itself"
+    assert package_components <= named
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         assert packaged.component_of("parties", "4.2")._member_names == {}

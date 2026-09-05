@@ -1,8 +1,8 @@
 # Parse FIX
 
 One task document runs the shared application for one category. Airflow injects
-`market`, `misc`, and `unknown` into three parallel runs; each scans only its
-category and writes one typed `FixMsg` table.
+`market`, `misc`, and `unknown` into three parallel runs. Each parses raw rows,
+retains one category in Arrow, and writes one typed `FixMsg` table.
 
 ## Run this step
 
@@ -44,13 +44,13 @@ Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 ## Category scans
 
 ```text
-logs.messages -+-> market predicate  -> transcribe -> fix.market
-               +-> misc predicate    -> transcribe -> fix.misc
-               `-> unknown predicate -> transcribe -> fix.unknown
+logs.messages -+-> transcribe -> market predicate  -> fix.market
+               +-> transcribe -> misc predicate    -> fix.misc
+               `-> transcribe -> unknown predicate -> fix.unknown
 ```
 
-The predicates are mutually exclusive and execute in Iceberg before FIX
-transcription:
+Each run reads raw `Message` batches from Iceberg, transcribes them under the
+same `FixCodec`, then applies one mutually exclusive Arrow predicate:
 
 | Category run | Selection | Target |
 | --- | --- | --- |
@@ -58,8 +58,8 @@ transcription:
 | `parse_fix_misc` | not market, and either `eventtype == MISC` or a configured protocol | `fix.misc` |
 | `parse_fix_unknown` | not market, not `MISC`, and no configured protocol | `fix.unknown` |
 
-MsgTypes in `exclude_msgtypes` are removed before those predicates. A null
-MsgType remains eligible for best-effort transcription. Only
+MsgTypes in `exclude_msgtypes` are removed from the parsed batch before those
+category predicates. A null MsgType remains eligible. Only
 `parse_fix_market` has downstream consumers; the other two tables are
 terminal audit products.
 
@@ -97,6 +97,8 @@ The one task document owns the shared parsing and commit rules:
 ```yaml
 fix_dictionary: null # The repository's data/fix; set a path or URL to override it.
 null_values: ["", "null", "<null>", "n/a", "none"]
+plugin_keys: {}
+timezone: Europe/Paris
 exclude_msgtypes: ["0", "1"] # Heartbeat and TestRequest stay in logs.messages.
 protocols: null
 fields: null
@@ -117,8 +119,9 @@ fields:
 
 FIX dates, times and timestamps are stored as `timestamp[us]`; date-only
 values land at midnight. An evidence-free UL row uses the selected registry's
-newest application version. Keep `fix_dictionary` and custom protocol rules
-aligned with `parse_messages.yml`.
+newest application version. `fix_dictionary`, protocol rules, plugin aliases,
+null spellings, and recording timezone live only in `parse_fix.yml`;
+`parse_messages.yml` has no FIX configuration.
 
 Each category run buffers at most eight input RecordBatches before a storage commit.
 The source interval uses the recording clock; the resulting `unix` uses the

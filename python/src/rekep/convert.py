@@ -29,9 +29,8 @@ from rekep.annotations import (
     item_annotation,
     unwrap_annotated,
 )
-from rekep.arrow_path import ArrowPath
-from rekep.filesystems import resolve
 from rekep.require import require
+from rekep.resources import read_bytes, resource
 
 #: Splits a path or URI on either separator, whatever platform wrote it.
 SEPARATORS = re.compile(r"[\\/]")
@@ -380,18 +379,6 @@ def _decode_scalar(value: Any, annotation: type) -> Any:
 # -- io ---------------------------------------------------------------------
 
 
-def _resolve(target: Any, filesystem: pyarrow.fs.FileSystem | None) -> tuple[Any, str]:
-    """Pair `target` with the filesystem that can open it.
-
-    Through the one parser, so a document is read from wherever data is --
-    a path, a URI, an object store with an endpoint and a secret in it.
-    """
-    path = os.fspath(target)
-    if filesystem is not None:
-        return filesystem, path
-    return resolve(path)
-
-
 def _write(
     payload: bytes, target: Target, filesystem: pyarrow.fs.FileSystem | None
 ) -> bytes | None:
@@ -406,10 +393,11 @@ def _write(
     if hasattr(target, "write"):
         target.write(payload.decode() if _is_text(target) else payload)
         return None
-    fs, path = _resolve(target, filesystem)
-    output = ArrowPath(os.fspath(target), fs, filesystem_path=path)
-    with output.open_output(overwrite=True) as stream:
-        stream.write(payload)
+    output = resource(os.fspath(target), filesystem)
+    try:
+        output.write_bytes(payload)
+    finally:
+        output.close()
     return None
 
 
@@ -419,12 +407,7 @@ def _read(source: Target, filesystem: pyarrow.fs.FileSystem | None) -> bytes:
     if hasattr(source, "read"):
         data = source.read()
         return data.encode() if isinstance(data, str) else data
-    fs, path = _resolve(source, filesystem)
-    required = ArrowPath(os.fspath(source), fs, filesystem_path=path)
-    payload = required.read_bytes(strict=True, compression="detect")
-    if payload is None:  # pragma: no cover - `strict=True` raises instead
-        raise FileNotFoundError(os.fspath(source))
-    return payload
+    return read_bytes(os.fspath(source), filesystem)
 
 
 def _is_text(target: Any) -> bool:

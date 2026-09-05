@@ -176,7 +176,7 @@ def test_scalar_and_arrow_market_events_keep_the_three_generic_clocks(
     recorded = unix_of("20260821-10:00:02")
     assert recorded is not None and all(value is not None for value in expected)
     scalar = next(iter(reader(line, recunix=recorded)))
-    parsed = FixMsg.from_message_batch([Message(body=line, recunix=recorded)])
+    parsed = FixMsg.from_message_batch([Message(body=line, timestamp="20260821-10:00:02")])
     [(shape, batch)] = list(FixMsg.into_market_arrow_batches(parsed))
     row = batch.to_pylist()[0]
 
@@ -517,7 +517,7 @@ def test_manual_order_indicator_lifts_into_orders_and_executions_on_both_paths()
 
     assert order.manualindicator is execution.manualindicator is ManualIndicator.MANUAL
 
-    parsed = FixMsg.from_message_batch([Message(body=line, recunix=order.recunix)])
+    parsed = FixMsg.from_message_batch([Message(body=line)])
     translated = {shape: batch for shape, batch in FixMsg.into_market_arrow_batches(parsed)}
     assert translated[Order].column("manualindicator").to_pylist() == [int(ManualIndicator.MANUAL)]
     assert translated[Execution].column("manualindicator").to_pylist() == [
@@ -1232,11 +1232,11 @@ def _restated(record, states):
 def test_a_registry_mutation_refreshes_its_market_reading(tmp_path) -> None:
     registry = FixRegistry(cache_dir=tmp_path / "fix")
     entry = FixRegistry.from_builtin().field("OrdStatus")
-    registry.add_field(_restated(entry, {"0": State.NEW}))
+    registry.add_fields((_restated(entry, {"0": State.NEW}),))
     first = MarketTags.of(registry)
     first_state = first.states["OrdStatus"]["0"]
 
-    registry.update_field(_restated(entry, {"0": State.CANCELLED}))
+    registry.add_fields((_restated(entry, {"0": State.CANCELLED}),))
     second = MarketTags.of(registry)
 
     assert second is not first
@@ -1259,11 +1259,11 @@ def test_configured_trade_encodings_create_only_execution_fallbacks(tmp_path) ->
     assert entry is not None
     configured = record_copy(entry)
     configured.fix.enumerated = [
-        FixFieldValue(value="T", meaning="Trade Correct"),
-        FixFieldValue(value="U", meaning="Trade Bust"),
+        FixFieldValue(value="T", meaning="Trade Correct", namespaces=("standard",)),
+        FixFieldValue(value="U", meaning="Trade Bust", namespaces=("standard",)),
     ]
     configured.fix.states = {"T": State.REPLACED, "U": State.REJECTED}
-    registry.add_field(configured)
+    registry.add_fields((configured,))
 
     tags = MarketTags.of(registry, "4.4")
     assert tags.execution_states["G"] is State.REPLACED

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
   <title id="title">Arrow schema and persisted-table lineage</title>
-  <desc id="desc">Repository schema declarations produce Arrow contracts. Protocol-neutral Message rows become canonical FixMsg rows with a nested Instrument component at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions InstUpdate events. Book order and execution lists flatten into their own tables. Orders and Executions link exact event hashes; parenthash carries exact construction provenance.</desc>
+  <desc id="desc">Repository schema declarations produce Arrow contracts. Physical Message rows become canonical FixMsg rows with a nested Instrument component at the FIX parsing boundary. One FixMsg contract is stored in three Iceberg tables, but only fix.market continues to BookIterator. parse_instruments reads fix.market and versions InstUpdate events. Book order and execution lists flatten into their own tables. Orders and Executions link exact event hashes; parenthash carries exact construction provenance.</desc>
   <defs>
     <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L0,6 L9,3 z" fill="#71717a"/>
@@ -46,8 +46,8 @@
 
   <rect class="contract" x="45" y="150" width="355" height="72" rx="15"/>
   <text class="label" x="223" y="180">Message contract</text>
-  <text class="small" x="223" y="201">logs.messages | binary body + ordered entries</text>
-  <text class="tiny" x="223" y="216">syntax only; no FIX registry lookup</text>
+  <text class="small" x="223" y="201">logs.messages | binary body + captured header</text>
+  <text class="tiny" x="223" y="216">source URL + physical row; no syntax pass</text>
 
   <rect class="contract" x="45" y="265" width="355" height="240" rx="15"/>
   <text class="label" x="223" y="298">FixMsg contract</text>

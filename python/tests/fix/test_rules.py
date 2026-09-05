@@ -10,6 +10,7 @@ from pyiceberg.expressions import And, EqualTo, In, Not, Or
 
 from rekep.enums.codes import Direction, Protocol
 from rekep.fix import Rule, Rules
+from rekep.fix.message_parser import MessageParser
 from rekep.fix.rules import (
     CODEC_ANCHORS,
     CODEC_KEYS,
@@ -25,7 +26,8 @@ from rekep.fix.rules import (
     payload_shapes,
 )
 from rekep.market import EventType
-from rekep.text import Message
+from rekep.text import FixMsg, Message
+from rekep.text.entries import ENTRIES
 
 SOH = "\x01"
 
@@ -118,7 +120,7 @@ def test_a_batch_classifies_every_row_where_it_stands() -> None:
 def test_an_unmarked_rendered_prefix_keeps_every_field() -> None:
     line = "After Enrichment -> ACCOUNT=ACCT-000117 CLIENTID=MCFP2 VENUE=XPAR"
 
-    found = Message.parse_arrow(pyarrow.array([line]))
+    found = MessageParser.parse_arrow(pyarrow.array([line]))
     entries = found["entries"][0].as_py()
 
     assert [entry["key"] for entry in entries] == ["ACCOUNT", "CLIENTID", "VENUE"]
@@ -164,7 +166,7 @@ def test_the_shape_decides_the_protocol_and_msgtype_stays_its_own(
     message: str, expected: str, msgtype: str | None
 ) -> None:
     """The grammar and its resolved version share one protocol code."""
-    parsed = Message.parse_arrow(pyarrow.array([message], pyarrow.string()))
+    parsed = MessageParser.parse_arrow(pyarrow.array([message], pyarrow.string()))
     assert spelled(parsed["protocol"]) == [expected]
     assert parsed["msgtype"].to_pylist() == [msgtype]
 
@@ -186,8 +188,10 @@ def test_a_value_full_of_digits_is_still_a_value() -> None:
 def test_the_scalar_row_and_the_column_agree() -> None:
     """One classifier: a row built from text answers what its batch answers."""
     for line in LINES:
-        parsed = Message.parse_arrow(pyarrow.array([line], pyarrow.string()))
-        assert Message(body=line).protocol.code == spelled(parsed["protocol"])[0]
+        parsed = MessageParser.parse_arrow(pyarrow.array([line], pyarrow.string()))
+        assert (
+            FixMsg.from_message(Message(body=line)).protocol.code == spelled(parsed["protocol"])[0]
+        )
 
 
 def test_xml_inside_a_fix_value_does_not_replace_the_fix_envelope() -> None:
@@ -310,7 +314,7 @@ def test_no_rows_is_no_rows() -> None:
     assert len(directions) == 0
     assert directions.type == pyarrow.int32()
 
-    assert len(payload_shapes(pyarrow.array([], Message.into_field().field("entries").dtype))) == 0
+    assert len(payload_shapes(pyarrow.array([], ENTRIES))) == 0
 
 
 def test_direction_is_an_open_packed_vocabulary() -> None:

@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import dataclasses
+import os
+import re
 from collections.abc import Iterator, Mapping
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from yggdryl import Url
 
 from rekep.convert import Convertible
 from rekep.fields import Field, StructField
@@ -16,13 +21,22 @@ if TYPE_CHECKING:
 
     from rekep.iceberg.dataset import IcebergDataset
 
-#: FileIO pyiceberg is pointed at unless the caller names another. Arrow is the
-#: hub here, so the store's reads and writes go through the same filesystem
-#: implementations everything else does -- one credential chain, one set of
-#: URI rules, and `pyarrow.fs` handles for anything that has to be listed or
-#: deleted during maintenance. Ours rather than pyiceberg's own, for the one
-#: parsing fix `rekep.arrow_file_io` explains: Windows drive letters.
-PYARROW_FILE_IO = "rekep.arrow_file_io.ArrowFileIO"
+#: PyIceberg's native PyArrow streams, with yggfin's output ownership boundary.
+PYARROW_FILE_IO = "rekep.iceberg.file_io.IcebergFileIO"
+
+_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+_WINDOWS_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
+
+
+def _file_location(location: str) -> str:
+    """Make a local path absolute while leaving an explicit URI on its store."""
+    if location.casefold().startswith("file:"):
+        return str(Url(location))
+    if os.name == "nt" and _WINDOWS_PATH.match(location):
+        return str(Url.from_path(Path(location).resolve()))
+    if _SCHEME.match(location):
+        return location
+    return str(Url.from_path(Path(location).resolve()))
 
 
 @dataclasses.dataclass(eq=False)
@@ -33,13 +47,16 @@ class IcebergCatalog(Convertible):
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Give location configuration one lock before this handle is shared."""
+        """Freeze the warehouse location before this handle is shared."""
         import threading
 
         if not isinstance(self.name, str):
             raise TypeError("an Iceberg catalog name must be a string")
         if not self.name:
             raise ValueError("an Iceberg catalog name must be non-empty")
+        self.properties = dict(self.properties)
+        if warehouse := self.properties.get("warehouse"):
+            self.properties["warehouse"] = _file_location(warehouse)
         self.__dict__["_location_guard"] = threading.RLock()
 
     # -- the catalog --------------------------------------------------------
@@ -63,9 +80,7 @@ class IcebergCatalog(Convertible):
             require("pyiceberg", "iceberg")
             from pyiceberg.catalog import load_catalog
 
-            from rekep.arrow_file_io import inferred_properties
-
-            properties = self._tracked_file_io_properties(inferred_properties(self.properties))
+            properties = self._tracked_file_io_properties(self.properties)
             loaded = load_catalog(self.name, **properties)
             self.__dict__["catalog"] = loaded
             return loaded
@@ -73,7 +88,7 @@ class IcebergCatalog(Convertible):
     @staticmethod
     def _tracked_file_io_properties(properties: Mapping[str, str]) -> dict[str, str]:
         """Catalog properties with custom FileIO routed through ownership tracking."""
-        from rekep.arrow_file_io import DELEGATE_FILE_IO, TRACKED_FILE_IO
+        from rekep.iceberg.file_io import DELEGATE_FILE_IO, TRACKED_FILE_IO
 
         configured = dict(properties)
         implementation = configured.get("py-io-impl")
@@ -180,34 +195,6 @@ class IcebergCatalog(Convertible):
     def rename_table(self, name: str, to: str) -> Table:
         return self.catalog.rename_table(name, to)
 
-    def _configure_locations(self, locations: list[str]) -> None:
-        """Apply table-specific S3 settings before loading its catalog handle."""
-        if not locations:
-            return
-        from rekep.arrow_file_io import location_properties
-
-        requested = dict(location_properties({}, locations=locations))
-        with self.__dict__["_location_guard"]:
-            conflicts = sorted(
-                name
-                for name, value in requested.items()
-                if name.startswith("s3.")
-                and name in self.properties
-                and self.properties[name] != value
-            )
-            if conflicts:
-                raise ValueError(
-                    f"explicit S3 location conflicts with catalog settings {conflicts!r}; "
-                    "use a separate IcebergCatalog for another store"
-                )
-            configured = dict(location_properties(self.properties, locations=locations))
-            if configured == self.properties:
-                return
-            self.properties = configured
-            loaded = self.__dict__.get("catalog")
-            if loaded is not None:
-                loaded.properties.update(self._tracked_file_io_properties(configured))
-
     def dataset(self, name: str, *, namespace: str | None = None, **kwargs: Any) -> IcebergDataset:
         """A dataset on this catalog: the way to read and write a table here.
 
@@ -220,22 +207,10 @@ class IcebergCatalog(Convertible):
         pyiceberg catalog builds a SQLAlchemy engine or asks a REST server for
         its config, and `datasets()` was paying that per table.
         """
-        from rekep.arrow_file_io import STORAGE_PROPERTIES
         from rekep.iceberg.dataset import IcebergDataset
 
         namespace, name = _coordinates(name, namespace)
         identifier = f"{namespace}.{name}"
-        storage = kwargs.get("table_properties") or {}
-        self._configure_locations(
-            [
-                str(location)
-                for location in (
-                    kwargs.get("location"),
-                    *(storage.get(name) for name in STORAGE_PROPERTIES),
-                )
-                if location
-            ]
-        )
         field = kwargs.pop("field", None)
         table = None
         if field is None:

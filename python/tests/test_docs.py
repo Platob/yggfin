@@ -21,6 +21,7 @@ from types import ModuleType
 
 import pytest
 
+from rekep import Message
 from rekep.tasks import Task
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
@@ -104,6 +105,36 @@ def test_home_page_uses_the_animated_rkp_trigram() -> None:
     assert "rkp-grid" not in logo
     assert "logo: assets/rkp-logo.svg" in config
     assert "stylesheets/home.css" in config
+
+
+def test_docs_keep_yggdryl_outside_the_raw_message_boundary() -> None:
+    """Text media stays physical; FIX meaning begins after `logs.messages`."""
+    home = (DOCS / "index.md").read_text(encoding="utf-8")
+    configuring = (DOCS / "fix" / "configuring.md").read_text(encoding="utf-8")
+    fixmsg = (DOCS / "fix" / "fixmsg.md").read_text(encoding="utf-8")
+    logs = (DOCS / "pipeline" / "operations" / "logs.md").read_text(encoding="utf-8")
+    run = (DOCS / "pipeline" / "operations" / "run.md").read_text(encoding="utf-8")
+
+    assert Message.into_field().names == [
+        "sourceurl",
+        "sourcerownum",
+        "timestamp",
+        "threadname",
+        "plugin",
+        "level",
+        "body",
+    ]
+    assert "from yggdryl import IOBase, TextOptions" in home
+    assert "from yggdryl import IOBase, TextOptions" in configuring
+    assert "from yggdryl import IOBase, TextOptions" in fixmsg
+    assert "A raw `Message` has no `entries`, protocol or discriminator columns." in fixmsg
+    assert "Fourteen physical rows through `parse_messages`" in logs
+    assert "selected 2 market rows" in logs
+    assert "selected 11 misc rows" in logs
+    assert "selected 0 unknown rows" in logs
+    assert "| `parse_messages` | 14 read, 14 written | 0 |" in run
+    assert "| `parse_fix_misc` | 11 read, 11 FixMsg written | 0 |" in run
+    assert "TextFile" not in home + configuring + fixmsg
 
 
 def test_registry_docs_keep_the_cli_discoverable_and_results_bounded() -> None:
@@ -433,7 +464,6 @@ _OUTSIDE = (
     "s3://bucket",
     "FixRegistry.scrape",
     "FixRegistry()",
-    "TextFile.from_path",
 )
 
 _CHECKPOINT = "__REKEP_DOC_CHECKPOINT_9B173F9E__"
@@ -491,7 +521,7 @@ def test_a_printed_output_is_what_the_code_prints(page: str, fences: list[str]) 
         # `catalog.db` and a warehouse where it is run. So: linked in, run
         # elsewhere, and whatever they create goes with the directory.
         root = Path(sandbox)
-        for shared in ("schemas", "data"):
+        for shared in ("schemas", "data", "python"):
             source_path = DOCS.parent / shared
             if source_path.exists():
                 _link_directory(root / shared, source_path)

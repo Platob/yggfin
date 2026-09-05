@@ -9,7 +9,7 @@ table](../assets/compatibility-tree-light.svg#only-light)
 
 | Contract | Version | Rows |
 | --- | ---: | --- |
-| `message.yaml` | 1 | Source records with an exact binary `body`, standard header columns, a promoted discriminator and ordered residual entries. |
+| `message.yaml` | 2 | Physical source rows: URL, row number, four optional header captures, and exact binary `body`. |
 | `fixmsg.yaml` | 1 | Parsed FIX records, with reference facts in a nested `Instrument` component. |
 | `instrument.yaml` | 1 | Immutable `InstUpdate` events carrying that component. |
 | `book.yaml` | 1 | Book deltas, executions, and recovery state. |
@@ -25,7 +25,7 @@ print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
 ```
 
 ```text
-59 59
+7 7
 ```
 
 A contract preserves exact Arrow types, order, nullability, descriptions,
@@ -96,15 +96,16 @@ instrument's `CFICode <461>` is.
 
 ## Evolution
 
-**Every contract is version 1.** Schema changes update the declaration and
-generated contract together. Data written to another shape is rebuilt.
+`message.yaml` is version 2; every other contract is version 1. Schema changes
+update the declaration and generated contract together. Data written to
+another shape is rebuilt.
 
 The version is not part of a table's identity either: PyIceberg carries no
 schema-level metadata, so it never survives the round trip and no write is
-refused over it. What a reader actually depends on is the columns, and
-each `parse_fix_*` task says so directly -- it refuses a source missing
-`msgtype`, `entries` or `protocol` rather than reporting an empty successful
-run.
+refused over it. What a reader actually depends on is the columns, and each
+`parse_fix_*` task says so directly: it reads `logs.messages` through the
+seven-column raw `Message` declaration rather than accepting a partially
+parsed predecessor.
 
 ## Publishing
 

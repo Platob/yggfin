@@ -7,26 +7,20 @@ with app.setup:
     import pathlib
 
     import marimo as mo
+    import pyarrow
     import pyarrow.compute as pc
-    from pyiceberg.expressions import (
-        And,
-        GreaterThanOrEqual,
-        IsNull,
-        LessThan,
-        NotIn,
-        Or,
-    )
 
+    from rekep.enums import EventType, Protocol
     from rekep.fix.fields import FieldRules
     from rekep.fix.registry import FixRegistry
     from rekep.fix.rules import MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY, Rules
     from rekep.fix.transcribe import FixCodec
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
+    from rekep.resources import resource
     from rekep.tasks import Task
     from rekep.text import FixMsg, Message
     from rekep.times import unix_of
-    from rekep.urls import Url
 
 
 @app.cell(hide_code=True)
@@ -34,9 +28,8 @@ def _():
     mo.md("""
     # Parse FIX
 
-    Resolve one classified message category against the FIX dictionary.
+    Parse raw messages and write one category resolved against the FIX dictionary.
     """)
-    return
 
 
 @app.cell
@@ -51,6 +44,8 @@ def parameters():
     end = _defaults["end"]
     fix_dictionary = _defaults["fix_dictionary"]
     null_values = _defaults["null_values"]
+    plugin_keys = _defaults["plugin_keys"]
+    timezone = _defaults["timezone"]
     exclude_msgtypes = _defaults["exclude_msgtypes"]
     protocols = _defaults["protocols"]
     fields = _defaults["fields"]
@@ -76,11 +71,13 @@ def parameters():
         log_level,
         merge_by,
         null_values,
+        plugin_keys,
         project_root,
         protocols,
         source,
         start,
         table_properties,
+        timezone,
     )
 
 
@@ -119,9 +116,11 @@ def _(
     fields,
     fix_dictionary,
     null_values,
+    plugin_keys,
     project_root,
     protocols,
     records,
+    timezone,
 ):
     # Read, not merely named: this is the edge that puts the level in force
     # before this cell can emit a record.
@@ -146,7 +145,7 @@ def _(
         FixRegistry()
         if fix_dictionary is None
         else FixRegistry(
-            cache_dir=Url.from_string(str(fix_dictionary)).resolve(project_root),
+            cache_dir=str(resource(str(fix_dictionary), root=project_root).url),
             announce=print,
         )
     )
@@ -155,6 +154,8 @@ def _(
         rules=protocol_rules,
         registry=registry,
         null_values=frozenset(null_values),
+        plugin_keys=plugin_keys,
+        timezone=timezone,
         fields=field_rules,
     )
     return codec, excluded, field_rules, protocol_rules, registry
@@ -196,46 +197,19 @@ def _(
         window=(lower, upper),
     )
     source_columns = list(messages.table_field.names if messages.exists else source_field.names)
-    if messages.exists:
-        # Cell-local: a source that does not exist yet never binds it.
-        _missing = sorted(
-            {"msgtype", "entries", "protocol", "eventtype"} - set(messages.table_field.names)
-        )
-        if _missing:
-            raise ValueError(
-                f"{source} is missing {_missing}; rebuild it with parse_messages before parsing FIX"
-            )
     return messages, source_columns, stage, store
 
 
 @app.cell
-def _(category, excluded, lower, protocol_rules, registry, upper):
-    def _window(lower, upper, column="unix"):
-        predicates = []
-        if lower is not None:
-            predicates.append(GreaterThanOrEqual(column, lower))
-        if upper is not None:
-            predicates.append(LessThan(column, upper))
-        return (
-            None if not predicates else predicates[0] if len(predicates) == 1 else And(*predicates)
-        )
-
-    # The window is read off the *stored* recording clock, because that is what
-    # the message stage partitioned on. `unix` moves when a transaction time
-    # resolves, so filtering on it here would drop rows the interval owns.
-    selection = _window(lower, upper)
-    if excluded:
-        # Null discriminators still need best-effort transcription. Only named
-        # session liveness traffic is left in logs.messages by this stage.
-        _application_messages = Or(IsNull("msgtype"), NotIn("msgtype", excluded))
-        selection = (
-            _application_messages if selection is None else And(selection, _application_messages)
-        )
-    # Each parallel run pushes its complete category predicate into Iceberg. A
-    # row outside it is never transcribed, enriched, buffered or written here.
-    _category_events = protocol_rules.into_iceberg_category_filter(category, registry.versions)
-    selection = _category_events if selection is None else And(selection, _category_events)
-    return (selection,)
+def _(protocol_rules):
+    market_eventtypes = pyarrow.array(
+        EventType.ranked_at_least(EventType.INTENT), type=pyarrow.int64()
+    )
+    known_protocols = pyarrow.array(
+        sorted(protocol.into_stored() for protocol in protocol_rules.protocols),
+        type=Protocol.into_storage_type(),
+    )
+    return known_protocols, market_eventtypes
 
 
 @app.cell
@@ -245,15 +219,19 @@ def _(
     codec,
     commit_batch_num,
     commit_row_size,
+    excluded,
     field,
+    known_protocols,
     limit,
+    lower,
+    market_eventtypes,
     merge_by,
     messages,
-    selection,
     source_columns,
     stage,
     store,
     table_properties,
+    upper,
 ):
     # The stage named the table this category writes, and reading it back is
     # what orders this cell after the record that opened the run.
@@ -291,17 +269,49 @@ def _(
         counts["errors"] += pc.sum(pc.is_valid(batch.column("error")), min_count=0).as_py() or 0
         return batch
 
+    def _selected(batch):
+        """Rows in this run's recording window and exclusive category."""
+        rows = batch.num_rows
+        keep = pyarrow.repeat(pyarrow.scalar(True), rows)
+        recorded = batch.column("recunix")
+        if lower is not None:
+            keep = pc.and_kleene(keep, pc.greater_equal(recorded, lower))
+        if upper is not None:
+            keep = pc.and_kleene(keep, pc.less(recorded, upper))
+
+        msgtypes = batch.column("msgtype")
+        if excluded:
+            excluded_msgtypes = pyarrow.array(sorted(excluded), type=msgtypes.type)
+            application = pc.or_kleene(
+                pc.is_null(msgtypes),
+                pc.invert(pc.is_in(msgtypes, value_set=excluded_msgtypes)),
+            )
+            keep = pc.and_kleene(keep, application)
+
+        eventtypes = batch.column("eventtype")
+        market = pc.is_in(eventtypes, value_set=market_eventtypes)
+        families = Protocol.into_family_arrow(batch.column("protocol"))
+        recognised = pc.is_in(families, value_set=known_protocols)
+        known_non_market = pc.or_kleene(pc.equal(eventtypes, int(EventType.MISC)), recognised)
+        if category == MARKET_CATEGORY:
+            category_rows = market
+        elif category == MISC_CATEGORY:
+            category_rows = pc.and_kleene(pc.invert(market), known_non_market)
+        else:
+            category_rows = pc.and_kleene(pc.invert(market), pc.invert(known_non_market))
+        return batch.filter(pc.fill_null(pc.and_kleene(keep, category_rows), False))
+
     def _batches():
-        for staged in messages.read_arrow_reader(columns=source_columns, row_filter=selection):
-            if limit is not None and counts["read"] + staged.num_rows > limit:
-                staged = staged.slice(0, max(0, limit - counts["read"]))
-            if not staged.num_rows:
-                continue
-            counts["read"] += staged.num_rows
-            batch = _measured(FixMsg.from_message_batch(staged, codec))
-            yield batch
+        for staged in messages.read_arrow_reader(columns=source_columns):
             if limit is not None and counts["read"] >= limit:
                 break
+            batch = _selected(FixMsg.from_message_batch(staged, codec))
+            if limit is not None and counts["read"] + batch.num_rows > limit:
+                batch = batch.slice(0, limit - counts["read"])
+            if not batch.num_rows:
+                continue
+            counts["read"] += batch.num_rows
+            yield _measured(batch)
 
     written = output.append_arrow_reader(
         _batches(),
@@ -320,7 +330,8 @@ def _(category, counts, stage, unixsource, written):
     # discovered two tables later.
     stage.says(
         "resolved unix from %s; %d of %d rows carry a symbolticker",
-        ", ".join(f"{rung} {count}" for rung, count in sorted(unixsource.items())) or "nothing",
+        ", ".join(f"{rung or 'nothing'} {count}" for rung, count in sorted(unixsource.items()))
+        or "nothing",
         counts["tickered"],
         counts["read"],
     )

@@ -10,14 +10,15 @@ from functools import cache
 from typing import Any
 
 from rekep.console import Console
-from rekep.fields import Field
-from rekep.filesystems import read_bytes
+from rekep.fields import STANDARD_NAMESPACE, Field
 from rekep.fix import quickfix
 from rekep.fix.entries import (
     ANY_VERSION,
     Alias,
     ComponentRecord,
+    is_declaration_block,
     record_copy,
+    record_key,
     record_kind,
     refuse_record,
 )
@@ -27,10 +28,11 @@ from rekep.fix.store import (
     DECLARATION_SUFFIXES,
     component_from_document,
     document_of,
-    field_document,
     field_from_document,
     is_declaration,
+    record_document,
 )
+from rekep.resources import read_bytes
 
 #: Answers that confirm a write; every other answer leaves the store unchanged.
 YES = ("y", "yes")
@@ -54,6 +56,44 @@ class Shell:
     #: Where answers come from. `input` at a prompt; a list of lines in a test,
     #: which is what makes every branch here reachable without a terminal.
     reader: Callable[[str], str] = terminal_reader
+
+    def _stored(self, record: Field, *, fresh: bool) -> Field:
+        """One record through the registry's one mutator, checked first.
+
+        `add_fields` folds, so a store already holding this identity would
+        take the change without a word. Whether that is what the operator
+        meant is this shell's question, and the answer is the refusal the two
+        per-kind verbs used to raise between them.
+        """
+        held = self._held(record)
+        if fresh and held is not None:
+            # Naming what claims it, because "already stored" answers a
+            # different question than the one a person asking for a tag has.
+            raise KeyError(
+                f"tag {record.fix.tag} is already claimed by {held.fix.canonical!r}"
+                if record.fix.tag is not None and held.fix.folded != record.fix.folded
+                else f"FIX record {record.fix.canonical!r} is already stored"
+            )
+        if not fresh and held is None:
+            raise KeyError(f"no FIX record stored for {record.fix.canonical!r}")
+        self.registry.add_fields((record,))
+        written = self._held(record)
+        if written is None:  # pragma: no cover - add_fields just stored it
+            raise RuntimeError(f"FIX record {record.fix.canonical!r} was not stored")
+        return written
+
+    def _held(self, record: Field) -> Field | None:
+        """What the store already holds for one record, block or field.
+
+        A block answers at its name and never through the field lookup, which
+        is the view that deliberately excludes them.
+        """
+        if is_declaration_block(record):
+            try:
+                return self.registry.component_of(record.fix.canonical).into_record()
+            except KeyError:
+                return None
+        return self.registry.field(record_key(record), namespace=STANDARD_NAMESPACE)
 
     def run(self) -> int:
         """Read commands until `quit`, end of input, or an interrupt."""
@@ -293,7 +333,7 @@ class Shell:
             self.console.warn("name one: `component Parties`")
             return
         try:
-            entry = self.registry.merged_component(rest)
+            entry = self.registry.component_of(rest)
         except KeyError:
             self.console.fail(f"no component or message {rest!r} in this store")
             near = difflib.get_close_matches(
@@ -345,7 +385,7 @@ class Shell:
         if not self._confirm(f"add {entry.name}"):
             self.console.warn("nothing was written")
             return
-        stored = self.registry.add_component(entry)
+        stored = self._stored(entry.into_record(), fresh=True)
         self.console.ok(f"added {stored.name}")
 
     def _update_component(self, rest: str) -> None:
@@ -356,7 +396,7 @@ class Shell:
         if not self._confirm(f"update {entry.name}"):
             self.console.warn("nothing was written")
             return
-        stored = self.registry.update_component(entry)
+        stored = self._stored(entry.into_record(), fresh=False)
         self.console.ok(f"updated {stored.name}")
 
     def _remove_component(self, rest: str) -> None:
@@ -365,7 +405,7 @@ class Shell:
             self.console.warn("name one: `remove-component Parties`")
             return
         try:
-            entry = self.registry.merged_component(rest)
+            entry = self.registry.component_of(rest)
         except KeyError:
             self.console.fail(f"no component or message {rest!r} in this store")
             return
@@ -380,7 +420,7 @@ class Shell:
         if not self._confirm(f"remove {entry.name}"):
             self.console.warn("kept")
             return
-        if self.registry.remove_component(entry.name):
+        if self.registry.remove_fields(entry.name):
             self.console.ok(f"removed {entry.name}")
         else:  # pragma: no cover - resolved immediately above
             self.console.fail(f"{entry.name} was not in this store")
@@ -431,7 +471,7 @@ class Shell:
         if not self._confirm(f"{verb} {record.fix.canonical}"):
             self.console.warn("nothing was written")
             return
-        stored = self.registry.update_field(record) if update else self.registry.add_field(record)
+        stored = self._stored(record, fresh=not update)
         self.console.ok(f"{'updated' if update else 'added'} {stored.fix.canonical}")
 
     def _add(self, rest: str) -> None:
@@ -439,8 +479,8 @@ class Shell:
         record = self._built(None, name=rest)
         if record is None:
             return
-        self.registry.add_field(record)
-        document = field_document(record.fix.key)
+        self._stored(record, fresh=True)
+        document = record_document(record_key(record))
         self.console.ok(f"added {record.fix.canonical} {self.console.glyph('arrow')} {document}")
 
     def _edit(self, rest: str) -> None:
@@ -453,7 +493,7 @@ class Shell:
             return
         written = record_copy(record)
         written.fix.named_aliases = held.fix.named_aliases
-        self.registry.update_field(written)
+        self._stored(written, fresh=False)
         self.console.ok(f"updated {written.fix.canonical}")
 
     def _built(self, held: Field | None, name: str = "") -> Field | None:
@@ -567,7 +607,7 @@ class Shell:
         if not self._confirm(f"remove {name}"):
             self.console.warn("kept")
             return
-        if self.registry.remove_field(name):
+        if self.registry.remove_fields(name):
             self.console.ok(f"removed {name}")
         else:
             self.console.fail(f"{name} was not in this store")

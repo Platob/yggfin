@@ -6,24 +6,30 @@ the [FixMsg product](../products/fixmsg.md) page; this is how the FIX stage
 reads it.
 
 ```python
-from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
+from rekep import FixCodec, FixMsg, FixRegistry, Message
+from yggdryl import IOBase, TextOptions
 
 registry = FixRegistry(cache_dir="data/fix")
-source = TextFiles.from_folder(
-    "s3://bucket/capture",
-    pattern="*.log*",
-    timezone="Europe/Paris",
-    msg_type_event_types=registry.msg_type_event_types(),
-)
-codec = FixCodec(registry=registry)
+codec = FixCodec(registry=registry, timezone="Europe/Paris")
+options = TextOptions()
+options.with_rownum = 1
+options.batch_row_size = 65_536
 
-for batch in source.read_arrow_reader(batch_row_size=65_536):
-    parsed = FixMsg.from_message_batch(batch, codec)
+source = IOBase("s3://bucket/capture/app.log.gz").into_text(options)
+for batch in source.read_arrow_reader():
+    names = [
+        {"url": "sourceurl", "rownum": "sourcerownum"}.get(name, name)
+        for name in batch.schema.names
+    ]
+    raw = Message.into_field().cast_arrow_batch(batch.rename_columns(names))
+    parsed = FixMsg.from_message_batch(raw, codec)
 ```
 
 A `FixRegistry` alone is enough — the codec derives from it, the packaged one
-by default. A full `FixCodec` serves only feeds whose rules or field
-declarations differ.
+by default. A full `FixCodec` also carries feed-specific rules, field
+declarations, plugin key aliases, null spellings and the recording timezone.
+The task adds its configured header captures before casting yggdryl's batches
+onto `Message`.
 
 ## Best-effort rows
 
@@ -43,33 +49,29 @@ BodyLength <9>: invalid 12x; Price <44>: invalid abc
 ```
 
 Typed values that cannot be read become null and `error` says which readings
-degraded. Body and component spellings remain in `entries`; a lifted session
-spelling remains in its diagnostic because that field left `entries` at the raw
-stage. An unexpected data error first retries vector slices, then retains only
-the irreducible row with its raw arguments and exception text; valid neighbours
-keep their order and parsed columns. Schema/projection mistakes still raise
-before row isolation.
+degraded. Body and component spellings that remain useful for audit land in
+the parsed `entries`; a lifted session spelling stays in its diagnostic. An
+unexpected data error first retries vector slices, then retains only the
+irreducible row with its raw arguments and exception text; valid neighbours
+keep their order and parsed columns. Schema mistakes still raise before row
+isolation.
 
 `error` is processing metadata and is not digested. A degraded row keeps the
-raw stage's `vhash`, so changing parser wording cannot change its identity. It
-is separate from `reason`, which keeps FIX `Text <58>` and upstream business
-diagnostics.
+identity derived from its raw body, so changing parser wording cannot change
+its identity. It is separate from `reason`, which keeps FIX `Text <58>` and
+upstream business diagnostics.
 `parse_instruments` and `parse_market` push down `error IS NULL`, and the class
 conversion APIs enforce the same quarantine for callers outside the tasks.
 
-The stage consumes the arguments `TextFile`/`TextFiles` already stored and may
-reclassify their binary `body` under feed-specific rules. A batch arriving
-from Iceberg carries `large_binary` where the contract says `binary`, so it is
-brought onto the `Message` declaration first. `FixMsg` consumes `body`; its
-stored schema contains only typed columns and ordered residual entries.
-
-Classification uses the codec's rules; the stored
-[`protocol`](../enums/protocol.md) fills only the rows those rules call
-`OTHER`.
+The stage consumes raw `Message` rows previously read by yggdryl and stored in
+Iceberg. A batch arriving from Iceberg carries `large_binary` where the
+contract says `binary`, so it is brought onto the `Message` declaration first.
+`FixMsg` classifies and tokenizes `body`, resolves the registry, then consumes
+the raw bytes; its stored schema contains only typed columns and ordered
+residual entries.
 
 ```yaml
-# Discard operational traffic before argument tokenization; empty retains it.
-include_msgtypes: []
+# Discard operational traffic after parsing; empty retains it.
 exclude_msgtypes: ["0", "1"]
 ```
 
@@ -134,9 +136,10 @@ wire order are data.
 | `value` | the value carried; always present, `""` when explicitly empty |
 | `comp` | an indexed container prefix, such as `NoPartyIDs[0]` |
 
-Raw `Message.entries` is always a list. A `FixMsg` carrying no recognized
-message has null `entries`; a parsed message with no residue has an empty one.
-The `MsgType` discriminator is promoted to `msgtype` and never duplicated here.
+A raw `Message` has no `entries`, protocol or discriminator columns. A
+`FixMsg` carrying no recognized message has null `entries`; a parsed message
+with no residue has an empty one. The `MsgType` discriminator is promoted to
+`msgtype` and never duplicated here.
 
 Every field a row keeps lands in exactly one of three places, and never two:
 
@@ -188,10 +191,10 @@ Read from the header verb, and only where it opens the line before the
 payload's first token, so the same words inside a payload never answer:
 
 ```python
-from rekep import Message
+from rekep import FixMsg
 
 for text in ("Receiving : 8=FIX.4.4|35=D|10=0", "Sending : 8=FIX.4.4|35=D|10=0"):
-    print(Message.from_text(text).direction)
+    print(FixMsg.from_text(text).direction)
 ```
 
 ```text
@@ -202,10 +205,8 @@ SENT
 `UNKNOWN` is most rows — bridge re-log lines repeat a payload without repeating
 the verb, and no answer beats a guessed one. The verb has to open before the
 first token the row's protocol could start with, which
-`rekep.fix.rules.CODEC_ANCHORS` spells per codec. It resolves at the message
-stage, where the raw body and its protocol reading coexist; the FIX stage
-re-resolves a retained body and keeps the stored answer where a projection
-omitted it.
+`rekep.fix.rules.CODEC_ANCHORS` spells per codec. It resolves at the FIX
+boundary, where the raw body and its protocol reading coexist.
 
 A `35=U...` wrapper may carry a rendered bridge payload with its own
 `MSGTYPE`. The wrapper names the envelope and the payload names the message,
@@ -215,18 +216,19 @@ indexed group members are never treated as duplicates.
 
 ## Stored categories
 
-The one `parse_fix` definition receives a category for three independent,
-mutually exclusive Iceberg scans:
+The one `parse_fix` definition receives a category for three independent runs.
+Each scans raw `logs.messages`, parses the batch, drops configured MsgTypes and
+applies one mutually exclusive Arrow mask:
 
-| task | table | pushed selection |
+| task | table | selection after parsing |
 | --- | --- | --- |
 | `parse_fix_market` | `fix.market` | kinds ranked at least `INTENT` |
 | `parse_fix_misc` | `fix.misc` | not market, and either `MISC` or a recognized protocol |
 | `parse_fix_unknown` | `fix.unknown` | not market, not `MISC`, and an unrecognized protocol |
 
-MsgTypes listed by the shared `exclude_msgtypes` parameter enter no FIX table,
-and technical plugins never reach the source. Every resulting `FixMsg` schema
-excludes `body`.
+MsgTypes listed by `exclude_msgtypes` enter no FIX table. Every resulting
+`FixMsg` schema excludes `body`. The three runs deliberately repeat parsing so
+`logs.messages` stays independent of every FIX dictionary and protocol rule.
 
 Market readers consume only `fix.market`, ordered by
 `(unix, msgseqnum, hash)`. Each row carries its reference facts in the final

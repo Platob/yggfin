@@ -4,6 +4,8 @@ import pyarrow
 import pytest
 
 from rekep import Field, ProtocolMetadata
+from rekep.fields.metadata import values_of
+from rekep.fix.fields import fix_field
 
 
 def make_field() -> Field:
@@ -117,8 +119,10 @@ def test_fix_metadata_reads_and_writes_typed_values() -> None:
     assert built.metadata["fix:tag"] == "55"
     built.fix.tag = None
     assert "fix:tag" not in built.metadata
-    built.fix.enumerated = {"1": "Buy"}
-    assert built.metadata["fix:values"] == '[{"value":"1","meaning":"Buy"}]'
+    built.fix.enumerated = values_of({"1": "Buy"}, namespace="standard")
+    assert built.metadata["fix:values"] == (
+        '[{"value":"1","meaning":"Buy","namespaces":["standard"]}]'
+    )
     assert built.fix.meanings == {"1": "Buy"}
     assert built.fix.value_of("1").meaning == "Buy"
     built.fix.versions = ["4.4", "4.2"]
@@ -238,7 +242,7 @@ def test_fix_value_codecs_apply_the_same_mapping_to_arrow_columns() -> None:
 
 def test_an_identity_fix_value_mapping_skips_arrow_work() -> None:
     built = make_field()
-    built.fix.enumerated = {"A": "A"}
+    built.fix.enumerated = values_of({"A": "A"}, namespace="standard")
     source = pyarrow.array(["A", None])
     assert built.fix.arrow_encode(source) is source
     assert built.fix.arrow_decode(source) is source
@@ -263,21 +267,26 @@ def test_merge_unions_the_spellings_tags_and_values_of_one_identity() -> None:
     held = _reading("SettlDate", 64)
     held.fix.versions = ("4.4", "5.0")
     held.fix.sources = ("fix-latest",)
-    held.fix.enumerated = {"0": "Regular"}
+    held.fix.enumerated = values_of({"0": "Regular"}, namespace="standard")
     other = _reading("TradeDate", 5020)
     other.fix.versions = ("4.2",)
+    # A reading attributes what it brings to its own declared source, rather
+    # than to a string the caller passes beside it.
+    other.fix.source = "venue"
     other.fix.sources = ("venue",)
-    other.fix.enumerated = {"9": "Venue"}
+    other.fix.enumerated = values_of({"9": "Venue"}, namespace="standard")
 
-    held.fix.merge(other.fix, source="venue")
+    # One merge, and it lets the *later* argument win a key it restates, so
+    # the held reading goes second and the venue's is what accumulates.
+    merged = other.merge(held)
 
-    assert held.fix.tag == 64, "the canonical tag does not move"
-    assert held.fix.tag_priority == (64, 5020)
-    assert held.fix.spellings() == ("SettlDate", "TradeDate")
-    assert [(one.name, one.source) for one in held.fix.named_aliases] == [("TradeDate", "venue")]
-    assert held.fix.meanings == {"0": "Regular", "9": "Venue"}
-    assert held.fix.sources == ("fix-latest", "venue")
-    assert set(held.fix.versions) == {"4.4", "5.0", "4.2"}
+    assert merged.fix.tag == 64, "the canonical tag does not move"
+    assert merged.fix.tag_priority == (64, 5020)
+    assert merged.fix.spellings() == ("SettlDate", "TradeDate")
+    assert [(one.name, one.source) for one in merged.fix.named_aliases] == [("TradeDate", "venue")]
+    assert merged.fix.meanings == {"0": "Regular", "9": "Venue"}
+    assert merged.fix.sources == ("fix-latest", "venue")
+    assert set(merged.fix.versions) == {"4.4", "5.0", "4.2"}
 
 
 def test_merge_keeps_the_datatype_spelling_it_holds_and_never_compares_it() -> None:
@@ -288,16 +297,15 @@ def test_merge_keeps_the_datatype_spelling_it_holds_and_never_compares_it() -> N
     other = _reading("TradeType", 9001)
     other.fix.type = "Qty"
 
-    held.fix.merge(other.fix)
+    merged = other.merge(held)
 
-    assert held.fix.type == "String"
-    assert held.fix.tag_priority == (210, 9001)
+    assert merged.fix.type == "String"
+    assert merged.fix.tag_priority == (210, 9001)
 
     unspelled = _reading("MaxShow", 210)
     del unspelled.fix["type"]
-    unspelled.fix.merge(other.fix)
 
-    assert unspelled.fix.type == "Qty", "nothing held, so the reading given fills it"
+    assert other.merge(unspelled).fix.type == "Qty", "nothing held, so the reading given fills it"
 
 
 def test_merge_keeps_the_first_provenance_of_a_spelling() -> None:
@@ -305,9 +313,9 @@ def test_merge_keeps_the_first_provenance_of_a_spelling() -> None:
     held.fix.named_aliases = [{"name": "FutSettDate", "source": "4.0", "occurrences": 3}]
     other = _reading("FutSettDate", 5020)
 
-    held.fix.merge(other.fix, source="venue")
+    merged = other.merge(held)
 
-    assert [(one.name, one.source, one.occurrences) for one in held.fix.named_aliases] == [
+    assert [(one.name, one.source, one.occurrences) for one in merged.fix.named_aliases] == [
         ("FutSettDate", "4.0", 3)
     ], "a later sighting of a known spelling says nothing new about where it came from"
 
@@ -325,3 +333,76 @@ def test_field_merge_adds_to_the_spellings_it_does_not_replace_them() -> None:
 
     assert merged.fix.type == "UTCDateOnly", "the later declaration still wins a scalar"
     assert merged.fix.spellings() == ("SettlDate", "TradeDate", "FutSettDate")
+
+
+def _reading_at(name: str, tag: int, source: str) -> Field:
+    """One bridge's reading of one tag, spelled its own way."""
+    built = fix_field(name, tag, "String")
+    built.fix.versions = ("4.4",)
+    built.fix.name = name
+    built.fix.source = source
+    built.fix.sources = (source,)
+    return built
+
+
+def test_match_order_is_tag_first_and_every_distinct_spelling_is_an_alias() -> None:
+    """Tag 11 is `ClOrdID` to one bridge and `SACHA` to another: one field.
+
+    The tag decides and nothing else is consulted, so two names at one tag
+    are two spellings of one identity, each attributed to who wrote it. Case
+    is no exception: `ClOrdId` and `ClOrdID` fold alike and are still two
+    things a bridge wrote, so both are carried rather than one winning
+    silently -- and case folding is for *comparison*, so neither spelling is
+    rewritten on the way in.
+    """
+    clordid = _reading_at("ClOrdID", 11, "brk-a")
+
+    renamed = clordid.merge(_reading_at("SACHA", 11, "brk-b"))
+    assert renamed.fix.canonical == "SACHA", "the later reading states the name"
+    assert [(one.name, one.source) for one in renamed.fix.named_aliases] == [("ClOrdID", "brk-a")]
+
+    recased = clordid.merge(_reading_at("ClOrdId", 11, "brk-c"))
+    assert recased.fix.canonical == "ClOrdId"
+    assert [one.name for one in recased.fix.named_aliases] == ["ClOrdID"], (
+        "both spellings, as written"
+    )
+
+    assert clordid.merge(clordid).into_dict() == clordid.into_dict(), (
+        "and a reading with itself is itself"
+    )
+
+
+def test_a_container_pairs_its_members_by_tag_then_by_casefolded_name() -> None:
+    """The recursion uses the same rule as the records it recurses into.
+
+    Two tagless members that differ only in case are one member; two that
+    differ by a space are two, because `casefold` is exact and the column
+    fold -- which would have paired them -- is for the key a record is stored
+    at, not for deciding what a member is.
+    """
+    held = Field(
+        name="Block",
+        dtype=pyarrow.struct(
+            [
+                pyarrow.field("QuoteID", pyarrow.string(), metadata={"fix:name": "QuoteID"}),
+                pyarrow.field("Px", pyarrow.int32(), metadata={"fix:tag": "44"}),
+            ]
+        ),
+    )
+    other = Field(
+        name="Block",
+        dtype=pyarrow.struct(
+            [
+                pyarrow.field("quoteid", pyarrow.string(), metadata={"fix:name": "quoteid"}),
+                pyarrow.field("Quote ID", pyarrow.string(), metadata={"fix:name": "Quote ID"}),
+                pyarrow.field("Price", pyarrow.int64(), metadata={"fix:tag": "44"}),
+            ]
+        ),
+    )
+
+    merged = held.merge(other)
+
+    assert [member.name for member in merged.fields] == ["quoteid", "Quote ID", "Price"], (
+        "other's order; `quoteid` absorbed `QuoteID`, `Quote ID` stayed its own, 44 paired by tag"
+    )
+    assert merged.fields[2].dtype == pyarrow.int64(), "the tag paired them and the type widened"

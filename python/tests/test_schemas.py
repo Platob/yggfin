@@ -14,14 +14,12 @@ CONTRACTS = sorted(
     path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
 )
 #: What each contract's stored shape is on, so a bump is a deliberate edit
-#: here and not a number that drifted with a declaration. All six sit at 1:
-#: nothing reads a stored version and there is no migration path, so the
-#: numbers were a history of shapes nobody can still read rather than a fact
-#: about the shape being published.
+#: here and not a number that drifted with a declaration.
 VERSIONS = dict.fromkeys(
     ("fixmsg.yaml", "message.yaml", "instrument.yaml", "book.yaml", "order.yaml", "execution.yaml"),
     "1",
 )
+VERSIONS["message.yaml"] = "2"
 
 PUBLISHED = {
     "fixmsg.yaml": FixMsg,
@@ -57,9 +55,14 @@ def test_contract_matches_its_declaration(name: str, shape: type) -> None:
     assert published.partition_keys() == declared.partition_keys()
 
 
-@pytest.mark.parametrize("name", ["message.yaml", "fixmsg.yaml"])
-def test_message_contracts_keep_time_keys(name: str) -> None:
-    message = Field.from_yaml(str(SCHEMAS / "rekep" / name))
+def test_raw_message_contract_keeps_source_keys() -> None:
+    message = Field.from_yaml(str(SCHEMAS / "rekep" / "message.yaml"))
+    assert message.primary_keys() == ["sourceurl", "sourcerownum"]
+    assert message.partition_keys() == {}
+
+
+def test_fixmsg_contract_keeps_time_keys() -> None:
+    message = Field.from_yaml(str(SCHEMAS / "rekep" / "fixmsg.yaml"))
     assert message.primary_keys() == ["unix", "hash"]
     assert message.partition_keys() == {"unixpartition": "identity"}
 

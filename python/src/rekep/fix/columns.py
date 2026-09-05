@@ -285,7 +285,7 @@ def _declaration(member: Field) -> Field:
 
 
 _REGISTRY = FixRegistry.from_builtin()
-_MERGED_FIELDS = _REGISTRY.merged_fields()
+_MERGED_FIELDS = _REGISTRY.field_table()
 
 # Source identifiers retained on parsed market rows, in lifecycle lookup
 # order. Tags come from the registry so this declaration never respells them,
@@ -441,7 +441,7 @@ def namespace_columns(registry: FixRegistry) -> Mapping[str, Field]:
     return MappingProxyType(
         {
             entry.fix.name: _namespace_column(entry)
-            for entry in registry.merged_fields().values()
+            for entry in registry.field_table().values()
             if entry.fix.column
         }
     )
@@ -457,7 +457,7 @@ def named_columns(registry: FixRegistry) -> Mapping[str, Field]:
     ways in one estate, and only where exactly one field claims it: a tail two
     fields would answer to is a guess, and is left out rather than guessed.
     """
-    merged = registry.merged_fields()
+    merged = registry.field_table()
     columns = namespace_columns(registry)
     # Canonical names claim their folds before aliases. Within the alias tier,
     # registry declaration order is priority and the first claimant wins.

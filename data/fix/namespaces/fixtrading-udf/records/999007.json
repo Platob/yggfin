@@ -1,0 +1,1476 @@
+[
+ {
+  "name": "B2BITS",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "B2BITS",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AccruedInterestAmt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5384"
+    }
+   },
+   {
+    "name": "AuctionIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5509"
+    }
+   },
+   {
+    "name": "BaseSwapPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5556"
+    }
+   },
+   {
+    "name": "BuyBackDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5559"
+    }
+   },
+   {
+    "name": "BuyBackPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5558"
+    }
+   },
+   {
+    "name": "ChgFromWAPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5510"
+    }
+   },
+   {
+    "name": "ChgOpenInterest",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5511"
+    }
+   },
+   {
+    "name": "EncodedShortSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5383"
+    }
+   },
+   {
+    "name": "EncodedShortSecurityDescLen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5382"
+    }
+   },
+   {
+    "name": "FaceValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5508"
+    }
+   },
+   {
+    "name": "FirstEligibleTradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5512"
+    }
+   },
+   {
+    "name": "InstrumentPricePrecision",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5514"
+    }
+   },
+   {
+    "name": "LastEligibleTradeDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5513"
+    }
+   },
+   {
+    "name": "LastFragment",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5919"
+    }
+   },
+   {
+    "name": "MarketCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5385"
+    }
+   },
+   {
+    "name": "MaxOrdersVolume",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5389"
+    }
+   },
+   {
+    "name": "MinPriceIncrement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5386"
+    }
+   },
+   {
+    "name": "MktShareLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5387"
+    }
+   },
+   {
+    "name": "MktShareThreshold",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5388"
+    }
+   },
+   {
+    "name": "PriceMvmLimit",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5470"
+    }
+   },
+   {
+    "name": "PriceMvmLimitT1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5472"
+    }
+   },
+   {
+    "name": "ProductStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6959"
+    }
+   },
+   {
+    "name": "ProductType1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6958"
+    }
+   },
+   {
+    "name": "Repo2Px",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5677"
+    }
+   },
+   {
+    "name": "SettlPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6957"
+    }
+   },
+   {
+    "name": "ShortSecurityDesc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5381"
+    }
+   },
+   {
+    "name": "StateSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5217"
+    }
+   },
+   {
+    "name": "TotalBustedQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5684"
+    }
+   }
+  ]
+ },
+ {
+  "name": "BATSTrading",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BATSTrading",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "BypassHiddenPeg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9687"
+    }
+   },
+   {
+    "name": "CancelOrigOnReject",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9619"
+    }
+   },
+   {
+    "name": "CentralCounterParty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7772"
+    }
+   },
+   {
+    "name": "CorrectedPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9620"
+    }
+   },
+   {
+    "name": "DiscretionAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9622"
+    }
+   },
+   {
+    "name": "ECNAccessFee",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9621"
+    }
+   },
+   {
+    "name": "InitialDisplayPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9691"
+    }
+   },
+   {
+    "name": "LockedQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7770"
+    }
+   },
+   {
+    "name": "ModifySequence",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9617"
+    }
+   },
+   {
+    "name": "OrigCompID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9688"
+    }
+   },
+   {
+    "name": "OrigSubID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9689"
+    }
+   },
+   {
+    "name": "RouteOddToSlowExchange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7771"
+    }
+   },
+   {
+    "name": "WorkingPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9690"
+    }
+   }
+  ]
+ },
+ {
+  "name": "MercoInc",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "MercoInc",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "testprice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6099"
+    }
+   }
+  ]
+ },
+ {
+  "name": "RaptorTradingSystems",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "RaptorTradingSystems",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "LastSale",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7082"
+    }
+   },
+   {
+    "name": "OrderContainerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7081"
+    }
+   },
+   {
+    "name": "PrevDeskOrderID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7080"
+    }
+   },
+   {
+    "name": "SrcOfExecution",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7083"
+    }
+   },
+   {
+    "name": "SUFICapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7084"
+    }
+   },
+   {
+    "name": "TraderName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7085"
+    }
+   }
+  ]
+ },
+ {
+  "name": "TeleinvestSA",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "TeleinvestSA",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "EstimatedAmount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6176"
+    }
+   },
+   {
+    "name": "TiCustom2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6177"
+    }
+   },
+   {
+    "name": "TiCustom3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6178"
+    }
+   },
+   {
+    "name": "TiCustom4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6179"
+    }
+   }
+  ]
+ },
+ {
+  "name": "Unknown",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Unknown",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AllocationType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9223"
+    }
+   },
+   {
+    "name": "AnyPriceAtClose",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6510"
+    }
+   },
+   {
+    "name": "CalculatedCcyLastQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5971"
+    }
+   },
+   {
+    "name": "CondPctQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9618"
+    }
+   },
+   {
+    "name": "DisplayRange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6227"
+    }
+   },
+   {
+    "name": "DisplaySize1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5621"
+    }
+   },
+   {
+    "name": "EndTime1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5612"
+    }
+   },
+   {
+    "name": "ExchangeName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5072"
+    }
+   },
+   {
+    "name": "ExecutionReportDetail",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5893"
+    }
+   },
+   {
+    "name": "GroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5982"
+    }
+   },
+   {
+    "name": "IncludeMarketClose",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5616"
+    }
+   },
+   {
+    "name": "IncludeMarketOpen",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5615"
+    }
+   },
+   {
+    "name": "InstrumentID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5983"
+    }
+   },
+   {
+    "name": "LegCalculatedCcyLastQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5970"
+    }
+   },
+   {
+    "name": "LegErrorCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5986"
+    }
+   },
+   {
+    "name": "LegErrorMsg",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5987"
+    }
+   },
+   {
+    "name": "LegOrdStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5985"
+    }
+   },
+   {
+    "name": "MaxPctParticipation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5619"
+    }
+   },
+   {
+    "name": "MIC",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9292"
+    }
+   },
+   {
+    "name": "MinPctParticipation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5617"
+    }
+   },
+   {
+    "name": "NoChildMsgs",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6234"
+    }
+   },
+   {
+    "name": "NoUserData",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5976"
+    }
+   },
+   {
+    "name": "NumberOfSlices",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5614"
+    }
+   },
+   {
+    "name": "NumberOfWaves",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6511"
+    }
+   },
+   {
+    "name": "OfficeCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7322"
+    }
+   },
+   {
+    "name": "OldRiskClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6321"
+    }
+   },
+   {
+    "name": "OrderLinkID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5975"
+    }
+   },
+   {
+    "name": "PositionId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7324"
+    }
+   },
+   {
+    "name": "QtyPerWave",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6512"
+    }
+   },
+   {
+    "name": "QuantitySign",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5988"
+    }
+   },
+   {
+    "name": "QuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5984"
+    }
+   },
+   {
+    "name": "Reserved76",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5894"
+    }
+   },
+   {
+    "name": "RiskClass",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6322"
+    }
+   },
+   {
+    "name": "StartTime1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5611"
+    }
+   },
+   {
+    "name": "STPExecType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5973"
+    }
+   },
+   {
+    "name": "STPFixingName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5974"
+    }
+   },
+   {
+    "name": "STPOrderType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5972"
+    }
+   },
+   {
+    "name": "StrategyFlags",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9259"
+    }
+   },
+   {
+    "name": "SuppTacticsFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5624"
+    }
+   },
+   {
+    "name": "SweepPriceEnum",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5623"
+    }
+   },
+   {
+    "name": "SweepType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5622"
+    }
+   },
+   {
+    "name": "TargetPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5620"
+    }
+   },
+   {
+    "name": "Testingselecttag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5865"
+    }
+   },
+   {
+    "name": "TgtPctParticipation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5618"
+    }
+   },
+   {
+    "name": "TickBandNoDecPlaces",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5071"
+    }
+   },
+   {
+    "name": "TimeInterval",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6304"
+    }
+   },
+   {
+    "name": "TradingSystemId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7323"
+    }
+   },
+   {
+    "name": "Urgency1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5613"
+    }
+   },
+   {
+    "name": "UserDataName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5977"
+    }
+   },
+   {
+    "name": "UserDataValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5978"
+    }
+   },
+   {
+    "name": "UseSettlement",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5070"
+    }
+   },
+   {
+    "name": "WouldDark",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6270"
+    }
+   }
+  ]
+ },
+ {
+  "name": "Weeden",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Weeden",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "WdnEndTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7603"
+    }
+   },
+   {
+    "name": "WdnMaxParticipation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7605"
+    }
+   },
+   {
+    "name": "WdnMOCFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7604"
+    }
+   },
+   {
+    "name": "WdnStartTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7602"
+    }
+   },
+   {
+    "name": "WdnStrategyMode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7601"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7607"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7608"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7609"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7610"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7611"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter6",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7612"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter7",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7613"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter8",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7614"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter9",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7615"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter10",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7616"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter11",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7617"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter12",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7618"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter13",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7619"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter14",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7620"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter15",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7621"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter16",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7622"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter17",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7623"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter18",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7624"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter19",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7625"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter20",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7626"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter21",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7627"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter22",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7628"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter23",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7629"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter24",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7630"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter25",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7631"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter26",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7632"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter27",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7633"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter28",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7634"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter29",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7635"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter30",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7636"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter31",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7637"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter32",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7638"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter33",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7639"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter34",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7640"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter35",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7641"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter36",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7642"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter37",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7643"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter38",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7644"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter39",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7645"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter40",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7646"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter41",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7647"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter42",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7648"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter43",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7649"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter44",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7650"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter45",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7651"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter46",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7652"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter47",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7653"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter48",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7654"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter49",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7655"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter50",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7656"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter51",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7657"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter52",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7658"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter53",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7659"
+    }
+   },
+   {
+    "name": "WdnStrategyParameter54",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7660"
+    }
+   },
+   {
+    "name": "WdnStrategyType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7600"
+    }
+   },
+   {
+    "name": "WdnTargetParticipation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7606"
+    }
+   }
+  ]
+ }
+]

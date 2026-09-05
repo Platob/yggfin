@@ -12,7 +12,7 @@ about which fields the standard has.
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import pyarrow
 import pytest
@@ -63,6 +63,10 @@ def _entry(
     )
     record.fix.versions = versions
     for key, value in fixed.items():
+        # A mapping of values states the wire spelling and its prose and no
+        # declarer, so the helper names the one these synthetic records speak.
+        if key == "enumerated" and isinstance(value, Mapping):
+            value = values_of(value, namespace="standard")
         setattr(record.fix, key, value)
     return refuse_record(record)
 
@@ -301,8 +305,10 @@ def test_a_value_resolves_from_its_prose_its_symbol_or_itself() -> None:
     """One lookup path, not two: `Side=Buy`, `Side=BUY` and `Side=1` all reach `1`."""
     entry = _entry(
         enumerated=[
-            FixFieldValue(value="1", meaning="Buy", aliases=("BUY",)),
-            FixFieldValue(value="2", meaning="Sell", aliases=("SELL_SHORT",)),
+            FixFieldValue(value="1", meaning="Buy", aliases=("BUY",), namespaces=("standard",)),
+            FixFieldValue(
+                value="2", meaning="Sell", aliases=("SELL_SHORT",), namespaces=("standard",)
+            ),
         ],
     )
     assert entry.fix.encode("Buy") == "1"
@@ -348,7 +354,7 @@ def test_a_value_resolves_without_explanatory_prose_or_identifier_expansion() ->
 
 def test_a_spelling_two_values_share_is_emitted_for_neither() -> None:
     """An ambiguous translation that picks one silently is worse than none."""
-    found, collisions = encodings_of(values_of({"1": "Cross", "2": "cross!"}))
+    found, collisions = encodings_of(values_of({"1": "Cross", "2": "cross!"}, namespace="standard"))
     assert "cross" not in found
     assert collisions == {"cross": ("1", "2")}
     assert _entry(enumerated={"1": "Cross", "2": "cross!"}).fix.encode("Cross") == "Cross"
@@ -358,8 +364,13 @@ def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> No
     """Tag 770 lists keys 8 to 34 with a symbol and no prose."""
     found, _ = encodings_of(
         (
-            FixFieldValue(value="1", meaning="Execution Time", aliases=("EXECUTION_TIME",)),
-            FixFieldValue(value="10", aliases=("SUBMITTED",)),
+            FixFieldValue(
+                value="1",
+                meaning="Execution Time",
+                aliases=("EXECUTION_TIME",),
+                namespaces=("standard",),
+            ),
+            FixFieldValue(value="10", aliases=("SUBMITTED",), namespaces=("standard",)),
         )
     )
     assert found["executiontime"] == "1"
@@ -369,7 +380,11 @@ def test_a_key_present_in_one_map_and_absent_from_the_other_is_tolerated() -> No
 
 def test_a_recorded_spelling_reaches_its_value_and_survives_a_rebuild() -> None:
     """An estate's own spelling is an alias of the value, beside the dictionary's."""
-    entry = _entry(enumerated=[FixFieldValue(value="1", meaning="Buy", aliases=("achat",))])
+    entry = _entry(
+        enumerated=[
+            FixFieldValue(value="1", meaning="Buy", aliases=("achat",), namespaces=("standard",))
+        ]
+    )
     assert entry.fix.encode("achat") == "1"
     assert entry.fix.encode("Buy") == "1", "and the dictionary's own are still there"
     restored = Field.from_dict(entry.into_dict())
@@ -450,7 +465,9 @@ def test_a_stored_enum_is_a_name_or_a_code_and_never_a_document(value: object) -
 def test_a_record_round_trips_through_the_document_it_is_stored_as() -> None:
     entry = _entry(
         aliases=[Alias(name="FAKEROLE", source="pco", occurrences=3).into_dict()],
-        enumerated=[FixFieldValue(value="1", meaning="One", aliases=("ONE",))],
+        enumerated=[
+            FixFieldValue(value="1", meaning="One", aliases=("ONE",), namespaces=("standard",))
+        ],
         msgtypes=("Execution Report",),
         components=("FakeParties",),
         note="no longer used",
@@ -459,19 +476,35 @@ def test_a_record_round_trips_through_the_document_it_is_stored_as() -> None:
 
 
 def test_a_stored_value_carries_the_namespaces_that_declare_it() -> None:
-    """Provenance survives the store's string-metadata contract, and empty
-    stays empty: a value nobody attributed must not read back as the
-    standard's, because a union could never tell the two apart afterwards."""
+    """Provenance survives the store's string-metadata contract, and a value
+    that states no declarer is refused rather than read as the standard's.
+
+    Refusing is what makes the sentinel unreachable. While an empty tuple was
+    a legal reading it meant *unstated*, and a union cannot tell an unstated
+    reading from a declared one -- so a standard value left empty came back
+    from its first merge naming the venue alone. There is now no such value to
+    merge: one is either attributed or it is not a value.
+    """
     document = field_record_document(_entry())
     document["fix"]["values"] = [
-        {"value": "1", "meaning": "Buy"},
+        {"value": "1", "meaning": "Buy", "namespaces": ["standard"]},
         {"value": "2", "meaning": "Venue", "namespaces": ["acme"]},
     ]
 
     record = field_from_document(document)
 
-    assert {one.value: one.namespaces for one in record.fix.enumerated} == {"1": (), "2": ("acme",)}
+    assert {one.value: one.namespaces for one in record.fix.enumerated} == {
+        "1": ("standard",),
+        "2": ("acme",),
+    }
     assert field_record_document(record) == document, "and the document is its own fixed point"
+
+    unattributed = field_record_document(_entry())
+    unattributed["fix"]["values"] = [{"value": "1", "meaning": "Buy"}]
+    with pytest.raises(ValueError, match="names no vocabulary"):
+        # Decoded where the values are read, which is where a document that
+        # states none of them can first be told from one that states some.
+        assert field_from_document(unattributed).fix.enumerated
 
 
 def test_a_stored_alias_may_be_a_bare_name_or_carry_its_provenance() -> None:
@@ -511,7 +544,7 @@ def test_a_merged_declaration_is_the_record_and_the_versions_that_declare_it() -
     assert merged.dtype == pyarrow.int32()
     assert json.loads(merged.fix["versions"]) == ["4.4", "4.2"], "newest first, and only those"
     assert merged.fix["version"] == "4.4", "the version the reading was taken from"
-    assert merged.fix.enumerated == values_of({"1": "One", "2": "Two"})
+    assert merged.fix.enumerated == values_of({"1": "One", "2": "Two"}, namespace="standard")
     assert json.loads(merged.fix["aliases"])[0]["name"] == "FakeRoleCode"
 
 
@@ -631,7 +664,7 @@ def test_a_records_values_are_the_union_with_the_newest_winning_per_key() -> Non
     newer = fix_field("FakeRole", 90001, "int", version="4.4")
     newer.fix.enumerated = (
         FixFieldValue("1", "Corrected", (), ("fixtrading-udf",)),
-        FixFieldValue("2", "", (), ()),
+        FixFieldValue("2", "", (), ("acme",)),
     )
 
     entry = collapsed_record([older, newer], ["4.2", "4.4"])
@@ -652,7 +685,7 @@ def test_a_records_value_parts_keep_the_source_that_supplied_each_half() -> None
         90001,
         "int",
         version="4.2",
-        values=(FixFieldValue("1", "Older meaning", ("OlderName",)),),
+        values=(FixFieldValue("1", "Older meaning", ("OlderName",), namespaces=("standard",)),),
     )
     older.fix.source = "onixs"
     older.fix.sources = ("onixs",)
@@ -666,8 +699,8 @@ def test_a_records_value_parts_keep_the_source_that_supplied_each_half() -> None
         "int",
         version="4.4",
         values=(
-            FixFieldValue("1", aliases=("NewerName",)),
-            FixFieldValue("2", "Newer meaning", ("SecondName",)),
+            FixFieldValue("1", aliases=("NewerName",), namespaces=("standard",)),
+            FixFieldValue("2", "Newer meaning", ("SecondName",), namespaces=("standard",)),
         ),
     )
     newer.fix.source = "nanoconda"

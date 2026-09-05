@@ -1,19 +1,20 @@
 # Configuring a parse
 
-Everything a capture differs by is a document, not a code change. The message
-stage owns the log header, timezone, protocol-neutral key/value split, source
-key aliases and absent-value filter. The FIX stage owns which payloads are FIX,
-which key spellings its rules admit, and what their fields mean.
+Everything a capture differs by is a document, not a code change.
+`parse_messages` configures yggdryl's filesystem, path selection, physical-line
+batches and header captures. `parse_fix` owns timezone conversion, protocol
+classification, tokenization, source-key aliases, absent values and registry
+resolution.
 
 ```mermaid
 flowchart LR
-    H[header] --> T[TextFile / TextFiles]
-    D[fix_dictionary<br/><i>MsgType event_types</i>] --> T
+    H[header] --> T[yggdryl<br/>IOBase / TextOptions]
     T --> M[(logs.messages<br/>Message)]
-    N[null_values] --> T
-    K[plugin_keys] --> T
+    D[fix_dictionary<br/><i>MsgType event_types</i>] --> C
+    N[null_values] --> C
+    K[plugin_keys] --> C
+    Z[timezone] --> C
     P[protocols<br/><i>Rules</i>] --> C
-    P --> T
     F[fields<br/><i>FieldRules</i>] --> C
     M --> C
     C --> R[(fix.*<br/>FixMsg)]
@@ -21,27 +22,32 @@ flowchart LR
 
 ## The header a line opens with
 
-`header_pattern` takes the source of a pattern as well as a compiled one, so a
-capture whose header this package has never seen is a `header:` in the task
-document. It must name four groups; an optional `level` group persists logger
-severity beside the payload.
+`TextOptions.rowheader` takes a byte-regex spelling. Its complete match is
+removed from `body`, and its named captures become nullable columns. A capture
+whose header this package has never seen supplies that prefix as `header:` in
+the task document. Use any of `timestamp`, `threadname`, `plugin`, and `level`;
+`url`, `rownum`, and `body` belong to yggdryl and cannot be capture names.
 
 ```python
-from rekep import TextFile
+from yggdryl import IOBase, TextOptions
 
 VENDOR = (
     r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
-    r"(?P<plugin>[^|]*)\|(?P<level>[^|]*)\|(?P<body>.*)$"
+    r"(?P<plugin>[^|]*)\|(?P<level>[^|]*)\|"
 )
 
-with TextFile.from_path("vendor.log", header_pattern=VENDOR) as log:
-    rows = log.into_arrow_table()
+options = TextOptions()
+options.rowheader = VENDOR
+options.with_rownum = 1
+options.autotype = False
+rows = IOBase("vendor.log").into_text(options).read_arrow_reader()
 ```
 
-The shipped `HEADER_PATTERN` reads the bracketed layout most trading logs
-write, with the timestamp in any of the three shapes `rekep.times.SHAPES`
-declares -- ISO, FIX's own `20260824-10:00:01.123`, and a compact
-`20260824100001123`.
+The task's default prefix reads the bracketed layout most trading logs write,
+with the timestamp in any of the three shapes `rekep.times.SHAPES` declares --
+ISO, FIX's own `20260824-10:00:01.123`, and a compact `20260824100001123`.
+`autotype` stays false: `Message.timestamp` preserves the source spelling and
+`FixCodec.timezone` turns it into the parsed `recunix` instant.
 
 ## Which lines carry a message
 
@@ -87,8 +93,8 @@ refused when the rule set is read.
 ## Which event a payload represents
 
 The FIX registry's `MsgType <35>` record owns the configurable
-`event_types` mapping. `parse_messages` loads that projection and applies an
-exact Arrow lookup; it does not maintain a second set of payload regexes.
+`event_types` mapping. `parse_fix` applies it after parsing `body`; it does not
+maintain a second set of payload regexes.
 
 ```json
 {
@@ -122,9 +128,9 @@ The market layer owns which message shapes it implements, under the standard's
 own name for each, and asks the dictionary what this feed spells them as:
 `newordersingle` encodes to `D` here and to whatever a venue writes instead.
 The registry carries no second handler vocabulary and nothing converts a
-MsgType back into a name. `parse_messages` controls what reaches
-`logs.messages`; the shared `parse_fix.yml` `exclude_msgtypes` parameter
-controls what enters FIX tables.
+MsgType back into a name. `parse_messages` retains every selected physical
+text row; the shared `parse_fix.yml` `exclude_msgtypes` parameter controls what
+enters FIX tables.
 
 Lifecycle fields carry one `states` conversion beside their value dictionary.
 Every consumer, including Order fallbacks, reads that map. Python declarations
@@ -211,32 +217,25 @@ folded comparison as the FIX registry.
 
 | Parameter | Read by | Stage |
 | --- | --- | --- |
-| `header` | `TextFile.header_pattern` | `parse_messages` |
-| `timezone` | `TextFile.timezone` | `parse_messages` |
-| `spill` | `TextFile`/`TextFiles` compressed-input policy | `parse_messages` |
-| `include_regexes`, `exclude_regexes` | `TextFile` raw payload filter | `parse_messages` |
-| `include_msgtypes`, `exclude_msgtypes` | exact pre-tokenization MsgType filter | `parse_messages` |
-| `technical_plugins` | header plugin filter before payload parsing | `parse_messages` |
-| `plugin_keys` | `TextFile` entry-key normalization | `parse_messages` |
-| `null_values` | `TextFile` entry filter | `parse_messages` |
-| `start`, `end`, `duration_ns` | `TextFile` recording-time stream | `parse_messages` |
-| `batch_row_size`, `batch_byte_size`, `max_row_byte_size` | [`TextFile` parser bounds](../pipeline/tasks/parse-messages.md) | `parse_messages` |
-| `protocols` | `FixCodec.rules`, then `Message.protocol` | both parse stages |
+| `source`, `pattern`, `recursive` | yggdryl `IOBase` selection | `parse_messages` |
+| `header` | yggdryl `TextOptions.rowheader` | `parse_messages` |
+| `batch_row_size` | yggdryl `TextOptions.batch_row_size` | `parse_messages` |
+| `start`, `end` | calendar source roots | `parse_messages` |
+| `timezone` | raw `timestamp` to `FixMsg.recunix` | all `parse_fix_*` tasks |
+| `exclude_msgtypes` | parsed `FixMsg.msgtype` filter | all `parse_fix_*` tasks |
+| `plugin_keys` | `FixCodec` entry-key normalization | all `parse_fix_*` tasks |
+| `null_values` | `FixCodec` entry filter | all `parse_fix_*` tasks |
+| `protocols` | `FixCodec.rules`, then `FixMsg.protocol` | all `parse_fix_*` tasks |
 | `fields` | `FixCodec.fields` | all `parse_fix_*` tasks |
-| `fix_dictionary` | MsgType metadata, then full `FixRegistry` | both parse stages |
+| `fix_dictionary` | MsgType metadata and full `FixRegistry` | all `parse_fix_*` tasks |
 
-`parse_messages` retains both the unsplit payload and its ordered generic
-arguments. A change to `fields`, protocol classification or the dictionary
-reruns the three `parse_fix_*` tasks without reopening the source logs or
-tokenizing the payload again. Changing MsgType event metadata requires
-rebuilding `logs.messages`; changing field boundaries only reruns the three
-category executions.
-
-A custom `protocols` document and `fix_dictionary` must be identical in
-`parse_messages.yml` and `parse_fix.yml`.
-`parse_messages` stores the selected grammar and registry version before the
-raw payload is projected away; each FIX run uses the same codec to interpret
-those stored arguments.
+`parse_messages` retains only the raw source coordinates, header captures and
+exact binary body. Changing `fields`, protocol classification, plugin aliases,
+null spellings, timezone or the dictionary reruns the three `parse_fix_*`
+tasks without reopening the source logs. Each category run parses the raw body
+under the same `parse_fix.yml` configuration, then applies its Arrow category
+mask. Repeated parsing is deliberate: `logs.messages` never depends on a FIX
+dictionary or protocol rule.
 
 The shipped UL rule prefers the bridge's detailed instrument classification:
 

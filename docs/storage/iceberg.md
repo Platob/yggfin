@@ -1,8 +1,9 @@
 # Iceberg
 
-`IcebergDataset` exposes a table as an Arrow stream. Pyiceberg owns planning,
-schema ids, snapshots, and commits; rekep supplies recursive casting,
-filesystem normalization, commit grouping, and maintenance policy.
+`IcebergDataset` exposes a table as an Arrow stream. PyIceberg owns planning,
+schema ids, snapshots, and commits; rekep supplies recursive casting, commit
+grouping, and maintenance policy. Yggdryl owns general resources outside this
+table boundary.
 
 ```python
 from rekep import FixMsg
@@ -13,7 +14,7 @@ catalog = IcebergCatalog(
     properties={
         "type": "sql",
         "uri": "sqlite:///catalog.db",
-        "warehouse": "file://warehouse",
+        "warehouse": "warehouse",
     },
 )
 logs = catalog.dataset(
@@ -175,7 +176,7 @@ from rekep.iceberg import IcebergCatalog
 
 catalog = IcebergCatalog(
     name="local",
-    properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "file://warehouse"},
+    properties={"type": "sql", "uri": "sqlite:///catalog.db", "warehouse": "warehouse"},
 )
 logs = catalog.dataset("fix.market", field=FixMsg.into_field())
 print(logs.read_arrow_reader().schema.field("msgtype").type)
@@ -244,94 +245,27 @@ not move existing files.
 
 ## Filesystems
 
-Local and object-store locations resolve through `pyarrow.fs`. Credentials,
-endpoint, bucket, and path are parsed once by `Url`; explicit catalog
-properties win. Hadoop-style `s3a://` and legacy `s3n://` locations use the
-same Arrow S3 filesystem as `s3://`.
+General resources are yggdryl `IOBase` handles. `rekep.resources.resource`
+binds a local path, a URI resolved by PyArrow, or a raw path on an injected
+`pyarrow.fs.FileSystem`. `IOBase` then owns traversal, codecs, decompression,
+byte streams, text media, and Arrow record batches.
 
-[`ArrowPath` and `ArrowFileIO`](arrow-files.md) own path operations, missing
-path behavior, staging, and the immutable-content cache.
-
-Maintenance lists through the table's own FileIO rather than resolving the
-location again, because a location this package canonicalized has had its
-endpoint and credentials taken out of it -- resolved afresh, a sweep of a MinIO
-warehouse would look for the bucket on AWS. Recorded locations are then reduced
-against the table's data and metadata directories; one that no spelling reduces
-is matched by base name instead, which is weaker in the safe direction -- every
-name Iceberg mints carries a UUID, so a false match leaves a file behind rather
-than deleting a live one.
-
-An object key keeps the escapes the location spells. Iceberg writes a partition
-value as `v=a%2Fb` so the value's own slash does not become a directory, and
-that escape is the key: decoded, it would name an object no manifest recorded.
+Iceberg keeps a narrower boundary. PyIceberg's `FileIO` owns table locations
+and supplies its native input and output files over PyArrow streams. Yggfin's
+`IcebergFileIO` adds transaction output tracking; it is not a second general
+filesystem, URL, spill, or content-cache layer. A configured third-party
+`py-io-impl` remains the table boundary and is wrapped only for the same output
+ownership.
 
 ### What an `s3://` netloc names
 
-`s3://bucket/key` is a bucket. `s3://store/bucket/key` is an S3-compatible
-store addressed path-style. A netloc is the store when it carries a port, when
-it is an IP address, when it is one of Amazon's own hostnames, or when its last
-label is a public suffix -- a registered name somebody pointed at a machine.
-Nothing else is: one label, a numeric last label, and the private-use suffixes
-(`.internal`, `.local`, `.lan`, `.corp`, ...) stay bucket names, which a bucket
-with dots in it needs.
+An Iceberg warehouse URI names only its bucket and key:
+`s3://example-bucket/rekep/warehouse`.
 
-```python
-from rekep.urls import Url
+#### Settings a location carries
 
-for text in (
-    "s3://bucket/logs/a.txt",                    # a bucket
-    "s3://minio:9000/bucket/logs/a.txt",         # a store, by its port
-    "s3://s3.eu.cloud.ovh.net/bucket/logs/a.txt",  # a store, by its name
-    "s3://bucket.s3.eu-west-1.amazonaws.com/logs/a.txt",  # AWS, virtual-hosted
-    "s3://my.logs.2026/logs/a.txt",              # a bucket, dots and all
-):
-    url = Url.from_string(text)
-    print(f"{url.bucket:<14} {url.key:<12} {url.endpoint}")
-```
-
-```text
-bucket         logs/a.txt   None
-bucket         logs/a.txt   minio:9000
-bucket         logs/a.txt   s3.eu.cloud.ovh.net
-bucket         logs/a.txt   s3.eu-west-1.amazonaws.com
-my.logs.2026   logs/a.txt   None
-```
-
-Two spellings the shape cannot decide say so with `?endpoint_override=`, which
-is a decision and beats a shape:
-
-- a bucket really named for a domain -- the S3 static-website pattern,
-  `s3://www.example.com/index.html?endpoint_override=s3.amazonaws.com`;
-- a bucket addressed virtual-hosted style on a store that is not Amazon's,
-  `s3://bucket/key?endpoint_override=s3.example.net&force_virtual_addressing=true`,
-  because only AWS publishes which of its leading labels is a bucket -- and an
-  overridden endpoint is addressed path-style unless the location says
-  otherwise.
-
-Everything derived from the location follows that reading: the Arrow
-`S3FileSystem`, the `s3.endpoint`, `s3.access-key-id`, `s3.secret-access-key`
-and `s3.region` a catalog is configured with, the FileIO cache identity, and
-the spill identity.
-
-A location this package writes into table metadata is canonical -- scheme,
-bucket and key, with the endpoint and credentials moved onto the catalog. One
-that is *not* -- written by another tool, or before those settings moved --
-still reaches the store it names: the FileIO builds a filesystem from the
-location, and the catalog fills what the location leaves unsaid.
-
-### Settings a location carries
-
-| query key | Arrow argument | catalog property |
-| --- | --- | --- |
-| `region` | `region` | `s3.region` |
-| `scheme` | `scheme` | part of `s3.endpoint` |
-| `endpoint_override` | `endpoint_override` | `s3.endpoint` |
-| `force_virtual_addressing` | `force_virtual_addressing` | `s3.force-virtual-addressing` |
-| `anonymous` | `anonymous` | `s3.anonymous` |
-| `allow_bucket_creation` | `allow_bucket_creation` | -- |
-
-Beyond what a location spells, these PyIceberg catalog properties reach Arrow
-through this FileIO. A production Glue catalog:
+The location carries no endpoint or credentials. Keep it portable and
+configure the store with PyIceberg's standard `s3.*` catalog properties:
 
 ```yaml
 catalog:
@@ -341,91 +275,36 @@ catalog:
     warehouse: s3://example-bucket/rekep/warehouse
     glue.region: eu-west-1
     s3.region: eu-west-1
-    s3.connect-timeout: "10.0"      # seconds
-    s3.request-timeout: "60.0"      # seconds
-    s3.role-arn: arn:aws:iam::123456789012:role/rekep-writer
-    s3.role-session-name: rekep
-    # A custom KMS key belongs in the bucket default. Per-request
-    # `s3.sse.type: kms` and `s3.sse.key` are refused by ArrowFileIO.
+    s3.endpoint: https://s3.example.net
+    s3.access-key-id: "<from-secret-store>"
+    s3.secret-access-key: "<from-secret-store>"
+    s3.session-token: "<from-secret-store>"
 ```
 
-Verify what any of them become:
+`glue.region` configures the catalog service; `s3.region` configures the
+warehouse. `s3.endpoint` selects an S3-compatible store, and the standard
+credential properties or provider chain authenticate it. Do not put an
+endpoint or credentials in the warehouse URI. These table properties do not
+configure an independent capture source; inject that source's configured Arrow
+filesystem when it needs different settings.
 
-```python
-from rekep.arrow_file_io import ArrowFileIO
+PyIceberg's native PyArrow FileIO does not consume `s3.profile-name` or
+`s3.signer.*`; use the provider chain, the credential properties above, or a
+configured `s3.role-arn`.
 
-filesystem = ArrowFileIO({"s3.region": "eu-west-1", "s3.connect-timeout": "12.5"})
-print(filesystem.fs_by_scheme("s3", "bucket").__reduce__()[1][0]["connect_timeout"])
-```
+### Maintenance filesystem boundary
 
-```text
-12.5
-```
+Orphan discovery asks the loaded table's `FileIO` for the exact configured
+filesystem and path. It never rebuilds a store from the location string. Live
+locations and listed paths are compared only after that resolution, so a MinIO,
+Ceph, or other compatible warehouse is not accidentally scanned on AWS.
 
-`s3.connect-timeout`, `s3.request-timeout`, `s3.role-arn`,
-`s3.role-session-name`, `s3.proxy-uri`, `s3.retry-strategy-impl` and
-`s3.resolve-region` all arrive. `s3.profile-name` and the `s3.signer.*` names
-do **not**: PyIceberg's Arrow FileIO never reads them, so a catalog that names
-a profile is signed by whatever the credential chain found instead. Name the
-credentials, a role, or the environment.
-
-Two catalog properties are this package's own: `rekep.io.cache-bytes` sizes the
-immutable-content cache below, and `rekep.io.delegate-file-io` names a FileIO
-to wrap when `py-io-impl` is not this one, so a failed commit still owns every
-output it created. Iceberg's `s3.sse.*` are refused rather than ignored -- see
-[Encryption at rest](#encryption-at-rest).
-
-```python
-from pprint import pprint
-
-from rekep.urls import Url
-
-warehouse = "s3://key:secret@minio.example.net/rekep/warehouse?force_virtual_addressing=true"
-pprint(dict(Url.from_string(warehouse).into_properties()), sort_dicts=False, width=74)
-```
-
-```text
-{'s3.endpoint': 'https://minio.example.net',
- 's3.access-key-id': 'key',
- 's3.secret-access-key': 'secret',
- 's3.region': 'us-east-1',
- 's3.force-virtual-addressing': 'true'}
-```
-
-A secret is read from the userinfo and percent-decoded, so one containing
-`:`, `/` or `@` has to arrive percent-encoded -- `wJalrXUtnFEMI%2FK7MDENG` --
-and an unencoded `/` is refused with the location's secret taken out of the
-message.
-
-The region is resolved in order: `?region=`, then a region label inside
-`?endpoint_override=`'s hostname, then one in the netloc. So
-`s3://bucket.s3.eu-west-1.amazonaws.com/key` yields `s3.region: eu-west-1` and
-no `s3.endpoint` -- overriding AWS with AWS only forces path-style addressing,
-while the region is the half of that hostname that has to travel.
-
-A flag is on only where it is spelled `true`, so a typo reads as off, on the
-catalog path as well as Arrow's. The two that decide whether a store answers at
-all are the addressing style -- Arrow addresses an overridden endpoint
-path-style, which is what MinIO and Ceph want and what a store serving only
-`bucket.endpoint` refuses -- and `anonymous`, so a public bucket is read as
-nobody instead of as whatever the credential chain found.
-
-`endpoint_override` may carry its own transport (`http://minio:9000`) or not
-(`minio:9000`); either way it reaches Arrow as a connect string and the catalog
-as one URL. Without a transport, a hostname with no dot -- a container or a
-laptop -- is read as plaintext and anything else as TLS; `scheme` says it
-outright.
-
-A location naming an endpoint and no region is signed for `us-east-1`, which
-is what Arrow and every S3-compatible store default to. Name `region` wherever
-the store signs with a real one -- Wasabi and Backblaze do. The default is not
-a convenience: PyIceberg with no region asks *AWS* which region hosts a bucket
-of that name, which blocks on the first touch of each bucket, discloses the
-name, and answers for a stranger's bucket when a real AWS bucket happens to
-share it -- signing every request to your store for that bucket's region.
-
-PyIceberg is configured with the package-level
-`rekep.arrow_file_io.ArrowFileIO` implementation.
+Yggdryl `0.1.1` does not yet expose the complete bound Arrow filesystem
+contract or modification time. Until that parity lands, maintenance performs
+its narrow directory listing through the table's PyArrow filesystem and uses
+Arrow `FileInfo.mtime` for `orphan_age`. A missing mtime cannot prove an orphan
+old enough, so the file is retained. Deletion is still bound to the same
+filesystem and raw path through `IOBase.from_fs`.
 
 ### Encryption at rest
 
@@ -440,28 +319,11 @@ aws s3api put-bucket-encryption --bucket rekep-warehouse \
     {"SSEAlgorithm":"aws:kms","KMSMasterKeyID":"arn:aws:kms:eu-west-1:111122223333:key/…"}}]}'
 ```
 
-`KMSMasterKeyID` is the custom-key setting. Do not translate it into
-`s3.sse.type: kms` plus `s3.sse.key` in `catalog.properties`: those Iceberg
-names ask for per-request headers that this FileIO cannot send.
-
-Per-*request* encryption is not available. `pyarrow.fs.S3FileSystem` has no
-parameter for it and drops an `x-amz-server-side-encryption` handed to
-`default_metadata`; PyIceberg reads none of Iceberg's `s3.sse.*` names in
-either of its FileIOs. So SSE-C -- a customer-provided key, which must travel
-on every GET as well as every PUT -- cannot be used at all, and a bucket policy
-that *denies* a PUT without the header refuses every write.
-
-A catalog that names `s3.sse.type`, `s3.sse.key` or `s3.sse.md5` is refused
-rather than ignored: the setting says those objects must be encrypted, and a
-layer that quietly drops it writes them in the clear and reports success.
-`s3.sse.type: none` is the one value honoured, because it asks for nothing.
-
-Where per-request encryption is a requirement, `rekep.io.delegate-file-io`
-names a FileIO to use in place of this one; it is wrapped for output ownership
-and everything else on this page still applies.
-
-Cache, spill, direct file operations, and environment precedence are documented
-once in [Arrow paths and FileIO](arrow-files.md).
+`KMSMasterKeyID` is the custom-key setting. Yggfin does not translate Iceberg
+`s3.sse.*` properties into per-request PyArrow headers. Where bucket-default
+encryption is insufficient, configure a PyIceberg `py-io-impl` that implements
+the required request headers; yggfin wraps it only to retain transaction output
+ownership.
 
 ## Maintenance
 

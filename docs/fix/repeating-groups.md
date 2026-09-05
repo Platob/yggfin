@@ -104,9 +104,11 @@ The reviewable record uses the common `Field` list representation:
 }
 ```
 
-`data/fix/repgroup/` is derived from the component trees on every registry
-write and publication. It gives each group one address without creating a
-second declaration to maintain. Archive validation rejects a group index that
-does not exactly match its component owners.
+A group is derived from the component trees on every registry write and
+publication, and stored in the one keyspace beside the fields and components
+-- a `Field` whose Arrow type is a list. It gives each group one address
+without creating a second declaration to maintain, and the counter that opens
+it links the item block in its own `fix:item`. Archive validation rejects
+groups that do not exactly match their component owners.
 
 [Browse repeating groups](registry.md?ck=repeating#components).

@@ -15,7 +15,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep import txhash
-from rekep.enums import MIC, Currency, Direction, EventType, Protocol, Side
+from rekep.enums import MIC, Currency, Direction, EventType, Plugin, Protocol, Side
 from rekep.fields import Field, column_name, column_names, scalar
 from rekep.fields.arrays import (
     build_list,
@@ -50,12 +50,19 @@ from rekep.fix.components import (
     # that column's own default under `get_type_hints`.
     SecurityAltID as SecurityAltIDEntry,
 )
-from rekep.fix.fields import cast_arrow_field, cast_arrow_fix, scalar_fix_value
+from rekep.fix.fields import cast_arrow_field, cast_arrow_fix
 from rekep.fix.message import (
     group_pairs,
     indexed_group_pairs,
     normalized_pairs,
+    parse_pairs,
     render_fix_value,
+)
+from rekep.fix.message_parser import (
+    SESSION_FIELDS,
+    MessageParser,
+    _event_types,
+    _scalar_session_values,
 )
 from rekep.fix.oms import OMS_ORDERS, OmsOrder, OmsOrders
 from rekep.fix.registry import FixRegistry
@@ -64,8 +71,7 @@ from rekep.market.event import ALTIDS_TYPE, Event, unix_partition_arrow
 from rekep.market.fields import MarketConvertible
 from rekep.market.identity import HASH, NIL, hash_bytes_arrow, hash_int_of
 from rekep.market.instrument import Instrument
-from rekep.text.entries import xml_payload_arrow
-from rekep.text.message import SESSION_FIELDS, Message, _body_text_arrow, _event_types
+from rekep.text.message import Message
 
 _CONTRACT_METADATA = MappingProxyType({"version": "1"})
 _PROTOCOL_CODE = Protocol.into_storage_type()
@@ -118,19 +124,8 @@ _TRANSCRIPTION_EXCEPTIONS = (
 _ERROR_VALUE_LENGTH = 160
 _ERROR_LENGTH = 2_048
 
-# A projected raw row no longer has its exact payload text. The raw stage's
-# `vhash` normally survives that projection; these are the payload readings
-# that still distinguish hand-built rows whose identity was never assigned.
-_PROJECTED_RAW_IDENTITY = (
-    "protocol",
-    "direction",
-    *(name for name, _ in SESSION_FIELDS),
-    "entries",
-)
-
-# Private intermediates distinguish package-owned clock statements from the
-# raw Message envelope they are parsed into. Both use the public clock names,
-# but only the former is event data carried by FIX.
+# Private intermediates distinguish package-owned FIX clock statements from
+# the physical text header captured by Message.
 _STATED_CLOCKS = {
     "unix": "__rekep_unix",
     "creaunix": "__rekep_creaunix",
@@ -173,21 +168,6 @@ def _promoted_value(message: FixMsg, name: str) -> Any:
     return None if value in ("", 0) else value
 
 
-def _structured_protocol(source: Message, registry: FixRegistry | None) -> Protocol:
-    """Protocol claimed by a direct text or pair constructor's version evidence."""
-    declared = Protocol.from_str(source.protocol)
-    if declared.family is not Protocol.OTHER:
-        return declared
-    evidence: list[tuple[str, Any]] = []
-    if source.beginstring:
-        evidence.append(("8", source.beginstring))
-    if source.applverid:
-        evidence.append(("1128", source.applverid))
-    evidence.extend(_stored_pairs(source.entries))
-    version, _ = infer_version_from_pairs(evidence, registry or FixMsg.into_registry())
-    return Protocol.with_version(Protocol.FIX, version) if version is not None else declared
-
-
 @functools.lru_cache(maxsize=8)
 def _codec_of(registry: FixRegistry, _revision: int) -> FixCodec:
     """One shared codec per dictionary generation, so batches share its memos.
@@ -200,7 +180,7 @@ def _codec_of(registry: FixRegistry, _revision: int) -> FixCodec:
 
 
 @scalar(slots=True)
-class FixMsg(Message):
+class FixMsg(Event):
     """One raw message transcribed under the FIX registry."""
 
     # The dictionary this row resolves through is reader state, not row
@@ -218,10 +198,9 @@ class FixMsg(Message):
     # a later conversion does not replace epoch zero with SendingTime.
     __creaunix_declared: bool = False
 
-    # `Message` inherits generic event columns for transport between stages,
-    # but its unix/creaunix are raw envelope values. A parsed FixMsg owns those
-    # clocks; a staged Message does not, while recunix remains local capture.
-    __raw_clocks: bool = False
+    # Direct text construction keeps the parser's source-valued entries for
+    # scalar inspection. They are reader state, not persisted row content.
+    __source_entries: list[Entry] | None = None
 
     @classmethod
     @functools.cache
@@ -298,7 +277,7 @@ class FixMsg(Message):
     def into_redirects(cls) -> Mapping[Any, str]:
         """Generic conversions plus direct text parsing and raw-row transcription."""
         return MappingProxyType(
-            {**Message.into_redirects(), str: "text", bytes: "text", Message: "message"}
+            {**Event.into_redirects(), str: "text", bytes: "text", Message: "message"}
         )
 
     @classmethod
@@ -312,6 +291,158 @@ class FixMsg(Message):
 
     code: str = ""
     """Best lifecycle identifier present on this line."""
+
+    sourceurl: Annotated[str, Field.column("SourceURL")] = ""
+    """Absolute URI of the raw source text object."""
+
+    sourcerownum: Annotated[int, Field.column("SourceRownum")] = 0
+    """1-based physical row number in the raw source object."""
+
+    threadname: Annotated[str, Field.column("ThreadName")] = ""
+    """Thread spelling captured from the raw line header."""
+
+    level: Annotated[str | None, Field.column("Level")] = None
+    """Severity spelling captured from the raw line header."""
+
+    protocol: Protocol = Protocol.UNKNOWN
+    """Protocol grammar and resolved version; OTHER carries neither."""
+
+    beginstring: Annotated[str | None, DECLARED["BeginString"]] = None
+    """`BeginString <8>`: which FIX version the message says it is."""
+
+    bodylength: Annotated[int | None, DECLARED["BodyLength"]] = None
+    """`BodyLength <9>`, as the message counted it."""
+
+    msgtype: Annotated[str | None, DECLARED["MsgType"]] = None
+    """`MsgType <35>`: what the message is, on the wire."""
+
+    sendercompid: Annotated[str | None, DECLARED["SenderCompID"]] = None
+    """`SenderCompID <49>`: who sent it."""
+
+    sendersubid: Annotated[str | None, DECLARED["SenderSubID"]] = None
+    """`SenderSubID <50>`: which desk of theirs."""
+
+    senderlocationid: Annotated[str | None, DECLARED["SenderLocationID"]] = None
+    """`SenderLocationID <142>`."""
+
+    targetcompid: Annotated[str | None, DECLARED["TargetCompID"]] = None
+    """`TargetCompID <56>`: who it was sent to."""
+
+    targetsubid: Annotated[str | None, DECLARED["TargetSubID"]] = None
+    """`TargetSubID <57>`."""
+
+    targetlocationid: Annotated[str | None, DECLARED["TargetLocationID"]] = None
+    """`TargetLocationID <143>`."""
+
+    onbehalfofcompid: Annotated[str | None, DECLARED["OnBehalfOfCompID"]] = None
+    """`OnBehalfOfCompID <115>`: who the sender was speaking for."""
+
+    onbehalfofsubid: Annotated[str | None, DECLARED["OnBehalfOfSubID"]] = None
+    """`OnBehalfOfSubID <116>`."""
+
+    onbehalfoflocationid: Annotated[str | None, DECLARED["OnBehalfOfLocationID"]] = None
+    """`OnBehalfOfLocationID <144>`."""
+
+    delivertocompid: Annotated[str | None, DECLARED["DeliverToCompID"]] = None
+    """`DeliverToCompID <128>`: who it is ultimately for."""
+
+    delivertosubid: Annotated[str | None, DECLARED["DeliverToSubID"]] = None
+    """`DeliverToSubID <129>`."""
+
+    delivertolocationid: Annotated[str | None, DECLARED["DeliverToLocationID"]] = None
+    """`DeliverToLocationID <145>`."""
+
+    msgseqnum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
+    """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
+
+    lastmsgseqnumprocessed: Annotated[int | None, DECLARED["LastMsgSeqNumProcessed"]] = None
+    """`LastMsgSeqNumProcessed <369>`: how far the sender had read."""
+
+    possdupflag: Annotated[bool | None, DECLARED["PossDupFlag"]] = None
+    """`PossDupFlag <43>`: a retransmission of a message already sent."""
+
+    possresend: Annotated[bool | None, DECLARED["PossResend"]] = None
+    """`PossResend <97>`: the same business content under a new sequence."""
+
+    sendingtime: Annotated[datetime.datetime | None, DECLARED["SendingTime"]] = None
+    """`SendingTime <52>`: when it was transmitted."""
+
+    origsendingtime: Annotated[datetime.datetime | None, DECLARED["OrigSendingTime"]] = None
+    """`OrigSendingTime <122>`: the original transmission, on a resend."""
+
+    onbehalfofsendingtime: Annotated[
+        datetime.datetime | None, DECLARED["OnBehalfOfSendingTime"]
+    ] = None
+    """`OnBehalfOfSendingTime <370>`."""
+
+    applverid: Annotated[str | None, DECLARED["ApplVerID"]] = None
+    """`ApplVerID <1128>`."""
+
+    cstmapplverid: Annotated[str | None, DECLARED["CstmApplVerID"]] = None
+    """`CstmApplVerID <1129>`."""
+
+    applextid: Annotated[int | None, DECLARED["ApplExtID"]] = None
+    """`ApplExtID <1156>`."""
+
+    messageencoding: Annotated[str | None, DECLARED["MessageEncoding"]] = None
+    """`MessageEncoding <347>`."""
+
+    securedatalen: Annotated[int | None, DECLARED["SecureDataLen"]] = None
+    """`SecureDataLen <90>`."""
+
+    securedata: Annotated[bytes | None, DECLARED["SecureData"]] = None
+    """`SecureData <91>`, as the bytes it is."""
+
+    signaturelength: Annotated[int | None, DECLARED["SignatureLength"]] = None
+    """`SignatureLength <93>`."""
+
+    signature: Annotated[bytes | None, DECLARED["Signature"]] = None
+    """`Signature <89>`, as the bytes it is."""
+
+    entries: list[Entry] | None = None
+    """Unlifted fields and lossless raw audit sidecars for typed columns."""
+
+    direction: Direction = Direction.UNKNOWN
+    """Transport direction parsed from the raw message body."""
+
+    unixsource: Annotated[str, Field.column("UnixSource")] = ""
+    """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
+
+    unmap: Annotated[list[Entry] | None, Field.column("Unmapped")] = None
+    """Registry-unresolved entries partition payload with `entries`; null means all resolved."""
+
+    parties: Annotated[
+        list[Party] | None,
+        Field(dtype=PARTIES, metadata={"fix:component": "Parties"}),
+    ] = None
+    """FIX Parties entries; null when the component is absent."""
+
+    trdregtimestamps: Annotated[
+        list[TrdRegTimestamp] | None,
+        Field(dtype=TRD_REG_TIMESTAMPS, metadata={"fix:component": "TrdRegTimestamps"}),
+    ] = None
+    """FIX TrdRegTimestamps entries; null when the component is absent."""
+
+    sidetrdregts: Annotated[
+        list[SideTrdRegTimestamp] | None,
+        Field(dtype=SIDE_TRD_REG_TIMESTAMPS, metadata={"fix:component": "SideTrdRegTS"}),
+    ] = None
+    """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
+
+    parentclordid: Annotated[str | None, PARENT_CL_ORD_ID] = None
+    """Client order identity of the parent in a replace chain, bridge-rendered."""
+
+    parentorderid: Annotated[str | None, PARENT_ORDER_ID] = None
+    """Venue order identity of the parent in a replace chain, bridge-rendered."""
+
+    checksum: Annotated[str | None, DECLARED["CheckSum"]] = None
+    """`CheckSum <10>`: three digits, so a string -- `010` read as `10` no longer verifies."""
+
+    xmldatalen: Annotated[int | None, DECLARED["XmlDataLen"]] = None
+    """`XmlDataLen <212>`."""
+
+    xmldata: Annotated[bytes | None, DECLARED["XmlData"]] = None
+    """`XmlData <213>`, as the bytes it is."""
 
     # One order, and it prefers the identifier that survives an amendment:
     # `OrigClOrdID <41>` names the order a replacement replaces, and a
@@ -344,9 +475,7 @@ class FixMsg(Message):
     def __post_init__(self) -> None:
         """Normalize retained FIX fields without changing null/list semantics."""
         Event.__post_init__(self)
-        # Both packed enums Message declares, because this reaches
-        # `Event.__post_init__` and not Message's, so nothing else reads them
-        # off a spelling. A column takes the code, never the word.
+        # Parsed enum columns take their packed codes, never display words.
         self.direction = Direction.from_str(self.direction)
         if self.settlcurrency is not None:
             currency = Currency.from_str(self.settlcurrency)
@@ -389,37 +518,15 @@ class FixMsg(Message):
             self._drop_self_link()
             return self
         codec = type(self).into_codec(self.registry)
-        staged_values = {
-            member.name: getattr(self, member.name) for member in dataclasses.fields(Message)
-        }
-        # FixMsg stores typed session columns while Message deliberately keeps
-        # their wire text. Identification stages a Message again, so cross the
-        # same boundary in reverse before Arrow sees timestamps and booleans.
-        for name, _ in SESSION_FIELDS:
-            if (value := staged_values.get(name)) is not None:
-                staged_values[name] = _fix_text(value)
-        staged_values["body"] = b""
-        if self.entries is not None or self.unmap is not None:
-            retained_entries: Sequence[Any] = self._residual_entries()
-            version = self.resolved_version(codec.registry)
-            if version is not None and retained_entries:
-                stored = pyarrow.array([_stored_entries(retained_entries)], type=ENTRIES)
-                completed = codec.complete_entries(stored, version)[0].as_py()
-                retained_entries = completed or ()
-            retained = list(_stored_pairs(retained_entries))
-            checksum = str(_tag_of("CheckSum"))
-            staged_values["entries"] = [
-                *[pair for pair in retained if str(pair[0]) != checksum],
-                *[pair for pair in retained if str(pair[0]) == checksum],
-            ]
-            # A scalar rendered message has no raw payload left to classify.
-            # Its unresolved names still need the rendered-field rule; the
-            # final row keeps the protocol already established on `self`.
-            if any(not Entry.from_stored(entry).tag for entry in retained_entries):
-                staged_values["protocol"] = Protocol.UL
-        else:
-            staged_values["entries"] = None
-        parsed = type(self).from_message_batch([Message(**staged_values)], codec)
+        staged = Message(
+            sourceurl=self.sourceurl,
+            sourcerownum=self.sourcerownum,
+            threadname=self.threadname,
+            plugin=self.plugin.code,
+            level=self.level,
+            body=self.into_text("|").encode("utf-8"),
+        )
+        parsed = type(self).from_message_batch([staged], codec)
 
         # A typed component is already a promoted reading. Retained entries
         # may fill what it omitted, but cannot replace a fact already lifted
@@ -445,6 +552,7 @@ class FixMsg(Message):
         )
         columns[_LOCAL_RECORDED] = columns["recunix"]
         columns["protocol"] = pyarrow.array([self.protocol.into_stored()], _PROTOCOL_CODE)
+        columns["eventtype"] = pyarrow.array([int(self.eventtype)], pyarrow.int64())
         columns["instrument"] = Instrument.into_arrow_batch((component,)).to_struct_array()
         parsed = type(self).identified(columns, parsed.schema, 1, self.registry)
 
@@ -466,66 +574,12 @@ class FixMsg(Message):
         self.hash = hash_int_of(value("hash")) or NIL
         self.xhash = hash_int_of(value("xhash")) or NIL
         self._drop_self_link()
-        self.__raw_clocks = False
         return self
 
     # Consumed from Message at the conversion boundary. ClassVar overrides the
     # inherited dataclass field, so no persisted FixMsg schema can retain a raw
     # payload beside its parsed columns.
     body: ClassVar[bytes] = b""
-
-    protocol: Protocol = Protocol.UNKNOWN
-    """Protocol grammar and resolved version; OTHER carries neither."""
-
-    # Without it nothing downstream can tell a real transaction time from a
-    # print time, and that distinction is the whole point of resolving one.
-    # Empty means no clock answered at all, which is a row with no time.
-    unixsource: Annotated[str, Field.column("UnixSource")] = ""
-    """Which rung of `TRANSACTED` gave `unix`; `recorded` is the log's own clock."""
-
-    msgseqnum: Annotated[int | None, DECLARED["MsgSeqNum"]] = None
-    """`MsgSeqNum <34>`: wire order among messages with equal timestamps."""
-
-    # A list preserves repeated keys and wire order. Null means no parsed
-    # message; an empty list means no residual or raw audit sidecar remains.
-    entries: list[Entry] | None = None
-    """Unlifted fields and lossless raw audit sidecars for typed columns."""
-
-    unmap: Annotated[list[Entry] | None, Field.column("Unmapped")] = None
-    """Registry-unresolved entries partition payload with `entries`; null means all resolved."""
-
-    parties: Annotated[
-        list[Party] | None,
-        Field(
-            dtype=PARTIES,
-            metadata={"fix:component": "Parties"},
-        ),
-    ] = None
-    """FIX Parties entries; null when the component is absent."""
-
-    trdregtimestamps: Annotated[
-        list[TrdRegTimestamp] | None,
-        Field(
-            dtype=TRD_REG_TIMESTAMPS,
-            metadata={"fix:component": "TrdRegTimestamps"},
-        ),
-    ] = None
-    """FIX TrdRegTimestamps entries; null when the component is absent."""
-
-    sidetrdregts: Annotated[
-        list[SideTrdRegTimestamp] | None,
-        Field(
-            dtype=SIDE_TRD_REG_TIMESTAMPS,
-            metadata={"fix:component": "SideTrdRegTS"},
-        ),
-    ] = None
-    """FIX SideTrdRegTS entries -- the per-side regulatory clock; null when absent."""
-
-    parentclordid: Annotated[str | None, PARENT_CL_ORD_ID] = None
-    """Client order identity of the parent in a replace chain, bridge-rendered."""
-
-    parentorderid: Annotated[str | None, PARENT_ORDER_ID] = None
-    """Venue order identity of the parent in a replace chain, bridge-rendered."""
 
     # -- what a message says, flattened ---------------------------------------
     #
@@ -534,117 +588,19 @@ class FixMsg(Message):
 
     # The envelope itself.
 
-    beginstring: Annotated[str | None, DECLARED["BeginString"]] = None
-    """`BeginString <8>`: which FIX version the message says it is."""
-
-    bodylength: Annotated[int | None, DECLARED["BodyLength"]] = None
-    """`BodyLength <9>`, as the message counted it."""
-
-    msgtype: Annotated[str | None, DECLARED["MsgType"]] = None
-    """`MsgType <35>`: what the message is, on the wire."""
-
-    checksum: Annotated[str | None, DECLARED["CheckSum"]] = None
-    """`CheckSum <10>`: three digits, so a string -- `010` read as `10` no longer verifies."""
-
     # Who sent it, and to whom.
-
-    sendercompid: Annotated[str | None, DECLARED["SenderCompID"]] = None
-    """`SenderCompID <49>`: who sent it."""
-
-    sendersubid: Annotated[str | None, DECLARED["SenderSubID"]] = None
-    """`SenderSubID <50>`: which desk of theirs."""
-
-    senderlocationid: Annotated[str | None, DECLARED["SenderLocationID"]] = None
-    """`SenderLocationID <142>`."""
-
-    targetcompid: Annotated[str | None, DECLARED["TargetCompID"]] = None
-    """`TargetCompID <56>`: who it was sent to."""
-
-    targetsubid: Annotated[str | None, DECLARED["TargetSubID"]] = None
-    """`TargetSubID <57>`."""
-
-    targetlocationid: Annotated[str | None, DECLARED["TargetLocationID"]] = None
-    """`TargetLocationID <143>`."""
 
     # And on whose behalf, when a hub relayed it.
 
-    onbehalfofcompid: Annotated[str | None, DECLARED["OnBehalfOfCompID"]] = None
-    """`OnBehalfOfCompID <115>`: who the sender was speaking for."""
-
-    onbehalfofsubid: Annotated[str | None, DECLARED["OnBehalfOfSubID"]] = None
-    """`OnBehalfOfSubID <116>`."""
-
-    onbehalfoflocationid: Annotated[str | None, DECLARED["OnBehalfOfLocationID"]] = None
-    """`OnBehalfOfLocationID <144>`."""
-
-    delivertocompid: Annotated[str | None, DECLARED["DeliverToCompID"]] = None
-    """`DeliverToCompID <128>`: who it is ultimately for."""
-
-    delivertosubid: Annotated[str | None, DECLARED["DeliverToSubID"]] = None
-    """`DeliverToSubID <129>`."""
-
-    delivertolocationid: Annotated[str | None, DECLARED["DeliverToLocationID"]] = None
-    """`DeliverToLocationID <145>`."""
-
     # Where it sits in the session's stream, and whether it is a repeat.
-
-    lastmsgseqnumprocessed: Annotated[int | None, DECLARED["LastMsgSeqNumProcessed"]] = None
-    """`LastMsgSeqNumProcessed <369>`: how far the sender had read."""
-
-    possdupflag: Annotated[bool | None, DECLARED["PossDupFlag"]] = None
-    """`PossDupFlag <43>`: a retransmission of a message already sent."""
-
-    possresend: Annotated[bool | None, DECLARED["PossResend"]] = None
-    """`PossResend <97>`: the same business content under a new sequence."""
 
     # FIX documents these instants as UTC; microseconds are Iceberg-compatible.
 
-    sendingtime: Annotated[datetime.datetime | None, DECLARED["SendingTime"]] = None
-    """`SendingTime <52>`: when it was transmitted."""
-
-    origsendingtime: Annotated[datetime.datetime | None, DECLARED["OrigSendingTime"]] = None
-    """`OrigSendingTime <122>`: the original transmission, on a resend."""
-
-    onbehalfofsendingtime: Annotated[
-        datetime.datetime | None, DECLARED["OnBehalfOfSendingTime"]
-    ] = None
-    """`OnBehalfOfSendingTime <370>`."""
-
     # Which application version speaks, under FIXT.
-
-    applverid: Annotated[str | None, DECLARED["ApplVerID"]] = None
-    """`ApplVerID <1128>`."""
-
-    cstmapplverid: Annotated[str | None, DECLARED["CstmApplVerID"]] = None
-    """`CstmApplVerID <1129>`."""
-
-    applextid: Annotated[int | None, DECLARED["ApplExtID"]] = None
-    """`ApplExtID <1156>`."""
 
     # How the payload is written, when it is not plain ASCII.
 
-    messageencoding: Annotated[str | None, DECLARED["MessageEncoding"]] = None
-    """`MessageEncoding <347>`."""
-
-    xmldatalen: Annotated[int | None, DECLARED["XmlDataLen"]] = None
-    """`XmlDataLen <212>`."""
-
-    xmldata: Annotated[bytes | None, DECLARED["XmlData"]] = None
-    """`XmlData <213>`, as the bytes it is."""
-
     # And how it is sealed.
-
-    securedatalen: Annotated[int | None, DECLARED["SecureDataLen"]] = None
-    """`SecureDataLen <90>`."""
-
-    securedata: Annotated[bytes | None, DECLARED["SecureData"]] = None
-    """`SecureData <91>`, as the bytes it is."""
-
-    signaturelength: Annotated[int | None, DECLARED["SignatureLength"]] = None
-    """`SignatureLength <93>`."""
-
-    signature: Annotated[bytes | None, DECLARED["Signature"]] = None
-    """`Signature <89>`, as the bytes it is."""
 
     # Who asked, and under which identifiers.
 
@@ -850,13 +806,20 @@ class FixMsg(Message):
         registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
-        """Build a scalar parsed row from one ordered FIX payload.
-
-        `Message.from_text` owns the tokenization and the discriminator; this
-        is `from_message` over that staged raw row.
-        """
-        staged = Message.from_text(text, separator, named=named, entry_separator=entry_separator)
-        return cls.from_message(staged, registry=registry, **declared)
+        """Build a parsed row from one raw FIX payload."""
+        if separator is not None or named is not None or entry_separator is not None:
+            return cls.from_pairs(
+                parse_pairs(text, separator, named=named, entry_separator=entry_separator),
+                registry=registry,
+                **declared,
+            )
+        staged = Message.from_text(text)
+        return cls._from_scalar_message(
+            staged,
+            registry=registry,
+            source_entries=[],
+            declared=declared,
+        )
 
     @classmethod
     def from_pairs(
@@ -868,9 +831,20 @@ class FixMsg(Message):
         **declared: Any,
     ) -> FixMsg:
         """Build a scalar parsed row from ordered named or numbered fields."""
-        entries = normalized_pairs(pairs, names)
-        staged = Message(entries=entries)
-        return cls.from_message(staged, registry=registry, **declared)
+        normalized = normalized_pairs(pairs, names)
+        session, residual = _scalar_session_values([Entry.from_stored(pair) for pair in normalized])
+        selected = registry or cls.into_registry()
+        version, _ = infer_version_from_pairs(normalized, selected)
+        values: dict[str, Any] = {"entries": residual, **session}
+        if version is not None:
+            values["protocol"] = Protocol.with_version(Protocol.FIX, version)
+        if (msgtype := session.get("msgtype")) is not None:
+            values["eventtype"] = selected.msg_type_event_types().get(msgtype, EventType.UNKNOWN)
+        values.update(declared)
+        built = cls.from_dict(values).link_registry(registry)
+        built._enrich_prices()
+        built.__creaunix_declared = "creaunix" in declared
+        return built
 
     @classmethod
     def from_message(
@@ -880,87 +854,48 @@ class FixMsg(Message):
         registry: FixRegistry | None = None,
         **declared: Any,
     ) -> FixMsg:
-        """Transcribe one raw row: the scalar half of `from_message_batch`.
+        """Transcribe one raw row through the batch parsing authority."""
+        return cls._from_scalar_message(source, registry=registry, declared=declared)
 
-        The raw stage already tokenized the payload and promoted the
-        discriminator, so the row carries over whole -- envelope, provenance
-        and residual arguments. `eventtype` classifies under the registry only
-        where the raw stage left it unknown, and identity resets: a parsed
-        row hashes over its parsed values, not the raw line's digest.
-        """
+    @classmethod
+    def _from_scalar_message(
+        cls,
+        source: Message,
+        *,
+        registry: FixRegistry | None,
+        declared: Mapping[str, Any],
+        source_entries: list[Entry] | None = None,
+    ) -> FixMsg:
+        """Build one scalar row, optionally retaining its parser audit entries."""
         if not isinstance(source, Message):
             raise TypeError(f"source must be Message, got {type(source).__name__}")
-        values = {
-            member.name: getattr(source, member.name) for member in dataclasses.fields(Message)
-        }
-        body = values.pop("body")
-        if not isinstance(source, cls):
-            # Raw structured rows have no stored classifier result. Their own
-            # version statement is the explicit FIX claim; a reconstructed
-            # FixMsg's persisted OTHER remains authoritative.
-            values["protocol"] = _structured_protocol(source, registry)
-        values.update(
-            {
-                "entries": list(source.entries or ()),
-                "linkhashes": list(source.linkhashes),
-                "altids": dict(source.altids),
-                "parenthash": None if source.parenthash is None else list(source.parenthash),
-                "hash": NIL,
-                "vhash": NIL,
-                "xhash": NIL,
-            }
-        )
-        if Protocol.from_str(source.protocol).family is Protocol.XML and body:
-            _, errors = xml_payload_arrow(
-                pyarrow.array([body], pyarrow.binary()), pyarrow.array([True])
-            )
-            values["error"] = errors[0].as_py()
-        values.update(_session_values(source))
+        selected = registry or cls.into_registry()
+        codec = cls.into_codec(selected)
+        staged = Message.into_arrow_batch((source,))
+        parsed = cls._from_message_batch(staged, codec, source_entries=source_entries)
+        values = parsed.to_pylist()[0]
         values.update(declared)
-        msg_type = values.get("msgtype")
-        if (
-            "eventtype" not in declared
-            and msg_type is not None
-            and source.eventtype == EventType.UNKNOWN
-        ):
-            values["eventtype"] = (
-                (registry or cls.into_registry())
-                .msg_type_event_types()
-                .get(msg_type, EventType.UNKNOWN)
-            )
-        built = cls(**values).link_registry(registry)
-        family = Protocol.from_str(source.protocol).family
-        if (
-            not isinstance(source, cls)
-            and family in {Protocol.FIXML, Protocol.UL}
-            and any(Entry.from_stored(entry).comp for entry in source.entries or ())
-        ):
-            built._with_indexed_components(source, registry)
-        built._enrich_prices()
-        built.__raw_clocks = not isinstance(source, cls)
+        built = cls.from_dict(values).link_registry(registry)
+        if source_entries:
+            built._keep_source_entries(source_entries, codec)
         built.__creaunix_declared = "creaunix" in declared
         return built
 
-    def _with_indexed_components(self, source: Message, registry: FixRegistry | None) -> None:
-        """Lift one scalar row's indexed groups through the Arrow authority."""
-        parsed = type(self).from_message_batch(
-            [source], type(self).into_codec(registry or type(self).into_registry())
-        )
-        row = type(self).from_dict(parsed.to_pylist()[0])
-        # The scalar object remains the source-spelled pair view: callers use
-        # it to inspect indexed names and malformed members exactly as read.
-        # Only the typed projections come back from the Arrow authority; a
-        # persisted FixMsg stores its normalized residuals through the batch
-        # path in the usual way.
-        for name in COMPONENT_COLUMNS:
-            if name == "legs":
-                if self.instrument.legs is None and row.instrument.legs is not None:
-                    self.instrument = dataclasses.replace(self.instrument, legs=row.instrument.legs)
-                continue
-            if _component_value(self, name) is None:
-                setattr(self, name, _component_value(row, name))
-        if row.error:
-            self.error = f"{self.error}; {row.error}" if self.error else row.error
+    def _keep_source_entries(self, entries: Iterable[Entry], codec: FixCodec) -> None:
+        """Keep source values while resolving their identities through the batch index."""
+        index = codec.index_of(self.resolved_version(codec.registry))
+        retained: list[Entry] = []
+        for entry in entries:
+            tag, matched, _, _ = index.resolve_key(entry.spelling)
+            retained.append(
+                Entry(
+                    tag=int(tag) if matched and tag is not None else entry.tag,
+                    key=entry.key,
+                    value=entry.value,
+                    comp=entry.comp,
+                )
+            )
+        self.__source_entries = retained
 
     def _enrich_prices(self) -> None:
         """Fill the uniform and side price slots from compatible FIX facts."""
@@ -1160,7 +1095,7 @@ class FixMsg(Message):
         components = [(key, entry.value) for key, entry in component_fields]
 
         # The promoted discriminator re-enters at its wire-legal position:
-        # after the leading BeginString/BodyLength run the raw stage retained.
+        # after the leading BeginString/BodyLength run the parser retained.
         # The projection then keeps the wire's own order, and a
         # rendered row re-parses whole -- a `35=` in front of the `8=` anchor
         # would be shed as log noise.
@@ -1251,7 +1186,11 @@ class FixMsg(Message):
 
     def indexed_group(self, name: int | str) -> list[list[tuple[str, str]]]:
         """Rendered indexed group entries in index order."""
-        return indexed_group_pairs(self.pairs, name)
+        source = getattr(self, "_FixMsg__source_entries", None)
+        pairs = (
+            self.pairs if source is None else [(entry.spelling, entry.value) for entry in source]
+        )
+        return indexed_group_pairs(pairs, name)
 
     def resolved_version(self, registry: FixRegistry | None = None) -> str | None:
         """The exact registry fragment selected by private or wire evidence."""
@@ -1309,7 +1248,9 @@ class FixMsg(Message):
     @property
     def has_indexed_entries(self) -> bool:
         """Whether a rendered group path survives only in source spelling."""
-        return any(entry.comp or "[" in entry.key for entry in self._residual_entries())
+        source = getattr(self, "_FixMsg__source_entries", None)
+        entries = self._residual_entries() if source is None else source
+        return any(entry.comp or "[" in entry.key for entry in entries)
 
     def into_first_values(self, access: FieldAccess | None = None) -> dict[str, Any] | None:
         """Promoted columns and simple numeric residuals without a FIX round trip.
@@ -1349,8 +1290,15 @@ class FixMsg(Message):
 
     @property
     def pairs(self) -> list[tuple[str, str]]:
-        """Canonical ordered text fields used by scalar and stored rows."""
-        return self.into_fix_pairs()
+        """Canonical ordered fields with direct scalar source text retained."""
+        access = self._row_access()
+        fields, _, _ = self._canonical_fields(access)
+        source = [(entry.spelling, entry.value) for entry in self._audited_fields(fields, access)]
+        resolved = access.tagged_pairs(source)
+        return [
+            (pair[0], _fix_text(access.canonical_value(tagged[0], pair[1])))
+            for pair, tagged in zip(source, resolved, strict=True)
+        ]
 
     def __len__(self) -> int:
         return len(self.pairs)
@@ -1364,8 +1312,31 @@ class FixMsg(Message):
 
     def _field_entries(self) -> list[Entry]:
         """The canonical field sequence as accessor-ready entries."""
-        fields, _, _ = self._canonical_fields(self._row_access())
-        return fields
+        access = self._row_access()
+        fields, _, _ = self._canonical_fields(access)
+        return self._audited_fields(fields, access)
+
+    def _audited_fields(self, fields: list[Entry], access: FieldAccess) -> list[Entry]:
+        """Canonical fields with scalar source paths and non-temporal lexemes restored."""
+        source = getattr(self, "_FixMsg__source_entries", None)
+        if source is None:
+            return fields
+        available: dict[tuple[Any, str], list[int]] = {}
+        for index, entry in reversed(tuple(enumerate(fields))):
+            available.setdefault(_reading_identity(entry, access), []).append(index)
+        replacements: dict[int, Entry] = {}
+        for entry in source:
+            matching = available.get(_reading_identity(entry, access))
+            if matching:
+                index = matching.pop()
+                normalized = access.canonical_value(entry.tag or entry.spelling, entry.value)
+                replacements[index] = Entry.of(
+                    tag=entry.tag,
+                    key=entry.key,
+                    value=fields[index].value if not isinstance(normalized, str) else entry.value,
+                    comp=entry.comp,
+                )
+        return [replacements.get(index, entry) for index, entry in enumerate(fields)]
 
     @classmethod
     @functools.cache
@@ -1408,14 +1379,17 @@ class FixMsg(Message):
         if not rows:
             staged = pyarrow.RecordBatch.from_pylist([], schema=schema)
         else:
-            table = pyarrow.Table.from_batches(
-                Message.into_arrow_reader(rows, batch_row_size=len(rows)), schema=schema
-            ).combine_chunks()
-            staged = table.to_batches(max_chunksize=table.num_rows)[0]
+            staged = Message.into_arrow_batch(rows)
         return cls._from_message_batch(staged, selected)
 
     @classmethod
-    def _from_message_batch(cls, batch: pyarrow.RecordBatch, codec: Any) -> pyarrow.RecordBatch:
+    def _from_message_batch(
+        cls,
+        batch: pyarrow.RecordBatch,
+        codec: Any,
+        *,
+        source_entries: list[Entry] | None = None,
+    ) -> pyarrow.RecordBatch:
         """Transcribe one raw batch, isolating malformed rows from their neighbours."""
         if not isinstance(batch, pyarrow.RecordBatch):
             raise TypeError(f"FixMsg conversion needs a RecordBatch, got {type(batch).__name__}")
@@ -1423,29 +1397,35 @@ class FixMsg(Message):
         # them before best-effort isolation so a misspelled projection or a
         # shadowed schema cannot turn into a table full of diagnostic rows.
         cls._message_schema(batch.schema)
-        # A batch scanned back out of Iceberg carries `large_string` where the
-        # raw contract says `string`, and the vectorized path below joins those
-        # columns against constants it builds itself -- which Arrow refuses
-        # across the two widths. The declaration is the one reading, so the
-        # batch is brought onto it here rather than at each kernel. Narrowed
-        # and not merged: this stage may be read with `body` projected away, and
-        # filling a column the reader did not select would invent the text it
-        # deliberately left behind.
+        # Iceberg may widen text columns. Bring every raw field back onto its
+        # declaration once before the parser starts.
         batch = Message.into_field().narrowed(batch.schema).cast_arrow_batch(batch)
-        if "body" not in batch.schema.names and "protocol" not in batch.schema.names:
-            raise ValueError(
-                "a projected Message batch needs protocol; reparse the "
-                "messages before dropping body"
+        if "body" not in batch.schema.names:
+            raise ValueError("a raw Message batch needs body")
+        thread_at = batch.schema.get_field_index("threadname")
+        if thread_at >= 0:
+            batch = batch.set_column(
+                thread_at,
+                batch.schema.field(thread_at),
+                pyarrow.compute.fill_null(batch.column(thread_at), ""),
             )
-        return cls._best_effort_message_batch(batch, codec)
+        return cls._best_effort_message_batch(batch, codec, source_entries=source_entries)
 
     @classmethod
     def _best_effort_message_batch(
-        cls, batch: pyarrow.RecordBatch, codec: Any
+        cls,
+        batch: pyarrow.RecordBatch,
+        codec: Any,
+        *,
+        source_entries: list[Entry] | None = None,
     ) -> pyarrow.RecordBatch:
         """Transcribe vector slices until one irreducible row needs a diagnostic."""
         try:
-            parsed = cls._transcribe_message_batch(batch, codec)
+            parsed = cls._transcribe_message_batch(
+                batch,
+                codec,
+                source_entries=source_entries,
+            )
             return cls._with_transcription_errors(batch, parsed, codec)
         except _TRANSCRIPTION_EXCEPTIONS as error:
             if batch.num_rows <= 1:
@@ -1465,58 +1445,53 @@ class FixMsg(Message):
 
     @classmethod
     def _transcribe_message_batch(
-        cls, batch: pyarrow.RecordBatch, codec: Any
+        cls,
+        batch: pyarrow.RecordBatch,
+        codec: Any,
+        *,
+        source_entries: list[Entry] | None = None,
     ) -> pyarrow.RecordBatch:
-        """The vectorized transcription of one already validated batch slice."""
-        if "entries" in batch.schema.names and _has_misplaced_checksum(batch.column("entries")):
-            raise ValueError("CheckSum <10> is not the final field")
+        """Parse and transcribe one validated raw batch slice."""
         columns = {name: batch.column(name) for name in batch.schema.names}
+        bodies = columns["body"]
+        raw_plugins = columns.get("plugin")
+        parsed = MessageParser.parse_arrow(
+            bodies,
+            codec.registry.msg_type_event_types(),
+            raw_plugins,
+            codec,
+            codec.plugin_keys,
+            codec.null_values,
+        )
+        parser_error = parsed.pop("parseerror")
+        columns.update(parsed)
         columns.update(_session_batch_columns(columns, codec.null_values))
-        bodies = columns.get("body")
-        if bodies is not None:
-            messages = _body_text_arrow(bodies)
-            # Protocol and direction are both read off the raw line, so both are
-            # answered here and by the same rule: a row that still carries its
-            # text is classified again under *this* codec's rules -- the ones it
-            # is then parsed with -- and a row whose text a projection dropped
-            # keeps the answer the message stage stored, because there is no
-            # other. Direction is written back onto the batch, appended where
-            # the batch has no such column, so either conversion path carries it.
-            stored_protocols = columns.get("protocol")
-            stored_direction = columns.get("direction")
-            carries_text = pyarrow.compute.fill_null(
-                pyarrow.compute.greater(pyarrow.compute.binary_length(messages), 0), False
+        columns["error"] = parser_error
+        if raw_plugins is not None:
+            columns["plugin"] = pyarrow.compute.fill_null(
+                Plugin.arrow_from_strings(raw_plugins), Plugin.UNKNOWN.into_stored()
             )
-            protocols = codec.rules.into_arrow_protocol_array(messages, columns.get("plugin"))
-            if stored_protocols is not None:
-                stored_protocols = pyarrow.compute.fill_null(
-                    stored_protocols.cast(_PROTOCOL_CODE, safe=False),
-                    Protocol.OTHER.into_stored(),
+        timestamp = columns.get("timestamp")
+        if timestamp is not None:
+            columns["recunix"] = _recorded_timestamp_arrow(timestamp, codec.timezone)
+        for name, dtype in _session_types().items():
+            raw = parsed.get(name)
+            if raw is not None:
+                columns["error"] = _merge_error_columns(
+                    columns["error"],
+                    _invalid_value_error(
+                        raw,
+                        dtype,
+                        cls.into_field().field(name),
+                        codec.null_values,
+                    ),
                 )
-                same_family = pyarrow.compute.equal(
-                    Protocol.into_family_arrow(protocols),
-                    Protocol.into_family_arrow(stored_protocols),
-                )
-                classified = pyarrow.compute.if_else(same_family, stored_protocols, protocols)
-                protocols = pyarrow.compute.if_else(
-                    carries_text,
-                    classified,
-                    stored_protocols,
-                )
-            direction = codec.rules.into_arrow_direction_array(messages, protocols)
-            if stored_direction is not None:
-                direction = pyarrow.compute.if_else(carries_text, direction, stored_direction)
-            columns["direction"] = direction
-            if "direction" in batch.schema.names:
-                at = batch.schema.get_field_index("direction")
-                batch = batch.set_column(at, batch.schema.field(at), direction)
-            else:
-                batch = batch.append_column(
-                    Message.into_field().into_arrow_schema().field("direction"), direction
-                )
-        else:
-            protocols = columns.get("protocol")
-            assert protocols is not None
+        protocols = columns["protocol"]
+        if source_entries is not None:
+            if batch.num_rows != 1:
+                raise ValueError("source audit is available only for one scalar message")
+            audited = cls._source_message_entries(columns["entries"], protocols, codec)
+            source_entries.extend(Entry.from_stored(entry) for entry in audited[0].as_py() or ())
         from rekep.text.fixmsg_arrow import into_flat_fixmsg_batch
 
         flat = into_flat_fixmsg_batch(cls, batch, codec, columns, protocols)
@@ -1538,22 +1513,6 @@ class FixMsg(Message):
         """Attach deterministic diagnostics for typed values that read as null."""
         rows = parsed.num_rows
         errors = parsed.column("error")
-        body_at = source.schema.get_field_index("body")
-        if body_at >= 0:
-            protocols = Protocol.into_family_arrow(parsed.column("protocol"))
-            selected = pyarrow.compute.equal(protocols, Protocol.XML.into_stored())
-            _, xml_errors = xml_payload_arrow(source.column(body_at), selected)
-            errors = _merge_error_columns(errors, xml_errors)
-        declared = cls.into_field()
-        for name, dtype in _session_types().items():
-            if name not in source.schema.names:
-                continue
-            errors = _merge_error_columns(
-                errors,
-                _invalid_value_error(
-                    source.column(name), dtype, declared.field(name), codec.null_values
-                ),
-            )
 
         entries = parsed.column("entries")
         parsed_columns = {name: parsed.column(name) for name in parsed.schema.names}
@@ -1645,10 +1604,18 @@ class FixMsg(Message):
                 continue
             target = schema.field(field.name)
             column = source.column(field.name)
+            if field.name == "plugin":
+                columns[field.name] = pyarrow.compute.fill_null(
+                    Plugin.arrow_from_strings(column), Plugin.UNKNOWN.into_stored()
+                )
+                continue
             columns[field.name] = (
                 column if column.type.equals(target.type) else cast_arrow_fix(column, target.type)
             )
-        columns.update(_session_batch_columns(columns, codec.null_values))
+        if "timestamp" in source.schema.names:
+            columns["recunix"] = _recorded_timestamp_arrow(
+                source.column("timestamp"), codec.timezone
+            )
         columns["error"] = pyarrow.array([_error_text(error)], pyarrow.string())
         # The full enrichment path raised the error that brought the row here.
         # Build the declared defaults directly so fallback cannot repeat the
@@ -1658,9 +1625,8 @@ class FixMsg(Message):
             schema=schema,
         )
 
-        # A failed parse has no parsed identity to earn. Keep the raw stage's
-        # exact-payload identity. A projected hand-built row falls back to the
-        # raw columns that remain rather than to an incomplete parsed shape.
+        # A failed parse has no parsed identity to earn. Keep the exact raw-body
+        # identity so diagnostic wording cannot change it.
         vhash = _raw_message_vhash(source, 1)
         anchored = txhash.couple128_arrow(cls._clock_micros(built.column("unix")), vhash)
         xhash = cls.xhash_arrow(built.column("code"))
@@ -1674,6 +1640,26 @@ class FixMsg(Message):
             cls._without_self_links_arrow(built.column(at), built.column("hash")),
         )
         return built
+
+    @staticmethod
+    def _source_message_entries(entries: Any, protocols: Any, codec: Any) -> Any:
+        """Protocol-structured entries before the registry rewrites source values."""
+        rows = len(entries)
+        parts, positions = [], []
+        for protocol, where in groups_of(protocols):
+            code = protocol.as_py()
+            rule = codec.rules.rule(code)
+            selected = entries if len(where) == rows else pyarrow.compute.take(entries, where)
+            if Protocol.from_stored(code).family is Protocol.XML:
+                # XML parsing already supplied its nested entry structure.
+                parts.append(selected)
+            elif rule.named is None:
+                parts.append(pyarrow.nulls(len(where), ENTRIES))
+            else:
+                pairs = codec.complete_pairs(codec.into_pairs_from_entries(selected, code), code)
+                parts.append(codec.into_message_entries(pairs))
+            positions.append(where)
+        return scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
 
     @classmethod
     def _from_message_batch_reference(
@@ -1689,33 +1675,7 @@ class FixMsg(Message):
         # stage lifted are read as this stage stores them here rather than at
         # each caller.
         columns = {**columns, **_session_batch_columns(columns, codec.null_values)}
-        parts, positions = [], []
-        for protocol, where in groups_of(protocols):
-            rule = codec.rules.rule(protocol.as_py())
-            if Protocol.from_stored(protocol.as_py()).family is Protocol.XML:
-                # `xml_payload_arrow` already supplied indexed structured
-                # entries. Re-tokenizing them as delimiter text drops nested
-                # siblings before their component declaration can lift them.
-                parts.append(
-                    columns["entries"]
-                    if len(where) == rows
-                    else pyarrow.compute.take(columns["entries"], where)
-                )
-            elif rule.named is None:
-                parts.append(pyarrow.nulls(len(where), ENTRIES))
-            else:
-                entries = (
-                    columns["entries"]
-                    if len(where) == rows
-                    else pyarrow.compute.take(columns["entries"], where)
-                )
-                pairs = codec.complete_pairs(
-                    codec.into_pairs_from_entries(entries, protocol.as_py()),
-                    protocol.as_py(),
-                )
-                parts.append(codec.into_message_entries(pairs))
-            positions.append(where)
-        entries = scattered(parts, positions) if parts else pyarrow.nulls(rows, ENTRIES)
+        entries = cls._source_message_entries(columns["entries"], protocols, codec)
         begin_strings = cls._begin_strings_arrow(columns, rows)
         protocols = codec.into_versioned_protocols(
             entries,
@@ -1730,8 +1690,9 @@ class FixMsg(Message):
             }
         )
         schema = cls._message_schema(batch.schema)
+        defaults = cls._default_batch_columns(schema, rows)
         for field in schema:
-            columns.setdefault(field.name, pyarrow.nulls(rows, field.type))
+            columns.setdefault(field.name, defaults[field.name])
         columns.update(cls._resolved_batch_columns(columns, codec, rows))
         columns["lastmkt"] = _lastmkt_arrow(columns, rows)
         return cls.identified(columns, schema, rows, codec.registry)
@@ -1761,6 +1722,25 @@ class FixMsg(Message):
             if column_name(field.name) not in own and column_name(field.name) not in raw
         ]
         return pyarrow.schema([*schema, *extra], metadata=schema.metadata)
+
+    @classmethod
+    def _default_batch_columns(cls, schema: pyarrow.Schema, rows: int) -> dict[str, pyarrow.Array]:
+        """Declared FixMsg defaults broadcast over one output batch."""
+        if not rows:
+            return {field.name: pyarrow.nulls(0, field.type) for field in schema}
+        defaults = cls.into_arrow_batch((cls(),))
+        own = {name: defaults.column(name)[0] for name in defaults.schema.names}
+        columns = {
+            field.name: (
+                pyarrow.repeat(own[field.name], rows)
+                if field.name in own
+                else pyarrow.nulls(rows, field.type)
+            )
+            for field in schema
+        }
+        # A non-null empty component would preempt the FIX columns that build it.
+        columns["instrument"] = pyarrow.nulls(rows, schema.field("instrument").type)
+        return columns
 
     @classmethod
     def _resolved_batch_columns(
@@ -1814,7 +1794,7 @@ class FixMsg(Message):
         # Every entry list is scanned to infer a version, and the two branches
         # below discard that answer for a row whose protocol token already
         # carries a version and for a row of unparsed text. Read the wire only
-        # where one of them survives: a batch the message stage already
+        # where one of them survives: a batch `MessageParser` already
         # versioned needs no scan at all. The test is the batch's, not the
         # row's -- one message whose version nothing states puts the whole
         # batch back on the scan, which is what a column-wide kernel costs.
@@ -1900,7 +1880,7 @@ class FixMsg(Message):
         found: dict[str, Any] = {
             **components,
             **lifted,
-            # The raw stage already chose among duplicate session spellings.
+            # `MessageParser` already chose among duplicate session spellings.
             # Its canonical value leads; a rendered entry fills a null one.
             **promoted,
             "omsorders": omsorders,
@@ -1910,7 +1890,7 @@ class FixMsg(Message):
         }
         eventtypes = columns.get("eventtype")
         if eventtypes is not None:
-            # OMS XML has no FIX MsgType, so the raw stage can only call it
+            # OMS XML has no FIX MsgType, so initial classification can only call it
             # MISC. A lifted order is the market discriminator the document
             # itself supplies; an explicit classifier remains authoritative.
             oms_rows = pyarrow.compute.greater(
@@ -2495,13 +2475,7 @@ class FixMsg(Message):
         carried = {
             "recunix": self.recunix,
             "expunix": self.expunix,
-            # A raw Message carries generic envelope columns between stages;
-            # only a parsed row or a caller override owns creation time.
-            "creaunix": (
-                self.creaunix
-                if self.__creaunix_declared or self.hash or not self.__raw_clocks
-                else None
-            ),
+            "creaunix": self.creaunix,
             "lastmkt": self.lastmkt,
             "registry": getattr(self, "_FixMsg__registry", None),
             **declared,
@@ -2519,8 +2493,7 @@ class FixMsg(Message):
         """
         from rekep.market.transacted import Transacted
 
-        owns_clock = self.hash or not self.__raw_clocks
-        if owns_clock and (self.unix or self.unixsource):
+        if self.unix or self.unixsource:
             built.__dict__["transacted"] = Transacted(self.unix, self.unixsource)
         return built
 
@@ -2806,33 +2779,6 @@ class FixMsg(Message):
                 yield tuple(found)
 
 
-def _has_misplaced_checksum(entries: Any) -> bool:
-    """Whether any row carries fields after its first FIX trailer."""
-    if isinstance(entries, pyarrow.ChunkedArray):
-        entries = entries.combine_chunks()
-    if not len(entries) or entries.null_count == len(entries):
-        return False
-    compute = pyarrow.compute
-    items = compute.list_flatten(entries)
-    if not len(items):
-        return False
-    parents = compute.list_parent_indices(entries).cast(pyarrow.int64())
-    tags = compute.struct_field(items, "tag")
-    keys = column_names(compute.struct_field(items, "key"))
-    checksum = compute.or_(
-        compute.fill_null(compute.equal(tags, 10), False),
-        compute.fill_null(compute.equal(keys, "checksum"), False),
-    )
-    if not compute.any(checksum, min_count=0).as_py():
-        return False
-    sizes = compute.fill_null(compute.list_value_length(entries), 0).cast(pyarrow.int64())
-    ends = compute.subtract(compute.cumulative_sum(sizes), 1)
-    checksum_parents = compute.filter(parents, checksum)
-    checksum_positions = compute.filter(sequence(len(items)), checksum)
-    misplaced = compute.not_equal(checksum_positions, compute.take(ends, checksum_parents))
-    return bool(compute.any(misplaced, min_count=0).as_py())
-
-
 def _invalid_entry_errors(
     entries: Any,
     fields: Mapping[int, Field],
@@ -2983,35 +2929,28 @@ def _error_text(error: Exception) -> str:
 
 
 def _raw_message_vhash(source: pyarrow.RecordBatch, rows: int) -> pyarrow.Array:
-    """Exact raw identity when available, or the remaining payload readings."""
+    """XXH3-64 identity of the exact raw body."""
+    at = source.schema.get_field_index("body")
+    if at < 0:
+        raise ValueError("a raw Message batch needs body")
+    return hash_bytes_arrow(source.column(at))
+
+
+def _recorded_timestamp_arrow(values: Any, timezone: str | None) -> pyarrow.Array:
+    """Captured header timestamps as UTC nanoseconds."""
     compute = pyarrow.compute
-
-    def column(name: str) -> Any:
-        at = source.schema.get_field_index(name)
-        return None if at < 0 else source.column(at)
-
-    incoming = column("vhash")
-    if incoming is not None:
-        carries_identity = compute.and_(
-            compute.is_valid(incoming),
-            compute.not_equal(incoming, pyarrow.scalar(NIL, pyarrow.int64())),
+    text = values.cast(pyarrow.string(), safe=False)
+    text = compute.replace_substring(text, pattern="_", replacement="")
+    text = compute.replace_substring(text, pattern=",", replacement=".")
+    local = cast_arrow_fix(text, pyarrow.timestamp("ns"))
+    if timezone:
+        local = compute.assume_timezone(
+            local,
+            timezone,
+            ambiguous="earliest",
+            nonexistent="latest",
         )
-        if compute.all(carries_identity, min_count=0).as_py():
-            return incoming
-
-    projected = Message.hash_arrow(
-        *(_digest_text(column(name), rows) for name in _PROJECTED_RAW_IDENTITY)
-    )
-    messages = column("body")
-    if messages is None:
-        raw = projected
-    else:
-        carries_text = compute.greater(compute.binary_length(messages), 0)
-        raw = compute.if_else(carries_text, hash_bytes_arrow(messages), projected)
-
-    if incoming is None:
-        return raw
-    return compute.if_else(carries_identity, incoming, raw)
+    return local.cast(pyarrow.int64(), safe=False)
 
 
 def _take_record_batch(batch: pyarrow.RecordBatch, where: pyarrow.Array) -> pyarrow.RecordBatch:
@@ -3234,6 +3173,13 @@ def _fix_text(value: Any) -> str:
     return "" if value is None else render_fix_value(value)
 
 
+def _reading_identity(entry: Entry, access: FieldAccess) -> tuple[tuple[str, int | str], str]:
+    """Resolved field and typed value used to pair source and canonical entries."""
+    source = (entry.spelling, entry.value)
+    tagged = access.tagged_pairs((source,))[0]
+    return _pair_identity(tagged[0]), _fix_text(access.typed(tagged[0], source[1]))
+
+
 def _numeric_key(value: Any) -> bool:
     """Whether a pair key is a numeric FIX tag."""
     text = str(value)
@@ -3255,12 +3201,11 @@ def _pair_identity(key: Any) -> tuple[str, int | str]:
 
 @functools.cache
 def _session_types() -> Mapping[str, Any]:
-    """Which of the lifted header fields this stage stores as something else.
+    """Which parsed session fields `FixMsg` stores as something else.
 
-    The raw stage is protocol-neutral and keeps every one of them as the text
-    the payload spelled; a `BodyLength` is a number here and a `SendingTime` an
-    instant, so the two stages disagree on exactly three of the seven and this
-    is the list of them.
+    `MessageParser` first spells session values as text; a `BodyLength` is a
+    number in `FixMsg` and a `SendingTime` an instant, so this names the fields
+    that need a typed cast.
     """
     declared = FixMsg.into_field()
     return {
@@ -3273,12 +3218,11 @@ def _session_types() -> Mapping[str, Any]:
 def _session_batch_columns(
     columns: Mapping[str, Any], null_values: Collection[str] = ()
 ) -> dict[str, Any]:
-    """The header columns the raw stage lifted, read as this stage stores them.
+    """Parsed session columns cast as `FixMsg` stores them.
 
-    The raw stage is protocol-neutral and keeps every one of them as text; a
-    `BodyLength` is a number here and a `SendingTime` an instant. Configured
-    absent spellings apply here too because these fields left `entries` before
-    the codec dropped its null values.
+    `MessageParser` first returns them as text. Configured absent spellings
+    apply here too because these fields left `entries` before the codec dropped
+    its null values.
     """
     compute = pyarrow.compute
     found: dict[str, Any] = {}
@@ -3300,24 +3244,6 @@ def _session_batch_columns(
             found[name] = cast_arrow_fix(cleaned, dtype)
         elif cleaned is not column:
             found[name] = cleaned
-    return found
-
-
-def _session_values(source: Message) -> dict[str, Any]:
-    """The header fields the raw stage already lifted, as this stage holds them.
-
-    Read off the columns rather than out of `entries`: the raw stage parsed
-    them once, and scanning the list again for facts already in hand is what
-    this exists to stop.
-    """
-    typed = _session_types()
-    found: dict[str, Any] = {}
-    for name, _ in SESSION_FIELDS:
-        value = getattr(source, name, None)
-        if value is None:
-            continue
-        dtype = typed.get(name)
-        found[name] = value if dtype is None else scalar_fix_value(value, dtype)
     return found
 
 

@@ -72,7 +72,7 @@ def test_importing_the_package_configures_nothing() -> None:
         [
             sys.executable,
             "-c",
-            "import logging, rekep, rekep.iceberg.dataset, rekep.text.text_files;"
+            "import logging, rekep, rekep.iceberg.dataset, rekep.text.message;"
             " root = logging.getLogger('rekep');"
             " print(bool(root.handlers), root.level)",
         ],

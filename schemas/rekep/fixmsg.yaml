@@ -113,20 +113,20 @@ fields:
   description: Why this event was rejected or could not be interpreted, when known.
 - name: sourceurl
   type: string
-  description: Normalized absolute URI of the log the row came from.
+  description: Absolute URI of the raw source text object.
   fix: {name: SourceURL}
 - name: sourcerownum
   type: int64
-  description: 1-based physical line number of the header; 0 when not read from a file.
+  description: 1-based physical row number in the raw source object.
   fix: {name: SourceRownum}
 - name: threadname
   type: string
-  description: Contents of the first bracketed header field.
+  description: Thread spelling captured from the raw line header.
   fix: {name: ThreadName}
 - name: level
   type: string
   nullable: true
-  description: Severity in the parenthesized header token; null when omitted.
+  description: Severity spelling captured from the raw line header.
   fix: {name: Level}
 - name: protocol
   type: fixed_size_binary[16]
@@ -304,7 +304,7 @@ fields:
       description: Indexed container prefix.
 - name: direction
   type: int32
-  description: SENT or RECV when stated by the transport prefix; UNKNOWN otherwise.
+  description: Transport direction parsed from the raw message body.
   enum: {name: Direction, key_type: int32, values: '{"0":"UNKNOWN","1397050964":"SENT","1380270934":"RECV"}', value_type: utf8, encoding: ascii-big-endian, byte_width: '4', padding: nul-right}
 - name: unixsource
   type: string

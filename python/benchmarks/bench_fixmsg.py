@@ -1,17 +1,10 @@
-"""Benchmark the `Message` -> `FixMsg` boundary: the mix, the stages, the kernels.
-
-`bench_text_file.py` prices this boundary as one number beside the text layer
-it follows. This script is that number taken apart -- which protocol mix pays
-what, which stage of `from_message_batch` the milliseconds are in, and which
-Arrow kernel each call site spends them on -- because the boundary is entirely
-kernel-bound and a proposal against it is otherwise a guess.
-"""
+"""Benchmark raw `Message` to parsed `FixMsg` protocol mixes and kernels."""
 
 from __future__ import annotations
 
 import pathlib
+import random
 import sys
-import tempfile
 import time
 from collections.abc import Sequence
 
@@ -25,14 +18,20 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import accounted_kernels, accounted_stages, best_of, parser  # noqa: E402
 
-# The capture is `bench_text_file`'s, fixture and mixes both: one capture for
-# the text layer and for the FIX layer that reads it, so the two scripts'
-# rows/s are the same rows and add up to what a pipeline pays.
-from bench_text_file import MIXES, capture  # noqa: E402
-
+from rekep.fix import SOH  # noqa: E402
 from rekep.fix.registry import FixRegistry  # noqa: E402
 from rekep.fix.transcribe import FixCodec  # noqa: E402
-from rekep.text import FixMsg, TextFile  # noqa: E402
+from rekep.text import FixMsg, Message  # noqa: E402
+
+CATEGORY_SHARES: tuple[tuple[str, int], ...] = (("OTHER", 60), ("FIX", 25), ("FIXML", 15))
+MIXES: tuple[tuple[str, tuple[tuple[str, int], ...]], ...] = (
+    ("mixed 60/25/15", CATEGORY_SHARES),
+    ("wire FIX only", (("FIX", 1),)),
+    ("bridge FIXML only", (("FIXML", 1),)),
+    ("unparsed text only", (("OTHER", 1),)),
+)
+PLUGINS = ("OMSSales_Enrichment", "ULBridge", "ModuleMarketDataManager", "ObjkeyTagWrapper")
+LEVELS = ("DEBUG", "INFO", "WARNING", None)
 
 #: What `--only stages` accounts, in the order a batch reaches them, as
 #: `(label, module[:Class], attribute)`. Every one of them is reached through
@@ -60,12 +59,72 @@ STAGES: tuple[tuple[str, str, str], ...] = (
 
 
 def raw_batch(rows: int, shares: Sequence[tuple[str, int]]) -> pyarrow.RecordBatch:
-    """One raw `Message` batch, read back through the text layer that writes it."""
-    with tempfile.TemporaryDirectory() as tmp:
-        path = pathlib.Path(tmp) / "capture.txt"
-        capture(path, rows, shares=shares)
-        with TextFile.from_path(path) as log:
-            return next(log.into_arrow_batches(batch_row_size=rows))
+    """One raw batch built without timing or depending on a text reader."""
+    generate = random.Random(5)
+    slots = [name for name, share in shares for _ in range(share)]
+    generate.shuffle(slots)
+    messages = []
+    for index in range(rows):
+        second, micro = divmod(index, 1_000_000)
+        messages.append(
+            Message(
+                sourceurl="memory:///bench-fixmsg.log",
+                sourcerownum=index + 1,
+                timestamp=(
+                    f"2026-08-14 {second // 3600 % 24:02d}:{second // 60 % 60:02d}:"
+                    f"{second % 60:02d}.{micro // 1000:03d}_{micro % 1000:03d}"
+                ),
+                threadname=f"250-e7256476:9effef3e6a:{72500 + index % 8:05d}",
+                plugin=PLUGINS[index % len(PLUGINS)],
+                level=LEVELS[index % len(LEVELS)],
+                body=_body(slots[index % len(slots)], index, generate),
+            )
+        )
+    return Message.into_arrow_batch(messages)
+
+
+def _body(protocol: str, index: int, generate: random.Random) -> bytes:
+    """One representative payload in the source spelling for `protocol`."""
+    if protocol == "FIX":
+        fields = (
+            "8=FIX.4.2",
+            "9=176",
+            "35=D",
+            f"34={1000 + index}",
+            "49=BUYSIDE",
+            "56=XPAR",
+            "52=20260814-00:05:01.147",
+            f"11=ORD-{index:010d}",
+            f"55=S{index % 512}",
+            "54=1",
+            f"38={generate.randint(1, 10_000)}",
+            "40=2",
+            f"44={generate.random() * 100:.4f}",
+            "59=0",
+            "10=203",
+        )
+        return f"sending >> {'|'.join(fields)}| << queued seq={1000 + index}".encode()
+    if protocol == "FIXML":
+        parties = SOH.join(("PARTYID=BUYSIDE", "PARTYIDSOURCE=D", "PARTYROLE=1"))
+        venue = SOH.join(("PARTYID=XPAR", "PARTYIDSOURCE=G", "PARTYROLE=17"))
+        fields = (
+            "#ISINCODE=XX0000084733",
+            "#CFICODE=FXXXSX",
+            f"#SYMBOL=S{index % 512}",
+            "#SIDE=1",
+            f"#ORDERQTY={generate.randint(1, 10_000)}",
+            f"#PRICE={generate.random() * 100:.4f}",
+            "#NOPARTYIDS=2",
+            f"#NOPARTYIDS[0]={parties}",
+            f"#NOPARTYIDS[1]={venue}",
+            "#TRANSACTTIME=20260814-00:05:01.148",
+            "#UNKNOWNVENUEFIELD=Z9",
+        )
+        return ("toBridge " + "|".join(fields)).encode()
+    return (
+        f"After Enrichment -> ACCOUNT=ACCT-{index % 500:06d} "
+        f"CLIENTID=MCFP2 VENUE=XPAR qty={index % 997}"
+    ).encode()
 
 
 def checked(batch: pyarrow.RecordBatch, codec: FixCodec, sample: int = 8) -> pyarrow.RecordBatch:

@@ -61,13 +61,13 @@ payload.
 
 ## What one run says
 
-Eleven rows through `parse_messages`, at `INFO`:
+Fourteen physical rows through `parse_messages`, at `INFO`:
 
 ```text
 INFO rekep.logs parse_messages reading capture=python/tests/data
-INFO rekep.iceberg.dataset logs.messages created at file://data/warehouse/logs/messages with 58 columns, partitioned by {'unixpartition': 'identity'}
+INFO rekep.iceberg.dataset logs.messages created at file:///srv/yggfin/data/warehouse/logs/messages with 7 columns, partitioned by nothing
 INFO rekep.iceberg.dataset logs.messages wrote branch=main snapshot=2257423558696136046 in 97ms
-INFO rekep.logs parse_messages finished: 11 read, 11 written, 0 skipped → messages=logs.messages in 0.9s
+INFO rekep.logs parse_messages finished: 14 read, 14 written, 0 skipped → messages=logs.messages in 0.9s
 ```
 
 Four records, because four things finished. The stage brackets the run, and
@@ -83,15 +83,15 @@ INFO rekep.logs parse_fix_market resolved unix from SendingTime 1, recorded 1; 2
 INFO rekep.logs parse_fix_market retained 0 rows with FIX transcription errors
 INFO rekep.logs parse_fix_market finished: 2 read, 2 written, 0 skipped → market=fix.market in 2.5s
 INFO rekep.logs parse_fix_misc reading messages=logs.messages
-INFO rekep.logs parse_fix_misc selected 7 misc rows
-INFO rekep.logs parse_fix_misc resolved unix from TransactTime 1, recorded 6; 2 of 7 rows carry a symbolticker
+INFO rekep.logs parse_fix_misc selected 11 misc rows
+INFO rekep.logs parse_fix_misc resolved unix from nothing 3, TransactTime 1, recorded 7; 3 of 11 rows carry a symbolticker
 INFO rekep.logs parse_fix_misc retained 0 rows with FIX transcription errors
-INFO rekep.logs parse_fix_misc finished: 7 read, 7 written, 0 skipped → misc=fix.misc in 2.8s
+INFO rekep.logs parse_fix_misc finished: 11 read, 11 written, 0 skipped → misc=fix.misc in 2.8s
 INFO rekep.logs parse_fix_unknown reading messages=logs.messages
-INFO rekep.logs parse_fix_unknown selected 1 unknown rows
-INFO rekep.logs parse_fix_unknown resolved unix from recorded 1; 1 of 1 rows carry a symbolticker
+INFO rekep.logs parse_fix_unknown selected 0 unknown rows
+INFO rekep.logs parse_fix_unknown resolved unix from nothing; 0 of 0 rows carry a symbolticker
 INFO rekep.logs parse_fix_unknown retained 0 rows with FIX transcription errors
-INFO rekep.logs parse_fix_unknown finished: 1 read, 1 written, 0 skipped → unknown=fix.unknown in 0.1s
+INFO rekep.logs parse_fix_unknown finished: 0 read, 0 written, 0 skipped → unknown=fix.unknown in 0.1s
 INFO rekep.logs parse_instruments reading market=fix.market
 INFO rekep.logs parse_instruments observed 1 instruments, of which 1 are new versions
 INFO rekep.logs parse_instruments finished: 1 read, 1 written, 0 skipped → instruments=market.instruments in 3.2s
@@ -104,8 +104,8 @@ still gets only the payload.
 The same run at `DEBUG` adds the cast and the staged file:
 
 ```text
-DEBUG rekep.fields.field casting a stream onto Message: 56 columns
-DEBUG rekep.iceberg.dataset staged 11 rows to file://data/warehouse/logs/messages/data/unixpartition=1786658400/…
+DEBUG rekep.fields.field casting a stream onto Message: 7 columns
+DEBUG rekep.iceberg.dataset staged 14 rows to file:///srv/yggfin/data/warehouse/logs/messages/data/…
 ```
 
 A write that commits forty chunks is still one `INFO`. The per-chunk work is
@@ -121,7 +121,6 @@ also the grep target:
 | `rekep.logs` | a task opening, what it alone knows, and the result it closes with | — |
 | `rekep.iceberg.dataset` | table created, columns added, write finished, compaction and cleanup settled | scan planned, columns projected, file staged |
 | `rekep.fields.field` | — | a stream cast onto a shape |
-| `rekep.text.text_files` | — | each log opened, and the rows it yielded |
 
 Filter or silence the package by its parent name:
 
@@ -144,7 +143,7 @@ out of context says which task it came from and a reader learns one shape:
 | key | what it is |
 | --- | --- |
 | `task` | the task document's own name |
-| `read` | rows drawn from the source, or products folded |
+| `read` | rows the task selected from its source, or products folded |
 | `written` | rows committed |
 | `skipped` | read and not written |
 | `sources` | what was read, keyed by the role this stage calls it |

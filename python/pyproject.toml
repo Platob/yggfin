@@ -10,10 +10,9 @@ requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "pyarrow>=17.0",
-    # `hash64` is half of a parsed log's primary key, so the hash is data and
-    # not an implementation detail: a fallback would key the same line
-    # differently in two environments. A hard dependency, never an extra -- and
-    # it is worth a quarter of the parser (benchmarks/bench_text_file.py).
+    "yggdryl",
+    # Hashes are persisted identities, so every environment must use the same
+    # implementation rather than a platform-dependent fallback.
     "xxhash>=3.4",
     # Windows ships no IANA time zone database, so `zoneinfo` -- and through
     # it every pyarrow conversion that names a zone, "UTC" included -- needs
@@ -85,6 +84,9 @@ bench = [
 # them: the runner group is what a task executes under, and the airflow group
 # is what the DAG and its operator are tested against.
 default-groups = ["dev", "runner", "airflow"]
+
+[tool.uv.sources]
+yggdryl = { path = "../../yggdryl/python", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

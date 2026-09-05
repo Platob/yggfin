@@ -1,17 +1,16 @@
 """Catalog and namespace CRUD against a real, fully local catalog."""
 
+import os
 from pathlib import Path
 from typing import Annotated
 
 import pyarrow.fs
 import pytest
-from pyiceberg.io.pyarrow import PyArrowFile
 
 from rekep import Convertible, Field, scalar
-from rekep.arrow_file_io import ArrowFileIO
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.catalog import PYARROW_FILE_IO
-from rekep.urls import S3
+from rekep.iceberg.file_io import IcebergFileIO
 
 
 @scalar
@@ -25,8 +24,8 @@ class Quote(Convertible):
     """Quantity."""
 
 
-class CustomArrowFileIO(ArrowFileIO):
-    """A distinct configured FileIO that keeps Windows URI handling."""
+class CustomArrowFileIO(IcebergFileIO):
+    """A distinct configured FileIO."""
 
 
 @pytest.fixture
@@ -51,27 +50,7 @@ def test_arrow_is_the_default_file_io(catalog: IcebergCatalog) -> None:
     assert catalog.catalog.properties["py-io-impl"] == PYARROW_FILE_IO
 
 
-def test_s3_location_settings_are_normalized_before_the_catalog_uses_them(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The catalog creates table locations; FileIO normalization is too late."""
-    import pyiceberg.catalog
-
-    seen = {}
-
-    def loaded(name: str, **properties: str) -> object:
-        seen.update(properties)
-        return object()
-
-    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", loaded)
-    warehouse = "s3://key:secret@bucket/wh?endpoint_override=minio%3A9000&scheme=http"
-    _ = IcebergCatalog(properties={"warehouse": warehouse}).catalog
-
-    assert seen["warehouse"] == "s3://bucket/wh"
-    assert seen["s3.endpoint"] == "http://minio:9000"
-
-
-def test_s3_process_defaults_reach_the_catalog_before_a_table_location(
+def test_standard_s3_properties_reach_pyiceberg_unchanged(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import pyiceberg.catalog
@@ -83,222 +62,39 @@ def test_s3_process_defaults_reach_the_catalog_before_a_table_location(
         return object()
 
     monkeypatch.setattr(pyiceberg.catalog, "load_catalog", loaded)
-    monkeypatch.setenv("S3_ENDPOINT_URL", "http://minio:9000")
-    monkeypatch.setenv("S3_REGION", "eu-west-1")
-    _ = IcebergCatalog(properties={"type": "in-memory"}).catalog
-    assert seen["s3.endpoint"] == "http://minio:9000"
-    assert seen["s3.region"] == "eu-west-1"
-
-
-@pytest.mark.parametrize("scheme", sorted(S3))
-def test_dataset_locations_configure_one_file_io_without_entering_stored_paths(
-    monkeypatch: pytest.MonkeyPatch, scheme: str
-) -> None:
-    """Table-specific storage still configures FileIO when the warehouse is local."""
-    import pyiceberg.catalog
-    from pyiceberg.table.locations import load_location_provider
-
-    from rekep.arrow_file_io import ArrowFileIO
-
-    query = "endpoint_override=minio%3A9000&scheme=http&region=eu-west-1"
-    prefix = f"{scheme}://key:secret@bucket"
-    seen = {}
-
-    def loaded(name: str, **properties: str) -> object:
-        seen.update(properties)
-        return object()
-
-    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", loaded)
-    dataset = IcebergDataset(
-        name="quotes",
-        namespace="trading",
-        field=Quote.into_field(),
-        catalog_properties={"type": "in-memory", "warehouse": "file:///local/warehouse"},
-        location=f"{prefix}/tables/quotes?{query}",
-        table_properties={
-            "write.data.path": f"{prefix}/data?{query}",
-            "write.metadata.path": f"{prefix}/metadata?{query}",
-        },
-    )
-
-    assert dataset.location == f"{scheme}://bucket/tables/quotes"
-    assert dataset.table_properties == {
-        "write.data.path": f"{scheme}://bucket/data",
-        "write.metadata.path": f"{scheme}://bucket/metadata",
+    properties = {
+        "type": "in-memory",
+        "warehouse": "s3://bucket/warehouse",
+        "s3.endpoint": "http://minio:9000",
+        "s3.region": "eu-west-1",
+        "s3.access-key-id": "key",
+        "s3.secret-access-key": "secret",
     }
-    assert dataset.catalog_properties["s3.endpoint"] == "http://minio:9000"
-    assert dataset.catalog_properties["s3.region"] == "eu-west-1"
-    assert dataset.catalog_properties["s3.access-key-id"] == "key"
-    assert dataset.catalog_properties["s3.secret-access-key"] == "secret"
-    assert all(
-        "secret" not in location and "?" not in location
-        for location in (dataset.location, *dataset.table_properties.values())
-    )
-
-    provider = load_location_provider(dataset.location, dataset.table_properties)
-    targets = [provider.new_data_location(name) for name in ("one.parquet", "two.parquet")]
-    assert targets == [
-        f"{scheme}://bucket/data/one.parquet",
-        f"{scheme}://bucket/data/two.parquet",
-    ]
-    assert len({ArrowFileIO.parse_location(target)[2] for target in targets}) == 2
-
-    _ = dataset.store.catalog
-    assert seen["warehouse"] == "file:///local/warehouse"
-    assert seen["s3.endpoint"] == "http://minio:9000"
-    assert seen["s3.access-key-id"] == "key"
+    _ = IcebergCatalog(properties=properties).catalog
+    assert {name: seen[name] for name in properties} == properties
 
 
-def test_dataset_locations_refuse_two_explicit_s3_stores() -> None:
-    with pytest.raises(ValueError, match="conflicting 's3.endpoint'"):
-        IcebergDataset(
-            name="quotes",
-            namespace="trading",
-            field=Quote.into_field(),
-            location="s3://bucket/tables/quotes?endpoint_override=first%3A9000",
-            table_properties={
-                "write.data.path": "s3://bucket/data?endpoint_override=second%3A9000"
-            },
-        )
-
-
-def test_a_shared_catalog_refuses_a_second_s3_store() -> None:
-    catalog = IcebergCatalog(properties={"warehouse": "file:///local/warehouse"})
-    catalog.dataset(
-        "trading.first",
-        field=Quote.into_field(),
-        location="s3://first:secret@minio-one:9000/bucket/first",
-    )
-
-    with pytest.raises(ValueError, match="separate IcebergCatalog"):
-        catalog.dataset(
-            "trading.second",
-            field=Quote.into_field(),
-            location="s3://second:secret2@minio-two:9000/bucket/second",
-        )
-
-    assert catalog.properties["s3.endpoint"] == "http://minio-one:9000"
-    assert catalog.properties["s3.access-key-id"] == "first"
-
-
-def test_an_open_catalog_receives_explicit_table_location_settings_before_load(
-    monkeypatch: pytest.MonkeyPatch,
+def test_relative_local_locations_become_absolute_file_uris(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import pyiceberg.catalog
-
-    table = object()
-
-    class Loaded:
-        def __init__(self, properties: dict[str, str]) -> None:
-            self.properties = properties
-
-        def load_table(self, _name: str) -> object:
-            assert self.properties["s3.endpoint"] == "http://minio:9000"
-            assert self.properties["s3.access-key-id"] == "key"
-            return table
-
-    monkeypatch.setattr(
-        pyiceberg.catalog,
-        "load_catalog",
-        lambda _name, **properties: Loaded(properties),
-    )
-    catalog = IcebergCatalog(
-        name="already-open",
-        properties={"warehouse": "file:///local/warehouse"},
-    )
-    _ = catalog.catalog
-
+    monkeypatch.chdir(tmp_path)
+    catalog = IcebergCatalog(properties={"warehouse": "data/warehouse"})
     dataset = catalog.dataset(
         "trading.quotes",
         field=Quote.into_field(),
-        location=(
-            "s3n://key:secret@bucket/tables/quotes?endpoint_override=minio%3A9000&scheme=http"
-        ),
-    )
-
-    assert dataset.store is catalog
-    assert catalog.properties["s3.endpoint"] == "http://minio:9000"
-    assert catalog.catalog.properties["s3.secret-access-key"] == "secret"
-    assert dataset.iceberg_table is table
-
-
-@pytest.mark.integration
-@pytest.mark.parametrize("scheme", sorted(S3))
-def test_explicit_create_location_stages_distinct_objects_without_network(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scheme: str
-) -> None:
-    import datetime
-
-    import pyarrow
-    import pyarrow.fs
-
-    from rekep.arrow_file_io import ArrowFileIO
-
-    @scalar
-    class DailyQuote(Convertible):
-        symbol: str
-        day: Annotated[datetime.date, Field.partition_key()]
-
-    remote = pyarrow.fs._MockFileSystem()
-    remote.create_dir("bucket/metadata", recursive=True)
-    remote.create_dir("bucket/data/day=2026-08-14", recursive=True)
-    original = ArrowFileIO._initialize_fs
-    opened: list[dict[str, str]] = []
-
-    def initialized(
-        self: ArrowFileIO, scheme: str, netloc: str | None = None
-    ) -> pyarrow.fs.FileSystem:
-        if scheme in S3:
-            opened.append(dict(self.properties))
-            return remote
-        return original(self, scheme, netloc)
-
-    monkeypatch.setattr(ArrowFileIO, "_initialize_fs", initialized)
-    warehouse = tmp_path / "warehouse"
-    warehouse.mkdir()
-    dataset = IcebergDataset(
-        name="remote_quotes",
-        namespace="trading",
-        field=DailyQuote.into_field(),
-        catalog_name="remote-location",
-        catalog_properties={
-            "type": "sql",
-            "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
-            "warehouse": warehouse.as_uri(),
-        },
-    )
-    query = "endpoint_override=minio%3A9000&scheme=http&region=eu-west-1"
-    prefix = f"{scheme}://key:secret@bucket"
-    assert not dataset.exists, "the already-open catalog receives the table-specific settings"
-    dataset.create_with_field(
-        DailyQuote.into_field("trading.remote_quotes"),
-        location=f"{prefix}/tables/quotes?{query}",
-        properties={
-            "write.data.path": f"{prefix}/data?{query}",
-            "write.metadata.path": f"{prefix}/metadata?{query}",
+        location="data/tables/quotes",
+        table_properties={
+            "write.data.path": "data/files",
+            "write.metadata.path": "data/metadata",
         },
     )
 
-    table = dataset.iceberg_table
-    assert table.location() == f"{scheme}://bucket/tables/quotes"
-    assert table.properties["write.data.path"] == f"{scheme}://bucket/data"
-    assert table.properties["write.metadata.path"] == f"{scheme}://bucket/metadata"
-    assert opened and opened[0]["s3.endpoint"] == "http://minio:9000"
-    assert opened[0]["s3.access-key-id"] == "key"
-
-    day = datetime.date(2026, 8, 14)
-    source = pyarrow.Table.from_pydict(
-        {"symbol": ["A", "B"], "day": [day, day]},
-        schema=DailyQuote.into_field().into_arrow_schema(),
-    )
-    dataset.overwrite_arrow_table(source, merge_by=False, commit_row_size=1)
-    files = dataset.data_files().column("file_path").to_pylist()
-    assert len(files) == 2
-    assert len(set(files)) == 2
-    assert all(path.startswith(f"{scheme}://bucket/data/day=2026-08-14/") for path in files)
-    assert all("?" not in path and "secret" not in path for path in files)
-    assert dataset.read_arrow_table().num_rows == 2
-    dataset.close()
+    assert catalog.properties["warehouse"] == (tmp_path / "data/warehouse").as_uri()
+    assert dataset.location == (tmp_path / "data/tables/quotes").as_uri()
+    assert dataset.table_properties == {
+        "write.data.path": (tmp_path / "data/files").as_uri(),
+        "write.metadata.path": (tmp_path / "data/metadata").as_uri(),
+    }
 
 
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
@@ -307,7 +103,7 @@ def test_a_named_file_io_wins(tmp_path: Path) -> None:
 
 
 def test_a_named_file_io_is_wrapped_with_output_ownership(tmp_path: Path) -> None:
-    from rekep.arrow_file_io import TRACKED_FILE_IO, TrackedFileIO
+    from rekep.iceberg.file_io import TRACKED_FILE_IO, TrackedFileIO
 
     warehouse = tmp_path / "custom-warehouse"
     warehouse.mkdir()
@@ -598,66 +394,82 @@ def test_a_catalog_name_is_explicit_and_nonempty() -> None:
 
 
 def test_maintenance_reaches_the_store_the_catalog_was_configured_with() -> None:
-    """`resolve` reads the location and the environment, and a canonical
-    location has had the endpoint and the credentials taken out of it -- so a
-    sweep resolved that way looks on AWS for a bucket that is on MinIO."""
+    """Maintenance reuses the FileIO's configured endpoint and credentials."""
     from rekep.iceberg.dataset import _store_of
 
     configured = pyarrow.fs.SubTreeFileSystem("/warehouse", pyarrow.fs.LocalFileSystem())
-
-    class Io:
-        @staticmethod
-        def new_input(location: str) -> PyArrowFile:
-            return PyArrowFile(location=location, path="wh/db/t/data", fs=configured)
+    file_io = IcebergFileIO({"s3.endpoint": "http://minio:9000"})
+    file_io.fs_by_scheme = lambda _scheme, _netloc: configured
 
     class Table:
-        io = Io()
+        io = file_io
 
     filesystem, base = _store_of(Table(), "s3://bucket/wh/db/t/data")
 
     assert filesystem is configured
-    assert base == "wh/db/t/data"
+    assert base == "bucket/wh/db/t/data"
 
-    # A FileIO with no Arrow filesystem behind it leaves the location as all
-    # there is to go on.
     class Bare:
-        @staticmethod
-        def new_input(location: str) -> object:
-            return object()
+        pass
 
     class Unbacked:
         io = Bare()
 
-    assert _store_of(Unbacked(), "s3://bucket/wh")[1] == "bucket/wh"
+    with pytest.raises(TypeError, match="cannot expose its configured Arrow store"):
+        _store_of(Unbacked(), "s3://bucket/wh")
 
 
-def test_the_sweep_evicts_by_the_key_the_file_io_stored_under() -> None:
-    """On an object store that key is not the location: the endpoint, the
-    access key and the region tell two stores serving one path apart."""
-    from rekep.arrow_file_io import CONTENT_CACHE
+def test_the_sweep_deletes_through_yggdryl_and_tolerates_absence(tmp_path: Path) -> None:
     from rekep.iceberg.dataset import IcebergDataset
 
-    io = ArrowFileIO({"s3.endpoint": "http://minio:9000", "s3.region": "eu-west-1"})
-    location = "s3://bucket/wh/db/t/metadata/x.avro"
-    identity = io.content_identity(location)
-    assert identity != location
-    CONTENT_CACHE.put(identity, b"stale")
+    orphan = tmp_path / "orphan.avro"
+    orphan.write_bytes(b"old")
+    dataset = object.__new__(IcebergDataset)
+    found = [(pyarrow.fs.LocalFileSystem(), os.fspath(orphan), orphan.as_uri(), 3)]
+    dataset._sweep(found)
+    dataset._sweep(found)
 
-    deleted: list[str] = []
+    assert not orphan.exists()
+
+
+def test_an_unknown_mtime_is_spared_by_the_orphan_grace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import datetime
+
+    from rekep.iceberg import dataset as module
+    from rekep.iceberg.dataset import IcebergDataset
 
     class FileSystem:
         @staticmethod
-        def delete_file(path: str) -> None:
-            deleted.append(path)
+        def get_file_info(_selector: pyarrow.fs.FileSelector) -> list[pyarrow.fs.FileInfo]:
+            return [
+                pyarrow.fs.FileInfo(
+                    "root/uncommitted.parquet",
+                    pyarrow.fs.FileType.File,
+                    size=4,
+                )
+            ]
 
-    class Table:
-        pass
-
-    table = Table()
-    table.io = io
+    filesystem = FileSystem()
+    monkeypatch.setattr(module, "_store_of", lambda _table, _directory: (filesystem, "root"))
     dataset = object.__new__(IcebergDataset)
-    dataset.__dict__["iceberg_table"] = table
-    dataset._sweep([(FileSystem(), "bucket/wh/db/t/metadata/x.avro", location, 1)])
+    dataset.__dict__.update(
+        iceberg_table=object(),
+        refresh=lambda: dataset,
+        _live=lambda _table: (set(), set()),
+        _data_path=lambda _table: "file:///root",
+    )
 
-    assert deleted == ["bucket/wh/db/t/metadata/x.avro"]
-    assert CONTENT_CACHE.peek(identity) is None
+    assert dataset._orphans(datetime.timedelta(days=3), metadata=False) == []
+    assert dataset._orphans(datetime.timedelta(0), metadata=False)[0][1] == (
+        "root/uncommitted.parquet"
+    )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path normalization")
+def test_native_file_io_resolves_windows_paths_and_file_uris(tmp_path: Path) -> None:
+    target = tmp_path / "metadata.json"
+
+    assert Path(IcebergFileIO.parse_location(os.fspath(target))[2]) == target
+    assert Path(IcebergFileIO.parse_location(target.as_uri())[2]) == target

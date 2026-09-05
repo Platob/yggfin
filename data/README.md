@@ -6,28 +6,36 @@ compressed copy. Runtime jobs can therefore stay offline.
 ```text
 data/fix/versions.json          the version list, session layers, and which
                                 versions have had their spec read
-data/fix/fields/000000.json     tags 0-999, one cross-version record each
-data/fix/fields/000030.json     tags 30000-30999, rekep package vocabulary
-data/fix/fields/000040.json     tags 40000-40999, the 5.0.SP2 extension pack
-data/fix/fields/999999.json     the fields FIX never numbered
-data/fix/components/parties.json  one component, declared as a Field
-data/fix/components/new_order_single.json  a message, declared the same way
-data/fix/repgroup/no_party_i_ds.json  one derived repeating-group list Field
-data/fix/namespaces/fixtrading-udf/fields/000009.json
+data/fix/records/000000.json    tags 0-999, one cross-version record each
+data/fix/records/000030.json    tags 30000-30999, rekep package vocabulary
+data/fix/records/000040.json    tags 40000-40999, the 5.0.SP2 extension pack
+data/fix/records/999000.json    records answering at a name: the components,
+                                the messages, the repeating groups, and the
+                                fields FIX never numbered -- sixteen shards
+data/fix/namespaces/fixtrading-udf/records/000009.json
                                 registered definitions for tags 9000-9999
-data/fix/namespaces/clear-street/fields/000009.json
+data/fix/namespaces/clear-street/records/000009.json
                                 Clear Street definitions for the same tag range
 data/fix/sources.json           complete-source URLs, versions, checksums, and terms
 data/fix-conflicts.json         every reading the collapse dropped
 ```
 
+One keyspace holds every declaration. A field, a component, a repeating group
+and a message are the same shape -- a `Field` -- so they are kept the same way,
+and there is no folder saying which kind a document holds: a group *is* a block
+whose Arrow type is a list, and a message *is* a block naming a message type.
+
 A field's record is cross-version by nature: one tag, one reading, and
 `versions` -- the list of versions that declare it. Shards hold one thousand
 tags each and are named by the shard index, so the document holding a tag is
-`tag // 1000` and nothing has to be looked up; a field FIX never numbered keys
-by its name and lands in `999999`, the one index no tag reaches. The tag space
-is sparse, so eleven files hold the populated ranges and named fields. Empty
-ranges are absent, and a lookup reads one shard.
+`tag // 1000` and nothing has to be looked up. A record with no tag -- which is
+what every block is -- keys by its folded name and lands in one of the sixteen
+named shards above every reachable tag index, chosen by a stable digest of that
+name. The tag space is sparse, so empty ranges are simply absent and a lookup
+reads one shard.
+
+A store written in the superseded `fields/`, `components/`, `repgroup/` layout
+is refused rather than read; regenerating it is the whole remedy.
 
 Every document here is a field document, and a shard is a JSON *list* of them:
 

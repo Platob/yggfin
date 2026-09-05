@@ -45,7 +45,7 @@ for the sourced interoperability details and the limits of zero-copy exchange.
 
 ```mermaid
 flowchart TD
-    L[TextFile / TextFiles] --> PM[parse_messages]
+    L[yggdryl<br/>IOBase / TextOptions] --> PM[parse_messages]
     PM --> M[(logs.messages)]
     M --> PFM[parse_fix_market] --> FM[(fix.market)]
     M --> PFX[parse_fix_misc] --> FX[(fix.misc)]
@@ -76,19 +76,16 @@ line = (
     "32=4|31=100.25|14=4|151=6|60=20260821-10:29:59.998|10=123"
 )
 
-# logs.messages: protocol-neutral source record
-message = Message(
-    body=line,
+# logs.messages: exact raw source record
+message = Message.from_text(
+    line,
     sourceurl="capture.log",
     sourcerownum=1,
-).identify()
+    timestamp="2026-08-21 10:30:00.250",
+)
 
 # fix.market: registry-resolved FIX record
-fixmsg = FixMsg.from_text(
-    message.body,
-    sourceurl=message.sourceurl,
-    sourcerownum=message.sourcerownum,
-)
+fixmsg = FixMsg.from_message(message)
 
 # market.orders and market.executions
 events = list(fixmsg.into_market_events(fix_version="4.4"))
@@ -99,7 +96,8 @@ execution = next(event for event in events if isinstance(event, Execution))
 instrument = next(InstUpdate.from_fixmsgs([fixmsg])).instrument
 book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
 
-assert message.MsgType == fixmsg.MsgType == "8"
+assert message.body == line.encode()
+assert fixmsg.msgtype == "8"
 assert (order.altids["clordid"], order.lastqty) == ("CL-7", 6.0)
 assert (execution.altids["execid"], execution.lastqty, execution.lastpx) == (
     "EX-3",
@@ -114,21 +112,30 @@ The scalar example exposes each boundary. File-scale work keeps the same
 shapes in Arrow batches, as shown below and in the [pipeline guide](pipeline/index.md).
 
 ```python
-from rekep import FixCodec, FixMsg, FixRegistry, TextFiles
+from rekep import FixCodec, FixMsg, FixRegistry, Message
+from yggdryl import IOBase, TextOptions
 
 registry = FixRegistry(cache_dir="data/fix")
+codec = FixCodec(registry=registry, timezone="Europe/Paris")
+options = TextOptions()
+options.with_rownum = 1
+options.batch_row_size = 65_536
 
-source = TextFiles.from_folder(
-    "logs",
-    pattern="*.log*",
-    msg_type_event_types=registry.msg_type_event_types(),
-)
-for messages in source.read_arrow_reader():
-    parsed = FixMsg.from_message_batch(messages, FixCodec(registry=registry))
+source = IOBase("s3://bucket/capture/app.log.gz").into_text(options)
+for batch in source.read_arrow_reader():
+    names = [
+        {"url": "sourceurl", "rownum": "sourcerownum"}.get(name, name)
+        for name in batch.schema.names
+    ]
+    messages = Message.into_field().cast_arrow_batch(batch.rename_columns(names))
+    parsed = FixMsg.from_message_batch(messages, codec)
 ```
 
-Every scalable API returns an Arrow reader. Table helpers are explicit choices
-for data known to fit in memory.
+Yggdryl owns text filesystems, decompression and physical-line batches.
+`parse_messages` additionally selects paths and captures the configured header;
+yggfin owns the raw `Message` and Iceberg table boundaries. Every scalable API
+returns an Arrow reader. Table helpers are explicit choices for data known to
+fit in memory.
 
 ## Command line
 

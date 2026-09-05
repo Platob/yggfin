@@ -25,15 +25,18 @@ import pyarrow
 
 from rekep.convert import Convertible
 from rekep.entries import fold
-from rekep.enums import EventType, State
 from rekep.fields import Field, column_name
 from rekep.fields.metadata import (
     ANY_VERSION,
     Alias,
-    FixFieldValue,
     canonical_versions,
     newest_of,
 )
+
+# Re-exported: `store` and the package take `FixFieldValue` from here. Spelled
+# in the form a linter reads as deliberate, because as a bare import it is
+# unused in this module and gets stripped as dead on every fix pass.
+from rekep.fields.metadata import FixFieldValue as FixFieldValue  # noqa: E402
 from rekep.fix import quickfix
 
 #: What a field record is: a numbered FIX tag, or a name a renderer prints with
@@ -149,6 +152,47 @@ def record_kind(record: Field) -> str:
     return NAMESPACE if record.fix.tag is None else STANDARD
 
 
+def is_declaration_block(record: Field) -> bool:
+    """Whether one stored record declares a block rather than a value.
+
+    A component, a repeating group and a message are all blocks; the one
+    keyspace holds them beside the fields, and this is what tells them apart.
+    It reads `fix:component` -- the name a block is declared under -- rather
+    than the Arrow type, because the type answers a different question: three
+    package-owned *fields* are Arrow lists (`ParentHash`, `LinkHashes`,
+    `Unmap`) and not one of them is a repeating group.
+    """
+    return bool(record.fix.get("component"))
+
+
+def is_group_record(record: Field) -> bool:
+    """Whether one stored record declares a repeating group.
+
+    A group is a block whose type is a list, which is the shape
+    `ComponentRecord` already describes. Asking `is_declaration_block` first is
+    what keeps the three list-typed package fields out of the answer: they
+    declare no block, so their Arrow type is never consulted.
+    """
+    return is_declaration_block(record) and quickfix.is_group(record)
+
+
+def is_message_record(record: Field) -> bool:
+    """Whether one stored block declares a message rather than a reusable one."""
+    return is_declaration_block(record) and bool(str(record.fix.get("msgtype") or ""))
+
+
+def record_key(record: Field) -> int | str:
+    """What one record answers at: a block by its name, a field by its tag.
+
+    A group carries the tag of the field that counts it, and that field is a
+    record of its own -- `NoPartyIDs <453>` is an `int64` count and a
+    `list<Party>` group, two readings that would otherwise be one key and
+    silently overwrite each other. The count owns the tag, because that is what
+    the wire carries at 453; the group answers at its name.
+    """
+    return column_name(record.fix.canonical) if is_declaration_block(record) else record.fix.key
+
+
 def record_copy(record: Field) -> Field:
     """A record nothing else holds, so a caller mutating it corrupts no cache."""
     return Field(
@@ -208,58 +252,48 @@ def collapsed_record(members: Sequence[Field], versions: Sequence[str]) -> Field
     `members` and `versions` run **oldest first** together, so a newer reading
     simply overwrites what an older one said -- which is the whole collapse
     rule, and the reason a value only 4.2 ever had survives it.
+
+    A fold through `Field.merge`, oldest first, so the newest reading wins
+    every key it restates and everything older accumulates beneath it. The
+    two things a merge does not know about are settled here afterwards: the
+    version list, which is this collapse's own input, and the order of the
+    message lists, which lead with the newest reading rather than the oldest.
     """
     if not members:
         raise ValueError("a FIX field record needs at least one declaration")
+    built = record_copy(members[0])
+    for member in members[1:]:
+        built = built.merge(member)
     latest = members[-1]
-    added = next((member for member in reversed(members) if member.fix.added), None)
-    event_types: dict[str, EventType] = {}
-    states: dict[str, State] = {}
-    for member in members:
-        event_types.update(member.fix.event_types)
-        states.update(member.fix.states)
-    # Newest first, unlike the values: where a field is used is a list and not
-    # a mapping, so the newest version's reading leads it rather than
-    # correcting it key by key.
-    used_in: list[str] = []
-    components: list[str] = []
-    for member in reversed(members):
-        for name in _json_sequence(member.fix.get("msgtypes")):
-            if name not in used_in:
-                used_in.append(name)
-        for name in _json_sequence(member.fix.get("components")):
-            if name not in components:
-                components.append(name)
-    built = record_copy(latest)
+    # The newest version owns the reading, its type included: `merge` widens,
+    # and a later version correcting an earlier one's type is not a widening.
+    built = dataclasses.replace(built, dtype=latest.dtype)
     fix = built.fix
     fix.name = latest.name
     fix.versions = canonical_versions(versions)
     fix.pop("version", None)
+    added = next((member for member in reversed(members) if member.fix.added), None)
     if added is not None:
         fix.added = added.fix.added
-    # The same refusals a stored document meets: a collapse is a write, and a
-    # record no lookup could answer for must not reach a shard from either side.
-    fix.event_types = event_types
+        if source := added.fix.source_of("added"):
+            fix.origins = {**fix.origins, "added": source}
+    # Newest first, unlike the values: where a field is used is a list and not
+    # a mapping, so the newest version's reading leads it rather than
+    # correcting it key by key.
+    fix.msgtypes = tuple(
+        dict.fromkeys(name for member in reversed(members) for name in member.fix.msgtypes)
+    )
+    fix.components = tuple(
+        dict.fromkeys(name for member in reversed(members) for name in member.fix.components)
+    )
     fix.tags = tuple(dict.fromkeys(tag for member in reversed(members) for tag in member.fix.tags))
-    refuse_record(built)
-    values, origins = folded_field_values(members)
-    fix.enumerated = values
-    scalar_origins = {
-        part: source
-        for part, source in latest.fix.origins.items()
-        if part not in ("values", "aliases", "added")
-    }
-    if added is not None and (source := added.fix.source_of("added")):
-        scalar_origins["added"] = source
-    fix.origins = {**scalar_origins, **origins}
     fix.sources = tuple(
         dict.fromkeys(source for member in reversed(members) for source in member.fix.sources)
     )
     fix.source = fix.sources[0] if fix.sources else latest.fix.source
-    fix.states = states
-    fix.msgtypes = used_in
-    fix.components = components
-    return built
+    # The same refusals a stored document meets: a collapse is a write, and a
+    # record no lookup could answer for must not reach a shard from either side.
+    return refuse_record(built)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -410,6 +444,29 @@ class ComponentRecord(Convertible):
                     found[(*path, member.name)] = entry[0].name
         return found
 
+    def into_record(self) -> Field:
+        """This block as the one `Field` the keyspace stores it as.
+
+        `fix:component` is stamped here rather than assumed already present.
+        It is the fact that marks a stored record as a block -- what the
+        three folders used to say by where a document sat -- and a derived
+        group's declaration is a member lifted out of a tree, which carries
+        no such name of its own until it is stored in its own right.
+        """
+        stored = record_copy(self.declaration)
+        # Dropped before they are written, so the two keys the record owns land
+        # in one order however the declaration reached here: a block lifted out
+        # of a tree already carries `component`, one read back from a document
+        # carries both, and a store that compares bytes would otherwise see two
+        # spellings of one record depending on which path built it.
+        stored.fix.pop("component", None)
+        stored.fix.pop("versions", None)
+        stored.fix.component = self.name
+        stored.fix.versions = list(self.versions)
+        if self.aliases:
+            stored.fix.named_aliases = self.aliases
+        return stored
+
     def into_dict(self) -> dict[str, Any]:
         """The record as its file holds it: the declaration, and nothing above it.
 
@@ -420,29 +477,29 @@ class ComponentRecord(Convertible):
         for a field, a group and a message, so there is no wrapper to keep in
         step with what it wraps.
         """
-        stored = record_copy(self.declaration)
-        stored.fix.versions = list(self.versions)
-        if self.aliases:
-            stored.fix.named_aliases = self.aliases
-        return _document(stored.into_dict())
+        return _document(self.into_record().into_dict())
+
+    @classmethod
+    def from_record(cls, record: Field) -> Self:
+        """One block from the record the keyspace holds it as."""
+        declaration = record_copy(record)
+        fix = declaration.fix
+        versions = tuple(str(version) for version in fix.versions)
+        aliases = tuple(fix.named_aliases)
+        name = str(fix.get("component") or declaration.name)
+        # The record owns the versions and the aliases, so the declaration
+        # under it states neither twice: `into_record` writes them back from
+        # the record that holds them. `fix:component` stays where it is --
+        # `quickfix.block` puts it on a declaration it builds, so popping it
+        # here would make a block read back as less than it was written.
+        fix.pop("versions", None)
+        fix.pop("aliases", None)
+        return cls(name=name, versions=versions, declaration=declaration, aliases=aliases)
 
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
         """Build one record from its stored field document."""
-        declaration = Field.from_dict(mapping)
-        fix = declaration.fix
-        versions = tuple(str(version) for version in fix.versions)
-        aliases = tuple(fix.named_aliases)
-        # The record owns both, so the declaration under it states neither
-        # twice: `into_dict` writes them back from the record that holds them.
-        fix.pop("versions", None)
-        fix.pop("aliases", None)
-        return cls(
-            name=declaration.name,
-            versions=versions,
-            declaration=declaration,
-            aliases=aliases,
-        )
+        return cls.from_record(Field.from_dict(mapping))
 
     @classmethod
     def from_components(cls, declared: Sequence[Field], versions: Sequence[str]) -> Self:
@@ -523,49 +580,6 @@ def _component_fields(
 def _document(payload: Mapping[str, Any]) -> dict[str, Any]:
     """A stored document with its empty parts dropped, for a small clean diff."""
     return {key: value for key, value in payload.items() if value not in (None, "", [], {})}
-
-
-def merged_value(held: FixFieldValue | None, fresh: FixFieldValue) -> FixFieldValue:
-    """One value read twice: each half taken from the newer reading that has it.
-
-    The prose and the spellings collapse independently, because a version
-    that lists a value without writing it up still names it -- so a reading
-    that says nothing about one half does not erase the other's.
-
-    The namespaces are the one half that does not collapse at all. Which
-    vocabularies declared a value accumulates rather than competing, and a
-    reading is fed here oldest first, so they union with the first declarer
-    first. Letting the newest reading win would make a version that merely
-    restates a value erase who introduced it.
-    """
-    if held is None:
-        return fresh
-    return dataclasses.replace(
-        fresh,
-        meaning=fresh.meaning or held.meaning,
-        aliases=fresh.aliases or held.aliases,
-        namespaces=tuple(dict.fromkeys((*held.namespaces, *fresh.namespaces))),
-    )
-
-
-def folded_field_values(
-    members: Sequence[Field],
-) -> tuple[tuple[FixFieldValue, ...], dict[str, dict[str, str]]]:
-    """Per-version values and their sources, with the newest stated half winning."""
-    values: dict[str, FixFieldValue] = {}
-    origins: dict[str, dict[str, str]] = {"values": {}, "aliases": {}}
-    for member in members:
-        for fresh in member.fix.enumerated:
-            values[fresh.value] = merged_value(values.get(fresh.value), fresh)
-            for part, stated in (("values", fresh.meaning), ("aliases", fresh.aliases)):
-                if not stated:
-                    continue
-                source = member.fix.source_of(part, fresh.value)
-                if source:
-                    origins[part][fresh.value] = source
-                else:
-                    origins[part].pop(fresh.value, None)
-    return tuple(values.values()), {part: found for part, found in origins.items() if found}
 
 
 def _json_any(value: str | None) -> Any:

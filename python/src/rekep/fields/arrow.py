@@ -32,22 +32,6 @@ def merge_fields(
     return pyarrow.field(target.name, merged, nullable=target.nullable, metadata=target.metadata)
 
 
-def merge_schemas(
-    source: pyarrow.Schema, target: pyarrow.Schema, *, leaf: LeafRule | None = None
-) -> pyarrow.Schema:
-    """`merge_fields` over two schemas: the same rule, one level up.
-
-    A schema is a list of fields and a struct is a list of fields, so this
-    is the field merge with the ends changed. Nothing about the rule is
-    restated here, which is why a nested addition behaves exactly like a
-    top-level one.
-    """
-    merged = _merge_field_lists(list(source), list(target), leaf=leaf)
-    if merged == list(target):
-        return target
-    return pyarrow.schema(merged, metadata=target.metadata)
-
-
 def promoted_type(
     source: pyarrow.DataType | None, target: pyarrow.DataType | None
 ) -> pyarrow.DataType | None:

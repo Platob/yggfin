@@ -641,6 +641,6 @@ def resolve_recorded_arrow(local: Any, stated: Any | None, rows: int) -> Any:
         if local is None
         else local.cast(pyarrow.int64(), safe=False)
     )
-    local_present = compute.and_(compute.is_valid(recorded), compute.not_equal(recorded, 0))
+    local_present = compute.fill_null(compute.not_equal(recorded, 0), False)
     found = compute.if_else(local_present, recorded, carried)
     return compute.fill_null(found, pyarrow.scalar(0, pyarrow.int64()))

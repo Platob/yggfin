@@ -17,14 +17,15 @@ from typing import Any
 from rekep import __version__
 from rekep.console import Console
 from rekep.deploy import TABLES, deploy
-from rekep.fields import Field, StructField
-from rekep.filesystems import read_bytes
+from rekep.fields import STANDARD_NAMESPACE, Field, StructField
 from rekep.fix.classify import KeyReport, apply_report, classify, count_files
 from rekep.fix.entries import (
     ANY_VERSION,
     Alias,
     ComponentRecord,
+    is_declaration_block,
     record_copy,
+    record_key,
     refuse_record,
 )
 from rekep.fix.fields import fix_field, namespaced_field
@@ -35,12 +36,13 @@ from rekep.fix.store import (
     component_from_document,
     component_record_document,
     document_of,
-    field_document,
     field_from_document,
     field_record_document,
+    record_document,
 )
 from rekep.iceberg import IcebergCatalog
 from rekep.logs import COMMAND_LEVEL, Stage, configure
+from rekep.resources import read_bytes
 from rekep.tasks import Task
 
 #: Where everything a person reads goes. `stderr`, so a dump piped into a file
@@ -289,7 +291,7 @@ def list_components(arguments: argparse.Namespace) -> int:
 def show_component(arguments: argparse.Namespace) -> int:
     """Write one complete component or message record."""
     try:
-        entry = _registry(arguments).merged_component(arguments.component)
+        entry = _registry(arguments).component_of(arguments.component)
     except KeyError:
         CONSOLE.fail(f"no FIX component or message {arguments.component!r} in this registry")
         return 1
@@ -305,12 +307,58 @@ def dump_registry(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _stored(registry: Any, record: Field, *, fresh: bool) -> Field:
+    """One record through the registry's one mutator, checked first.
+
+    `add_fields` folds, so a store already holding this identity would take
+    the change silently. Whether that is what a person typing `add-field` or
+    `update-field` meant is this layer's question, and the answer is the same
+    KeyError the two verbs used to raise between them.
+    """
+    held = _held(registry, record)
+    if fresh and held is not None:
+        # Naming what claims it, because "already stored" answers a
+        # different question than the one a person asking for a tag has.
+        raise KeyError(
+            f"tag {record.fix.tag} is already claimed by {held.fix.canonical!r}"
+            if record.fix.tag is not None and held.fix.folded != record.fix.folded
+            else f"FIX record {record.fix.canonical!r} is already stored"
+        )
+    if not fresh and held is None:
+        raise KeyError(f"no FIX record stored in {record_document(record_key(record))}")
+    registry.add_fields((record,))
+    written = _held(registry, record)
+    if written is None:  # pragma: no cover - add_fields just stored it
+        raise RuntimeError(f"FIX record {record.fix.canonical!r} was not stored")
+    return written
+
+
+def _held(registry: Any, record: Field) -> Field | None:
+    """What the store already holds for one record, block or field.
+
+    A block answers at its name and never through the field lookup, which is
+    the view that deliberately excludes them -- so asking for a component the
+    way a field is asked for would report every component as absent.
+    """
+    if is_declaration_block(record):
+        try:
+            return registry.component_of(record.fix.canonical).into_record()
+        except KeyError:
+            return None
+    return registry.field(record_key(record), namespace=STANDARD_NAMESPACE)
+
+
 def add_field(arguments: argparse.Namespace) -> int:
-    """Register one field identity the store does not have yet."""
+    """Register one field identity the store does not have yet.
+
+    The "does not have yet" is checked here rather than by the store: the
+    registry has one way in and it folds, so refusing a name a person did not
+    mean to overwrite is this command's courtesy, not the store's rule.
+    """
     registry = _registry(arguments)
-    entry = registry.add_field(_field_entry(arguments))
+    entry = _stored(registry, _field_entry(arguments), fresh=True)
     CONSOLE.ok(
-        f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
+        f"added {entry.fix.canonical} {CONSOLE.glyph('arrow')} {record_document(record_key(entry))}"
     )
     return 0
 
@@ -324,9 +372,10 @@ def update_field(arguments: argparse.Namespace) -> int:
         fresh = record_copy(fresh)
         fresh.fix.named_aliases = held.fix.named_aliases or fresh.fix.named_aliases
         fresh.fix.tags = fresh.fix.tags or held.fix.tags
-    entry = registry.update_field(fresh)
+    entry = _stored(registry, fresh, fresh=False)
     CONSOLE.ok(
-        f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} {field_document(entry.fix.key)}"
+        f"updated {entry.fix.canonical} {CONSOLE.glyph('arrow')} "
+        f"{record_document(record_key(entry))}"
     )
     return 0
 
@@ -347,7 +396,7 @@ def promote_field(arguments: argparse.Namespace) -> int:
 
 def remove_field(arguments: argparse.Namespace) -> int:
     """Delete one field identity, saying so when the store did not have it."""
-    if not _registry(arguments).remove_field(arguments.name):
+    if not _registry(arguments).remove_fields(arguments.name):
         CONSOLE.fail(f"no FIX field {arguments.name!r} in this registry")
         return 1
     CONSOLE.ok(f"removed {arguments.name}")
@@ -370,7 +419,7 @@ def alias_field(arguments: argparse.Namespace) -> int:
 
 def remove_component(arguments: argparse.Namespace) -> int:
     """Delete one component or message, saying so when the store did not have it."""
-    if not _registry(arguments).remove_component(arguments.name):
+    if not _registry(arguments).remove_fields(arguments.name):
         CONSOLE.fail(f"no FIX component or message {arguments.name!r} in this registry")
         return 1
     CONSOLE.ok(f"removed {arguments.name}")
@@ -380,16 +429,20 @@ def remove_component(arguments: argparse.Namespace) -> int:
 def add_component(arguments: argparse.Namespace) -> int:
     """Register one component or message from a document holding its member trees."""
     registry = _registry(arguments)
-    entry = registry.add_component(_component_entry(arguments))
-    CONSOLE.ok(f"added {entry.name} {CONSOLE.glyph('arrow')} components/{entry.slug}")
+    declared = _component_entry(arguments)
+    _stored(registry, declared.into_record(), fresh=True)
+    CONSOLE.ok(f"added {declared.name} {CONSOLE.glyph('arrow')} {record_document(declared.folded)}")
     return 0
 
 
 def update_component(arguments: argparse.Namespace) -> int:
     """Replace one stored component or message from such a document."""
     registry = _registry(arguments)
-    entry = registry.update_component(_component_entry(arguments))
-    CONSOLE.ok(f"updated {entry.name} {CONSOLE.glyph('arrow')} components/{entry.slug}")
+    declared = _component_entry(arguments)
+    _stored(registry, declared.into_record(), fresh=False)
+    CONSOLE.ok(
+        f"updated {declared.name} {CONSOLE.glyph('arrow')} {record_document(declared.folded)}"
+    )
     return 0
 
 

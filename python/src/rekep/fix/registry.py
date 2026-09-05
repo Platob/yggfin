@@ -11,8 +11,9 @@ import re
 import shutil
 import sys
 import tempfile
+import urllib.parse
 import warnings
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import cache, cached_property
 from types import MappingProxyType
 from typing import Any, Self, cast
@@ -20,22 +21,24 @@ from typing import Any, Self, cast
 import pyarrow
 import pyarrow.compute as compute
 import pyarrow.fs
+from yggdryl import IOBase
 
-from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import EventType, State
 from rekep.fields import Field, ListField, StructField, column_name, newest_rank
-from rekep.fields.arrow import promoted_type, reconcilable
-from rekep.fields.metadata import canonical_versions
-from rekep.filesystems import local_path, resolve, spill_path
+from rekep.fields.arrow import reconcilable
+from rekep.fields.metadata import STANDARD_NAMESPACE, canonical_versions
 from rekep.fix.entries import (
     ANY_VERSION,
     NAMESPACE,
     Alias,
     ComponentRecord,
     fold,
+    is_declaration_block,
+    is_group_record,
     merged_record,
     record_copy,
+    record_key,
     record_kind,
     records_for,
     refuse_record,
@@ -45,20 +48,17 @@ from rekep.fix.quickfix import (
     declared_group,
     entry_of,
     first_declared_name,
-    is_group,
     is_reference,
     walk,
 )
 from rekep.fix.store import (
     ALIASES,
-    COMPONENTS,
     DECLARED,
     DOCUMENT_SUFFIX,
-    FIELDS,
     NAME,
     NAMESPACES,
     NOTE,
-    REPGROUP,
+    RECORDS,
     SESSIONS,
     SOURCES_FILE,
     STORED,
@@ -73,16 +73,14 @@ from rekep.fix.store import (
     Dropped,
     ShardedLayout,
     collapse,
-    component_document,
-    component_from_document,
     documents_of,
-    field_document,
     field_from_document,
+    record_document,
     repeating_groups_of,
     slug_collisions,
     write_archive,
 )
-from rekep.urls import HTTP, LOCAL, Url
+from rekep.resources import read_bytes, resource
 
 #: Where the scrape persists: the tag shards, the components and the version
 #: list, so everything after the first scrape works offline -- including on a
@@ -91,9 +89,14 @@ CACHE_DIRECTORY = pathlib.Path.home() / ".config" / "fix"
 
 #: Lookup priority is a protocol contract. Standard definitions always win;
 #: registered UDFs fill the numeric space FIX reserved for them; configured
-#: venue dictionaries are consulted only after both.
-STANDARD_NAMESPACE = "standard"
+#: venue dictionaries are consulted only after both. The standard's own name is
+#: declared beside the values that carry it, so a reader naming its vocabulary
+#: and a lookup ranking it cannot drift into two spellings of one word.
 UDF_NAMESPACE = "fixtrading-udf"
+
+#: "nothing cached here", so a key whose unified reading is genuinely None is
+#: answered from the cache rather than re-folded on every lookup that misses.
+_MISSING: Any = object()
 
 # Bump when parsed records project or reconcile differently without source
 # bytes changing. The parsed-output checksum catches parser and mapping changes;
@@ -134,6 +137,26 @@ _BUILTIN_VIEWS: tuple[tuple[str, str], ...] = (
     ("rekep.market.fix", "MarketTags.standard"),
     ("rekep.market.ticker", "SymbolTicker.from_str"),
 )
+
+
+def _same_identity(held: Field, other: Field) -> bool:
+    """Whether two readings are of one identity: tag first, then name.
+
+    Where both state a tag, the tag is the whole answer -- two tags are two
+    fields however alike the names, and a venue numbering its own `QuoteID`
+    5984 has not renumbered the standard's 117. Only where *neither* states
+    one does the name decide, which is the path every component has.
+    """
+    tags = (held.fix.tag, other.fix.tag)
+    if tags[0] is not None and tags[1] is not None:
+        return tags[0] == tags[1]
+    if tags[0] is not None or tags[1] is not None:
+        return False
+    # `casefold`, and nothing looser. The column fold strips whitespace and
+    # punctuation as well, which is right for the key a record is stored at
+    # and wrong for deciding what a record *is*: `Quote ID` and `QuoteID` are
+    # two names until somebody says otherwise.
+    return held.fix.canonical.casefold() == other.fix.canonical.casefold()
 
 
 def _forget_builtin_views() -> None:
@@ -333,10 +356,10 @@ class FixRegistry(Convertible):
         reserved = {"cache_dir", "filesystem"} & configuration.keys()
         if reserved:
             raise TypeError(f"scrape configures {sorted(reserved)} through dump_folder")
-        location = Url.from_string(os.fspath(dump_folder or CACHE_DIRECTORY))
-        if location.scheme not in LOCAL or pathlib.PurePath(location.path).suffix.lower() == ".zip":
+        location = resource(dump_folder or CACHE_DIRECTORY)
+        if location.url.scheme != "file" or location.url.suffix.lower() == ".zip":
             raise ValueError("FixRegistry.scrape requires a local dump folder")
-        target = pathlib.Path(local_path(location.into_string()))
+        target = pathlib.Path(os.fspath(location))
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists() and (not target.is_dir() or target.is_symlink()):
             raise ValueError(f"the FIX registry dump target is not a directory: {target}")
@@ -454,102 +477,73 @@ class FixRegistry(Convertible):
                     raise ValueError("the FIX registry source manifest is invalid")
                 continue
             namespaced = re.fullmatch(
-                rf"{NAMESPACES}/([^/]+)/{FIELDS}/\d{{6}}{re.escape(DOCUMENT_SUFFIX)}", name
+                rf"{NAMESPACES}/([^/]+)/{RECORDS}/\d{{6}}{re.escape(DOCUMENT_SUFFIX)}", name
             )
-            if name.startswith(f"{FIELDS}/") or namespaced:
-                namespace = namespaced.group(1) if namespaced else ""
-                if not isinstance(document, list):
-                    raise ValueError(f"FIX registry shard {name!r} is not a list of records")
-                for record in document:
-                    if not isinstance(record, Mapping):
-                        raise ValueError(f"a FIX field in {name!r} is not an object")
-                    stored = record.get("name")
-                    # A record validates by being read, the way a component's
-                    # declaration does: a document `Field` cannot parse is not
-                    # one, and `refuse_record` says the rest.
-                    try:
-                        entry = refuse_record(field_from_document(record))
-                    except (AttributeError, KeyError, TypeError, ValueError) as error:
-                        raise ValueError(
-                            f"FIX field {stored!r} in {name!r} is invalid: {error}"
-                        ) from error
-                    if not namespace and not set(entry.fix.versions).issubset(
-                        known_versions | {ANY_VERSION}
-                    ):
-                        raise ValueError(
-                            f"FIX field {stored!r} in {name!r} names a version this store "
-                            "does not declare"
-                        )
-                    if field_document(entry.fix.key, namespace) != name:
-                        raise ValueError(f"FIX field {stored!r} is stored in the wrong shard")
+            shard = re.fullmatch(rf"{RECORDS}/\d{{6}}{re.escape(DOCUMENT_SUFFIX)}", name)
+            if not shard and not namespaced:
+                raise ValueError(f"unexpected FIX registry document {name!r}")
+            namespace = namespaced.group(1) if namespaced else ""
+            if not isinstance(document, list):
+                raise ValueError(f"FIX registry shard {name!r} is not a list of records")
+            for record in document:
+                if not isinstance(record, Mapping):
+                    raise ValueError(f"a FIX record in {name!r} is not an object")
+                stored = record.get("name")
+                # A record validates by being read: a document `Field` cannot
+                # parse is not one, and `refuse_record` says the rest.
+                try:
+                    entry = refuse_record(field_from_document(record))
+                except (AttributeError, KeyError, TypeError, ValueError) as error:
+                    raise ValueError(
+                        f"FIX record {stored!r} in {name!r} is invalid: {error}"
+                    ) from error
+                declared_versions = (record.get("fix") or {}).get("versions")
+                if isinstance(declared_versions, list) and len(set(declared_versions)) != len(
+                    declared_versions
+                ):
+                    raise ValueError(f"FIX record {stored!r} in {name!r} has invalid metadata")
+                if not namespace and not set(entry.fix.versions).issubset(
+                    known_versions | {ANY_VERSION}
+                ):
+                    raise ValueError(
+                        f"FIX record {stored!r} in {name!r} names a version this store "
+                        "does not declare"
+                    )
+                if record_document(record_key(entry), namespace) != name:
+                    raise ValueError(f"FIX record {stored!r} is stored in the wrong shard")
+                if not is_declaration_block(entry):
                     identity = (namespace, entry.fix.key)
                     if identity in fields:
                         raise ValueError(f"FIX field {stored!r} is stored more than once")
                     fields[identity] = entry
-                continue
-            scoped_component = re.fullmatch(
-                rf"{NAMESPACES}/([^/]+)/({COMPONENTS}|{REPGROUP})/[^/]+"
-                rf"{re.escape(DOCUMENT_SUFFIX)}",
-                name,
-            )
-            namespace = scoped_component.group(1) if scoped_component else ""
-            component_file = name.startswith(f"{COMPONENTS}/") or bool(
-                scoped_component and scoped_component.group(2) == COMPONENTS
-            )
-            group_file = name.startswith(f"{REPGROUP}/") or bool(
-                scoped_component and scoped_component.group(2) == REPGROUP
-            )
-            if not component_file and not group_file:
-                raise ValueError(f"unexpected FIX registry document {name!r}")
-            component_versions = (
-                document.get("fix", {}).get("versions") if isinstance(document, Mapping) else None
-            )
-            if (
-                not isinstance(document, Mapping)
-                or type(document.get("name")) is not str
-                or not isinstance(component_versions, list)
-                or any(type(version) is not str for version in component_versions)
-                or len(set(component_versions)) != len(component_versions)
-                or (
-                    not namespace
-                    and not set(component_versions).issubset(known_versions | {ANY_VERSION})
-                )
-            ):
-                kind = "repeating group" if group_file else "component"
-                raise ValueError(f"FIX {kind} in {name!r} has invalid metadata")
-            try:
-                entry = component_from_document(document)
-            except (AttributeError, KeyError, TypeError, ValueError) as error:
-                kind = "repeating group" if group_file else "component"
-                raise ValueError(f"FIX {kind} in {name!r} is invalid: {error}") from error
-            # The declaration validates by being read: a document Field cannot
-            # parse is not one. What is left is the cross-check the shape alone
-            # cannot make -- that every tag and every reference it names is
-            # something this store actually holds.
-            if is_group(entry.declaration) != group_file:
-                expected_kind = "a list" if group_file else "a struct"
-                raise ValueError(f"FIX declaration in {name!r} must be {expected_kind}")
-            declared = entry_of(entry.declaration) if group_file else entry.declaration
-            members = list(walk(declared))
-            if group_file:
-                members.insert(0, (entry.declaration, ()))
-            for member, _ in members:
-                if is_reference(member):
-                    component_refs.setdefault(namespace, set()).add(fold(member.name))
                     continue
-                tag = member.fix.tag
-                if tag is None or tag <= 0:
-                    raise ValueError(
-                        f"FIX component in {name!r} declares {member.name!r} with no tag"
-                    )
-                component_tags.setdefault(namespace, set()).add(tag)
-            records_by_namespace = repeating_groups if group_file else components
-            records = records_by_namespace.setdefault(namespace, {})
-            expected = component_document(entry.slug, namespace, group=group_file)
-            if name != expected or entry.slug in records:
-                kind = "repeating group" if group_file else "component"
-                raise ValueError(f"FIX {kind} {entry.name!r} is stored under the wrong name")
-            records[entry.slug] = entry
+                # A block: a component, a message, or the group a tree carries.
+                # What is left is the cross-check the shape alone cannot make --
+                # that every tag and every reference it names is something this
+                # store actually holds.
+                group_record = is_group_record(entry)
+                block = ComponentRecord.from_record(entry)
+                declared = entry_of(block.declaration) if group_record else block.declaration
+                members = list(walk(declared))
+                if group_record:
+                    members.insert(0, (block.declaration, ()))
+                for member, _ in members:
+                    if is_reference(member):
+                        component_refs.setdefault(namespace, set()).add(fold(member.name))
+                        continue
+                    tag = member.fix.tag
+                    if tag is None or tag <= 0:
+                        raise ValueError(
+                            f"FIX component in {name!r} declares {member.name!r} with no tag"
+                        )
+                    component_tags.setdefault(namespace, set()).add(tag)
+                records_by_namespace = repeating_groups if group_record else components
+                held_blocks = records_by_namespace.setdefault(namespace, {})
+                if block.slug in held_blocks:
+                    kind = "repeating group" if group_record else "component"
+                    raise ValueError(f"FIX {kind} {block.name!r} is stored more than once")
+                held_blocks[block.slug] = block
+            continue
         if not fields:
             raise ValueError("the FIX registry has no fields")
         standard_fields = {
@@ -721,7 +715,7 @@ class FixRegistry(Convertible):
                     changes = MappingProxyType({"additions": 0, "updates": 0})
                 else:
                     definitions = tuple(field.into_field() for field in registry.fields)
-                    changes = self.add_definitions(definitions, registry.source.namespace)
+                    changes = self.add_fields(definitions, registry.source.namespace)
                 changed = changed or bool(changes["additions"] or changes["updates"])
                 if registry.source.namespace == STANDARD_NAMESPACE and not replayed:
                     standard_registries.append(registry)
@@ -1093,18 +1087,75 @@ class FixRegistry(Convertible):
                     else self._resolutions.get(fold(str(key)))
                 )
             return self._layout.namespace_record(normalized, key)
-        if _is_tag(key):
-            standard = self._layout.record(int(key))
-        else:
-            standard = self._resolutions.get(fold(str(key)))
+        # No namespace named is the *unified* reading: every namespace that
+        # declares this identity, folded through the one merge, first declarer
+        # first. Derived and never written back -- the stored records stay
+        # separate, because two bridges disagreeing about one tag is a
+        # collision to keep, not one to resolve by picking a winner.
+        #
+        # Held per key for the life of a revision, because reaching a namespace
+        # by *name* is a scan of that namespace and this now runs on every
+        # unscoped lookup rather than only on a standard miss.
+        held = self.__dict__.setdefault("_unified", {})
+        cached = held.get(key, _MISSING)
+        if cached is not _MISSING:
+            return cached
+        record = self._unified_record(key)
+        held[key] = record
+        return record
+
+    def _unified_record(self, key: int | str) -> Field | None:
+        """Every namespace's reading of one identity, folded into one."""
+        readings = []
+        standard = (
+            self._layout.record(int(key)) if _is_tag(key) else self._resolutions.get(fold(str(key)))
+        )
         if standard is not None:
-            return standard
+            readings.append(standard)
         for candidate in self._namespace_order:
             if candidate == STANDARD_NAMESPACE:
                 continue
             found = self._layout.namespace_record(candidate, key)
-            if found is not None:
-                return found
+            if found is not None and _same_identity(readings[0] if readings else found, found):
+                readings.append(found)
+        if not readings:
+            return None
+        if len(readings) == 1:
+            return readings[0]
+        first = readings[0]
+        unified = first
+        for reading in readings[1:]:
+            unified = unified.merge(reading)
+        # The canonical spelling and tag are the first declarer's, restored
+        # here because `merge` lets the later reading win a key it restates.
+        # Every other spelling is already an attributed alias and every other
+        # tag an alternate by now, so nothing is lost by putting them back --
+        # and a great deal is, by leaving a venue's name and number on the
+        # identity the standard numbered. The name is also the shard filename
+        # and the key a lookup resolves.
+        unified = unified.with_name(first.name)
+        unified.fix.name = first.fix.canonical
+        if first.fix.tag is not None:
+            unified.fix.tag = first.fix.tag
+        # Restoring the first declarer's name displaces the spelling the last
+        # reading won it with, and that spelling is a fact too: a bridge that
+        # calls tag 11 `SACHA` has said so. Every other reading's own name
+        # rides as an alias attributed to where it was read, unless the
+        # identity already answers to it.
+        # The merge recorded the first declarer's own name as an alias while
+        # the later reading held the record; with the name restored, that
+        # alias is the canonical spelling and is dropped.
+        canonical = fold(first.fix.canonical)
+        aliases = [alias for alias in unified.fix.named_aliases if alias.folded != canonical]
+        spelled = {canonical, *(alias.folded for alias in aliases)}
+        for reading in readings[1:]:
+            name = reading.fix.canonical
+            if name and fold(name) not in spelled:
+                source = str(reading.fix.get("namespace") or reading.fix.source or "")
+                aliases.append(Alias(name=name, source=source))
+                spelled.add(fold(name))
+        unified.fix.named_aliases = tuple(aliases)
+        return unified
         return None
 
     def field(
@@ -1148,10 +1199,6 @@ class FixRegistry(Convertible):
             definition.fix["namespace"] = namespace
             found.append(definition)
         return tuple(found)
-
-    def definition(self, key: int | str, namespace: str) -> Field | None:
-        """One definition under exactly one namespace."""
-        return self.field(key, namespace=namespace)
 
     def namespaces(self) -> tuple[str, ...]:
         """Standard and stored extension namespaces in lookup order."""
@@ -1411,82 +1458,6 @@ class FixRegistry(Convertible):
         )
         return MappingProxyType({entry.fix.canonical: entry for entry in records.values()})
 
-    def standardizes(self, record: Field) -> int | str | None:
-        """Which standard identity a namespace record is a venue reading of.
-
-        Two ways a namespace says "this is the standard's field under our own
-        tag": the registry's own `replacement-tag`, which names the tag the
-        UDF was folded into, and a canonical name the standard already owns.
-        Both are only taken when Arrow can hold both readings in one column,
-        which is a guard and not a formality: `Fidessa_GTP_Alloc_FIX44_DropCopy.cfb`
-        alone declares 11 vendor tags whose name the standard owns at a
-        *different* tag -- 6442 `BenchmarkPrice` against standard 662 and 6871
-        `DeskID` against standard 284 among them -- and none of the 11 is the
-        standard's field renumbered.
-        """
-        fix = record.fix
-        replacement = fix.get("replacement-tag")
-        candidates: list[int | str] = []
-        if replacement:
-            candidates.append(int(replacement))
-        if name := fix.get("replacement-name") or fix.canonical:
-            candidates.append(str(name))
-        for candidate in candidates:
-            held = self._record(candidate, namespace=STANDARD_NAMESPACE)
-            if held is None or held.fix.tag == fix.tag:
-                continue
-            if not reconcilable(held.dtype, record.dtype):
-                continue
-            return held.fix.key
-        return None
-
-    def unified(self, key: int | str) -> Field | None:
-        """One identity with every namespace reading of it folded in.
-
-        The unique record a caller reads: the standard declaration, carrying
-        each venue's own tag in `fix:tags`, each venue's spelling as an alias
-        attributed to that namespace, and any value only a venue enumerates.
-        A namespace whose reading is a *different* identity -- tag 9001 is
-        `MaxShow` to one venue and `TradeType` to another -- is not folded in
-        and stays reachable through `definitions`.
-        """
-        held = self._record(key, namespace=STANDARD_NAMESPACE)
-        if held is None:
-            return None
-        built = merged_record(record_copy(held), self.versions)
-        for namespace, record in self._standardized.get(built.fix.key, ()):
-            built.fix.merge(merged_record(record, self.versions).fix, source=namespace)
-        return built
-
-    def unified_records(self) -> Mapping[str, Field]:
-        """Every identity as one record, namespace readings folded into each."""
-        standardized = self._standardized
-        found: dict[str, Field] = {}
-        for entry in self._entries[0].values():
-            built = merged_record(record_copy(entry), self.versions)
-            for namespace, record in standardized.get(built.fix.key, ()):
-                built.fix.merge(merged_record(record, self.versions).fix, source=namespace)
-            found[built.fix.canonical] = built
-        return MappingProxyType(found)
-
-    @cached_property
-    def _standardized(self) -> Mapping[int | str, tuple[tuple[str, Field], ...]]:
-        """`{standard key: the namespace readings of it}`, built once.
-
-        Every namespace field is asked once whether it standardizes, because
-        the answer needs a lookup per candidate and a unified read wants them
-        all -- not one scan of every namespace per identity.
-        """
-        found: dict[int | str, list[tuple[str, Field]]] = {}
-        for namespace in self._namespace_order:
-            if namespace == STANDARD_NAMESPACE:
-                continue
-            for record in self._layout.namespace_field_records(namespace).values():
-                target = self.standardizes(record)
-                if target is not None:
-                    found.setdefault(target, []).append((namespace, record))
-        return MappingProxyType({key: tuple(value) for key, value in found.items()})
-
     def source_manifest(self) -> tuple[Mapping[str, Any], ...]:
         """Deterministic complete-source provenance carried by this store."""
         return tuple(MappingProxyType(source) for source in self._layout.source_manifest())
@@ -1574,7 +1545,7 @@ class FixRegistry(Convertible):
         """
         return self._messages
 
-    def merged_fields(self) -> Mapping[str, Field]:
+    def field_table(self) -> Mapping[str, Field]:
         """The whole unified field table: `{canonical name: merged declaration}`.
 
         `scalar()` for every field at once, and the same declaration it builds:
@@ -1589,7 +1560,7 @@ class FixRegistry(Convertible):
             }
         )
 
-    def merged_component(self, name: str) -> ComponentRecord:
+    def component_of(self, name: str) -> ComponentRecord:
         """One component across every version it is declared for.
 
         A name, one of its aliases, or a MsgType: a message is a component
@@ -1613,7 +1584,7 @@ class FixRegistry(Convertible):
         decides each member's type, so a component projects into a shape a
         reader can trust rather than into a struct of nullable strings.
         """
-        entry = self.merged_component(name)
+        entry = self.component_of(name)
         return entry.into_field(
             self._spelling(version),
             fields=self._component_fields_by_name(version),
@@ -1631,7 +1602,7 @@ class FixRegistry(Convertible):
         if not path:
             raise ValueError("a FIX component group path cannot be empty")
         try:
-            entry = self.merged_component(root)
+            entry = self.component_of(root)
         except KeyError:
             return None
         try:
@@ -1771,63 +1742,45 @@ class FixRegistry(Convertible):
     # through one of these, is checked against the schema and against what the
     # store already holds, and is refused whole rather than written half.
 
-    def add_field(self, entry: Field) -> Field:
-        """Store one new field identity; `KeyError` when it is already here.
+    def remove_fields(self, *names: str, namespace: str = STANDARD_NAMESPACE) -> int:
+        """Delete records by any name each answers to; how many went.
 
-        The duplicate tag and duplicate name checks are in `_validated`, which
-        every write goes through; this one is only the file it would land in.
+        The other of the two ways this registry changes. By any name, because
+        every other verb here takes one: a spelling good enough to resolve a
+        rendered key is good enough to name the entry it resolves to.
         """
-        fix = entry.fix
-        held = self._entries[0].get(fix.key)
-        if held is not None and held.fix.folded == fix.folded:
-            raise KeyError(
-                f"FIX field {fix.canonical!r} is already stored in {field_document(entry.fix.key)}"
+        gone = 0
+        for name in names:
+            entry = self.resolve(name, namespace=namespace)
+            if entry is None:
+                # A block answers at its own name and never through the field
+                # lookup, which is the view that excludes them. One verb for
+                # every kind means asking both ways before saying "no".
+                try:
+                    entry = self.component_of(name).into_record()
+                except KeyError:
+                    continue
+            standard = str(namespace).strip().lower() == STANDARD_NAMESPACE
+            removed = (
+                self._layout.remove_field(record_key(entry))
+                if standard
+                else self._layout.remove_namespace_field(namespace, record_key(entry))
             )
-        if held is not None:
-            claimed = f"tag {fix.tag}" if fix.tag is not None else f"the name {fix.canonical!r}"
-            raise KeyError(
-                f"FIX field {fix.canonical!r} cannot be added: {claimed} is already claimed by "
-                f"{held.fix.canonical!r}, in {field_document(entry.fix.key)}"
-            )
-        return self._write_field(entry)
+            gone += bool(removed)
+        if gone:
+            self._forget()
+        return gone
 
-    def update_field(self, entry: Field) -> Field:
-        """Replace one stored field identity; `KeyError` when there is none."""
-        if entry.fix.key not in self._entries[0]:
-            raise KeyError(f"no FIX field stored in {field_document(entry.fix.key)}")
-        return self._write_field(entry)
+    def add_fields(
+        self, entries: Sequence[Field], namespace: str = STANDARD_NAMESPACE
+    ) -> Mapping[str, int]:
+        """Fold every incoming record into what is stored, then write once.
 
-    def remove_field(self, name: str) -> bool:
-        """Delete one field identity, by any name it answers to.
-
-        By any name, because every other verb here takes one: a spelling good
-        enough to resolve a rendered key is good enough to name the entry it
-        resolves to.
+        One of the two ways this registry changes. A record is a record --
+        a field, a component, a group, a message -- so there is no second verb
+        for a second kind, and folding is `Field.merge`, so there is no second
+        answer to what two readings of one identity make.
         """
-        entry = self.resolve(name, namespace=STANDARD_NAMESPACE)
-        if entry is None:
-            return False
-        removed = self._layout.remove_field(entry.fix.key)
-        self._forget()
-        return removed
-
-    def add_definition(self, entry: Field, namespace: str) -> Field:
-        """Store or reconcile one extension definition in its namespace.
-
-        Multiple authorities may publish the same venue dictionary. Their
-        disagreement is data to report, not a reason to lose the remaining
-        refresh; disputed datatypes deliberately become Arrow strings.
-        """
-        self.add_definitions((entry,), namespace)
-        found = self.definition(entry.fix.key, namespace) or self.definition(
-            entry.fix.canonical, namespace
-        )
-        if found is None:  # pragma: no cover - the bulk writer just stored it
-            raise RuntimeError(f"FIX definition {entry.fix.key!r} was not stored")
-        return found
-
-    def add_definitions(self, entries: Sequence[Field], namespace: str) -> Mapping[str, int]:
-        """Reconcile a source in memory, then write each affected shard once."""
         normalized = str(namespace).strip().lower()
         standard = normalized == STANDARD_NAMESPACE
         records = dict(
@@ -1836,7 +1789,14 @@ class FixRegistry(Convertible):
             else self._layout.namespace_field_records(normalized)
         )
         stored_keys = set(records)
-        names = {entry.fix.folded: entry for entry in records.values()}
+        # Two indexes, consulted in order, rather than one predicate with an
+        # `or` in it: a tag decides on its own, and a name is tried only where
+        # neither side has one. Written as one condition, the name half fires
+        # whenever the tag half should have been decisive -- which is how an
+        # identically named component and scalar become one record.
+        by_tag = {one.fix.tag: one for one in records.values() if one.fix.tag is not None}
+        by_name = {one.fix.folded: one for one in records.values() if one.fix.tag is None}
+        named = {entry.fix.folded: entry for entry in records.values()}
         additions = 0
         updates = 0
         changed: set[int | str] = set()
@@ -1852,9 +1812,17 @@ class FixRegistry(Convertible):
             else:
                 fresh.fix["namespace"] = normalized
             refuse_record(fresh)
-            held = records.get(fresh.fix.key)
-            same_name = names.get(fresh.fix.folded)
-            if held is None and same_name is not None and same_name.fix.key != fresh.fix.key:
+            tag = fresh.fix.tag
+            held = by_tag.get(tag) if tag is not None else by_name.get(fresh.fix.folded)
+            # Only a *tagless* reading may be claimed by a name it shares, and
+            # only from a tagless record. A tag on either side ends the search.
+            same_name = named.get(fresh.fix.folded) if tag is None else None
+            if (
+                held is None
+                and same_name is not None
+                and same_name.fix.tag is None
+                and same_name.fix.key != fresh.fix.key
+            ):
                 fresh_wins = self._source_priority(fresh.fix.source) < self._source_priority(
                     same_name.fix.source
                 )
@@ -1869,19 +1837,24 @@ class FixRegistry(Convertible):
                 held = same_name
                 if fresh_wins:
                     records.pop(same_name.fix.key)
+                    by_name.pop(same_name.fix.folded, None)
                     changed.add(same_name.fix.key)
             else:
-                merged = fresh if held is None else self._merge_definition(held, fresh)
+                merged = fresh if held is None else self._reconciled_definition(held, fresh)
             if standard:
                 merged.fix.pop("namespace", None)
             records[merged.fix.key] = merged
-            names[merged.fix.folded] = merged
+            named[merged.fix.folded] = merged
+            if merged.fix.tag is not None:
+                by_tag[merged.fix.tag] = merged
+            else:
+                by_name[merged.fix.folded] = merged
             additions += held is None
             modified = held is None or merged != held
             updates += held is not None and modified
             if modified:
                 changed.add(merged.fix.key)
-        records, shadowed = self._without_shadowed_aliases(records)
+        records, shadowed = self._without_shadowed_aliases(records, written=changed)
         for key in shadowed:
             if key not in changed and key in stored_keys:
                 updates += 1
@@ -1896,13 +1869,22 @@ class FixRegistry(Convertible):
         return MappingProxyType({"additions": additions, "updates": updates})
 
     def _without_shadowed_aliases(
-        self, records: Mapping[int | str, Field]
+        self, records: Mapping[int | str, Field], written: Collection[int | str] = ()
     ) -> tuple[dict[int | str, Field], set[int | str]]:
-        """Drop aliases which a canonical identity in the namespace now owns."""
+        """Drop aliases which a canonical identity in the namespace now owns.
+
+        A repair, and only for records this call is *not* writing. A stored
+        record whose alias just became somebody's canonical name did nothing
+        wrong and is quietly corrected; a record arriving with an alias that
+        can never resolve is a mistake, and is left intact so validation
+        refuses it rather than writing a changed version of what was asked.
+        """
         canonical = {entry.fix.folded: entry for entry in records.values()}
         built = dict(records)
         changed: set[int | str] = set()
         for key, entry in records.items():
+            if key in written:
+                continue
             kept: list[Alias] = []
             for alias in entry.fix.named_aliases:
                 owner = canonical.get(alias.folded)
@@ -1925,55 +1907,59 @@ class FixRegistry(Convertible):
             changed.add(key)
         return built, changed
 
-    def update_definition(self, entry: Field, namespace: str) -> Field:
-        """Replace one exact extension definition."""
-        normalized = str(namespace).strip().lower()
-        if normalized == STANDARD_NAMESPACE:
-            return self.update_field(entry)
-        fresh = record_copy(entry)
-        fresh.fix["namespace"] = normalized
-        if self._layout.namespace_record(normalized, fresh.fix.key) is None:
-            raise KeyError(f"no FIX definition {fresh.fix.key!r} in namespace {normalized!r}")
-        self._layout.store_namespace_field(normalized, refuse_record(fresh))
-        self._forget()
-        return merged_record(fresh)
+    def _reconciled_definition(self, held: Field, fresh: Field) -> Field:
+        """Two same-namespace readings, ordered by source priority and folded.
 
-    def remove_definition(self, key: int | str, namespace: str) -> bool:
-        """Delete one exact extension definition."""
-        normalized = str(namespace).strip().lower()
-        if normalized == STANDARD_NAMESPACE:
-            found = self._record(key, namespace=STANDARD_NAMESPACE)
-            return False if found is None else self.remove_field(found.fix.canonical)
-        found = self._layout.namespace_record(normalized, key)
-        if found is None:
-            return False
-        removed = self._layout.remove_namespace_field(normalized, found.fix.key)
-        self._forget()
-        return removed
+        Not a merge, and no longer named one: what happens here is deciding
+        which reading wins a key both restate, and reporting what the loser
+        said. The fold itself is `Field.merge`.
 
-    def _merge_definition(self, held: Field, fresh: Field) -> Field:
-        """Two same-namespace readings under source priority."""
+        The versions, sources, tags, spellings, msgtypes, components and
+        enumerated values all union there, once, the same way they do for a
+        nested member -- rather than being written out again here, which is
+        what the eighty lines this replaced were.
+        """
         held_priority = self._source_priority(held.fix.source)
         fresh_priority = self._source_priority(fresh.fix.source)
-        winner, dropped = (fresh, held) if fresh_priority < held_priority else (held, fresh)
-        built = record_copy(winner)
-        built.fix.versions = canonical_versions((*held.fix.versions, *fresh.fix.versions))
-        built.fix.sources = tuple(dict.fromkeys((*winner.fix.sources, *dropped.fix.sources)))
-        built.fix.source = winner.fix.source or dropped.fix.source
-        built.fix.tags = tuple(dict.fromkeys((*winner.fix.tags, *dropped.fix.tags)))
-        aliases = list(winner.fix.named_aliases)
-        aliased = {alias.folded for alias in aliases}
-        for alias in dropped.fix.named_aliases:
-            if alias.folded != winner.fix.folded and alias.folded not in aliased:
-                aliases.append(alias)
-                aliased.add(alias.folded)
-        values = {value.value: value for value in winner.fix.enumerated}
+        # A tie goes to the incoming reading. Priority separates two *sources*
+        # disagreeing; two readings from one source are the same authority
+        # speaking twice, and the later word is the one meant. Letting the
+        # stored record win a tie was harmless while a separate verb existed
+        # to replace it, and means nothing can be changed now that folding is
+        # the only way in.
+        winner, dropped = (fresh, held) if fresh_priority <= held_priority else (held, fresh)
+        self._report_definition_conflicts(winner, dropped, held, fresh)
+        # `merge` lets the *later* argument win a key it restates, so the
+        # winner goes second and the dropped reading is what accumulates.
+        built = dropped.merge(winner)
+        # Two blobs a plain metadata merge would take whole rather than fold.
+        built.fix.event_types = {**dropped.fix.event_types, **winner.fix.event_types}
+        built.fix.states = {**dropped.fix.states, **winner.fix.states}
+        if not reconcilable(dropped.dtype, winner.dtype):
+            readings = tuple(dict.fromkeys((*_definition_types(held), *_definition_types(fresh))))
+            built.dtype = pyarrow.string()
+            built.fix.type = "String"
+            built.fix["disputed_types"] = json.dumps(readings, separators=(",", ":"))
+        return built
+
+    def _report_definition_conflicts(
+        self, winner: Field, dropped: Field, held: Field, fresh: Field
+    ) -> None:
+        """What the two readings disagreed about, before either is folded away.
+
+        Read off the inputs rather than the result: once they are merged the
+        losing reading is an alias and a united value list, and what it used
+        to say is exactly what a conflict report is for.
+        """
+        kept = {value.value: value for value in winner.fix.enumerated}
         for value in dropped.fix.enumerated:
-            kept = values.get(value.value)
-            if kept is None:
-                values[value.value] = value
-                continue
-            if kept.meaning and value.meaning and kept.meaning != value.meaning:
+            other = kept.get(value.value)
+            if (
+                other is not None
+                and other.meaning
+                and value.meaning != other.meaning
+                and value.meaning
+            ):
                 self._record_namespace_conflict(
                     winner,
                     dropped,
@@ -1981,58 +1967,22 @@ class FixRegistry(Convertible):
                     dropped_key=value.value,
                     dropped_reading=value.meaning,
                 )
-            values[value.value] = dataclasses.replace(
-                kept,
-                meaning=kept.meaning or value.meaning,
-                aliases=tuple(dict.fromkeys((*kept.aliases, *value.aliases))),
-                namespaces=tuple(dict.fromkeys((*kept.namespaces, *value.namespaces))),
-            )
-        built.fix.enumerated = tuple(values.values())
         if fold(winner.fix.canonical) != fold(dropped.fix.canonical):
-            displaced = Alias(name=dropped.fix.canonical, source=dropped.fix.source)
-            if displaced.folded not in aliased:
-                aliases.append(displaced)
-                aliased.add(displaced.folded)
-            if winner is fresh or displaced.folded not in {
+            displaced = fold(dropped.fix.canonical)
+            if winner is fresh or displaced not in {
                 fold(spelling) for spelling in held.fix.spellings()
             }:
                 self._record_namespace_conflict(winner, dropped, NAME)
-        built.fix.named_aliases = tuple(aliases)
-        built.fix.event_types = {**dropped.fix.event_types, **winner.fix.event_types}
-        built.fix.states = {**dropped.fix.states, **winner.fix.states}
-        built.fix.msgtypes = tuple(dict.fromkeys((*winner.fix.msgtypes, *dropped.fix.msgtypes)))
-        built.fix.components = tuple(
-            dict.fromkeys((*winner.fix.components, *dropped.fix.components))
-        )
-        built.fix.column = winner.fix.column or dropped.fix.column
-        if not winner.description and dropped.description:
-            built.description = dropped.description
-        elif (
-            winner.description and dropped.description and winner.description != dropped.description
-        ):
+        if winner.description and dropped.description and winner.description != dropped.description:
             self._record_namespace_conflict(
-                winner,
-                dropped,
-                NOTE,
-                dropped_reading=dropped.description,
+                winner, dropped, NOTE, dropped_reading=dropped.description
             )
-        if reconcilable(dropped.dtype, built.dtype):
-            # Arrow widening is not a dispute, so nothing is recorded for it:
-            # this is where a `UTCTimestamp` reading that states the zone and
-            # one that omits it become the localised column both can fill.
-            built.dtype = promoted_type(dropped.dtype, built.dtype)
-        else:
+        if not reconcilable(dropped.dtype, winner.dtype):
             held_types = _definition_types(held)
-            fresh_types = _definition_types(fresh)
-            readings = tuple(dict.fromkeys((*held_types, *fresh_types)))
-            built.dtype = pyarrow.string()
-            built.fix.type = "String"
-            built.fix["disputed_types"] = json.dumps(readings, separators=(",", ":"))
             # A reading already in the dispute says nothing new about it, so a
             # re-read of the same definition does not re-record the conflict.
-            if not set(fresh_types).issubset(held_types):
+            if not set(_definition_types(fresh)).issubset(held_types):
                 self._record_namespace_conflict(winner, dropped, TYPE, kept_reading="string")
-        return built
 
     def _source_priority(self, source: str) -> int:
         """Active adapter priority, then the stored source manifest."""
@@ -2077,28 +2027,6 @@ class FixRegistry(Convertible):
             report, collapses=(*report.collapses, conflict)
         )
 
-    def add_component(self, entry: ComponentRecord) -> ComponentRecord:
-        """Store one new component identity; `KeyError` when it is already here."""
-        if entry.slug in self._entries[1]:
-            raise KeyError(f"FIX component {entry.name!r} is already stored")
-        return self._write_component(entry)
-
-    def update_component(self, entry: ComponentRecord) -> ComponentRecord:
-        """Replace one stored component identity; `KeyError` when there is none."""
-        if entry.slug not in self._entries[1]:
-            raise KeyError(f"no FIX component stored as {entry.slug}{DOCUMENT_SUFFIX}")
-        return self._write_component(entry)
-
-    def remove_component(self, name: str) -> bool:
-        """Delete one component identity, by any name it answers to."""
-        try:
-            entry = self.merged_component(name)
-        except KeyError:
-            return False
-        removed = self._layout.remove_component(entry.slug)
-        self._forget()
-        return removed
-
     def alias_field(self, name: str, *aliases: Alias | str) -> Field:
         """Add spellings one field has been observed under, and keep the entry.
 
@@ -2110,11 +2038,16 @@ class FixRegistry(Convertible):
         if entry is None:
             raise KeyError(f"no FIX field {name!r} in this registry")
         added = tuple(alias if isinstance(alias, Alias) else Alias(name=alias) for alias in aliases)
+
         spelled = entry.fix.named_aliases
         held = {alias.folded for alias in spelled}
         aliased = record_copy(entry)
         aliased.fix.named_aliases = (*spelled, *(a for a in added if a.folded not in held))
-        return self.update_field(aliased)
+        # Checked here rather than left to the write. `add_fields` *repairs* a
+        # spelling an earlier tier already answers for -- right for a bulk
+        # reconcile, wrong for a person naming one, who wants to be told.
+        self._validated(fields={**self._entries[0], aliased.fix.key: aliased})
+        return self._written(aliased)
 
     def promote_field(
         self,
@@ -2167,7 +2100,7 @@ class FixRegistry(Convertible):
                 "two fields cannot land in one column"
             )
         if held is None:
-            return self.add_field(
+            return self._written(
                 namespaced_field(
                     name,
                     type or "String",
@@ -2195,21 +2128,20 @@ class FixRegistry(Convertible):
             promoted.description = description
         promoted.fix.named_aliases = (*aliased, *(a for a in added if a.folded not in spelled))
         promoted.fix.column = column
-        return self.update_field(promoted)
+        return self._written(promoted)
 
-    def _write_field(self, entry: Field) -> Field:
-        """Validate one field record against the whole store, then write it."""
-        self._validated(fields={**self._entries[0], entry.fix.key: entry})
-        self._layout.store_field(entry)
-        self._forget()
-        return entry
+    def _written(self, entry: Field) -> Field:
+        """One record through the one mutator, handed back as it was stored.
 
-    def _write_component(self, entry: ComponentRecord) -> ComponentRecord:
-        """Validate one component record against the whole store, then write it."""
-        self._validated(components={**self._entries[1], entry.slug: entry})
-        self._layout.store_component(entry)
-        self._forget()
-        return entry
+        Read through `_record` rather than `field`, which projects the store's
+        version list over the record: a rendered field declares `*` and would
+        come back naming whichever versions the dictionary happens to have.
+        """
+        self.add_fields((entry,))
+        stored = self._record(record_key(entry), namespace=STANDARD_NAMESPACE)
+        if stored is None:  # pragma: no cover - add_fields just stored it
+            raise RuntimeError(f"FIX record {entry.fix.canonical!r} was not stored")
+        return stored
 
     def _validated(
         self,
@@ -2378,6 +2310,7 @@ class FixRegistry(Convertible):
         self.__dict__.pop("_entries", None)
         self.__dict__.pop("_messages", None)
         self.__dict__.pop("_resolutions", None)
+        self.__dict__.pop("_unified", None)
         self.__dict__.pop("_msg_type_event_types", None)
         self.__dict__.pop("_state_values", None)
         self.__dict__.pop("_group_count_tags", None)
@@ -2395,22 +2328,22 @@ class FixRegistry(Convertible):
         not exist yet has to say what it will be before anything is written
         to it, and its `.zip` suffix says it.
         """
-        location = Url.from_string(os.fspath(cast(str | os.PathLike[str], self.cache_dir)))
-        return pathlib.PurePosixPath(location.path).suffix.lower() == ".zip"
+        location = os.fspath(cast(str | os.PathLike[str], self.cache_dir))
+        return pathlib.PurePosixPath(urllib.parse.urlsplit(location).path).suffix.lower() == ".zip"
 
     @cached_property
-    def _cache_source(self) -> tuple[pyarrow.fs.FileSystem, str] | None:
+    def _cache_source(self) -> IOBase | None:
         """The configured cache before an archive is localized."""
         location = os.fspath(cast(str | os.PathLike[str], self.cache_dir))
         if self.filesystem is not None:
-            return self.filesystem, location
-        if Url.from_string(location).scheme in HTTP:
+            return resource(location, self.filesystem)
+        if urllib.parse.urlsplit(location).scheme.lower() in {"http", "https"}:
             return None
-        return resolve(location)
+        return resource(location)
 
     @cached_property
-    def _cache(self) -> tuple[pyarrow.fs.FileSystem, str]:
-        """The filesystem and path used by cache operations, resolved once.
+    def _cache(self) -> IOBase:
+        """The yggdryl handle used by cache operations, resolved once.
 
         A directory is read where it is, local or not. An archive somewhere
         this process cannot open a file on -- `s3://bucket/fix.zip`, a store
@@ -2421,17 +2354,15 @@ class FixRegistry(Convertible):
         fetching it again.
         """
         source = self._cache_source
-        location = os.fspath(cast(str | os.PathLike[str], self.cache_dir))
         if source is None:
             if not self.archived:
                 raise ValueError("an HTTP FIX registry cache must be an archive")
-            return pyarrow.fs.LocalFileSystem(), local_path(location)
-        filesystem, path = source
-        if self.archived and not isinstance(filesystem, pyarrow.fs.LocalFileSystem):
-            return pyarrow.fs.LocalFileSystem(), self._localized(filesystem, path)
-        return filesystem, path
+            return resource(self._localized(None))
+        if self.archived and source.url.scheme != "file":
+            return resource(self._localized(source))
+        return source
 
-    def _localized(self, filesystem: pyarrow.fs.FileSystem, path: str) -> str:
+    def _localized(self, source: IOBase | None) -> str:
         """A remote archive's OS path, fetched into `remote_cache()` when it exists.
 
         Keyed by the location, not by the filesystem handle that read it: two
@@ -2439,48 +2370,75 @@ class FixRegistry(Convertible):
         by the handle would fetch the archive again for each of them -- which
         is the cost this cache exists to pay once.
 
-        `spill_path` answers None for a remote that is not there, which is a
-        store about to be written rather than one that failed to read -- so
-        the local path it *would* have is what a cold remote store gets.
+        A missing remote names a store about to be written, so the local path
+        it would have is what a cold remote store gets.
         """
         cache = remote_cache()
         cache.mkdir(parents=True, exist_ok=True)
-        identity = Url.from_string(
-            os.fspath(cast(str | os.PathLike[str], self.cache_dir))
-        ).into_string()
-        found = spill_path(path, filesystem, cache, identity=identity, temporary=False)
-        if found is not None:
-            return found
-        return local_path(path, filesystem, missing_ok=True)
+        identity = _resource_identity(cast(str | os.PathLike[str], self.cache_dir), self.filesystem)
+        target = cache / f"{hashlib.sha256(identity.encode()).hexdigest()}.zip"
+        if source is None:
+            if target.is_file():
+                return os.fspath(target)
+            payload = read_bytes(cast(str | os.PathLike[str], self.cache_dir))
+            expected = len(payload)
+        else:
+            if not source.is_file():
+                return os.fspath(target)
+            expected = source.size
+            if target.is_file() and target.stat().st_size == expected:
+                return os.fspath(target)
+            payload = None
+
+        descriptor, scratch_name = tempfile.mkstemp(
+            prefix=f".{target.stem}.", suffix=".tmp", dir=cache
+        )
+        os.close(descriptor)
+        scratch = pathlib.Path(scratch_name)
+        try:
+            scratch.unlink()
+            destination = resource(scratch)
+            copied = (
+                destination.write_bytes(payload)
+                if payload is not None
+                else source.copy_into(destination)
+            )
+            if copied != expected or not scratch.is_file() or scratch.stat().st_size != expected:
+                raise OSError(f"registry archive copy wrote {copied} bytes; expected {expected}")
+            os.replace(scratch, target)
+        finally:
+            scratch.unlink(missing_ok=True)
+        return os.fspath(target)
 
     @property
     def _cache_path(self) -> str:
         """OS path of an archive after any required one-time localization."""
-        filesystem, path = self._cache
-        if not isinstance(filesystem, pyarrow.fs.LocalFileSystem):  # pragma: no cover - invariant
+        cache = self._cache
+        if cache.url.scheme != "file":  # pragma: no cover - invariant
             raise RuntimeError("a FIX registry archive was not localized")
-        return path
+        return os.fspath(cache)
 
     def _sync_archive(self) -> None:
         """Copy a modified localized archive back to its Arrow filesystem."""
         source = self._cache_source
         if source is None:
             cache_dir = cast(str | os.PathLike[str], self.cache_dir)
-            if Url.from_string(os.fspath(cache_dir)).scheme in HTTP:
+            if urllib.parse.urlsplit(os.fspath(cache_dir)).scheme.lower() in {"http", "https"}:
                 raise OSError("an HTTP FIX registry archive is read-only")
             return
-        filesystem, path = source
-        if isinstance(filesystem, pyarrow.fs.LocalFileSystem):
+        if source.url.scheme == "file":
             return
-        ArrowPath(path, filesystem).write_bytes(pathlib.Path(self._cache_path).read_bytes())
+        local = resource(self._cache_path)
+        if not local.is_file():
+            raise FileNotFoundError(self._cache_path)
+        local.copy_into(source)
 
     @cached_property
     def _documents(self) -> Documents:
         """Where this registry's documents are read and written, resolved once."""
         if self.archived:
             return ArchiveDocuments(self._cache_path, self._sync_archive)
-        filesystem, directory = self._cache
-        return DirectoryDocuments(filesystem, directory)
+        return DirectoryDocuments(self._cache)
 
     @cached_property
     def _layout(self) -> ShardedLayout:
@@ -2576,13 +2534,15 @@ class FixRegistry(Convertible):
 
 
 def _resource_identity(
-    resource: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None = None
+    source: str | os.PathLike[str], filesystem: pyarrow.fs.FileSystem | None = None
 ) -> str:
     """Canonical identity used when comparing two registry resources."""
-    location = os.fspath(resource)
+    location = os.fspath(source)
     if filesystem is not None:
         return f"{id(filesystem)}:{location}"
-    return Url.from_string(location).into_string()
+    if urllib.parse.urlsplit(location).scheme.lower() in {"http", "https"}:
+        return location
+    return str(resource(location).url)
 
 
 def _stage_registry_file(source: str, target: str) -> str:

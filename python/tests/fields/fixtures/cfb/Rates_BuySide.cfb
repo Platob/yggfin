@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cplugin-configuration type="RatesBuySideFIXCPluginCBlock" fix-version="4.2">
+  <vocabulary>
+    <vocabulary-tag name="11" alt="SACHA" type="string"/>
+    <vocabulary-tag name="54" alt="Side" type="char"/>
+    <vocabulary-tag name="5001" alt="MaturityDate" type="utc-date"/>
+    <vocabulary-tag name="32" alt="LastShares" type="float"/>
+  </vocabulary>
+  <grammar-binding type="8">
+    <grammar checkordering="false">
+      <tag-constraint name="11"><string-validity regexp=".*"/></tag-constraint>
+      <tag-constraint name="54"><char-validity regexp="^[1-2]$"/></tag-constraint>
+      <tag-constraint name="5001"><utc-timestamp-validity/></tag-constraint>
+      <tag-constraint name="32"><float-validity min="0"/></tag-constraint>
+    </grammar>
+  </grammar-binding>
+</cplugin-configuration>

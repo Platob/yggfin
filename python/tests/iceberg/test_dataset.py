@@ -20,23 +20,20 @@ from pyiceberg.transforms import BucketTransform, IdentityTransform
 
 from rekep import (
     Convertible,
-    Entry,
     Field,
     FixMsg,
     Instrument,
     Message,
     StructField,
-    TextFile,
     scalar,
 )
-from rekep.arrow_file_io import ArrowFileIO
 from rekep.enums import Protocol
 from rekep.fix import Party
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
 from rekep.iceberg.fields import INFERRED_METRICS
+from rekep.iceberg.file_io import IcebergFileIO
 from rekep.market import EventType
-from rekep.urls import S3
 
 from ..conftest import catalog_properties
 
@@ -60,8 +57,8 @@ class Quote(Convertible):
     """Where it traded, when known."""
 
 
-class CustomArrowFileIO(ArrowFileIO):
-    """A distinct configured FileIO that keeps Windows URI handling."""
+class CustomArrowFileIO(IcebergFileIO):
+    """A distinct configured FileIO."""
 
 
 def local(location: str) -> Path:
@@ -454,7 +451,8 @@ def test_closing_a_partial_ordered_limit_releases_the_scan(
 def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from rekep import ArrowPath
+    from pyiceberg.io.pyarrow import PyArrowFile
+
     from rekep.iceberg import dataset as module
 
     catalog = IcebergCatalog(name="partition-order", properties=catalog_properties(tmp_path))
@@ -475,14 +473,14 @@ def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     assert paths == ["day=2026-08-14", "day=2026-08-15"]
 
     opened: list[str] = []
-    original = ArrowPath.open_input
+    original = PyArrowFile.open
 
-    def recorded(self: ArrowPath, *args: object, **kwargs: object) -> object:
+    def recorded(self: PyArrowFile, *args: object, **kwargs: object) -> object:
         if self.location.endswith(".parquet"):
             opened.append(self.location)
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(ArrowPath, "open_input", recorded)
+    monkeypatch.setattr(PyArrowFile, "open", recorded)
     reader = ordered.read_arrow_reader(order_by="unix")
     head = reader.read_next_batch()
     assert opened and all("day=2026-08-14" in path for path in opened)
@@ -2292,7 +2290,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     hold fails at the write and nowhere earlier: the pair lists, a boolean, a
     double, a binary block, and a UTC microsecond timestamp.
     """
-    assert len(FixMsg.into_field().names) == 125
+    assert len(FixMsg.into_field().names) == 124
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
     logs.overwrite_arrow_table(log_table(FIX_LINE), merge_by=True)
 
@@ -2313,7 +2311,7 @@ def test_a_log_lands_in_a_table(logs: IcebergDataset) -> None:
     assert row["price"] is None, "a field this message never carried"
 
 
-def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path) -> None:
+def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     target = IcebergDataset(
         name="messages",
         namespace="trading",
@@ -2322,26 +2320,32 @@ def test_a_raw_message_argument_list_round_trips_through_iceberg(tmp_path: Path)
         catalog_properties=catalog_properties(tmp_path),
     )
     row = Message(
-        unix=1,
         sourceurl="capture.log",
         sourcerownum=7,
+        timestamp="2026-08-14 09:30:00.123",
+        threadname="worker-1",
+        plugin="bridge",
+        level="INFO",
         body=b"opaque",
-        entries=[
-            Entry(key="Empty", value=""),
-            Entry(key="55", value="TTF"),
-        ],
-    ).identify()
+    )
 
-    target.append_arrow_table(Message.into_arrow_reader([row]).read_all())
+    target.append_arrow_table(pyarrow.Table.from_batches([Message.into_arrow_batch([row])]))
 
     reopened = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
         target.identifier
     )
-    shape = reopened.into_struct_field().field("entries")
-    stored = reopened.read_arrow_table(Message.into_field()).column("entries").to_pylist()
-    assert shape.nullable is False and not shape.item.nullable
-    assert shape.item.field("value").nullable is False
-    assert stored == [[dataclasses.asdict(entry) for entry in row.entries]]
+    stored = reopened.read_arrow_table(Message.into_field()).to_pylist()
+    assert stored == [
+        {
+            "sourceurl": "capture.log",
+            "sourcerownum": 7,
+            "timestamp": "2026-08-14 09:30:00.123",
+            "threadname": "worker-1",
+            "plugin": "bridge",
+            "level": "INFO",
+            "body": b"opaque",
+        }
+    ]
 
 
 def test_pyiceberg_currently_collapses_absent_pair_lists_to_empty(
@@ -2395,7 +2399,7 @@ def test_the_leaf_columns_are_inside_the_bounds_budget(logs: IcebergDataset) -> 
     """
     logs.append_arrow_table(log_table(FIX_LINE))
     leaves = FixMsg.into_field().leaf_names()
-    assert len(leaves) == 228
+    assert len(leaves) == 227
     assert int(logs.iceberg_table.properties[INFERRED_METRICS]) >= len(leaves)
     last = logs.iceberg_table.schema().find_field("text").field_id
     written = [task.file for task in logs.iceberg_table.scan().plan_files()]
@@ -2455,7 +2459,7 @@ def test_creating_twice_leaves_the_table_alone(dataset: IcebergDataset) -> None:
 
 def test_add_fields_adds_what_the_table_lacks(dataset: IcebergDataset) -> None:
     dataset.append_arrow_table(quotes(2))
-    wider = Quote.into_field().merge_with(
+    wider = Quote.into_field().widened_for_cast(
         pyarrow.schema([("desk", pyarrow.string()), ("pod", pyarrow.int32())])
     )
     assert dataset.add_fields(wider) == ["desk", "pod"]
@@ -2473,14 +2477,14 @@ def test_add_fields_skips_when_there_is_nothing_new(dataset: IcebergDataset) -> 
 
 def test_add_fields_can_report_without_touching_the_table(dataset: IcebergDataset) -> None:
     dataset.append_arrow_table(quotes(1))
-    wider = Quote.into_field().merge_with(pyarrow.schema([("desk", pyarrow.string())]))
+    wider = Quote.into_field().widened_for_cast(pyarrow.schema([("desk", pyarrow.string())]))
     assert dataset.add_fields(wider, dry_run=True) == ["desk"]
     assert "desk" not in dataset.refresh().into_struct_field().names
 
 
 def test_a_wider_batch_lands_after_the_columns_are_added(dataset: IcebergDataset) -> None:
     dataset.append_arrow_table(quotes(1))
-    wider = Quote.into_field().merge_with(pyarrow.schema([("desk", pyarrow.string())]))
+    wider = Quote.into_field().widened_for_cast(pyarrow.schema([("desk", pyarrow.string())]))
     dataset.add_fields(wider)
     batch = quotes(1).append_column("desk", pyarrow.array(["EQ"]))
     dataset.append_arrow(batch)  # the declared shape moved with the table
@@ -2931,7 +2935,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
         venue: Venue | None = None
         """Where."""
 
-    wide = Wide.into_field().merge_with(
+    wide = Wide.into_field().widened_for_cast(
         pyarrow.struct(
             [
                 pyarrow.field("symbol", pyarrow.string()),
@@ -3086,27 +3090,6 @@ def test_cleanup_sweeps_the_files_expiry_stranded(dataset: IcebergDataset) -> No
     assert report["expired"] > 0
     assert report["deleted"] > 0, "expiring the old snapshots is what made them garbage"
     assert report["bytes"] > 0
-    assert dataset.read_arrow_table().num_rows == 6, "only garbage went"
-
-
-def test_a_sweep_forgets_the_bytes_of_what_it_deleted(dataset: IcebergDataset) -> None:
-    """The cache is keyed by location and the sweep deletes through a
-    `pyarrow.fs` handle, so nothing told it -- and a swept manifest went on
-    answering `exists()` and handing over its bytes. Five of them, measured
-    after one `cleanup`."""
-    from rekep.arrow_file_io import CONTENT_CACHE
-
-    for index in range(3):
-        dataset.append_arrow_table(quotes(2, f"venue{index}"))
-    dataset.compact(min_files=2)
-    dataset.cleanup(retain=1, remove_orphans=False)  # expire, and strand what they held
-    stranded = dataset._orphans(datetime.timedelta(seconds=0), metadata=True)
-    held = [location for _, _, location, _ in stranded if CONTENT_CACHE.peek(location) is not None]
-    assert held, "this process wrote those manifests, so it cached them"
-
-    report = dataset.cleanup(retain=1, orphan_age=datetime.timedelta(seconds=0))
-    assert report["deleted"] >= len(held)
-    assert [location for location in held if CONTENT_CACHE.peek(location) is not None] == []
     assert dataset.read_arrow_table().num_rows == 6, "only garbage went"
 
 
@@ -3467,14 +3450,14 @@ def _streaming_dataset(
     remote = pyarrow.fs._MockFileSystem()
     remote.create_dir("bucket/metadata", recursive=True)
     remote.create_dir("bucket/data/day=2026-08-14", recursive=True)
-    original = ArrowFileIO._initialize_fs
+    original = IcebergFileIO._initialize_fs
 
     def initialized(
-        self: ArrowFileIO, scheme: str, netloc: str | None = None
+        self: IcebergFileIO, scheme: str, netloc: str | None = None
     ) -> pyarrow.fs.FileSystem:
-        return remote if scheme in S3 else original(self, scheme, netloc)
+        return remote if scheme in {"s3", "s3a", "s3n"} else original(self, scheme, netloc)
 
-    monkeypatch.setattr(ArrowFileIO, "_initialize_fs", initialized)
+    monkeypatch.setattr(IcebergFileIO, "_initialize_fs", initialized)
     target.create_with_field(
         target.field,
         location="s3://bucket/tables/streamed",
@@ -3761,18 +3744,18 @@ def keyed(prefix: str, count: int) -> pyarrow.Table:
 
 @pytest.fixture
 def opened(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
-    """Store opens by file kind, counted on `ArrowPath` -- below any cache."""
-    from rekep import ArrowPath
+    """Native PyArrow input opens, grouped by file kind."""
+    from pyiceberg.io.pyarrow import PyArrowFile
 
     counts: dict[str, int] = {}
-    original = ArrowPath.open_input
+    original = PyArrowFile.open
 
-    def counted(self: ArrowPath, *args: object, **kwargs: object) -> object:
+    def counted(self: PyArrowFile, *args: object, **kwargs: object) -> object:
         kind = "data" if self.location.endswith(".parquet") else "metadata"
         counts[kind] = counts.get(kind, 0) + 1
         return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(ArrowPath, "open_input", counted)
+    monkeypatch.setattr(PyArrowFile, "open", counted)
     return counts
 
 
@@ -4076,7 +4059,7 @@ def test_a_merge_onto_a_branch_without_the_key_column_is_all_new(
 ) -> None:
     dataset.append_arrow(quotes(3), commit_row_size=1_000_000)
     dataset.create_branch("dev")
-    wider = Quote.into_field().merge_with(pyarrow.schema([("desk", pyarrow.string())]))
+    wider = Quote.into_field().widened_for_cast(pyarrow.schema([("desk", pyarrow.string())]))
     dataset.add_fields(wider)
     dataset.field = dataset.table_field
     incoming = dataset.field.cast_arrow_table(
@@ -5554,14 +5537,24 @@ def test_a_scan_hands_back_the_narrow_arrow_types(dataset: IcebergDataset) -> No
     assert not any("large" in one for one in widths.values()), widths
 
 
-def test_a_wide_batch_transcribes_the_same_as_a_narrow_one(logs: IcebergDataset) -> None:
+def test_a_wide_batch_transcribes_the_same_as_a_narrow_one() -> None:
     """And when a store does hand back large types, nothing downstream reads
     differently. The transcription brings a batch onto the raw declaration
     before its kernels see it, so the two widths meet the same code and leave
     it under the published contract."""
-    sample = Path(__file__).parent.parent / "data" / "app_messages_sample.txt"
-    raw = TextFile.from_path(str(sample)).into_arrow_table()
-    narrow = raw.to_batches()[0]
+    narrow = Message.into_arrow_batch(
+        [
+            Message(
+                sourceurl="capture.log",
+                sourcerownum=1,
+                timestamp="2026-08-14 09:30:00.123",
+                threadname="worker-1",
+                plugin="bridge",
+                level="INFO",
+                body=b"8=FIX.4.4|35=D|11=ORD-1|55=TTF|54=1|38=1|10=000",
+            )
+        ]
+    )
 
     def widen(dtype: pyarrow.DataType) -> pyarrow.DataType:
         if pyarrow.types.is_string(dtype):
@@ -5571,7 +5564,10 @@ def test_a_wide_batch_transcribes_the_same_as_a_narrow_one(logs: IcebergDataset)
         return dtype
 
     wide_schema = pyarrow.schema(
-        [pyarrow.field(one.name, widen(one.type), one.nullable, one.metadata) for one in raw.schema]
+        [
+            pyarrow.field(one.name, widen(one.type), one.nullable, one.metadata)
+            for one in narrow.schema
+        ]
     )
     wide = pyarrow.RecordBatch.from_struct_array(
         narrow.to_struct_array().cast(pyarrow.struct(wide_schema))

@@ -184,8 +184,8 @@ def test_component_and_message_declarations_are_added_updated_and_removed(
     ).into_json(str(declaration))
     added = _run(store, f"add-component {declaration}", "y", "quit")
     assert f"added {name}" in added
-    assert store.merged_component(name).members[0].name == "FakeCode"
-    assert store.merged_component(name).msg_type == msg_type
+    assert store.component_of(name).members[0].name == "FakeCode"
+    assert store.component_of(name).msg_type == msg_type
     if msg_type:
         assert "msgtype" in added and msg_type in added
 
@@ -193,16 +193,18 @@ def test_component_and_message_declarations_are_added_updated_and_removed(
     assert "kept" in _run(store, f"remove-component {name}", "n", "quit")
     assert f"removed {name}" in _run(store, f"remove-component {name}", "y", "quit")
     with pytest.raises(KeyError, match=name):
-        store.merged_component(name)
+        store.component_of(name)
 
 
 def test_complete_field_declarations_are_added_and_updated(store: Offline, tmp_path: Path) -> None:
     declaration = tmp_path / "venue.json"
     record = namespaced_field("FAKE.VENUE.CODE", "String")
-    record.fix.enumerated = {"A": "Alpha"}
+    record.fix.enumerated = values_of({"A": "Alpha"}, namespace="standard")
     declaration.write_text(json.dumps(record.into_dict()))
     assert "added FAKE.VENUE.CODE" in _run(store, f"add-field {declaration}", "y", "quit")
-    assert store.resolve("FAKE.VENUE.CODE").fix.enumerated == values_of({"A": "Alpha"})
+    assert store.resolve("FAKE.VENUE.CODE").fix.enumerated == values_of(
+        {"A": "Alpha"}, namespace="standard"
+    )
 
     assert "updated FAKE.VENUE.CODE" in _run(store, f"update-field {declaration}", "y", "quit")
 

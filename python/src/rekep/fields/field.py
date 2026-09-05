@@ -8,6 +8,7 @@ import decimal
 import functools
 import json
 import logging
+import pathlib
 import re
 import struct
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -113,6 +114,52 @@ _FIELD_CASTS = MappingProxyType(
         pyarrow.ChunkedArray: "arrow_array",
     }
 )
+
+
+def _merged_origins(held: Mapping[str, Any], other: Mapping[str, Any]) -> dict[str, Any]:
+    """Both attributions, the later winning per part and per key within one."""
+    merged: dict[str, Any] = dict(held)
+    for part, source in other.items():
+        seen = merged.get(part)
+        if isinstance(source, Mapping) and isinstance(seen, Mapping):
+            merged[part] = {**seen, **source}
+        else:
+            merged[part] = source
+    return merged
+
+
+def _merged_members(held: Field, other: Field) -> list[Field] | None:
+    """Both readings' members, paired the way two records are: tag, then name.
+
+    `None` for a leaf, which has no members and settles by type promotion.
+
+    A member states its FIX tag, and where both sides state one the tag is the
+    whole answer -- two members at one tag are one member however differently
+    the two dictionaries spelled it, and two tags are two members however alike
+    the names. Only where *neither* states a tag does the name decide, folded
+    for comparison and never for storage. Trying the name on a member that has
+    a tag is how an identically named component and scalar fuse into one.
+
+    `other`'s order, then whatever `held` has that `other` did not name: the
+    later reading is the one stating current wire order.
+    """
+    if not held.fields or not other.fields:
+        return None
+    by_tag = {tag: one for one in held.fields if (tag := one.fix.tag) is not None}
+    # `casefold` for the name, never the column fold: comparison, not storage.
+    by_name = {one.name.casefold(): one for one in held.fields if one.fix.tag is None}
+    taken: list[Field] = []
+    matched: set[int] = set()
+    for member in other.fields:
+        tag = member.fix.tag
+        against = by_tag.get(tag) if tag is not None else by_name.get(member.name.casefold())
+        if against is None:
+            taken.append(member)
+            continue
+        matched.add(id(against))
+        taken.append(against.merge(member))
+    taken.extend(one for one in held.fields if id(one) not in matched)
+    return taken
 
 
 def _protocol_keyed(metadata: Mapping[str, Any]) -> bool:
@@ -342,6 +389,11 @@ class Field(Convertible):
     def merge(self, other: Field) -> Field:
         """Combine two declarations, letting `other` win where it says anything.
 
+        The one merge in this library. Two readings of one identity meet here
+        and nowhere else -- a later version of a field, a venue's spelling of
+        it, a bridge's enumeration of its values -- so there is one answer to
+        what folding them means rather than one per caller.
+
         Winning is per reading, not per key: a later declaration overrides the
         description it restates, and *adds* to the spellings, tags, versions
         and values the earlier one gathered. Overwriting those would make an
@@ -351,28 +403,68 @@ class Field(Convertible):
         The type is the exception: it is the one reading a declaration can
         *lose* rather than restate, so two readings widen into the type that
         holds both, at every depth.
+
+        A container recurses *here*, member by member, rather than handing its
+        shape to Arrow. Arrow carries a name, a type and metadata bytes; it
+        does not carry aliases, versions, enumerated values or the namespaces
+        that declare them, so a merge written over `pyarrow.Field` widens the
+        type correctly and drops everything else a member knows. Recursion
+        through `Field.merge` is what makes a nested member fold exactly as a
+        top-level one does.
         """
+        members = _merged_members(self, other)
         built = Field(
             name=other.name or self.name,
-            dtype=promoted_type(self.dtype, other.dtype),
+            dtype=self._merged_dtype(other, members),
             nullable=other.nullable if other.nullable is not None else self.nullable,
             metadata={**self.metadata, **other.metadata},
         )
         if _protocol_keyed(self.metadata) and _protocol_keyed(other.metadata):
             built.fix.accumulate(self.fix)
+            # Which source supplied which part is a mapping, and for the values
+            # and aliases a mapping of mappings, so the plain metadata merge
+            # above would take the later reading's whole blob and forget what
+            # the earlier one attributed. Per part, and per key within a part,
+            # the later reading wins.
+            origins = _merged_origins(self.fix.origins, built.fix.origins)
+            if origins:
+                built.fix.origins = origins
         return built
+
+    def _merged_dtype(
+        self, other: Field, members: Sequence[Field] | None
+    ) -> pyarrow.DataType | None:
+        """This reading's type widened with `other`'s, members already merged.
+
+        A leaf has no members and settles by promotion alone; a container
+        rebuilds around what `merge` folded, so the members keep the metadata
+        an Arrow-level widening would have dropped.
+        """
+        if members is None:
+            return promoted_type(self.dtype, other.dtype)
+        return other._container_of(members)
+
+    def _container_of(self, members: Sequence[Field]) -> pyarrow.DataType:
+        """This container's type around another set of members."""
+        return pyarrow.struct([member.into_arrow_field() for member in members])
 
     def with_name(self, name: str) -> Self:
         """A copy carrying `name`, without changing this declaration."""
         return dataclasses.replace(self, name=name)
 
-    def merge_with(self, other: Any) -> Field:
-        """This field widened with whatever `other` has and it does not."""
-        return self.merge_with_arrow_field(Field.from_(other).into_arrow_field())
+    def widened_for_cast(self, other: Any) -> Field:
+        """This field's shape grown to hold `other`'s, for casting data onto.
 
-    def merge_with_arrow_field(self, other: pyarrow.Field) -> Field:
-        """`merge_with`, for an Arrow field already in hand."""
-        return Field.from_arrow_field(merge_fields(other, self.into_arrow_field()))
+        Deliberately not `merge`, and deliberately not called one. `merge`
+        reconciles two *readings of one identity* and widens the leaf so both
+        fit; this grows a *write target* so a batch can be cast onto it, and a
+        shared leaf stays this field's -- `int32` here against `int64` incoming
+        stays `int32`, where `merge` would answer `int64`. Two answers to two
+        questions; naming both of them "merge" is what made it possible to ask
+        one and get the other.
+        """
+        incoming = Field.from_(other).into_arrow_field()
+        return Field.from_arrow_field(merge_fields(incoming, self.into_arrow_field()))
 
     # -- building -----------------------------------------------------------
 
@@ -501,6 +593,44 @@ class Field(Convertible):
         )
 
     @classmethod
+    def from_cfb(
+        cls,
+        path: Any,
+        namespace: str = "",
+        *,
+        standard: Any = None,
+    ) -> Iterator[Field]:
+        """Every field one Ullink bridge configuration (`.cfb`) declares, lazily.
+
+        A declaration source produces `Field`s, the same shape as a scalar
+        read from the standard, a component, a group or a message -- so this
+        is a constructor in the `from_*` family and the registry knows nothing
+        of the format. Ingestion is the generic path:
+        `registry.add_fields(Field.from_cfb(path))`.
+
+        `namespace` defaults to the file's stem, normalised the one way every
+        namespace is: `FX_Quoting_SellSide.cfb` becomes `fx-quoting-sellside`.
+        `standard` resolves a tag the file's own vocabulary does not name --
+        `tag -> (name, datatype)`, or None -- so a constraint on such a tag
+        takes the standard's reading rather than a synthesised name; without
+        one, such a constraint is counted and skipped.
+
+        The iterator carries a `report`: what it walked, what it enumerated
+        and what it passed over, by kind. A file `ElementTree` cannot parse
+        yields nothing, so one damaged capture does not lose a directory of
+        them; any other fault raises.
+        """
+        from rekep.fields.cfb import fields_of
+        from rekep.resources import read_bytes, resource
+
+        located = resource(path)
+        try:
+            stem = pathlib.PurePosixPath(located.name).stem
+        finally:
+            located.close()
+        return fields_of(read_bytes(path), namespace=namespace or stem, standard=standard)
+
+    @classmethod
     def from_arrow_type(cls, source: pyarrow.DataType, name: str = "") -> Field:
         """An Arrow type as a field, non-nullable and undocumented."""
         return Field(name=name, dtype=source, nullable=False)
@@ -582,9 +712,22 @@ class Field(Convertible):
         """The one field a list repeats."""
         blocks = mapping.get("fields") or ()
         if len(blocks) != 1:
+            # A container states its members under `fields`, whatever kind of
+            # container it is. The older spellings named the halves instead --
+            # `item` for a list, `key`/`value` for a map -- so a document
+            # carrying one is not merely short of members, it is written to a
+            # shape this reader no longer has, and saying which key it used is
+            # the difference between a fixable error and a puzzling one.
+            superseded = sorted({ITEM, "key", "value"} & set(mapping))
+            spelled = (
+                f"; it states {', '.join(repr(key) for key in superseded)}, and a container "
+                "states its members under 'fields'"
+                if superseded
+                else "; dump it with into_dict() rather than writing it by hand"
+            )
             raise ValueError(
                 f"list {mapping.get(NAME, '')!r} holds {len(blocks)} fields, and a list repeats "
-                "exactly one; dump it with into_dict() rather than writing it by hand"
+                f"exactly one{spelled}"
             )
         return cls._fields_of(blocks, ITEM)[0]
 
@@ -601,9 +744,15 @@ class Field(Convertible):
         name = mapping.get(NAME, "")
         blocks = mapping.get("fields") or ()
         if len(blocks) != 1:
+            superseded = sorted({ITEM, "key", "value"} & set(mapping))
+            spelled = (
+                f"; it states {', '.join(repr(key) for key in superseded)}, and a container "
+                "states its members under 'fields'"
+                if superseded
+                else "; dump it with into_dict() rather than writing it by hand"
+            )
             raise ValueError(
-                f"map {name!r} holds {len(blocks)} fields, and a map holds one entry; "
-                "dump it with into_dict() rather than writing it by hand"
+                f"map {name!r} holds {len(blocks)} fields, and a map holds one entry{spelled}"
             )
         entry = blocks[0]
         if str(entry.get("type")) != "struct":
@@ -995,6 +1144,10 @@ class ListField(Field):
         """This flavour of list, around another item."""
         return pyarrow.list_(item)
 
+    def _container_of(self, members: Sequence[Field]) -> pyarrow.DataType:
+        """A list is its one item, so the flavour rebuilds around what merged."""
+        return self.with_item(members[0].into_arrow_field())
+
     def _member_changed(self, member: Field) -> None:
         self.dtype = self.with_item(member.into_arrow_field())
 
@@ -1147,6 +1300,14 @@ class MapField(Field):
         self.dtype = pyarrow.map_(
             halves["key"].into_arrow_field(), halves["value"].into_arrow_field()
         )
+
+    def _container_of(self, members: Sequence[Field]) -> pyarrow.DataType:
+        """A map's key stays this reading's; only the value side may grow.
+
+        A key is what identifies an entry, so widening it changes which
+        entries exist rather than what one holds.
+        """
+        return pyarrow.map_(self.key.into_arrow_field(), members[-1].into_arrow_field())
 
     def kind(self) -> str:
         return "map"
@@ -1567,7 +1728,7 @@ class StructField(Field):
         self, batch: pyarrow.RecordBatch, *, safe: bool = False, merge_schema: bool = False
     ) -> pyarrow.RecordBatch:
         """`batch` reshaped onto this field: cast, filled, reordered."""
-        target = self.merged(batch.schema) if merge_schema else self
+        target = self.widened_for_cast(batch.schema) if merge_schema else self
         schema = target.arrow_schema
         if batch.schema.equals(schema, check_metadata=True):
             return batch
@@ -1589,7 +1750,7 @@ class StructField(Field):
         chunked, and casting a chunk at a time is what keeps the peak at one
         batch instead of a second copy of the whole column.
         """
-        target = self.merged(table.schema) if merge_schema else self
+        target = self.widened_for_cast(table.schema) if merge_schema else self
         if table.schema.equals(target.arrow_schema, check_metadata=True):
             return table
         batches = (target.cast_arrow_batch(batch, safe=safe) for batch in table.to_batches())
@@ -1607,7 +1768,7 @@ class StructField(Field):
         if merge_schema:
             source, incoming = _peek_schema(source)
             if incoming is not None:
-                target = self.merged(incoming)
+                target = self.widened_for_cast(incoming)
         # Per stream, not per batch: `cast_arrow_batch` runs once per
         # `batch_row_size` rows, which is thousands of records over one file.
         LOGGER.debug(
@@ -1630,19 +1791,6 @@ class StructField(Field):
         )
 
     # -- merging ------------------------------------------------------------
-
-    def merged(self, incoming: Any) -> StructField:
-        """This field widened with whatever `incoming` has and it does not.
-
-        Shared members stay this field's (so data is cast onto them), new ones
-        are added nullable -- at every level, so a struct column that grew a
-        member grows here too (`fields.arrow.merge_fields`).
-        """
-        return self.merge_with(incoming)
-
-    def merge_arrow_schema(self, incoming: pyarrow.Schema) -> pyarrow.Schema:
-        """`merged`, as the Arrow schema it produces."""
-        return self.merged(incoming).arrow_schema
 
     def narrowed(self, incoming: Any) -> StructField:
         """This field's reading of the columns `incoming` actually has.

@@ -35,7 +35,7 @@ package contains no prebuilt pipeline jobs or task reports.
 ## Flow
 
 ```text
-Text files -> parse_messages -> logs.messages -+-> parse_fix_market -> fix.market -+-> parse_instruments -> market.instruments
+Text objects -> parse_messages -> logs.messages -+-> parse_fix_market -> fix.market -+-> parse_instruments -> market.instruments
                                                |                                  `-> parse_market -+-> Book -+-> Order
                                                |                                                    |         `-> Execution
                                                |                                                    `---------> Order + Execution (books: false)
@@ -43,13 +43,13 @@ Text files -> parse_messages -> logs.messages -+-> parse_fix_market -> fix.marke
                                                `-> parse_fix_unknown -> fix.unknown
 ```
 
-`parse_messages` tokenizes once and assigns `MsgType` and `eventtype`.
-Airflow runs the one `parse_fix` definition three times with mutually exclusive
-event categories. Each run transcribes only its selected rows and owns one
-`fix.*` table. Keeping `logs.messages` is what lets a field or protocol
-change rerun FIX resolution without reopening the source logs -- only a
-MsgType event-metadata change rebuilds it, because that changes its stored
-`eventtype`.
+`parse_messages` uses yggdryl to retain one seven-column raw `Message` per
+physical line. Airflow runs the one `parse_fix` definition three times. Each
+run parses the raw body, applies one mutually exclusive event-category mask,
+and owns one `fix.*` table. Keeping `logs.messages` lets field, protocol,
+timezone, plugin-alias, null-value, and MsgType metadata changes rerun FIX
+resolution without reopening the source objects. Only source selection or
+header-capture changes rebuild the raw table.
 
 `parse_instruments` reads the rows `parse_fix_market` wrote to `fix.market` and
 versions `market.instruments` from their nested `Instrument` components. One

@@ -158,6 +158,49 @@ def test_source_field_projects_provenance_and_original_type_to_arrow_metadata() 
     assert declared.fix.named_aliases[0].name == "MaxShow1"
 
 
+def test_every_reader_names_its_own_vocabulary_on_the_values_it_produces() -> None:
+    """Including the standard's, which is the one a reader may leave implicit.
+
+    An empty `namespaces` has to keep meaning *unstated*: a union can never
+    tell an absent reading from a declared one afterwards, so a value that
+    arrived without its declarer would come back from its first merge naming
+    some venue alone. That is only safe while no reader emits one.
+    """
+    venue = fixture_registry().field(9003).into_field()  # type: ignore[union-attr]
+    standard = parse_quickfix(QUICKFIX).field(54).into_field()  # type: ignore[union-attr]
+
+    assert {one.value: one.namespaces for one in venue.fix.enumerated} == {
+        "1": ("fixtrading-udf",),
+        "2": ("fixtrading-udf",),
+    }
+    assert {one.value: one.namespaces for one in standard.fix.enumerated} == {
+        "1": ("standard",),
+        "2": ("standard",),
+        "7": ("standard",),
+    }
+    declared = [
+        one.namespaces
+        for parsed in (fixture_registry(), parse_quickfix(QUICKFIX))
+        for field in parsed.fields
+        for one in field.into_field().fix.enumerated
+    ]
+    assert len(declared) == 10, "both fixtures' enumerated values, so neither side can move alone"
+    assert all(declared), "a value with no declarer is one no reader ever saw"
+
+
+def test_a_declarer_is_named_the_way_the_store_names_a_namespace() -> None:
+    """One vocabulary, one spelling: `add_fields` folds a namespace to
+    lowercase before it stamps the record, so a value declared `ACME ` and a
+    record stored under `acme` would be one dictionary no lookup could match
+    to itself."""
+    shouted = SourceProvenance.for_bytes(ORCHESTRA, source_id="fixture", namespace="  ACME  ")
+    parsed = parse_orchestra(ORCHESTRA, shouted)
+
+    declared = parsed.field(9003).into_field()  # type: ignore[union-attr]
+
+    assert [one.namespaces for one in declared.fix.enumerated] == [("acme",), ("acme",)]
+
+
 def test_source_field_keeps_the_utc_zone_its_description_declares() -> None:
     document = b"""<repository name='FIX.Test' version='FIX.Test_EP7'>
       <fields>

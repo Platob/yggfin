@@ -157,7 +157,6 @@
     components.forEach((component) => {
       component._tree = fixDeclaration.members(component);
       component._arrowType = fixDeclaration.arrowType(component);
-      component._folder = component.record_kind === "group" ? "repgroup" : "components";
       component._msgType = fixDeclaration.msgType(component);
       component._members = flattenMembers(component._tree);
       component._shape = componentShape(component);
@@ -541,7 +540,7 @@
         ${referenceList("Fields", relatedFields.map((field) => `${fieldLink(field)} ${tagCode(field.tag, true)}`))}
         <h4>Member tree</h4>
         ${memberTree(component._tree, 0, new Set([normalized(component.name)]))}
-        <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/${component._folder}/${component.slug}.json`)}">View repository record →</a>`;
+        <a class="fix-registry__source" href="${escape(`${app.dataset.repository}/${component.document}`)}">View repository record →</a>`;
       componentDetail.hidden = false;
     }
 
@@ -603,10 +602,10 @@
       }
       const valueCodes = [...declared.values()];
       const encoded = encodings(field);
-      // `tag // 1000`, and the shard no tag reaches for a field FIX never
-      // numbered -- the same arithmetic the store writes by.
-      const shard = field.tag === undefined ? 999999 : Math.floor(Number(field.tag) / 1000);
-      const source = `${field.namespace === "standard" ? "" : `namespaces/${field.namespace}/`}fields/${String(shard).padStart(6, "0")}.json`;
+      // Which document holds this record is decided by the store and carried
+      // in the catalog: a tag shards by arithmetic and a name by a digest, and
+      // re-deriving either here would be a second rule to keep in step.
+      const source = field.document;
       const componentReferences = list(field.components);
       const messageReferences = list(field.used_in);
       fieldDetail.innerHTML = `<header>

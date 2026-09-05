@@ -1,0 +1,1052 @@
+[
+ {
+  "name": "BarclaysCapital",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BarclaysCapital",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "BidPx2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6050"
+    }
+   },
+   {
+    "name": "BidSize2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6052"
+    }
+   },
+   {
+    "name": "CombinedPointsBid",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6056"
+    }
+   },
+   {
+    "name": "CombinedPointsOffer",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6057"
+    }
+   },
+   {
+    "name": "Contributor",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5111"
+    }
+   },
+   {
+    "name": "EndpointExchangeExecutionId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5785"
+    }
+   },
+   {
+    "name": "EndPointExchangeOrderId",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5784"
+    }
+   },
+   {
+    "name": "ExchangeGatewayID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5783"
+    }
+   },
+   {
+    "name": "ExecutedQuantityLeg2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5687"
+    }
+   },
+   {
+    "name": "IssueDenomination",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5112"
+    }
+   },
+   {
+    "name": "OfferPx2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6051"
+    }
+   },
+   {
+    "name": "OfferSize2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6053"
+    }
+   },
+   {
+    "name": "OrderedQuantityLeg2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5685"
+    }
+   },
+   {
+    "name": "QuoteDepthOfMarket",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5110"
+    }
+   },
+   {
+    "name": "SecondaryQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6054"
+    }
+   },
+   {
+    "name": "SecondaryQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6055"
+    }
+   },
+   {
+    "name": "TenorValue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6215"
+    }
+   },
+   {
+    "name": "TenorValue2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6216"
+    }
+   }
+  ]
+ },
+ {
+  "name": "BrookPathPartnersInc",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BrookPathPartnersInc",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AEPTradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9875"
+    }
+   },
+   {
+    "name": "AggressorIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5460"
+    }
+   },
+   {
+    "name": "AllocInterestAtMaturity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6696"
+    }
+   },
+   {
+    "name": "CstmApplVerID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5465"
+    }
+   },
+   {
+    "name": "InCompete",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6702"
+    }
+   },
+   {
+    "name": "InterestAtMaturity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6695"
+    }
+   },
+   {
+    "name": "MarketZone",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5454"
+    }
+   },
+   {
+    "name": "MDBookType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5466"
+    }
+   },
+   {
+    "name": "MDCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5468"
+    }
+   },
+   {
+    "name": "MDCountType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5452"
+    }
+   },
+   {
+    "name": "MDDelayed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5458"
+    }
+   },
+   {
+    "name": "MDPriceLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5467"
+    }
+   },
+   {
+    "name": "MDStatScope",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5451"
+    }
+   },
+   {
+    "name": "MDStdDeviation",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5456"
+    }
+   },
+   {
+    "name": "PriceTimestamp",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5457"
+    }
+   },
+   {
+    "name": "PrimeDealIndicator",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5462"
+    }
+   },
+   {
+    "name": "SecondaryTradeID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5464"
+    }
+   },
+   {
+    "name": "SettlType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5459"
+    }
+   },
+   {
+    "name": "SmoothRateSrc",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5455"
+    }
+   },
+   {
+    "name": "TicketStatus1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5461"
+    }
+   },
+   {
+    "name": "TradeID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5463"
+    }
+   },
+   {
+    "name": "TraderCount",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5453"
+    }
+   }
+  ]
+ },
+ {
+  "name": "CinnoberFinancialTechnologyAB",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "CinnoberFinancialTechnologyAB",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "ADT",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7573"
+    }
+   },
+   {
+    "name": "ADTCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7574"
+    }
+   },
+   {
+    "name": "AVT",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7571"
+    }
+   },
+   {
+    "name": "AVTCurrency",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7572"
+    }
+   },
+   {
+    "name": "BasisOfTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7559"
+    }
+   },
+   {
+    "name": "BOATdelay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7550"
+    }
+   },
+   {
+    "name": "ClientTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7587"
+    }
+   },
+   {
+    "name": "DelayToTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7552"
+    }
+   },
+   {
+    "name": "LiquidityLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7594"
+    }
+   },
+   {
+    "name": "LiquidShare",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7557"
+    }
+   },
+   {
+    "name": "NoQuotableCurrencies",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7582"
+    }
+   },
+   {
+    "name": "NoQuotableInstruments",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7586"
+    }
+   },
+   {
+    "name": "NoSharesIssued",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7595"
+    }
+   },
+   {
+    "name": "NoTradeSeqNoSeries",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7565"
+    }
+   },
+   {
+    "name": "NoWarningReasons",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7563"
+    }
+   },
+   {
+    "name": "OverrideDelay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7553"
+    }
+   },
+   {
+    "name": "PxQtyReviewed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7596"
+    }
+   },
+   {
+    "name": "QueriedTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7597"
+    }
+   },
+   {
+    "name": "QuotableInstrStatusReqRejReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7589"
+    }
+   },
+   {
+    "name": "QuotableInstrumentStatusReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7588"
+    }
+   },
+   {
+    "name": "QuotesClearedTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7583"
+    }
+   },
+   {
+    "name": "ReceivedTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7590"
+    }
+   },
+   {
+    "name": "ReportedPxDiff",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7567"
+    }
+   },
+   {
+    "name": "ReportedPXReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7568"
+    }
+   },
+   {
+    "name": "RptSys",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7569"
+    }
+   },
+   {
+    "name": "RptTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7570"
+    }
+   },
+   {
+    "name": "SecondaryQuoteID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7561"
+    }
+   },
+   {
+    "name": "SecondaryTradeID2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7562"
+    }
+   },
+   {
+    "name": "Sector2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7558"
+    }
+   },
+   {
+    "name": "SecurityChangedTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7592"
+    }
+   },
+   {
+    "name": "SecurityValidFromTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7593"
+    }
+   },
+   {
+    "name": "SecurityValidToTime",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7591"
+    }
+   },
+   {
+    "name": "SILiquidSharesRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7578"
+    }
+   },
+   {
+    "name": "SILiquidSharesReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7576"
+    }
+   },
+   {
+    "name": "SILiquidSharesStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7577"
+    }
+   },
+   {
+    "name": "SMS",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7575"
+    }
+   },
+   {
+    "name": "SuspendQuotingRejectReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7581"
+    }
+   },
+   {
+    "name": "SuspendQuotingReqID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7579"
+    }
+   },
+   {
+    "name": "SuspendQuotingStatus",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7580"
+    }
+   },
+   {
+    "name": "SuspendReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7560"
+    }
+   },
+   {
+    "name": "SystemUTI",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7599"
+    }
+   },
+   {
+    "name": "SystemUTIRef",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7598"
+    }
+   },
+   {
+    "name": "TimezoneOffset",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7566"
+    }
+   },
+   {
+    "name": "TradeReportRefSystem",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7556"
+    }
+   },
+   {
+    "name": "TradeReportRefVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7585"
+    }
+   },
+   {
+    "name": "TradeReportSystem",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7584"
+    }
+   },
+   {
+    "name": "TradeReportVersion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7551"
+    }
+   },
+   {
+    "name": "TradeReportWarningReason",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7564"
+    }
+   },
+   {
+    "name": "TradeSeqNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7554"
+    }
+   },
+   {
+    "name": "TradeSeqNoSeries",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7555"
+    }
+   }
+  ]
+ },
+ {
+  "name": "GATETecnologieInformatiche",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "GATETecnologieInformatiche",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "CustomerType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5250"
+    }
+   },
+   {
+    "name": "NoSides",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6552"
+    }
+   },
+   {
+    "name": "OrdTypeExt",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5253"
+    }
+   },
+   {
+    "name": "OrigOrderID1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5254"
+    }
+   },
+   {
+    "name": "QtyParam",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5252"
+    }
+   },
+   {
+    "name": "Reserved28",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5393"
+    }
+   },
+   {
+    "name": "Reserved29",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5394"
+    }
+   },
+   {
+    "name": "Reserved30",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5395"
+    }
+   },
+   {
+    "name": "Reserved31",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5396"
+    }
+   },
+   {
+    "name": "Reserved32",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5397"
+    }
+   },
+   {
+    "name": "Reserved33",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5398"
+    }
+   },
+   {
+    "name": "Reserved34",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5399"
+    }
+   },
+   {
+    "name": "SenderGroupID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5392"
+    }
+   },
+   {
+    "name": "SettlAccType1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5391"
+    }
+   },
+   {
+    "name": "SettlVenue",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5390"
+    }
+   },
+   {
+    "name": "StopPxCondition",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5255"
+    }
+   },
+   {
+    "name": "TimeInForce",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5251"
+    }
+   }
+  ]
+ },
+ {
+  "name": "GLConsultantsInc",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "GLConsultantsInc",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AccountType4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9555"
+    }
+   },
+   {
+    "name": "MITFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9556"
+    }
+   },
+   {
+    "name": "SubRule80A",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9500"
+    }
+   }
+  ]
+ },
+ {
+  "name": "McNamaraGroup",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "McNamaraGroup",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "BloombergPriceEngPriceLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9399"
+    }
+   }
+  ]
+ },
+ {
+  "name": "PhiladelphiaStockExchange",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "PhiladelphiaStockExchange",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AccountOriginType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5256"
+    }
+   }
+  ]
+ }
+]

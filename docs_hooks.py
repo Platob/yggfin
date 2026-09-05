@@ -14,7 +14,6 @@ from rekep import enums as rekep_enums
 from rekep.enums.ascii_codes import Ascii32
 from rekep.fix import FixRegistry
 from rekep.market import Book
-from rekep.text.message import SESSION_FIELDS
 
 #: The six persisted contracts, in the order a row reaches them: text first,
 #: then the market products a transcribed row is translated into. `stage` is
@@ -53,10 +52,12 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
     registry = FixRegistry(cache_dir=root / "data" / "fix")
     namespaces = registry.namespaces()
     fields_by_namespace = {
-        namespace: tuple(registry.field_records(namespace).values()) for namespace in namespaces
+        namespace: tuple(registry.field_records(namespace).values())
+        for namespace in namespaces
     }
     components_by_namespace = {
-        namespace: tuple(registry.component_records(namespace).values()) for namespace in namespaces
+        namespace: tuple(registry.component_records(namespace).values())
+        for namespace in namespaces
     }
     groups_by_namespace = {
         namespace: tuple(registry.repeating_group_records(namespace).values())
@@ -77,7 +78,9 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
     components = [
         (entry, namespace)
         for namespace in namespaces
-        for entry in sorted(components_by_namespace[namespace], key=lambda one: one.name)
+        for entry in sorted(
+            components_by_namespace[namespace], key=lambda one: one.name
+        )
     ]
     groups = [
         (entry, namespace)
@@ -88,7 +91,9 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
     sources = sorted(
         (dict(source) for source in registry.source_manifest()),
         key=lambda source: (
-            namespace_order.get(str(source.get("namespace", "standard")), len(namespace_order)),
+            namespace_order.get(
+                str(source.get("namespace", "standard")), len(namespace_order)
+            ),
             str(source.get("source_id", "")),
         ),
     )
@@ -111,7 +116,8 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
                     "components": len(components_by_namespace[namespace]),
                     "groups": len(groups_by_namespace[namespace]),
                     "enumerations": sum(
-                        bool(entry.fix.enumerated) for entry in fields_by_namespace[namespace]
+                        bool(entry.fix.enumerated)
+                        for entry in fields_by_namespace[namespace]
                     ),
                 }
                 for namespace in namespaces
@@ -123,6 +129,7 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
                 "slug": entry.slug,
                 "namespace": namespace,
                 "record_kind": "component",
+                "document": _document_of(entry, namespace),
             }
             for entry, namespace in components
         ],
@@ -132,6 +139,7 @@ def _registry_catalog(root: Path) -> dict[str, Any]:
                 "slug": entry.slug,
                 "namespace": namespace,
                 "record_kind": "group",
+                "document": _document_of(entry, namespace),
             }
             for entry, namespace in groups
         ],
@@ -153,7 +161,11 @@ def _enum_catalog() -> dict[str, Any]:
     found = []
     for name in sorted(rekep_enums.__all__):
         enum = getattr(rekep_enums, name)
-        if not isinstance(enum, type) or not issubclass(enum, Ascii32) or not enum.__members__:
+        if (
+            not isinstance(enum, type)
+            or not issubclass(enum, Ascii32)
+            or not enum.__members__
+        ):
             continue
         found.append(
             {
@@ -190,6 +202,23 @@ def _enum_catalog() -> dict[str, Any]:
     return {"enums": found}
 
 
+def _document_of(entry: Any, namespace: str = "standard") -> str:
+    """Which stored document one record lives in, decided by the store itself.
+
+    Named here rather than rebuilt in the browser: the shard a record answers
+    at is arithmetic for a tag and a digest of the folded name otherwise, and a
+    second implementation of that in JavaScript is a second rule to keep in
+    step with this one.
+    """
+    from rekep.fix.entries import record_key
+    from rekep.fix.store import record_document
+
+    record = entry.into_record() if hasattr(entry, "into_record") else entry
+    return record_document(
+        record_key(record), "" if namespace == "standard" else namespace
+    )
+
+
 def _field_view(entry: Field, namespace: str = "standard") -> dict[str, Any]:
     """One field record as the page reads it: flat, with nothing left packed.
 
@@ -201,7 +230,11 @@ def _field_view(entry: Field, namespace: str = "standard") -> dict[str, Any]:
     lives in the build that serves the page, not in the store.
     """
     fix = entry.fix
-    view: dict[str, Any] = {"name": fix.canonical, "namespace": namespace}
+    view: dict[str, Any] = {
+        "name": fix.canonical,
+        "namespace": namespace,
+        "document": _document_of(entry, namespace),
+    }
     if fix.tag is not None:
         view["tag"] = fix.tag
     for key, value in (
@@ -240,7 +273,6 @@ def _product_catalog() -> dict[str, Any]:
     products = []
     for pyclass, key, stage, source in PRODUCTS:
         document = Field.from_class(pyclass).into_dict()
-        _lift_session_header(document, key)
         products.append(
             {
                 "key": key,
@@ -256,28 +288,11 @@ def _product_catalog() -> dict[str, Any]:
     return {"products": products, "enums": enums}
 
 
-def _lift_session_header(document: dict[str, Any], key: str) -> None:
-    """Give the raw stage's seven header columns the tags they are lifted from.
-
-    `Message` is protocol-neutral, so its declaration carries no FIX origin --
-    the annotation lives on `FixMsg`, where a column *is* a FIX field. But the
-    raw stage does lift seven of them, and `SESSION_FIELDS` is where the code
-    says which and from what tag. Read from there rather than matched on the
-    column names: the names agreeing with the standard's is what makes the
-    guess look safe, and a guess that looks safe is still not the declaration.
-    """
-    if key != "message":
-        return
-    tags = dict(SESSION_FIELDS)
-    for member in document["fields"]:
-        tag = tags.get(member["name"])
-        if tag is not None:
-            member["fix"] = {"tag": tag, "name": member["name"]}
-
-
 #: Every container writes one `fields` block, so the flavour word is the only
 #: thing that says a block repeats what it holds rather than composing it.
-_LIST_TYPES = frozenset({"list", "large_list", "list_view", "large_list_view", "fixed_size_list"})
+_LIST_TYPES = frozenset(
+    {"list", "large_list", "list_view", "large_list_view", "fixed_size_list"}
+)
 
 
 def _column(
@@ -372,7 +387,7 @@ ACCENT_CHROMA = 20.0
 KEPT_SELECTOR = ".brand-plate"
 
 _HEX = re.compile(r"#[0-9a-fA-F]{6}\b")
-_STYLE = re.compile(r"(<style[^>]*>)(.*?)(</style>)", re.S)
+_STYLE = re.compile(r"(<style[^>]*>)(.*?)(</style>)", re.DOTALL)
 _RULE = re.compile(r"([^{}]+)\{([^}]*)\}")
 _MARK = re.compile(r'<image href="(logos/[^"]+)"([^/>]*)/>')
 
@@ -384,10 +399,16 @@ def _to_lab(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
     """One sRGB colour in CIELAB, where lightness is a coordinate of its own."""
 
     def linear(channel: float) -> float:
-        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+        return (
+            channel / 12.92
+            if channel <= 0.04045
+            else ((channel + 0.055) / 1.055) ** 2.4
+        )
 
     def curve(value: float) -> float:
-        return value ** (1 / 3) if value > 216 / 24389 else (24389 / 27 * value + 16) / 116
+        return (
+            value ** (1 / 3) if value > 216 / 24389 else (24389 / 27 * value + 16) / 116
+        )
 
     red, green, blue = (linear(channel / 255) for channel in rgb)
     xyz = (
@@ -395,7 +416,9 @@ def _to_lab(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
         0.2126729 * red + 0.7151522 * green + 0.0721750 * blue,
         0.0193339 * red + 0.1191920 * green + 0.9503041 * blue,
     )
-    fx, fy, fz = (curve(value / white) for value, white in zip(xyz, _WHITE, strict=True))
+    fx, fy, fz = (
+        curve(value / white) for value, white in zip(xyz, _WHITE, strict=True)
+    )
     return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
 
 
@@ -404,7 +427,11 @@ def _from_lab(lab: tuple[float, float, float]) -> tuple[int, int, int]:
 
     def gamma(channel: float) -> float:
         channel = max(0.0, min(1.0, channel))
-        return channel * 12.92 if channel <= 0.0031308 else 1.055 * channel ** (1 / 2.4) - 0.055
+        return (
+            channel * 12.92
+            if channel <= 0.0031308
+            else 1.055 * channel ** (1 / 2.4) - 0.055
+        )
 
     def curve(value: float) -> float:
         return value**3 if value**3 > 216 / 24389 else (116 * value - 16) * 27 / 24389
@@ -412,7 +439,9 @@ def _from_lab(lab: tuple[float, float, float]) -> tuple[int, int, int]:
     lightness, a, b = lab
     fy = (lightness + 16) / 116
     coordinates = (fy + a / 500, fy, fy - b / 200)
-    x, y, z = (curve(value) * white for value, white in zip(coordinates, _WHITE, strict=True))
+    x, y, z = (
+        curve(value) * white for value, white in zip(coordinates, _WHITE, strict=True)
+    )
     return (
         round(gamma(3.2404542 * x - 1.5371385 * y - 0.4985314 * z) * 255),
         round(gamma(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z) * 255),
@@ -511,5 +540,7 @@ def on_files(files: Any, config: Any) -> Any:
             standing = files.get_file_from_path(spelling)
             if standing is not None:
                 files.remove(standing)
-            files.append(File.generated(config, spelling, content=embed_marks(drawing, assets)))
+            files.append(
+                File.generated(config, spelling, content=embed_marks(drawing, assets))
+            )
     return files

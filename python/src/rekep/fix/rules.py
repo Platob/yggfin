@@ -354,8 +354,8 @@ class Rules(Convertible):
         """What each row carries, in kernels: one packed `protocol` code per line.
 
         `entries` is the row's already-parsed key/value pairs, which is what a
-        structured rule is decided by -- the message stage hands over the ones
-        it just parsed rather than paying for them twice.
+        structured rule is decided by -- `MessageParser` hands over the ones it
+        just parsed rather than paying for them twice.
 
         Rules are tried in order over a shrinking column: a row the first rule
         claims is cut out of the text the second is matched against, so the
@@ -494,10 +494,10 @@ class Rules(Convertible):
 def _opens(verb_at: Any, payload_at: Any) -> Any:
     """Whether a found verb starts before the row's first payload token.
 
-    No payload token is no anchor, not an open door: a row can carry a
-    protocol whose patterns never matched its text -- the message stage's
-    stored reading rescued it -- and without an anchor a verb could sit
-    anywhere in the payload. No answer beats a guessed one.
+    No payload token is no anchor, not an open door: a plugin or structured
+    rule can classify a row whose text has no codec anchor, and without an
+    anchor a verb could sit anywhere in the payload. No answer beats a guessed
+    one.
     """
     compute = pyarrow.compute
     return compute.and_(

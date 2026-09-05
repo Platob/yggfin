@@ -63,7 +63,7 @@ def _registry_at(path: Path) -> FixRegistry:
     )
     isin = namespaced_field("ISINCODE", "String")
     isin.fix.named_aliases = (Alias("AMON.ISINCODE", "fixture", 1),)
-    registry.add_field(isin)
+    registry.add_fields((isin,))
     return registry
 
 

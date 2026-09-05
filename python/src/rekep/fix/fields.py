@@ -17,6 +17,7 @@ import pyarrow.compute
 from rekep.convert import Convertible
 from rekep.fields import ANY_VERSION, Field, TimestampField, column_name, scalar
 from rekep.fields.field import arrow_type_for
+from rekep.fields.metadata import values_of
 from rekep.times import EPOCH_ORDINAL as _EPOCH_ORDINAL
 
 #: What every FIX temporal projects to, declared once through the field that
@@ -198,6 +199,7 @@ def fix_field(
     description: str | None = None,
     version: str | None = None,
     values: Mapping[str, str] | Sequence[Any] | None = None,
+    namespace: str = "",
     metadata: Mapping[str, str] | None = None,
 ) -> Field:
     """One FIX field as a generic `Field`, its FIX identity under `fix:` keys.
@@ -223,7 +225,7 @@ def fix_field(
     if version:
         fix["version"] = version
     if values:
-        fix.enumerated = values
+        fix.enumerated = values_of(values, namespace=namespace)
     return built
 
 

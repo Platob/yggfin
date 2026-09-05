@@ -48,7 +48,9 @@ rekep fix registry alias-field --store data/fix \
 rekep fix registry show --store data/fix BRKR.VenueTier
 ```
 
-Fields are sharded by `tag // 1000` under `data/fix/fields/`. Unnumbered
-rendered fields share `fields/999999.json` and key by canonical name.
+Fields are sharded by `tag // 1000` under `data/fix/records/`, the one
+keyspace that also holds the components, the messages and the repeating
+groups. A record with no tag keys by its canonical name and lands in one of
+the sixteen named shards above every reachable tag index.
 
 [Browse fields](registry.md#fields) or use the [registry CLI](shell.md).

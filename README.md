@@ -10,17 +10,29 @@ pip install "rekep[all]"
 ```
 
 ```python
-from rekep import TextFiles
+import pyarrow.fs
+from yggdryl import IOBase, TextOptions
 
-capture = TextFiles.from_folder(
-    "s3://bucket/logs/2026-08-14",
-    pattern="*.log*",
-    static_values={"source": "bridge-1"},
+options = TextOptions()
+options.with_rownum = 1
+options.rowheader = (
+    r"^(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}_\d{3}) "
+    r"\[(?<threadname>[^]]*)\] \[(?<plugin>[^]]*)\] "
+    r"(?:\((?<level>[A-Za-z]{1,12})\) )?"
 )
+
+capture = IOBase.from_fs(
+    pyarrow.fs.S3FileSystem(region="eu-west-1"),
+    "bucket/logs/2026-08-14/capture.log",
+).into_text(options)
 
 for messages in capture.read_arrow_reader():
     consume(messages)
 ```
+
+The text batch is raw: source URL, physical row number, captured log header,
+and exact binary body. Protocol classification and FIX parsing start in the
+next stage.
 
 Arrow is the boundary between every stage. `@scalar` declarations define the
 in-memory schema, recursive casts, Iceberg projection, and portable YAML
@@ -50,7 +62,7 @@ package `Task` only reads and writes their configuration.
 
 Core properties:
 
-- streamed local and `pyarrow.fs` text input;
+- yggdryl text media over local and caller-supplied `pyarrow.fs` filesystems;
 - registry-driven, cross-version FIX metadata;
 - stable cross-language XXH3 `int64` identities;
 - immutable event histories and `InstUpdate` reference data with nested

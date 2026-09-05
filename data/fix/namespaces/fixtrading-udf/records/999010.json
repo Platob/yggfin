@@ -1,0 +1,1258 @@
+[
+ {
+  "name": "ABNAMRO",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "ABNAMRO",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "ABNCust",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6175"
+    }
+   },
+   {
+    "name": "ABNCust1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6173"
+    }
+   },
+   {
+    "name": "ABNCust2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6174"
+    }
+   },
+   {
+    "name": "FracToTrade",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6170"
+    }
+   },
+   {
+    "name": "MaxCostFromStrike",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6172"
+    }
+   },
+   {
+    "name": "StrategyStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6171"
+    }
+   }
+  ]
+ },
+ {
+  "name": "AutomatedSecurityClearanceLtd",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "AutomatedSecurityClearanceLtd",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "CxlQty1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9304"
+    }
+   },
+   {
+    "name": "LiquidityFlag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9373"
+    }
+   },
+   {
+    "name": "MmkrCapacity",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9301"
+    }
+   },
+   {
+    "name": "OrderPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9302"
+    }
+   },
+   {
+    "name": "OrigOrderDate",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9306"
+    }
+   },
+   {
+    "name": "PfdMktMkr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9307"
+    }
+   },
+   {
+    "name": "RoutingInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9303"
+    }
+   },
+   {
+    "name": "SponsorBkr",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9305"
+    }
+   }
+  ]
+ },
+ {
+  "name": "BankOfAmerica",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "BankOfAmerica",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AlgoParam1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7310"
+    }
+   },
+   {
+    "name": "AlgoParam2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7311"
+    }
+   },
+   {
+    "name": "AlgoParam3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7312"
+    }
+   },
+   {
+    "name": "AlgoParam4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7313"
+    }
+   },
+   {
+    "name": "AlgoParam5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7314"
+    }
+   },
+   {
+    "name": "AlgoParam6",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7315"
+    }
+   },
+   {
+    "name": "AlgoParam7",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7316"
+    }
+   },
+   {
+    "name": "AlgoParam8",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7317"
+    }
+   },
+   {
+    "name": "AlgoParam9",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7318"
+    }
+   },
+   {
+    "name": "AlgoParam10",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7319"
+    }
+   },
+   {
+    "name": "AlgoParam11",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7320"
+    }
+   },
+   {
+    "name": "AlgoParam12",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7321"
+    }
+   },
+   {
+    "name": "AvgPx2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6159"
+    }
+   },
+   {
+    "name": "BidSpotRate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6162"
+    }
+   },
+   {
+    "name": "BofAAlgoParam1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7302"
+    }
+   },
+   {
+    "name": "BofAAlgoParam2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7303"
+    }
+   },
+   {
+    "name": "BofAAlgoParam3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7304"
+    }
+   },
+   {
+    "name": "BofAAlgoParam4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7305"
+    }
+   },
+   {
+    "name": "BofAAlgoParam5",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7306"
+    }
+   },
+   {
+    "name": "BofAAlgoParam6",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7307"
+    }
+   },
+   {
+    "name": "BofAAlgoParam7",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7308"
+    }
+   },
+   {
+    "name": "BofAAlgoParam8",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7309"
+    }
+   },
+   {
+    "name": "CanTradeQuote",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9090"
+    }
+   },
+   {
+    "name": "CumQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6165"
+    }
+   },
+   {
+    "name": "Duration1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5904"
+    }
+   },
+   {
+    "name": "EaseBaseTag",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5999"
+    }
+   },
+   {
+    "name": "EffectiveTime1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5902"
+    }
+   },
+   {
+    "name": "ExecBrokerFINS",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5212"
+    }
+   },
+   {
+    "name": "ExecutionMode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5906"
+    }
+   },
+   {
+    "name": "ExpireTime2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5903"
+    }
+   },
+   {
+    "name": "HomeCcy",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6197"
+    }
+   },
+   {
+    "name": "HomeCcyEquivQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6193"
+    }
+   },
+   {
+    "name": "HomeCcyEquivQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6195"
+    }
+   },
+   {
+    "name": "HomeCcyEquivRte",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6194"
+    }
+   },
+   {
+    "name": "HomeCcyEquivRte2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6196"
+    }
+   },
+   {
+    "name": "LastPx2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6160"
+    }
+   },
+   {
+    "name": "LastSpotRate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6161"
+    }
+   },
+   {
+    "name": "LeavesQty2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6164"
+    }
+   },
+   {
+    "name": "LegContraQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7741"
+    }
+   },
+   {
+    "name": "NonDirectedBrokerFINS1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5210"
+    }
+   },
+   {
+    "name": "NonDirectedBrokerFINS2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5211"
+    }
+   },
+   {
+    "name": "OfferSpotRate2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6163"
+    }
+   },
+   {
+    "name": "ParticipationRate1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5905"
+    }
+   },
+   {
+    "name": "PBTFut1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9092"
+    }
+   },
+   {
+    "name": "PBTFut2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9093"
+    }
+   },
+   {
+    "name": "PBTFut3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9094"
+    }
+   },
+   {
+    "name": "PBTFut4",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9095"
+    }
+   },
+   {
+    "name": "QuoteStreamClosed",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9091"
+    }
+   },
+   {
+    "name": "TargetStrategy3",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5900"
+    }
+   },
+   {
+    "name": "TargetStrategyParameters2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5901"
+    }
+   },
+   {
+    "name": "USDEquiv",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6166"
+    }
+   },
+   {
+    "name": "USDEquiv2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6167"
+    }
+   }
+  ]
+ },
+ {
+  "name": "EBS",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "EBS",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "MDElementName",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5450"
+    }
+   }
+  ]
+ },
+ {
+  "name": "FidelityCapitalMarkets",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "FidelityCapitalMarkets",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "DiscretionInstruction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6388"
+    }
+   },
+   {
+    "name": "DiscretionOffset",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6389"
+    }
+   },
+   {
+    "name": "PegDifference1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6387"
+    }
+   },
+   {
+    "name": "PegSpreadPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "9642"
+    }
+   }
+  ]
+ },
+ {
+  "name": "Nomura",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "Nomura",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "DarkBlockLimitPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5956"
+    }
+   },
+   {
+    "name": "ExecInst",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5947"
+    }
+   },
+   {
+    "name": "MaxDeltaNeutrality",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5943"
+    }
+   },
+   {
+    "name": "MinAnytimeQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5931"
+    }
+   },
+   {
+    "name": "MinDeltaNeutrality",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5942"
+    }
+   },
+   {
+    "name": "MinLeavesQty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5932"
+    }
+   },
+   {
+    "name": "RemainingPortfolioNetDeltaMax",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5952"
+    }
+   },
+   {
+    "name": "RemainingPortfolioNetDeltaMin",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5951"
+    }
+   },
+   {
+    "name": "SchedulingDays",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5955"
+    }
+   },
+   {
+    "name": "TargetVolumeReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5945"
+    }
+   },
+   {
+    "name": "TradingPortfolioNetDeltaMax",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5954"
+    }
+   },
+   {
+    "name": "TradingPortfolioNetDeltaMin",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5953"
+    }
+   },
+   {
+    "name": "TriggerQtyADVPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6819"
+    }
+   },
+   {
+    "name": "TriggerQtyNotional",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6820"
+    }
+   },
+   {
+    "name": "TriggerQtyOrderPct",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6821"
+    }
+   }
+  ]
+ },
+ {
+  "name": "NYSEEuronext",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "NYSEEuronext",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AccountCode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6399"
+    }
+   },
+   {
+    "name": "CancelOnDisconnect",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6867"
+    }
+   },
+   {
+    "name": "OtherLegLastPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7775"
+    }
+   },
+   {
+    "name": "OtherLegReferenceNo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7774"
+    }
+   },
+   {
+    "name": "OtherLegSecurityID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7773"
+    }
+   },
+   {
+    "name": "OtherLegSecurityIDSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7489"
+    }
+   },
+   {
+    "name": "OtherParty",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6397"
+    }
+   },
+   {
+    "name": "PackageID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5883"
+    }
+   },
+   {
+    "name": "PostingAction",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "7443"
+    }
+   }
+  ]
+ },
+ {
+  "name": "UBS",
+  "type": "struct",
+  "nullable": true,
+  "fix": {
+   "component": "UBS",
+   "version": "5.0.SP2",
+   "source": "fixtrading-udf",
+   "sources": [
+    "fixtrading-udf"
+   ],
+   "namespace": "fixtrading-udf",
+   "source-version": "1.0",
+   "source-url": "https://orchestrahub.org/api/v3/repos/community/fix-udf/revisions/2EewWYrfFXqxPgLF/download",
+   "source-checksum": "sha256:dbc1dfbd9deea8180303edd28145e7494ffeae273e0ccee3cc72ecdeefe9afe5",
+   "versions": [
+    "5.0.SP2"
+   ]
+  },
+  "fields": [
+   {
+    "name": "AllocBrokerAccountID",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5047"
+    }
+   },
+   {
+    "name": "AMSessionPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6180"
+    }
+   },
+   {
+    "name": "Bias",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6309"
+    }
+   },
+   {
+    "name": "BlockPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6198"
+    }
+   },
+   {
+    "name": "CompletionPrice",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6188"
+    }
+   },
+   {
+    "name": "CountEligibleVolInLimitPx",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6298"
+    }
+   },
+   {
+    "name": "DarkOnlyIndic",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6191"
+    }
+   },
+   {
+    "name": "Delta1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6305"
+    }
+   },
+   {
+    "name": "Discretion",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6295"
+    }
+   },
+   {
+    "name": "IOCIndic",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6199"
+    }
+   },
+   {
+    "name": "LocateSource",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "5965"
+    }
+   },
+   {
+    "name": "MaxOrdersPerLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6184"
+    }
+   },
+   {
+    "name": "MaxPriceLevels",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6183"
+    }
+   },
+   {
+    "name": "MaxSliceSize",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6303"
+    }
+   },
+   {
+    "name": "MaxTimeDelay",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6186"
+    }
+   },
+   {
+    "name": "MOCPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6190"
+    }
+   },
+   {
+    "name": "MOCType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6189"
+    }
+   },
+   {
+    "name": "OnAMOpenPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6181"
+    }
+   },
+   {
+    "name": "OnPMOpenPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6182"
+    }
+   },
+   {
+    "name": "PegMode",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6086"
+    }
+   },
+   {
+    "name": "PercentVolumeOverrides",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6222"
+    }
+   },
+   {
+    "name": "PortfolioStyle",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6314"
+    }
+   },
+   {
+    "name": "QtyRandomizationPercent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6185"
+    }
+   },
+   {
+    "name": "ReferencePrice2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6087"
+    }
+   },
+   {
+    "name": "RelativeLimitBase",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6491"
+    }
+   },
+   {
+    "name": "RelativeLimitOffset",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6492"
+    }
+   },
+   {
+    "name": "ResetEligibleVolOnAmend",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6297"
+    }
+   },
+   {
+    "name": "RetainVolumeCountHistory",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6299"
+    }
+   },
+   {
+    "name": "SessionType",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6337"
+    }
+   },
+   {
+    "name": "SliceMethod",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6302"
+    }
+   },
+   {
+    "name": "SpotReference",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6306"
+    }
+   },
+   {
+    "name": "StrategyComponent",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6187"
+    }
+   },
+   {
+    "name": "SweepLevel",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6307"
+    }
+   },
+   {
+    "name": "Tactic",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6308"
+    }
+   },
+   {
+    "name": "Tolerance1",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6312"
+    }
+   },
+   {
+    "name": "TriggerPrice2",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6192"
+    }
+   },
+   {
+    "name": "UnderlyingAlgo",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6313"
+    }
+   },
+   {
+    "name": "UnderlyingLowerRange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6300"
+    }
+   },
+   {
+    "name": "UnderlyingUpperRange",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6301"
+    }
+   },
+   {
+    "name": "WouldIfNat",
+    "type": "string",
+    "nullable": true,
+    "fix": {
+     "tag": "6296"
+    }
+   }
+  ]
+ }
+]

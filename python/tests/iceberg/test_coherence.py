@@ -374,7 +374,7 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
 
 def test_a_shape_the_table_does_not_have_still_reads(stored) -> None:
     """A column the target declares and the store lacks is filled, not refused."""
-    wider = Quote.into_field().merge_with(pyarrow.schema([("desk", pyarrow.string())]))
+    wider = Quote.into_field().widened_for_cast(pyarrow.schema([("desk", pyarrow.string())]))
     table = stored.read_arrow_table(wider)
     assert table.column("desk").null_count == table.num_rows
 

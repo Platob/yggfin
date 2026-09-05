@@ -85,9 +85,9 @@ silently replaced.
 ## Reference envelopes
 
 ```python
-from rekep import Message
+from rekep import FixMsg
 
-reference = Message.from_text(
+reference = FixMsg.from_text(
     "Referential(XLON|equity|dbi;GB00BN7SWP63_XLON_GBX|["
     "quantity-type=, tick-size-scale-id=PRIMARY|[[0|0.01], [100|0.05]]])"
 )
@@ -168,12 +168,8 @@ import pyarrow.compute as compute
 
 from rekep import Message
 
-raw_messages = next(
-    iter(
-        Message.into_arrow_reader(
-            [Message(body=b"XmlApi: <Order ClOrdID='broken'>")]
-        )
-    )
+raw_messages = Message.into_arrow_batch(
+    [Message(body=b"XmlApi: <Order ClOrdID='broken'>")]
 )
 batch = FixMsg.from_message_batch(raw_messages)
 failed = batch.filter(compute.is_valid(batch.column("error")))
@@ -181,7 +177,7 @@ failed = batch.filter(compute.is_valid(batch.column("error")))
 
 The parser drops configured null spellings before lookup. Package defaults
 include empty text, `null`, `<null>`, `n/a`, `none`, and `NONE`; a feed can
-replace that set on `FixCodec` or `TextFile`.
+replace that set on `FixCodec`.
 
 ## Arrow shapes
 

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cplugin-configuration type="FXQuotingSellSideFIXCPluginCBlock" fix-version="4.4">
+  <history><cvs-revision>$Revision: 1.7 $</cvs-revision></history>
+  <description>Out of scope: no handler reads this.</description>
+  <message-types><message-type name="D"/><message-type name="j"/></message-types>
+  <vocabulary>
+    <vocabulary-tag name="11" alt="ClOrdID" type="string" ref="fix44"/>
+    <vocabulary-tag name="54" alt="Side" type="char"/>
+    <vocabulary-tag name="40" alt="OrdType" type="char"/>
+    <vocabulary-tag name="38" alt="OrderQty" type="float"/>
+    <vocabulary-tag name="60" alt="TransactTime" type="utc-timestamp">
+      <description>Time of execution, expressed in UTC.</description>
+    </vocabulary-tag>
+    <vocabulary-tag name="59" alt="TimeInForce" type="char"/>
+    <vocabulary-tag name="167" alt="SecurityType" type="string"/>
+    <vocabulary-tag name="22" alt="IDSource" type="string"/>
+    <vocabulary-tag name="29" type="integer"/>
+    <vocabulary-tag name="5001" alt="GLMXTradeType" type="string"/>
+    <vocabulary-tag name="9690" alt="NoDealers" type="integer"/>
+    <vocabulary-tag name="9691" alt="DealerID" type="string"/>
+    <vocabulary-tag name="9692" alt="DealerIDSource" type="char"/>
+    <vocabulary-tag name="627" alt="NoHops" type="integer"/>
+    <vocabulary-tag name="628" alt="HopCompID" type="string"/>
+    <vocabulary-tag name="629" alt="HopSendingTime" type="utc-timestamp"/>
+    <vocabulary-tag name="18" alt="ExecInst" type="string"/>
+    <vocabulary-tag name="64" alt="SettlDate" type="utc-date"/>
+    <vocabulary-tag name="7777" alt="VocabularyOnly" type="boolean"/>
+    <vocabulary-tag name="7778" alt="NeverPlaced" type="utc-time-only"/>
+  </vocabulary>
+  <grammar-binding type="D">
+    <grammar checkordering="false">
+      <tag-constraint name="11"><string-validity regexp=".*"/></tag-constraint>
+      <tag-constraint name="54"><char-validity regexp="^[1-2]$"/></tag-constraint>
+      <tag-constraint name="40"><char-validity regexp="^[1-9A-J]$"/></tag-constraint>
+      <tag-constraint name="38"><float-validity min="0"/></tag-constraint>
+      <tag-constraint name="60"><utc-timestamp-validity/></tag-constraint>
+      <tag-constraint name="167"><string-validity regexp="^(CS|FUT|OPT|NONE)$"/></tag-constraint>
+      <tag-constraint name="22"><string-validity regexp="^(BIC|ISO|ZZ|\?)$"/></tag-constraint>
+      <tag-constraint name="18"><string-validity regexp="^[1-9A]( [1-9A])*$"/></tag-constraint>
+      <tag-constraint name="64"><string-validity regexp="^[0-9]{4}((0[1-9])|10|11|12)$"/></tag-constraint>
+      <tag-constraint name="59"><condition-expression>required</condition-expression><char-validity regexp="^[0-6]$"/></tag-constraint>
+      <tag-constraint name="9999"><string-validity regexp="^(X|Y)$"/></tag-constraint>
+      <grammar checkordering="false">
+        <tag-constraint name="627"><integer-validity min="1"/></tag-constraint>
+        <tag-constraint name="628"><string-validity regexp=".*"/></tag-constraint>
+        <tag-constraint name="629"><utc-timestamp-validity/></tag-constraint>
+        <grammar checkordering="false">
+          <tag-constraint name="9690"><integer-validity/></tag-constraint>
+          <tag-constraint name="9691"><string-validity regexp=".*"/></tag-constraint>
+          <tag-constraint name="9692"><char-validity regexp="^[1-4689DEGI-MP]$"/></tag-constraint>
+        </grammar>
+      </grammar>
+    </grammar>
+  </grammar-binding>
+  <grammar-binding type="j Inbound">
+    <grammar checkordering="false">
+      <tag-constraint name="11"><string-validity regexp=".*"/></tag-constraint>
+      <tag-constraint name="54"><char-validity regexp="^[1-2789]$"/></tag-constraint>
+      <tag-constraint name="29"><integer-validity/></tag-constraint>
+      <tag-constraint name="5001"><string-validity regexp="^(REPO|LEND)$"/></tag-constraint>
+    </grammar>
+  </grammar-binding>
+  <grammar-binding type="j Outbound">
+    <grammar checkordering="false">
+      <tag-constraint name="11"><string-validity regexp=".-."/></tag-constraint>
+      <tag-constraint name="54"><char-validity regexp="^[12]$"/></tag-constraint>
+    </grammar>
+  </grammar-binding>
+  <maps><map name="ignored"/></maps>
+  <options><option name="ignored" value="true"/></options>
+</cplugin-configuration>

@@ -1,7 +1,7 @@
 # Products
 
-Six persisted contracts. A row is text until the FIX registry transcribes it,
-and a market product until a fold gives it state.
+Six persisted contracts. One physical line remains raw until the FIX registry
+transcribes it, and a market event remains flat until a fold gives it state.
 
 ```mermaid
 flowchart LR
@@ -14,18 +14,20 @@ flowchart LR
 
 | product | one row is | built by |
 | --- | --- | --- |
-| [Message](message.md) | one log line, tokenized | `Message.from_text` |
+| [Message](message.md) | one physical source line, uninterpreted | `Message.from_text` |
 | [FixMsg](fixmsg.md) | one line transcribed under the registry | `FixMsg.from_message_batch` |
 | [Instrument update](instrument.md) | one current reference-data event | `InstUpdate.from_fixmsgs` |
 | [Order](order.md) | one version of one order | `FixMsg.into_market_events` |
 | [Execution](execution.md) | one fill, correction or cancellation | `FixMsg.into_market_events` |
 | [Book](book.md) | both sides of one book, flat | `BookIterator.from_events` |
 
-Every event product is keyed `(unix, hash)` except `InstUpdate`, whose
-current row is keyed by its sixteen-byte `xhash`. All lifecycle and reference
-identities are clock-free `int64` values. All six are partitioned on
-`unixpartition` alone. They declare no physical sort order; ordered readers
-request `(unix, hash)` or the protocol sequence explicitly:
+Raw `Message` is keyed by `(sourceurl, sourcerownum)` and is unpartitioned.
+`FixMsg`, Book, Order, and Execution are keyed by `(unix, hash)`; the current
+`InstUpdate` row is keyed by its sixteen-byte `xhash`. `vhash` is the
+clock-free `int64` value identity, while `hash` and `xhash` are sixteen-byte
+identities. The five parsed products partition on `unixpartition`. None
+declares a physical sort order; ordered readers request `(unix, hash)` or the
+protocol sequence explicitly:
 
 ```bash
 rekep fields load --target schemas/rekep/order.yaml | tail -2

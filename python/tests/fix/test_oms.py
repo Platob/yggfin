@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pyarrow
 
-from rekep.enums import EventType, State
+from rekep.enums import State
 from rekep.fix.oms import OmsOrder, OmsOrders
 from rekep.market.orders import Execution, Order
 from rekep.text.fixmsg import FixMsg
@@ -158,22 +158,6 @@ def test_invalid_oms_numbers_stay_residual_without_failing_the_row() -> None:
         *parsed.column("unmap")[0].as_py(),
     ]
     assert [(entry["key"], entry["value"]) for entry in residual] == [("quantity", "not-a-number")]
-
-
-def test_oms_orders_classify_only_unclassified_rows_as_market_orders() -> None:
-    parsed = FixMsg.from_message_batch(
-        [
-            Message(body=OMS_XML),
-            Message(body="an operational note"),
-            Message(body=OMS_XML, eventtype=EventType.EXECUTION),
-        ]
-    )
-
-    assert parsed.column("eventtype").to_pylist() == [
-        int(EventType.ORDER),
-        int(EventType.MISC),
-        int(EventType.EXECUTION),
-    ]
 
 
 def test_oms_market_translation_accepts_storage_empty_component_lists() -> None:

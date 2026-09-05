@@ -2,49 +2,24 @@ name: parse_messages
 application: parse_messages.py
 parameters:
   project_root: .
-  # Raw input may be an S3 prefix. Calendar tokens select only the closed
+  # Raw input is a yggdryl resource. Calendar tokens select only the closed
   # start/end window: s3://example-bucket/capture/{year}/{month}/{day}
-  # `s3a://` and `s3n://` name the same object with the same settings. This
-  # location is resolved on its own, not through the table catalog, so an
-  # endpoint or region for it comes from the URL or from `S3_*` in the
-  # environment -- see docs/storage/iceberg.md#what-an-s3-netloc-names.
+  # The table catalog does not configure this source; inject a configured
+  # Arrow filesystem below when it needs a non-default endpoint or credentials.
   source: data/capture
-  # MsgType metadata maps values to EventType codes before protocol translation.
-  # The FIX dictionary. A directory, a zip, or either on a bucket:
-  # `s3://example-bucket/rekep/fix.zip` is fetched once and kept locally.
-  # Null reads the repository's data/fix dictionary.
-  fix_dictionary: null
-  # Protocol syntax classification. Null uses the shipped default rules; keep
-  # custom rules aligned with parse_fix.yml. Rules may add literal nested-group
-  # delimiters through `extra_entry_separators`.
-  protocols: null
+  # Null resolves the URI through PyArrow and binds the result to IOBase. A
+  # caller may inject any pyarrow.fs.FileSystem; `source` is then its raw path.
+  filesystem: null
   pattern: "*.log*"
-  # The fixed header every line opens with, as a regex naming `timestamp`,
-  # `threadname`, `plugin`, optional `level`, and `body`. Null reads the shipped one.
+  # A prefix regex naming any of `timestamp`, `threadname`, `plugin`, and
+  # `level`. The matched prefix is removed; yggdryl supplies the binary `body`.
+  # Null admits the three timestamp spellings declared by `rekep.times`.
   header: null
   recursive: true
-  # False streams compressed objects directly. True stages their raw compressed
-  # bytes in a uniquely owned temporary local file while decoding.
-  spill: false
-  timezone: Europe/Paris
-  # Arrow RE2 payload patterns: any include admits, while any exclude rejects.
-  # Filtering happens before entries and message identities are built.
-  include_regexes: []
-  exclude_regexes: []
-  # Exact FIX MsgTypes retained or dropped before key/value parsing.
-  include_msgtypes: []
-  exclude_msgtypes: []
-  # Exact recorder plugins bypass timestamp, payload and entry parsing.
-  technical_plugins: [jolokia]
-  # Plugin-owned keys become canonical before MsgType and session fields lift.
-  # plugin_keys: {XmlApi: {clientid: ClOrdID, type: MsgType}}
-  plugin_keys: {}
-  # Matching is case-insensitive; absent pairs never reach logs.messages.
-  null_values: ["", "null", "<null>", "n/a", "none"]
+  # These bounds select calendar-token source roots; raw rows are not filtered
+  # by their timestamp text.
   start: null
   end: null
-  # Optional recording-time batch window in nanoseconds.
-  duration_ns: null
   # AWS Glue with an S3 warehouse (replace the active local block). Needs the
   # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
   # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
@@ -56,13 +31,15 @@ parameters:
   #     glue.region: eu-west-1   # Catalog region.
   #     s3.region: eu-west-1     # Warehouse region.
   #     glue.id: "123456789012"  # Optional cross-account catalog ID.
+  #     # Standard s3.endpoint and s3.* credential properties configure a
+  #     # compatible store; keep those settings out of the warehouse URI.
   #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
   catalog:
     name: rekep
     properties:
       type: sql
       uri: sqlite:///data/catalog.db
-      warehouse: file://data/warehouse
+      warehouse: data/warehouse
   table_properties:
     history.expire.max-snapshot-age-ms: "604800000"
     # Bound metadata from the first commit; maintenance applies the same values.
@@ -74,14 +51,7 @@ parameters:
   target: logs.messages
   merge_by: true
   batch_row_size: 65536
-  # Also bounds batches between records; a record is cut only at the row bound.
-  batch_byte_size: 67108864
-  # Retained bytes per record, including folded continuations. A capture
-  # truncated mid-write has no next newline, so without this a single record
-  # would hold the rest of the file. What is past it is dropped and counted in
-  # `reason`.
-  max_row_byte_size: 67108864
-  # Commit after eight retained RecordBatches; an optional row cap may end sooner.
+  # Commit after eight yggdryl RecordBatches; an optional row cap may end sooner.
   commit_batch_num: 8
   commit_row_size: null
   limit: null

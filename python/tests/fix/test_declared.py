@@ -9,10 +9,8 @@ from __future__ import annotations
 import pyarrow
 import pytest
 
-from rekep.enums import Plugin
 from rekep.fix import FieldRule, FieldRules, FixCodec, FixRegistry
 from rekep.fix.fields import fix_field
-from rekep.text import FixMsg, TextFile
 
 #: One order, spelled the way a bridge prints one, with a vendor tag on it.
 LINE = (
@@ -35,7 +33,7 @@ def registry(tmp_path_factory: pytest.TempPathFactory) -> FixRegistry:
             fix_field("MsgType", 35, "String", version="4.4"),
             fix_field("OrderQty", 38, "Qty", version="4.4"),
             fix_field("Price", 44, "Price", version="4.4"),
-            fix_field("Side", 54, "char", version="4.4", values={"1": "Buy"}),
+            fix_field("Side", 54, "char", version="4.4", values={"1": "Buy"}, namespace="standard"),
             fix_field("Symbol", 55, "String", version="4.4"),
             fix_field("TransactTime", 60, "UTCTimestamp", version="4.4"),
         ],
@@ -166,39 +164,3 @@ def test_declared_readings_round_trip_through_a_document() -> None:
 def test_a_codec_carries_its_declared_readings(registry: FixRegistry) -> None:
     codec = codec_of(registry, {"rules": [{"field": "60", "type": "timestamp[s]"}]})
     assert codec.into_dict()["fields"]["rules"][0]["type"] == "timestamp[s]"
-
-
-# -- the header a line opens with ----------------------------------------------
-
-#: A capture whose header is not the one this package ships: a pipe-delimited
-#: preamble, which no shipped pattern reads.
-VENDOR_HEADER = (
-    r"^(?P<timestamp>[0-9]{8}-[0-9:.]+)\|(?P<threadname>[^|]*)\|"
-    r"(?P<plugin>[^|]*)\|(?P<body>.*)$"
-)
-
-
-def test_a_job_may_declare_the_header_its_capture_writes(tmp_path, registry: FixRegistry) -> None:
-    path = tmp_path / "vendor.log"
-    path.write_text(f"20260821-10:00:00.123|t-1|VendorBridge|{LINE}\n")
-    with TextFile.from_path(
-        path,
-        header_pattern=VENDOR_HEADER,
-        msg_type_event_types=registry.msg_type_event_types(),
-    ) as log:
-        messages = log.into_arrow_table()
-    rows = pyarrow.Table.from_batches(
-        [FixMsg.from_message_batch(batch, codec_of(registry)) for batch in messages.to_batches()]
-    )
-    assert messages.num_rows == 1
-    assert messages.column("plugin").to_pylist() == [Plugin.from_str("VendorBridge").into_stored()]
-    assert messages.column("msgtype").to_pylist() == ["D"]
-    assert rows.column("msgtype").to_pylist() == ["D"]
-
-
-def test_the_shipped_header_reads_that_capture_as_no_row_at_all(tmp_path) -> None:
-    """Which is what makes the declaration load-bearing rather than decoration."""
-    path = tmp_path / "vendor.log"
-    path.write_text(f"20260821-10:00:00.123|t-1|VendorBridge|{LINE}\n")
-    with TextFile.from_path(path) as log:
-        assert log.into_arrow_table().num_rows == 0

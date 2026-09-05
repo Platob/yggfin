@@ -53,6 +53,38 @@ _FIX_VALUE_ABBREVIATION = re.compile(r"\(([A-Z][A-Z0-9]{1,7})\)")
 #: the standard has.
 ANY_VERSION = "*"
 
+#: The vocabulary a published FIX dictionary speaks. Named here, beside the
+#: `namespaces` it is written into, because the standard is the one declarer a
+#: reader is tempted to leave implicit -- and leaving it implicit is what
+#: `FixFieldValue.namespaces` documents as the way authorship is lost.
+STANDARD_NAMESPACE = "standard"
+
+#: Everything a namespace may not spell, folded to one dash by
+#: `normalized_namespace`. A dot survives: a namespace is regularly a dotted
+#: vendor name.
+_NAMESPACE_UNSAFE = re.compile(r"[^a-z0-9.]+")
+
+
+def normalized_namespace(value: Any) -> str:
+    """One namespace as every entry point spells it, or a refusal.
+
+    A namespace is regularly a file stem nobody chose -- `FX_Quoting_SellSide`
+    -- and the older rule rejected the underscore outright, so the names that
+    most needed a home were the ones that could not have one. Lowercased,
+    every run of anything but a letter, digit or dot folded to one dash, and
+    the dashes trimmed off both ends: 81 such stems stay 81 distinct names
+    that still name a directory safely.
+
+    Defined here, beside the standard's own name, rather than in the store:
+    a reader building a `Field` from a capture names its namespace before any
+    store exists, and one normaliser applied at every entry point is what
+    keeps a caller from pre-cleaning a value into a second spelling of it.
+    """
+    namespace = _NAMESPACE_UNSAFE.sub("-", str(value).strip().lower()).strip("-")
+    if not namespace or namespace == STANDARD_NAMESPACE:
+        raise ValueError("a namespaced FIX definition needs a non-standard namespace")
+    return namespace
+
 
 @functools.lru_cache(maxsize=4096)
 def encoded_key(text: Any) -> str:
@@ -176,24 +208,28 @@ class FixFieldValue(Convertible):
     counterparty: over the 81-tag bridge corpus, 370 of 505 (tag, value) pairs
     are declared by more than one namespace and 135 by exactly one.
 
-    Empty means *unstated*; it never means the standard. A union cannot tell
-    an absent reading from a declared one, so a standard value left empty
-    comes back from its first merge naming the venue alone -- `()` united with
-    `("acme",)` is `("acme",)` -- and the standard's authorship is gone with
-    nothing raised. So a loader must name its own vocabulary on every value it
-    produces, the standard's included, and empty is then only what a document
-    written before it says: that nobody recorded where the value came from.
+    Required, and empty is refused rather than read as the standard. A union
+    cannot tell an absent reading from a declared one, so a standard value
+    left empty comes back from its first merge naming the venue alone --
+    `()` united with `("acme",)` is `("acme",)` -- and the standard's
+    authorship is gone with nothing raised. Refusing at construction is what
+    makes that unreachable: every loader names its own vocabulary on every
+    value it produces, the standard's included, so there is no value anywhere
+    that a merge could quietly re-attribute.
     """
 
     def __post_init__(self) -> None:
-        """Refuse a missing wire value and settle the spellings' shape."""
+        """Refuse a value with no wire spelling or no declarer, and settle the rest."""
         value = str(self.value).strip()
         if not value:
             raise ValueError("a FIX field value carries no value")
+        namespaces = _aliases(self.namespaces)
+        if not namespaces:
+            raise ValueError(f"the FIX field value {value!r} names no vocabulary")
         object.__setattr__(self, "value", value)
         object.__setattr__(self, "meaning", str(self.meaning or ""))
         object.__setattr__(self, "aliases", _aliases(self.aliases))
-        object.__setattr__(self, "namespaces", _aliases(self.namespaces))
+        object.__setattr__(self, "namespaces", namespaces)
 
     def spellings(self) -> tuple[str, ...]:
         """Every spelling that names this value, the raw value included.
@@ -264,18 +300,27 @@ def _tag_numbers(declared: Iterable[Any], name: str) -> tuple[int, ...]:
     return tuple(found)
 
 
-def values_of(declared: Any) -> tuple[FixFieldValue, ...]:
+def values_of(declared: Any, *, namespace: str = "") -> tuple[FixFieldValue, ...]:
     """One field's enumerated values from whatever spelling declared them.
 
     A list of records is the stored spelling and a `{value: meaning}` mapping
     is the one a declaration writes by hand; both land here, so no caller has
     to build the records to state four values.
+
+    The mapping spelling states only the wire value and its prose, so the
+    vocabulary declaring them has to arrive with it: a value carries who
+    declared it or it is not a value, and there is no reading of an omitted
+    `namespace` that is not a guess about authorship.
     """
     if not declared:
         return ()
     if isinstance(declared, Mapping):
+        if not str(namespace).strip():
+            raise ValueError(
+                "FIX field values given as a mapping need the namespace declaring them"
+            )
         return tuple(
-            FixFieldValue(value=str(value), meaning=str(meaning))
+            FixFieldValue(value=str(value), meaning=str(meaning), namespaces=(namespace,))
             for value, meaning in declared.items()
         )
     return tuple(
@@ -521,15 +566,25 @@ def _merged_aliases(held: Any, other: Any, source: str) -> tuple[Alias, ...]:
     First reading of a spelling keeps its provenance: a later duplicate says
     nothing new about where the name came from.
     """
-    found: dict[str, Alias] = {alias.folded: alias for alias in held.named_aliases}
+    # Keyed by the exact spelling, not its fold. `ClOrdId` and `ClOrdID`
+    # fold alike and are still two spellings a bridge wrote, and an identity
+    # is asked for by what was written -- so both are kept, each attributed.
+    # Only a spelling identical to the canonical name says nothing new.
+    found: dict[str, Alias] = {alias.name: alias for alias in held.named_aliases}
     incoming = list(other.named_aliases)
-    if (name := other.canonical) and column_name(name) != held.folded:
+    if (name := other.canonical) and name != held.canonical:
         incoming.append(Alias(name=name, source=source))
     for alias in incoming:
-        if alias.folded == held.folded:
+        if alias.name == held.canonical:
             continue
+        # First reading of a spelling keeps everything about it, the count
+        # included. Adding the counts up reads well -- two sightings are two
+        # sightings -- and it is wrong: a merge has to be idempotent, and
+        # `a.merge(a)` is one reading folded with itself, not a second
+        # sighting. Nothing at this level can tell those apart, so the count
+        # stays what the reading that carried it said.
         found.setdefault(
-            alias.folded,
+            alias.name,
             Alias(alias.name, source=alias.source or source, occurrences=alias.occurrences),
         )
     return tuple(found.values())
@@ -558,16 +613,21 @@ def _merged_values(
     exists for; a namespace that spells an existing code differently adds
     that spelling to the value's own aliases rather than a second entry, and
     its own name to the value's namespaces.
+
+    `other` is the reading being *accumulated* -- the earlier declarer, in
+    every fold that reaches here -- so its values lead and its namespaces
+    come first: provenance is in declaration order, and the record's own
+    reading wins only what a tie leaves undecided, the prose.
     """
-    found: dict[str, FixFieldValue] = {one.value: one for one in held}
-    for one in other:
+    found: dict[str, FixFieldValue] = {one.value: one for one in other}
+    for one in held:
         current = found.get(one.value)
         if current is None:
             found[one.value] = one
             continue
         found[one.value] = dataclasses.replace(
             current,
-            meaning=current.meaning or one.meaning,
+            meaning=one.meaning or current.meaning,
             aliases=tuple(dict.fromkeys((*current.aliases, *one.aliases))),
             namespaces=tuple(dict.fromkeys((*current.namespaces, *one.namespaces))),
         )
@@ -595,6 +655,11 @@ class FixMetadata(ProtocolMetadata):
     added = _Text()
     source = _Text()
     component = _Text()
+    #: What a counter counts: the block one entry of its group is. `NoPartyIDs
+    #: <453>` carries `PartiesGrp`, so the count and the group it opens are one
+    #: question apart rather than a name a reader has to re-derive. Empty on
+    #: every field that counts nothing, which is nearly all of them.
+    item = _Text()
     #: The message type a declaration defines, where it defines one -- `"D"`,
     #: `"8"`. Empty for a reusable component, which is what most blocks are.
     msgtype = _Text()
@@ -759,28 +824,6 @@ class FixMetadata(ProtocolMetadata):
     #: earlier. `values` and `aliases` are keyed documents and merge by their
     #: own key; the rest are ordered name lists.
     ACCUMULATED: tuple[str, ...] = ("versions", "sources", "msgtypes", "components")
-
-    def merge(self, other: FixMetadata, *, source: str = "") -> None:
-        """Fold another reading of this same identity into this one, in place.
-
-        What a unified registry is made of: one record per identity, and a
-        second reading of it -- an older version, a venue's own tag, a
-        namespace that renamed it -- contributes its spelling, its tag and its
-        values rather than replacing what is here. `source` attributes what
-        the other reading brings, defaulting to its own primary source.
-
-        The datatype word is not compared: `string`/`String`, `integer`/`int`
-        and `float`/`Price` are one identity written by two dictionaries, so
-        which word is stored settles nothing. The Arrow type the field carries
-        is what says what the column holds.
-        """
-        self.accumulate(other, source=source)
-        for key in ("type", "note", "added", "column", "source"):
-            if not self.get(key) and other.get(key):
-                self[key] = other[key]
-        origins = {**other.origins, **self.origins}
-        if origins:
-            self.origins = origins
 
     def accumulate(self, other: FixMetadata, *, source: str = "") -> None:
         """Union every key that holds a set of readings, leaving the rest alone.

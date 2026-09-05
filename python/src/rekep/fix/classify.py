@@ -25,16 +25,18 @@ from typing import Any
 
 import pyarrow
 import pyarrow.compute
+from yggdryl import IOBase, TextOptions
 
 from rekep.convert import Convertible
-from rekep.fields import Field
+from rekep.fields import STANDARD_NAMESPACE, Field
 from rekep.fields.arrays import groups_of
-from rekep.fix.entries import NAMESPACE, Alias, fold
+from rekep.fix.entries import NAMESPACE, Alias, fold, record_key
 from rekep.fix.fields import namespaced_field
 from rekep.fix.message import rendered_keys
 from rekep.fix.registry import FixRegistry, _levenshtein
 from rekep.fix.rules import Rules
-from rekep.urls import Url
+from rekep.resources import resource
+from rekep.times import MESSAGE_HEADER
 
 #: What a counted name turned out to be. Ordered by how much work it implies,
 #: which is also the order a backlog reads best in. `NAMESPACE` is the record
@@ -125,7 +127,7 @@ class KeyCounts(Convertible):
 
     def add_messages(self, messages: Any, plugins: Any = None, source: str = "") -> KeyCounts:
         """Count one batch of raw log lines, and keep only what it spelled."""
-        from rekep.text.message import _body_text_arrow
+        from rekep.fix.message_parser import _body_text_arrow
 
         compute = pyarrow.compute
         if isinstance(messages, pyarrow.ChunkedArray):
@@ -421,7 +423,13 @@ def apply_report(
     for row in report.of(NAMESPACE) if namespace else ():
         if row.count.total < minimum:
             continue
-        registry.add_field(row.into_entry())
+        declared = row.into_entry()
+        # `add_fields` folds, so a report applied twice would be taken twice
+        # without a word. Whether a run has already been applied is this
+        # caller's question -- the store has one way in and it does not guess.
+        if registry.field(record_key(declared), namespace=STANDARD_NAMESPACE) is not None:
+            raise KeyError(f"FIX field {declared.fix.canonical!r} is already stored")
+        registry.add_fields((declared,))
         applied.append(f"field {row.name} ({row.count.total} occurrences)")
     return applied
 
@@ -496,16 +504,36 @@ def count_files(
     limit: int | None = None,
 ) -> KeyCounts:
     """Count every key name under one folder or file, one batch at a time."""
-    from rekep.text.text_files import TextFiles
-
-    files = TextFiles.from_folder(source, pattern=pattern, recursive=recursive)
+    options = TextOptions()
+    options.rowheader = MESSAGE_HEADER
+    options.autotype = False
+    options.batch_row_size = batch_row_size
+    root = resource(source)
+    try:
+        if root.is_file():
+            sources: Iterable[IOBase] = (root,)
+        elif root.is_dir():
+            listed = root.rglob(pattern) if recursive else root.glob(pattern)
+            sources = sorted(listed, key=lambda opened: str(opened.url or opened.name))
+            root.close()
+        else:
+            raise FileNotFoundError(source)
+    except BaseException:
+        root.close()
+        raise
     counted = counts if counts is not None else KeyCounts()
-    for opened in files.into_files():
-        with opened:
-            for batch in opened.into_arrow_batches(batch_row_size=batch_row_size):
-                counted = count_reader(
-                    batch, counted, source=Url.from_string(opened.url).name, plugins=plugins
-                )
-                if limit is not None and counted.lines >= limit:
-                    return counted
+    for opened in sources:
+        try:
+            if not opened.is_file():
+                continue
+            reader = opened.into_text(options).read_arrow_reader()
+            try:
+                for batch in reader:
+                    counted = count_reader(batch, counted, source=opened.name, plugins=plugins)
+                    if limit is not None and counted.lines >= limit:
+                        return counted
+            finally:
+                reader.close()
+        finally:
+            opened.close()
     return counted

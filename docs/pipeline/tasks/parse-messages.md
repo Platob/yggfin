@@ -1,8 +1,8 @@
 # Parse messages
 
-`parse_messages` streams text captures into `logs.messages`. It splits the
-wire shape but leaves FIX names, components and typed values to the three
-`parse_fix_*` tasks.
+`parse_messages` streams text records into `logs.messages`. yggdryl owns the
+filesystem and text-media read; yggfin owns the Iceberg table and commit.
+Nothing in this task interprets the record body.
 
 ## Run this step
 
@@ -12,10 +12,10 @@ uv run --project python --group runner rekep task run \
   --parameter source=python/tests/data/app_messages_sample.txt
 ```
 
-The command runs `tasks/parse_messages/parse_messages.py`; the adjacent
-`parse_messages.yml` declares its parameters and their defaults.
+The command runs `tasks/parse_messages/parse_messages.py`; the adjacent YAML
+document supplies the source, text options, and Iceberg write settings.
 
-Calendar-partitioned paths expand before the files are opened:
+Calendar-partitioned paths expand before objects are opened:
 
 ```yaml
 source: s3://example-bucket/capture/{year}/{month}/{day}
@@ -28,70 +28,71 @@ bounds; a date-only `end` includes that whole day.
 
 Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
 
+## Text media
+
+The row-header expression matches and removes only the log prefix. It names
+the header columns; `body` remains yggdryl's exact binary remainder.
+
+```python
+import pyarrow.fs
+from yggdryl import IOBase, TextOptions
+
+options = TextOptions()
+options.with_rownum = 1
+options.autotype = False
+options.rowheader = (
+    r"^(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}_\d{3}) "
+    r"\[(?<threadname>[^]]*)\] \[(?<plugin>[^]]*)\] "
+    r"(?:\((?<level>[A-Za-z]{1,12})\) )?"
+)
+
+source = IOBase.from_fs(
+    pyarrow.fs.S3FileSystem(region="eu-west-1"),
+    "example-bucket/capture/app.log.gz",
+).into_text(options)
+reader = source.read_arrow_reader()
+```
+
+`IOBase.from_fs` accepts a local, S3, subtree, or caller-defined Arrow
+filesystem. yggdryl infers content encoding from the object and returns a
+`RecordBatchReader`; yggfin renames `url` and `rownum` to `sourceurl` and
+`sourcerownum`, casts the raw contract, and appends those batches to Iceberg.
+
 ## Output
 
-One retained payload becomes one [`Message`](../../products/message.md):
+One retained source row becomes one raw [`Message`](../../products/message.md):
 
 ```yaml
-protocol: FIX4.4
-msgtype: D
-eventtype: ORDER
-plugin: ""
-body: !!binary OD1GSVguNC40fDM1PUR8MTE9T1JELTF8MTA9MDAxfA==
-entries:
-  - {tag: 11, key: "11", value: ORD-1}
-  - {tag: 10, key: "10", value: "001"}
-unix: 1787306400123000000       # recording clock
-code: ""                       # FIX has not selected a lifecycle field yet
-altids: {}
 sourceurl: file:///capture.log
 sourcerownum: 1
+timestamp: "2026-08-21 12:00:00.123_000"
+threadname: fix-reader
+plugin: VenueBridge
+level: INFO
+body: !!binary OD1GSVguNC40fDM1PUR8MTE9T1JELTF8MTA9MDAxfA==
 ```
 
-Repeated tags remain repeated list items in wire order. `vhash` identifies the
-payload bytes and `hash` adds `unix`. The raw stage has no lifecycle code, so
-its `xhash` is zero; the selected `parse_fix_*` task fills `code`, every code
-in `altids`, and `xhash = XXH3-128(UTF-8(code))`.
+The table contains no `protocol`, `direction`, `msgtype`, `eventtype`, session
+fields, `entries`, event lifecycle, or payload-derived identity. Source URL and
+row number are its key. Header captures remain their source spellings.
 
-`protocol` already includes the version resolved by the selected FIX
-dictionary. Evidence-free UL rows use that dictionary's newest application
-version, so stored messages and later FIX transcription agree.
+The three `parse_fix_*` runs read `body` and own UTF-8 repair, protocol and
+direction classification, MsgType filtering, entry tokenization, dictionary
+resolution, diagnostics, clocks, and event identity. Changing those rules
+reruns parse_fix without reopening the original text objects.
 
-## Filters and bounds
+## Bounds
 
-Payload and MsgType filters run before entry splitting. `technical_plugins`
-uses the parsed header to reject operational rows before timestamp, payload or
-entry parsing:
+`batch_row_size` controls the Arrow batches yggdryl yields. `limit` bounds the
+task result, while `commit_batch_num` and `commit_row_size` control yggfin's
+Iceberg commit cadence. These are independent: a text batch is not an Iceberg
+commit.
 
 ```yaml
-include_regexes: []
-exclude_regexes: []
-include_msgtypes: []
-exclude_msgtypes: ["0", "1"]
-technical_plugins: [jolokia]
-
-plugin_keys:
-  XmlApi: {clientid: ClOrdID, type: MsgType}
-null_values: ["", "null", "<null>", "n/a", "none"]
-
-batch_row_size: 65536
-batch_byte_size: 67108864
-max_row_byte_size: 67108864
-duration_ns: null
 commit_batch_num: 8
-commit_row_size: null # Optional earlier row cap.
+commit_row_size: null
 ```
 
-`plugin_keys` renames only rows recorded by that plugin, before fields such as
-`MsgType` lift. Null matching is case-insensitive. Empty filter lists keep
-every row. A truncated or oversized record is retained with its dropped-byte
-count in `reason`; a bound that prevents even a header from being read raises.
-
-Compressed local and remote files stream one at a time. Set `spill: true` to
-stage only the compressed bytes in a temporary local file. A live `TextFile`
-reader owns its handle, so close it before opening another reader on the same
-object.
-
-`logs.messages` is retained so field rules can be replayed without reopening
-the source captures. Rebuild it when source filtering, key normalization,
-header parsing, protocol rules or MsgType metadata changes.
+Current yggdryl text media emits one record per physical line. The proposed
+logical-record framing and per-record byte diagnostic are tracked in
+[`docs/prompts/yggdryl-text-records.md`](../../prompts/yggdryl-text-records.md).

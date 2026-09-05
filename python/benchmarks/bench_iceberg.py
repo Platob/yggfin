@@ -1,4 +1,4 @@
-"""Focused Iceberg commits, scans, merges and maintenance over a parsed log."""
+"""Focused Iceberg commits, scans, merges and maintenance over synthetic rows."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import shutil
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from typing import Annotated, Any
 
 import pyarrow
@@ -22,8 +22,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import parser, timed  # noqa: E402
 
-from rekep import Convertible, Field, Message, TextFile, scalar  # noqa: E402
-from rekep.enums import Plugin  # noqa: E402
+from rekep import Convertible, Field, scalar  # noqa: E402
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
 from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 
@@ -59,9 +58,27 @@ class Tick(Convertible):
     """Payload."""
 
 
-PLUGINS = [b"OMSSales_Enrichment", b"ULBridge", b"ModuleMarketDataManager", b"ObjkeyTagWrapper"]
-LEVELS = [b"(DEBUG) ", b"(INFO) ", b"(WARNING) ", b""]
-TRACE = b"java.lang.IllegalStateException: synthetic\n\tat com.example.A.b(A.java:1)\n"
+@scalar
+class LogRow(Convertible):
+    """One benchmark-local stored row with an hourly partition."""
+
+    unix: Annotated[int, Field.primary_key(), Field.sort_key()]
+    """Unique nanosecond clock."""
+
+    unixpartition: Annotated[int, Field.partition_key()]
+    """Whole epoch hour used for identity partitioning."""
+
+    plugin: str
+    """Low-cardinality source spelling."""
+
+    body: bytes
+    """Representative binary payload."""
+
+
+PLUGINS = ("OMSSales_Enrichment", "ULBridge", "ModuleMarketDataManager", "ObjkeyTagWrapper")
+_BASE_UNIX = 1_786_665_600_000_000_000
+_DAY_NS = 86_400_000_000_000
+_HOUR_NS = 3_600_000_000_000
 
 #: Table properties this package sets when commits are optimised.
 OPTIMISED = {
@@ -70,47 +87,34 @@ OPTIMISED = {
 }
 
 
-# -- the log ----------------------------------------------------------------
+# -- the source rows ---------------------------------------------------------
 
 
-def generate(path: pathlib.Path, rows: int, days: int) -> int:
-    """Write a synthetic log of `rows` records spread over `days`.
+def log_rows(rows: int, days: int) -> pyarrow.Table:
+    """Build `rows` stored records spread over `days`.
 
-    Spread on purpose: a log that all lands on one day cannot show whether a
+    Spread on purpose: a table that all lands on one day cannot show whether a
     read prunes, and a partitioned table with one partition is not a
     partitioned table.
     """
     per_day = max(rows // days, 1)
-    with path.open("wb") as out:
-        for i in range(rows):
-            day = 14 + min(i // per_day, days - 1)
-            second, micro = divmod(i % per_day, 1_000_000)
-            out.write(
-                b"2026-08-%02d %02d:%02d:%02d.%03d_%03d [250-e7256476:9effef3e6a:%05d] [%s] %s"
-                % (
-                    day,
-                    second // 3600 % 24,
-                    second // 60 % 60,
-                    second % 60,
-                    micro // 1000,
-                    micro % 1000,
-                    72500 + i % 8,
-                    PLUGINS[i % len(PLUGINS)],
-                    LEVELS[i % len(LEVELS)],
-                )
-            )
-            out.write(
-                b"payload %d: ACCOUNT=ACCT-%06d routed XPAR qty=%d\n" % (i, i % 500, i % 10_000)
-            )
-            if i % 200 == 199:
-                out.write(TRACE)
-    return path.stat().st_size
-
-
-def parsed(path: pathlib.Path) -> pyarrow.Table:
-    """The whole log as one table, so a write benchmark measures the write."""
-    with TextFile.from_path(path) as log:
-        return log.read_arrow_table()
+    day = [min(index // per_day, days - 1) for index in range(rows)]
+    unix = [_BASE_UNIX + offset * _DAY_NS + index * 1_000 for index, offset in enumerate(day)]
+    return pyarrow.Table.from_pydict(
+        {
+            "unix": unix,
+            "unixpartition": [value // _HOUR_NS for value in unix],
+            "plugin": [PLUGINS[index % len(PLUGINS)] for index in range(rows)],
+            "body": [
+                (
+                    f"payload {index}: ACCOUNT=ACCT-{index % 500:06d} "
+                    f"routed XPAR qty={index % 10_000}"
+                ).encode()
+                for index in range(rows)
+            ],
+        },
+        schema=LogRow.into_field().into_arrow_schema(),
+    )
 
 
 def batches(table: pyarrow.Table, batch_row_size: int) -> Iterator[pyarrow.RecordBatch]:
@@ -135,8 +139,8 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
 
 
 def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]) -> IcebergDataset:
-    """A fresh table, partitioned by day or not at all."""
-    field = Message.into_field()
+    """A fresh table, partitioned by hour or not at all."""
+    field = LogRow.into_field()
     if not partitioned:
         field = field.into_dataclass("Flat").into_field()
         field.field("unixpartition").is_partition_key = False
@@ -251,11 +255,9 @@ def header(columns: tuple[str, ...], widths: tuple[int, ...]) -> None:
 
 
 def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
-    """Streaming a parsed log into a table, in every shape worth trying."""
+    """Streaming stored rows into a table, in every shape worth trying."""
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-log-"))
-    path = tmp / "bench.txt"
-    generate(path, rows, days)
-    table = parsed(path)
+    table = log_rows(rows, days)
     # One throwaway write first: the first configuration would otherwise pay for
     # importing pyiceberg, opening the catalog and warming the page cache.
     write_case(table.slice(0, 1_000), mode="append", commit_row_size=1_000_000)
@@ -411,14 +413,12 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
     """Reading it back: what prunes, what does not, and what a projection saves."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-read-"))
     try:
-        path = root / "bench.txt"
-        generate(path, rows, days)
-        table = parsed(path)
+        table = log_rows(rows, days)
         target = dataset(root, partitioned=True, properties=OPTIMISED)
         target.append_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
         # A partition the data actually has, read from the data rather than
-        # spelled out: `unixpartition` is whatever hour the generator's first line fell
+        # spelled out: `unixpartition` is whatever hour the first row fell
         # in, and a filter naming an empty partition measures nothing.
         hour = table.column("unixpartition")[0].as_py()
         # The unix bound of the third day: a filter on a column that is not the
@@ -434,7 +434,7 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         )
         from pyiceberg.expressions import EqualTo
 
-        plugin_filter = EqualTo("plugin", Plugin.from_str("ULBridge").into_stored())
+        plugin_filter = EqualTo("plugin", "ULBridge")
         print(f"\n== read: {table.num_rows:,} rows, {stats(target)['files']} files ==")
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
@@ -482,172 +482,6 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
-def sweep_fs(rows: int, days: int) -> None:
-    """Every flow again, in store calls: what S3 would be asked, not seconds.
-
-    Counted on `ArrowPath` itself -- *below* the FileIO content cache, so a
-    count is a call the store actually served. The same sweep runs with the
-    cache off and on, because the cache is the answer to most of what the off
-    leg shows: everything it removes is a manifest, manifest list or
-    `metadata.json` fetched again.
-    """
-    import contextlib
-
-    from rekep.arrow_file_io import CONTENT_CACHE, ArrowFileIO
-    from rekep.arrow_path import ArrowPath
-
-    counts: dict[str, int] = {}
-
-    def sort(location: str) -> str:
-        name = location.rsplit("/", 1)[-1]
-        if name.endswith(".parquet"):
-            return "data"
-        if name.startswith("snap-") and name.endswith(".avro"):
-            return "list"
-        if name.endswith(".avro"):
-            return "manifest"
-        return "meta"
-
-    @contextlib.contextmanager
-    def counted():
-        originals = {
-            "input_file": ArrowPath.open_input_file,
-            "input_stream": ArrowPath.open_input_stream,
-            "output": ArrowPath.open_output_stream,
-            "copy": ArrowFileIO.copy_from_local,
-        }
-
-        def watched(verb: str, original: Callable[..., Any]) -> Callable[..., Any]:
-            def call(self: Any, *args: Any, **kwargs: Any) -> Any:
-                key = f"{verb} {sort(self.location)}"
-                counts[key] = counts.get(key, 0) + 1
-                return original(self, *args, **kwargs)
-
-            return call
-
-        def copied(self: Any, source: Any, target: str) -> Any:
-            key = f"put {sort(target)}"
-            counts[key] = counts.get(key, 0) + 1
-            return originals["copy"](self, source, target)
-
-        ArrowPath.open_input_file = watched("get", originals["input_file"])
-        ArrowPath.open_input_stream = watched("get", originals["input_stream"])
-        ArrowPath.open_output_stream = watched("put", originals["output"])
-        ArrowFileIO.copy_from_local = copied
-        try:
-            yield
-        finally:
-            ArrowPath.open_input_file = originals["input_file"]
-            ArrowPath.open_input_stream = originals["input_stream"]
-            ArrowPath.open_output_stream = originals["output"]
-            ArrowFileIO.copy_from_local = originals["copy"]
-
-    def fresh(root: pathlib.Path, name: str, cached: bool) -> IcebergDataset:
-        warehouse = root / f"wh-{name}"
-        warehouse.mkdir(parents=True)
-        properties = {
-            "type": "sql",
-            "uri": f"sqlite:///{(root / f'{name}.db').as_posix()}",
-            "warehouse": warehouse.as_uri(),
-            **({} if cached else {"rekep.io.cache-bytes": "0"}),
-        }
-        catalog = IcebergCatalog(name=f"fs{name}", properties=properties)
-        return catalog.dataset(
-            "bench.logs", field=Message.into_field(), table_properties=OPTIMISED
-        ).create_with()
-
-    def report(label: str, seconds: float) -> None:
-        gets = sum(v for k, v in counts.items() if k.startswith("get"))
-        puts = sum(v for k, v in counts.items() if k.startswith("put"))
-        parts = ", ".join(f"{k}={v}" for k, v in sorted(counts.items()))
-        print(f"{label:>30} {gets:>6} {puts:>6} {seconds:>9.3f}  {parts}")
-        counts.clear()
-
-    tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-fs-"))
-    try:
-        path = tmp / "bench.txt"
-        generate(path, rows, days)
-        table = parsed(path)
-        # One throwaway write, so the first case is not also paying for
-        # importing pyiceberg and opening the first catalog.
-        write_case(table.slice(0, 1_000), mode="append", commit_row_size=1_000_000)
-        chunk = max(table.num_rows // 8, 1)
-        half = table.slice(0, table.num_rows // 2)
-        hour = table.column("unixpartition")[0].as_py()
-
-        def leg(cached: bool) -> None:
-            CONTENT_CACHE.clear()
-            print(
-                f"\n== store calls: {table.num_rows:,} rows, 8 commits, cache "
-                f"{'on' if cached else 'off'} =="
-            )
-            header(("case", "GET", "PUT", "seconds", "detail"), (30, 6, 6, 9, 40))
-            with counted():
-                target = fresh(tmp, f"a{cached}", cached)
-                counts.clear()
-                seconds, _ = timed(
-                    lambda: target.append_arrow(batches(table, 16_384), commit_row_size=chunk)
-                )
-                report("append stream", seconds)
-
-                target = fresh(tmp, f"m{cached}", cached)
-                counts.clear()
-                seconds, _ = timed(
-                    lambda: target.overwrite_arrow(
-                        batches(table, 16_384), merge_by=True, commit_row_size=chunk
-                    )
-                )
-                report("merge, all new", seconds)
-
-                target = fresh(tmp, f"h{cached}", cached)
-                target.append_arrow(half, commit_row_size=1_000_000)
-                counts.clear()
-                seconds, _ = timed(
-                    lambda: target.overwrite_arrow(
-                        batches(table, 16_384), merge_by=True, commit_row_size=chunk
-                    )
-                )
-                report("merge, half stored", seconds)
-
-                target = fresh(tmp, f"i{cached}", cached)
-                target.append_arrow(table, commit_row_size=1_000_000)
-                counts.clear()
-                seconds, _ = timed(
-                    lambda: target.append_arrow(
-                        batches(table, 16_384), merge_by=True, commit_row_size=chunk
-                    )
-                )
-                report("insert-only, full replay", seconds)
-
-                target = fresh(tmp, f"r{cached}", cached)
-                target.append_arrow(batches(table, 16_384), commit_row_size=chunk)
-                counts.clear()
-                seconds, _ = timed(target.read_arrow_table)
-                report("read everything", seconds)
-                seconds, _ = timed(
-                    lambda: target.read_arrow_table(row_filter=f"unixpartition = {hour}")
-                )
-                report("read one partition", seconds)
-                seconds, _ = timed(lambda: target.read_arrow_reader(limit=100).read_all())
-                report("read limit=100", seconds)
-                seconds, _ = timed(lambda: target.scan_plan(f"unixpartition = {hour}"))
-                report("scan_plan one partition", seconds)
-                seconds, _ = timed(target.read_arrow_table)
-                report("read everything, again", seconds)
-                seconds, _ = timed(target.optimize)
-                report("optimize", seconds)
-
-        for cached in (False, True):
-            leg(cached)
-        stats = CONTENT_CACHE.stats()
-        print(
-            f"\ncache: {stats['hits']} hits, {stats['misses']} misses, "
-            f"{stats['entries']} entries, {stats['bytes'] / 2**10:.0f} KiB held"
-        )
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-
-
 def sweep_maintain(rows: int, days: int) -> None:
     """What a reader holds and whether explicit compaction settles.
 
@@ -660,9 +494,7 @@ def sweep_maintain(rows: int, days: int) -> None:
 
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-maint-"))
     try:
-        path = tmp / "bench.txt"
-        generate(path, rows, days)
-        table = parsed(path)
+        table = log_rows(rows, days)
 
         # -- what a reader holds ------------------------------------------
         print(f"\n== reading as a stream: {table.num_rows:,} rows ==")
@@ -937,14 +769,14 @@ def _terms(expression: Any) -> int:
 
 
 def daily(root: pathlib.Path) -> IcebergDataset:
-    """The log shape again, partitioned by a *transform* of the same column.
+    """The stored-row shape, partitioned by a *transform* of the same column.
 
     Every partition transform but `identity` hides which rows a partition
     holds, so the table is only addressable as a whole -- and a plan that
     cannot address parts of it has to settle as a whole too. When it did not,
     every run read the table back and wrote it out again, forever.
     """
-    field = Message.into_field().into_dataclass("Daily").into_field()
+    field = LogRow.into_field().into_dataclass("Daily").into_field()
     # `bucket[8]`, because `unixpartition` is a signed integer and Iceberg's `day`
     # transform is for dates. The point is unchanged: a transform, not the value itself.
     field.field("unixpartition").is_partition_key = "bucket[8]"
@@ -969,10 +801,10 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
 
 def narrow_field() -> Any:
-    """Three raw-message columns, as a declared shape rather than a column list."""
+    """Three stored columns, as a declared shape rather than a column list."""
     from rekep.fields import Field
 
-    schema = Message.into_field().into_arrow_schema()
+    schema = LogRow.into_field().into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema([schema.field(name) for name in ("unix", "plugin", "body")]),
         "Narrow",
@@ -989,7 +821,6 @@ def main() -> int:
             "insert",
             "polars",
             "read",
-            "fs",
             "maintain",
             "update",
             "delete",
@@ -1009,8 +840,6 @@ def main() -> int:
         sweep_polars(rows, 2 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "read"):
         sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
-    if arguments.only in (None, "fs"):
-        sweep_fs(min(rows, 100_000), days)
     if arguments.only in (None, "maintain"):
         sweep_maintain(min(rows, 100_000), days)
     if arguments.only in (None, "update"):

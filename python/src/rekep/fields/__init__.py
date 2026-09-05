@@ -3,7 +3,6 @@
 from rekep.fields.arrow import (
     LeafRule,
     merge_fields,
-    merge_schemas,
     promoted_scalar,
     promoted_type,
     reconcilable,
@@ -41,6 +40,7 @@ from rekep.fields.field import (
 )
 from rekep.fields.metadata import (
     ANY_VERSION,
+    STANDARD_NAMESPACE,
     Alias,
     EnumMetadata,
     FixFieldValue,
@@ -52,6 +52,7 @@ from rekep.fields.metadata import (
     encodings_of,
     newest_of,
     newest_rank,
+    normalized_namespace,
     version_rank,
 )
 from rekep.fields.names import column_name, column_names
@@ -90,6 +91,7 @@ __all__ = [
     "ProtocolMetadata",
     "SORT_KEY",
     "SORT_ORDER",
+    "STANDARD_NAMESPACE",
     "StructField",
     "TimestampField",
     "canonical_versions",
@@ -99,9 +101,9 @@ __all__ = [
     "encoded_key",
     "encodings_of",
     "merge_fields",
-    "merge_schemas",
     "newest_of",
     "newest_rank",
+    "normalized_namespace",
     "promoted_scalar",
     "promoted_type",
     "reconcilable",

@@ -286,14 +286,14 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
             *lastqty.fix.named_aliases,
             Alias("LastShares", source=LASTSHARES_VERSION),
         )
-        registry.update_field(lastqty)
+        registry.add_fields((lastqty,))
         records["LastQty"] = lastqty
     lastmkt = records.get("LastMkt")
     expected_lastmkt = _lastmkt_field(lastmkt)
     if lastmkt is None:
-        registry.add_field(expected_lastmkt)
+        registry.add_fields((expected_lastmkt,))
     elif lastmkt.into_dict() != expected_lastmkt.into_dict():
-        registry.update_field(expected_lastmkt)
+        registry.add_fields((expected_lastmkt,))
     records["LastMkt"] = expected_lastmkt
     for name, tag, description in (
         ("SettlCurrency", 120, "Currency code of settlement denomination."),
@@ -302,9 +302,9 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
         held = records.get(name)
         expected = _currency_field(held, name, tag, description)
         if held is None:
-            registry.add_field(expected)
+            registry.add_fields((expected,))
         elif held.into_dict() != expected.into_dict():
-            registry.update_field(expected)
+            registry.add_fields((expected,))
         records[name] = expected
     tagged = {entry.fix.tag: entry for entry in records.values() if entry.fix.tag is not None}
     additions: list[Field] = []
@@ -325,7 +325,7 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
     if additions:
         # Package fields share one shard. Reconcile them together so an archive
         # refresh rewrites that shard once and invalidates the registry once.
-        registry.add_definitions(additions, STANDARD)
+        registry.add_fields(additions, STANDARD)
 
     for expected in _component_records():
         held = registry.component_records().get(expected.name)
@@ -337,7 +337,7 @@ def register_rekep(registry: FixRegistry) -> FixRegistry:
             claimed = registry.message_records().get(expected.msg_type)
             if claimed is not None:
                 raise ValueError(f"rekep MsgType {expected.msg_type!r} is already {claimed.name!r}")
-        registry.add_component(expected)
+        registry.add_fields((expected.into_record(),))
     return registry
 
 

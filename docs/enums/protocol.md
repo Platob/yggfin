@@ -17,14 +17,15 @@ The grammar comes first and the resolved version follows it. Service packs
 drop punctuation to fit exactly: `FIX5SP2` is FIX 5.0 SP2. `FXML5SP2` keeps
 the FIXML grammar and the same version.
 
-The vocabulary belongs to the logs rather than to this package. A rule naming
-its own bridge stores that name without a release here. Up to sixteen bytes of
-`[A-Z0-9._-]` is the stored shape.
+The vocabulary belongs to the configured parsing rules rather than to raw
+`Message`. A rule naming its own bridge stores that name without a release
+here. Up to sixteen bytes of `[A-Z0-9._-]` is the stored shape.
 
-`Message.protocol` and `FixMsg.protocol` carry the same grammar and resolved
-registry version. `BeginString` and application-version fields lead; a bare UL
-row uses the registry's newest application version. A line no rule recognised
-is `OTHER`, so the column is NOT NULL.
+Only parsed `FixMsg.protocol` carries the grammar and resolved registry
+version. `parse_fix` classifies the raw body's syntax, then `BeginString` and
+application-version fields lead resolution; a bare UL row uses the registry's
+newest application version. A line no rule recognised is `OTHER`, so the
+column is NOT NULL.
 
 | Key | Code | Stored hex | Meaning |
 | --- | --- | --- | --- |

@@ -145,8 +145,10 @@ single guide that owns it. Optimize descriptions whenever touching a field.
   handle nested shapes with Arrow kernels.
 - Never use a Python row loop for an Arrow shape conversion. Column
   comprehensions are fine.
-- Let Arrow own codecs, filesystems, decompression, and kernels. Let pyiceberg
-  own table conversion, ids, snapshots, planning, and commits.
+- Let Yggdryl `IOBase` own general resources, filesystems, codecs, and
+  decompression. Arrow owns kernels; PyArrow native streams remain at the
+  PyIceberg boundary, which owns table conversion, ids, snapshots, planning,
+  and commits.
 - Dictionary-encode repeated code columns; store enum values as integers so
   unknown future codes survive.
 
@@ -163,8 +165,9 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Accumulate `commit_batch_num` input batches per commit; `commit_row_size` is
   an optional earlier row cap. An input batch is not itself a storage commit.
 - Push filters, projections, limits, and ordering to the storage engine.
-- File sets open one naturally sorted path at a time and combine short batches.
-- Nothing names a source except caller-supplied `static_values`.
+- Yggdryl `IOBase` and `TextOptions` own source binding, directory traversal,
+  header capture, decompression, and physical-line batching.
+- A raw text row names its source only through yggdryl's `url` and `rownum`.
 - Size parameters state their unit (`batch_row_size`, `read_byte_size`).
 
 ## Iceberg
@@ -174,8 +177,11 @@ single guide that owns it. Optimize descriptions whenever touching a field.
 - Read planned partitions in deterministic order and stream one partition at a
   time when ordered input is requested.
 - Merge scan filters are safe supersets; deletion matching remains exact.
-- Compare filesystem paths only after resolving both through the same
-  filesystem.
+- Keep the Iceberg boundary on PyIceberg's FileIO and PyArrow native streams.
+  Standard `s3.*` catalog properties own endpoints and credentials.
+- Compare filesystem paths only after resolving both through the table's
+  configured store. Orphan discovery uses Arrow file mtimes until Yggdryl
+  exposes the complete bound-filesystem metadata contract.
 - Maintenance must settle and report what it changed.
 - Tests assert planned files, snapshots, and stored results, not only returned
   rows.
@@ -242,8 +248,8 @@ parse_messages -+-> parse_fix_market -> fix.market -+-> parse_instruments -> mar
 ```
 
 The one `parse_fix` task definition receives a category for three independent
-Airflow runs after `parse_messages`. Each pushes its complete category predicate
-into Iceberg, transcribes only selected rows, and owns one `fix.*` table.
+Airflow runs after `parse_messages`. Each transcribes raw `Message` rows, applies
+its mutually exclusive category predicate in Arrow, and owns one `fix.*` table.
 `parse_fix_market` owns FIX translation and the resolved `unix` clock for market rows. It nests
 the `Instrument` component, whose class owns ticker and ISIN derivation.
 `parse_instruments` reads the rows it wrote to `fix.market` and versions
@@ -254,9 +260,9 @@ With `parse_market.books: false`, the market task bypasses Book construction
 and writes the FIX-carried Order and Execution rows itself; the two flatten
 tasks are skipped by the Airflow result route.
 
-Inputs are text files. Persisted outputs are `logs.messages`, the three
-`fix.*` tables, and the `market.*` instrument, book, order and execution
-tables.
+Inputs are physical text records read by yggdryl. Persisted outputs are
+`logs.messages`, the three `fix.*` tables, and the `market.*` instrument, book,
+order and execution tables.
 
 Every task returns the same result keys and brackets itself with the same two
 INFO records, both built by `rekep.logs.Stage`: `task`, `read`, `written`,
@@ -290,11 +296,10 @@ python/src/rekep/
   fix/          messages, registry, components, protocol rules, and the shell
   enums/        every persisted market code, over two ASCII bases
   market/       event, instrument, order, execution, and book logic
-  iceberg/      catalog, dataset, and the schema bridge
-  text/         FixMsg plus streamed text files
+  iceberg/      catalog, dataset, schema bridge, and native PyIceberg FileIO
+  text/         raw Message and parsed FixMsg declarations
   tasks/        application configuration only
-  arrow_path.py     one URL and the Arrow filesystem serving its path
-  arrow_file_io.py  the Iceberg FileIO: locations, spills, content cache
+  resources.py  yggdryl resource binding and required byte reads
   console.py    terminal styling: colour, boxes, tables, spinners
   logs.py       the level policy, and where a run's records go
   times.py      one reading of "an instant", whatever spelled it
@@ -302,6 +307,9 @@ schemas/rekep/  the six persisted output contracts
 data/fix/       the FIX dictionary: tag-range shards, components, messages
 tasks/          Marimo applications, adjacent YAML, the operator and the DAG
 ```
+
+Yggdryl supplies general resources and text media. Yggfin keeps the narrow
+PyIceberg/PyArrow table boundary, Iceberg reads, writes and table contracts.
 
 Comments explain why a constraint exists. Docstrings and descriptions never
 restate what code already says.

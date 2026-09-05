@@ -89,14 +89,16 @@ def test_referential_key_and_tick_ladder_use_the_component_api() -> None:
         "quantity-type=shares, tick-size-scale-id=PRIMARY|[[0|0.01], [100|0.05]], "
         "vendor-note=[inside|the, value]])"
     )
-    message = Message.from_text(body)
+    raw_message = Message.from_text(body)
+    message = FixMsg.from_message(raw_message)
     registry = FixRegistry(cache_dir=FIX_DATA)
+    entries = [*message.entries, *message.unmap]
 
-    scalar = Instrument.from_referential_entries(message.entries, registry=registry)
+    scalar = Instrument.from_referential_entries(entries, registry=registry)
     arrow = Instrument.from_referential_arrow(
         pyarrow.array(
-            [[entry.into_dict() for entry in message.entries]],
-            type=Message.into_field().field("entries").dtype,
+            [[entry.into_dict() for entry in entries]],
+            type=FixMsg.into_field().field("entries").dtype,
         ),
         registry=registry,
     )[0].as_py()
@@ -114,12 +116,12 @@ def test_referential_key_and_tick_ladder_use_the_component_api() -> None:
         TickRule(starttickpricerange=100, tickincrement=0.05),
     ]
 
-    parsed = FixMsg.from_message(message, registry=registry)
+    parsed = FixMsg.from_message(raw_message, registry=registry)
     (update,) = InstUpdate.from_fixmsgs([parsed], registry=registry)
     assert update.instrument == scalar
-    assert any(entry.key == "vendor-note" for entry in (*parsed.entries, *parsed.unmap))
+    assert any(entry.key == "Referential.vendor-note" for entry in (*parsed.entries, *parsed.unmap))
 
-    raw = next(iter(Message.into_arrow_reader([message])))
+    raw = Message.into_arrow_batch([raw_message])
     parsed_batch = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
     assert Instrument.from_dict(parsed_batch.column("instrument")[0].as_py()) == scalar
     (stored,) = FixMsg.from_arrow_reader([parsed_batch])
@@ -133,7 +135,7 @@ def test_referential_entries_answer_for_every_name_in_one_pass() -> None:
     The residual lists are the batch's largest column, so every name a
     Referential row carries is read off one walk of them rather than one each.
     """
-    dtype = Message.into_field().field("entries").dtype
+    dtype = FixMsg.into_field().field("entries").dtype
 
     def entries(*pairs: tuple[str, str]) -> pyarrow.Array:
         return pyarrow.array(

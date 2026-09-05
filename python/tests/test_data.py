@@ -18,10 +18,11 @@ from pathlib import Path
 import pyarrow
 import pytest
 
+from rekep.fields import Field
 from rekep.fix import FIX_SCALARS, FixRegistry
 from rekep.fix.classify import NAMESPACE, NEAR, KeyCount, KeyCounts, classify
 from rekep.fix.columns import _ORDER
-from rekep.fix.entries import ANY_VERSION
+from rekep.fix.entries import ANY_VERSION, fold
 from rekep.fix.fields import fix_field
 from rekep.fix.publish import (
     CONFLICT_BASELINE,
@@ -39,7 +40,15 @@ from rekep.fix.rekep import (
     REKEP_TAGS,
     rekep_is_registered,
 )
-from rekep.fix.store import NAMED_SHARD, SHARD_SPAN, ConflictReport, field_document
+from rekep.fix.store import (
+    NAMED_SHARD_BASE,
+    SHARD_SPAN,
+    ConflictReport,
+    document_text,
+    documents_of,
+    group_carriage,
+    record_document,
+)
 from rekep.market.fix import CARRIED_FIELDS, market_tags
 
 #: The dictionary is at the repo root, beside `python/` -- published data,
@@ -71,19 +80,56 @@ def members(folder: str) -> dict[str, dict[str, object]]:
 
 
 @cache
+def keyspace() -> list[dict[str, object]]:
+    """Every record the archive holds, in one list, standard and namespaced."""
+    with zipfile.ZipFile(DATA) as archive:
+        return [
+            record
+            for name in sorted(archive.namelist())
+            if name.startswith("records/") or "/records/" in name
+            for record in json.loads(archive.read(name).decode("utf-8"))
+        ]
+
+
+def is_block(record: dict[str, object]) -> bool:
+    """Whether one stored record declares a block: a component, group or message."""
+    return bool((record.get("fix") or {}).get("component"))
+
+
+@cache
 def records() -> dict[str, dict[str, object]]:
-    """Every field record in the archive, by the identity it states.
+    """Every standard *field* record in the archive, by the identity it states.
 
     A shard is a list of records, so the key here is read *off* each record --
     its tag, or its canonical name where FIX never numbered it -- rather than
     from a mapping above it that could disagree with what it keys.
+
+    The blocks share those shards now, and this stays the fields alone: what
+    the callers below mean by a record is the reading of one tag.
     """
     found: dict[str, dict[str, object]] = {}
-    for shard in members("fields").values():
-        for record in shard:
-            fix = record["fix"]
-            found[str(fix["tag"]) if "tag" in fix else str(record["name"])] = record
+    with zipfile.ZipFile(DATA) as archive:
+        for name in sorted(archive.namelist()):
+            if not name.startswith("records/"):
+                continue
+            for record in json.loads(archive.read(name).decode("utf-8")):
+                if is_block(record):
+                    continue
+                fix = record["fix"]
+                found[str(fix["tag"]) if "tag" in fix else str(record["name"])] = record
     return found
+
+
+@cache
+def blocks(*, group: bool | None = None) -> dict[str, dict[str, object]]:
+    """Standard blocks by the name they declare: the groups, the rest, or both."""
+    return {
+        str((record.get("fix") or {})["component"]): record
+        for record in keyspace()
+        if is_block(record)
+        and not (record.get("fix") or {}).get("namespace")
+        and (group is None or (record["type"] == "list") is group)
+    }
 
 
 #: Every key one stored field record carries at its top level: the Arrow
@@ -132,10 +178,15 @@ VERSIONS: list[str] = INDEX["versions"]
 #: sparse ranges, rekep's frozen 30000 range occupies one more, and the fields
 #: FIX never numbered share `NAMED_SHARD`, which is an index no tag reaches
 #: rather than a document of another kind.
-EXPECTED_FIELD_DOCUMENTS = 11
+EXPECTED_FIELD_DOCUMENTS = 26
 EXPECTED_FIELD_RECORDS = 6283
-EXPECTED_COMPONENT_FILES = 927
+#: 927 the dictionaries declare, and 176 item blocks derived for the groups
+#: whose entry no dictionary named: `group_carriage` prefers what exists, so
+#: 343 groups reuse an `<item>Grp` block and 6 an exact-name one.
+EXPECTED_COMPONENT_FILES = 1103
 EXPECTED_REPEATING_GROUP_FILES = 525
+#: Every declaration the archive holds, standard and namespaced, in one keyspace.
+EXPECTED_RECORDS = 12076
 #: Of which these are messages: a message is a component that arrives under a MsgType.
 EXPECTED_MESSAGE_FILES = 193
 
@@ -176,18 +227,14 @@ def test_the_archive_holds_one_file_per_registry_identity() -> None:
         names = archive.namelist()
     assert len(names) == len(set(names)), "one member per name, never a shadowed one"
     folders = {name.split("/")[0] if "/" in name else name for name in names}
-    assert folders == {
-        "fields",
-        "components",
-        "namespaces",
-        "repgroup",
-        "sources.json",
-        "versions.json",
-    }
-    assert len(members("fields")) == EXPECTED_FIELD_DOCUMENTS
+    assert folders == {"records", "namespaces", "sources.json", "versions.json"}
+    # One keyspace, so the three families are a question asked of a record
+    # rather than the folder it sits in -- and every one of them is still here.
+    assert len(members("records")) == EXPECTED_FIELD_DOCUMENTS
+    assert len(keyspace()) == EXPECTED_RECORDS
     assert len(records()) == EXPECTED_FIELD_RECORDS
-    assert len(members("components")) == EXPECTED_COMPONENT_FILES
-    assert len(members("repgroup")) == EXPECTED_REPEATING_GROUP_FILES
+    assert len(blocks(group=False)) == EXPECTED_COMPONENT_FILES
+    assert len(blocks(group=True)) == EXPECTED_REPEATING_GROUP_FILES
     assert VERSIONS[0] == "5.0.SP2", "newest first"
     assert VERSIONS[-1] == "FIXT1.1", "and the transport last"
     assert set(INDEX["sessions"]) <= set(VERSIONS)
@@ -205,18 +252,23 @@ def test_every_field_is_in_the_document_the_arithmetic_names() -> None:
         shards = {
             name: json.loads(archive.read(name).decode("utf-8"))
             for name in sorted(archive.namelist())
-            if name.startswith("fields/")
+            if name.startswith("records/")
         }
     for name, shard in shards.items():
         assert isinstance(shard, list), name
         for record in shard:
             fix = record["fix"]
-            key = int(fix["tag"]) if "tag" in fix else record["name"]
-            assert field_document(key) == name, key
-    populated = {int(name[len("fields/") : -len(".json")]) for name in shards}
+            key = (
+                record["fix"]["component"]
+                if is_block(record)
+                else (int(fix["tag"]) if "tag" in fix else record["name"])
+            )
+            assert record_document(key) == name, key
+    populated = {int(name[len("records/") : -len(".json")]) for name in shards}
     assert len(populated) == EXPECTED_FIELD_DOCUMENTS
-    assert NAMED_SHARD in populated, "the fields with no tag are one shard among them"
-    tagged = populated - {NAMED_SHARD}
+    named = {index for index in populated if index >= NAMED_SHARD_BASE}
+    assert named, "the records with no tag are shards among them"
+    tagged = populated - named
     assert max(tagged) * SHARD_SPAN >= 50000, "the extension packs, up at 50002"
 
 
@@ -297,7 +349,7 @@ def test_scraped_protocol_names_are_identifiers_not_page_labels() -> None:
     ], "tag 32's pre-4.3 name is a spelling of it, sourced to the version that used it"
 
 
-def test_every_stored_document_is_a_field_document() -> None:
+def test_every_stored_document_is_a_record_document() -> None:
     """One serialization for the whole dictionary.
 
     A shard is a list of field records and a component is the `Field` it
@@ -307,23 +359,18 @@ def test_every_stored_document_is_a_field_document() -> None:
     with zipfile.ZipFile(DATA) as archive:
         for name in sorted(archive.namelist()):
             document = json.loads(archive.read(name).decode("utf-8"))
-            if name.startswith("fields/") or "/fields/" in name:
+            if name.startswith("records/") or "/fields/" in name:
                 assert isinstance(document, list), name
                 for record in document:
                     assert set(record) <= FIELD_KEYS, name
                     assert record["name"] and record["fix"]["versions"], name
-            elif name.startswith(("components/", "repgroup/")) or "/components/" in name:
-                assert isinstance(document, dict), name
-                assert set(document) <= FIELD_KEYS, name
-                assert document["fix"]["versions"], "the versions ride in its own fix"
-                assert "declaration" not in document, "a component is its declaration"
 
 
 def test_a_component_record_is_one_declaration_and_its_versions() -> None:
     """The same for a component, and its declaration is a Field document: a
     struct of members, a list where one of them repeats, and `fix` at every
     level -- the shape every other declaration in this package is stored as."""
-    declared = members("components")["parties"]
+    declared = blocks(group=False)["Parties"]
     assert declared["name"] == "Parties"
     assert declared["fix"]["versions"] == ["4.3", "4.4", "5.0", "5.0.SP1", "5.0.SP2"], (
         "the versions declaring it ride in its own `fix`, as a field record's do"
@@ -340,7 +387,7 @@ def test_a_component_record_is_one_declaration_and_its_versions() -> None:
 
 
 def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None:
-    declared = members("repgroup")["no_party_i_ds"]
+    declared = blocks(group=True)["NoPartyIDs"]
 
     assert declared["name"] == "NoPartyIDs"
     assert declared["type"] == "list" and declared["fix"]["tag"] == "453"
@@ -351,7 +398,7 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
         "PartyIDSource",
         "PartyRole",
     ]
-    embedded = members("components")["parties"]["fields"][0]
+    embedded = blocks(group=False)["Parties"]["fields"][0]
     assert (embedded["name"], embedded["fix"]["tag"]) == ("NoPartyIDs", "453")
     assert embedded["fields"][0]["fields"][-1] == {
         "name": "PtysSubGrp",
@@ -367,7 +414,7 @@ def test_a_repeating_group_is_the_common_list_field_its_components_use() -> None
 
 def test_a_message_is_stored_as_the_component_it_is() -> None:
     """One folder, one record shape: the MsgType is the whole difference."""
-    declared = members("components")["new_order_single"]
+    declared = blocks(group=False)["NewOrderSingle"]
     assert declared["name"] == "NewOrderSingle"
     assert declared["fix"]["msgtype"] == "D"
     assert "msgtypes" not in declared["fix"], "a message is not carried by a message"
@@ -383,7 +430,7 @@ def test_a_message_is_stored_as_the_component_it_is() -> None:
         "SecondaryClOrdID",
         "ClOrdLinkID",
     ], "the newest tree, as every record here keeps"
-    stored = members("components")
+    stored = blocks(group=False)
     messages = [one for one in stored.values() if one["fix"].get("msgtype")]
     assert len(messages) == EXPECTED_MESSAGE_FILES
     assert len(stored) == EXPECTED_COMPONENT_FILES
@@ -501,7 +548,7 @@ def test_full_publication_registers_rekep_in_a_clean_store(tmp_path: Path) -> No
     registry = FixRegistry(cache_dir=source)
     venue = fix_field("VenueField", 49999, "String")
     venue.fix.versions = ("9.1",)
-    registry.add_field(venue)
+    registry.add_fields((venue,))
 
     target = publish_full(source, tmp_path / "full.zip")
     stored = FixRegistry(cache_dir=source)
@@ -533,8 +580,12 @@ def test_a_projection_is_a_small_exact_offline_registry(
     # had to fetch the whole dictionary to get past.
     assert target.stat().st_size < DATA.stat().st_size * 80 // 100
     with zipfile.ZipFile(target) as opened:
-        fields = [name for name in opened.namelist() if name.startswith("fields/")]
-    assert sorted(fields) == ["fields/000000.json"], "both tags share one shard"
+        shards = [name for name in opened.namelist() if name.startswith("records/")]
+    tagged = [
+        name for name in shards if int(name[len("records/") : -len(".json")]) < NAMED_SHARD_BASE
+    ]
+    assert sorted(tagged) == ["records/000000.json"], "both tags share one tag shard"
+    assert len(shards) > len(tagged), "and the declarations travel in the named shards"
     for version in projected.versions:
         assert projected.components(version) == registry.components(version)
 
@@ -625,15 +676,81 @@ def test_the_default_registry_carries_the_component_declarations(
             component.name not in package_components for component in builtin.components(version)
         )
     }
-    assert declared == {
-        "4.3",
-        "4.4",
-        "5.0",
-        "5.0.SP1",
-        "5.0.SP2",
-        "FIXT1.1",
-    }
-    assert {"4.0", "4.1", "4.2"}.isdisjoint(declared), "no standard component existed before 4.3"
+    assert declared == set(registry.versions), (
+        "every version declares a block now: 4.3 is where the dictionary first "
+        "named a reusable component, but a repeating group is older than that "
+        "and `group_carriage` gives each one the item block it repeats"
+    )
+    early = {one.name for one in builtin.components("4.0")} - package_components
+    assert "ContraBroker" in early, "the item of a group 4.0 already declared"
+
+
+def test_every_group_is_stored_beside_the_item_it_repeats() -> None:
+    """A group repeats one thing, and that thing is a block like any other.
+
+    Most are already declared -- a dictionary that names `PartiesGrp` names the
+    item too -- so the carriage prefers what exists and creates only what is
+    genuinely missing. Creating unconditionally would duplicate most of the
+    dictionary under a second set of names.
+    """
+    registry = OfflineRegistry(cache_dir=DATA)
+    layout = registry._layout
+    _blocks, counters, taken = group_carriage(layout.component_records, layout.field_records)
+    # Against the published store there is nothing left to create: 343 groups
+    # reuse an `<item>Grp` block the dictionaries declare, and the remaining
+    # 182 reuse an exact-name one -- 6 of which the dictionaries declared and
+    # 176 of which this carriage created the first time it ran. `created: 0` is
+    # the fixed point: publishing again adds no block and renames none.
+    assert taken == {"reused-grp": 343, "reused-name": 182, "created": 0}
+    assert not counters, "already carried by the published store, so nothing to write"
+
+    groups = layout.repeating_group_records
+    assert len(groups) == EXPECTED_REPEATING_GROUP_FILES
+    declared = {one.fix.canonical: one for one in layout.field_records.values()}
+    linked = {name: one.fix.item for name, one in declared.items() if one.fix.item}
+    assert len(linked) == EXPECTED_REPEATING_GROUP_FILES, "one counter per group, and all of them"
+    # The counter is what the wire carries at the group's tag, and step 4.2's
+    # widening: a bridge that typed its count `int32` would be widened back.
+    assert declared["NoPartyIDs"].dtype == pyarrow.int64()
+    assert declared["NoPartyIDs"].fix.tag == 453
+    assert declared["NoPartyIDs"].fix.item == "PartyID", (
+        "the block one *entry* of the group is, not the wrapper carrying it"
+    )
+    assert all(declared[name].dtype == pyarrow.int64() for name in linked), (
+        "a count is int64 whatever a dictionary called it"
+    )
+    for name, item in linked.items():
+        assert fold(item) in {one.folded for one in layout.component_records.values()}, name
+
+
+def test_the_published_store_is_what_the_generator_writes() -> None:
+    """Regenerated, not migrated: the archive is a fixed point of its writer.
+
+    `documents_of` is the one function that turns records into documents, and
+    a publication is exactly its output. Reading the store back and running it
+    again has to reproduce the store byte for byte -- if it does not, what is
+    checked in was edited or converted by something that is not the generator,
+    and the next real publication would silently rewrite it.
+    """
+    registry = OfflineRegistry(cache_dir=DATA)
+    layout = registry._layout
+    emitted = documents_of(
+        layout.versions(),
+        layout.field_records,
+        layout.component_records,
+        {version: layout.session(version) for version in layout.versions()},
+        sources=layout.source_manifest(),
+        declared=[version for version in layout.versions() if layout.declared(version)],
+        namespace_records={
+            namespace: layout.namespace_records(namespace) for namespace in layout.namespaces()
+        },
+    )
+    with zipfile.ZipFile(DATA) as archive:
+        stored = {name: archive.read(name).decode("utf-8") for name in archive.namelist()}
+    written = {name: document_text(document) for name, document in emitted.items()}
+    assert set(written) == set(stored), "the same documents, and no others"
+    differing = sorted(name for name in stored if stored[name] != written[name])
+    assert differing == [], "every document is exactly what the writer emits"
 
 
 def test_the_archive_says_it_came_from_nowhere_in_particular() -> None:
@@ -833,10 +950,10 @@ def test_the_published_dictionary_pins_registered_udfs_and_venue_alternatives(
     assert len({field.fix.folded for field in udf}) == 4028
     assert all(5000 <= field.fix.tag <= 9999 for field in udf)
 
-    max_show = registry.definition(9001, "fixtrading-udf")
-    cross = registry.definition(9002, "fixtrading-udf")
-    support = registry.definition(9003, "fixtrading-udf")
-    venue = registry.definition(9001, "clear-street")
+    max_show = registry.field(9001, namespace="fixtrading-udf")
+    cross = registry.field(9002, namespace="fixtrading-udf")
+    support = registry.field(9003, namespace="fixtrading-udf")
+    venue = registry.field(9001, namespace="clear-street")
     assert max_show is not None and max_show.fix.canonical == "MaxShow"
     assert max_show.fix["source-name"] == "MaxShow1"
     assert (max_show.fix["replacement-tag"], max_show.fix["replacement-name"]) == (
@@ -945,3 +1062,43 @@ def test_the_published_dictionary_says_what_every_message_carries(
     carried = {version for version in registry.versions if registry.session(version)}
     assert carried == {"4.0", "4.1", "4.2", "4.3", "4.4", "FIXT1.1"}
     assert len(registry.session("FIXT1.1")) > len(registry.session("4.0"))
+
+
+def test_the_one_merge_is_idempotent_over_every_published_record() -> None:
+    """`a.merge(a) == a` for all of them, alias and value order included.
+
+    The law that catches a metadata-blind merge: two readings that differ
+    only in metadata make an identical Arrow type, so an Arrow-level merge
+    returns one and drops the other's aliases, versions and values with no
+    type change to notice. Folding every record with itself and demanding
+    the record back is what makes that impossible to do quietly.
+    """
+    layout = OfflineRegistry(cache_dir=DATA)._layout
+    records = [
+        *layout.records.values(),
+        *(one for name in layout.namespaces() for one in layout.namespace_records(name).values()),
+    ]
+    assert len(records) == EXPECTED_RECORDS
+    changed = [
+        one.fix.canonical for one in records if one.merge(one).into_dict() != one.into_dict()
+    ]
+    assert changed == [], "every record is a fixed point of merging with itself"
+
+
+def test_arrow_interop_round_trips_every_type_the_published_store_declares() -> None:
+    """`Field.from_arrow_field(f.into_arrow_field())` is `f`, over the type census.
+
+    Generic Arrow input converts in once, at the edge, and back out the same
+    way -- so one field of each distinct Arrow type in the dictionary, scalar
+    and container alike, has to survive the round trip with its metadata.
+    """
+    layout = OfflineRegistry(cache_dir=DATA)._layout
+    one_of_each = {str(one.dtype): one for one in layout.records.values()}
+    assert len(one_of_each) > 1_000, "the census: hundreds of scalar and container shapes"
+    lost = [
+        kind
+        for kind, one in one_of_each.items()
+        if Field.from_arrow_field(one.into_arrow_field()).into_arrow_field()
+        != one.into_arrow_field()
+    ]
+    assert lost == []

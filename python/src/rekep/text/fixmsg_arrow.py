@@ -116,8 +116,9 @@ def into_flat_fixmsg_batch(
             **shape._wire_session_columns(columns, codec, version, promoted),
         }
     )
+    defaults = shape._default_batch_columns(schema, rows)
     for field in schema:
-        output.setdefault(field.name, pyarrow.nulls(rows, field.type))
+        output.setdefault(field.name, defaults[field.name])
 
     from rekep.text.fixmsg import _lastmkt_arrow
 

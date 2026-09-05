@@ -23,10 +23,10 @@ with app.setup:
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.market import Book, BookIterator, Execution, Order
+    from rekep.resources import resource
     from rekep.tasks import Task
     from rekep.text import FixMsg
     from rekep.times import unix_of
-    from rekep.urls import Url
 
 
 @app.cell(hide_code=True)
@@ -172,7 +172,7 @@ def _(fix_dictionary, project_root, records):
     registry = (
         FixRegistry()
         if fix_dictionary is None
-        else FixRegistry(cache_dir=Url.from_string(str(fix_dictionary)).resolve(project_root))
+        else FixRegistry(cache_dir=str(resource(str(fix_dictionary), root=project_root).url))
     )
     return (registry,)
 

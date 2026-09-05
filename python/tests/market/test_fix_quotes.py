@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rekep import FixCodec, FixMsg, Message
 from rekep.fix import FixRegistry
-from rekep.market import BookIterator, EventType, InstUpdate, MarketKind, Order, Side, State
+from rekep.market import BookIterator, InstUpdate, MarketKind, Order, Side, State
 from rekep.market.fix import FixEvents, unix_of
 
 FIX_DATA = Path(__file__).resolve().parents[3] / "data" / "fix"
@@ -144,14 +144,7 @@ def test_a_stored_mass_quote_matches_direct_translation_and_book_folding() -> No
         "299=ENTRY-1|55=AAPL|132=100|133=101|134=10|135=11|"
         "60=20260821-10:00:00|10=000"
     )
-    raw = next(
-        iter(
-            Message.into_arrow_reader(
-                [Message(body=line, msgtype="i", eventtype=EventType.QUOTE)],
-                batch_row_size=1,
-            )
-        )
-    )
+    raw = Message.into_arrow_batch([Message(body=line)])
     batch = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
     stored = FixMsg.from_dict(batch.to_pylist()[0])
     direct = FixMsg.from_text(line)

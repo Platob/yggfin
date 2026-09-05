@@ -130,7 +130,7 @@ def test_the_security_type_map_only_holds_values_the_dictionary_defines() -> Non
     archive = Path(__file__).resolve().parents[3] / "data" / "fix.zip"
     with zipfile.ZipFile(archive) as opened:
         # SecurityType is tag 167, so it is in the shard holding tags 0 to 499.
-        shard = json.loads(opened.read("fields/000000.json"))
+        shard = json.loads(opened.read("records/000000.json"))
     # The field shard is the readable boundary: Arrow's compact metadata
     # strings are nested JSON values here and restored only when loaded. A
     # shard is a list of records, each stating the tag it is.

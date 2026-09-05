@@ -42,17 +42,22 @@ Then, from the repository root:
 uv run --project python --group runner rekep task run \
   tasks/parse_messages/parse_messages.yml \
   --parameter source=python/tests/data \
-  --parameter pattern=app_messages_sample.txt \
-  --parameter timezone=UTC
+  --parameter pattern=app_messages_sample.txt
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml --parameter category=market &
+  tasks/parse_fix/parse_fix.yml \
+  --parameter category=market \
+  --parameter timezone=UTC &
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml --parameter category=misc &
+  tasks/parse_fix/parse_fix.yml \
+  --parameter category=misc \
+  --parameter timezone=UTC &
 
 uv run --project python --group runner rekep task run \
-  tasks/parse_fix/parse_fix.yml --parameter category=unknown &
+  tasks/parse_fix/parse_fix.yml \
+  --parameter category=unknown \
+  --parameter timezone=UTC &
 
 wait
 
@@ -69,9 +74,9 @@ uv run --project python --group runner rekep task run \
   tasks/flatten_executions/flatten_executions.yml
 ```
 
-The three FIX commands reuse one task document and each scans only the category
-passed on the command line. The YAML selects the catalog, branch and commit
-cadence. Repeatable
+The three FIX commands reuse one task document. Each scans the raw message
+table, parses its batches, then retains only the category passed on the command
+line. The YAML selects the catalog, branch and commit cadence. Repeatable
 `--parameter NAME=VALUE` options override one run. The same eight task
 commands run unchanged against S3 — only the `source`, `fix_dictionary` and
 `catalog.properties` values in the YAML move; see
@@ -85,36 +90,37 @@ both ignored by git -- delete them for a clean run.
 
 ## Pinned results
 
-The run used the default eight-batch commit cadence. Its 11 source records
-span FIX wire, FIXML, operational prose, a folded stack trace and unknown
-fields.
+The run used the default eight-batch commit cadence. Its 14 physical source
+lines span FIX wire, FIXML, operational prose, a stack trace with three
+headerless continuation lines, and unknown fields.
 
 | Task | First run | Replay writes |
 | --- | --- | ---: |
-| `parse_messages` | 11 read, 11 written | 0 |
+| `parse_messages` | 14 read, 14 written | 0 |
 | `parse_fix_market` | 2 read, 2 FixMsg written | 0 |
-| `parse_fix_misc` | 8 read, 8 FixMsg written | 0 |
+| `parse_fix_misc` | 11 read, 11 FixMsg written | 0 |
 | `parse_fix_unknown` | 0 read, 0 written | 0 |
 | `parse_instruments` | 1 observed, 1 written | 0 |
 | `parse_market` | 2 Books written; 2 Orders and 1 Execution nested | 0 |
 | `flatten_orders` | 2 projected, 2 written | 0 |
 | `flatten_executions` | 1 projected, 1 written | 0 |
 
-The FIX tasks left the `35=0` heartbeat in `logs.messages`.
-`parse_fix_market` selected 2 rows and `parse_fix_misc` selected the other 8;
-every protocol this fixture carries is a configured one, so
-`parse_fix_unknown` selected none and created an empty `fix.unknown`. No row
-carried a transcription error. Together they resolved `unix` from
-`SendingTime` on 1 row, from `TransactTime` on 1, and from the recording clock
-on the other 8. Five of the 10 rows carried a `symbolticker`. The replay wrote
-nothing at any stage: 10 FixMsg rows were skipped and the one canonical
-`InstUpdate` was unchanged.
+`logs.messages` retains all 14 physical lines, including the `35=0` heartbeat.
+The FIX tasks exclude that heartbeat after parsing: `parse_fix_market` selects
+2 rows and `parse_fix_misc` selects 11. Every protocol this fixture carries is
+configured, so `parse_fix_unknown` selects none and creates an empty
+`fix.unknown`. No row carries a transcription error. Together the 13 retained
+rows resolve `unix` from `SendingTime` once, `TransactTime` once, and the
+recording clock 8 times; the three headerless continuation lines have no
+clock. Five of 13 rows carry a `symbolticker`. The replay writes nothing at
+any stage: 13 FixMsg rows are skipped and the one canonical `InstUpdate` is
+unchanged.
 
 | Iceberg table | Rows | Iceberg snapshots |
 | --- | ---: | ---: |
-| `logs.messages` | 11 | 1 |
+| `logs.messages` | 14 | 1 |
 | `fix.market` | 2 | 1 |
-| `fix.misc` | 8 | 1 |
+| `fix.misc` | 11 | 1 |
 | `fix.unknown` | 0 | 0 |
 | `market.instruments` | 1 | 1 |
 | `market.books` | 2 | 1 |

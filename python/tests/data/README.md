@@ -17,5 +17,5 @@ hard-coded row edits.
   version, indexed FIXML groups, unknown fields, prose from a bridge driver, a
   folded stack trace, and a row without a level.
 
-The message fixture deliberately mixes shapes in one batch so tests exercise
-classification, slicing, ordering, and continuation boundaries together.
+The message fixture deliberately mixes shapes so tests exercise classification,
+slicing, ordering, and headerless physical rows together.

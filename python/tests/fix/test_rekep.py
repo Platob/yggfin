@@ -197,8 +197,8 @@ def test_rekep_components_and_contract_msg_types_are_frozen() -> None:
     }
     for contract, msg_type in EXPECTED_MESSAGES:
         record = messages[msg_type]
-        assert registry.merged_component(msg_type) is record
-        assert registry.merged_component(f"REKEP.{contract}") is record
+        assert registry.component_of(msg_type) is record
+        assert registry.component_of(f"REKEP.{contract}") is record
 
     expected_members = {
         "REKEP.Message": ("RekepHeader",),
@@ -249,7 +249,7 @@ def test_registration_restores_lastqtys_legacy_lastshares_alias(tmp_path: Path) 
     registry = FixRegistry(cache_dir=tmp_path / "registry")
     lastqty = fix_field("LastQty", 32, "Qty")
     lastqty.fix.versions = (ANY_VERSION,)
-    registry.add_field(lastqty)
+    registry.add_fields((lastqty,))
 
     register_rekep(registry)
 
@@ -274,7 +274,7 @@ def test_registration_refuses_changed_versions(tmp_path: Path) -> None:
     assert stored is not None
     changed = Field.from_dict(stored.into_dict())
     changed.fix.versions = ("4.4",)
-    registry.update_field(changed)
+    registry.add_fields((changed,))
 
     assert not rekep_is_registered(registry)
     with pytest.raises(ValueError, match="does not own tag"):

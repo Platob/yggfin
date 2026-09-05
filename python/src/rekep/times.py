@@ -43,11 +43,8 @@ NAMED: dict[str, Any] = {
 #: the three shapes a capture writes, declared once for both readings of them.
 #:
 #: One declaration because the set of accepted spellings is *one behavior*
-#: even where the execution is two: this module reads a configuration value
-#: with `strptime`, once per job, and `rekep.Text.text_file` reads a column of
-#: log-line stamps in Arrow kernels, once per line. The fast path cannot use
-#: `strptime`, but it must not decide for itself what a stamp looks like, so
-#: it derives its widths and its slicing offsets from these.
+#: even where the execution is two: this module reads configuration with
+#: `strptime`, while the raw Message header expression uses the same shapes.
 @dataclasses.dataclass(frozen=True)
 class Stamp:
     """One accepted spelling of an instant, and where its parts sit in it."""
@@ -225,6 +222,16 @@ COMPACT = Stamp(
 #: commits to fewest: a compact stamp and a FIX one share a width, and only
 #: where the separators sit tells them apart.
 SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
+
+_MESSAGE_TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
+MESSAGE_HEADER = (
+    r"^[ \t]*"
+    rf"(?P<timestamp>{_MESSAGE_TIMESTAMP})[ \t]+"
+    r"\[(?P<threadname>[^]]*)\][ \t]+"
+    r"\[(?P<plugin>[^]]*)\][ \t]*"
+    r"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
+)
+"""Default yggdryl row-header expression for physical message records."""
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are
 #: tried. The three shapes above lead, because they are what a capture

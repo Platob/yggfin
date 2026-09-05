@@ -622,8 +622,18 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
         "ExecType": record_copy(exec_type),
     }
     configured["MsgType"].fix.enumerated = [
-        FixFieldValue(value="Q", meaning="NewOrderSingle", aliases=("NEW_ORDER_SINGLE",)),
-        FixFieldValue(value="R", meaning="ExecutionReport", aliases=("EXECUTION_REPORT",)),
+        FixFieldValue(
+            value="Q",
+            meaning="NewOrderSingle",
+            aliases=("NEW_ORDER_SINGLE",),
+            namespaces=("standard",),
+        ),
+        FixFieldValue(
+            value="R",
+            meaning="ExecutionReport",
+            aliases=("EXECUTION_REPORT",),
+            namespaces=("standard",),
+        ),
     ]
     configured["MsgType"].fix.event_types = {"Q": EventType.ORDER, "R": EventType.EXECUTION}
     configured["MsgType"].fix.states = {"Q": State.PENDING_NEW}
@@ -656,7 +666,7 @@ def test_flat_fix_arrow_uses_custom_message_names_and_states(tmp_path: Path) -> 
             entry.fix.tag = 9000 + index
         assert entry.fix.tag is not None
         wire_tags[name] = entry.fix.tag
-        registry.add_field(entry)
+        registry.add_fields((entry,))
     logs = [
         FixMsg(
             unix=BASE + 1,
@@ -769,7 +779,7 @@ def test_parsed_fixmsg_keeps_raw_unused_values_in_scalar_and_arrow_metadata() ->
         "39=1|150=F|38=2|31=10.5|32=2|14=2|151=0|6=0010.5000|"
         "60=20260825-09:30:03.5|10=000|"
     )
-    raw = next(iter(Message.into_arrow_reader([Message(body=line)])))
+    raw = Message.into_arrow_batch([Message(body=line)])
     registry = FixRegistry.from_builtin()
     parsed = FixMsg.from_message_batch(raw, FixCodec(registry=registry))
 

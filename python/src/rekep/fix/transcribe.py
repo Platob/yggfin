@@ -229,7 +229,7 @@ class TagIndex:
         entries: a message keys its fields out of a bounded vocabulary, so a
         batch of a hundred thousand entries carries a few dozen spellings. 25x
         on a captured bridge batch, where every key is a name and none of the
-        fast paths below fire (benchmarks/bench_text_file.py).
+        fast paths below fire.
         """
         compute = pyarrow.compute
         if isinstance(keys, pyarrow.ChunkedArray):
@@ -342,6 +342,12 @@ class FixCodec(Convertible):
     #: reading of that field, because every one of them resolves through
     #: `tag_field` and casts through `cast_arrow_fix`.
     fields: FieldRules = dataclasses.field(default_factory=FieldRules)
+
+    plugin_keys: Mapping[str, Mapping[str, str]] = dataclasses.field(default_factory=dict)
+    """Per-plugin entry spellings normalized before FIX fields are resolved."""
+
+    timezone: str | None = None
+    """Timezone applied to offset-free recording timestamps."""
 
     # -- the seam -----------------------------------------------------------
 
@@ -583,7 +589,7 @@ class FixCodec(Convertible):
         compute = pyarrow.compute
         tags, _, _, _ = self.index_of(version).resolve_with_match(keys)
         # The split is `structure`'s, not a second rule: where a field stood is
-        # a fact about the spelling, so the message stage settles it and the
+        # a fact about the spelling, so `MessageParser` settles it and the
         # dictionary never revises it. What the dictionary adds is the tag.
         _, key, value, comp = self.structure(keys, values)
         return (
@@ -593,7 +599,7 @@ class FixCodec(Convertible):
             comp,
         )
 
-    # -- the message stage ----------------------------------------------------
+    # -- parsed entry shape ---------------------------------------------------
     #
     # Structuration without the dictionary: what a line spells, cut into the
     # same struct the resolved rows use. `parse_fix_*` completes the same column
@@ -788,7 +794,7 @@ class FixCodec(Convertible):
             keys,
         )
         tags, matched, _, _ = self.index_of(version).resolve_with_match(whole)
-        # Only an unresolved entry is filled: one the message stage already
+        # Only an unresolved entry is filled: one `MessageParser` already
         # numbered was numbered off the wire, and the wire is the authority.
         fill = compute.and_(compute.equal(stored, 0), compute.fill_null(matched, False))
         tags = compute.if_else(fill, compute.fill_null(tags, pyarrow.scalar(0, TAG)), stored)
@@ -990,9 +996,8 @@ class FixCodec(Convertible):
         # *slice* of the run rather than two filters over the whole of it: a
         # filter per column walks every lifted entry once per column, which
         # is sixty passes over the batch where this is one sort and sixty
-        # zero-copy slices -- 2.7x on a captured batch
-        # (benchmarks/bench_text_file.py). The sort is stable, so parents stay
-        # row ordered inside a column, which is what the shortcut below reads.
+        # zero-copy slices -- 2.7x on a captured batch. The stable sort keeps
+        # parents row ordered inside a column, which the shortcut below reads.
         order = compute.array_sort_indices(compute.filter(code, taken))
         codes = compute.take(compute.filter(code, taken), order)
         where = compute.take(compute.filter(parents, taken), order)

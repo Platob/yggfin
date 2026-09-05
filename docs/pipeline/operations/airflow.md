@@ -142,12 +142,12 @@ pushed to XCom. Keep credentials out of the task YAML, which is checked in.
 The default input directory, `data/capture`, is not included in the
 repository. Before the first run, edit
 `tasks/parse_messages/parse_messages.yml` so `source` points to an existing
-worker-visible directory or object-store prefix, and adjust `pattern`,
-`timezone`, header rules, payload filters, and `fix_dictionary` for it.
+worker-visible directory or object-store prefix, and adjust `pattern` and the
+header rule for it. Configure timezone, protocol rules, MsgType exclusion,
+plugin aliases, null values, and `fix_dictionary` in `parse_fix.yml`.
 
-Set the same `fix_dictionary` in `parse_messages.yml` and `parse_fix.yml`; the
-first stage reads MsgType metadata and the
-parallel FIX tasks perform full transcription.
+The three parallel FIX tasks consume that one `parse_fix.yml`; raw
+`logs.messages` carries no dictionary or protocol decision to keep in sync.
 
 The active catalog configuration in every task YAML is deliberately local:
 
@@ -157,15 +157,15 @@ catalog:
   properties:
     type: sql
     uri: sqlite:///data/catalog.db
-    warehouse: file://data/warehouse
+    warehouse: data/warehouse
 ```
 
 The operator runs every task with the repository as its working directory, so
 `sqlite:///data/catalog.db` resolves inside the checkout. `rekep` makes a local
-`warehouse` absolute before a table records it, so `file://data/warehouse` and
-`data/warehouse` name one directory and a table stays readable from any working
-directory. This is useful for a single-host test, but the checkout must be
-writable and the catalog cannot coordinate distributed workers.
+`warehouse` absolute before a table records it, so `data/warehouse` stays
+readable from any working directory. This is useful for a single-host test,
+but the checkout must be writable and the catalog cannot coordinate distributed
+workers.
 
 For production, replace the catalog block consistently in all seven YAML files,
 including `tasks/optimize_iceberg/optimize_iceberg.yml`.
@@ -338,8 +338,8 @@ made at, so that command covers `[2026-08-21T09:00:00Z,
 2026-08-21T10:00:00Z)`. A *scheduled* run is named by the hour it covers
 instead: logical date `2026-08-21T10:00:00Z` covers
 `[2026-08-21T10:00:00Z, 2026-08-21T11:00:00Z)` and starts once 11:00 has
-passed. The interval is UTC; the `timezone` in `parse_messages.yml` controls
-how timestamps without an offset are interpreted inside the source logs.
+passed. The interval is UTC; the `timezone` in `parse_fix.yml` controls how
+captured timestamps without an offset become `FixMsg.recunix`.
 
 The operator streams the child's output into the Airflow task log line by line
 — including the package's own records, which each task document sets the level

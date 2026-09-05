@@ -36,11 +36,11 @@ WORKFLOW = (
     ("flatten_executions", {}),
 )
 
-#: What the fixture's eleven records produce, first run.
+#: What the fixture's fourteen physical rows produce, first run.
 FIRST = {
-    "parse_messages": {"read": 11, "written": 11, "skipped": 0},
+    "parse_messages": {"read": 14, "written": 14, "skipped": 0},
     "parse_fix_market": {"read": 2, "written": 2, "skipped": 0},
-    "parse_fix_misc": {"read": 8, "written": 8, "skipped": 0},
+    "parse_fix_misc": {"read": 11, "written": 11, "skipped": 0},
     "parse_fix_unknown": {"read": 0, "written": 0, "skipped": 0},
     "parse_instruments": {"read": 1, "written": 1, "skipped": 0},
     "parse_market": {"read": 2, "written": 2, "skipped": 0},
@@ -56,9 +56,9 @@ REPLAY = {
 
 #: Stored rows, and the one snapshot each table holds after both runs.
 STORED = {
-    "logs.messages": 11,
+    "logs.messages": 14,
     "fix.market": 2,
-    "fix.misc": 8,
+    "fix.misc": 11,
     "fix.unknown": 0,
     "market.instruments": 1,
     "market.books": 2,
@@ -148,7 +148,7 @@ def test_the_workflow_publishes_the_fixture_and_a_replay_writes_nothing(ran: Ran
     for one in CATEGORIES:
         for rung, count in first[f"parse_fix_{one}"]["unixsource"].items():
             resolved[rung] = resolved.get(rung, 0) + count
-    assert resolved == {"SendingTime": 1, "TransactTime": 1, "recorded": 8}
+    assert resolved == {"": 3, "SendingTime": 1, "TransactTime": 1, "recorded": 8}
     assert first["parse_market"]["mode"] == "books"
     assert first["parse_market"]["products"]["read"] == {"books": 2, "orders": 2, "executions": 1}
     assert first["parse_market"]["flatten"] == {"orders": 2, "executions": 1}
@@ -207,16 +207,16 @@ def test_several_files_are_one_capture(ran: Ran, tmp_path: Path) -> None:
 
     result = ran.task("parse_messages", source=str(capture))
 
-    assert counted(result) == {"read": 11, "written": 11, "skipped": 0}
-    assert ran.rows() == {"logs.messages": 11}
+    assert counted(result) == {"read": 14, "written": 14, "skipped": 0}
+    assert ran.rows() == {"logs.messages": 14}
 
 
 def test_a_batch_bound_below_the_input_changes_nothing_but_the_batches(ran: Ran) -> None:
     """One row per batch crosses every boundary the streaming path has."""
     result = ran.task("parse_messages", source=str(FIXTURE), batch_row_size=1, commit_batch_num=1)
 
-    assert counted(result) == {"read": 11, "written": 11, "skipped": 0}
-    assert ran.rows() == {"logs.messages": 11}
+    assert counted(result) == {"read": 14, "written": 14, "skipped": 0}
+    assert ran.rows() == {"logs.messages": 14}
 
 
 def test_a_limit_stops_the_read_where_it_says(ran: Ran) -> None:
@@ -236,7 +236,7 @@ def test_direct_market_mode_writes_the_events_and_leaves_nothing_to_flatten(ran:
     assert counted(result) == {"read": 3, "written": 3, "skipped": 0}
     assert result["products"]["read"] == {"books": 0, "orders": 2, "executions": 1}
     assert ran.rows() == {
-        "logs.messages": 11,
+        "logs.messages": 14,
         "fix.market": 2,
         "market.orders": 2,
         "market.executions": 1,

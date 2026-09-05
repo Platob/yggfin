@@ -2,7 +2,6 @@
 
 from importlib.metadata import version as package_version
 
-from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
 from rekep.enums import Ascii32, Ascii64, Ascii128, Currency, MarketKind
@@ -33,14 +32,12 @@ from rekep.market import (
     TickRule,
 )
 from rekep.tasks import Task
-from rekep.text import Entry, FixMsg, Message, TextFile, TextFiles
+from rekep.text import Entry, FixMsg, Message
 from rekep.times import datetime_of, unix_of
-from rekep.urls import Url
 
 __version__ = package_version("rekep")
 
 __all__ = [
-    "ArrowPath",
     "Book",
     "Convertible",
     "Ascii32",
@@ -76,10 +73,7 @@ __all__ = [
     "StructField",
     "SymbolTicker",
     "Task",
-    "TextFile",
-    "TextFiles",
     "TickRule",
-    "Url",
     "__version__",
     "datetime_of",
     "scalar",

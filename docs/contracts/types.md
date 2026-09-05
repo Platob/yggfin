@@ -102,8 +102,10 @@ or none at all:
 
 One declaration, because the accepted spellings are one behavior even where
 the execution is two: this module reads a configuration value with
-`Stamp.read`, once per job, while `rekep.text.text_file` reads a column of
-log-line stamps in Arrow kernels, once per line.
+`Stamp.read`, while `parse_messages` builds yggdryl's default row-header regex
+from the same shapes. The raw `Message.timestamp` remains text;
+`FixMsg.from_message_batch` reads that column with `FixCodec.timezone` when it
+builds `recunix`.
 
 The fast path cannot use `strptime`, which cannot read a compact stamp's
 fraction at all, having no separator to anchor `%f` to, so both read the
@@ -117,8 +119,8 @@ nanoseconds.
 
 A width therefore never decides which shape a stamp is; the separators do,
 and a batch mixing two shapes of one width is grouped rather than sliced as
-either. A fraction finer than a microsecond is truncated, which is what the
-microsecond column stores.
+either. `recunix` retains nanoseconds from the captured header; FIX timestamp
+columns use Iceberg-compatible microseconds.
 
 ## Optional dependencies
 

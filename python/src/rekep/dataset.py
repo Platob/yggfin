@@ -30,8 +30,6 @@ _KINDS: dict[str, type[Dataset]] = {}
 _MODULES = MappingProxyType(
     {
         "iceberg": "rekep.iceberg.dataset",
-        "text_file": "rekep.text.text_file",
-        "text_files": "rekep.text.text_files",
     }
 )
 _READS = MappingProxyType(

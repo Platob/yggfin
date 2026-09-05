@@ -7,7 +7,22 @@ import pyarrow
 import pytest
 
 from rekep import Convertible, Field, scalar
-from rekep.fields import cast_batch, cast_reader, cast_table, merge_fields, merge_schemas
+from rekep.fields import cast_batch, cast_reader, cast_table, merge_fields
+
+
+def _merge_schemas(source, target, *, leaf=None):
+    """`merge_fields` over two schemas, kept here because the package has one
+    merge and it is on `Field`: a schema-level unifier is exactly the second
+    merge step 5 removed, so what these cases pin is the field rule applied to
+    a schema's fields by the caller that wants it."""
+    by_name = {field.name: field for field in source}
+    merged = [
+        merge_fields(by_name[field.name], field, leaf=leaf) if field.name in by_name else field
+        for field in target
+    ]
+    known = {field.name for field in target}
+    merged.extend(field.with_nullable(True) for field in source if field.name not in known)
+    return target if merged == list(target) else pyarrow.schema(merged, metadata=target.metadata)
 
 
 @scalar
@@ -261,7 +276,7 @@ def test_the_stream_shape_is_decided_once_not_per_batch() -> None:
 
 def test_merge_arrow_schema_adds_nullable_columns() -> None:
     incoming = pyarrow.schema([("symbol", pyarrow.string()), ("desk", pyarrow.string())])
-    merged = Tick.into_field().merge_arrow_schema(incoming)
+    merged = Tick.into_field().widened_for_cast(incoming).arrow_schema
     assert merged.field("desk").nullable, "rows already stored have nothing to put in it"
     assert merged.field("size").type == pyarrow.int32(), "shared columns stay the target's"
 
@@ -274,7 +289,7 @@ def test_a_struct_that_grew_a_member_grows_in_the_merge() -> None:
     source = pyarrow.schema(
         [pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.int64()))]
     )
-    merged = merge_schemas(source, target).field("venue").type
+    merged = _merge_schemas(source, target).field("venue").type
     assert [merged.field(i).name for i in range(merged.num_fields)] == ["mic", "desk"]
     assert merged.field(1).nullable, "an addition is nullable however deep it is"
 
@@ -284,7 +299,7 @@ def test_a_list_of_structs_merges_its_item() -> None:
     source = pyarrow.schema(
         [pyarrow.field("legs", pyarrow.list_(struct_of(id=pyarrow.int64(), px=pyarrow.float64())))]
     )
-    item = merge_schemas(source, target).field("legs").type.field(0).type
+    item = _merge_schemas(source, target).field("legs").type.field(0).type
     assert [item.field(i).name for i in range(item.num_fields)] == ["id", "px"]
 
 
@@ -304,7 +319,7 @@ def test_a_map_merges_its_values_but_never_its_keys() -> None:
             )
         ]
     )
-    merged = merge_schemas(source, target).field("m").type
+    merged = _merge_schemas(source, target).field("m").type
     assert merged.key_type == pyarrow.string(), "the target's key survives"
     assert merged.item_type.num_fields == 2
 
@@ -312,12 +327,12 @@ def test_a_map_merges_its_values_but_never_its_keys() -> None:
 def test_a_container_facing_a_scalar_leaves_the_target_alone() -> None:
     target = pyarrow.schema([pyarrow.field("x", pyarrow.int64())])
     source = pyarrow.schema([pyarrow.field("x", struct_of(a=pyarrow.int64()))])
-    assert merge_schemas(source, target).field("x").type == pyarrow.int64()
+    assert _merge_schemas(source, target).field("x").type == pyarrow.int64()
 
 
 def test_a_schema_with_nothing_to_add_is_returned_as_it_was() -> None:
     target = Tick.into_field().into_arrow_schema()
-    assert merge_schemas(pyarrow.schema([("symbol", pyarrow.string())]), target) is target
+    assert _merge_schemas(pyarrow.schema([("symbol", pyarrow.string())]), target) is target
 
 
 def test_merge_fields_is_the_same_rule_on_one_field() -> None:
@@ -504,17 +519,17 @@ def test_cast_arrow_refuses_what_it_cannot_place() -> None:
 # -- merging with another declaration ---------------------------------------
 
 
-def test_merge_with_takes_whatever_names_a_shape() -> None:
+def test_widened_for_cast_takes_whatever_names_a_shape() -> None:
     other = pyarrow.schema([("symbol", pyarrow.large_string()), ("desk", pyarrow.string())])
     for source in (other, Field.from_arrow_schema(other), Tick):
-        merged = Tick.into_field().merge_with(source)
+        merged = Tick.into_field().widened_for_cast(source)
         assert merged.field("symbol").dtype == pyarrow.string(), "this field's type wins"
         assert "size" in merged.names
 
 
 def test_merge_with_adds_what_the_other_has() -> None:
     other = pyarrow.schema([("desk", pyarrow.string())])
-    merged = Tick.into_field().merge_with(other)
+    merged = Tick.into_field().widened_for_cast(other)
     assert merged.names == [*Tick.into_field().names, "desk"]
     assert merged.field("desk").nullable, "rows already stored have nothing to put in it"
 
@@ -522,7 +537,7 @@ def test_merge_with_adds_what_the_other_has() -> None:
 def test_merge_with_an_arrow_field_directly() -> None:
     venue = pyarrow.field("venue", struct_of(mic=pyarrow.string(), desk=pyarrow.string()))
     target = Field(name="venue", dtype=struct_of(mic=pyarrow.large_string()))
-    merged = target.merge_with_arrow_field(venue)
+    merged = target.widened_for_cast(venue)
     assert merged.names == ["mic", "desk"]
     assert merged.field("mic").dtype == pyarrow.large_string(), "this field's type wins"
 
@@ -534,7 +549,7 @@ def test_merge_with_recurses_into_a_member() -> None:
     target = Field.from_arrow_schema(
         pyarrow.schema([pyarrow.field("venue", struct_of(mic=pyarrow.string()))])
     )
-    assert target.merge_with(other).field("venue").names == ["mic", "desk"]
+    assert target.widened_for_cast(other).field("venue").names == ["mic", "desk"]
 
 
 # -- narrowed: the declaration's reading of what a batch actually has --------

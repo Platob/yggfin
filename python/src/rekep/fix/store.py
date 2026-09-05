@@ -1,32 +1,33 @@
-"""Where a FIX dictionary is kept: fields, components, and repeating groups.
+"""Where a FIX dictionary is kept: one keyspace, holding every declaration.
 
-One layout. Fields live in shards of one thousand tags under `fields/`, named
-by the shard index, so the file holding a tag is arithmetic -- no index, no
-lookup table, no scan -- and a single-tag lookup reads one document rather than
-the dictionary. The tag space is sparse, and an empty shard is simply absent:
-ten files hold the tagged and named fields. Fields FIX never numbered have no tag
-to shard on: they key by their name and share `999999`, the one shard index the
-arithmetic never reaches, so every field document is named the same way and
-nothing has to ask what kind of record it is about to read.
+A field, a component, a repeating group and a message are the same thing here
+-- a `Field` -- so they are kept the same way, in shards under `records/`. That
+is the whole layout. There is no folder saying what kind of declaration a
+document holds, because asking was the mistake: a group *is* a block whose
+Arrow type is a list, and a message *is* a block that names a message type.
+
+Shards are arithmetic. A record that answers at a tag lives in the shard for
+`tag // SHARD_SPAN`, so the document holding a tag is computed rather than
+looked up and a single-tag lookup reads one document rather than the
+dictionary. The tag space is sparse and an empty shard is simply absent.
+
+A record that answers at a name -- which is what every block is -- lands in one
+of the named shards above every reachable tag index, chosen by a stable digest
+of that name. Several rather than one, because there are a thousand of them and
+a lookup parsing all of them to answer for one is the scan the tag shards exist
+to avoid.
 
 A shard is a *list* of its records. Every record states its own tag or its own
 name, so keying the list by that identity wrote it a second time, and two
 spellings of one fact are one fact that can contradict itself.
 
-Components stay one document per identity under `components/`, because they are
-keyed by name and there is no arithmetic to do.
-
-Repeating groups are derived from those component trees and stored under
-`repgroup/`. Their declaration is the same list `Field` carried by the tree,
-so tools can inspect a group without first finding a component which embeds it.
-
-Every document here is a field document -- a component and a group are the
-`Field` they declare, carrying the versions declaring them in their own `fix`
-metadata exactly as a field record does. One serialization, so a reader that
-can read a field can read the whole dictionary.
+Every document here is a field document. One serialization, so a reader that
+can read a field can read the whole dictionary, and there is no second tree to
+keep in step with the first.
 
 A store lives on a directory or inside a zip -- the extension decides -- and
-never reaches the network.
+never reaches the network. A store written in the superseded three-folder
+layout is refused rather than read; see `refuse_superseded_layout`.
 """
 
 from __future__ import annotations
@@ -36,18 +37,17 @@ import io
 import json
 import os
 import pathlib
-import posixpath
 import zipfile
+import zlib
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Protocol
 
-import pyarrow.fs
+from yggdryl import IOBase
 
-from rekep.arrow_path import ArrowPath
 from rekep.convert import Convertible
 from rekep.enums import State
-from rekep.fields import Field, encodings_of, newest_rank
-from rekep.filesystems import write_bytes
+from rekep.fields import Field, column_name, encodings_of, newest_rank
+from rekep.fields.metadata import normalized_namespace
 from rekep.fix.entries import (
     ANY_VERSION,
     Alias,
@@ -56,24 +56,29 @@ from rekep.fix.entries import (
     canonical_versions,
     collapsed_record,
     fold,
-    folded_field_values,
+    is_declaration_block,
+    is_group_record,
     newest_of,
     record_copy,
     record_for,
+    record_key,
     refuse_record,
     slug_of,
 )
 from rekep.fix.fields import datatype_identity
-from rekep.fix.quickfix import is_group, is_reference, walk
+from rekep.fix.quickfix import entry_name, entry_of, is_group, is_reference, walk
 from rekep.require import require
-from rekep.urls import LOCAL, Url
+from rekep.resources import resource
 
-#: What the layout calls its three folders. Named here because the reader, the
-#: writer and the tests must all spell them alike.
-FIELDS = "fields"
-COMPONENTS = "components"
-REPGROUP = "repgroup"
+#: The one keyspace every declaration is kept in. Named here because the
+#: reader, the writer and the tests must all spell it alike.
+RECORDS = "records"
 NAMESPACES = "namespaces"
+
+#: The folders a store written before the keyspaces were collapsed used. Kept
+#: only to recognise such a store and refuse it: nothing here reads them.
+SUPERSEDED_FOLDERS: tuple[str, ...] = ("fields", "components", "repgroup")
+
 
 #: Complete-source provenance is one store-level document. Keeping it beside
 #: the declarations makes a copied directory or archive self-describing while
@@ -112,15 +117,21 @@ DECLARED = "declared"
 #: halving object-store listings and archive members for the sparse registry.
 SHARD_SPAN = 1_000
 
-#: The shard the fields FIX never numbered share. An index, not a name, so
-#: every field document is `fields/NNNNNN.json` under one rule and there is no
-#: second kind of document for a reader or a writer to test for. It sorts
-#: after every populated range, which is where a nameless-tag record belongs.
-NAMED_SHARD = 999_999
+#: Where the shards for records answering at a name begin. Indices, not names,
+#: so every document is `records/NNNNNN.json` under one rule and there is no
+#: second kind of document for a reader or a writer to test for. They sort
+#: after every populated tag range, which is where a nameless record belongs.
+NAMED_SHARD_BASE = 999_000
 
-#: The largest tag the shard arithmetic can carry without colliding with
-#: `NAMED_SHARD`. FIX's own tags stop five orders of magnitude below it.
-MAX_TAG = NAMED_SHARD * SHARD_SPAN - 1
+#: How many shards those records spread over. One would hold every block the
+#: dictionary declares -- most of a thousand records -- and answering for one
+#: of them would parse all of them, which is the scan the tag shards exist to
+#: avoid. Sixteen keeps a named lookup about the size of a tag lookup.
+NAMED_SHARDS = 16
+
+#: The largest tag the shard arithmetic can carry without reaching the named
+#: shards. FIX's own tags stop four orders of magnitude below it.
+MAX_TAG = NAMED_SHARD_BASE * SHARD_SPAN - 1
 
 
 class Documents(Protocol):
@@ -202,43 +213,40 @@ def document_of(payload: bytes, name: str) -> Any:
 
 @dataclasses.dataclass(eq=False)
 class DirectoryDocuments:
-    """Documents under a directory, on any Arrow filesystem."""
+    """Documents under one yggdryl directory handle."""
 
-    filesystem: pyarrow.fs.FileSystem
-    directory: str
+    root: IOBase
 
     def read(self, name: str) -> Document | None:
         """One document, or None for anything that cannot be read as one."""
         try:
-            payload = self._path(name).read_bytes()
-            return None if payload is None else document_of(payload, name)
-        except (OSError, ValueError, pyarrow.ArrowException):
+            path = self._path(name)
+            return document_of(path.read_bytes(), name) if path.is_file() else None
+        except (OSError, ValueError):
             # A torn write or someone else's file: write over it rather than
             # refuse to run offline forever.
             return None
 
     def write(self, name: str, payload: Document) -> None:
-        """Written beside, then renamed, so a reader never sees half a file."""
-        path = self._path(name)
-        scratch = path.with_name(f"{path.name}.tmp")
-        scratch.write_bytes(document_text(payload).encode())
-        scratch.replace(path)
+        """Replace one complete document through yggdryl."""
+        self._path(name).write_bytes(document_text(payload).encode())
 
     def remove(self, name: str) -> bool:
         """Delete one document; False when it is not there."""
-        return self._path(name).delete()
+        path = self._path(name)
+        present = path.is_file()
+        if present:
+            path.unlink()
+        return present
 
     def names(self) -> tuple[str, ...]:
         """Every document under the directory, folders included."""
-        prefix = self.directory.replace("\\", "/").rstrip("/") + "/"
-        found = []
-        root = ArrowPath(self.directory, self.filesystem)
-        for path, info in root.ls_with_info(recursive=True):
-            if info.type != pyarrow.fs.FileType.File or not is_document(info.path):
+        found: list[str] = []
+        for path in sorted(self.root.ls(recursive=True), key=str):
+            if not path.is_file() or not is_document(path.name):
                 continue
-            spelled = path.path
-            found.append(spelled[len(prefix) :] if spelled.startswith(prefix) else spelled)
-        return tuple(sorted(found))
+            found.append(path.url.relative_to(self.root.url))
+        return tuple(found)
 
     def read_many(self, prefix: str) -> dict[str, Document]:
         """Every document under `prefix`, one file open each."""
@@ -257,8 +265,8 @@ class DirectoryDocuments:
         for name in stale:
             self.remove(name)
 
-    def _path(self, name: str) -> ArrowPath:
-        return ArrowPath(posixpath.join(self.directory, name), self.filesystem)
+    def _path(self, name: str) -> IOBase:
+        return self.root / name
 
 
 @dataclasses.dataclass(eq=False)
@@ -336,7 +344,7 @@ class ArchiveDocuments:
         with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as fresh:
             for name in sorted(documents):
                 fresh.writestr(archive_member(name), document_text(documents[name]))
-        write_bytes(output.getvalue(), self.archive)
+        resource(self.archive).write_bytes(output.getvalue())
         self._cached_members = None
         self._synchronise()
 
@@ -417,48 +425,84 @@ def _archive_prefix(members: Sequence[str]) -> str:
     if len(leading) != 1:
         return ""
     (folder,) = leading
-    if is_document(folder) or folder in (FIELDS, COMPONENTS, REPGROUP, NAMESPACES):
+    if is_document(folder) or folder in (RECORDS, NAMESPACES, *SUPERSEDED_FOLDERS):
         return ""
     return f"{folder}/"
+
+
+def refuse_superseded_layout(names: Iterable[str]) -> None:
+    """Refuse a store still filed under `fields/`, `components/` or `repgroup/`.
+
+    One check, where a store is opened, and no reading: the three keyspaces
+    became one, and a store written under the old one files its records in
+    folders this layout has no rule for. Regenerating is the whole remedy, so
+    the message says so rather than leaving an operator to infer it from a
+    parse error somewhere further in.
+    """
+    found = set()
+    for name in names:
+        parts = name.split("/")
+        if parts[0] in SUPERSEDED_FOLDERS:
+            found.add(parts[0])
+        elif parts[0] == NAMESPACES and len(parts) > 2 and parts[2] in SUPERSEDED_FOLDERS:
+            found.add(parts[2])
+    if found:
+        spelled = ", ".join(f"{folder}/" for folder in sorted(found))
+        raise ValueError(
+            f"this FIX store is written in the superseded layout ({spelled}); "
+            f"regenerate it -- there is one keyspace now, {RECORDS}/"
+        )
 
 
 # -- the layout ---------------------------------------------------------------
 
 
-def field_document(key: int | str, namespace: str = "") -> str:
-    """The document holding one field key: `fields/000000.json` for tags 0-999.
+def _blocks(records: Mapping[int | str, Field], *, group: bool) -> dict[str, ComponentRecord]:
+    """The blocks in one keyspace, keyed by slug: the groups, or the rest.
 
-    `tag // SHARD_SPAN` zero-padded, and `NAMED_SHARD` for a field FIX never
-    numbered, which keys by its name instead. That is the whole mapping: no
-    index in `versions.json`, no lookup table, no scan -- and one kind of
-    document, so nothing downstream asks whether a record has a tag to decide
-    where it is written or read.
+    A group and a component were two folders and are now one question asked of
+    a record, so both answers come from here and cannot drift apart.
     """
-    if isinstance(key, int):
-        if not 0 <= key <= MAX_TAG:
-            raise ValueError(f"a FIX tag outside 0..{MAX_TAG} has no shard: {key}")
-        index = key // SHARD_SPAN
-    else:
-        index = NAMED_SHARD
-    relative = f"{FIELDS}/{index:06d}{DOCUMENT_SUFFIX}"
-    return relative if not namespace else f"{NAMESPACES}/{_namespace(namespace)}/{relative}"
+    return {
+        slug_of(one.fix.canonical): ComponentRecord.from_record(one)
+        for one in records.values()
+        if is_declaration_block(one) and is_group_record(one) is group
+    }
 
 
-def component_document(slug: str, namespace: str = "", *, group: bool = False) -> str:
-    """The component or derived-group document for one namespace."""
-    folder = REPGROUP if group else COMPONENTS
-    relative = f"{folder}/{slug}{DOCUMENT_SUFFIX}"
+def shard_index(key: int | str) -> int:
+    """Which shard one record key belongs to.
+
+    `tag // SHARD_SPAN` for a tag, and one of the named shards for a record
+    answering at a name. `zlib.crc32` rather than `hash`, because Python salts
+    string hashing per process and a store whose file names moved between two
+    runs of one generator would rewrite itself every time.
+    """
+    if not isinstance(key, int):
+        # Folded here rather than trusted from the caller. A record answers at
+        # its folded name, and while every name shared one shard the difference
+        # never showed; now it picks the file, so a caller handing over the
+        # spelling instead of the key would write where no read will look.
+        return NAMED_SHARD_BASE + zlib.crc32(column_name(key).encode()) % NAMED_SHARDS
+    if not 0 <= key <= MAX_TAG:
+        raise ValueError(f"a FIX tag outside 0..{MAX_TAG} has no shard: {key}")
+    return key // SHARD_SPAN
+
+
+def record_document(key: int | str, namespace: str = "") -> str:
+    """The document holding one record key: `records/000000.json` for tags 0-999.
+
+    That is the whole mapping: no index in `versions.json`, no lookup table, no
+    scan -- and one kind of document, so nothing downstream asks what kind of
+    declaration it is about to read in order to find where it lives.
+    """
+    relative = f"{RECORDS}/{shard_index(key):06d}{DOCUMENT_SUFFIX}"
     return relative if not namespace else f"{NAMESPACES}/{_namespace(namespace)}/{relative}"
 
 
 def _namespace(value: str) -> str:
-    """One filesystem-safe registry namespace."""
-    namespace = str(value).strip().lower()
-    if not namespace or namespace == "standard":
-        raise ValueError("a namespaced FIX definition needs a non-standard namespace")
-    if not all(part and part.replace("-", "").isalnum() for part in namespace.split(".")):
-        raise ValueError(f"{value!r} is not a FIX registry namespace")
-    return namespace
+    """One filesystem-safe registry namespace: the one normaliser, applied here."""
+    return normalized_namespace(value)
 
 
 @dataclasses.dataclass(eq=False)
@@ -557,19 +601,33 @@ class ShardedLayout:
         The whole point of the arithmetic: asking what tag 54 is opens
         `fields/000000.json` and nothing else.
         """
-        return self._shard(field_document(int(tag))).get(int(tag))
+        return self._shard(record_document(int(tag))).get(int(tag))
 
     def namespace_record(self, namespace: str, key: int | str) -> Field | None:
         """One definition from exactly one namespace."""
         namespace = _namespace(namespace)
         if isinstance(key, int) or str(key).isdigit():
             tag = int(key)
-            return self._shard(field_document(tag, namespace)).get(tag)
-        wanted = fold(str(key))
-        for record in self.namespace_field_records(namespace).values():
-            if wanted in {fold(spelling) for spelling in record.fix.spellings()}:
-                return record
-        return None
+            return self._shard(record_document(tag, namespace)).get(tag)
+        return self._namespace_spellings(namespace).get(fold(str(key)))
+
+    def _namespace_spellings(self, namespace: str) -> dict[str, Field]:
+        """`{folded spelling: record}` for one namespace, built once and held.
+
+        A name lookup used to walk the namespace and rebuild every record's
+        spellings to compare one -- fine while it ran only when the standard
+        had already missed, and a scan of four thousand records per call once
+        the unified reading consults every namespace on every lookup. The
+        first spelling wins, which is the record order the shards are read in.
+        """
+        held = self.__dict__.setdefault("_spellings_by_namespace", {})
+        found = held.get(namespace)
+        if found is None:
+            found = held[namespace] = {}
+            for record in self.namespace_field_records(namespace).values():
+                for spelling in record.fix.spellings():
+                    found.setdefault(fold(spelling), record)
+        return found
 
     def _shard(self, name: str) -> dict[int | str, Field]:
         """One shard's records, read once and held."""
@@ -588,24 +646,44 @@ class ShardedLayout:
         if not isinstance(document, Sequence):
             raise ValueError(f"the FIX registry shard {name} is not a list of field records")
         records = (refuse_record(field_from_document(record)) for record in document)
-        return {record.fix.key: record for record in records}
+        return {record_key(record): record for record in records}
+
+    def _keyspace(self, prefix: str) -> dict[int | str, Field]:
+        """Every record filed under one keyspace prefix, each shard read once."""
+        shards = self.__dict__.setdefault("_shards", {})
+        for name in self.documents.names():
+            if name.startswith(prefix):
+                shards.setdefault(name, self._read_shard(name))
+        return {
+            key: record
+            for name in sorted(shards)
+            if name.startswith(prefix)
+            for key, record in shards[name].items()
+        }
+
+    @property
+    def records(self) -> dict[int | str, Field]:
+        """The whole keyspace, every shard read once.
+
+        Everything the dictionary declares, in one mapping: the fields, the
+        components, the groups and the messages. What a caller wanted of three
+        folders is a question about a record, and `field_records`,
+        `component_records` and `repeating_group_records` all ask it here.
+        """
+        held = self.__dict__.get("_records")
+        if held is None:
+            held = self.__dict__["_records"] = self._keyspace(f"{RECORDS}/")
+        return held
 
     @property
     def field_records(self) -> dict[int | str, Field]:
-        """`{tag or folded name: record}` for every field, every shard read once."""
-        held = self.__dict__.get("_fields")
-        if held is None:
-            shards = self.__dict__.setdefault("_shards", {})
-            for name in self.documents.names():
-                if name.startswith(f"{FIELDS}/"):
-                    shards.setdefault(name, self._read_shard(name))
-            held = self.__dict__["_fields"] = {
-                key: record
-                for name in sorted(shards)
-                if name.startswith(f"{FIELDS}/")
-                for key, record in shards[name].items()
-            }
-        return held
+        """The records declaring a field: not a component, not a group.
+
+        A view, not a keyspace. It stays this narrow because `fields(version)`
+        answers with it, and a caller asking a version for its fields has never
+        meant "and every block it declares too".
+        """
+        return {key: one for key, one in self.records.items() if not is_declaration_block(one)}
 
     def namespaces(self) -> tuple[str, ...]:
         """Stored definition namespaces in deterministic order."""
@@ -613,67 +691,33 @@ class ShardedLayout:
         found = {
             name[len(prefix) :].split("/", 1)[0]
             for name in self.documents.names()
-            if name.startswith(prefix) and f"/{FIELDS}/" in name
+            if name.startswith(prefix) and f"/{RECORDS}/" in name
         }
         return tuple(sorted(found))
 
+    def namespace_records(self, namespace: str) -> dict[int | str, Field]:
+        """Every definition stored under exactly one namespace."""
+        namespace = _namespace(namespace)
+        held = self.__dict__.setdefault("_namespace_records", {})
+        if namespace not in held:
+            held[namespace] = self._keyspace(f"{NAMESPACES}/{namespace}/{RECORDS}/")
+        return held[namespace]
+
     def namespace_field_records(self, namespace: str) -> dict[int | str, Field]:
         """Every field definition stored under exactly one namespace."""
-        namespace = _namespace(namespace)
-        held = self.__dict__.setdefault("_namespace_fields", {})
-        if namespace in held:
-            return held[namespace]
-        prefix = f"{NAMESPACES}/{namespace}/{FIELDS}/"
-        shards = self.__dict__.setdefault("_shards", {})
-        for name in self.documents.names():
-            if name.startswith(prefix):
-                shards.setdefault(name, self._read_shard(name))
-        records = {
-            key: record
-            for name in sorted(shards)
-            if name.startswith(prefix)
-            for key, record in shards[name].items()
+        return {
+            key: one
+            for key, one in self.namespace_records(namespace).items()
+            if not is_declaration_block(one)
         }
-        held[namespace] = records
-        return records
 
     def namespace_component_records(self, namespace: str) -> dict[str, ComponentRecord]:
         """Every component and message stored under one extension namespace."""
-        namespace = _namespace(namespace)
-        held = self.__dict__.setdefault("_namespace_components", {})
-        if namespace in held:
-            return held[namespace]
-        prefix = f"{NAMESPACES}/{namespace}/{COMPONENTS}/"
-        readable = (
-            self.documents.read_many(prefix)
-            if any(name.startswith(prefix) for name in self.documents.names())
-            else {}
-        )
-        records = {
-            document_stem(name[len(prefix) :]): component_from_document(document)
-            for name, document in sorted(readable.items())
-        }
-        held[namespace] = records
-        return records
+        return _blocks(self.namespace_records(namespace), group=False)
 
     def namespace_repeating_group_records(self, namespace: str) -> dict[str, ComponentRecord]:
-        """Every derived group stored under one extension namespace."""
-        namespace = _namespace(namespace)
-        held = self.__dict__.setdefault("_namespace_repeating_groups", {})
-        if namespace in held:
-            return held[namespace]
-        prefix = f"{NAMESPACES}/{namespace}/{REPGROUP}/"
-        readable = (
-            self.documents.read_many(prefix)
-            if any(name.startswith(prefix) for name in self.documents.names())
-            else {}
-        )
-        records = {
-            document_stem(name[len(prefix) :]): component_from_document(document)
-            for name, document in sorted(readable.items())
-        }
-        held[namespace] = records
-        return records
+        """Every repeating group stored under one extension namespace."""
+        return _blocks(self.namespace_records(namespace), group=True)
 
     def source_manifest(self) -> tuple[dict[str, Any], ...]:
         """Complete-source provenance carried by this store."""
@@ -727,45 +771,34 @@ class ShardedLayout:
 
     @property
     def component_records(self) -> dict[str, ComponentRecord]:
-        """`{slug: record}` for every component identity, read once and held."""
+        """`{slug: record}` for every component and message identity.
+
+        Held, not recomputed per read. A caller that folds the whole
+        dictionary asks for this once per block, and one of them --
+        `_store_carriage` -- tells an unchanged block from a changed one by
+        identity, which a view rebuilt on every read can never answer.
+        """
         held = self.__dict__.get("_components")
         if held is None:
-            prefix = f"{COMPONENTS}/"
-            readable = self.documents.read_many(prefix)
-            torn = self.__dict__.setdefault("_torn", set())
-            torn.update(name for name in self.documents.names() if name.startswith(prefix))
-            torn.difference_update(readable)
-            held = self.__dict__["_components"] = {
-                document_stem(name[len(prefix) :]): component_from_document(document)
-                for name, document in sorted(readable.items())
-            }
+            held = self.__dict__["_components"] = _blocks(self.records, group=False)
         return held
 
     @property
     def repeating_group_records(self) -> dict[str, ComponentRecord]:
-        """`{slug: record}` for every derived repeating-group identity."""
+        """`{slug: record}` for every repeating-group identity, held the same way."""
         held = self.__dict__.get("_repeating_groups")
         if held is None:
-            prefix = f"{REPGROUP}/"
-            readable = self.documents.read_many(prefix)
-            torn = self.__dict__.setdefault("_torn", set())
-            torn.update(name for name in self.documents.names() if name.startswith(prefix))
-            torn.difference_update(readable)
-            held = self.__dict__["_repeating_groups"] = {
-                document_stem(name[len(prefix) :]): component_from_document(document)
-                for name, document in sorted(readable.items())
-            }
+            held = self.__dict__["_repeating_groups"] = _blocks(self.records, group=True)
         return held
 
     def forget(self) -> None:
         """Drop the held records, so the next read sees what was just written."""
         self.__dict__.pop("_shards", None)
-        self.__dict__.pop("_fields", None)
-        self.__dict__.pop("_namespace_fields", None)
+        self.__dict__.pop("_records", None)
+        self.__dict__.pop("_namespace_records", None)
+        self.__dict__.pop("_spellings_by_namespace", None)
         self.__dict__.pop("_components", None)
         self.__dict__.pop("_repeating_groups", None)
-        self.__dict__.pop("_namespace_components", None)
-        self.__dict__.pop("_namespace_repeating_groups", None)
         self.__dict__.pop("_torn", None)
 
     @property
@@ -846,13 +879,65 @@ class ShardedLayout:
     # -- writing -------------------------------------------------------------
 
     def store_field(self, record: Field) -> str:
-        """Write one field record, and name the document it landed in."""
-        name = field_document(record.fix.key)
+        """Write one record, and name the document it landed in."""
+        return self._store_record(record)
+
+    def _store_record(self, record: Field, namespace: str = "") -> str:
+        """Write one record into the shard its key belongs to, keeping the rest.
+
+        A write that would change nothing does not happen. The views above are
+        recomputed per read rather than held, so a caller cannot tell "the same
+        record" by identity any more, and one that rewrote its shard anyway
+        would churn every document in the store on every pass.
+        """
+        key = record_key(record)
+        name = record_document(key, namespace)
         shard = self._shard(name)
-        shard[record.fix.key] = record
+        held = shard.get(key)
+        if held is not None and held.into_dict() == record.into_dict():
+            return name
+        shard[key] = record
         self.documents.write(name, _shard_document(shard))
-        self.__dict__.pop("_fields", None)
+        self._forget_keyspace(namespace)
         return name
+
+    def _store_many(self, records: Iterable[Field], namespace: str = "") -> bool:
+        """Write several records, one write per shard rather than one per record.
+
+        A pass over the whole dictionary touches a thousand blocks that share
+        sixteen named shards, and writing per record rewrote each of those
+        shards a hundred times over -- every rewrite a create-and-rename of the
+        whole document. Grouping by the document they land in makes the pass
+        one write per shard, and a shard whose content did not change is not
+        written at all.
+        """
+        pending: dict[str, dict[int | str, Field]] = {}
+        for record in records:
+            key = record_key(record)
+            name = record_document(key, namespace)
+            pending.setdefault(name, dict(self._shard(name)))[key] = record
+        changed = False
+        for name, shard in sorted(pending.items()):
+            held = self._shard(name)
+            if _shard_document(held) == _shard_document(shard):
+                continue
+            held.clear()
+            held.update(shard)
+            self.documents.write(name, _shard_document(shard))
+            changed = True
+        if changed:
+            self._forget_keyspace(namespace)
+        return changed
+
+    def _forget_keyspace(self, namespace: str = "") -> None:
+        """Drop the read view a write just invalidated, keeping the shards."""
+        if namespace:
+            self.__dict__.setdefault("_namespace_records", {}).pop(namespace, None)
+            self.__dict__.setdefault("_spellings_by_namespace", {}).pop(namespace, None)
+            return
+        self.__dict__.pop("_records", None)
+        self.__dict__.pop("_components", None)
+        self.__dict__.pop("_repeating_groups", None)
 
     def store_field_records(
         self,
@@ -863,70 +948,61 @@ class ShardedLayout:
         """Replace one namespace's fields with one write per affected shard."""
         normalized = _namespace(namespace) if namespace else ""
         changed_documents = (
-            None if changed is None else {field_document(key, normalized) for key in changed}
+            None if changed is None else {record_document(key, normalized) for key in changed}
         )
-        shards: dict[str, dict[int | str, Field]] = {}
+        prefix = f"{NAMESPACES}/{normalized}/{RECORDS}/" if normalized else f"{RECORDS}/"
+        existing = {name for name in self.documents.names() if name.startswith(prefix)}
+        # The blocks share these shards and this call speaks only for the
+        # fields, so every shard starts from the blocks already in it. Sweeping
+        # a shard clean because no field named it would delete the components
+        # filed beside them, which is the one way one keyspace can lose a
+        # record that three folders could not.
+        shards: dict[str, dict[int | str, Field]] = {
+            name: {key: one for key, one in self._shard(name).items() if is_declaration_block(one)}
+            for name in existing
+        }
         for record in records.values():
-            name = field_document(record.fix.key, normalized)
             stored = record_copy(record)
             if normalized:
                 stored.fix["namespace"] = normalized
             else:
                 stored.fix.pop("namespace", None)
-            shards.setdefault(name, {})[stored.fix.key] = stored
-        prefix = f"{NAMESPACES}/{normalized}/{FIELDS}/" if normalized else f"{FIELDS}/"
-        existing = (
-            {name for name in self.documents.names() if name.startswith(prefix)}
-            if changed_documents is None
-            else set()
-        )
+            key = record_key(stored)
+            shards.setdefault(record_document(key, normalized), {})[key] = stored
         for name in sorted(shards):
             if changed_documents is not None and name not in changed_documents:
                 continue
-            self.documents.write(name, _shard_document(shards[name]))
-        if changed_documents is None:
-            for name in sorted(existing - shards.keys()):
-                self.documents.remove(name)
-        else:
-            for name in sorted(changed_documents - shards.keys()):
+            if shards[name]:
+                self.documents.write(name, _shard_document(shards[name]))
+            elif name in existing:
                 self.documents.remove(name)
         self.forget()
 
     def store_namespace_field(self, namespace: str, record: Field) -> str:
         """Write one namespaced definition without touching the standard shard."""
         namespace = _namespace(namespace)
-        name = field_document(record.fix.key, namespace)
-        shard = self._shard(name)
         stored = record_copy(record)
         stored.fix["namespace"] = namespace
-        shard[stored.fix.key] = stored
-        self.documents.write(name, _shard_document(shard))
-        self.__dict__.pop("_namespace_fields", None)
-        return name
+        return self._store_record(stored, namespace)
 
     def remove_namespace_field(self, namespace: str, key: int | str) -> bool:
         """Delete one exact namespaced definition."""
         namespace = _namespace(namespace)
         key = int(key) if isinstance(key, int) or str(key).isdigit() else fold(str(key))
-        name = field_document(key, namespace)
-        shard = self._shard(name)
-        if key not in shard:
-            return False
-        del shard[key]
-        self.__dict__.pop("_namespace_fields", None)
-        if shard:
-            self.documents.write(name, _shard_document(shard))
-            return True
-        return self.documents.remove(name)
+        return self._remove_record(key, namespace)
 
     def remove_field(self, key: int | str) -> bool:
-        """Delete one field record by tag or folded name; False when absent."""
-        name = field_document(key)
+        """Delete one record by tag or folded name; False when absent."""
+        return self._remove_record(key)
+
+    def _remove_record(self, key: int | str, namespace: str = "") -> bool:
+        """Drop one record from its shard, removing a shard nothing is left in."""
+        name = record_document(key, namespace)
         shard = self._shard(name)
         if key not in shard:
             return False
         del shard[key]
-        self.__dict__.pop("_fields", None)
+        self._forget_keyspace(namespace)
         if shard:
             self.documents.write(name, _shard_document(shard))
             return True
@@ -937,38 +1013,17 @@ class ShardedLayout:
         self._store_component(entry)
         self._sync_repeating_groups()
 
-    def _store_component(self, entry: ComponentRecord) -> None:
-        """Write one component without rebuilding the derived group index."""
-        self.documents.write(
-            f"{COMPONENTS}/{entry.slug}{DOCUMENT_SUFFIX}", component_record_document(entry)
-        )
-        self.component_records[entry.slug] = entry
+    def _store_component(self, entry: ComponentRecord, namespace: str = "") -> None:
+        """Write one block without rebuilding the groups derived from the trees."""
+        self._store_record(entry.into_record(), namespace)
 
     def store_namespace_components(
         self, namespace: str, records: Mapping[str, ComponentRecord]
     ) -> None:
-        """Write changed extension blocks and derive their group index once."""
+        """Write changed extension blocks and derive their groups once."""
         namespace = _namespace(namespace)
         records = _used_in(records, {entry.folded: entry for entry in records.values()})
-        held = self.namespace_component_records(namespace)
-        for slug, entry in sorted(records.items()):
-            if held.get(slug) != entry:
-                self.documents.write(
-                    component_document(slug, namespace), component_record_document(entry)
-                )
-        cached = self.__dict__.setdefault("_namespace_components", {})
-        cached[namespace] = dict(records)
-        groups = repeating_groups_of(records)
-        held_groups = self.namespace_repeating_group_records(namespace)
-        for slug in sorted(set(held_groups) - set(groups)):
-            self.documents.remove(component_document(slug, namespace, group=True))
-        for slug, entry in sorted(groups.items()):
-            if held_groups.get(slug) != entry:
-                self.documents.write(
-                    component_document(slug, namespace, group=True),
-                    component_record_document(entry),
-                )
-        self.__dict__.setdefault("_namespace_repeating_groups", {})[namespace] = groups
+        self._store_blocks(records, namespace)
 
     def remove_component(self, slug: str) -> bool:
         """Delete one component identity; False when the store did not hold it."""
@@ -978,26 +1033,43 @@ class ShardedLayout:
         return removed
 
     def _remove_component(self, slug: str) -> bool:
-        """Delete one component without rebuilding the derived group index."""
-        self.component_records.pop(slug, None)
-        return self.documents.remove(f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}")
+        """Delete one block without rebuilding the groups derived from the trees."""
+        held = self.component_records.get(slug)
+        if held is None:
+            return False
+        return self._remove_record(record_key(held.into_record()))
+
+    def _store_blocks(self, records: Mapping[str, ComponentRecord], namespace: str = "") -> bool:
+        """Write one namespace's blocks and the groups its trees declare.
+
+        The groups are derived rather than authored -- a group *is* a member of
+        the tree that carries it -- so they are rewritten from the trees on
+        every block write, exactly as they were when they had a folder of their
+        own. What changed is where they land, not who owns them.
+        """
+        wanted = {**records, **repeating_groups_of(records)}
+        held = {
+            **_blocks(self._namespaced(namespace), group=False),
+            **_blocks(self._namespaced(namespace), group=True),
+        }
+        changed = False
+        for slug in sorted(set(held) - set(wanted)):
+            changed = (
+                self._remove_record(record_key(held[slug].into_record()), namespace) or changed
+            )
+        for slug, entry in sorted(wanted.items()):
+            if held.get(slug) != entry:
+                self._store_record(entry.into_record(), namespace)
+                changed = True
+        return changed
+
+    def _namespaced(self, namespace: str) -> dict[int | str, Field]:
+        """One namespace's keyspace, or the standard one where none is named."""
+        return self.namespace_records(namespace) if namespace else self.records
 
     def _sync_repeating_groups(self) -> bool:
-        """Rewrite the group index from the component trees which own it."""
-        records = repeating_groups_of(self.component_records)
-        held = self.repeating_group_records
-        changed = False
-        prefix = f"{REPGROUP}/"
-        for slug in sorted(set(held) - set(records)):
-            changed = self.documents.remove(f"{prefix}{slug}{DOCUMENT_SUFFIX}") or changed
-        for slug, entry in sorted(records.items()):
-            if held.get(slug) != entry:
-                self.documents.write(
-                    f"{prefix}{slug}{DOCUMENT_SUFFIX}", component_record_document(entry)
-                )
-                changed = True
-        self.__dict__["_repeating_groups"] = records
-        return changed
+        """Rewrite the groups from the component trees which own them."""
+        return self._store_blocks(self.component_records)
 
     def store(
         self,
@@ -1060,6 +1132,13 @@ class ShardedLayout:
                 self._remove_component(slug)
         self._store_carriage()
         self._sync_repeating_groups()
+        self._store_group_carriage()
+
+    def _store_group_carriage(self) -> bool:
+        """Give every group the item block it repeats and the counter naming it."""
+        blocks, counters, _taken = group_carriage(self.component_records, self.field_records)
+        changed = self._store_blocks(blocks)
+        return self._store_many(counters.values()) or changed
 
     def _store_carriage(self, preserved: Mapping[str, Sequence[str]] | None = None) -> bool:
         """Tell every block which messages carry it, once the trees settled.
@@ -1071,8 +1150,8 @@ class ShardedLayout:
         messages reach the same blocks.
         """
         held = self.component_records
-        changed = False
         derived = _used_in(held, {one.folded: one for one in held.values()})
+        fresh: list[Field] = []
         for slug, entry in derived.items():
             names = tuple(sorted({*entry.msgtypes, *(preserved or {}).get(slug, ())}))
             if names != entry.msgtypes:
@@ -1080,9 +1159,8 @@ class ShardedLayout:
                 declared.fix.msgtypes = list(names)
                 entry = dataclasses.replace(entry, declaration=declared)
             if entry is not held[slug]:
-                self._store_component(entry)
-                changed = True
-        return changed
+                fresh.append(entry.into_record())
+        return self._store_many(fresh)
 
 
 def _shard_document(shard: Mapping[int | str, Field]) -> list[dict[str, Any]]:
@@ -1174,70 +1252,59 @@ def fold_field(held: Field | None, member: Field, version: str) -> Field:
     newer reading displaces becomes an alias, so a rename -- tag 64 is
     `FutSettDate` through 4.3 and `SettlDate` after -- stays one identity that
     still answers to both.
+
+    Which reading owns the record is this function's whole judgement, and it
+    is a judgement about *versions*, which a field knows nothing of. The fold
+    itself is `Field.merge`: the newer reading goes second so it wins every
+    key it restates, and the older one accumulates into it.
     """
     fresh = collapsed_record([member], [version])
     if held is None:
         return fresh
     versions = canonical_versions((*held.fix.versions, version))
-    if newest_of(versions) == version:
-        # The newer reading owns the record, so it is the one written back to.
-        built = fresh
-        readings = (held, fresh)
-        built.fix.named_aliases = _displaced(held, fresh.fix.canonical)
-    else:
-        built = record_copy(held)
-        readings = (fresh, held)
-    added = next((reading for reading in reversed(readings) if reading.fix.added), None)
+    older, newer = (held, fresh) if newest_of(versions) == version else (fresh, held)
+    built = older.merge(newer)
+    # The newest reading *owns* the record, its type included. `merge` widens,
+    # which is right between two sources reading one version and wrong
+    # between two versions: 4.3 calling a field `int` after 4.2 called it
+    # `char` is a correction, and the corrected column is not a string.
+    built = dataclasses.replace(built, dtype=newer.dtype)
+    built.fix.versions = versions
+    built.fix.pop("version", None)
+    # A spelling the newer reading displaced is attributed to the version that
+    # used it -- a FIX version is a source too, and "what 4.2 called this" is
+    # the question an alias from a rename answers. The merge attributes what
+    # the older reading brings to its dictionary source, which for a rename
+    # says where the *record* came from rather than when the *name* held.
+    displaced = older.fix.canonical
+    if displaced != built.fix.canonical:
+        built.fix.named_aliases = tuple(
+            dataclasses.replace(alias, source=alias.source or older.fix.newest)
+            if alias.name == displaced
+            else alias
+            for alias in built.fix.named_aliases
+        )
+    added = next((reading for reading in (newer, older) if reading.fix.added), None)
     if added is not None:
         built.fix.added = added.fix.added
-    values, origins = folded_field_values(readings)
-    built.fix.enumerated = values
-    scalar_origins = {
-        part: source
-        for part, source in built.fix.origins.items()
-        if part not in (VALUES, ALIASES, ADDED)
-    }
-    if added is not None and (source := added.fix.source_of(ADDED)):
-        scalar_origins[ADDED] = source
-    built.fix.origins = {**scalar_origins, **origins}
-    built.fix.versions = versions
-    built.fix.event_types = {**fresh.fix.event_types, **held.fix.event_types}
-    built.fix.states = {**fresh.fix.states, **held.fix.states}
-    built.fix.msgtypes = _union(held.fix.msgtypes, fresh.fix.msgtypes)
-    built.fix.components = _union(held.fix.components, fresh.fix.components)
-    built.fix.sources = _union(_union(built.fix.sources, held.fix.sources), fresh.fix.sources)
-    built.fix.source = built.fix.source or held.fix.source or fresh.fix.source
-    built.fix.tags = tuple(dict.fromkeys((*built.fix.tags, *held.fix.tags, *fresh.fix.tags)))
-    built.fix.column = held.fix.column or fresh.fix.column
+        if source := added.fix.source_of(ADDED):
+            built.fix.origins = {**built.fix.origins, ADDED: source}
     return built
 
 
 def fold_component(held: ComponentRecord | None, declared: Field, version: str) -> ComponentRecord:
-    """One version's component folded into the record that owns it."""
+    """One version's component folded into the record that owns it.
+
+    The same judgement as `fold_field` and the same merge under it: the newer
+    declaration owns the tree, and the versions accumulate.
+    """
     fresh = ComponentRecord.from_components([declared], [version])
     if held is None:
         return fresh
-    versions = (*held.versions, version)
+    versions = canonical_versions((*held.versions, version))
     if newest_of(versions) == version:
         return dataclasses.replace(fresh, versions=versions, aliases=held.aliases)
     return dataclasses.replace(held, versions=versions)
-
-
-def _displaced(held: Field, name: str) -> tuple[Alias, ...]:
-    """The record's aliases, plus the spelling a newer reading just displaced."""
-    canonical = held.fix.canonical
-    aliases = held.fix.named_aliases
-    if fold(canonical) == fold(name):
-        return aliases
-    spelled = {alias.folded for alias in aliases}
-    if fold(canonical) in spelled:
-        return aliases
-    return (*aliases, Alias(name=canonical, source=held.fix.newest))
-
-
-def _union(held: Sequence[str], fresh: Sequence[str]) -> tuple[str, ...]:
-    """Both lists, in order, with nothing said twice."""
-    return tuple(dict.fromkeys((*held, *fresh)))
 
 
 # -- collapsing per-version declarations into records --------------------------
@@ -1759,8 +1826,70 @@ def repeating_groups_of(
             declaration = member
             if held is not None and newest_rank(held.newest) >= newest_rank(owner.newest):
                 declaration = held.declaration
+            # Named as the block it becomes, so a derived group and the record
+            # read back for it compare equal: a member lifted out of a tree
+            # carries no `fix:component` of its own until it is one.
+            declaration = record_copy(declaration)
+            declaration.fix.component = member.name
             found[slug] = ComponentRecord(member.name, versions, declaration)
     return found
+
+
+def group_carriage(
+    component_records: Mapping[str, ComponentRecord],
+    field_records: Mapping[int | str, Field],
+) -> tuple[dict[str, ComponentRecord], dict[int | str, Field], dict[str, int]]:
+    """What every repeating group needs beside it: an item block, and a counter
+    that names it.
+
+    A group repeats one thing, and that thing is a block like any other. Most
+    of them are already declared -- a bridge that writes `PartiesGrp` has
+    written the item too -- so this prefers what exists and creates only what
+    is genuinely missing, in that order: the `<item>Grp` block, then a block
+    of the item's own name, then a new one. Creating unconditionally would
+    duplicate most of the dictionary under a second set of names.
+
+    The counter is the field the wire carries at the group's tag, and it links
+    the item here rather than leaving every reader to derive the name again
+    from the counter's spelling. Returns the blocks to store, the counters to
+    store, and how many groups took each of the three routes.
+    """
+    blocks = dict(component_records)
+    by_name = {one.folded: name for name, one in component_records.items()}
+    counters: dict[int | str, Field] = {}
+    taken = {"reused-grp": 0, "reused-name": 0, "created": 0}
+    for group in repeating_groups_of(component_records).values():
+        item = entry_name(group.name)
+        if not item:
+            continue
+        if (held := by_name.get(fold(f"{item}Grp"))) is not None:
+            named = component_records[held].name
+            taken["reused-grp"] += 1
+        elif (held := by_name.get(fold(item))) is not None:
+            named = component_records[held].name
+            taken["reused-name"] += 1
+        else:
+            named = item
+            entry = entry_of(group.declaration)
+            declared = record_copy(entry)
+            declared.fix.component = named
+            blocks[slug_of(named)] = ComponentRecord(named, group.versions, declared)
+            by_name[fold(named)] = slug_of(named)
+            taken["created"] += 1
+        tag = group.declaration.fix.tag
+        if tag is None:
+            continue
+        held_counter = field_records.get(tag)
+        if held_counter is None:
+            continue
+        # Widened rather than trusted: a bridge that typed its count `int32`
+        # is one step-1 widening away from the `int64` every other reading of
+        # it carries, and the two would disagree until they merged.
+        counter = record_copy(held_counter)
+        counter.fix.item = named
+        if counter.into_dict() != held_counter.into_dict():
+            counters[tag] = counter
+    return blocks, counters, taken
 
 
 def documents_of(
@@ -1796,22 +1925,24 @@ def documents_of(
     if index:
         documents[VERSIONS_FILE] = {key: index[key] for key in sorted(index)}
     shards: dict[str, dict[int | str, Field]] = {}
+
+    def _file(record: Field, namespace: str = "") -> None:
+        key = record_key(record)
+        shards.setdefault(record_document(key, namespace), {})[key] = record
+
     for record in field_records.values():
-        name = field_document(record.fix.key)
-        shards.setdefault(name, {})[record.fix.key] = record
+        _file(record)
+    # The blocks join the fields in the same shards, and the groups the trees
+    # declare join them there too: one keyspace, so one place they are filed.
+    for entry in component_records.values():
+        _file(entry.into_record())
+    for entry in repeating_groups_of(component_records).values():
+        _file(entry.into_record())
+    for namespace, records in sorted((namespace_records or {}).items()):
+        for record in records.values():
+            _file(record, namespace)
     for name, shard in shards.items():
         documents[name] = _shard_document(shard)
-    for namespace, records in sorted((namespace_records or {}).items()):
-        namespaced: dict[str, dict[int | str, Field]] = {}
-        for record in records.values():
-            name = field_document(record.fix.key, namespace)
-            namespaced.setdefault(name, {})[record.fix.key] = record
-        for name, shard in namespaced.items():
-            documents[name] = _shard_document(shard)
-    for slug, entry in component_records.items():
-        documents[f"{COMPONENTS}/{slug}{DOCUMENT_SUFFIX}"] = component_record_document(entry)
-    for slug, entry in repeating_groups_of(component_records).items():
-        documents[f"{REPGROUP}/{slug}{DOCUMENT_SUFFIX}"] = component_record_document(entry)
     if sources:
         ordered = sorted(
             (dict(source) for source in sources),
@@ -1839,9 +1970,13 @@ def write_archive(
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(documents):
             archive.writestr(archive_member(name), document_text(documents[name]))
-    write_bytes(output.getvalue(), target)
-    parsed = Url.from_string(os.fspath(target))
-    return pathlib.Path(parsed.store_path) if parsed.scheme in LOCAL else parsed.into_string()
+    destination = resource(target)
+    destination.write_bytes(output.getvalue())
+    return (
+        pathlib.Path(os.fspath(destination))
+        if destination.url.scheme == "file"
+        else str(destination.url)
+    )
 
 
 def slug_collisions(names: Iterable[str]) -> dict[str, list[str]]:

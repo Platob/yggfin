@@ -143,6 +143,7 @@ def test_a_fix_field_is_a_generic_field_with_fix_metadata() -> None:
         description="Side of order.",
         version="4.4",
         values={"1": "Buy", "2": "Sell"},
+        namespace="standard",
     )
     assert built.name == "Side"
     assert built.dtype == pyarrow.string()

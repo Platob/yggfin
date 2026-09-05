@@ -78,10 +78,12 @@ Parties = registry.component_scalar("Parties", "4.4")
 row = Parties(nopartyids=[Parties.PartyID(partyid="BUY-A", partyrole=3)])
 ```
 
-Messages use the same record shape and add `fix.msgtype`. Component records
-live under `data/fix/components/`, one JSON document per identity, and that
-document is the `Field` the component declares -- the versions declaring it
-ride in its own `fix:versions`, the way a field record carries them.
+FIX message declarations use the same record shape and add `fix.msgtype`.
+Component records live in the one keyspace under `data/fix/records/`, beside
+the fields and repeating groups, and each record is the `Field` the component
+declares -- the versions declaring it ride in its own `fix:versions`, the way
+a field record carries them, and `fix:component` marks it as a block rather
+than a value.
 
 [Browse components](registry.md#components) or create and update them through
 the [registry CLI](shell.md#scriptable-commands).

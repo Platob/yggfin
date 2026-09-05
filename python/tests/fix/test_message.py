@@ -23,6 +23,7 @@ from rekep.fix.message import (
     DATA_TAGS,
     _Names,
     group_segment_pairs,
+    indexed_group_pairs,
     parse_pairs,
     split_glued_group_value,
 )
@@ -100,8 +101,7 @@ def test_the_two_spellings_parse_identically(line: str) -> None:
     parsed = FixMsg.from_text(line)
 
     assert _raw(parsed, 8).startswith("FIX")
-    # A lifted header field answers from its column, and `BodyLength` is a
-    # number there: the raw stage keeps the text, this stage keeps the reading.
+    # A promoted header field answers from its typed column.
     assert _raw(parsed, 9) in {2058, 100}
 
 
@@ -114,7 +114,7 @@ def test_the_pipe_message_has_every_field() -> None:
 
 def test_log_noise_around_the_message_is_shed() -> None:
     parsed = FixMsg.from_text(NOISY)
-    assert parsed.pairs[0] == ("8", "FIX4.2")
+    assert parsed.pairs[0] == ("8", "FIX.4.2")
     assert _raw(parsed, 58) == "a=b", "only the first = splits tag from value"
     assert parsed.pairs[-1] == ("10", "033"), "the checksum ends the message"
 
@@ -139,18 +139,23 @@ def test_generic_text_that_looks_like_a_document_is_still_a_fix_payload() -> Non
 def test_canonical_pairs_survive_value_round_trips() -> None:
     parsed = FixMsg.from_text("8=FIX.4.4|35=UL|55=wire|#MSGTYPE=D|#SYMBOL=named|")
 
-    assert FixMsg.from_json(parsed.into_json()).pairs == parsed.pairs
+    assert FixMsg.from_dict(parsed.into_dict()).pairs == parsed.pairs
     assert dataclasses.replace(parsed).pairs == parsed.pairs
 
 
-def test_inferred_prices_enrich_columns_without_inventing_wire_facts() -> None:
+def test_inferred_prices_are_rendered_as_canonical_fix_fields() -> None:
     parsed = FixMsg.from_text("Side=1|Price=41.25")
 
     assert (parsed.lastpx, parsed.bidpx, parsed.offerpx) == (41.25, 41.25, None)
-    assert parsed.priceinferred == "bidpx,lastpx"
-    assert parsed.pairs == [("Side", "1"), ("Price", "41.25")]
+    assert parsed.priceinferred == ""
+    assert parsed.pairs == [
+        ("54", "1"),
+        ("44", "41.25"),
+        ("31", "41.25"),
+        ("132", "41.25"),
+    ]
     assert dataclasses.replace(parsed).pairs == parsed.pairs
-    assert FixMsg.from_json(parsed.into_json()).pairs == parsed.pairs
+    assert FixMsg.from_dict(parsed.into_dict()).pairs == parsed.pairs
 
 
 def test_equal_explicit_prices_survive_arrow_storage_as_wire_facts() -> None:
@@ -269,50 +274,51 @@ EXPECTED_RENDERED = 7
 
 
 def test_named_mode_is_automatic_without_a_beginstring() -> None:
-    parsed = FixMsg.from_text(RENDERED)
+    parsed = parse_pairs(RENDERED)
     assert len(parsed) == EXPECTED_RENDERED
-    assert _raw(parsed, "Side") == "1"
-    assert _raw(parsed, "took") == "5ms", "a rendered line is pairs, noise included"
+    assert ("Side", "1") in parsed
+    assert ("took", "5ms") in parsed, "a rendered line is pairs, noise included"
 
 
 def test_a_named_key_beside_a_beginstring_is_a_field_of_the_frame() -> None:
-    """A frame carrying both spellings is one message, so both are read.
-
-    `54` and `Side` are one field written twice, so the projection renders the
-    rendered occurrence once; both spellings stay in `entries`, where the
-    conflict is visible rather than silently resolved."""
+    """Canonical transcription retains both readings under the registry tag."""
     parsed = FixMsg.from_text("8=FIX.4.2|54=1|Side=2|PartyID[0]=X|10=000")
     assert [(entry.tag, entry.key, entry.value) for entry in parsed.entries] == [
-        (54, "54", "1"),
-        (0, "Side", "2"),
-        (10, "10", "000"),
+        (54, "Side", "1"),
+        (54, "Side", "2"),
     ]
-    assert parsed.pairs == [("8", "FIX.4.2"), ("Side", "2"), ("10", "000"), ("PartyID[0]", "X")]
+    assert parsed.pairs == [
+        ("8", "FIX.4.2"),
+        ("10", "000"),
+        ("54", "1"),
+        ("54", "2"),
+        ("PartyID[0]", "X"),
+    ]
     assert FixMsg.from_text("8=FIX.4.2|54=1|10=000").pairs == [
         ("8", "FIX.4.2"),
         ("54", "1"),
         ("10", "000"),
     ], "and a frame carrying only tags reads only tags"
-    assert FixMsg.from_text(RENDERED, named=False).pairs == []
+    assert parse_pairs(RENDERED, named=False) == []
 
 
 def test_group_entries_store_under_canonical_indexed_keys() -> None:
-    parsed = FixMsg.from_text(RENDERED)
-    assert ("NoPartyIDs[0].PartyID", "BRK") in parsed.pairs
-    assert ("NoPartyIDs[1].PartyID", "CLI") in parsed.pairs
-    assert ("PartyID[1]", "dup") in parsed.pairs
+    parsed = parse_pairs(RENDERED)
+    assert ("NoPartyIDs[0].PartyID", "BRK") in parsed
+    assert ("NoPartyIDs[1].PartyID", "CLI") in parsed
+    assert ("PartyID[1]", "dup") in parsed
 
 
 def test_the_canonical_spelling_parses_to_the_same_pairs() -> None:
     """`G[0]=M=v` and `G[0].M=v` are two prints of one field."""
-    equal_signs = FixMsg.from_text("NoPartyIDs[0]=PartyID=BRK", "|")
-    dotted = FixMsg.from_text("NoPartyIDs[0].PartyID=BRK", "|")
-    assert equal_signs.pairs == dotted.pairs == [("NoPartyIDs[0].PartyID", "BRK")]
+    equal_signs = parse_pairs("NoPartyIDs[0]=PartyID=BRK", "|")
+    dotted = parse_pairs("NoPartyIDs[0].PartyID=BRK", "|")
+    assert equal_signs == dotted == [("NoPartyIDs[0].PartyID", "BRK")]
 
 
 def test_a_dotted_component_path_is_one_plain_key() -> None:
-    parsed = FixMsg.from_text("Instrument.Symbol=AAPL|Qty=100")
-    assert parsed.pairs == [("Instrument.Symbol", "AAPL"), ("Qty", "100")]
+    parsed = parse_pairs("Instrument.Symbol=AAPL|Qty=100")
+    assert parsed == [("Instrument.Symbol", "AAPL"), ("Qty", "100")]
 
 
 def test_a_rendered_message_round_trips_through_its_canonical_text() -> None:
@@ -320,19 +326,19 @@ def test_a_rendered_message_round_trips_through_its_canonical_text() -> None:
     assert FixMsg.from_text(parsed.into_text(), SOH).pairs == parsed.pairs
 
 
-def test_indexed_group_folds_the_keys_back_into_entries() -> None:
-    entries = FixMsg.from_text(RENDERED).indexed_group("NoPartyIDs")
+def test_indexed_group_pairs_folds_the_keys_back_into_entries() -> None:
+    entries = indexed_group_pairs(parse_pairs(RENDERED), "NoPartyIDs")
     assert entries == [
         [("PartyID", "BRK"), ("PartyRole", "1")],
         [("PartyID", "CLI")],
     ]
 
 
-def test_indexed_group_is_case_insensitive_and_takes_bare_entries() -> None:
-    parsed = FixMsg.from_text(RENDERED)
-    assert parsed.indexed_group("nopartyids") == parsed.indexed_group("NoPartyIDs")
-    assert parsed.indexed_group("PartyID") == [[("PartyID", "dup")]]
-    assert parsed.indexed_group("absent") == []
+def test_indexed_group_pairs_is_case_insensitive_and_takes_bare_entries() -> None:
+    parsed = parse_pairs(RENDERED)
+    assert indexed_group_pairs(parsed, "nopartyids") == indexed_group_pairs(parsed, "NoPartyIDs")
+    assert indexed_group_pairs(parsed, "PartyID") == [[("PartyID", "dup")]]
+    assert indexed_group_pairs(parsed, "absent") == []
 
 
 def test_get_and_values_reach_through_the_rendered_spellings() -> None:
@@ -345,13 +351,12 @@ def test_get_and_values_reach_through_the_rendered_spellings() -> None:
 
 def test_an_indexed_value_with_an_equals_reads_as_member_and_value() -> None:
     """The one ambiguity of the format, resolved the way the group form says."""
-    parsed = FixMsg.from_text("PartyID[0]=a=b", "|")
-    assert parsed.pairs == [("PartyID[0].a", "b")]
+    assert parse_pairs("PartyID[0]=a=b", "|") == [("PartyID[0].a", "b")]
 
 
 def test_a_dotted_digit_key_keeps_its_dot_in_both_parsers() -> None:
     """Only a digit key can capture a member without an index; the dot is the key's."""
-    assert FixMsg.from_text("54.5=x", "|", named=True).pairs == [("54.5", "x")]
+    assert parse_pairs("54.5=x", "|", named=True) == [("54.5", "x")]
     vector = parse_arrow_array(pyarrow.array(["54.5=x"]), "|", named=True)
     assert vector.to_pylist() == [[("54.5", "x")]]
 
@@ -359,7 +364,7 @@ def test_a_dotted_digit_key_keeps_its_dot_in_both_parsers() -> None:
 def test_a_vertical_tab_pads_a_token_in_both_parsers() -> None:
     """Python's ASCII `\\s` holds `\\x0b`, RE2's does not: the explicit class does."""
     for line in ("\x0bSide=1", "Side\x0b=1", "N[0]=\x0bM=v"):
-        scalar = FixMsg.from_text(line, "|", named=True).pairs
+        scalar = parse_pairs(line, "|", named=True)
         vector = parse_arrow_array(pyarrow.array([line]), "|", named=True).to_pylist()[0]
         assert scalar == vector and scalar, line
 
@@ -367,7 +372,7 @@ def test_a_vertical_tab_pads_a_token_in_both_parsers() -> None:
 def test_non_ascii_digits_are_noise_to_both_parsers() -> None:
     """The standard's digits are ASCII, and so is RE2's `\\d`: the scalar agrees."""
     line = "٥٤=1|54=2"
-    assert FixMsg.from_text(line, "|", named=False).pairs == [("54", "2")]
+    assert parse_pairs(line, "|", named=False) == [("54", "2")]
     vector = parse_arrow_array(pyarrow.array([line]), "|", named=False)
     assert vector.to_pylist() == [[("54", "2")]]
 
@@ -383,16 +388,16 @@ def test_get_returns_the_default_when_nothing_matches() -> None:
 
 
 def test_a_user_defined_wire_wrapper_prefers_its_named_payload() -> None:
-    """The raw stage owns the discriminator: the named payload's `MSGTYPE=D`
-    wins the `U1` wrapper and re-emits canonically, at the wire's position."""
+    """The named payload's discriminator wins its user-defined wrapper."""
     parsed = FixMsg.from_text("8=FIX.4.4|35=U1|55=wire|#MSGTYPE=D|#SYMBOL=named|10=000|")
 
     assert parsed.msgtype == "D"
     assert parsed.pairs == [
         ("8", "FIX.4.4"),
         ("35", "D"),
-        ("SYMBOL", "named"),
         ("10", "000"),
+        ("55", "wire"),
+        ("55", "named"),
     ]
 
 
@@ -418,13 +423,12 @@ EXPECTED_BRIDGE_PAIRS = 11
 
 def test_the_bridge_fixture_is_the_shape_the_tests_assume() -> None:
     assert BRIDGE_LINE.count("|") + 1 == 7
-    assert len(FixMsg.from_text(BRIDGE_LINE).pairs) == EXPECTED_BRIDGE_PAIRS
+    assert len(parse_pairs(BRIDGE_LINE)) == EXPECTED_BRIDGE_PAIRS
 
 
 def test_a_marked_key_drops_its_marker() -> None:
     """`#` says where a key starts, not which field it is."""
-    parsed = FixMsg.from_text("#SIDE=1|#SYMBOL=TTF")
-    assert parsed.pairs == [("SIDE", "1"), ("SYMBOL", "TTF")]
+    assert parse_pairs("#SIDE=1|#SYMBOL=TTF") == [("SIDE", "1"), ("SYMBOL", "TTF")]
 
 
 def test_a_marked_key_is_log_noise_in_tag_mode() -> None:
@@ -436,8 +440,7 @@ def test_a_marked_key_is_log_noise_in_tag_mode() -> None:
 
 def test_the_plugin_s_own_prefix_never_glues_onto_the_first_key() -> None:
     """The same rule `8=FIX` gets, for the same reason."""
-    parsed = FixMsg.from_text(BRIDGE_LINE)
-    assert parsed.pairs[0] == ("ISINCODE", "XX0000084733")
+    assert parse_pairs(BRIDGE_LINE)[0] == ("ISINCODE", "XX0000084733")
 
 
 def test_an_unmarked_route_prefix_keeps_the_first_field_in_both_parsers() -> None:
@@ -491,12 +494,11 @@ def test_unmatched_assignment_tokens_are_counted_without_failing_the_row() -> No
         == vector_diagnostics.to_pylist()
         == ["FIX parse skipped unmatched tokens: 1"]
     )
-    assert Message.from_text(line).reason == "FIX parse skipped unmatched tokens: 1"
 
 
 def test_one_marked_key_in_prose_is_not_a_message_start() -> None:
     """Two `#NAME=` or it is a sentence, which is what `MARKED_VECTOR` says."""
-    assert _raw(FixMsg.from_text("Account=A|note=see #ref for details"), "Account") == "A"
+    assert dict(parse_pairs("Account=A|note=see #ref for details"))["Account"] == "A"
 
 
 def test_a_bridge_that_writes_nothing_between_its_tokens_is_separated_by_the_marker() -> None:
@@ -507,8 +509,8 @@ def test_a_bridge_that_writes_nothing_between_its_tokens_is_separated_by_the_mar
     next -- silently, because the result still parsed.
     """
     assert detect_separator("#A=1#B=2") == MARKER
-    assert FixMsg.from_text("#A=1#B=2").pairs == [("A", "1"), ("B", "2")]
-    assert FixMsg.from_text("toBridge #A=1#B=2#C=3").pairs == [
+    assert parse_pairs("#A=1#B=2") == [("A", "1"), ("B", "2")]
+    assert parse_pairs("toBridge #A=1#B=2#C=3") == [
         ("A", "1"),
         ("B", "2"),
         ("C", "3"),
@@ -519,7 +521,7 @@ def test_a_bridge_that_writes_nothing_between_its_tokens_is_separated_by_the_mar
 def test_a_candidate_between_the_tokens_is_still_the_separator(between: str) -> None:
     """Only a candidate, though: anything else is a value, not a delimiter."""
     assert detect_separator(f"#A=1{between}#B=2") == between
-    assert FixMsg.from_text(f"#A=1{between}#B=2").pairs == [("A", "1"), ("B", "2")]
+    assert parse_pairs(f"#A=1{between}#B=2") == [("A", "1"), ("B", "2")]
 
 
 def test_a_multicharacter_wire_separator_uses_the_general_token_path() -> None:
@@ -537,7 +539,7 @@ def test_both_separators_on_one_line_and_neither_is_the_other_s() -> None:
     line = "toBridge #NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1#SIDE=1"
     assert detect_separator(line) == MARKER
     assert detect_entry_separator(line, MARKER) == SOH
-    assert FixMsg.from_text(line).pairs == [
+    assert parse_pairs(line) == [
         ("NOPARTYIDS[0].PARTYID", "x"),
         ("NOPARTYIDS[0].PARTYROLE", "1"),
         ("SIDE", "1"),
@@ -552,7 +554,7 @@ def test_the_outer_separator_is_read_off_the_second_marked_key() -> None:
 
 def test_a_nested_group_entry_becomes_its_members() -> None:
     """Under the canonical keys the one-member-per-token spelling produces."""
-    found = dict(FixMsg.from_text(BRIDGE_LINE).pairs)
+    found = dict(parse_pairs(BRIDGE_LINE))
     assert found["NOPARTYIDS[0].PARTYID"] == "BUYSIDE"
     assert found["NOPARTYIDS[0].PARTYIDSOURCE"] == "D"
     assert found["NOPARTYIDS[0].PARTYROLE"] == "1"
@@ -563,23 +565,23 @@ def test_a_nested_entry_and_a_printed_one_parse_to_the_same_pairs() -> None:
     """No new key spelling: the two spellings of a group are one shape."""
     nested = "#NOPARTYIDS[0]=" + SOH.join(["PARTYID=BUYSIDE", "PARTYROLE=1"]) + "|#SIDE=1"
     printed = "#NOPARTYIDS[0]=PARTYID=BUYSIDE|#NOPARTYIDS[0].PARTYROLE=1|#SIDE=1"
-    assert FixMsg.from_text(nested).pairs == FixMsg.from_text(printed).pairs
+    assert parse_pairs(nested) == parse_pairs(printed)
 
 
-def test_a_group_entry_reads_back_as_entries() -> None:
-    entries = FixMsg.from_text(BRIDGE_LINE).indexed_group("NOPARTYIDS")
+def test_indexed_group_pairs_reads_a_group_entry_back_as_entries() -> None:
+    entries = indexed_group_pairs(parse_pairs(BRIDGE_LINE), "NOPARTYIDS")
     assert [dict(entry)["PARTYID"] for entry in entries] == ["BUYSIDE", "XPAR"]
 
 
 def test_a_second_separator_is_only_read_inside_an_indexed_token() -> None:
     """`Text=a;b` is a value with a semicolon in it, not two fields."""
     assert detect_entry_separator("Text=a;b|Side=1", "|") is None
-    assert FixMsg.from_text("Text=a;b|Side=1").pairs == [("Text", "a;b"), ("Side", "1")]
+    assert parse_pairs("Text=a;b|Side=1") == [("Text", "a;b"), ("Side", "1")]
 
 
 def test_a_stated_entry_separator_is_used_as_given() -> None:
     line = "#NOPARTYIDS[0]=PARTYID=x;PARTYROLE=1|#SIDE=1"
-    assert dict(FixMsg.from_text(line, "|", entry_separator=";").pairs) == {
+    assert dict(parse_pairs(line, "|", entry_separator=";")) == {
         "NOPARTYIDS[0].PARTYID": "x",
         "NOPARTYIDS[0].PARTYROLE": "1",
         "SIDE": "1",
@@ -592,7 +594,7 @@ def test_a_multicharacter_entry_separator_drops_its_terminal_empty_chunk() -> No
     line = f"#NOPARTYIDS[0]={value}|#SIDE=1"
 
     assert detect_entry_separator(line, "|") == separator
-    assert FixMsg.from_text(line).pairs == [
+    assert parse_pairs(line) == [
         ("NOPARTYIDS[0].PARTYID", "99106.003"),
         ("NOPARTYIDS[0].PARTYROLE", "clientid"),
         ("SIDE", "1"),
@@ -600,7 +602,7 @@ def test_a_multicharacter_entry_separator_drops_its_terminal_empty_chunk() -> No
     single = f"#NOPARTYIDS[0]=PARTYID=99106.003{separator}|#SIDE=1"
     assert (
         parse_arrow_array(pyarrow.array([single])).to_pylist()[0]
-        == FixMsg.from_text(single).pairs
+        == parse_pairs(single)
         == [
             ("NOPARTYIDS[0].PARTYID", "99106.003"),
             ("SIDE", "1"),
@@ -611,7 +613,7 @@ def test_a_multicharacter_entry_separator_drops_its_terminal_empty_chunk() -> No
 def test_a_malformed_member_is_kept_rather_than_dropped() -> None:
     """A parser that loses the malformed half of a line loses the record."""
     line = "#NOPARTYIDS[0]=PARTYID=x" + SOH + "garbage|#SIDE=1"
-    assert FixMsg.from_text(line).pairs == [
+    assert parse_pairs(line) == [
         ("NOPARTYIDS[0].PARTYID", "x"),
         ("NOPARTYIDS[0]", "garbage"),
         ("SIDE", "1"),
@@ -638,14 +640,14 @@ def test_a_malformed_member_is_kept_rather_than_dropped() -> None:
 def test_the_two_parsers_agree_on_every_bridge_spelling(line: str) -> None:
     """The contract this module is built on, asserted on the shapes it added."""
     column = pyarrow.array([line])
-    assert parse_arrow_array(column).to_pylist()[0] == FixMsg.from_text(line).pairs
+    assert parse_arrow_array(column).to_pylist()[0] == parse_pairs(line)
 
 
 def test_a_column_of_bridge_lines_agrees_row_for_row() -> None:
     """One style per call, so the sampled reading has to hold for every row."""
     lines = [BRIDGE_LINE, "#A=1|#B=2", "#NOPARTYIDS[0]=PARTYID=x" + SOH + "PARTYROLE=1|#SIDE=1"]
     column = pyarrow.array(lines)
-    expected = [FixMsg.from_text(line, "|").pairs for line in lines]
+    expected = [parse_pairs(line, "|") for line in lines]
     assert parse_arrow_array(column).to_pylist() == expected
 
 
@@ -672,14 +674,14 @@ def test_a_null_line_among_bridge_lines_stays_null() -> None:
 def test_a_column_parses_to_one_map_per_row() -> None:
     maps = parse_arrow_array(pyarrow.array([PIPE, NOISY]))
     assert pyarrow.types.is_map(maps.type)
-    assert maps.to_pylist()[0] == FixMsg.from_text(PIPE).pairs
+    assert maps.to_pylist()[0] == parse_pairs(PIPE)
 
 
 def test_the_vectorised_and_scalar_parsers_agree() -> None:
     lines = [PIPE, NOISY, "35=D|54=1", "plain text"]
     maps = parse_arrow_array(pyarrow.array(lines), "|").to_pylist()
     for line, row in zip(lines, maps, strict=True):
-        assert row == FixMsg.from_text(line, "|").pairs
+        assert row == parse_pairs(line, "|")
 
 
 def test_the_checksum_ends_each_row_in_the_vectorised_parser_too() -> None:
@@ -694,7 +696,7 @@ def test_the_checksum_ends_each_row_in_the_vectorised_parser_too() -> None:
     assert maps[1][-1] == ("10", "001")
     assert maps[2] == [("8", "FIX.4.2"), ("9", "2"), ("58", "x")]
     for line, row in zip(lines, maps, strict=True):
-        assert row == FixMsg.from_text(line).pairs
+        assert row == parse_pairs(line)
 
 
 @pytest.mark.parametrize(
@@ -704,14 +706,14 @@ def test_the_checksum_ends_each_row_in_the_vectorised_parser_too() -> None:
 def test_a_named_checksum_ends_scalar_and_vector_messages(checksum: str) -> None:
     line = f"#BeginString=FIXT.1.1|#{checksum}=000|#ApplVerID=9|#Symbol=X"
     expected = [("BeginString", "FIXT.1.1"), (checksum, "000")]
-    assert FixMsg.from_text(line, "|", named=True).pairs == expected
+    assert parse_pairs(line, "|", named=True) == expected
     assert parse_arrow_array(pyarrow.array([line]), "|", named=True).to_pylist() == [expected]
 
 
 @pytest.mark.parametrize("checksum", ["CheckSum", "10"])
 def test_an_indexed_member_named_checksum_does_not_end_the_outer_message(checksum: str) -> None:
     line = f"#BeginString=FIXT.1.1|#NoFoo[0].{checksum}=000|#ApplVerID=9|#Symbol=X"
-    scalar = FixMsg.from_text(line, "|", named=True).pairs
+    scalar = parse_pairs(line, "|", named=True)
     vector = parse_arrow_array(pyarrow.array([line]), "|", named=True).to_pylist()[0]
     assert scalar[-2:] == [("ApplVerID", "9"), ("Symbol", "X")]
     assert vector[-2:] == [("ApplVerID", "9"), ("Symbol", "X")]
@@ -739,7 +741,7 @@ def test_a_named_column_parses_like_the_scalar_parser() -> None:
     lines = [RENDERED, None, "Instrument.Symbol=AAPL|Qty=100", "", "no pairs at all"]
     maps = parse_arrow_array(pyarrow.array(lines), "|").to_pylist()
     for line, row in zip(lines, maps, strict=True):
-        expected = None if line is None else FixMsg.from_text(line, "|").pairs
+        expected = None if line is None else parse_pairs(line, "|")
         assert row == expected
 
 
@@ -773,7 +775,7 @@ def test_a_binary_column_with_invalid_utf8_still_parses() -> None:
 def test_a_newline_inside_a_message_survives_the_begin_cut() -> None:
     line = "junk 8=FIX.4.2|58=a\nb|10=000"
     maps = parse_arrow_array(pyarrow.array([line])).to_pylist()
-    assert maps[0] == FixMsg.from_text(line).pairs
+    assert maps[0] == parse_pairs(line)
     assert ("58", "a\nb") in maps[0]
 
 
@@ -989,7 +991,7 @@ def test_a_named_bracket_reads_as_the_dotted_path_it_spells(
 ) -> None:
     """One canonical key, whichever of the two ways a bridge wrote it."""
     line = f"toBridge {token}|#SIDE=1"
-    assert FixMsg.from_text(line).pairs == [*expected, ("SIDE", "1")]
+    assert parse_pairs(line) == [*expected, ("SIDE", "1")]
 
 
 def test_the_two_parsers_agree_about_a_named_bracket() -> None:
@@ -1001,7 +1003,7 @@ def test_the_two_parsers_agree_about_a_named_bracket() -> None:
     ]
     parsed = parse_arrow_array(pyarrow.array(lines))
     for line, row in zip(lines, parsed.to_pylist(), strict=True):
-        assert FixMsg.from_text(line).pairs == [tuple(pair) for pair in row], line
+        assert parse_pairs(line) == [tuple(pair) for pair in row], line
 
 
 def test_a_line_of_named_brackets_is_a_marked_document() -> None:
@@ -1014,11 +1016,11 @@ def test_a_line_of_named_brackets_is_a_marked_document() -> None:
 def test_tag_mode_refuses_a_bracketed_key() -> None:
     """Tag mode is digits only; a bracket is a rendered spelling, not a tag."""
     line = "8=FIX.4.2\x01INSTRUMENT[EXCHANGE]=XTST\x0154=1\x01"
-    assert FixMsg.from_text(line, named=False).pairs == [("8", "FIX.4.2"), ("54", "1")]
-    assert FixMsg.from_text(line).pairs == [
+    assert parse_pairs(line, named=False) == [("8", "FIX.4.2"), ("54", "1")]
+    assert parse_pairs(line) == [
         ("8", "FIX.4.2"),
-        ("54", "1"),
         ("INSTRUMENT.EXCHANGE", "XTST"),
+        ("54", "1"),
     ], "and the frame carries the rendered key, so it is read and kept unmapped"
 
 
