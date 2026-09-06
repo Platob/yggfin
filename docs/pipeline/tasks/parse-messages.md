@@ -13,13 +13,18 @@ rekep task run tasks/parse_messages/parse_messages.json
 ```json
 {
   "parameters": {
-    "filesystem": "file:data/capture"
+    "filesystem": "file:data/capture",
+    "direction": "sent"
   }
 }
 ```
 
 For AWS S3, use
 `s3://example-bucket/capture?region=eu-west-1` as `filesystem`.
+
+`direction` names what a line carrying no verb in front of its payload took:
+`sent`, `recv`, or `unknown`. Classification needs no dictionary at all -- the
+scan reads the frame's own shape -- so this task takes no `registry`.
 
 The URI is passed unchanged to `IOBase.from_uri`. Yggdryl selects supported
 text leaves, opens each once, derives gzip or zstd decoding from the filename
@@ -34,8 +39,9 @@ The task configures `TextOptions` with:
   as bytes.
 
 `Message.apply_arrow_batch` uses Arrow kernels to normalize the captured
-timestamp without Python row loops, then native `Field.apply_arrow_batch`
-derives `timepartition`. An offset-free header means UTC; fractional digits are
+timestamp without Python row loops, classifies the body in one native scan, then
+native `Field.apply_arrow_batch` derives `timepartition` and fills the `msghash`
+digest holder. An offset-free header means UTC; fractional digits are
 padded or truncated to microseconds. A missing header stays null and an invalid
 captured instant fails the batch. Both timestamp columns are nullable
 `timestamp[us, UTC]`; Iceberg applies its `hour` transform to `timepartition`.
@@ -50,6 +56,21 @@ remains bounded only when
 `TextOptions.max_record_byte_size` is set. Its current truncation policy would
 change `body`, so this task leaves it unset until Yggdryl exposes the
 error-on-overflow mode specified in the streaming prompt.
+
+## Classification and digest
+
+Four columns are added beside the capture, and none of them interprets the
+body:
+
+- `mimetype`, the media type the frame's own shape proves;
+- `msgtype`, the raw `MsgType` the frame spells, or `unknown`;
+- `msgdirection`, `SENT` or `RECV` from the verbs beside the frame;
+- `msghash`, the XXH3-128 digest of the exact body bytes, filled by Yggdryl.
+
+The first three are one native `classify_arrow_array` pass over the payload
+column, so no row crosses into Python. Downstream,
+[`parse_fix`](parse-fix.md) reads this classification rather than recomputing
+it. [Quality](../../fix/quality.md) states what each value means.
 
 The table merge key is `(url, rownum)`. On replay, existing keys
 are skipped before a commit; a fully repeated source creates no data file or

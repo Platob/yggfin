@@ -1,5 +1,17 @@
 # Final FIX slice: publish the schema and registry JSON
 
+!!! success "Landed"
+
+    This one is done, and the numbers in it are the ones it was written
+    against rather than the ones that shipped. The dictionary this checkout
+    parses against is
+    [`config/fix`](https://github.com/Platob/yggfin/tree/main/config/fix), the
+    published snapshot is the 101-column
+    [`schemas/rekep/fix-message.json`](../contracts/index.md), and the runtime
+    path is `yggdryl.fix.parse_arrow_reader` over `FixBatchReader::from_column`
+    -- one parser, no second FIX implementation. Kept for its rationale.
+
+
 From latest Yggdryl main, generate the canonical native `Field` JSON for the
 exact full-registry output of `FixBatchReader::from_column` carrying yggfin's
 eight-column `Message` schema. Use the existing Rust schema construction and

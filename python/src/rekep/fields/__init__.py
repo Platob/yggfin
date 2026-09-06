@@ -5,6 +5,9 @@ from yggdryl import Field, scalar
 from rekep.fields import arrays
 from rekep.fields.field import (
     DESCRIPTION,
+    DIGEST_ALGORITHM,
+    DIGEST_ROLE,
+    DIGEST_SOURCES,
     FIELD_ID,
     ICEBERG,
     PARTITION_KEY,
@@ -12,6 +15,7 @@ from rekep.fields.field import (
     SORT_KEY,
     SORT_ORDER,
     derived_from,
+    digest_key,
     field_of,
     field_options,
     leaf_names,
@@ -23,6 +27,9 @@ from rekep.fields.field import (
 
 __all__ = [
     "DESCRIPTION",
+    "DIGEST_ALGORITHM",
+    "DIGEST_ROLE",
+    "DIGEST_SOURCES",
     "FIELD_ID",
     "ICEBERG",
     "PARTITION_KEY",
@@ -32,6 +39,7 @@ __all__ = [
     "Field",
     "arrays",
     "derived_from",
+    "digest_key",
     "field_of",
     "field_options",
     "leaf_names",

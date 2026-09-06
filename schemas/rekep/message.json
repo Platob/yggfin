@@ -90,6 +90,50 @@
         }
       },
       {
+        "name": "mimetype",
+        "dtype": {
+          "type": "utf8"
+        },
+        "nullable": false,
+        "metadata": {
+          "description": "Media type Yggdryl's shallow scan infers for the body."
+        }
+      },
+      {
+        "name": "msgtype",
+        "dtype": {
+          "type": "utf8"
+        },
+        "nullable": false,
+        "metadata": {
+          "description": "Raw `MsgType` the body's frame spells, or `unknown`."
+        }
+      },
+      {
+        "name": "msgdirection",
+        "dtype": {
+          "type": "utf8"
+        },
+        "nullable": false,
+        "metadata": {
+          "description": "`SENT`, `RECV`, or `unknown`, from the verbs beside the frame."
+        }
+      },
+      {
+        "name": "msghash",
+        "dtype": {
+          "type": "fixed_size_binary",
+          "width": 16
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "XXH3-128 digest of the exact body bytes, filled by Yggdryl.",
+          "digest:algorithm": "xxh3-128",
+          "digest:role": "holder",
+          "digest:sources": "[\"body\"]"
+        }
+      },
+      {
         "name": "body",
         "dtype": {
           "type": "binary"

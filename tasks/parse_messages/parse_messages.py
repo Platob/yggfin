@@ -35,8 +35,9 @@ def parameters():
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     filesystem = _defaults["filesystem"]
+    direction = _defaults["direction"]
     catalog = _defaults["catalog"]
-    return catalog, filesystem
+    return catalog, direction, filesystem
 
 
 @app.cell
@@ -46,7 +47,7 @@ def _():
 
 
 @app.cell
-def _(catalog, filesystem, records):
+def _(catalog, direction, filesystem, records):
     _ = records
     with ExitStack() as opened:
         source = IOBase.from_uri(filesystem)
@@ -77,7 +78,7 @@ def _(catalog, filesystem, records):
 
         def _batches():
             for batch in reader:
-                parsed = Message.apply_arrow_batch(batch)
+                parsed = Message.apply_arrow_batch(batch, direction)
                 counts["read"] += parsed.num_rows
                 yield parsed
 

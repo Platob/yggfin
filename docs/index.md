@@ -7,6 +7,7 @@
     <nav class="rkp-hero__actions" aria-label="Start with rekep">
       <a href="pipeline/operations/run/">Run ingestion</a>
       <a href="products/message/">Inspect Message</a>
+      <a href="fix/">Explore FIX</a>
     </nav>
   </div>
   <figure class="rkp-hero__mark">
@@ -53,3 +54,13 @@ The checked raw contract is
 [`schemas/rekep/message.json`](contracts/index.md). `parse_fix` derives its
 registry-dependent output contract from Yggdryl's native reader instead of
 checking in a second FIX schema.
+
+## Explore FIX
+
+The [FIX section](fix/index.md) is the protocol side of the same pipeline,
+under four themes: the [dictionary](fix/registry.md) and how to browse it,
+[decoding](fix/decode.md) a captured line with full debug,
+[encoding](fix/encode.md) one by hand, and the
+[quality](fix/quality.md) each stage asserts -- classification, digests,
+deduplication, and coverage. The browsers run in your tab against a generated
+dump; nothing you paste is uploaded.

@@ -150,3 +150,71 @@ def test_message_instance_normalizes_a_timestamp_to_utc() -> None:
         147250,
         tzinfo=datetime.UTC,
     )
+
+
+def classified(bodies: list[bytes], direction: str = "sent") -> pyarrow.RecordBatch:
+    """One text batch carrying the given payloads, through the raw boundary."""
+    rows = len(bodies)
+    return Message.apply_arrow_batch(
+        pyarrow.record_batch(
+            {
+                "url": ["file:///capture.log"] * rows,
+                "rownum": list(range(1, rows + 1)),
+                "timestamp": [None] * rows,
+                "threadname": [None] * rows,
+                "branch": [None] * rows,
+                "level": [None] * rows,
+                "body": bodies,
+            }
+        ),
+        direction,
+    )
+
+
+def test_message_names_what_a_body_is_without_parsing_it() -> None:
+    batch = classified(
+        [
+            b"sending >> 8=FIX.4.4|35=D|55=TTF|10=203|",
+            b"recv 8=FIX4^A35=0^A10=017^A on session 3",
+            b"toBridge #SYMBOL=TTF|#SIDE=1",
+            b"no level printed by this driver",
+        ]
+    )
+
+    assert batch.column("mimetype").to_pylist() == [
+        "text/fix",
+        "text/fix",
+        "text/ullink",
+        "application/octet-stream",
+    ]
+    assert batch.column("msgtype").to_pylist() == ["D", "0", "unknown", "unknown"]
+    # A verb beats the default; a line carrying none takes it.
+    assert batch.column("msgdirection").to_pylist() == ["SENT", "RECV", "SENT", "SENT"]
+
+
+def test_message_direction_default_is_the_captures_own_side() -> None:
+    unmarked = [b"8=FIX.4.4|35=D|10=0|"]
+
+    assert classified(unmarked, "sent").column("msgdirection").to_pylist() == ["SENT"]
+    assert classified(unmarked, "recv").column("msgdirection").to_pylist() == ["RECV"]
+    # `unknown` leaves the reading null, which the declaration fills.
+    assert classified(unmarked, "unknown").column("msgdirection").to_pylist() == ["unknown"]
+
+    with pytest.raises(ValueError, match="sent, recv, unknown"):
+        classified(unmarked, "sideways")
+
+
+def test_message_digests_the_body_and_nothing_else() -> None:
+    holder = Message.field()["msghash"]
+    assert holder.digest.is_holder()
+    assert holder.digest.sources == ["body"]
+    assert holder.digest.algorithm == "xxh3-128"
+
+    batch = classified([b"8=FIX.4.4|35=D|10=0|", b"8=FIX.4.4|35=D|10=0|", b"other"])
+    digests = batch.column("msghash").to_pylist()
+
+    assert all(isinstance(digest, bytes) and len(digest) == 16 for digest in digests)
+    # The same bytes digest the same however the row reached the boundary, and
+    # different bytes do not.
+    assert digests[0] == digests[1]
+    assert digests[0] != digests[2]

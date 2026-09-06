@@ -2,7 +2,9 @@
   "name": "parse_fix",
   "application": "parse_fix.py",
   "parameters": {
-    "registry": null,
+    "registry": "file:config/fix",
+    "version": "FIX.4.4",
+    "dedup": true,
     "catalog": {
       "name": "rekep",
       "properties": {

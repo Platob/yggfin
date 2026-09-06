@@ -18,6 +18,10 @@ assert schema.names == [
     "threadname",
     "branch",
     "level",
+    "mimetype",
+    "msgtype",
+    "msgdirection",
+    "msghash",
     "body",
 ]
 timestamp = schema.field("timestamp")
@@ -51,6 +55,27 @@ compiles once, then casts, computes `partition:sources` columns, and fills
 `digest:role=holder` columns in that order. Missing and null required values,
 protocol exemptions, nested array casts, final verification, and stream
 ownership are Yggdryl contracts rather than Rekep implementations.
+
+`digest_key()` declares the third kind: a member that *holds* a digest Yggdryl
+computes over the members it names. The members it reads state nothing, which
+is the point -- a schema marks one holder and leaves its inputs ordinary
+columns. The declared datatype must be the algorithm's exact width, so the
+128-bit default takes `fixed_size_binary[16]`.
+
+```python
+import pyarrow
+from yggdryl import Field
+
+from rekep.fields import digest_key
+
+options = digest_key(["body"], dtype=pyarrow.binary(16))["metadata"]
+holder = Field("msghash", "fixed_size_binary[16]", True, options)
+assert holder.digest.is_holder()
+assert holder.digest.sources == ["body"]
+assert holder.digest.algorithm == "xxh3-128"
+```
+
+The raw [`Message`](../products/message.md) declares exactly one, over `body`.
 
 Iceberg layout and executable derivation are separate declarations. Yggfin
 maps `partition_key()` to Yggdryl's `field:partition` layout marker and an

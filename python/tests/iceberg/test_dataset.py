@@ -2274,6 +2274,10 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         target.identifier
     )
     stored = reopened.read_arrow_table(Message.field()).to_pylist()
+    # The declaration's digest holder is filled on the way in, so the stored
+    # row carries a digest the literal below cannot spell.
+    digest = stored[0].pop("msghash")
+    assert isinstance(digest, bytes) and len(digest) == 16
     assert stored == [
         {
             "url": "capture.log",
@@ -2283,6 +2287,9 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "threadname": "worker-1",
             "branch": "bridge",
             "level": "INFO",
+            "mimetype": "application/octet-stream",
+            "msgtype": "unknown",
+            "msgdirection": "unknown",
             "body": b"opaque",
         }
     ]

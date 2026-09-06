@@ -3,8 +3,8 @@
 Both files are native Yggdryl `Field` JSON:
 
 - `message.json` is the generated contract for `logs.messages`.
-- `fix-message.json` is a reproducible snapshot of the 95-column `FixMsg`
-  schema produced by the full Yggdryl registry at `c9c84b24`.
+- `fix-message.json` is a reproducible snapshot of the 101-column `FixMsg`
+  schema this checkout's dictionary produces.
 
 ```bash
 rekep fields dump --pyclass rekep.text.message:Message \
@@ -20,5 +20,7 @@ JSON strings inside that metadata.
 
 The FIX snapshot is for schema review and Iceberg simulations. It is not a
 second registry: production `parse_fix` always asks its selected runtime
-registry for the schema before reading a batch. Regenerate the snapshot through
-the interactive FIX-registry application whenever the pinned registry changes.
+registry for the schema before reading a batch. The dictionary it is generated
+from is `config/fix`, and the exact snippet that regenerates `fix-message.json`
+is on the [portable schema](../docs/contracts/index.md) page. Regenerate it
+whenever that dictionary changes.

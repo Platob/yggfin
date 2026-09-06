@@ -1,5 +1,15 @@
 # Yggdryl prompt: make FIX Arrow parsing column-native
 
+!!! note "Still open"
+
+    The reader itself landed: `FixBatchReader::from_column` is the runtime
+    path, reachable from Python as
+    [`parse_arrow_reader`](../fix/decode.md). What is still open is this page's
+    subject -- it goes through `RecordBatch -> Scalar rows -> RecordBatch` per
+    batch, which is what makes the cost scale with carried bytes rather than
+    with parsed columns.
+
+
 Start at `c9c84b24` on `codex/fix-arrow-python`, rebased after PR 53 merges.
 Implement in Rust, then keep Python and JavaScript bindings thin. Preserve the
 source-first schema, child metadata, collision refusal, `fixbranch` parameter,

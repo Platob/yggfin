@@ -76,6 +76,10 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "threadname",
         "branch",
         "level",
+        "mimetype",
+        "msgtype",
+        "msgdirection",
+        "msghash",
         "body",
     ]
     assert "pipeline/tasks/parse-fix.md" in config

@@ -640,7 +640,7 @@ name = "colorlog"
 version = "6.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "python_version < '0'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8c/55/ba79756cb90c8d69d599d57785398ac87bba7b19c80e87f4e8a562197c93/colorlog-6.12.0.tar.gz", hash = "sha256:2a7924c1dadf18b22a0eb8b06d1c7b01d5341707ec1641eb6fcc4fde0c3e8e5f", size = 18151, upload-time = "2026-07-23T13:40:40.71Z" }
 wheels = [
@@ -2556,7 +2556,7 @@ requires-dist = [
     { name = "pyiceberg", extras = ["pyiceberg-core", "sql-sqlite"], marker = "extra == 'iceberg'", specifier = ">=0.11.1" },
     { name = "rekep", extras = ["glue", "iceberg", "polars"], marker = "extra == 'all'" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
-    { name = "yggdryl", git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=c9c84b24722354c31710a213b4618cb30ca98fd1" },
+    { name = "yggdryl", git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=4f271d53ed470fee33deb56b9deea407808f2b8d" },
 ]
 provides-extras = ["iceberg", "glue", "polars", "all"]
 
@@ -2972,7 +2972,7 @@ version = "0.27.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
-    { name = "colorama", marker = "python_version < '0'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "rich" },
     { name = "shellingham" },
 ]
@@ -3060,7 +3060,7 @@ standard = [
     { name = "httptools" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
-    { name = "uvloop", marker = "platform_python_implementation != 'PyPy' and sys_platform != 'cygwin'" },
+    { name = "uvloop", marker = "platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32'" },
     { name = "watchfiles" },
     { name = "websockets" },
 ]
@@ -3399,7 +3399,7 @@ wheels = [
 [[package]]
 name = "yggdryl"
 version = "0.1.1"
-source = { git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=c9c84b24722354c31710a213b4618cb30ca98fd1#c9c84b24722354c31710a213b4618cb30ca98fd1" }
+source = { git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=4f271d53ed470fee33deb56b9deea407808f2b8d#4f271d53ed470fee33deb56b9deea407808f2b8d" }
 dependencies = [
     { name = "pyarrow" },
 ]

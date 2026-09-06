@@ -127,6 +127,9 @@ def expected(index: int) -> dict[str, object]:
         "threadname": f"worker-{index % 16}",
         "branch": f"feed-{index % 4}",
         "level": "WARN" if index % 7 == 0 else "INFO",
+        "mimetype": "text/fix",
+        "msgtype": "D",
+        "msgdirection": "SENT",
         "body": body(index),
     }
 
@@ -143,7 +146,9 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
         url = row.pop("url")
+        digest = row.pop("msghash")
         assert isinstance(url, str) and url.endswith(case.filename)
+        assert isinstance(digest, bytes) and len(digest) == 16
         assert row == expected(index)
     return table
 

@@ -45,9 +45,12 @@ def test_fix_contract_is_a_native_field_snapshot_for_iceberg_simulation() -> Non
     fixed = Field.from_json(document)
 
     assert document == f"{fixed.into_json(indent=2)}\n"
-    assert len(fixed) == 95
+    assert len(fixed) == 101
     assert primary_keys(fixed) == ["url", "rownum"]
     assert partition_keys(fixed) == {"timepartition": "hour"}
+    # Every timestamp is microseconds, which is what Iceberg v2 stores
+    # without a precision shim -- the derived market clock included.
+    assert fixed.into_arrow_schema().field("52").type.unit == "us"
     assert fixed.into_arrow_schema().field("30004").type.unit == "us"
 
 
@@ -56,5 +59,6 @@ def test_raw_message_contract_keeps_source_keys() -> None:
     assert primary_keys(message) == ["url", "rownum"]
     assert partition_keys(message) == {"timepartition": "hour"}
     assert derived_keys(message) == {"timepartition": ("timestamp",)}
-    assert all(member.digest.get("role") != "holder" for member in message)
+    assert [member.name for member in message if member.digest.is_holder()] == ["msghash"]
+    assert message["msghash"].digest.sources == ["body"]
     assert all(member.partition.transform is None for member in message)

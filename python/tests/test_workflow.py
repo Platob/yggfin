@@ -25,10 +25,11 @@ FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fix-message.json"
 
 WORKFLOW = (("parse_messages", {}), ("parse_fix", {}))
 
-#: What the fixture's fourteen physical rows produce, first run.
+#: What the fixture's fourteen physical rows produce, first run. Ten of them
+#: name no `MsgType`, so `parse_fix` never reads them.
 FIRST = {
     "parse_messages": {"read": 14, "written": 14, "skipped": 0},
-    "parse_fix": {"read": 14, "written": 14, "skipped": 0},
+    "parse_fix": {"read": 4, "written": 4, "skipped": 0},
 }
 
 #: What a replay of the same input produces: the same reads, no writes.
@@ -40,7 +41,7 @@ REPLAY = {
 #: Stored rows, and the one snapshot each table holds after both runs.
 STORED = {
     "logs.messages": 14,
-    "fix.messages": 14,
+    "fix.messages": 4,
 }
 
 
@@ -127,6 +128,18 @@ class Ran:
             dataset.close()
             store.close()
 
+    def partitions(self, name: str) -> dict[str, str]:
+        """One stored table's partition spec, by the column it reads."""
+        store = IcebergCatalog.from_dict(self.catalog)
+        try:
+            table = store.catalog.load_table(name)
+            return {
+                table.schema().find_column_name(field.source_id) or "": str(field.transform)
+                for field in table.spec().fields
+            }
+        finally:
+            store.close()
+
     def snapshots(self) -> dict[str, int]:
         store = IcebergCatalog.from_dict(self.catalog)
         try:
@@ -209,34 +222,40 @@ def test_parse_fix_refuses_an_empty_registry_before_creating_a_table(
     assert ran.rows() == {}, "a missing dictionary cannot leave a narrow FIX table"
 
 
-def test_parse_fix_refuses_a_registry_iceberg_cannot_store_before_creating_a_table(
+def test_parse_fix_narrows_a_nanosecond_clock_iceberg_cannot_store(
     ran: Ran, tmp_path: Path
 ) -> None:
+    """A venue stamps nanoseconds; Iceberg v2 holds microseconds."""
     ran.task("parse_messages", filesystem=FIXTURE.as_uri())
     registry = tmp_path / "nanosecond-fix-registry"
     registry.mkdir()
     sending_time = Field("sendingtime", pyarrow.timestamp("ns", tz="UTC"), nullable=True)
     sending_time.fix.tag = 52
     FixRegistry.from_fields([sending_time]).write_into(registry)
-    argv = [
-        "task",
-        "run",
-        str(ROOT / "tasks" / "parse_fix" / "parse_fix.json"),
-        "--parameter",
-        f"catalog={json.dumps(ran.catalog)}",
-        "--parameter",
-        f"registry={json.dumps(registry.as_uri())}",
-    ]
 
-    assert cli.main(argv) == 1
-    assert ran.rows() == {"logs.messages": 14}
+    result = ran.task("parse_fix", registry=registry.as_uri())
+
+    assert counted(result) == {"read": 4, "written": 4, "skipped": 0}
+    fixes = ran.table("fix.messages")
+    # The dictionary's own clock and the crate's derived one alike.
+    assert fixes.schema.field("52").type == pyarrow.timestamp("us", tz="UTC")
+    assert fixes.schema.field("30004").type == pyarrow.timestamp("us", tz="UTC")
 
 
 def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> None:
     field = Field.from_json(FIX_CONTRACT.read_text(encoding="utf-8"))
     schema = field.into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(
-        [{"url": "file:///mock/fix.log", "rownum": 1, "body": b"8=FIX.4.4|35=D|10=0|"}],
+        [
+            {
+                "url": "file:///mock/fix.log",
+                "rownum": 1,
+                "mimetype": "text/fix",
+                "msgtype": "D",
+                "direction": "SENT",
+                "body": b"8=FIX.4.4|35=D|10=0|",
+            }
+        ],
         schema=schema,
     )
     source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
@@ -246,7 +265,7 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert fixes.append_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
-        assert stored.num_columns == 95
+        assert stored.num_columns == 101
         assert stored.schema.field("30004").type == pyarrow.timestamp("us", tz="UTC")
         assert stored.select(("url", "rownum", "body")).to_pylist() == [
             {
@@ -381,11 +400,22 @@ def test_fix_parsing_preserves_source_identity_and_emits_native_columns(
     fixes = ran.table("fix.messages")
     assert len(handed_to_iceberg) == 1
     assert handed_to_iceberg[0].names == fixes.schema.names
-    assert fixes.num_rows == 14
+    assert fixes.num_rows == 4
+    # The raw layer's own columns, and the ones Yggdryl derives beside the
+    # specification: the digest (30001), the version read (30002) and the
+    # partition the market clock falls in (30005).
+    # The raw layer's own columns, under the names the reader reads them by:
+    # `branch` renamed out of the dialect parameter, `msgdirection` renamed
+    # into the direction one, so the reader uses the reading rather than
+    # repeating it.
+    assert {"mimetype", "msghash", "logbranch", "direction"} <= set(fixes.column_names)
+    assert {"30001", "30002", "30005"} <= set(fixes.column_names)
     assert {"url", "rownum", "timepartition", "35", "entries", "unmapped"} <= set(
         fixes.column_names
     )
-    assert fixes.schema.field("timepartition").metadata[b"iceberg:partition_key"] == b"hour"
+    # Arrow field metadata is not what Iceberg stores: the hourly transform is
+    # in the table's own partition spec, and that is where it is read back.
+    assert ran.partitions("fix.messages") == {"timepartition": "hour"}
     store = IcebergCatalog.from_dict(ran.catalog)
     try:
         table = store.catalog.load_table("fix.messages")
@@ -395,28 +425,37 @@ def test_fix_parsing_preserves_source_identity_and_emits_native_columns(
         } == {"url", "rownum"}
     finally:
         store.close()
-    msgtypes = {
-        row["rownum"]: row["35"]
-        for row in fixes.select(("rownum", "35")).to_pylist()
-    }
+    msgtypes = {row["rownum"]: row["35"] for row in fixes.select(("rownum", "35")).to_pylist()}
     assert msgtypes[3] == "D"
     assert msgtypes[5] == "8"
 
 
 def test_maintenance_visits_every_table_and_reports_what_it_changed(ran: Ran) -> None:
+    """The first pass settles what is fragmented; the second finds nothing."""
     ran.workflow()
 
-    result = ran.task("optimize_iceberg")
+    first = ran.task("optimize_iceberg")
 
-    assert result["task"] == "optimize_iceberg"
-    assert result["tables"] == len(STORED)
-    assert counted(result) == {
+    assert first["task"] == "optimize_iceberg"
+    assert first["tables"] == len(STORED)
+    assert set(first["reports"]) == set(STORED)
+    # The fixture's fourteen rows land in two hour partitions -- one of them
+    # the null clocks' -- so `logs.messages` holds two files and is compacted
+    # once. The four FIX rows share one partition and one file, so that table
+    # is already settled.
+    assert first["reports"]["logs.messages"]["rewritten"] == 2
+    assert first["reports"]["fix.messages"]["rewritten"] == 0
+    assert counted(first) == {"read": 2, "written": 2, "skipped": 1}, json.dumps(first, indent=2)
+    assert (first["expired"], first["deleted"], first["byte_size"]) == (0, 0, 0)
+    assert ran.rows() == STORED, "compaction rewrites rows, it never drops them"
+
+    second = ran.task("optimize_iceberg")
+
+    assert counted(second) == {
         "read": len(STORED),
         "written": 0,
         "skipped": len(STORED),
-    }, json.dumps(result, indent=2)
-    assert (result["expired"], result["deleted"], result["byte_size"]) == (0, 0, 0)
-    assert set(result["reports"]) == set(STORED)
-    assert result["reports"]["logs.messages"]["rewritten"] == 0
-    assert result["reports"]["fix.messages"]["rewritten"] == 0
+    }, json.dumps(second, indent=2)
+    assert second["reports"]["logs.messages"]["rewritten"] == 0
+    assert second["reports"]["fix.messages"]["rewritten"] == 0
     assert ran.rows() == STORED, "a settled catalog is left as it was"

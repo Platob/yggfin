@@ -39,6 +39,13 @@ theme:
 extra_css:
   - stylesheets/terminal.css
   - stylesheets/home.css
+  - stylesheets/fix.css
+
+# The FIX section's three widgets. One file, no framework, no build step: it
+# reads the generated dictionary dump and mounts on Material's own navigation
+# event so an instant-loaded page arrives wired.
+extra_javascript:
+  - assets/fix.js
 
 nav:
   - Overview:
@@ -50,6 +57,12 @@ nav:
       - Field contract: contracts/types.md
       - Portable schema: contracts/index.md
       - FIX registry browser (tool): tools/fix-registry.md
+  - FIX:
+      - Overview: fix/index.md
+      - Registry: fix/registry.md
+      - Decode: fix/decode.md
+      - Encode: fix/encode.md
+      - Quality: fix/quality.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md

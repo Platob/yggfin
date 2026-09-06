@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -9,6 +10,9 @@ from yggdryl import Field
 from yggdryl import field as field_of
 
 DESCRIPTION = "description"
+DIGEST_ALGORITHM = "digest:algorithm"
+DIGEST_ROLE = "digest:role"
+DIGEST_SOURCES = "digest:sources"
 ICEBERG = "iceberg"
 PRIMARY_KEY = "iceberg:primary_key"
 PARTITION_KEY = "iceberg:partition_key"
@@ -84,6 +88,27 @@ def derived_from(
     return field_options(metadata=metadata, **declared)
 
 
+def digest_key(
+    sources: str | Sequence[str] | None = None,
+    algorithm: str = "xxh3-128",
+    **declared: Any,
+) -> dict[str, Any]:
+    """Mark one member as the row digest Yggdryl computes beside it.
+
+    The member holds the digest; the members it reads stay ordinary columns,
+    so `sources` is the only place the input is named. Omitting `sources`
+    selects every field beside the holder. The declared datatype must be the
+    algorithm's exact width -- `fixed_size_binary[16]` for the 128-bit default.
+    """
+    metadata = dict(declared.pop("metadata", None) or {})
+    metadata[DIGEST_ROLE] = "holder"
+    metadata[DIGEST_ALGORITHM] = str(algorithm)
+    if sources is not None:
+        named = [sources] if isinstance(sources, str) else list(sources)
+        metadata[DIGEST_SOURCES] = json.dumps(named, separators=(",", ":"))
+    return field_options(metadata=metadata, **declared)
+
+
 def sort_key(direction: bool | str = True, **declared: Any) -> dict[str, Any]:
     """Mark one member as an Iceberg sort column."""
     metadata = dict(declared.pop("metadata", None) or {})
@@ -123,6 +148,9 @@ def leaf_names(source: Field) -> list[str]:
 
 __all__ = [
     "DESCRIPTION",
+    "DIGEST_ALGORITHM",
+    "DIGEST_ROLE",
+    "DIGEST_SOURCES",
     "FIELD_ID",
     "ICEBERG",
     "PARTITION_KEY",
@@ -131,6 +159,7 @@ __all__ = [
     "SORT_ORDER",
     "Field",
     "derived_from",
+    "digest_key",
     "field_of",
     "field_options",
     "leaf_names",

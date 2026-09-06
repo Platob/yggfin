@@ -7,10 +7,20 @@ from typing import Annotated, Any, Self
 
 import pyarrow
 from yggdryl import scalar
+from yggdryl.fix import classify_arrow_array
 
 from rekep.convert import Convertible
-from rekep.fields import derived_from, partition_key, primary_key
+from rekep.fields import derived_from, digest_key, partition_key, primary_key
 from rekep.times import SHAPES, Stamp, datetime_of
+
+#: What a record whose protocol or `MsgType` no scan could name holds.
+#: `parse_fix` reads the rows that spell something else.
+UNKNOWN = "unknown"
+
+#: What an unmarked line took. A session's own log is written by the side doing
+#: the sending, so a line carrying no verb is one it sent; any verb a line does
+#: carry beats this.
+DIRECTION = "sent"
 
 
 @scalar(slots=True)
@@ -42,6 +52,21 @@ class Message(Convertible):
     level: str | None = None
     """Severity spelling captured from the line header."""
 
+    mimetype: str = "application/octet-stream"
+    """Media type Yggdryl's shallow scan infers for the body."""
+
+    msgtype: str = UNKNOWN
+    """Raw `MsgType` the body's frame spells, or `unknown`."""
+
+    msgdirection: str = UNKNOWN
+    """`SENT`, `RECV`, or `unknown`, from the verbs beside the frame."""
+
+    msghash: Annotated[
+        bytes | None,
+        digest_key(["body"], dtype=pyarrow.binary(16)),
+    ] = None
+    """XXH3-128 digest of the exact body bytes, filled by Yggdryl."""
+
     body: bytes = b""
     """Exact bytes after the matched line-header prefix."""
 
@@ -60,13 +85,25 @@ class Message(Convertible):
             self.body = bytes(self.body)
 
     @classmethod
-    def apply_arrow_batch(cls, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
-        """Apply the raw Message contract to one Yggdryl text batch."""
+    def apply_arrow_batch(
+        cls,
+        batch: pyarrow.RecordBatch,
+        direction: str = DIRECTION,
+    ) -> pyarrow.RecordBatch:
+        """Apply the raw Message contract to one Yggdryl text batch.
+
+        `direction` names what an unmarked line took. Classification is one
+        native pass over the body column -- the same shallow scan and the same
+        verbs the FIX reader itself uses -- so no row crosses into Python and
+        the two stages cannot disagree.
+        """
         field = cls.field()
         timestamp = field.into_arrow_schema().field("timestamp")
+        prepared = _canonical_timestamp(batch, timestamp)
+        prepared = _classified(prepared, direction)
         return field.apply_arrow_batch(
-            _canonical_timestamp(batch, timestamp),
-            digest=False,
+            prepared,
+            digest=True,
             safe=False,
             nullability="strict",
         )
@@ -76,6 +113,44 @@ class Message(Convertible):
         """Build one raw record without interpreting its body."""
         declared["body"] = text.encode("utf-8") if isinstance(text, str) else bytes(text)
         return cls(**declared)
+
+
+def _classified(batch: pyarrow.RecordBatch, direction: str) -> pyarrow.RecordBatch:
+    """Name each record's protocol, `MsgType`, and direction as three columns."""
+    body = _body(batch)
+    if body is None:
+        return batch
+    mimetype, msgtype, msgdirection = classify_arrow_array(body, direction)
+    columns = {
+        "mimetype": pyarrow.compute.fill_null(mimetype, "application/octet-stream"),
+        "msgtype": pyarrow.compute.fill_null(msgtype, UNKNOWN),
+        "msgdirection": pyarrow.compute.fill_null(msgdirection, UNKNOWN),
+    }
+    for name, values in columns.items():
+        index = batch.schema.get_field_index(name)
+        if index < 0:
+            batch = batch.append_column(name, values)
+        else:
+            batch = batch.set_column(index, name, values)
+    return batch
+
+
+def _body(batch: pyarrow.RecordBatch) -> pyarrow.Array | None:
+    """The record payload column, whatever Arrow layout the text reader used.
+
+    A batch carrying no payload column names no protocol at all. One typed
+    `null` -- what a zero-row source hands over -- is read as the empty bytes
+    it holds, so the three columns are still built.
+    """
+    index = batch.schema.get_field_index("body")
+    if index < 0:
+        return None
+    values = batch.column(index)
+    if pyarrow.types.is_dictionary(values.type):
+        values = pyarrow.compute.dictionary_decode(values)
+    if pyarrow.types.is_null(values.type):
+        return pyarrow.compute.cast(values, pyarrow.binary())
+    return values
 
 
 def _canonical_timestamp(
