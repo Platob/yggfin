@@ -18,7 +18,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-yaml = ["pyyaml>=6.0"]
 # The Iceberg dataset, with the SQLite catalog that makes it fully local and
 # the Rust core every partition transform but `identity` is written through.
 iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.11.1"]
@@ -28,7 +27,7 @@ iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.11.1"]
 # itself does not provide.
 glue = ["pyiceberg[glue]>=0.11.1"]
 polars = ["polars>=1.36"]
-all = ["rekep[glue,iceberg,polars,yaml]"]
+all = ["rekep[glue,iceberg,polars]"]
 
 [project.scripts]
 # Publishing a declaration and checking one loads are things CI and a
@@ -45,9 +44,10 @@ docs = [
     "mkdocs-material>=9.5",
 ]
 dev = [
+    "pyyaml>=6.0",
     "pytest>=8.0",
     "ruff>=0.6",
-    "rekep[iceberg,polars,yaml]",
+    "rekep[iceberg,polars]",
 ]
 # What `rekep task run` needs on the machine to execute a task document:
 # Marimo imports the application and runs its cells, and Glue is the catalog a
@@ -56,7 +56,7 @@ dev = [
 # extra, installed with `uv sync --locked --group runner`.
 runner = [
     "marimo>=0.16,<1",
-    "rekep[glue,iceberg,polars,yaml]",
+    "rekep[glue,iceberg,polars]",
 ]
 # What the Airflow DAG and its operator are tested against. Airflow is an
 # orchestrator this repository is deployed into, never a runtime dependency of
@@ -67,7 +67,7 @@ runner = [
 airflow = [
     "apache-airflow>=3.0,<4; sys_platform != 'win32'",
     "apache-airflow-providers-standard>=1.0,<2; sys_platform != 'win32'",
-    "rekep[yaml]",
+    "rekep",
 ]
 # What the benchmarks race the shipped implementations against. `polars` is
 # shipped as an extra and `bench_iceberg` races the export this package selects

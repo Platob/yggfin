@@ -8,12 +8,12 @@ from rekep import Message
 from rekep.iceberg import partition_keys, primary_keys
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
-CONTRACT = SCHEMAS / "rekep" / "message.yaml"
+CONTRACT = SCHEMAS / "rekep" / "message.json"
 
 
 def load_contract() -> Field:
     """Read the native Yggdryl field contract."""
-    return Field.from_yaml(CONTRACT.read_text(encoding="utf-8"))
+    return Field.from_json(CONTRACT.read_text(encoding="utf-8"))
 
 
 def test_only_the_message_output_is_published() -> None:
@@ -25,8 +25,8 @@ def test_only_the_message_output_is_published() -> None:
 
 def test_contract_round_trip_keeps_shape_and_identity() -> None:
     contract = load_contract()
-    assert CONTRACT.read_text(encoding="utf-8") == contract.into_yaml()
-    assert Field.from_dict(contract.into_dict()) == contract
+    assert CONTRACT.read_text(encoding="utf-8") == f"{contract.into_json(indent=2)}\n"
+    assert Field.from_json(contract.into_json()) == contract
     assert Field.from_arrow(contract.into_arrow()) == contract
 
 

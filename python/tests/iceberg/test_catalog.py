@@ -380,7 +380,7 @@ def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
 
 def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:
     assert set(catalog.into_dict()) == {"name", "properties"}
-    rebuilt = IcebergCatalog.from_yaml(catalog.into_yaml())
+    rebuilt = IcebergCatalog.from_json(catalog.into_json())
     assert (rebuilt.name, rebuilt.properties) == (
         catalog.name,
         catalog.properties,

@@ -286,7 +286,7 @@ def test_declared_ids_are_kept_rather_than_renumbered() -> None:
     from pyiceberg.types import NestedField, StringType
 
     schema = Schema(NestedField(5, "mic", StringType(), required=True))
-    published = Field.from_yaml(iceberg_struct_field(schema, "Venue").into_yaml())
+    published = Field.from_json(iceberg_struct_field(schema, "Venue").into_json())
     assert int(published.field("mic").iceberg["field_id"]) == 5
     assert [(f.field_id, f.name) for f in iceberg_schema(published).fields] == [(5, "mic")]
 

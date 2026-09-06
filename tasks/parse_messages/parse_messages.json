@@ -1,0 +1,15 @@
+{
+  "name": "parse_messages",
+  "application": "parse_messages.py",
+  "parameters": {
+    "filesystem": "file:data/capture",
+    "catalog": {
+      "name": "rekep",
+      "properties": {
+        "type": "sql",
+        "uri": "sqlite:///data/catalog.db",
+        "warehouse": "data/warehouse"
+      }
+    }
+  }
+}

@@ -73,7 +73,7 @@ class Dataset(Convertible, abc.ABC):
         it builds that one, and refuses a document naming a different kind
         rather than quietly building the wrong store from the right fields.
         A document with no `kind` read through a concrete class is just that
-        class, which is what keeps `IcebergDataset.from_yaml(...)` working
+        class, which is what keeps `IcebergDataset.from_json(...)` working
         unchanged.
         """
         kind = str(mapping.get("kind", "") or "")

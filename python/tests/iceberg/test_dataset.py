@@ -1931,7 +1931,7 @@ def test_partition_sources_scope_default_and_explicit_merge_keys(
 # -- the dataset is also a document ---------------------------------------
 
 
-def test_a_dataset_round_trips_through_yaml(dataset: IcebergDataset) -> None:
+def test_a_dataset_round_trips_through_json(dataset: IcebergDataset) -> None:
     """Its configuration -- the declared shape included -- is a file."""
     document = dataset.into_dict()
     assert document["name"] == "quotes"
@@ -1939,7 +1939,7 @@ def test_a_dataset_round_trips_through_yaml(dataset: IcebergDataset) -> None:
     assert document["field"]["name"] == "quotes"
     assert document["catalog_name"] == dataset.catalog_name
     assert document["catalog_properties"] == dataset.catalog_properties
-    rebuilt = IcebergDataset.from_yaml(dataset.into_yaml())
+    rebuilt = IcebergDataset.from_json(dataset.into_json())
     assert (
         rebuilt.name,
         rebuilt.namespace,
@@ -1969,7 +1969,7 @@ def test_relative_snapshot_expiry_round_trips_as_the_iceberg_property(
         snapshot_expiry=datetime.timedelta(days=7),
     )
 
-    rebuilt = IcebergDataset.from_yaml(retained.into_yaml())
+    rebuilt = IcebergDataset.from_json(retained.into_json())
 
     assert retained.snapshot_expiry is None
     assert retained.table_properties["history.expire.max-snapshot-age-ms"] == "604800000"
@@ -1989,7 +1989,7 @@ def test_snapshot_expiry_rounds_up_to_icebergs_millisecond_precision(
         snapshot_expiry=datetime.timedelta(microseconds=500),
     )
 
-    rebuilt = IcebergDataset.from_yaml(retained.into_yaml())
+    rebuilt = IcebergDataset.from_json(retained.into_json())
 
     assert retained.table_properties["history.expire.max-snapshot-age-ms"] == "1"
     assert retained.__dict__["_snapshot_expiry"] == datetime.timedelta(milliseconds=1)

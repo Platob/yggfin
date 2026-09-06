@@ -64,15 +64,19 @@ a general filesystem abstraction.
 
 Configure warehouse S3 behavior with standard catalog properties:
 
-```yaml
-catalog:
-  name: production
-  properties:
-    type: glue
-    warehouse: s3://warehouse-bucket/rekep
-    glue.region: eu-west-1
-    s3.region: eu-west-1
-    s3.endpoint: https://s3.example.net
+```json
+{
+  "catalog": {
+    "name": "production",
+    "properties": {
+      "type": "glue",
+      "warehouse": "s3://warehouse-bucket/rekep",
+      "glue.region": "eu-west-1",
+      "s3.region": "eu-west-1",
+      "s3.endpoint": "https://s3.example.net"
+    }
+  }
+}
 ```
 
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
@@ -94,4 +98,17 @@ messages.optimize(
 
 Compaction rewrites small files. Cleanup expires old snapshots and removes only
 files unreachable from every retained ref after the configured grace period.
+The checked maintenance job exposes the same controls:
+
+```bash
+rekep task run tasks/optimize_iceberg/optimize_iceberg.json
+```
+
+A null `namespace` visits every namespace recursively. `min_files` is the
+compaction threshold; `retain` and `snapshot_age_days` preserve recent time
+travel; `orphan_age_days` protects files from active or recently failed
+writers. `root`, `main`, and `master` select the same Iceberg root branch.
+`remove_orphans` enables the sweep; `metadata` includes the metadata directory
+in it. Set `log_level` to `DEBUG` for file and plan details.
+
 Run long transaction checks explicitly with `pytest -m integration`.

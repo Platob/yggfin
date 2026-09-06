@@ -72,8 +72,8 @@ with app.setup:
 
 @app.cell
 def parameters():
-    _document = pathlib.Path(__file__).with_suffix(".yml")
-    seconds = Task.from_yaml(str(_document)).parameters["seconds"]
+    _document = pathlib.Path(__file__).with_suffix(".json")
+    seconds = Task.from_json(str(_document)).parameters["seconds"]
     return (seconds,)
 
 
@@ -133,7 +133,7 @@ def context(**held: Any) -> dict[str, Any]:
 def operator(**held: Any) -> Any:
     held.setdefault("task_id", "parse_messages")
     held.setdefault("repository", str(ROOT))
-    held.setdefault("document", "tasks/parse_messages/parse_messages.yml")
+    held.setdefault("document", "tasks/parse_messages/parse_messages.json")
     return MarimoOperator(**held)
 
 
@@ -170,7 +170,7 @@ def test_the_task_command_is_the_locked_offline_argv() -> None:
         "rekep",
         "task",
         "run",
-        str(ROOT / "tasks" / "parse_messages" / "parse_messages.yml"),
+        str(ROOT / "tasks" / "parse_messages" / "parse_messages.json"),
         "--parameters-file",
         parameters,
         "--result-file",
@@ -258,7 +258,6 @@ def test_the_document_defaults_reach_the_application(kept: Held) -> None:
 
     parameters = written()
     assert parameters["filesystem"] == "file:data/capture"
-    assert parameters["branch"] == "root"
     assert parameters["catalog"]["properties"]["type"] == "sql"
 
 
@@ -268,7 +267,7 @@ def test_a_param_the_task_does_not_declare_is_not_injected(kept: Held) -> None:
 
     parameters = written()
     assert "unknown" not in parameters
-    assert parameters["branch"] == "wip"
+    assert "branch" not in parameters
 
 
 def test_the_interval_fills_only_a_declared_start_and_end(kept: Held) -> None:
@@ -477,14 +476,14 @@ def test_a_document_outside_the_repository_is_refused(tmp_path: Path) -> None:
     from airflow.sdk.exceptions import AirflowException
 
     with pytest.raises(AirflowException, match="is outside"):
-        operator(document="../elsewhere/job.yml").execute(context())
+        operator(document="../elsewhere/job.json").execute(context())
 
 
 def test_a_document_that_is_not_there_is_refused() -> None:
     from airflow.sdk.exceptions import AirflowException
 
     with pytest.raises(AirflowException, match="is not a task document"):
-        operator(document="tasks/parse_messages/absent.yml").execute(context())
+        operator(document="tasks/parse_messages/absent.json").execute(context())
 
 
 # -- against a real child ----------------------------------------------------
@@ -508,7 +507,7 @@ def test_a_real_child_publishes_a_result_through_the_locked_environment(
     built = MarimoOperator(
         task_id="parse_messages",
         repository=str(ROOT),
-        document="tasks/parse_messages/parse_messages.yml",
+        document="tasks/parse_messages/parse_messages.json",
         parameters={
             "filesystem": (ROOT / "python/tests/data/app_messages_sample.txt").as_uri(),
             "catalog": catalog,
@@ -533,13 +532,19 @@ def test_terminating_the_task_stops_uv_and_the_application_under_it(
     (tmp_path / "python").symlink_to(ROOT / "python")
     directory = tmp_path / "tasks" / "sleeper"
     directory.mkdir(parents=True)
-    (directory / "sleeper.yml").write_text(
-        "name: sleeper\napplication: sleeper.py\nparameters:\n  seconds: 120\n",
+    (directory / "sleeper.json").write_text(
+        json.dumps(
+            {
+                "name": "sleeper",
+                "application": "sleeper.py",
+                "parameters": {"seconds": 120},
+            }
+        ),
         encoding="utf-8",
     )
     (directory / "sleeper.py").write_text(SLEEPER, encoding="utf-8")
     built = MarimoOperator(
-        task_id="sleeper", repository=str(tmp_path), document="tasks/sleeper/sleeper.yml"
+        task_id="sleeper", repository=str(tmp_path), document="tasks/sleeper/sleeper.json"
     )
     raised: list[BaseException] = []
 

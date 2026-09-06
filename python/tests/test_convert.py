@@ -1,8 +1,4 @@
-"""`Convertible`: generic dispatch, and serialising a dataclass to text.
-
-Plain `dataclasses.dataclass` throughout, deliberately: the serialisation is
-the mixin's, not the `field` decorator's, and nothing here may need Arrow.
-"""
+"""JSON conversion for generic Rekep configuration dataclasses."""
 
 import dataclasses
 import datetime
@@ -10,16 +6,12 @@ import enum
 import io
 import json
 import pathlib
-import sys
 from typing import Any
 
 import pyarrow.fs
 import pytest
-import yaml
 
 from rekep import Convertible
-
-FORMATS = ["yaml", "json"]
 
 
 class Side(enum.StrEnum):
@@ -59,19 +51,14 @@ def book() -> Book:
     )
 
 
-# -- round trips ------------------------------------------------------------
+def test_round_trip_through_a_file(book: Book, tmp_path: pathlib.Path) -> None:
+    path = tmp_path / "book.json"
+    book.into_json(path)
+    assert Book.from_json(path) == book
 
 
-@pytest.mark.parametrize("fmt", FORMATS)
-def test_round_trip_through_a_file(book: Book, tmp_path: pathlib.Path, fmt: str) -> None:
-    path = tmp_path / f"book.{fmt}"
-    getattr(book, f"into_{fmt}")(path)
-    assert getattr(Book, f"from_{fmt}")(path) == book
-
-
-@pytest.mark.parametrize("fmt", FORMATS)
-def test_round_trip_through_the_generic_forms(book: Book, tmp_path: pathlib.Path, fmt: str) -> None:
-    path = tmp_path / f"book.{fmt}"
+def test_round_trip_through_the_generic_forms(book: Book, tmp_path: pathlib.Path) -> None:
+    path = tmp_path / "book.json"
     book.into_(path)
     assert Book.from_(path) == book
 
@@ -81,40 +68,22 @@ def test_round_trip_through_a_dict(book: Book) -> None:
     assert Book.from_(book.into_(dict)) == book
 
 
-def test_nesting_is_rebuilt_not_left_as_dicts(book: Book, tmp_path: pathlib.Path) -> None:
-    path = tmp_path / "book.yaml"
-    book.into_yaml(path)
-    loaded = Book.from_yaml(path)
+def test_nested_and_scalar_types_are_rebuilt(book: Book) -> None:
+    loaded = Book.from_json(book.into_json())
     assert all(isinstance(venue, Venue) for venue in loaded.venues)
     assert loaded.venues[0].timeout == 2.5
-
-
-@pytest.mark.parametrize("fmt", FORMATS)
-def test_types_survive_the_round_trip(book: Book, tmp_path: pathlib.Path, fmt: str) -> None:
-    path = tmp_path / f"book.{fmt}"
-    book.into_(path)
-    loaded = Book.from_(path)
     assert isinstance(loaded.opened, datetime.date)
     assert isinstance(loaded.side, Side)
     assert isinstance(loaded.root, pathlib.Path)
     assert loaded.limits == {"gross": 1_000_000, "net": 250_000}
 
 
-# -- bytes in, bytes out ----------------------------------------------------
-
-
-@pytest.mark.parametrize("fmt", FORMATS)
 @pytest.mark.parametrize("target", [None, str, bytes])
-def test_no_destination_returns_the_bytes(book: Book, fmt: str, target: type | None) -> None:
-    payload = getattr(book, f"into_{fmt}")(target)
+def test_no_destination_returns_the_bytes(book: Book, target: type | None) -> None:
+    payload = book.into_json(target)
     assert isinstance(payload, bytes)
-    assert payload == getattr(book, f"into_{fmt}")()
-
-
-@pytest.mark.parametrize("fmt", FORMATS)
-def test_bytes_round_trip_without_touching_a_filesystem(book: Book, fmt: str) -> None:
-    payload = getattr(book, f"into_{fmt}")()
-    assert getattr(Book, f"from_{fmt}")(payload) == book
+    assert payload == book.into_json()
+    assert Book.from_json(payload) == book
 
 
 def test_writing_to_a_destination_returns_nothing(book: Book, tmp_path: pathlib.Path) -> None:
@@ -122,51 +91,21 @@ def test_writing_to_a_destination_returns_nothing(book: Book, tmp_path: pathlib.
     assert book.into_json(io.BytesIO()) is None
 
 
-def test_returned_bytes_match_what_is_written(book: Book, tmp_path: pathlib.Path) -> None:
-    path = tmp_path / "book.yaml"
-    book.into_yaml(path)
-    assert path.read_bytes() == book.into_yaml()
-
-
-# -- encoding rules ---------------------------------------------------------
-
-
-def test_none_is_omitted_not_written_as_null(book: Book) -> None:
-    """A missing key is what lets the default apply on load."""
-    assert "timeout" not in book.into_dict()["venues"][1]
+def test_none_is_omitted_not_written_as_null() -> None:
+    assert "timeout" not in Venue(mic="XETR").into_dict()
     assert json.loads(Venue(mic="XETR").into_json()) == {"mic": "XETR"}
     assert Venue.from_json(Venue(mic="XETR").into_json()).timeout is None
 
 
-def test_none_inside_a_container_is_kept(tmp_path: pathlib.Path) -> None:
-    """A field can fall back to its default; a list element cannot.
-
-    Dropping one shifts every element after it, silently -- and a fixed-width
-    tuple stops loading at all, which is how this was found.
-    """
-
+def test_none_inside_a_container_is_kept() -> None:
     @dataclasses.dataclass
-    class Book(Convertible):
-        """A book of quotes."""
-
-        slots: list[str | None]
-        """Names, some of them not known yet."""
-
+    class Slots(Convertible):
+        values: list[str | None]
         lookup: dict[str, str | None]
-        """What each slot maps to, where it maps to anything."""
-
         flags: tuple[int, int | None, int]
-        """Three flags, the middle one optional."""
 
-    book = Book(slots=["a", None, "c"], lookup={"k1": "v", "k2": None}, flags=(1, None, 3))
-    assert book.into_dict() == {
-        "slots": ["a", None, "c"],
-        "lookup": {"k1": "v", "k2": None},
-        "flags": [1, None, 3],
-    }
-    assert Book.from_dict(book.into_dict()) == book
-    assert Book.from_json(book.into_json()) == book
-    assert Book.from_yaml(book.into_yaml()) == book
+    value = Slots(["a", None, "c"], {"k1": "v", "k2": None}, (1, None, 3))
+    assert Slots.from_json(value.into_json()) == value
 
 
 def test_arrow_struct_spellings_decode_to_declared_tuples() -> None:
@@ -184,13 +123,11 @@ def test_arrow_struct_spellings_decode_to_declared_tuples() -> None:
 
 
 def test_unknown_keys_are_ignored() -> None:
-    assert Venue.from_json(json.dumps({"mic": "XPAR", "retired": True}).encode()) == Venue("XPAR")
+    document = json.dumps({"mic": "XPAR", "retired": True}).encode()
+    assert Venue.from_json(document) == Venue("XPAR")
 
 
 def test_a_dict_of_any_round_trips_untyped_values() -> None:
-    """`Any` means "trust the container a text format already gave back" --
-    not "look up `isinstance(value, Any)`", which raises."""
-
     @dataclasses.dataclass
     class Config(Convertible):
         properties: dict[str, Any] = dataclasses.field(default_factory=dict)
@@ -199,12 +136,9 @@ def test_a_dict_of_any_round_trips_untyped_values() -> None:
     assert Config.from_json(config.into_json()) == config
 
 
-def test_enum_is_written_as_its_value(book: Book) -> None:
-    assert book.into_dict()["side"] == "BUY"
-
-
-def test_dates_and_paths_are_written_as_text(book: Book) -> None:
+def test_enum_dates_and_paths_are_written_as_values(book: Book) -> None:
     payload = book.into_dict()
+    assert payload["side"] == "BUY"
     assert payload["opened"] == "2026-08-14"
     assert isinstance(payload["root"], str)
 
@@ -222,66 +156,35 @@ def test_from_dict_needs_a_mapping() -> None:
         Venue.from_dict([("mic", "XPAR")])
 
 
-# -- targets ----------------------------------------------------------------
+def test_text_and_binary_file_objects(book: Book) -> None:
+    text = io.StringIO()
+    binary = io.BytesIO()
+    book.into_json(text)
+    book.into_json(binary)
+    assert Book.from_json(io.StringIO(text.getvalue())) == book
+    assert json.loads(binary.getvalue())["name"] == "eu-equities"
 
 
-def test_writes_to_a_text_file_object(book: Book) -> None:
-    buffer = io.StringIO()
-    book.into_yaml(buffer)
-    assert yaml.safe_load(buffer.getvalue())["name"] == "eu-equities"
-
-
-def test_writes_to_a_binary_file_object(book: Book) -> None:
-    buffer = io.BytesIO()
-    book.into_json(buffer)
-    assert json.loads(buffer.getvalue())["name"] == "eu-equities"
-
-
-def test_reads_from_a_file_object(book: Book) -> None:
-    assert Book.from_json(io.StringIO(book.into_json().decode())) == book
-
-
-def test_accepts_a_string_path(book: Book, tmp_path: pathlib.Path) -> None:
-    path = str(tmp_path / "book.json")
-    book.into_json(path)
-    assert Book.from_json(path) == book
-
-
-def test_accepts_a_file_uri(book: Book, tmp_path: pathlib.Path) -> None:
+def test_accepts_a_string_path_and_file_uri(book: Book, tmp_path: pathlib.Path) -> None:
     path = tmp_path / "book.json"
-    book.into_json(path.as_uri())
+    book.into_json(str(path))
     assert Book.from_json(path.as_uri()) == book
 
 
 def test_accepts_an_explicit_filesystem(book: Book, tmp_path: pathlib.Path) -> None:
     filesystem = pyarrow.fs.LocalFileSystem()
-    path = str(tmp_path / "book.yaml")
-    book.into_yaml(path, filesystem)
-    assert Book.from_yaml(path, filesystem) == book
+    path = str(tmp_path / "book.json")
+    book.into_json(path, filesystem)
+    assert Book.from_json(path, filesystem) == book
 
 
-# -- dispatch ---------------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    ("name", "stem"),
-    [
-        ("book.yaml", "yaml"),
-        ("book.yml", "yaml"),
-        ("book.json", "json"),
-        ("s3://bucket/book.json", "json"),
-    ],
-)
-def test_extension_picks_the_format(name: str, stem: str) -> None:
-    assert Convertible.redirect_of(name) == stem
-
-
-def test_a_requested_type_picks_the_converter() -> None:
+def test_json_extension_picks_the_format() -> None:
+    assert Convertible.redirect_of("s3://bucket/book.json") == "json"
     assert Convertible.redirect_of(dict) == "dict"
 
 
 def test_dispatch_uses_a_file_objects_name(book: Book, tmp_path: pathlib.Path) -> None:
-    path = tmp_path / "book.yaml"
+    path = tmp_path / "book.json"
     with path.open("wb") as handle:
         book.into_(handle)
     assert Book.from_(path) == book
@@ -289,28 +192,9 @@ def test_dispatch_uses_a_file_objects_name(book: Book, tmp_path: pathlib.Path) -
 
 def test_dispatch_refuses_an_unknown_extension(book: Book, tmp_path: pathlib.Path) -> None:
     with pytest.raises(TypeError, match="cannot infer"):
-        book.into_(tmp_path / "book.ini")
+        book.into_(tmp_path / "book.yaml")
 
 
-# -- optional formats -------------------------------------------------------
-
-
-def test_json_needs_no_optional_dependency(book: Book) -> None:
-    """Blocking the one extra must not stop JSON, which is stdlib all the way."""
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setitem(sys.modules, "yaml", None)
-        assert Book.from_json(book.into_json()) == book
-
-
-@pytest.mark.parametrize(
-    ("module", "extra", "call"),
-    [
-        ("yaml", "yaml", lambda b: b.into_yaml()),
-        ("yaml", "yaml", lambda b: Book.from_yaml(b"name: x")),
-    ],
-)
-def test_a_missing_extra_is_named_in_the_error(book: Book, module: str, extra: str, call) -> None:
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setitem(sys.modules, module, None)
-        with pytest.raises(ImportError, match=rf"pip install rekep\[{extra}\]"):
-            call(book)
+def test_yaml_codec_is_not_part_of_the_document_api() -> None:
+    assert not hasattr(Convertible, "into_yaml")
+    assert not hasattr(Convertible, "from_yaml")

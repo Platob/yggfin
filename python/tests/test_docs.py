@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import re
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from rekep import Field, Message
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 FENCE = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
+JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
 
 def test_python_examples_compile() -> None:
@@ -26,6 +28,21 @@ def test_python_examples_compile() -> None:
     assert len(examples) >= 6
     for page, index, source in examples:
         ast.parse(source, filename=f"{page.relative_to(DOCS)}#{index}")
+
+
+def test_json_examples_parse() -> None:
+    examples = [
+        (page, source)
+        for page in sorted(DOCS.rglob("*.md"))
+        for source in JSON_FENCE.findall(page.read_text(encoding="utf-8"))
+    ]
+
+    assert examples
+    for page, source in examples:
+        try:
+            json.loads(source)
+        except json.JSONDecodeError as error:
+            raise AssertionError(f"invalid JSON in {page.relative_to(DOCS)}: {error}") from error
 
 
 def test_navigation_names_existing_pages() -> None:
@@ -48,7 +65,7 @@ def test_navigation_names_existing_pages() -> None:
 
 def test_docs_publish_only_the_native_message_contract() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
-    schema = (ROOT / "schemas" / "rekep" / "message.yaml").read_text(encoding="utf-8")
+    schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
 
     assert Field is YggdrylField
     assert [member.name for member in Message.field()] == [
@@ -61,8 +78,8 @@ def test_docs_publish_only_the_native_message_contract() -> None:
         "body",
     ]
     assert "fix/" not in config and "market/" not in config
-    assert list((ROOT / "schemas" / "rekep").glob("*.yaml")) == [
-        ROOT / "schemas" / "rekep" / "message.yaml"
+    assert list((ROOT / "schemas" / "rekep").glob("*.json")) == [
+        ROOT / "schemas" / "rekep" / "message.json"
     ]
     assert "fix:name" not in schema
 

@@ -20,7 +20,7 @@ assert Message.field().into_arrow_schema().names == [
 
 `@yggdryl.scalar` derives the cached field from the dataclass annotations.
 `Annotated` options supply the two Iceberg primary-key markers. Native
-`Field.into_arrow_schema`, `from_arrow_schema`, `into_yaml`, and `from_yaml`
+`Field.into_arrow_schema`, `from_arrow_schema`, `into_json`, and `from_json`
 own every conversion.
 
 Rekep's `strict_cast_batch`, `strict_cast_table`, and `strict_cast_reader` are

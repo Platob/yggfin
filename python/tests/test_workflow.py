@@ -56,7 +56,7 @@ class Ran:
         argv = [
             "task",
             "run",
-            str(ROOT / "tasks" / name / f"{name}.yml"),
+            str(ROOT / "tasks" / name / f"{name}.json"),
             "--parameter",
             f"catalog={json.dumps(self.catalog)}",
         ]
@@ -142,7 +142,7 @@ def test_a_capture_missing_altogether_is_reported(ran: Ran, tmp_path: Path) -> N
     argv = [
         "task",
         "run",
-        str(ROOT / "tasks" / "parse_messages" / "parse_messages.yml"),
+        str(ROOT / "tasks" / "parse_messages" / "parse_messages.json"),
         "--parameter",
         f"catalog={json.dumps(ran.catalog)}",
         "--parameter",

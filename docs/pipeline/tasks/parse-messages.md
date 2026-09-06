@@ -4,14 +4,19 @@
 `Message` rows into `logs.messages`.
 
 ```bash
-rekep task run tasks/parse_messages/parse_messages.yml
+rekep task run tasks/parse_messages/parse_messages.json
 ```
 
-```yaml
-parameters:
-  filesystem: file:data/capture
-  # filesystem: s3://example-bucket/capture?region=eu-west-1
+```json
+{
+  "parameters": {
+    "filesystem": "file:data/capture"
+  }
+}
 ```
+
+For AWS S3, use
+`s3://example-bucket/capture?region=eu-west-1` as `filesystem`.
 
 The URI is passed unchanged to `IOBase.from_uri`. Yggdryl selects supported
 text leaves, opens each once, derives gzip or zstd decoding from the filename

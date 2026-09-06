@@ -7,7 +7,7 @@ One operator call executes:
 
 ```text
 uv run --project <repository>/python --group runner --no-sync --offline \
-  rekep task run <repository>/tasks/parse_messages/parse_messages.yml \
+  rekep task run <repository>/tasks/parse_messages/parse_messages.json \
   --parameters-file <attempt>/parameters.json \
   --result-file <attempt>/result.json
 ```

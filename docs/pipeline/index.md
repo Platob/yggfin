@@ -17,6 +17,6 @@ traversal, suffix/media-type compression selection, 1 MiB sequential transport
 read-ahead, header capture, and physical-line batching. Yggfin owns the target
 side: the Message contract, merge identity, and PyIceberg commits.
 
-The application lives under `tasks/parse_messages/` beside the YAML document
+The application lives under `tasks/parse_messages/` beside the JSON document
 that selects its filesystem and catalog. `rekep.tasks.Task` serializes that
 configuration; `rekep task run` executes the Marimo application.

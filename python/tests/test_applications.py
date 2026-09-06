@@ -10,13 +10,13 @@ is clean.
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "tasks"
@@ -49,7 +49,7 @@ def cells(app: Any) -> dict[str, Any]:
 
 def declared(name: str) -> dict[str, Any]:
     """What the adjacent document says this application takes."""
-    document = yaml.safe_load((TASKS / name / f"{name}.yml").read_text(encoding="utf-8"))
+    document = json.loads((TASKS / name / f"{name}.json").read_text(encoding="utf-8"))
     return document["parameters"]
 
 
@@ -84,11 +84,11 @@ def test_the_parameter_cell_defines_exactly_what_the_document_declares(name: str
 
 @pytest.mark.parametrize("name", NAMES)
 def test_the_parameter_cell_reads_its_defaults_out_of_the_document(name: str) -> None:
-    """Opened interactively, an application is configured by the same YAML."""
+    """Opened interactively, an application is configured by the same JSON."""
     source = (TASKS / name / f"{name}.py").read_text(encoding="utf-8")
 
-    assert "Task.from_yaml" in source
-    assert 'pathlib.Path(__file__).with_suffix(".yml")' in source
+    assert "Task.from_json" in source
+    assert 'pathlib.Path(__file__).with_suffix(".json")' in source
     assert not any(
         f"{key} = " in source.split("def parameters", 1)[1].split("return", 1)[0]
         and f'_defaults["{key}"]' not in source

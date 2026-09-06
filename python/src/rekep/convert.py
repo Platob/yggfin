@@ -29,7 +29,6 @@ from rekep.annotations import (
     item_annotation,
     unwrap_annotated,
 )
-from rekep.require import require
 from rekep.resources import read_bytes, resource
 
 #: Splits a path or URI on either separator, whatever platform wrote it.
@@ -41,8 +40,6 @@ Target = typing.Union[str, os.PathLike[str], typing.IO[bytes], typing.IO[str], t
 
 _REDIRECTS = MappingProxyType(
     {
-        ".yaml": "yaml",
-        ".yml": "yaml",
         ".json": "json",
         dict: "dict",
         Mapping: "dict",
@@ -135,18 +132,6 @@ class Convertible:
             raise TypeError(f"{type(self).__name__} must be a dataclass to be serialised")
         return _encode_dataclass(self)
 
-    def into_yaml(
-        self, target: Target = None, filesystem: pyarrow.fs.FileSystem | None = None
-    ) -> bytes | None:
-        """Write this instance to `target` as YAML, or return the bytes."""
-        yaml = require("yaml", "yaml")
-        payload = self._dump_yaml(yaml)
-        return _write(payload.encode(), target, filesystem)
-
-    def _dump_yaml(self, yaml: Any) -> str:
-        """Encode this document with its YAML layout."""
-        return yaml.safe_dump(self.into_dict(), sort_keys=False, allow_unicode=True)
-
     def into_json(
         self, target: Target = None, filesystem: pyarrow.fs.FileSystem | None = None
     ) -> bytes | None:
@@ -160,12 +145,6 @@ class Convertible:
     def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
         """Rebuild an instance from plain containers."""
         return _decode_dataclass(cls, mapping)
-
-    @classmethod
-    def from_yaml(cls, source: Target, filesystem: pyarrow.fs.FileSystem | None = None) -> Self:
-        """Read an instance from `source` as YAML."""
-        yaml = require("yaml", "yaml")
-        return cls.from_dict(yaml.safe_load(_read(source, filesystem)) or {})
 
     @classmethod
     def from_json(cls, source: Target, filesystem: pyarrow.fs.FileSystem | None = None) -> Self:
@@ -234,7 +213,7 @@ def _dumps_itself(cls: Any) -> bool:
 
 
 def _encode(value: Any) -> Any:
-    """Reduce `value` to containers every one of the three encoders accepts."""
+    """Reduce `value` to containers JSON and plain mappings accept."""
     kind = type(value)
     if kind in _VERBATIM:
         return value
@@ -361,7 +340,7 @@ def _decode_tuple(value: Any, args: tuple[Any, ...]) -> tuple[Any, ...]:
 
 def _decode_scalar(value: Any, annotation: type) -> Any:
     if isinstance(value, annotation) and not issubclass(annotation, enum.Enum):
-        return value  # YAML and TOML already give back dates, bools and numbers
+        return value  # JSON already gives back bools and numbers.
     if issubclass(annotation, enum.Enum):
         return annotation(value)
     if issubclass(annotation, datetime.datetime):  # before date: datetime is a date

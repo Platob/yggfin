@@ -27,7 +27,7 @@ def _():
 def parameters():
     # The adjacent document owns every default. A runner passes the whole
     # mapping to `app.run(defs=...)`, which replaces this cell.
-    _defaults = Task.from_yaml(str(pathlib.Path(__file__).with_suffix(".yml"))).parameters
+    _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     catalog = _defaults["catalog"]
     namespace = _defaults["namespace"]
     branch = _defaults["branch"]

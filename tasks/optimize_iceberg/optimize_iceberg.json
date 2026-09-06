@@ -1,0 +1,23 @@
+{
+  "name": "optimize_iceberg",
+  "application": "optimize_iceberg.py",
+  "parameters": {
+    "catalog": {
+      "name": "rekep",
+      "properties": {
+        "type": "sql",
+        "uri": "sqlite:///data/catalog.db",
+        "warehouse": "data/warehouse"
+      }
+    },
+    "namespace": null,
+    "branch": "root",
+    "min_files": 2,
+    "retain": 24,
+    "snapshot_age_days": 7,
+    "orphan_age_days": 3,
+    "remove_orphans": true,
+    "metadata": true,
+    "log_level": "INFO"
+  }
+}

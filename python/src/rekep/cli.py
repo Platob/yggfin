@@ -25,11 +25,6 @@ from rekep.tasks import Task
 
 CONSOLE = Console(stream="stderr")
 
-FORMATS: dict[str, tuple[str, ...]] = {
-    "json": (".json",),
-    "yaml": (".yaml", ".yml"),
-}
-
 
 class CommandFormatter(argparse.RawDescriptionHelpFormatter):
     """Compact command help with scannable section names."""
@@ -76,8 +71,7 @@ def main(argv: list[str] | None = None) -> int:
 def dump(arguments: argparse.Namespace) -> int:
     """Write a Python class's native field as a document."""
     shape = field_of(_imported(arguments.pyclass))
-    spelling = arguments.format or _format_of(arguments.target)
-    payload = getattr(shape, f"into_{spelling}")()
+    payload = f"{shape.into_json(indent=2)}\n"
     if arguments.target:
         output = resource(arguments.target)
         try:
@@ -92,8 +86,7 @@ def dump(arguments: argparse.Namespace) -> int:
 
 def load(arguments: argparse.Namespace) -> int:
     """Read and validate a native field document."""
-    spelling = _format_of(arguments.target)
-    shape = getattr(Field, f"from_{spelling}")(read_bytes(arguments.target).decode())
+    shape = Field.from_json(read_bytes(arguments.target).decode())
     schema = shape.into_arrow_schema()
     print(f"{shape.name or '<unnamed>'}: {len(schema.names)} columns, builds")
     for member in fields(shape):
@@ -138,15 +131,6 @@ def _imported(spec: str) -> Any:
         raise AttributeError(f"{module_name} has no {attribute!r}") from error
 
 
-def _format_of(target: str | None) -> str:
-    """Return the document format named by ``target``, defaulting to YAML."""
-    if target:
-        for spelling, suffixes in FORMATS.items():
-            if target.endswith(suffixes):
-                return spelling
-    return "yaml"
-
-
 def _write_json(document: Any) -> None:
     """Write one machine-readable command result to stdout."""
     json.dump(document, sys.stdout, indent=2, ensure_ascii=False)
@@ -156,7 +140,7 @@ def _write_json(document: Any) -> None:
 def run_task(arguments: argparse.Namespace) -> int:
     """Execute one task document's Marimo application in this process."""
     document = pathlib.Path(arguments.document).resolve()
-    task = Task.from_yaml(str(document))
+    task = Task.from_json(str(document))
     application = task.into_application_path(document)
     parameters = dict(task.parameters)
     if arguments.parameters_file:
@@ -253,7 +237,7 @@ def _catalog_settings(arguments: argparse.Namespace) -> dict[str, Any]:
     parameters: dict[str, Any] = {}
     if arguments.document:
         document = pathlib.Path(arguments.document).resolve()
-        parameters = dict(Task.from_yaml(str(document)).parameters)
+        parameters = dict(Task.from_json(str(document)).parameters)
     configured = parameters.get("catalog") or {}
     if not isinstance(configured, Mapping):
         raise TypeError("task catalog must be a mapping with name and properties")
@@ -299,9 +283,9 @@ def _parser() -> argparse.ArgumentParser:
         prog="rekep",
         description=__doc__.splitlines()[0],
         epilog="""examples:
-  rekep task run tasks/parse_messages/parse_messages.yml
+  rekep task run tasks/parse_messages/parse_messages.json
   rekep fields dump --pyclass rekep.text:Message
-  rekep iceberg deploy tasks/parse_messages/parse_messages.yml""",
+  rekep iceberg deploy tasks/parse_messages/parse_messages.json""",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
@@ -320,7 +304,7 @@ def _parser() -> argparse.ArgumentParser:
     running = tasks.add_subparsers(
         dest="action", required=True, title="commands", metavar="COMMAND"
     ).add_parser("run", help="execute one task document's Marimo application")
-    running.add_argument("document", help="path to a task YAML under tasks/")
+    running.add_argument("document", help="path to a task JSON document under tasks/")
     running.add_argument(
         "--parameter",
         action="append",
@@ -351,7 +335,7 @@ def _parser() -> argparse.ArgumentParser:
         dest="action", required=True, title="commands", metavar="COMMAND"
     ).add_parser("deploy", help="create each declared table that is not there yet")
     deploying.add_argument(
-        "document", nargs="?", default=None, help="task YAML carrying catalog settings"
+        "document", nargs="?", default=None, help="task JSON carrying catalog settings"
     )
     deploying.add_argument("--catalog", default=None, help="catalog name")
     deploying.add_argument("--property", action="append", default=None, metavar="NAME=VALUE")
@@ -375,11 +359,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     dumping = actions.add_parser("dump", help="write a class's field as a document")
     dumping.add_argument("--pyclass", required=True, help="class as module:Attribute")
-    dumping.add_argument("--format", choices=sorted(FORMATS), default=None)
-    dumping.add_argument("--target", default=None, help="path or URI; stdout when omitted")
+    dumping.add_argument("--target", default=None, help="JSON path or URI; stdout when omitted")
     dumping.set_defaults(run=dump)
     loading = actions.add_parser("load", help="read and validate a field document")
-    loading.add_argument("--target", required=True, help="path or URI of the document")
+    loading.add_argument("--target", required=True, help="JSON path or URI")
     loading.set_defaults(run=load)
     return parser
 

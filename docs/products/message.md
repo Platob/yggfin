@@ -38,11 +38,16 @@ nullable because a line may not match the configured expression.
 
 ## Text source
 
-```yaml
-parameters:
-  filesystem: file:data/capture
-  # filesystem: s3://example-bucket/capture?region=eu-west-1
+```json
+{
+  "parameters": {
+    "filesystem": "file:data/capture"
+  }
+}
 ```
+
+For AWS S3, use
+`s3://example-bucket/capture?region=eu-west-1` as `filesystem`.
 
 The task passes the URI to `IOBase.from_uri`. `TextOptions` enables row numbers,
 applies `rekep.times.MESSAGE_HEADER`, disables type guessing, and leaves

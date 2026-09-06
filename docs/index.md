@@ -23,7 +23,7 @@ pip install "rekep[iceberg]"
 ## Run
 
 ```bash
-rekep task run tasks/parse_messages/parse_messages.yml
+rekep task run tasks/parse_messages/parse_messages.json
 ```
 
 ```mermaid
@@ -46,6 +46,6 @@ assert Field is YggdrylField
 print(Message.field().into_arrow_schema())
 ```
 
-The checked contract is [`schemas/rekep/message.yaml`](contracts/index.md).
+The checked contract is [`schemas/rekep/message.json`](contracts/index.md).
 The removed Rekep FIX and market implementation is intentionally deferred to a
 separate refactor built directly on `yggdryl.fix`.

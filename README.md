@@ -8,23 +8,30 @@ native `Field`; yggfin keeps the PyIceberg read/write boundary.
 pip install "rekep[iceberg]"
 ```
 
-```yaml
-# tasks/parse_messages/parse_messages.yml
-name: parse_messages
-application: parse_messages.py
-parameters:
-  filesystem: file:data/capture
-  # filesystem: s3://example-bucket/capture?region=eu-west-1
-  catalog:
-    name: rekep
-    properties:
-      type: sql
-      uri: sqlite:///data/catalog.db
-      warehouse: data/warehouse
+```json
+{
+  "name": "parse_messages",
+  "application": "parse_messages.py",
+  "parameters": {
+    "filesystem": "file:data/capture",
+    "catalog": {
+      "name": "rekep",
+      "properties": {
+        "type": "sql",
+        "uri": "sqlite:///data/catalog.db",
+        "warehouse": "data/warehouse"
+      }
+    }
+  }
+}
 ```
 
+For AWS S3, set `filesystem` to
+`s3://example-bucket/capture?region=eu-west-1`. An S3-compatible store can add
+`endpoint_override`, `scheme`, and `force_path_style` URI query parameters.
+
 ```bash
-rekep task run tasks/parse_messages/parse_messages.yml
+rekep task run tasks/parse_messages/parse_messages.json
 ```
 
 The task recursively reads every supported text leaf beneath `filesystem`,

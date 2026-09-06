@@ -36,5 +36,5 @@ small until Yggdryl exposes the same opt-in nullability policy natively.
 
 ## Keep orchestration outside the package
 
-`tasks/parse_messages/` contains the Marimo application and its YAML input.
+`tasks/parse_messages/` contains the Marimo application and its JSON input.
 Package code contains reusable models and storage behavior only.

@@ -2514,7 +2514,6 @@ dependencies = [
 all = [
     { name = "polars" },
     { name = "pyiceberg", extra = ["glue", "pyiceberg-core", "sql-sqlite"] },
-    { name = "pyyaml" },
 ]
 glue = [
     { name = "pyiceberg", extra = ["glue"] },
@@ -2525,22 +2524,20 @@ iceberg = [
 polars = [
     { name = "polars" },
 ]
-yaml = [
-    { name = "pyyaml" },
-]
 
 [package.dev-dependencies]
 airflow = [
     { name = "apache-airflow", marker = "sys_platform != 'win32'" },
     { name = "apache-airflow-providers-standard", marker = "sys_platform != 'win32'" },
-    { name = "rekep", extra = ["yaml"] },
+    { name = "rekep" },
 ]
 bench = [
     { name = "polars" },
 ]
 dev = [
     { name = "pytest" },
-    { name = "rekep", extra = ["iceberg", "polars", "yaml"] },
+    { name = "pyyaml" },
+    { name = "rekep", extra = ["iceberg", "polars"] },
     { name = "ruff" },
 ]
 docs = [
@@ -2548,7 +2545,7 @@ docs = [
 ]
 runner = [
     { name = "marimo" },
-    { name = "rekep", extra = ["glue", "iceberg", "polars", "yaml"] },
+    { name = "rekep", extra = ["glue", "iceberg", "polars"] },
 ]
 
 [package.metadata]
@@ -2557,29 +2554,29 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17.0" },
     { name = "pyiceberg", extras = ["glue"], marker = "extra == 'glue'", specifier = ">=0.11.1" },
     { name = "pyiceberg", extras = ["pyiceberg-core", "sql-sqlite"], marker = "extra == 'iceberg'", specifier = ">=0.11.1" },
-    { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0" },
-    { name = "rekep", extras = ["glue", "iceberg", "polars", "yaml"], marker = "extra == 'all'" },
+    { name = "rekep", extras = ["glue", "iceberg", "polars"], marker = "extra == 'all'" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "yggdryl", git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=bfadd39fb0be3bec53298e8e00b100b638a69d90" },
 ]
-provides-extras = ["yaml", "iceberg", "glue", "polars", "all"]
+provides-extras = ["iceberg", "glue", "polars", "all"]
 
 [package.metadata.requires-dev]
 airflow = [
     { name = "apache-airflow", marker = "sys_platform != 'win32'", specifier = ">=3.0,<4" },
     { name = "apache-airflow-providers-standard", marker = "sys_platform != 'win32'", specifier = ">=1.0,<2" },
-    { name = "rekep", extras = ["yaml"] },
+    { name = "rekep" },
 ]
 bench = [{ name = "polars", specifier = ">=1.36" }]
 dev = [
     { name = "pytest", specifier = ">=8.0" },
-    { name = "rekep", extras = ["iceberg", "polars", "yaml"] },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rekep", extras = ["iceberg", "polars"] },
     { name = "ruff", specifier = ">=0.6" },
 ]
 docs = [{ name = "mkdocs-material", specifier = ">=9.5" }]
 runner = [
     { name = "marimo", specifier = ">=0.16,<1" },
-    { name = "rekep", extras = ["glue", "iceberg", "polars", "yaml"] },
+    { name = "rekep", extras = ["glue", "iceberg", "polars"] },
 ]
 
 [[package]]

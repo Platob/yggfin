@@ -81,7 +81,7 @@ class MarimoOperator(BaseOperator):
 
         repository = self._rooted()
         document = self._document(repository)
-        task = Task.from_yaml(str(document))
+        task = Task.from_json(str(document))
         # Refuses an application outside its own task directory before a
         # process is started with it.
         task.into_application_path(document)

@@ -29,7 +29,7 @@ Use `docs/prompts/yggdryl-fix-refactor.md` for the next vertical slice.
 
 - `rekep.Field is yggdryl.Field`.
 - Use native `@yggdryl.scalar` and `Annotated` options for declarations.
-- Arrow schema metadata is authoritative; portable YAML derives from it.
+- Arrow schema metadata is authoritative; portable JSON derives from it.
 - Use Yggdryl cast methods at producer and consumer boundaries.
 - Keep Rekep strict preflight limited to missing or null non-null fields until
   Yggdryl exposes the same opt-in policy.
@@ -73,7 +73,7 @@ The supported graph is:
 filesystem URI -> parse_messages -> logs.messages
 ```
 
-`tasks/parse_messages/` contains the Marimo application beside its YAML
+`tasks/parse_messages/` contains the Marimo application beside its JSON
 document. The application passes `filesystem` to `IOBase.from_uri`, casts each
 batch to `Message.field()`, and writes the iterator directly to Iceberg.
 
@@ -102,5 +102,5 @@ python/src/rekep/
 tasks/
   parse_messages/
   optimize_iceberg/
-schemas/rekep/message.yaml
+schemas/rekep/message.json
 ```

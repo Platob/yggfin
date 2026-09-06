@@ -14,5 +14,5 @@ Command decoration and errors go to stderr. The machine-readable result alone
 goes to stdout, so redirection remains safe:
 
 ```bash
-rekep task run tasks/parse_messages/parse_messages.yml > result.json
+rekep task run tasks/parse_messages/parse_messages.json > result.json
 ```

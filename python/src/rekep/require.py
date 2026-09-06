@@ -9,13 +9,13 @@ from typing import Any
 def require(module: str, extra: str) -> Any:
     """Import an optional dependency, or name the extra that provides it.
 
-    A top-level `import yaml` would turn a missing extra into an unimportable
-    package; going through here turns it into a clear error at the one call
-    that needed it, naming the install that fixes it.
+    Importing optional storage or dataframe packages at module load would make
+    the base package unusable without them. This names the install at the call
+    that needs it.
     """
     try:
         return importlib.import_module(module)
     except ImportError as error:
         raise ImportError(
-            f"{module} is required for this format; install it with: pip install rekep[{extra}]"
+            f"{module} is required for this operation; install it with: pip install rekep[{extra}]"
         ) from error

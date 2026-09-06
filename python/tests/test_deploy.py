@@ -80,7 +80,7 @@ def test_the_command_reads_the_catalog_a_task_document_names(
         run(
             "iceberg",
             "deploy",
-            str(TASKS / "parse_messages" / "parse_messages.yml"),
+            str(TASKS / "parse_messages" / "parse_messages.json"),
             "--property",
             f"uri={properties['uri']}",
             "--property",
@@ -112,14 +112,15 @@ def test_a_property_option_is_a_pair(capsys: pytest.CaptureFixture) -> None:
 def test_a_task_catalog_refuses_legacy_or_misspelled_keys(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    document = tmp_path / "task.yml"
+    document = tmp_path / "task.json"
     document.write_text(
-        "name: invalid\n"
-        "application: task.py\n"
-        "parameters:\n"
-        "  catalog:\n"
-        "    catalog_name: legacy\n"
-        "    properties: {}\n",
+        json.dumps(
+            {
+                "name": "invalid",
+                "application": "task.py",
+                "parameters": {"catalog": {"catalog_name": "legacy", "properties": {}}},
+            }
+        ),
         encoding="utf-8",
     )
 

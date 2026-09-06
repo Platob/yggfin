@@ -46,43 +46,17 @@ def test_version_is_available_without_entering_a_command(capsys: pytest.CaptureF
 def test_dump_writes_the_declaration_to_stdout(capsysbinary: pytest.CaptureFixture) -> None:
     assert run("fields", "dump", "--pyclass", "tests.test_cli:Venue") == 0
     written = capsysbinary.readouterr().out
-    assert Field.from_yaml(written.decode()) == field_of(Venue)
+    assert written.decode() == f"{field_of(Venue).into_json(indent=2)}\n"
+    assert Field.from_json(written.decode()) == field_of(Venue)
 
 
 def test_dump_takes_a_dotted_class_too(capsysbinary: pytest.CaptureFixture) -> None:
     """`module:Attribute` is what an entry point writes; the dot is what a docstring does."""
     assert run("fields", "dump", "--pyclass", "tests.test_cli.Venue") == 0
-    assert Field.from_yaml(capsysbinary.readouterr().out.decode()) == field_of(Venue)
+    assert Field.from_json(capsysbinary.readouterr().out.decode()) == field_of(Venue)
 
 
-@pytest.mark.parametrize(
-    ("suffix", "reader"), [(".yaml", Field.from_yaml), (".json", Field.from_json)]
-)
-def test_dump_infers_the_format_from_the_target(tmp_path: Path, suffix: str, reader) -> None:
-    target = tmp_path / f"log{suffix}"
-    assert (
-        run(
-            "fields",
-            "dump",
-            "--pyclass",
-            "tests.test_cli:Venue",
-            "--target",
-            str(target),
-        )
-        == 0
-    )
-    assert reader(target.read_text()) == field_of(Venue)
-
-
-def test_dump_format_wins_over_the_extension(tmp_path: Path) -> None:
-    """It was typed; the extension was merely there."""
-    target = tmp_path / "venue.yaml"
-    argv = ("fields", "dump", "--pyclass", "tests.test_cli:Venue", "--format", "json")
-    assert run(*argv, "--target", str(target)) == 0
-    assert json.loads(target.read_text())["name"] == "Venue"
-
-
-def test_dump_infers_the_format_from_the_extension(tmp_path: Path) -> None:
+def test_dump_writes_json_to_the_target(tmp_path: Path) -> None:
     target = tmp_path / "log.json"
     assert (
         run(
@@ -95,12 +69,13 @@ def test_dump_infers_the_format_from_the_extension(tmp_path: Path) -> None:
         )
         == 0
     )
+    assert target.read_text() == f"{field_of(Venue).into_json(indent=2)}\n"
     assert Field.from_json(target.read_text()) == field_of(Venue)
 
 
 def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     """So a dump with no target pipes, and one with a target says where it went."""
-    target = tmp_path / "venue.yaml"
+    target = tmp_path / "venue.json"
     assert (
         run(
             "fields",
@@ -120,7 +95,7 @@ def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.Capture
 def test_dump_takes_a_plain_dataclass(capsysbinary: pytest.CaptureFixture) -> None:
     """The CLI projects an undecorated dataclass through the same field adapter."""
     assert run("fields", "dump", "--pyclass", "tests.test_cli:Venue") == 0
-    dumped = Field.from_yaml(capsysbinary.readouterr().out.decode())
+    dumped = Field.from_json(capsysbinary.readouterr().out.decode())
     assert field_names(dumped) == ["mic", "country"]
     assert dumped.field("country").nullable is True
 
@@ -133,8 +108,11 @@ class Venue:
     country: str | None = None
 
 
+NOT_A_FIELD: dict[str, object] = {}
+
+
 def test_a_class_that_is_not_a_shape_is_refused(capsys: pytest.CaptureFixture) -> None:
-    assert run("fields", "dump", "--pyclass", "rekep.cli:FORMATS") == 1
+    assert run("fields", "dump", "--pyclass", "tests.test_cli:NOT_A_FIELD") == 1
     assert "does not name a field" in capsys.readouterr().err
 
 
@@ -177,34 +155,35 @@ def test_a_document_that_does_not_build_is_refused(
 def test_a_document_with_an_unknown_type_is_refused(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    broken = tmp_path / "broken.yaml"
+    broken = tmp_path / "broken.json"
     broken.write_text(
-        "name: Broken\n"
-        "dtype:\n"
-        "  type: struct\n"
-        "  fields:\n"
-        "  - name: x\n"
-        "    dtype:\n"
-        "      type: int65\n"
-        "    nullable: false\n"
-        "nullable: false\n"
+        json.dumps(
+            {
+                "name": "Broken",
+                "dtype": {
+                    "type": "struct",
+                    "fields": [{"name": "x", "dtype": {"type": "int65"}, "nullable": False}],
+                },
+                "nullable": False,
+            }
+        )
     )
     assert run("fields", "load", "--target", str(broken)) == 1
     assert "int65" in capsys.readouterr().err
 
 
-def test_an_unknown_extension_defaults_to_yaml(
+def test_a_document_extension_does_not_select_another_codec(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
     unknown = tmp_path / "log.txt"
-    unknown.write_text(field_of(Venue).into_yaml())
+    unknown.write_text(field_of(Venue).into_json())
     assert run("fields", "load", "--target", str(unknown)) == 0
     assert "Venue: 2 columns, builds" in capsys.readouterr().out
 
 
 def test_a_missing_document_is_reported(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-    assert run("fields", "load", "--target", str(tmp_path / "nowhere.yaml")) == 1
-    assert "nowhere.yaml" in capsys.readouterr().err
+    assert run("fields", "load", "--target", str(tmp_path / "nowhere.json")) == 1
+    assert "nowhere.json" in capsys.readouterr().err
 
 
 # -- the round trip the CLI exists for --------------------------------------
@@ -214,7 +193,7 @@ def test_dump_then_load_is_the_contract_workflow(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
     """What CI runs: publish the declaration, then check the file builds."""
-    target = tmp_path / "venue.yaml"
+    target = tmp_path / "venue.json"
     assert (
         run(
             "fields",
@@ -227,7 +206,7 @@ def test_dump_then_load_is_the_contract_workflow(
         == 0
     )
     assert run("fields", "load", "--target", str(target)) == 0
-    assert Field.from_yaml(target.read_text()) == field_of(Venue)
+    assert Field.from_json(target.read_text()) == field_of(Venue)
     assert "builds" in capsys.readouterr().out
 
 
@@ -257,7 +236,7 @@ with app.setup:
 
 @app.cell
 def parameters():
-    _defaults = Task.from_yaml(str(pathlib.Path(__file__).with_suffix(".yml"))).parameters
+    _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     source = _defaults["source"]
     rows = _defaults["rows"]
     secret = _defaults["secret"]
@@ -280,15 +259,18 @@ def _(records, rows, secret, source):
     return (result,)
 """
 
-DOCUMENT = """
-name: sample
-application: sample.py
-parameters:
-  source: data/capture
-  rows: 1
-  secret: unset
-  log_level: INFO
-"""
+DOCUMENT = json.dumps(
+    {
+        "name": "sample",
+        "application": "sample.py",
+        "parameters": {
+            "source": "data/capture",
+            "rows": 1,
+            "secret": "unset",
+            "log_level": "INFO",
+        },
+    }
+)
 
 
 def task(tmp_path: Path, application: str = APPLICATION, document: str = DOCUMENT) -> str:
@@ -296,8 +278,8 @@ def task(tmp_path: Path, application: str = APPLICATION, document: str = DOCUMEN
     directory = tmp_path / "sample"
     directory.mkdir()
     (directory / "sample.py").write_text(application, encoding="utf-8")
-    (directory / "sample.yml").write_text(document, encoding="utf-8")
-    return str(directory / "sample.yml")
+    (directory / "sample.json").write_text(document, encoding="utf-8")
+    return str(directory / "sample.json")
 
 
 def test_a_task_run_publishes_the_same_document_to_stdout_and_the_result_file(
