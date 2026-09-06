@@ -23,8 +23,9 @@ operation. No carried value returns only the native FIX projection. A carried
 Struct preserves all children, order, nullability and metadata, then appends
 the FIX columns and rejects case-insensitive collisions before pulling input.
 Do not add a binding-owned schema, tag list, JSON model, parser, or second
-combiner. If this accessor is absent, implement it in Yggdryl first; never
-emulate it in yggfin.
+combiner. Do not add another reader accessor: `parse_arrow_reader` already
+returns the final lazy Arrow stream. If `FixMsg.schema` is absent, implement it
+in Yggdryl first; never emulate it in yggfin.
 
 Prove in Rust, Python and JavaScript: global and explicit registries;
 empty/partial/full registries; carried and native-only shapes; deterministic
@@ -38,12 +39,14 @@ source-first columns for 95. The carried result must equal
 After Yggdryl lands, pull and pin that exact commit in yggfin. In
 `tasks/parse_fix/parse_fix.py`, obtain `FixMessage` with
 `FixMsg.schema(dictionary, name="FixMessage", carried=Message.field())`, then
-stream the native parser through strict `Field.apply_arrow_reader` into
-Iceberg. In `tools/fix_registry.py`, obtain the native-only `FixMsg` view from
-the same accessor. Delete both empty `RecordBatchReader` schema probes, their
-`Field.from_arrow_schema` conversions, and now-unused imports. Regenerate
-`schemas/rekep/fix-message.json` from the accessor through
-`Field.into_json`; keep it only as a derived fixture.
+pass the `RecordBatchReader` returned by `parse_arrow_reader` directly to
+`IcebergDataset.append_arrow_reader(parsed, field, merge_by=True)`. That
+Iceberg boundary already applies and validates `field`; delete the redundant
+task-level `Field.apply_arrow_reader`. In `tools/fix_registry.py`, obtain the
+native-only `FixMsg` view from the same accessor. Delete both empty
+`RecordBatchReader` schema probes, their `Field.from_arrow_schema` conversions,
+and now-unused imports. Regenerate `schemas/rekep/fix-message.json` from the
+accessor through `Field.into_json`; keep it only as a derived fixture.
 
 Update the FIX task, registry-tool and contract pages to show only the native
 accessor. Test accessor/parser schema equality, the 95-column JSON round trip,
