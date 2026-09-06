@@ -31,12 +31,13 @@ _WINDOWS_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
 def _file_location(location: str) -> str:
     """Make a local path absolute while leaving an explicit URI on its store."""
     if location.casefold().startswith("file:"):
-        # Arrow accepts `file:/x`; Yggdryl Url deliberately requires the
-        # hierarchical `file:///x`. Resolve the URI as a path before asking
-        # Yggdryl for its canonical URL.
-        if not location[5:].startswith("//"):
-            return str(Url.from_path(Path(Uri(location).into_path()).resolve()))
-        return str(Url(location))
+        uri = Uri(location)
+        try:
+            return str(uri.into_url())
+        except ValueError:
+            # Arrow accepts `file:/x`; Yggdryl Url deliberately requires the
+            # hierarchical `file:///x`. Resolve the URI as a path first.
+            return str(Url.from_path(Path(uri.into_path()).resolve()))
     if os.name == "nt" and _WINDOWS_PATH.match(location):
         return str(Url.from_path(Path(location).resolve()))
     if _SCHEME.match(location):

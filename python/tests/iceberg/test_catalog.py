@@ -107,6 +107,12 @@ def test_a_nonhierarchical_file_uri_becomes_a_canonical_url(tmp_path: Path) -> N
     assert catalog.properties["warehouse"] == warehouse.as_uri()
 
 
+def test_a_file_uri_with_unc_backslashes_keeps_its_authority() -> None:
+    catalog = IcebergCatalog(properties={"warehouse": r"file:\\server\share\warehouse"})
+
+    assert catalog.properties["warehouse"] == "file://server/share/warehouse"
+
+
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
     named = IcebergCatalog(name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"})
     assert named.properties["py-io-impl"] == "x.Y"
