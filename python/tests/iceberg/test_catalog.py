@@ -98,6 +98,15 @@ def test_relative_local_locations_become_absolute_file_uris(
     }
 
 
+def test_a_nonhierarchical_file_uri_becomes_a_canonical_url(tmp_path: Path) -> None:
+    warehouse = tmp_path / "warehouse"
+    shorthand = f"file:{warehouse.as_posix()}"
+
+    catalog = IcebergCatalog(properties={"warehouse": shorthand})
+
+    assert catalog.properties["warehouse"] == warehouse.as_uri()
+
+
 def test_a_named_file_io_wins(tmp_path: Path) -> None:
     named = IcebergCatalog(name="test", properties={"type": "in-memory", "py-io-impl": "x.Y"})
     assert named.properties["py-io-impl"] == "x.Y"

@@ -9,7 +9,7 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from yggdryl import Url
+from yggdryl import Uri, Url
 
 from rekep.convert import Convertible
 from rekep.fields import field_of
@@ -31,6 +31,11 @@ _WINDOWS_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
 def _file_location(location: str) -> str:
     """Make a local path absolute while leaving an explicit URI on its store."""
     if location.casefold().startswith("file:"):
+        # Arrow accepts `file:/x`; Yggdryl Url deliberately requires the
+        # hierarchical `file:///x`. Resolve the URI as a path before asking
+        # Yggdryl for its canonical URL.
+        if not location[5:].startswith("//"):
+            return str(Url.from_path(Path(Uri(location).into_path()).resolve()))
         return str(Url(location))
     if os.name == "nt" and _WINDOWS_PATH.match(location):
         return str(Url.from_path(Path(location).resolve()))
