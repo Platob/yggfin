@@ -1,6 +1,6 @@
 # Yggdryl prompt: remove IOBase transfer bottlenecks
 
-Start at merged main `ac093526`. Optimize Rust first, then keep Python and
+Start at merged main `083da992`. Optimize Rust first, then keep Python and
 JavaScript thin. Preserve injected Arrow filesystem identity, opaque paths,
 lazy construction, missing-as-empty reads, sticky first errors, and close-once
 behavior. Add no filesystem or compatibility layer.
@@ -42,6 +42,10 @@ complete rewrites; cadence is native only for folders and Iceberg.
 
 ## Whole-byte reads
 
+Keep `083da992`'s direct whole-read delegation through Text, Coded, and media
+wrappers; a composed gzip value must not run a size pass and then decode it a
+second time.
+
 Optimize `holder::fs::File::read_all_bytes`. It currently allocates one vector
 per 64 KiB stream item, copies each into a growing vector, then Python copies
 that vector into `PyBytes`. Retain exactly one sequential open and one reusable
@@ -82,7 +86,7 @@ pulled, and target publication only after the encoder/container finishes.
 Measure seven interleaved warmed samples: median/range throughput, calls,
 first-batch latency, and peak retained bytes.
 
-Reference Windows medians from release-built Yggdryl 0.1.1 at `ac093526` with
+Historical Windows medians from release-built Yggdryl 0.1.1 at `ac093526` with
 PyArrow 25.0.1, for 64 MiB cached reads, were 1.6-1.8 GiB/s through
 pathlib/PyArrow, 1.5-1.7 GiB/s through
 `IOBase.open_input_file().read()`, and 0.37 GiB/s through

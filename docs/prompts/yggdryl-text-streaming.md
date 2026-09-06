@@ -1,6 +1,6 @@
 # Yggdryl prompt: finish compressed text streaming
 
-Start at merged main `ac093526`. Keep the public Rust, Python, and JavaScript
+Start at merged main `083da992`. Keep the public Rust, Python, and JavaScript
 shape and optimize the Rust core first.
 
 Decode every RFC 1952 gzip member in order. Replace single-member
@@ -33,9 +33,10 @@ the foreign Arrow-filesystem `read -> Vec -> copy` seam with a one-copy
 `readinto`/buffer-protocol path plus a compatible `read` fallback. Preserve
 custom `PyFileSystem` support, sticky errors, 1 MiB requests, and close-once.
 
-After transport correctness is fixed, replace the text reader's generic
-`Scalar` row materialization with dedicated Arrow builders. Reuse row/body
-buffers and compiled capture locations; do not allocate URL and capture scalar
+After transport correctness is fixed, replace the text reader's remaining
+generic `Scalar` row wrappers with dedicated Arrow builders. Keep the
+zero-copy canonical Utf8/Binary values added in `083da992`; reuse row/body
+buffers and compiled capture locations, and do not allocate URL or capture
 wrappers per row or revalidate values the parser just produced. Preserve exact
 metadata, nulls, physical row numbers, multiline framing, truncation/overflow
 accounting, and batch/error timing.

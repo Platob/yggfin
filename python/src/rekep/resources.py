@@ -58,7 +58,7 @@ def read_bytes(
     timeout: float | None = None,
     headers: Mapping[str, str] | None = None,
 ) -> bytes:
-    """Read one required resource, decoding its yggdryl content codec."""
+    """Read one required resource through its composed yggdryl handle."""
     request = source if isinstance(source, urllib.request.Request) else None
     location = request.full_url if request is not None else os.fspath(source)
     if filesystem is None and _scheme(location) in HTTP:
@@ -70,14 +70,7 @@ def read_bytes(
     try:
         if not opened.is_file():
             raise FileNotFoundError(location)
-        if opened.codec is None:
-            return opened.read_bytes()
-        decoded = IOBase.from_bytes()
-        try:
-            opened.decompress_into(decoded)
-            return decoded.read_bytes()
-        finally:
-            decoded.close()
+        return opened.read_bytes()
     finally:
         opened.close()
 

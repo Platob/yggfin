@@ -129,10 +129,12 @@ def expected(index: int) -> dict[str, object]:
     }
 
 
-def verify(case: Case, rows: int) -> None:
+def verify(case: Case, rows: int) -> pyarrow.Table:
     """Assert the streamed schema, count, and endpoint rows before timing."""
     batches = list(message_batches(case.source()))
     assert batches and all(batch.schema.equals(SCHEMA, check_metadata=True) for batch in batches)
+    assert all(0 < batch.num_rows <= BATCH_ROW_SIZE for batch in batches)
+    assert SCHEMA.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
     table = pyarrow.Table.from_batches(batches, schema=SCHEMA)
     assert table.num_rows == rows
     assert first_batch(case) == min(rows, BATCH_ROW_SIZE)
@@ -141,6 +143,7 @@ def verify(case: Case, rows: int) -> None:
         url = row.pop("url")
         assert isinstance(url, str) and url.endswith(case.filename)
         assert row == expected(index)
+    return table
 
 
 def cases(root: pathlib.Path, decoded: bytes) -> tuple[tuple[Case, ...], int]:
@@ -173,8 +176,13 @@ def sweep(rows: int, repeat: int) -> None:
     decoded = corpus(rows)
     with tempfile.TemporaryDirectory(prefix="rekep-message-bench-") as directory:
         selected, encoded_size = cases(pathlib.Path(directory), decoded)
-        for case in selected:
-            verify(case, rows)
+        verified = [verify(case, rows) for case in selected]
+        comparable = [
+            table.select([name for name in table.schema.names if name != "url"])
+            for table in verified
+        ]
+        assert comparable[0].equals(comparable[1]), "plain and gzip rows differ"
+        del comparable, verified
 
         print(
             f"{rows:,} rows, {len(decoded) / 2**20:.2f} decoded MiB, "
