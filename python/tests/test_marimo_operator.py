@@ -543,6 +543,9 @@ def test_terminating_the_task_stops_the_runner_process_group(
     (tmp_path / "python").symlink_to(ROOT / "python")
     directory = tmp_path / "tasks" / "sleeper"
     directory.mkdir(parents=True)
+    # The runner the operator hands `uv` lives beside the tasks it runs, so a
+    # checkout without it never reaches a child process at all.
+    (tmp_path / "tasks" / "airflow").symlink_to(DAGS)
     (directory / "sleeper.json").write_text(
         json.dumps(
             {
