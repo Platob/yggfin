@@ -65,7 +65,7 @@ nav:
       - Yggdryl IOBase throughput: prompts/yggdryl-iobase-throughput.md
       - Yggdryl Arrow apply: prompts/yggdryl-arrow-apply.md
       - Yggdryl FIX Arrow throughput: prompts/yggdryl-fix-arrow-throughput.md
-      - Yggdryl FIX schema bindings: prompts/yggdryl-fix-schema-bindings.md
+      - Final FixMsg schema accessor: prompts/yggdryl-fix-schema-bindings.md
 
 validation:
   links:

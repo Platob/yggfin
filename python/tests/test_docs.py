@@ -63,7 +63,7 @@ def test_navigation_names_existing_pages() -> None:
     assert all((DOCS / page).is_file() for page in declared)
 
 
-def test_docs_publish_only_the_static_native_message_contract() -> None:
+def test_docs_publish_the_native_message_contracts() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
 
@@ -80,8 +80,9 @@ def test_docs_publish_only_the_static_native_message_contract() -> None:
     ]
     assert "pipeline/tasks/parse-fix.md" in config
     assert "market/" not in config
-    assert list((ROOT / "schemas" / "rekep").glob("*.json")) == [
-        ROOT / "schemas" / "rekep" / "message.json"
+    assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
+        "fix-message.json",
+        "message.json",
     ]
     assert "fix:name" not in schema
 
@@ -105,4 +106,5 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
 
     assert "parse_arrow_reader" in task
     assert "Field.from_arrow_schema" in task
-    assert "no checked schema" in schemas
+    assert "second registry" in schemas
+    assert "`fix-message.json`" in schemas

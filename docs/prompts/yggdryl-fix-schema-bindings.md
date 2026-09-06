@@ -1,41 +1,55 @@
-# Yggdryl prompt: expose the native FIX schema
+# Final FIX slice: use the native `FixMsg` schema
 
-Start at `c9c84b24` on `codex/fix-arrow-python`, or its merged descendant.
-Implement in Rust, then keep Python and JavaScript bindings thin. The only
-FIX schema source of truth is `rust/src/fix/schema.rs::fix_schema`; do not add
-a parser, projection, schema class, tag list, or binding-owned JSON model.
+Pull latest Yggdryl main containing the merged FIX Arrow work. Rust remains
+the owner of the fixed table shape and source composition. Require this single
+binding accessor before changing yggfin:
 
-Expose the native constructor as Python
-`fix_schema(registry: FixRegistry | None = None, name: str = "fix", *,
-carried: FieldLike | pyarrow.Schema | None = None) -> Field` and JavaScript
-`fix.schema(registry?: FixRegistry | null, name?: string,
-carried?: Field | null): Field`. `None`/`null` uses the global registry. With
-no `carried` value, return exactly Rust `fix_schema(registry, name)`. A carried
-root must be a Struct; preserve every carried child, including nested metadata,
-in source order, append the native FIX children, reject case-insensitive child
-name collisions, and put the FIX root metadata on the named combined root.
-Python may coerce a PyArrow schema through the existing Arrow-to-`Field`
-boundary; JavaScript takes its native `Field`. Move the private merge in
-`rust/src/fix/batch.rs` beside the schema owner and make
-`FixBatchReader::from_column` call the same operation.
+```python
+class FixMsg:
+    @staticmethod
+    def schema(
+        registry: FixRegistry | None = None,
+        name: str = "FixMsg",
+        *,
+        carried: FieldLike | pyarrow.Schema | None = None,
+    ) -> Field: ...
+```
 
-Return an ordinary native `Field`. Its existing `into_arrow_schema`,
-`into_json`/`toJSON`, and metadata views must be the only renderers. Prove that
-Python and JavaScript return structurally identical JSON for the same registry,
-and that the Arrow round trip preserves numeric tag names, display and FIX
-metadata, nested groups, nullability, derived crate columns, `entries`, and
-`unmapped`. Add Rust tests comparing direct, carried, and batch-reader schemas;
-cover empty/partial/full registries, root and child metadata, collision refusal,
-and deterministic order. Add binding export, typing, explicit/global registry,
-carried/no-carried, PyArrow-schema (Python), JSON-parity, and executable-doc
-tests. Assert schema construction cannot pull or parse a row, then delete the
-empty-reader schema workaround from examples and downstream UI code.
+Expose the equivalent JavaScript static method with `Field | null` for
+`carried`. Keep the instance `message.field` accessor unchanged. Back both
+bindings directly with `rust/src/fix/schema.rs::fix_schema`; move the private
+source combiner beside it and make `FixBatchReader::from_column` call the same
+operation. No carried value returns only the native FIX projection. A carried
+Struct preserves all children, order, nullability and metadata, then appends
+the FIX columns and rejects case-insensitive collisions before pulling input.
+Do not add a binding-owned schema, tag list, JSON model, parser, or second
+combiner. If this accessor is absent, implement it in Yggdryl first; never
+emulate it in yggfin.
 
-One adjacent deletion is allowed only if it removes yggfin's
-`rekep.fields.replace_field`: add one native immutable
-`Field.clone_with(*, name=None, dtype=None, nullable=None, metadata=None) -> Field`
-and JavaScript `field.cloneWith({ name, dtype, nullable, metadata }): Field`.
-Unspecified parts, dictionary flags, metadata, and other native field state
-must survive; replacements use existing validation. Otherwise omit this API
-rather than reconstructing a `Field` in a binding. Do not add any other field
-builder or compatibility layer.
+Prove in Rust, Python and JavaScript: global and explicit registries;
+empty/partial/full registries; carried and native-only shapes; deterministic
+ordering; nested groups and metadata; numeric tag names; derived fields;
+`timestamp[us, UTC]`; closing `entries` and `unmapped`; collision refusal; no
+source pull; Arrow/JSON parity across bindings. With the full checked registry,
+the native shape has 87 columns and carrying `Message.field()` adds its eight
+source-first columns for 95. The carried result must equal
+`parse_arrow_reader(...).schema` exactly.
+
+After Yggdryl lands, pull and pin that exact commit in yggfin. In
+`tasks/parse_fix/parse_fix.py`, obtain `FixMessage` with
+`FixMsg.schema(dictionary, name="FixMessage", carried=Message.field())`, then
+stream the native parser through strict `Field.apply_arrow_reader` into
+Iceberg. In `tools/fix_registry.py`, obtain the native-only `FixMsg` view from
+the same accessor. Delete both empty `RecordBatchReader` schema probes, their
+`Field.from_arrow_schema` conversions, and now-unused imports. Regenerate
+`schemas/rekep/fix-message.json` from the accessor through
+`Field.into_json`; keep it only as a derived fixture.
+
+Update the FIX task, registry-tool and contract pages to show only the native
+accessor. Test accessor/parser schema equality, the 95-column JSON round trip,
+empty input, streamed hourly-partition append/read, replay idempotence,
+commit-before-next-chunk, definite-failure cleanup, and no remaining
+`rekep-iceberg-*` temporary directories. Run Rust first, then Python and
+JavaScript bindings, yggfin Ruff, focused unit/integration tests, strict Marimo
+and strict MkDocs. Delete obsolete helpers and assertions, commit each
+repository once, and push both main branches only when clean.
