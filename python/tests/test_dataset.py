@@ -384,6 +384,41 @@ def test_polars_cannot_fill_a_missing_required_column(dataset: MemoryDataset) ->
     assert dataset.commits == []
 
 
+# -- watermarks --------------------------------------------------------------
+
+
+def test_watermarks_answer_the_greatest_value_per_key(dataset: MemoryDataset) -> None:
+    dataset.append_arrow_batch(
+        batch_of(
+            symbol=["AAPL", "AAPL", "MSFT"],
+            day=[datetime.date(2026, 8, 14)] * 3,
+            size=[7, 3, 5],
+        ),
+        merge_by=False,
+    )
+
+    assert dataset.watermarks("size", by="symbol") == {"AAPL": 7, "MSFT": 5}
+
+
+def test_watermarks_cross_batches_and_ignore_nulls(dataset: MemoryDataset) -> None:
+    day = datetime.date(2026, 8, 14)
+    for sizes in ([1, 9], [4, None]):
+        dataset.append_arrow_batch(
+            batch_of(symbol=["AAPL", "MSFT"], day=[day] * 2, size=sizes),
+            merge_by=False,
+        )
+
+    # The greatest is the greatest across every commit, and a key whose only
+    # value is null is a key with no mark rather than a key with a null one.
+    assert dataset.watermarks("size", by="symbol") == {"AAPL": 4, "MSFT": 9}
+
+
+def test_a_dataset_that_holds_nothing_has_no_watermarks(dataset: MemoryDataset) -> None:
+    # The first run of a fresh catalog: no marks, so nothing resumes and the
+    # whole source is read.
+    assert dataset.watermarks("size", by="symbol") == {}
+
+
 # -- appending --------------------------------------------------------------
 
 

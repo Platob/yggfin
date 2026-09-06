@@ -224,6 +224,35 @@ class Dataset(Convertible, abc.ABC):
         polars = require("polars", "polars")
         return polars.from_arrow(self.read_arrow_table(schema, **kwargs), rechunk=False)
 
+    def watermarks(self, column: str, *, by: str, **kwargs: Any) -> dict[Any, Any]:
+        """The greatest `column` this dataset holds, per distinct `by` value.
+
+        How an incremental task learns what it has already landed: a source
+        keyed by an ordered column resumes above its own mark rather than
+        re-reading itself and leaning on the write to discard the duplicates.
+        Only the two columns are read, so storage planning prunes the rest.
+
+        A dataset that is not there yet has no marks, which is what makes the
+        first run of a fresh catalog a plain full load.
+        """
+        highest: dict[Any, Any] = {}
+        reader = self.read_arrow_reader(columns=[by, column], **kwargs)
+        try:
+            for batch in reader:
+                grouped = (
+                    pyarrow.Table.from_batches([batch]).group_by(by).aggregate([(column, "max")])
+                )
+                for key, mark in zip(
+                    grouped.column(by).to_pylist(),
+                    grouped.column(f"{column}_max").to_pylist(),
+                    strict=True,
+                ):
+                    if mark is not None and (key not in highest or mark > highest[key]):
+                        highest[key] = mark
+        finally:
+            reader.close()
+        return highest
+
     # -- writing ------------------------------------------------------------
 
     @abc.abstractmethod

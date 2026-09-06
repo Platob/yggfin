@@ -77,6 +77,11 @@ filesystem URI -> parse_messages -> logs.messages
 document. The application passes `filesystem` to `IOBase.from_uri`, casts each
 batch to `Message.field()`, and writes the iterator directly to Iceberg.
 
+A run costs what arrived. `Dataset.watermarks` reads the line each source was
+last read to, and a leaf whose `row_size` has not passed its mark is settled
+without being parsed; one that grew resumes above it. A task reports the
+sources it settled as `settled`.
+
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
 `elapsed_ms`.

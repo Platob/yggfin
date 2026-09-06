@@ -24,11 +24,10 @@ FIRST = {
     "parse_messages": {"read": 14, "written": 14, "skipped": 0},
 }
 
-#: What a replay of the same input produces: the same reads, no writes.
-REPLAY = {
-    name: {"read": counts["read"], "written": 0, "skipped": counts["read"]}
-    for name, counts in FIRST.items()
-}
+#: What a replay of the same input produces: nothing at all. Each source
+#: resumes above the line it was last read to, so a replay that has nothing
+#: new settles it without parsing it rather than reading it to discard it.
+REPLAY = {name: {"read": 0, "written": 0, "skipped": 0} for name in FIRST}
 
 #: Stored rows, and the one snapshot each table holds after both runs.
 STORED = {
@@ -113,6 +112,7 @@ def test_the_workflow_publishes_the_fixture_and_a_replay_writes_nothing(ran: Ran
 
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY
+    assert replay["parse_messages"]["settled"] == 1, "the one source was settled, not re-read"
     assert ran.rows() == STORED, "an idempotent replay adds no row"
     assert ran.snapshots() == {name: int(bool(rows)) for name, rows in STORED.items()}
 

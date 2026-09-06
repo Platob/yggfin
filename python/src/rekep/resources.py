@@ -70,14 +70,9 @@ def read_bytes(
     try:
         if not opened.is_file():
             raise FileNotFoundError(location)
-        if opened.codec is None:
-            return opened.read_bytes()
-        decoded = IOBase.from_bytes()
-        try:
-            opened.decompress_into(decoded)
-            return decoded.read_bytes()
-        finally:
-            decoded.close()
+        # A handle is described as the value its name declares, so a coded name
+        # already reads decoded and there is nothing here to decode.
+        return opened.read_bytes()
     finally:
         opened.close()
 

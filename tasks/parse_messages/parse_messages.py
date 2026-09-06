@@ -8,6 +8,7 @@ with app.setup:
     from contextlib import ExitStack
 
     import marimo as mo
+    import pyarrow.compute
     from yggdryl import IOBase, TextOptions
 
     from rekep.fields import strict_cast_batch
@@ -26,7 +27,8 @@ def _():
     mo.md("""
     # Parse messages
 
-    Read physical text records into raw message rows.
+    Read physical text records into raw message rows, resuming each source
+    above the line it was last read to.
     """)
 
 
@@ -65,7 +67,7 @@ def _(catalog, filesystem, records):
         options.with_rownum = 1
         options.rowheader = MESSAGE_HEADER
         options.autotype = False
-        counts = {"read": 0}
+        counts = {"read": 0, "settled": 0}
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
         messages = store.dataset(
@@ -73,18 +75,52 @@ def _(catalog, filesystem, records):
             field=field,
         )
         opened.callback(messages.close)
-        reader = source.read_arrow_reader(options=options)
-        opened.callback(reader.close)
+        # The physical line each source was last read to. A run then costs what
+        # arrived rather than what the target already holds: without it every
+        # run re-reads the whole capture and leans on the write to discard the
+        # duplicates, which grows with history instead of with new data.
+        marks = messages.watermarks("sourcerownum", by="sourceurl")
+
+        def _leaves():
+            # A capture is usually a tree of objects, and may be one object.
+            # The selection is the one a folder read makes for itself: the
+            # leaves whose media type is what these options read.
+            entries = source.ls(recursive=True) if source.is_dir() else (source,)
+            for entry in entries:
+                if not entry.is_dir() and entry.media_type.base == options.mime_type:
+                    yield entry
 
         def _batches():
-            for batch in reader:
-                names = [SOURCE_NAMES.get(name, name) for name in batch.schema.names]
-                parsed = strict_cast_batch(field, batch.rename_columns(names))
-                counts["read"] += parsed.num_rows
-                yield parsed
+            for leaf in _leaves():
+                mark = marks.get(str(leaf.url), 0)
+                # Counting physical lines builds no batches, so a source that
+                # has not grown settles without being parsed. A source that
+                # shrank has nothing an insert would take either.
+                if mark and leaf.row_size <= mark:
+                    counts["settled"] += 1
+                    continue
+                reader = leaf.read_arrow_reader(options=options)
+                try:
+                    for batch in reader:
+                        if mark:
+                            batch = batch.filter(
+                                pyarrow.compute.greater(batch.column("rownum"), mark)
+                            )
+                            if not batch.num_rows:
+                                continue
+                        names = [SOURCE_NAMES.get(name, name) for name in batch.schema.names]
+                        parsed = strict_cast_batch(field, batch.rename_columns(names))
+                        counts["read"] += parsed.num_rows
+                        yield parsed
+                finally:
+                    reader.close()
 
         written = messages.append_arrow_reader(_batches(), field, merge_by=True)
-        _outcome = stage.finished(read=counts["read"], written=written)
+        _outcome = stage.finished(
+            read=counts["read"],
+            written=written,
+            settled=counts["settled"],
+        )
     outcome = _outcome
     return (outcome,)
 
