@@ -19,8 +19,9 @@ print(polars.from_arrow(arrow.empty_table()))
 ```
 
 Yggdryl emits `RecordBatch` objects. Rekep checks required values, then the
-native `Field` reconciles order and types; PyIceberg accepts the resulting
-Arrow stream. No row model or project filesystem sits between those boundaries.
+native `Field` casts and applies any declared partition and digest columns;
+PyIceberg accepts the resulting Arrow stream. No row model or project
+filesystem sits between those boundaries.
 
 The remaining strict-preflight behavior belongs upstream; its exact target is
 the [strict cast prompt](../prompts/yggdryl-strict-arrow-cast.md).

@@ -41,5 +41,8 @@ def test_contract_matches_the_message_declaration() -> None:
 
 def test_raw_message_contract_keeps_source_keys() -> None:
     message = load_contract()
-    assert primary_keys(message) == ["sourceurl", "sourcerownum"]
+    assert primary_keys(message) == ["url", "rownum"]
     assert partition_keys(message) == {}
+    assert all(member.digest.get("role") != "holder" for member in message)
+    assert all(member.partition.sources is None for member in message)
+    assert all(member.partition.transform is None for member in message)

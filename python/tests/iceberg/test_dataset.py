@@ -25,6 +25,7 @@ from rekep import (
     scalar,
 )
 from rekep.fields import (
+    derived_from,
     field_names,
     field_of,
     fields,
@@ -1584,7 +1585,7 @@ def test_a_partition_derived_from_the_primary_key_merges_exactly(
     @scalar
     class Tick(Convertible):
         unix: Annotated[int, primary_key()]
-        unixpartition: Annotated[int, partition_key(derived_from="unix")]
+        unixpartition: Annotated[int, partition_key(), derived_from("unix")]
         venue: str
 
     ticks = IcebergDataset(
@@ -1594,17 +1595,9 @@ def test_a_partition_derived_from_the_primary_key_merges_exactly(
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
     )
-    schema = Tick.field().into_arrow_schema()
-    ticks.append_arrow_table(
-        pyarrow.Table.from_pydict(
-            {"unix": [1, 2], "unixpartition": [0, 0], "venue": ["XPAR", "XPAR"]},
-            schema=schema,
-        )
-    )
+    ticks.append_arrow_table(pyarrow.table({"unix": [1, 2], "venue": ["XPAR", "XPAR"]}))
     ticks.overwrite_arrow_table(
-        pyarrow.Table.from_pydict(
-            {"unix": [1], "unixpartition": [0], "venue": ["XETR"]}, schema=schema
-        ),
+        pyarrow.table({"unix": [1], "venue": ["XETR"]}),
         merge_by=True,
     )
 
@@ -2246,8 +2239,8 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         catalog_properties=catalog_properties(tmp_path),
     )
     row = Message(
-        sourceurl="capture.log",
-        sourcerownum=7,
+        url="capture.log",
+        rownum=7,
         timestamp="2026-08-14 09:30:00.123",
         threadname="worker-1",
         plugin="bridge",
@@ -2267,9 +2260,9 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     stored = reopened.read_arrow_table(Message.field()).to_pylist()
     assert stored == [
         {
-            "sourceurl": "capture.log",
-            "sourcerownum": 7,
-            "timestamp": "2026-08-14 09:30:00.123",
+            "url": "capture.log",
+            "rownum": 7,
+            "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
             "threadname": "worker-1",
             "plugin": "bridge",
             "level": "INFO",
@@ -4981,29 +4974,28 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
 
 @scalar
 class Beat(Convertible):
-    """A row keyed on a textual instant, partitioned on the hour it falls in."""
+    """A row keyed on text, partitioned on its length."""
 
     at: Annotated[str, primary_key()]
-    """The instant, spelled out -- a key with no arithmetic to band."""
+    """The text key."""
 
-    hour: Annotated[str, partition_key(derived_from="at")] = ""
-    """`at` truncated to the hour -- what the data is partitioned on."""
+    width: Annotated[int, partition_key(), derived_from("at", "length")] = 0
+    """The character count Yggdryl derives from `at`."""
 
     payload: str = "x"
     """Payload."""
 
 
-def beats(hour: int, count: int = 200) -> pyarrow.Table:
-    stamp = f"2026-08-14T{hour:02d}"
-    return pyarrow.Table.from_pydict(
-        {
-            "at": [
-                f"{stamp}:{index // 60:02d}:{index % 60:02d}.{index:04d}" for index in range(count)
-            ],
-            "hour": [stamp] * count,
-            "payload": ["x"] * count,
-        },
-        schema=Beat.field().into_arrow_schema(),
+def beats(width: int, count: int = 200) -> pyarrow.Table:
+    characters = width + 3
+    return strict_cast_table(
+        Beat.field(),
+        pyarrow.table(
+            {
+                "at": [str(index).zfill(characters) for index in range(count)],
+                "payload": ["x"] * count,
+            }
+        ),
     )
 
 
@@ -5011,9 +5003,9 @@ def test_a_derivation_is_usable_only_where_its_sources_are_keys() -> None:
     from rekep.iceberg.dataset import _derivable
 
     chunk = beats(0)
-    declared = {"hour": ("at",), "day": ("at", "venue"), "absent": ("at",)}
-    assert _derivable(chunk, ["at"], declared) == ["hour"], "day needs a key nothing joins on"
-    assert _derivable(chunk, ["at", "hour"], declared) == [], "already a key, already named"
+    declared = {"width": ("at",), "day": ("at", "venue"), "absent": ("at",)}
+    assert _derivable(chunk, ["at"], declared) == ["width"], "day needs an unkeyed source"
+    assert _derivable(chunk, ["at", "width"], declared) == [], "already a key, already named"
     assert _derivable(chunk, ["at"], None) == []
 
 
@@ -5023,8 +5015,8 @@ def test_a_derived_column_is_named_in_the_filter() -> None:
     chunk = beats(5)
     plain = _key_ranges(chunk, ["at"])
     named = _key_ranges(chunk, ["at"], derived_keys(Beat.field()))
-    assert "hour" not in str(plain), "the merge joins on `at` and knows nothing else"
-    assert "hour" in str(named), "and `hour` is `at`, so it may say so"
+    assert "width" not in str(plain), "the merge joins on `at` and knows nothing else"
+    assert "width" in str(named), "and `width` is derived from `at`, so it may say so"
 
 
 def test_a_derived_column_with_nulls_contributes_no_term() -> None:
@@ -5034,22 +5026,19 @@ def test_a_derived_column_with_nulls_contributes_no_term() -> None:
 
     chunk = beats(5)
     holed = chunk.set_column(
-        chunk.schema.get_field_index("hour"),
-        pyarrow.field("hour", pyarrow.string()),
-        pyarrow.array([None] + ["2026-08-14T05"] * (chunk.num_rows - 1), pyarrow.string()),
+        chunk.schema.get_field_index("width"),
+        pyarrow.field("width", pyarrow.int64()),
+        pyarrow.array([None] + [8] * (chunk.num_rows - 1), pyarrow.int64()),
     )
-    assert "hour" not in str(_key_ranges(holed, ["at"], derived_keys(Beat.field())))
+    assert "width" not in str(_key_ranges(holed, ["at"], derived_keys(Beat.field())))
 
 
 def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> None:
-    """The whole point. A text key has no arithmetic to find gaps with, so two
-    distant hours become one range covering every hour between them and the
-    filter reads every hour between them -- while the partition column they are
-    a function of names exactly the two."""
+    """Two text bands span many files; their derived widths name only two."""
     catalog = IcebergCatalog(name="beats", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.beats", field=Beat.field())
-    for hour in range(12):
-        dataset.insert_arrow_table(beats(hour), True)
+    for width in range(12):
+        dataset.insert_arrow_table(beats(width), True)
     assert dataset.refresh().data_files().num_rows == 12
 
     from rekep.iceberg.dataset import _key_ranges
@@ -5057,8 +5046,8 @@ def test_a_replay_prunes_to_the_partitions_the_keys_fall_in(tmp_path: Path) -> N
     replay = pyarrow.concat_tables([beats(2), beats(9)])
     unaware = dataset.scan_plan(_key_ranges(replay, ["at"]))
     aware = dataset.scan_plan(_key_ranges(replay, ["at"], dataset.derived_columns()))
-    assert unaware["files"] == 8, "one text range, and every hour between the two"
-    assert aware["files"] == 2, "the two hours, and not the six between them"
+    assert unaware["files"] > aware["files"]
+    assert aware["files"] == 2, "the two widths and none between them"
     assert dataset.insert_arrow_table(replay, True) == 0, "and every key is already stored"
 
 
@@ -5067,8 +5056,8 @@ def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) ->
     and not, has to update the same rows."""
     catalog = IcebergCatalog(name="same", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("trading.beats", field=Beat.field())
-    for hour in range(6):
-        dataset.insert_arrow_table(beats(hour), True)
+    for width in range(6):
+        dataset.insert_arrow_table(beats(width), True)
 
     def repainted(colour: str) -> pyarrow.Table:
         rows = beats(3)
@@ -5078,13 +5067,13 @@ def test_a_derivation_never_loses_a_row_the_merge_had_to_find(tmp_path: Path) ->
             pyarrow.array([colour] * rows.num_rows),
         )
 
-    assert dataset.derived_columns() == {"hour": ("at",)}
+    assert dataset.derived_columns() == {"width": ("at",)}
     assert dataset.merge_arrow_table(repainted("y"), True) == (200, 0), "matched, none inserted"
 
     bare = catalog.dataset("trading.beats", field=_undeclared())
     assert bare.derived_columns() == {}
     assert bare.merge_arrow_table(repainted("z"), True) == (200, 0), "the same rows, the long way"
-    held = dataset.refresh().read_arrow_table(row_filter="hour = '2026-08-14T03'")
+    held = dataset.refresh().read_arrow_table(row_filter="width = 6")
     assert set(held.column("payload").to_pylist()) == {"z"}, "and the last write is what stands"
 
 
@@ -5093,9 +5082,10 @@ def _undeclared() -> Field:
     plain = Field.from_dict(Beat.field().into_dict())
     members = []
     for member in fields(plain):
-        if member.name == "hour":
+        if member.name == "width":
             metadata = dict(member.metadata)
-            metadata.pop("iceberg:derived_from", None)
+            metadata.pop("partition:sources", None)
+            metadata.pop("partition:transform", None)
             member = replace_field(member, metadata=metadata)
         members.append(member)
     return replace_field(plain, dtype=pyarrow.struct([member.into_arrow() for member in members]))
@@ -5107,7 +5097,7 @@ def test_a_table_read_back_declares_no_derivation(tmp_path: Path) -> None:
     dataset = catalog.dataset("trading.beats", field=Beat.field())
     dataset.insert_arrow_table(beats(0), True)
     reread = catalog.dataset("trading.beats")
-    assert partition_keys(reread.into_struct_field()) == {"hour": "identity"}
+    assert partition_keys(reread.into_struct_field()) == {"width": "identity"}
     assert reread.derived_columns() == {}, "unsaid, which costs pruning and never a row"
 
 

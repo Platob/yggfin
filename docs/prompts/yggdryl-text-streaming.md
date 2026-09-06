@@ -1,6 +1,6 @@
 # Yggdryl prompt: finish compressed text streaming
 
-Start at committed `bfadd39f`. Keep the public Rust, Python, and JavaScript
+Start at merged main `ac093526`. Keep the public Rust, Python, and JavaScript
 shape and optimize the Rust core first.
 
 Decode every RFC 1952 gzip member in order. Replace single-member
@@ -33,6 +33,13 @@ the foreign Arrow-filesystem `read -> Vec -> copy` seam with a one-copy
 `readinto`/buffer-protocol path plus a compatible `read` fallback. Preserve
 custom `PyFileSystem` support, sticky errors, 1 MiB requests, and close-once.
 
+After transport correctness is fixed, replace the text reader's generic
+`Scalar` row materialization with dedicated Arrow builders. Reuse row/body
+buffers and compiled capture locations; do not allocate URL and capture scalar
+wrappers per row or revalidate values the parser just produced. Preserve exact
+metadata, nulls, physical row numbers, multiline framing, truncation/overflow
+accounting, and batch/error timing.
+
 Test native Rust byte/read/send paths and Python `IOBase.read_arrow_reader`
 over local, counting Arrow, folder, malformed, gzip, and zstd sources. Cover
 two independently compressed members/frames, early explicit close, exhaustion,
@@ -40,6 +47,8 @@ limit satisfaction, malformed member 2, error fusion, and drop. Assert rows
 and members occur once, overflow never emits a partial record, each leaf opens
 and closes once, and backend reads do not exceed the fetch window.
 
-Benchmark single- versus multi-member gzip, local Arrow FS, `PyFileSystem`, and
-an S3-compatible transport over at least five warmed samples. Verify output
-before timing and reject a local decoded-rows/s regression above 5%.
+Benchmark zero/one/four captures, single- versus multi-member gzip, local Arrow
+FS, `PyFileSystem`, and an S3-compatible transport over at least five warmed
+samples. Verify output before timing and reject a local decoded-rows/s
+regression above 5%. Record baseline and head commits, release/debug mode,
+PyArrow version, backend, corpus bytes/rows, and median/range for every case.

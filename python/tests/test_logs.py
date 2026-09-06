@@ -127,7 +127,7 @@ def test_a_write_is_one_record_however_many_chunks_it_commits(
 
 @pytest.mark.integration
 def test_the_detail_under_it_is_debug(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-    """Writing a file and casting a stream are what INFO is a summary of."""
+    """Writing a file and applying a stream are what INFO is a summary of."""
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
@@ -144,7 +144,7 @@ def test_the_detail_under_it_is_debug(tmp_path: Path, caplog: pytest.LogCaptureF
     with caplog.at_level(logging.DEBUG, logger=ROOT):
         dataset.append_arrow_table(quotes(4))
     assert " output " in caplog.text and ".parquet" in caplog.text
-    assert "casting a stream" in caplog.text
+    assert "applying a stream" in caplog.text
 
 
 @pytest.mark.integration

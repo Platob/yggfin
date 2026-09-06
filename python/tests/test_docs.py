@@ -69,8 +69,8 @@ def test_docs_publish_only_the_native_message_contract() -> None:
 
     assert Field is YggdrylField
     assert [member.name for member in Message.field()] == [
-        "sourceurl",
-        "sourcerownum",
+        "url",
+        "rownum",
         "timestamp",
         "threadname",
         "plugin",
@@ -89,8 +89,8 @@ def test_docs_record_the_measured_message_rates() -> None:
     task = (DOCS / "pipeline" / "tasks" / "parse-messages.md").read_text(encoding="utf-8")
 
     assert "200,000" in benchmark
-    assert "97,813" in benchmark
-    assert "fastest of three warmed runs" in benchmark
+    assert "timestamp[us, UTC]" in benchmark
+    assert "fastest of five warmed runs" in benchmark
     assert "buffered()" in benchmark
     assert "300,000 rows" in benchmark
     assert "Concatenated gzip" in task

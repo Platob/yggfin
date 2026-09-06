@@ -60,6 +60,7 @@ nav:
       - Logs: pipeline/operations/logs.md
   - Next work:
       - Yggdryl text streaming: prompts/yggdryl-text-streaming.md
+      - Yggdryl IOBase throughput: prompts/yggdryl-iobase-throughput.md
       - Yggdryl strict casts: prompts/yggdryl-strict-arrow-cast.md
       - Yggdryl FIX vertical slice: prompts/yggdryl-fix-refactor.md
 

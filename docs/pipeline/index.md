@@ -5,7 +5,7 @@ flowchart LR
     U[filesystem URI] --> I[IOBase]
     I --> T[TextOptions]
     T --> M[Message RecordBatch]
-    M --> C[strict native Field cast]
+    M --> C[strict native Field apply]
     C --> D[(logs.messages)]
 ```
 

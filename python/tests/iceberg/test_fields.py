@@ -199,6 +199,29 @@ def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
     for partition in spec.fields:
         assert "[" not in partition.name and "]" not in partition.name
 
+    built = iceberg_struct_field(iceberg_schema(Bucketed.field()), "Bucketed", spec)
+    assert partition_keys(built) == {"symbol": "bucket[16]", "stamp": "day"}
+    assert not built.field("symbol").is_partition
+    assert not built.field("stamp").is_partition
+
+
+def test_a_repeated_partition_source_stays_authoritative_in_iceberg(schema: object) -> None:
+    from pyiceberg.partitioning import PartitionField, PartitionSpec
+    from pyiceberg.transforms import DayTransform, IdentityTransform
+
+    source_id = schema.find_field("day").field_id
+    spec = PartitionSpec(
+        PartitionField(source_id, 1000, IdentityTransform(), "day"),
+        PartitionField(source_id, 1001, DayTransform(), "day_day"),
+    )
+
+    built = iceberg_struct_field(schema, "Quote", spec)
+
+    assert field_names(built) == ["symbol", "day", "venue"]
+    assert partition_keys(built) == {}
+    assert not built.field("day").is_partition
+    assert built.field("day").iceberg.get("partition_key") is None
+
 
 def test_nothing_declared_is_an_unpartitioned_spec() -> None:
     @scalar
@@ -224,6 +247,8 @@ def test_the_spec_comes_back_as_partition_keys(schema: object) -> None:
     spec = iceberg_partition_spec(Quote.field(), schema)
     built = iceberg_struct_field(schema, "Quote", spec)
     assert partition_keys(built) == {"day": "identity"}
+    assert built.field("day").is_partition
+    assert built.field("day").iceberg.get("partition_key") is None
 
 
 def test_the_widths_are_arrow_s_narrow_ones(schema: object) -> None:

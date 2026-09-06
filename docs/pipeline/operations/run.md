@@ -33,8 +33,8 @@ rekep task run tasks/parse_messages/parse_messages.json
 The command prints one compact JSON result to stdout and progress to stderr.
 The default source path is illustrative and is not created by the package.
 
-Replaying an unchanged source is safe. Rows already stored under
-`(sourceurl, sourcerownum)` are counted as skipped and do not create another
+Replaying an unchanged source is safe. Rows already stored under `(url, rownum)`
+are counted as skipped and do not create another
 Iceberg snapshot.
 
 Override one source without editing the document:

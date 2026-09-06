@@ -103,10 +103,15 @@ def _marks(member: Field) -> str:
     metadata = member.iceberg
     if str(metadata.get("primary_key") or "").casefold() == "true":
         marks.append("primary key")
-    if (partition := str(metadata.get("partition_key") or "")) and (
+    if member.is_partition:
+        marks.append("partition identity")
+    elif (partition := str(metadata.get("partition_key") or "")) and (
         partition.casefold() != "false"
     ):
         marks.append(f"partition {partition}")
+    if sources := member.partition.sources:
+        transform = member.partition.transform or "identity"
+        marks.append(f"derived {transform}({', '.join(sources)})")
     if field_id := metadata.get("field_id"):
         marks.append(f"id {field_id}")
     if member.nullable:

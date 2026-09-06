@@ -10,14 +10,12 @@ with app.setup:
     import marimo as mo
     from yggdryl import IOBase, TextOptions
 
-    from rekep.fields import strict_cast_batch
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
     from rekep.text import Message
     from rekep.times import MESSAGE_HEADER
 
-    SOURCE_NAMES = {"url": "sourceurl", "rownum": "sourcerownum"}
     TARGET = "logs.messages"
 
 
@@ -78,8 +76,7 @@ def _(catalog, filesystem, records):
 
         def _batches():
             for batch in reader:
-                names = [SOURCE_NAMES.get(name, name) for name in batch.schema.names]
-                parsed = strict_cast_batch(field, batch.rename_columns(names))
+                parsed = Message.cast_arrow_batch(batch)
                 counts["read"] += parsed.num_rows
                 yield parsed
 

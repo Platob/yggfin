@@ -36,12 +36,32 @@ batch size.
 `overwrite_arrow_reader` replaces rows matching the declared key and inserts
 the remainder. Both APIs consume one batch at a time.
 
+Before either write, the native Field applies its declarations in dependency
+order: cast, derived partition columns, then digest holders. Yggdryl
+`partition:sources` describes an executable Arrow derivation. It is distinct
+from the Iceberg partition spec: `field:partition` is Yggdryl's physical-layout
+marker, which yggfin maps to an identity Iceberg spec. Non-identity transforms
+passed to `partition_key(...)` remain under `iceberg:partition_key`. A native
+derived transform such as `day` may also appear under `partition:transform`;
+that declaration computes a separate Arrow column and does not define the
+table spec.
+
+The identity and transformed Iceberg markers are mutually exclusive;
+declaration and Iceberg spec conversion reject a field carrying both. A native
+`derived_from(...)` declaration is independent and may be composed with the
+chosen Iceberg marker.
+
+Iceberg itself may declare several transforms over one source column. A Field
+member has only one physical marker, so schema projection deliberately omits
+that ambiguous marker and leaves the table's native `PartitionSpec`
+authoritative for storage planning.
+
 ## Stream reads
 
 ```python
 reader = messages.read_arrow_reader(
-    columns=("sourceurl", "sourcerownum", "body"),
-    row_filter="sourcerownum >= 1000",
+    columns=("url", "rownum", "body"),
+    row_filter="rownum >= 1000",
     limit=100,
 )
 try:
@@ -81,6 +101,29 @@ Configure warehouse S3 behavior with standard catalog properties:
 
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
 never in committed task documents.
+
+## Message schema migration
+
+If a table already stores `timestamp` as `timestamptz` and only uses the former
+source names, rename those columns in place before ingestion resumes. Their
+field and identifier IDs remain stable:
+
+```python
+table = catalog.load_table("logs.messages")
+with table.update_schema() as update:
+    update.rename_column("sourceurl", "url")
+    update.rename_column("sourcerownum", "rownum")
+```
+
+Iceberg cannot evolve the legacy `string` timestamp column to `timestamptz`.
+Such a table needs a replacement created from `Message.field()`. Prefer
+reingesting the original captures; otherwise stream the old rows through an
+explicit UTC timestamp conversion into the replacement. Validate row counts
+and `(url, rownum)` keys before switching consumers. Do not update the timestamp
+type in place.
+
+This is an operator migration, not a runtime compatibility path. Fresh tables
+use `url`, `rownum`, and the nullable microsecond `timestamptz` directly.
 
 ## Maintenance
 

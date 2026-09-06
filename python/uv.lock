@@ -2556,7 +2556,7 @@ requires-dist = [
     { name = "pyiceberg", extras = ["pyiceberg-core", "sql-sqlite"], marker = "extra == 'iceberg'", specifier = ">=0.11.1" },
     { name = "rekep", extras = ["glue", "iceberg", "polars"], marker = "extra == 'all'" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
-    { name = "yggdryl", git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=bfadd39fb0be3bec53298e8e00b100b638a69d90" },
+    { name = "yggdryl", git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=ac093526536c4423ec056471a0a9f7984f7fc30a" },
 ]
 provides-extras = ["iceberg", "glue", "polars", "all"]
 
@@ -3399,7 +3399,7 @@ wheels = [
 [[package]]
 name = "yggdryl"
 version = "0.1.1"
-source = { git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=bfadd39fb0be3bec53298e8e00b100b638a69d90#bfadd39fb0be3bec53298e8e00b100b638a69d90" }
+source = { git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=ac093526536c4423ec056471a0a9f7984f7fc30a#ac093526536c4423ec056471a0a9f7984f7fc30a" }
 dependencies = [
     { name = "pyarrow" },
 ]

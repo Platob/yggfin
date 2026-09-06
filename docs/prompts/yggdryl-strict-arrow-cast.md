@@ -17,6 +17,26 @@ conversion safety independent from nullability: strictness decides whether a
 value may be absent; `safe` decides whether a present value may be converted.
 Preserve target field and schema metadata through every cast.
 
+Integrate strictness with `Field.apply_arrow_batch`, `apply_arrow_schema`, and
+`apply_arrow_reader`. Grant a missing/null exemption only after validating a
+complete, runnable materialization plan: a `partition:sources` derivation or
+`digest:role=holder`. Materialization is whole-column -- absent or entirely
+canonical-default -- rather than per-cell. Do not grant the exemption under
+list/map containers until native application can materialize there; reject
+executable declarations in unsupported containers at schema planning rather
+than leaving canonical defaults uncomputed. Route partial or malformed
+`partition:` and `digest:` namespaces through application so they fail instead
+of becoming inert metadata. The final applied batch must satisfy its declared
+nullability. Keep the public cast → partition → digest order and derive the
+reader schema without pulling a batch.
+
+Add `safe` to apply-batch, apply-schema, apply-reader, and the compiled plan;
+the current apply path hardcodes safe casting. Keep it orthogonal to strict
+nullability so yggfin can replace its unsafe cast followed by
+`apply(..., cast=False)` with one native call. If a generated column is partly
+populated, preserve it as the whole-column materialization rule requires, then
+let final strict validation reject any required nulls that remain.
+
 ## Compiled plans
 
 Compile the schema-dependent work once from source schema, target non-null

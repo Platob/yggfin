@@ -16,7 +16,10 @@ print(field.into_arrow_schema())
 
 The file is native Yggdryl `Field` JSON. It carries the Arrow types,
 nullability, field metadata, and Iceberg key markers needed to reproduce the
-table shape. Rekep has no parallel schema class or document implementation.
+table shape. Native partition and digest declarations, when present, use the
+same validated metadata and round-trip through `Field.from_json` and
+`Field.into_json`. The raw Message contract declares neither generated
+protocol. Rekep has no parallel schema class or document implementation.
 
 Regenerate it from the declaration:
 

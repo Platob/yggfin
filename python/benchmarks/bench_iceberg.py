@@ -24,7 +24,6 @@ from _bench import parser, timed  # noqa: E402
 
 from rekep import Convertible, scalar  # noqa: E402
 from rekep.fields import (  # noqa: E402
-    PARTITION_KEY,
     partition_key,
     primary_key,
     replace_field,
@@ -91,12 +90,10 @@ def log_field(name: str, partition: str | None) -> Any:
     """Clone the log shape with one selected Iceberg partition transform."""
     field = replace_field(LogRow.field(), name=name)
     member = field.field("unixpartition")
-    metadata = dict(member.metadata)
-    if partition is None:
-        metadata.pop(PARTITION_KEY, None)
-    else:
-        metadata[PARTITION_KEY] = partition
-    field.set_field(member.name, replace_field(member, metadata=metadata))
+    member.set_partition(False)
+    if partition is not None:
+        member.iceberg["partition_key"] = partition
+    field.set_field(member.name, member)
     return field
 
 

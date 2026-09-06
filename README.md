@@ -36,7 +36,7 @@ rekep task run tasks/parse_messages/parse_messages.json
 
 The task recursively reads every supported text leaf beneath `filesystem`,
 including gzip and zstd objects, and appends raw rows to `logs.messages`.
-Replaying the same source skips its `(sourceurl, sourcerownum)` keys.
+Replaying the same source skips its `(url, rownum)` keys.
 
 ```text
 IOBase / TextOptions -> Message batches -> logs.messages

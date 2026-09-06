@@ -34,7 +34,7 @@ flowchart LR
 ```
 
 The task accepts one filesystem URI. Yggdryl owns binding, recursive discovery,
-decompression, header capture, and physical-line batches. Rekep strictly casts
+decompression, header capture, and physical-line batches. Rekep strictly applies
 those batches to the native Yggdryl `Message.field()` and writes them through
 the PyIceberg boundary.
 

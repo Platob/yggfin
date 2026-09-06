@@ -19,13 +19,11 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import best_of, parser  # noqa: E402
 
-from rekep.fields import strict_cast_batch  # noqa: E402
 from rekep.text import Message  # noqa: E402
-from rekep.times import MESSAGE_HEADER  # noqa: E402
+from rekep.times import MESSAGE_HEADER, datetime_of  # noqa: E402
 
 # Yggdryl's default when TextOptions leaves the bound unset.
 BATCH_ROW_SIZE = 65_536
-SOURCE_NAMES = {"url": "sourceurl", "rownum": "sourcerownum"}
 FIELD = Message.field()
 SCHEMA = FIELD.into_arrow_schema()
 
@@ -87,8 +85,7 @@ def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
     reader = source.read_arrow_reader(options=OPTIONS)
     try:
         for batch in reader:
-            names = [SOURCE_NAMES.get(name, name) for name in batch.schema.names]
-            yield strict_cast_batch(FIELD, batch.rename_columns(names))
+            yield Message.cast_arrow_batch(batch)
     finally:
         reader.close()
         source.close()
@@ -123,8 +120,8 @@ def first_batch(case: Case) -> int:
 def expected(index: int) -> dict[str, object]:
     """The endpoint values independent of the resource's diagnostic URL."""
     return {
-        "sourcerownum": index + 1,
-        "timestamp": timestamp(index),
+        "rownum": index + 1,
+        "timestamp": datetime_of(timestamp(index)),
         "threadname": f"worker-{index % 16}",
         "plugin": f"feed-{index % 4}",
         "level": "WARN" if index % 7 == 0 else "INFO",
@@ -141,8 +138,8 @@ def verify(case: Case, rows: int) -> None:
     assert first_batch(case) == min(rows, BATCH_ROW_SIZE)
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
-        sourceurl = row.pop("sourceurl")
-        assert isinstance(sourceurl, str) and sourceurl.endswith(case.filename)
+        url = row.pop("url")
+        assert isinstance(url, str) and url.endswith(case.filename)
         assert row == expected(index)
 
 

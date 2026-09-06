@@ -27,18 +27,25 @@ The task configures `TextOptions` with:
 
 - physical `rownum` output;
 - the fixed named header expression from `rekep.times.MESSAGE_HEADER`;
-- type inference disabled, preserving source spellings and body bytes.
+- general type inference disabled, leaving header captures as text and the body
+  as bytes.
 
-Yggdryl names source columns `url` and `rownum`; the task renames them to
-`sourceurl` and `sourcerownum`, strictly casts the batch to `Message.field()`,
-and sends the iterator directly to Iceberg. It never accumulates the source or
-an output table in memory. Transport read-ahead is 1 MiB and batches default to
-65,536 rows; one individual record remains bounded only when
+`Message.cast_arrow_batch` uses Arrow kernels to normalize the captured
+timestamp without Python row loops. An offset-free header means UTC; fractional
+digits are padded or truncated to microseconds. A missing header stays null and
+an invalid captured instant fails the batch. The result is a nullable
+`timestamp[us, UTC]` column.
+
+Yggdryl names source columns `url` and `rownum`; the task applies this Message
+boundary to each batch and sends the iterator directly to Iceberg. It never
+accumulates the source or an output table in memory. Transport read-ahead is
+1 MiB and batches default to 65,536 rows; one individual record remains bounded
+only when
 `TextOptions.max_record_byte_size` is set. Its current truncation policy would
 change `body`, so this task leaves it unset until Yggdryl exposes the
 error-on-overflow mode specified in the streaming prompt.
 
-The table merge key is `(sourceurl, sourcerownum)`. On replay, existing keys
+The table merge key is `(url, rownum)`. On replay, existing keys
 are skipped before a commit; a fully repeated source creates no data file or
 snapshot.
 
@@ -52,24 +59,17 @@ remote objects locally is not a replacement for fixing the decoder.
 
 ## Throughput
 
-The focused benchmark generates 200,000 log rows and reports the fastest of
-three warmed runs. On the reference Windows development host:
-
-| source | native rows/s | Message rows/s | first batch |
-| --- | ---: | ---: | ---: |
-| `file:` plain | 85,660 | 96,848 | 684 ms |
-| `file:` gzip | 99,359 | 97,813 | 653 ms |
-
-Run the same focused measurement:
+The focused benchmark generates realistic log rows, verifies its output, and
+times both native Yggdryl emission and the complete Message boundary:
 
 ```bash
 cd python
-uv run python benchmarks/bench_message.py --rows 200000 --repeat 3
+uv run python benchmarks/bench_message.py --rows 200000 --repeat 5
 ```
 
-`native rows/s` measures Yggdryl text emission. `Message rows/s` includes the
-rename and strict schema cast used by the task. Timing is a diagnostic, not a
-portable performance guarantee.
+The measured parser and complete Message-to-Iceberg results, including build
+provenance, live in the single
+[benchmark record](../../storage/benchmarks.md).
 
 The sequential text path already has encoded transport read-ahead. Yggdryl's
 positional `buffered()` cache is not used by record reads, and a local-staging

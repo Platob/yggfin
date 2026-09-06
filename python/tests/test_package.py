@@ -76,7 +76,11 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
     metadata = dict(Row.field().field("unix").metadata)
     assert metadata[SORT_KEY] == "asc"
     assert metadata[PRIMARY_KEY] == "true"
-    assert dict(Row.field().field("hour").metadata)[PARTITION_KEY] == "identity"
+    hour = Row.field().field("hour")
+    assert hour.is_partition
+    assert hour.metadata["field:partition"] == "true"
+    assert PARTITION_KEY not in hour.metadata
+    assert partition_key("day")["metadata"][PARTITION_KEY] == "day"
 
 
 def test_rekep_reexports_the_native_yggdryl_field() -> None:

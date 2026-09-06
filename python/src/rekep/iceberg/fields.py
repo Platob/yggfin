@@ -58,11 +58,18 @@ def primary_keys(source: Field) -> list[str]:
 
 def partition_keys(source: Field) -> dict[str, str]:
     """Top-level partition columns mapped to their transforms."""
-    return {
-        member.name: transform
-        for member in fields(source)
-        if (transform := _enabled(member.iceberg.get("partition_key")))
-    }
+    declared = {}
+    for member in fields(source):
+        transform = _enabled(member.iceberg.get("partition_key"))
+        if member.is_partition and transform:
+            raise ValueError(
+                f"partition column {member.name!r} declares both identity and {transform!r}"
+            )
+        if member.is_partition:
+            declared[member.name] = "identity"
+        elif transform:
+            declared[member.name] = transform
+    return declared
 
 
 def sort_keys(source: Field) -> dict[str, str]:
@@ -89,9 +96,9 @@ def sort_keys(source: Field) -> dict[str, str]:
 def derived_keys(source: Field) -> dict[str, tuple[str, ...]]:
     """Top-level derived columns mapped to their source columns."""
     return {
-        member.name: tuple(name for name in derived.split(",") if name)
+        member.name: tuple(sources)
         for member in fields(source)
-        if (derived := str(member.iceberg.get("derived_from") or ""))
+        if (sources := member.partition.sources) is not None
     }
 
 
@@ -215,10 +222,23 @@ def iceberg_struct_field(
         column = schema.find_column_name(field_id)
         if column and "." not in column:  # a nested key is Iceberg's, not a column here
             members[column].iceberg["primary_key"] = "true"
+    partitioned: dict[str, list[Any]] = {}
     for partition in getattr(spec, "fields", ()):
         column = schema.find_column_name(partition.source_id)
         if column and "." not in column:
-            members[column].iceberg["partition_key"] = str(partition.transform)
+            partitioned.setdefault(column, []).append(partition)
+    for column, partitions in partitioned.items():
+        if len(partitions) != 1:
+            # Iceberg permits more than one transform over the same source.
+            # One Field member has one physical slot, so keep table.spec()
+            # authoritative instead of publishing a false partial projection.
+            continue
+        transform = str(partitions[0].transform)
+        if transform == "identity":
+            members[column].set_partition(True)
+        else:
+            members[column].set_partition(False)
+            members[column].iceberg["partition_key"] = transform
     metadata = dict(field.metadata)
     if sort_order is not None:
         from pyiceberg.table.sorting import NullOrder, SortDirection

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+import pyarrow
 import pytest
 
 from rekep import cli
@@ -84,6 +86,16 @@ class Ran:
         finally:
             store.close()
 
+    def table(self, name: str) -> pyarrow.Table:
+        """Read one stored table and release its catalog owners."""
+        store = IcebergCatalog.from_dict(self.catalog)
+        dataset = store.dataset(name)
+        try:
+            return dataset.read_arrow_table()
+        finally:
+            dataset.close()
+            store.close()
+
     def snapshots(self) -> dict[str, int]:
         store = IcebergCatalog.from_dict(self.catalog)
         try:
@@ -110,6 +122,15 @@ def test_the_workflow_publishes_the_fixture_and_a_replay_writes_nothing(ran: Ran
     first = ran.workflow()
     assert {name: counted(result) for name, result in first.items()} == FIRST
     assert ran.rows() == STORED
+    messages = ran.table("logs.messages")
+    assert messages.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
+    timestamps = {
+        row["rownum"]: row["timestamp"]
+        for row in messages.select(("rownum", "timestamp")).to_pylist()
+    }
+    assert timestamps[1] == datetime.datetime(2026, 8, 14, 0, 5, 1, 147250, tzinfo=datetime.UTC)
+    assert timestamps[3] == datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=datetime.UTC)
+    assert [timestamps[rownum] for rownum in (10, 11, 12)] == [None, None, None]
 
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY

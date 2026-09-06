@@ -4,7 +4,7 @@
     "type": "struct",
     "fields": [
       {
-        "name": "sourceurl",
+        "name": "url",
         "dtype": {
           "type": "utf8"
         },
@@ -15,7 +15,7 @@
         }
       },
       {
-        "name": "sourcerownum",
+        "name": "rownum",
         "dtype": {
           "type": "int64"
         },
@@ -28,11 +28,17 @@
       {
         "name": "timestamp",
         "dtype": {
-          "type": "utf8"
+          "type": "datetime64",
+          "unit": "microsecond",
+          "timezone": "UTC"
         },
         "nullable": true,
         "metadata": {
-          "description": "Timestamp spelling captured from the line header."
+          "description": "UTC instant captured from the line header, at microsecond resolution.",
+          "python.class": "datetime",
+          "python.kind": "class",
+          "python.module": "datetime",
+          "python.qualname": "datetime"
         }
       },
       {
