@@ -1,8 +1,6 @@
-"""What every benchmark here does the same way: time a call, print a line.
+"""Shared benchmark timing and accounting.
 
-Five of the six had their own "fastest of N runs" under four names, and the
-number a benchmark prints is only comparable to the number beside it if both
-were measured the same way -- so there is one timer, and it warms up.
+One warmed fastest-of-N timer keeps results comparable across scripts.
 
 `Accounted` and the two blocks under it are the same argument one level down:
 a kernel-bound path is a table of stages and kernels, and two benchmarks

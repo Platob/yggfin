@@ -1,151 +1,51 @@
 <section class="rkp-hero" aria-labelledby="rkp-home-title">
   <div class="rkp-hero__copy">
-    <p class="rkp-hero__eyebrow">RKP / Arrow-native market data</p>
+    <p class="rkp-hero__eyebrow">RKP / Arrow-native ingestion</p>
     <h1 id="rkp-home-title">rekep</h1>
-    <p class="rkp-hero__lead">Turn ordered text logs into Arrow records and six portable shapes: source messages, FIX messages, instruments, books, orders, and executions.</p>
-    <p class="rkp-hero__flow" aria-label="Log to FIX to market">LOG → FIX → MARKET</p>
+    <p class="rkp-hero__lead">Stream physical text records through Yggdryl and Arrow into Iceberg.</p>
+    <p class="rkp-hero__flow" aria-label="Text to Arrow to Iceberg">TEXT → ARROW → ICEBERG</p>
     <nav class="rkp-hero__actions" aria-label="Start with rekep">
-      <a href="pipeline/operations/run/">Run pipeline</a>
-      <a href="fix/transcribe/">Transcribe FIX</a>
+      <a href="pipeline/operations/run/">Run ingestion</a>
+      <a href="products/message/">Inspect Message</a>
     </nav>
   </div>
   <figure class="rkp-hero__mark">
-    <img src="assets/rkp-logo.svg#only-dark" alt="RKP, the rekep project trigram" width="420" height="230">
-    <img src="assets/rkp-logo-light.svg#only-light" alt="RKP, the rekep project trigram" width="420" height="230">
+    <img src="assets/rkp-logo.svg" alt="RKP, the rekep project trigram" width="420" height="230">
   </figure>
 </section>
 
 ## Install
 
 ```bash
-pip install rekep
-pip install "rekep[iceberg]"   # persisted tables
-pip install "rekep[all]"       # all package extras
+pip install "rekep[iceberg]"
 ```
 
-## Choose a task
-
-- [Transcribe a FIX message](fix/transcribe.md)
-- [Run the complete pipeline](pipeline/operations/run.md)
-- [Browse the FIX registry](fix/registry.md)
-- [Publish an Arrow contract](contracts/index.md#publishing)
-
-<div class="rkp-diagram-scroll" role="region" aria-label="Scrollable Apache Arrow interoperability diagram" tabindex="0">
-  <img src="assets/arrow-hub.svg#only-dark" alt="Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.">
-  <img src="assets/arrow-hub-light.svg#only-light" alt="Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.">
-</div>
-
-Arrow is the project's shared columnar boundary: Iceberg tables and encoded
-files on one side, Spark, DataFrames, query engines, and SQL database drivers
-on the other. Arrow is neither the store nor the engine, so each can change
-without replacing the in-memory contract. See [why rekep chooses Apache Arrow](overview/arrow.md)
-for the sourced interoperability details and the limits of zero-copy exchange.
-
-## Workflow
-
-```mermaid
-flowchart TD
-    L[yggdryl<br/>IOBase / TextOptions] --> PM[parse_messages]
-    PM --> M[(logs.messages)]
-    M --> PFM[parse_fix_market] --> FM[(fix.market)]
-    M --> PFX[parse_fix_misc] --> FX[(fix.misc)]
-    M --> PFU[parse_fix_unknown] --> FU[(fix.unknown)]
-    FM --> PI[parse_instruments] --> I[(market.instruments)]
-    FM --> PK[parse_market]
-    PK -->|books: true| B[(market.books)]
-    B --> FO[flatten_orders] --> O[(market.orders)]
-    B --> FE[flatten_executions] --> E[(market.executions)]
-    PK -->|books: false| O
-    PK -->|books: false| E
-```
-
-Concrete stages are Marimo applications with adjacent YAML files under
-`tasks/`. The package owns reusable parsing, schemas, lifecycle logic, and
-storage adapters; it does not own deployment-specific jobs.
-
-## One record end to end
-
-```python
-from rekep import FixMsg, InstUpdate, Message
-from rekep.market import Book, Execution, Order
-
-line = (
-    "8=FIX.4.4|35=8|52=20260821-10:30:00.250|"
-    "37=ORD-9|11=CL-7|17=EX-3|150=F|39=1|"
-    "55=BTC-USD|207=XCME|15=USD|54=1|38=10|44=100.5|"
-    "32=4|31=100.25|14=4|151=6|60=20260821-10:29:59.998|10=123"
-)
-
-# logs.messages: exact raw source record
-message = Message.from_text(
-    line,
-    sourceurl="capture.log",
-    sourcerownum=1,
-    timestamp="2026-08-21 10:30:00.250",
-)
-
-# fix.market: registry-resolved FIX record
-fixmsg = FixMsg.from_message(message)
-
-# market.orders and market.executions
-events = list(fixmsg.into_market_events(fix_version="4.4"))
-order = next(event for event in events if isinstance(event, Order))
-execution = next(event for event in events if isinstance(event, Execution))
-
-# market.instruments and market.books
-instrument = next(InstUpdate.from_fixmsgs([fixmsg])).instrument
-book = next(Book.from_fixmsgs([fixmsg], purge_alive=False))
-
-assert message.body == line.encode()
-assert fixmsg.msgtype == "8"
-assert (order.altids["clordid"], order.lastqty) == ("CL-7", 6.0)
-assert (execution.altids["execid"], execution.lastqty, execution.lastpx) == (
-    "EX-3",
-    4.0,
-    100.25,
-)
-assert instrument is not None
-assert instrument.symbolticker == book.symbolticker == "XCME:BTC-USD"
-```
-
-The scalar example exposes each boundary. File-scale work keeps the same
-shapes in Arrow batches, as shown below and in the [pipeline guide](pipeline/index.md).
-
-```python
-from rekep import FixCodec, FixMsg, FixRegistry, Message
-from yggdryl import IOBase, TextOptions
-
-registry = FixRegistry(cache_dir="data/fix")
-codec = FixCodec(registry=registry, timezone="Europe/Paris")
-options = TextOptions()
-options.with_rownum = 1
-options.batch_row_size = 65_536
-
-source = IOBase("s3://bucket/capture/app.log.gz").into_text(options)
-for batch in source.read_arrow_reader():
-    names = [
-        {"url": "sourceurl", "rownum": "sourcerownum"}.get(name, name)
-        for name in batch.schema.names
-    ]
-    messages = Message.into_field().cast_arrow_batch(batch.rename_columns(names))
-    parsed = FixMsg.from_message_batch(messages, codec)
-```
-
-Yggdryl owns text filesystems, decompression and physical-line batches.
-`parse_messages` additionally selects paths and captures the configured header;
-yggfin owns the raw `Message` and Iceberg table boundaries. Every scalable API
-returns an Arrow reader. Table helpers are explicit choices for data known to
-fit in memory.
-
-## Command line
+## Run
 
 ```bash
-rekep fields dump --pyclass rekep.text.fixmsg:FixMsg --target fixmsg.yaml
-rekep fix registry show --store data/fix 35
-rekep fix shell --store data/fix
+rekep task run tasks/parse_messages/parse_messages.yml
 ```
 
-`fields` publishes declarations. `fix registry` is the JSON command surface;
-`fix shell` is the interactive terminal. Styling stays on `stderr`, payloads
-stay on `stdout`, and colour disables itself outside a capable terminal. See
-the [registry CLI guide](fix/shell.md) for the bounded interactive workflow.
+```mermaid
+flowchart LR
+    S[filesystem URI] --> Y[yggdryl IOBase / TextOptions]
+    Y --> M[Message batches]
+    M --> I[(logs.messages)]
+```
+
+The task accepts one filesystem URI. Yggdryl owns binding, recursive discovery,
+decompression, header capture, and physical-line batches. Rekep strictly casts
+those batches to the native Yggdryl `Message.field()` and writes them through
+the PyIceberg boundary.
+
+```python
+from rekep import Field, Message
+from yggdryl import Field as YggdrylField
+
+assert Field is YggdrylField
+print(Message.field().into_arrow_schema())
+```
+
+The checked contract is [`schemas/rekep/message.yaml`](contracts/index.md).
+The removed Rekep FIX and market implementation is intentionally deferred to a
+separate refactor built directly on `yggdryl.fix`.

@@ -1,4 +1,4 @@
-"""The tables a pipeline run writes, created before anything runs.
+"""The raw-message table, created before ingestion runs.
 
 A task creates its own target on the first write, so a run against an
 empty catalog already lands every table it needs. That is not enough where the
@@ -19,21 +19,19 @@ import dataclasses
 from collections.abc import Sequence
 from typing import Any
 
-from rekep.fields import StructField
-from rekep.fix.rules import MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY
+from rekep.fields import Field, field_of
 from rekep.iceberg import IcebergCatalog
-from rekep.market import Book, Execution, InstUpdate, Order
-from rekep.text import FixMsg, Message
+from rekep.text import Message
 
 
 @dataclasses.dataclass(frozen=True)
 class Deployed:
-    """One table the pipeline writes: what it is called and what it holds."""
+    """One table ingestion writes: what it is called and what it holds."""
 
     #: Catalog table identifier, `namespace.table`.
     table: str
 
-    #: The declaring class. Its `into_field` is what the task writing this
+    #: The declaring class. Its `field` is what the task writing this
     #: table builds its own schema from, so a deployed table and a written one
     #: cannot disagree.
     shape: type
@@ -41,24 +39,13 @@ class Deployed:
     #: Physical order is opt-in; pipeline reads request their logical order.
     sort_by: tuple[str, ...] | None = None
 
-    def into_field(self) -> StructField:
+    def field(self) -> Field:
         """The shape this table carries, named as the table."""
-        return self.shape.into_field(self.table)
+        return field_of(self.shape, self.table)
 
 
-#: Every table the five pipeline tasks write, in the order they fill them.
-#: The `fix.*` names are the router's own categories, so a category added
-#: there arrives here rather than being spelled twice.
-TABLES: tuple[Deployed, ...] = (
-    Deployed("logs.messages", Message),
-    Deployed(f"fix.{MARKET_CATEGORY}", FixMsg),
-    Deployed(f"fix.{MISC_CATEGORY}", FixMsg),
-    Deployed(f"fix.{UNKNOWN_CATEGORY}", FixMsg),
-    Deployed("market.instruments", InstUpdate),
-    Deployed("market.books", Book),
-    Deployed("market.orders", Order),
-    Deployed("market.executions", Execution),
-)
+#: The table the supported ingestion task writes.
+TABLES: tuple[Deployed, ...] = (Deployed("logs.messages", Message),)
 
 
 def deploy(
@@ -83,8 +70,7 @@ def deploy(
     unknown = [name for name in wanted if name not in declared]
     if unknown:
         raise ValueError(
-            f"the pipeline writes no such table: {', '.join(unknown)}; "
-            f"it writes {', '.join(declared)}"
+            f"ingestion writes no such table: {', '.join(unknown)}; it writes {', '.join(declared)}"
         )
     return {
         name: _deployed(catalog, declared[name], table_properties, branch, dry_run)
@@ -102,7 +88,7 @@ def _deployed(
     """One table, through the catalog handle the whole deployment shares."""
     dataset: Any = store.dataset(
         shape.table,
-        field=shape.into_field(),
+        field=shape.field(),
         table_properties=dict(table_properties or {}),
         branch=branch,
         sort_by=shape.sort_by,

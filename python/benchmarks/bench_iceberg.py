@@ -22,7 +22,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import parser, timed  # noqa: E402
 
-from rekep import Convertible, Field, scalar  # noqa: E402
+from rekep import Convertible, scalar  # noqa: E402
+from rekep.fields import (  # noqa: E402
+    PARTITION_KEY,
+    partition_key,
+    primary_key,
+    replace_field,
+    sort_key,
+    strict_cast_table,
+)
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
 from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 
@@ -31,10 +39,10 @@ from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
 class Quote(Convertible):
     """One quote, under a composite key whose halves both repeat."""
 
-    symbol: Annotated[str, Field.primary_key()]
+    symbol: Annotated[str, primary_key()]
     """Instrument."""
 
-    day: Annotated[datetime.date, Field.primary_key(), Field.partition_key()]
+    day: Annotated[datetime.date, primary_key(), partition_key()]
     """Trading day, and the partition."""
 
     size: int
@@ -48,10 +56,10 @@ class Quote(Convertible):
 class Tick(Convertible):
     """A row under a wide composite key, clustered per commit."""
 
-    at: Annotated[int, Field.primary_key(), Field.sort_key()]
+    at: Annotated[int, primary_key(), sort_key()]
     """A timestamp that advances with the commits."""
 
-    h64: Annotated[int, Field.primary_key()]
+    h64: Annotated[int, primary_key()]
     """A hash spread over the whole 62-bit range."""
 
     payload: str
@@ -62,10 +70,10 @@ class Tick(Convertible):
 class LogRow(Convertible):
     """One benchmark-local stored row with an hourly partition."""
 
-    unix: Annotated[int, Field.primary_key(), Field.sort_key()]
+    unix: Annotated[int, primary_key(), sort_key()]
     """Unique nanosecond clock."""
 
-    unixpartition: Annotated[int, Field.partition_key()]
+    unixpartition: Annotated[int, partition_key()]
     """Whole epoch hour used for identity partitioning."""
 
     plugin: str
@@ -77,6 +85,21 @@ class LogRow(Convertible):
 
 PLUGINS = ("OMSSales_Enrichment", "ULBridge", "ModuleMarketDataManager", "ObjkeyTagWrapper")
 _BASE_UNIX = 1_786_665_600_000_000_000
+
+
+def log_field(name: str, partition: str | None) -> Any:
+    """Clone the log shape with one selected Iceberg partition transform."""
+    field = replace_field(LogRow.field(), name=name)
+    member = field.field("unixpartition")
+    metadata = dict(member.metadata)
+    if partition is None:
+        metadata.pop(PARTITION_KEY, None)
+    else:
+        metadata[PARTITION_KEY] = partition
+    field.set_field(member.name, replace_field(member, metadata=metadata))
+    return field
+
+
 _DAY_NS = 86_400_000_000_000
 _HOUR_NS = 3_600_000_000_000
 
@@ -113,7 +136,7 @@ def log_rows(rows: int, days: int) -> pyarrow.Table:
                 for index in range(rows)
             ],
         },
-        schema=LogRow.into_field().into_arrow_schema(),
+        schema=LogRow.field().into_arrow_schema(),
     )
 
 
@@ -140,10 +163,7 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
 
 def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]) -> IcebergDataset:
     """A fresh table, partitioned by hour or not at all."""
-    field = LogRow.into_field()
-    if not partitioned:
-        field = field.into_dataclass("Flat").into_field()
-        field.field("unixpartition").is_partition_key = False
+    field = LogRow.field() if partitioned else log_field("Flat", None)
     built = catalog(root).dataset("bench.logs", field=field, table_properties=properties)
     return built.create_with()
 
@@ -213,7 +233,7 @@ def monotonic_insert_case(table: pyarrow.Table, commit_rows: int) -> dict:
     """Insert increasing chunks the way a chronological stream commits them."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-insert-"))
     try:
-        target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
+        target = catalog(root).dataset("bench.ticks", field=Tick.field()).create_with()
 
         def write() -> None:
             for start in range(0, table.num_rows, commit_rows):
@@ -334,7 +354,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
     """Write one converted result and report the storage a reader inherits."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
     try:
-        target = catalog(root).dataset("bench.quotes", field=Quote.into_field()).create_with()
+        target = catalog(root).dataset("bench.quotes", field=Quote.field()).create_with()
         target.append_arrow_table(table, commit_row_size=1_000_000)
         plan = target.scan_plan("day = '2026-08-14'")
         report = {
@@ -343,7 +363,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
             "planned": plan["files"],
             "skipped": plan["skipped"],
         }
-        return report, target.read_arrow_table(Quote.into_field()).sort_by("symbol")
+        return report, target.read_arrow_table(Quote.field()).sort_by("symbol")
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -364,13 +384,13 @@ def sweep_polars(rows: int, repeat: int) -> None:
             "venue": ["XPAR"] * rows,
         }
     )
-    target = Quote.into_field()
+    target = Quote.field()
 
     def compatible() -> pyarrow.Table:
         return _polars_table(source, target, polars)
 
     def newest() -> pyarrow.Table:
-        return target.cast_arrow_table(source.to_arrow(compat_level=polars.CompatLevel.newest()))
+        return strict_cast_table(target, source.to_arrow(compat_level=polars.CompatLevel.newest()))
 
     compatible()
     newest()
@@ -584,14 +604,14 @@ def sweep_update(rows: int, days: int) -> None:
         cases = (
             (
                 "(symbol, day) — day repeats",
-                Quote.into_field(),
+                Quote.field(),
                 quote_rows(wide, days),
                 ["symbol", "day"],
                 "venue",
             ),
             (
                 "(at, h64) — nothing repeats",
-                Tick.into_field(),
+                Tick.field(),
                 tick_rows(wide * days),
                 ["at", "h64"],
                 "payload",
@@ -648,7 +668,7 @@ def sweep_delete(rows: int, days: int, repeat: int) -> None:
             try:
                 target = (
                     catalog(root)
-                    .dataset("bench.quotes", field=Quote.into_field(), table_properties=OPTIMISED)
+                    .dataset("bench.quotes", field=Quote.field(), table_properties=OPTIMISED)
                     .create_with()
                 )
                 target.append_arrow(
@@ -687,7 +707,7 @@ def tick_rows(count: int) -> pyarrow.Table:
             "h64": [source.getrandbits(62) for _ in range(count)],
             "payload": ["XPAR"] * count,
         },
-        schema=Tick.into_field().into_arrow_schema(),
+        schema=Tick.field().into_arrow_schema(),
     )
 
 
@@ -701,7 +721,7 @@ def sweep_backfill(rows: int, days: int) -> None:
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
     try:
-        target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
+        target = catalog(root).dataset("bench.ticks", field=Tick.field()).create_with()
         per = max(rows // 20, 1_000)
         # The hash is drawn per *row*, not derived from the band: a real line
         # hash spreads over the whole range, so every file's bounds on it span
@@ -716,7 +736,7 @@ def sweep_backfill(rows: int, days: int) -> None:
                     "h64": [source.getrandbits(62) for _ in range(per)],
                     "payload": ["x" * 40] * per,
                 },
-                schema=Tick.into_field().into_arrow_schema(),
+                schema=Tick.field().into_arrow_schema(),
             )
             for band in range(20)
         ]
@@ -756,7 +776,7 @@ def quote_rows(symbols: int, days: int) -> pyarrow.Table:
             "size": list(range(len(pairs))),
             "venue": ["XPAR"] * len(pairs),
         },
-        schema=Quote.into_field().into_arrow_schema(),
+        schema=Quote.field().into_arrow_schema(),
     )
 
 
@@ -776,10 +796,9 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     cannot address parts of it has to settle as a whole too. When it did not,
     every run read the table back and wrote it out again, forever.
     """
-    field = LogRow.into_field().into_dataclass("Daily").into_field()
     # `bucket[8]`, because `unixpartition` is a signed integer and Iceberg's `day`
     # transform is for dates. The point is unchanged: a transform, not the value itself.
-    field.field("unixpartition").is_partition_key = "bucket[8]"
+    field = log_field("Daily", "bucket[8]")
     built = catalog(root).dataset("bench.daily", field=field, table_properties=OPTIMISED)
     return built.create_with()
 
@@ -804,7 +823,7 @@ def narrow_field() -> Any:
     """Three stored columns, as a declared shape rather than a column list."""
     from rekep.fields import Field
 
-    schema = LogRow.into_field().into_arrow_schema()
+    schema = LogRow.field().into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema([schema.field(name) for name in ("unix", "plugin", "body")]),
         "Narrow",

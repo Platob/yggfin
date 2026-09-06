@@ -1,315 +1,106 @@
 # Coding patterns
 
-House style for `rekep`. Keep one obvious implementation for each behavior.
+Optimize Rust core behavior in Yggdryl first, then Python and JavaScript
+bindings, then yggfin documentation. Keep one obvious implementation per
+behavior.
 
-## Writing for the next agent
+## Writing
 
-This file, every docstring and every description is read far more often by an
-agent scanning for one fact than by a person reading a chapter. Write for that
-reader.
+- Write for an agent searching for one fact.
+- Prefer deletion to compatibility layers or deprecation.
+- Keep docstrings synthetic: what the object is, then only hidden constraints.
+- Put a contract beside its owner and link to it instead of repeating it.
+- Keep examples executable and prose connective.
 
-- Ship the simple implementation. One pass, one obvious data structure, no
-  layer that exists in case something later needs it. A shorter diff is a
-  cheaper diff to scan.
-- Docstrings are synthetic: one line saying what the thing *is*, and a second
-  paragraph only for a constraint or a measurement the code cannot show. Never
-  restate the signature, never narrate the steps.
-- State facts, not history or hedging. "One tag is one identity" beats "we
-  decided that it is probably best if each tag maps to a single identity".
-- Put the answer where it will be looked for: on the class that owns the data,
-  next to the constant it constrains, in the one guide that owns the topic.
-  Two half-answers in two files cost more than one whole answer in one.
-- Name things so a search finds them. A grep for a column name must reach its
-  declaration, its parser and its test.
-- Delete rather than deprecate. There are no compatibility shims here, so a
-  renamed thing has exactly one name.
+## Ownership
 
-## Documentation
+- Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
+  streams, codecs, decompression, text media, and general FIX primitives.
+- Arrow owns columnar shape conversions and kernels.
+- PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
+- Yggfin owns the raw `Message` contract and its narrow PyArrow/PyIceberg seam.
+- Never add a second Field class, filesystem/path layer, text reader, codec, or
+  registry in yggfin.
 
-Documentation is example-first. A reader should reach the working shape before
-the explanation of it.
+The deleted Rekep FIX and market implementation is not a compatibility target.
+Use `docs/prompts/yggdryl-fix-refactor.md` for the next vertical slice.
 
-- Prefer executable Python, command lines, YAML and Arrow schemas to prose.
-  Never replace a concrete example with several paragraphs describing it.
-- Keep prose connective: one explicit fact per sentence and the fewest
-  sentences that make the example safe to use. Delete introductions,
-  repetition and implementation narration.
-- Put commands in fenced blocks that can be copied unchanged. Put configuration
-  beside the command that consumes it and show the resulting schema or table
-  when that is the contract.
-- Keep each fact in the one page that owns it; link there instead of repeating
-  a shortened explanation elsewhere.
-- The site is dark-first and uses black, white, red, orange and yellow. New
-  diagrams and page assets use that palette except for third-party brand marks.
-- Top-level guide families are horizontal tabs. Pages within the selected
-  family remain a categorized vertical navigation; do not flatten the site
-  into one long menu.
+## Fields and Arrow
 
-## Command line
+- `rekep.Field is yggdryl.Field`.
+- Use native `@yggdryl.scalar` and `Annotated` options for declarations.
+- Arrow schema metadata is authoritative; portable YAML derives from it.
+- Use Yggdryl cast methods at producer and consumer boundaries.
+- Keep Rekep strict preflight limited to missing or null non-null fields until
+  Yggdryl exposes the same opt-in policy.
+- Do not use Python row loops for Arrow shape conversion.
 
-`rekep` is read at a terminal, so it is styled like one written this decade --
-and every bit of that degrades on its own.
+## Resources and text
 
-- `rekep.console.Console` owns colour, box drawing, spinners and tables.
-  Nothing else writes an escape sequence.
-- `Console` renders for the person who just typed a command; `rekep.logs`
-  records what the library did for whoever reads the run afterwards. One fact
-  belongs to one of them. INFO is a completed operation -- one record per
-  public verb, whatever it commits inside; DEBUG is the detail under it, per
-  stream and per file, never per batch. Modules hold
-  `logging.getLogger(__name__)` and nothing configures logging at import.
-- The shell uses the documentation palette: white for primary values, yellow
-  for success and selected values, orange for interaction and warnings, red
-  for failures, and grey only for secondary context. Do not add another hue.
-- Colour is off without a TTY, under `NO_COLOR`, and on `TERM=dumb`. Box
-  drawing falls back to ASCII where the stream cannot encode it.
-- Styling goes to `stderr`; the payload -- a dumped document, a report -- goes
-  to `stdout` alone, so a redirect gets data and never decoration.
-- A step that can take a second animates. A step that writes gets a `✓` or a
-  `✗`, never a bare return.
-- Interactive verbs ask one question at a time, offer the stored value as the
-  default, show the whole change back, and write only after a yes.
-- Every interactive path takes its answers through an injected reader, so it is
-  testable without a terminal.
-
-## API
-
-- Put behavior on the class that owns the data. Keep justified helpers private.
-- `from_*` builds an instance; `into_*` converts or emits it.
-- Generic `from_`/`into_` dispatch through cached `into_redirects()` mappings.
-- Prefer cached class methods over class variables for derived declarations.
-- Dataclass `__post_init__` normalizes state once.
-- Expensive handles are `cached_property`; teardown pops `__dict__` and never
-  opens a lazy resource.
-
-## Declarations
-
-`@scalar` makes a dataclass an Arrow `StructField`, returned by
-`Class.into_field()`.
-
-- Type hints declare nullability, including list items.
-- `__`-prefixed annotations are private state, not columns.
-- Use `Annotated[..., Field(...)]` for Arrow types, metadata, keys, partitions,
-  and sort order.
-- Container behavior belongs to its `Field` subclass. Do not branch on Arrow
-  kinds at call sites.
-- Refuse recursive classes, ambiguous unions, unknown leaves, and missing
-  non-null columns.
-- Protocol metadata is prefixed (`fix:`, `iceberg:`, `enum:`).
-- Nested fields never publish table keys.
-- Portable contracts live in `schemas/<namespace>/<name>.yaml` and round-trip
-  losslessly through Arrow.
-
-### Column names
-
-Every column name is folded: `column_name` lowercases it and drops everything
-that is not a letter or a digit. `OrigClOrdID` is `origclordid`, `source_url`
-is `sourceurl`. One name serves the Arrow column, the Python attribute and the
-stored document, and there is no snake-case alias beside it.
-
-The fold is also the match: a spelling resolves against the FIX registry by
-what it folds to, so `MsgType`, `msgtype` and `MSGTYPE` are one field.
-
-`fix:name` is the reader-facing spelling the folded Arrow name cannot retain;
-for a FIX-backed column it is the dictionary's canonical name. There is no
-parallel `fix:display` metadata.
-
-A column that reads a FIX field is *named after that field*: `ClOrdID <11>` is
-`clordid`, `CumQty <14>` is `cumqty`, `MinPriceIncrement <969>` is
-`minpriceincrement`. Three exceptions, all deliberate:
-
-- `lastpx` and `lastqty` are the flat summary slots every `MarketEvent` shares.
-  An Order maps `lastpx` from its `Price <44>` limit, an Execution holds
-  `LastPx <31>` and `LastQty <32>`, and a Book holds its midpoint and touch
-  size. Their unit columns remain `pxunit` and `qtyunit`.
-- A nested book `Level` keeps the compact `px` and `qty`; the nesting already
-  says they are `MDEntryPx <270>` and `MDEntrySize <271>`. Flat touch columns
-  keep the side in their names: `bidpx`, `bidqty`, `askpx`, `askqty`.
-- A nested struct takes the *generic* spelling, because the nesting already
-  says whose it is: a leg's `LegCFICode <608>` is `cficode`, the same name its
-  instrument's `CFICode <461>` has, not `legcficode`.
-
-### Description budget
-
-Descriptions are contract text, not tutorials. Use one short factual sentence
-that adds information such as units, source, null meaning, or derivation.
-Delete text that repeats the name, type, signature, or implementation. Put a
-non-obvious constraint in one nearby `#` comment and longer rationale in the
-single guide that owns it. Optimize descriptions whenever touching a field.
-
-## Arrow is the hub
-
-- Arrow schema metadata is the authority; other representations derive from it.
-- Cast at producer and consumer boundaries. Recursive casts reorder columns,
-  fill only nullable omissions, drop extras unless `merge_schema=True`, and
-  handle nested shapes with Arrow kernels.
-- Never use a Python row loop for an Arrow shape conversion. Column
-  comprehensions are fine.
-- Let Yggdryl `IOBase` own general resources, filesystems, codecs, and
-  decompression. Arrow owns kernels; PyArrow native streams remain at the
-  PyIceberg boundary, which owns table conversion, ids, snapshots, planning,
-  and commits.
-- Dictionary-encode repeated code columns; store enum values as integers so
-  unknown future codes survive.
-
-## Streaming datasets
-
-`Dataset` is a stream in and a stream out.
-
-- Primary APIs use `RecordBatchReader`; table helpers explicitly require data
-  to fit in memory.
-- `overwrite_*` replaces the rows whose keys match and inserts the rest;
-  `append_*` inserts, skipping stored keys when `merge_by` names them. Both
-  create a missing table. `merge_by=True` means the declared primary key, and
-  an overwrite has no keyless mode.
-- Accumulate `commit_batch_num` input batches per commit; `commit_row_size` is
-  an optional earlier row cap. An input batch is not itself a storage commit.
-- Push filters, projections, limits, and ordering to the storage engine.
-- Yggdryl `IOBase` and `TextOptions` own source binding, directory traversal,
-  header capture, decompression, and physical-line batching.
-- A raw text row names its source only through yggdryl's `url` and `rownum`.
+- Bind paths and URIs with `IOBase`; preserve injected Arrow filesystem
+  identity and opaque paths.
+- `IOBase` and `TextOptions` own traversal, header capture, decompression, and
+  physical-line batching.
+- A raw text row names its source only through Yggdryl `url` and `rownum`.
+- Streams open one leaf at a time with bounded transport read-ahead and
+  row-bounded batches. One record is unbounded until Yggdryl provides an
+  error-on-overflow byte limit that preserves exact bodies.
+- Never stage a remote file locally as the production path.
 - Size parameters state their unit (`batch_row_size`, `read_byte_size`).
 
 ## Iceberg
 
+- Primary APIs consume and return `RecordBatchReader`; table helpers explicitly
+  require memory-sized data.
+- `append_*` inserts and optionally skips existing keys; `overwrite_*` replaces
+  matching keys and inserts the rest. Both create a missing table.
+- `merge_by=True` means the native Field's declared primary key.
+- Commit after `commit_batch_num` input batches or the earlier optional
+  `commit_row_size` bound.
+- Push filters, projections, ordering, and limits into storage planning.
 - Every verb accepts `branch`; every read accepts `snapshot_id`.
-- Preserve field ids when present and assign them when absent.
-- Read planned partitions in deterministic order and stream one partition at a
-  time when ordered input is requested.
-- Merge scan filters are safe supersets; deletion matching remains exact.
-- Keep the Iceberg boundary on PyIceberg's FileIO and PyArrow native streams.
-  Standard `s3.*` catalog properties own endpoints and credentials.
-- Compare filesystem paths only after resolving both through the table's
-  configured store. Orphan discovery uses Arrow file mtimes until Yggdryl
-  exposes the complete bound-filesystem metadata contract.
-- Maintenance must settle and report what it changed.
-- Tests assert planned files, snapshots, and stored results, not only returned
-  rows.
+- Preserve supplied Iceberg ids and assign missing ids.
+- Keep PyIceberg's configured `FileIO` and native PyArrow streams at the table
+  boundary. Standard `s3.*` catalog properties own endpoints and credentials.
+- Maintenance reports settled changes and never deletes a file whose ownership
+  is ambiguous.
 
-## Market data
-
-- Events are immutable versions. `vhash` identifies a clock-free value and
-  `hash` anchors it to `unix`; `prevhash` names the preceding exact version
-  and `parenthash` records exact construction provenance.
-- `xhash` identifies a lifecycle as the direct XXH3-128 digest of UTF-8 `code`.
-  `altids` retains every readable code under its folded field name;
-  `linkhashes` names exact related event versions by their sixteen-byte `hash`.
-- Composite identity is the cross-language `rekep-identity-v1` frame: signed
-  little-endian `int64` lengths, `-1` for null, typed payload bytes and XXH3-64.
-  `vhash` is signed `int64`; `hash`, `xhash`, and reference identities are
-  sixteen big-endian bytes. Numbers are never formatted as text.
-- Store market notions as ASCII codes packed into one integer, left-justified
-  and padded with trailing NULs, so the value orders as its text does. Ranks
-  carry the band order, so live and terminal checks compare ranks and a storage
-  scan pushes the finite code set `ranked_at_least` names.
-- Nest nothing a reader filters on. `InstUpdate.xhash` keeps the event
-  lifecycle flat; book summary values stay flat too.
-- `Instrument` is the event-free FIX component of reference facts, nested in
-  `FixMsg` and `InstUpdate`. `InstUpdate` is the latest persisted
-  reference event, keyed by the direct XXH3-128 digest of `code`, where `code`
-  is its `symbolticker`. Instrument, leg, and flat instrument identities are
-  the same clock-free operation over their canonical ticker.
-- FIX transcription preserves repeated tags and wire order in lists, not maps.
-- `lastmkt` is standard `LastMkt <30>` with the packed `MIC` enum as its
-  column type.
-- Package fields use bare FIX names. `MarketEventType <30002>` avoids the
-  standard `EventType <865>`; the six package message declarations retain the
-  `REKEP.` namespace.
-- The registry owns FIX names, types, descriptions, tags, and values across
-  versions. Hard-code only normalization rules the registry cannot express.
-- Generic `Event` owns snapshot and idle-expiry behavior. Finished states do
-  not keep producing snapshots.
-- `BookIterator` consumes time-sorted parsed `FixMsg` records and emits only
-  `Book` rows. Keep state mutation single-threaded and bounded. `purge_alive`
-  decides whether orders still resting when the stream ends are expired.
-- A structured FIX component is a `ComponentGroup` subclass naming its
-  component, its group and the members that earn a column; everything else
-  stays in the row's residual `entries`, which is the one place a value
-  nothing lifted belongs. The spec's own `required` rules decide member
-  nullability -- `FixRegistry.component_field` reads them.
-
-## Workflow ownership
-
-Concrete jobs are Marimo applications under `tasks/<name>/`, beside a YAML
-document that points to the application. Package code contains reusable parsing
-and model logic, not project-specific job classes. `Task` only
-defines/serializes application configuration. Airflow executes them with the
-repository's `MarimoOperator`, which runs `rekep task run` in the locked `uv`
-environment and routes the JSON result through XCom.
+## Workflow
 
 The supported graph is:
 
 ```text
-parse_messages -+-> parse_fix_market -> fix.market -+-> parse_instruments -> market.instruments
-               |                                  `-> parse_market -+-> flatten_orders
-               |                                                    `-> flatten_executions
-               +-> parse_fix_misc -> fix.misc
-               `-> parse_fix_unknown -> fix.unknown
+filesystem URI -> parse_messages -> logs.messages
 ```
 
-The one `parse_fix` task definition receives a category for three independent
-Airflow runs after `parse_messages`. Each transcribes raw `Message` rows, applies
-its mutually exclusive category predicate in Arrow, and owns one `fix.*` table.
-`parse_fix_market` owns FIX translation and the resolved `unix` clock for market rows. It nests
-the `Instrument` component, whose class owns ticker and ISIN derivation.
-`parse_instruments` reads the rows it wrote to `fix.market` and versions
-`market.instruments` through `InstUpdate.versioned`, so every caller
-uses the same enrichment and versioning rule.
+`tasks/parse_messages/` contains the Marimo application beside its YAML
+document. The application passes `filesystem` to `IOBase.from_uri`, casts each
+batch to `Message.field()`, and writes the iterator directly to Iceberg.
 
-With `parse_market.books: false`, the market task bypasses Book construction
-and writes the FIX-carried Order and Execution rows itself; the two flatten
-tasks are skipped by the Airflow result route.
-
-Inputs are physical text records read by yggdryl. Persisted outputs are
-`logs.messages`, the three `fix.*` tables, and the `market.*` instrument, book,
-order and execution tables.
-
-Every task returns the same result keys and brackets itself with the same two
-INFO records, both built by `rekep.logs.Stage`: `task`, `read`, `written`,
-`skipped`, `sources`, `targets`, `window`, `elapsed_ms`, and whatever else a
-task alone knows under its own name. The numbers in the closing record are the
-numbers in the returned dict or one of them is wrong. An application that
-hand-rolls its own result shape is an application the Airflow routes and the
-docs cannot both be right about.
+Every task result and its closing INFO record use `rekep.logs.Stage` and agree
+on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
+`elapsed_ms`.
 
 ## Tests and benchmarks
 
-- Test reusable internal logic; do not re-test it through a task application.
-  The workflow's own contract -- the counts each task returns and the rows each
-  table holds, over the checked-in fixture -- is pinned once, as an
-  `integration` test.
-- Mark long Iceberg transactions `integration`. Default CI excludes them; the
-  integration workflow opts in explicitly.
-- Derive expectations from fixtures, then pin counts so broken producers cannot
-  move both sides of an assertion.
-- Cross every control-flow boundary: zero/one rows, batch sizes, thresholds,
-  nulls, and alternate types.
-- Compare optimized paths with a reference implementation before timing them.
-- Keep focused internal benchmarks. Do not add full-pipeline or million-row
-  development benchmarks.
+- Test reusable internals; pin the application contract once as integration.
+- Mark long Iceberg transactions `integration`; default CI excludes them.
+- Cross zero/one rows, batch bounds, nulls, retries, and alternate Arrow types.
+- Compare optimized code with a reference before timing it.
+- Keep focused component benchmarks. Do not add million-row development or
+  duplicate pipeline benchmarks.
 
 ## Layout
 
 ```text
 python/src/rekep/
-  fields/       declarations and recursive Arrow casts
-  fix/          messages, registry, components, protocol rules, and the shell
-  enums/        every persisted market code, over two ASCII bases
-  market/       event, instrument, order, execution, and book logic
-  iceberg/      catalog, dataset, schema bridge, and native PyIceberg FileIO
-  text/         raw Message and parsed FixMsg declarations
+  fields/       native Field helpers and strict Arrow boundary checks
+  iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
   tasks/        application configuration only
-  resources.py  yggdryl resource binding and required byte reads
-  console.py    terminal styling: colour, boxes, tables, spinners
-  logs.py       the level policy, and where a run's records go
-  times.py      one reading of "an instant", whatever spelled it
-schemas/rekep/  the six persisted output contracts
-data/fix/       the FIX dictionary: tag-range shards, components, messages
-tasks/          Marimo applications, adjacent YAML, the operator and the DAG
+  text/         raw Message declaration
+  resources.py  Yggdryl binding and required byte reads
+tasks/
+  parse_messages/
+  optimize_iceberg/
+schemas/rekep/message.yaml
 ```
-
-Yggdryl supplies general resources and text media. Yggfin keeps the narrow
-PyIceberg/PyArrow table boundary, Iceberg reads, writes and table contracts.
-
-Comments explain why a constraint exists. Docstrings and descriptions never
-restate what code already says.

@@ -1,77 +1,40 @@
 # Design
 
-## Arrow is the boundary
-
-One Arrow schema defines each record. Producers and consumers cast against the
-same declaration, so width, order, nullability, metadata, and nested types do
-not drift between task applications, Iceberg, Python, or a later Rust stage.
+## One field model
 
 ```python
-from rekep import Book
+from rekep import Field, Message
+from yggdryl import Field as YggdrylField
 
-shape = Book.into_field()
-empty = shape.into_arrow_schema().empty_table()
-
-print(len(shape.into_arrow_schema()), len(shape.into_iceberg_schema().fields))
-print(shape.cast_arrow(empty).num_columns)
+assert Field is YggdrylField
+schema = Message.field().into_arrow_schema()
 ```
 
-```text
-55 55
-55
-```
-
-Shape changes use Arrow kernels. Data-sized Python collections or row loops do
-not belong in casts.
+Yggdryl `Field` is the schema authority. Rekep adds no wrapper class, protocol
+metadata model, dataclass compiler, or alternate document codec.
 
 ## Stream by default
 
-Readers and writers exchange `RecordBatchReader`. Batch size bounds parsing
-memory; commit size bounds write memory and metadata growth. Files are opened
-one at a time in deterministic natural order. Filters and projections are
-pushed to Iceberg before rows are read.
+`IOBase.read_arrow_reader()` and Iceberg reads expose `RecordBatchReader`.
+Row batching bounds retained rows, and write commit limits bound transaction
+size. One exact body has no byte bound until Yggdryl exposes error-on-overflow.
+Helpers returning an Arrow table are explicit choices for data known to fit in
+memory.
+
+## Keep ownership narrow
+
+- Yggdryl owns filesystems, byte streams, compression, text media, and fields.
+- Arrow owns columnar kernels and schema casts.
+- PyIceberg owns tables, snapshots, planning, and commits.
+- Rekep owns the `Message` contract and the small seam between those systems.
 
 ## Refuse ambiguity
 
-Missing non-null fields, unsupported unions, unresolved locations, unordered
-event streams, and unsafe merge keys raise at their boundary. Filling or
-guessing would make bad data look valid.
+Missing required columns, nulls in non-null fields, invalid merge keys, and
+unresolved resources fail at their boundary. Rekep's strict preflight remains
+small until Yggdryl exposes the same opt-in nullability policy natively.
 
-## Keep identities portable
+## Keep orchestration outside the package
 
-Value identities are signed `int64`. Lifecycle and reference identities are
-direct XXH3-128 digests, while event `hash` composes epoch microseconds over a
-value digest. All three wide identities use big-endian
-`fixed_size_binary(16)` in Arrow and `fixed[16]` in Iceberg.
-Composite keys use the exact
-[binary frame](../contracts/identity.md), not Python formatting or
-process-local hashes.
-Enums persist integer codes with their member table in field metadata, so an
-unknown future code is retained.
-
-## Keep filtered values flat
-
-Columns used for time, instrument, state, price, or quantity filters remain
-top-level. Nested lists hold compact book levels and repeated protocol data,
-where engines do not provide useful bounds anyway.
-
-## Separate reusable logic from orchestration
-
-Package classes parse, normalize, fold, cast, and store data. Task
-applications choose sources, targets, time windows, and deployment policy.
-`Task` describes an application config; it never hides the application
-implementation.
-
-## Documentation budget
-
-A field description is one factual sentence. Keep units, source, derivation,
-and null meaning; remove prose that repeats the field name or type. Put one
-non-obvious constraint in a nearby comment and longer rationale only on the
-guide page that owns it.
-
-## Validation
-
-Tests cover reusable internals and compare optimized paths with Arrow or
-pyiceberg references. Long storage transactions are marked `integration`.
-Focused component benchmarks remain; full-pipeline and million-row development
-benchmarks do not.
+`tasks/parse_messages/` contains the Marimo application and its YAML input.
+Package code contains reusable models and storage behavior only.

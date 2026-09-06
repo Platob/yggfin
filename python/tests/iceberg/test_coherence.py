@@ -13,8 +13,9 @@ import pyarrow
 import pyarrow.compute
 import pytest
 
-from rekep import Convertible, Field, scalar
-from rekep.iceberg import IcebergCatalog, IcebergDataset
+from rekep import Convertible, scalar
+from rekep.fields import field_names, field_of, partition_key, primary_key, sort_key
+from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_schema, partition_keys
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
 
 from ..conftest import catalog_properties
@@ -26,13 +27,13 @@ pytestmark = pytest.mark.integration
 class Quote(Convertible):
     """One quote."""
 
-    symbol: Annotated[str, Field.primary_key()]
+    symbol: Annotated[str, primary_key()]
     """Instrument."""
 
-    day: Annotated[datetime.date, Field.partition_key()]
+    day: Annotated[datetime.date, partition_key()]
     """Trading day, and the partition."""
 
-    seq: Annotated[int, Field.primary_key()]
+    seq: Annotated[int, primary_key()]
     """Sequence within the day -- the second half of a composite key."""
 
     size: int
@@ -46,10 +47,10 @@ class Quote(Convertible):
 class Ordered(Convertible):
     """One event under the chronological key used by streamed inserts."""
 
-    unix: Annotated[int, Field.primary_key(), Field.sort_key()]
+    unix: Annotated[int, primary_key(), sort_key()]
     """Event time."""
 
-    hash: Annotated[int, Field.primary_key()]
+    hash: Annotated[int, primary_key()]
     """Content identity."""
 
     payload: str = "x"
@@ -69,7 +70,7 @@ def quotes(start: int, count: int, venue: str = "XPAR", *, days: int = 1) -> pya
             "size": [(start + i) * 10 for i in range(count)],
             "venue": [venue] * count,
         },
-        schema=Quote.into_field().into_arrow_schema(),
+        schema=Quote.field().into_arrow_schema(),
     )
 
 
@@ -86,7 +87,7 @@ def ordered(start: int, count: int) -> pyarrow.Table:
             "hash": [index * 1_000_003 for index in range(start, start + count)],
             "payload": ["x"] * count,
         },
-        schema=Ordered.into_field().into_arrow_schema(),
+        schema=Ordered.field().into_arrow_schema(),
     )
 
 
@@ -96,7 +97,7 @@ def pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("ours", "theirs"):
         catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
-        dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
+        dataset = catalog.dataset("trading.quotes", field=Quote.field())
         dataset.create_with()
         built.append(dataset)
     ours, theirs = built
@@ -126,7 +127,7 @@ def test_monotonic_insert_shortcut_agrees_with_pyiceberg_across_the_literal_limi
     built = []
     for name in ("ours_ordered", "theirs_ordered"):
         catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
-        built.append(catalog.dataset("trading.ordered", field=Ordered.into_field()).create_with())
+        built.append(catalog.dataset("trading.ordered", field=Ordered.field()).create_with())
     ours, theirs = built
     for chunk in (ordered(0, MERGE_IN_LIMIT), ordered(MERGE_IN_LIMIT, MERGE_IN_LIMIT + 1)):
         ours.append_arrow_table(chunk, merge_by=True, commit_row_size=1_000_000)
@@ -269,7 +270,7 @@ def test_the_report_says_what_moved(pair) -> None:
 @pytest.fixture
 def stored(tmp_path: Path) -> IcebergDataset:
     catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path, "read"))
-    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
+    dataset = catalog.dataset("trading.quotes", field=Quote.field())
     dataset.append_arrow(quotes(0, 300, days=5), commit_row_size=100)
     return dataset
 
@@ -290,10 +291,8 @@ def test_a_filtered_read_plans_fewer_files_than_a_whole_one(stored) -> None:
 
 
 def test_a_projection_returns_what_selecting_afterwards_would(stored) -> None:
-    narrow = Field.from_arrow_schema(
-        pyarrow.schema(
-            [Quote.into_field().into_arrow_schema().field(name) for name in ("seq", "size")]
-        ),
+    narrow = field_of(
+        pyarrow.schema([Quote.field().into_arrow_schema().field(name) for name in ("seq", "size")]),
         "Narrow",
     )
     pushed = stored.read_arrow_table(narrow)
@@ -303,24 +302,20 @@ def test_a_projection_returns_what_selecting_afterwards_would(stored) -> None:
 
 def test_a_projection_does_not_read_the_columns_it_drops(stored) -> None:
     """The scan is told the shape, rather than the cast dropping columns after."""
-    narrow = Field.from_arrow_schema(
-        pyarrow.schema([Quote.into_field().into_arrow_schema().field("seq")]), "Narrow"
-    )
+    narrow = field_of(pyarrow.schema([Quote.field().into_arrow_schema().field("seq")]), "Narrow")
     scan = stored.iceberg_table.scan()
     assert stored._selected(narrow, scan) == {"seq": "seq"}, "the scan is told, not the cast"
     assert stored.read_arrow_table(narrow).column_names == ["seq"]
     assert stored.read_arrow_table(columns=["size"]).column_names == ["size"], "an explicit list"
-    assert stored.read_arrow_table().column_names == Quote.into_field().names, (
+    assert stored.read_arrow_table().column_names == field_names(Quote.field()), (
         "no shape, every column"
     )
 
 
 def test_explicit_columns_narrow_the_requested_schema(stored) -> None:
     """`columns` intersects the cast shape instead of only narrowing its scan."""
-    narrow = Field.from_arrow_schema(
-        pyarrow.schema(
-            [Quote.into_field().into_arrow_schema().field(name) for name in ("seq", "size")]
-        ),
+    narrow = field_of(
+        pyarrow.schema([Quote.field().into_arrow_schema().field(name) for name in ("seq", "size")]),
         "Narrow",
     )
     rows = stored.read_arrow_table(narrow, columns=["venue", "size", "seq"])
@@ -340,7 +335,7 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     pyiceberg's own scan of the same snapshot, which is where the values are.
     """
     catalog = IcebergCatalog(name="evolved", properties=catalog_properties(tmp_path, "evolved"))
-    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
+    dataset = catalog.dataset("trading.quotes", field=Quote.field())
     dataset.append_arrow(quotes(0, 3), commit_row_size=1_000_000)
     table = dataset.get_or_create_table()
     snapshot = table.current_snapshot().snapshot_id
@@ -358,7 +353,7 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
     assert rows.column("market").to_pylist() == ["XPAR"] * 3, "under the name it has now"
     # And the shape as it was then, which is what a caller who kept one has:
     # the column comes back under the name it was asked for either way.
-    then = dataset.read_arrow_table(Quote.into_field(), **pinned)
+    then = dataset.read_arrow_table(Quote.field(), **pinned)
     assert then.column("venue").to_pylist() == ["XPAR"] * 3, "under the name it had then"
 
     # And a column that snapshot never had is still filled, not refused.
@@ -374,7 +369,10 @@ def test_a_pinned_read_follows_the_schema_that_snapshot_was_written_under(
 
 def test_a_shape_the_table_does_not_have_still_reads(stored) -> None:
     """A column the target declares and the store lacks is filled, not refused."""
-    wider = Quote.into_field().widened_for_cast(pyarrow.schema([("desk", pyarrow.string())]))
+    wider = field_of(
+        pyarrow.schema([*Quote.field().into_arrow_schema(), ("desk", pyarrow.string())]),
+        Quote.field().name,
+    )
     table = stored.read_arrow_table(wider)
     assert table.column("desk").null_count == table.num_rows
 
@@ -391,7 +389,7 @@ def test_the_official_library_reads_what_we_wrote(stored) -> None:
 
 
 def test_the_schema_we_declare_is_the_schema_it_stores(stored) -> None:
-    declared = Quote.into_field().into_iceberg_schema()
+    declared = iceberg_schema(Quote.field())
     stored_schema = stored.iceberg_table.schema()
     assert [(f.name, str(f.field_type), f.required, f.doc) for f in stored_schema.fields] == [
         (f.name, str(f.field_type), f.required, f.doc) for f in declared.fields
@@ -401,7 +399,7 @@ def test_the_schema_we_declare_is_the_schema_it_stores(stored) -> None:
 
 def test_the_partition_spec_we_declare_is_the_one_it_partitions_by(stored) -> None:
     assert [f.name for f in stored.iceberg_table.spec().fields] == ["day"]
-    assert stored.table_field.partition_keys() == {"day": "identity"}
+    assert partition_keys(stored.table_field) == {"day": "identity"}
 
 
 # -- the vectorised comparison ----------------------------------------------
@@ -649,7 +647,7 @@ def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
     from rekep.iceberg.dataset import _key_ranges
 
     catalog = IcebergCatalog(name="wide", properties=catalog_properties(tmp_path, "wide"))
-    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
+    dataset = catalog.dataset("trading.quotes", field=Quote.field())
     # One commit per key range, so the files carry disjoint bounds -- which is
     # what makes a range predicate able to skip any of them at all.
     for start in range(0, 1_000, 200):
@@ -707,8 +705,8 @@ def test_the_factored_delete_filter_matches_what_pyiceberg_matches(
     from rekep.iceberg.dataset import _match_filter
 
     catalog = IcebergCatalog(name="factored", properties=catalog_properties(tmp_path, "factored"))
-    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
-    schema = dataset.into_struct_field().into_iceberg_schema()
+    dataset = catalog.dataset("trading.quotes", field=Quote.field())
+    schema = iceberg_schema(dataset.into_struct_field())
     join = ["symbol", "seq"]
 
     updates = quotes(0, count, "XETR", days=days)
@@ -727,7 +725,7 @@ def test_the_factored_delete_filter_matches_what_pyiceberg_matches(
             "size": [0] * (2 * len(seqs)),
             "venue": ["XPAR"] * (2 * len(seqs)),
         },
-        schema=Quote.into_field().into_arrow_schema(),
+        schema=Quote.field().into_arrow_schema(),
     )
     haystack = pyarrow.concat_tables([updates, decoys])
     ours = _match_filter(updates, join)
@@ -752,10 +750,10 @@ def test_a_factored_filter_falls_back_where_a_zero_could_hide(tmp_path: Path) ->
     class Reading(Convertible):
         """A reading under a float key."""
 
-        sensor: Annotated[str, Field.primary_key()]
+        sensor: Annotated[str, primary_key()]
         """Which sensor."""
 
-        offset: Annotated[float, Field.primary_key()]
+        offset: Annotated[float, primary_key()]
         """Offset, which may be a signed zero."""
 
         value: int
@@ -767,14 +765,14 @@ def test_a_factored_filter_falls_back_where_a_zero_could_hide(tmp_path: Path) ->
 
     updates = pyarrow.Table.from_pydict(
         {"sensor": ["A", "A", "B"], "offset": [0.0, 1.5, 0.0], "value": [1, 2, 3]},
-        schema=Reading.into_field().into_arrow_schema(),
+        schema=Reading.field().into_arrow_schema(),
     )
     join = ["sensor", "offset"]
     assert str(_match_filter(updates, join)) == str(create_match_filter(updates, join))
 
     without = pyarrow.Table.from_pydict(
         {"sensor": ["A", "A", "B"], "offset": [0.5, 1.5, 0.5], "value": [1, 2, 3]},
-        schema=Reading.into_field().into_arrow_schema(),
+        schema=Reading.field().into_arrow_schema(),
     )
     assert str(_match_filter(without, join)) != str(create_match_filter(without, join)), (
         "with no zero in it there is nothing to be careful of, and it groups"
@@ -870,10 +868,10 @@ def test_a_three_column_key_matches_what_pyiceberg_matches(
 def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None:
     """A repeated composite-key half stays coherent across six partitions."""
     ours = IcebergCatalog(name="mine", properties=catalog_properties(tmp_path, "mine")).dataset(
-        "trading.quotes", field=Quote.into_field()
+        "trading.quotes", field=Quote.field()
     )
     theirs = IcebergCatalog(name="lib", properties=catalog_properties(tmp_path, "lib")).dataset(
-        "trading.quotes", field=Quote.into_field()
+        "trading.quotes", field=Quote.field()
     )
     stored = quotes(0, 60, days=6)
     for target in (ours, theirs):
@@ -894,7 +892,7 @@ def test_a_merge_of_many_updates_agrees_with_the_library(tmp_path: Path) -> None
 class Nested(Convertible):
     """A row with a column Arrow cannot compare."""
 
-    key: Annotated[str, Field.primary_key()]
+    key: Annotated[str, primary_key()]
     """Identity."""
 
     size: int
@@ -911,7 +909,7 @@ def nested_rows(keys: range, size: int) -> pyarrow.Table:
             "size": [size] * len(keys),
             "book": [[("bid", 1)] for _ in keys],
         },
-        schema=Nested.into_field().into_arrow_schema(),
+        schema=Nested.field().into_arrow_schema(),
     )
 
 
@@ -919,7 +917,7 @@ def nested_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("nested-ours", "nested-theirs"):
         catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
-        dataset = catalog.dataset("trading.nested", field=Nested.into_field())
+        dataset = catalog.dataset("trading.nested", field=Nested.field())
         dataset.create_with()
         built.append(dataset)
     built[1].plan_merges = False
@@ -970,7 +968,7 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
         size: int
         """Quantity."""
 
-    schema = Level.into_field().into_arrow_schema()
+    schema = Level.field().into_arrow_schema()
     filler = [float(index + 1) for index in range(keys - 1)]
     stored = pyarrow.Table.from_pydict(
         {"price": [0.0 * stored_sign, *filler], "size": [1] * keys}, schema=schema
@@ -979,7 +977,7 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
         {"price": [0.0 * -stored_sign, *filler], "size": [2] * keys}, schema=schema
     )
     catalog = IcebergCatalog(name="zero", properties=catalog_properties(tmp_path, "zero"))
-    dataset = catalog.dataset("trading.levels", field=Level.into_field())
+    dataset = catalog.dataset("trading.levels", field=Level.field())
     dataset.append_arrow(stored, commit_row_size=1_000_000)
     dataset.overwrite_arrow(incoming, merge_by=["price"], commit_row_size=1_000_000)
     rows = dataset.refresh().read_arrow_table()
@@ -1001,12 +999,12 @@ def test_signed_zero_source_keys_are_duplicates(tmp_path: Path) -> None:
         """Quantity."""
 
     rows = pyarrow.Table.from_pydict(
-        {"price": [0.0, -0.0], "size": [1, 2]}, schema=Level.into_field().into_arrow_schema()
+        {"price": [0.0, -0.0], "size": [1, 2]}, schema=Level.field().into_arrow_schema()
     )
     catalog = IcebergCatalog(
         name="zero-source", properties=catalog_properties(tmp_path, "zero-source")
     )
-    dataset = catalog.dataset("trading.levels", field=Level.into_field())
+    dataset = catalog.dataset("trading.levels", field=Level.field())
 
     with pytest.raises(ValueError, match="Duplicate rows found in source dataset"):
         dataset.overwrite_arrow(rows, merge_by=["price"], commit_row_size=1_000_000)
@@ -1023,14 +1021,14 @@ def test_a_null_merge_key_is_refused(stored) -> None:
             "size": [1],
             "venue": ["XPAR"],
         },
-        schema=Quote.into_field().into_arrow_schema(),
+        schema=Quote.field().into_arrow_schema(),
     )
     with pytest.raises(ValueError, match="cannot be null"):
         stored.merge_arrow_table(rows, True)
 
 
 def test_an_empty_chunk_reads_nothing(stored) -> None:
-    empty = Quote.into_field().into_arrow_schema().empty_table()
+    empty = Quote.field().into_arrow_schema().empty_table()
     assert stored.merge_arrow_table(empty, True) == (0, 0)
 
 
@@ -1099,7 +1097,7 @@ def test_the_comparison_agrees_or_hands_back(case: str) -> None:
 class Event(Convertible):
     """One event, partitioned by a *transform* of its timestamp."""
 
-    at: Annotated[datetime.datetime, Field.primary_key(), Field.partition_key("day")]
+    at: Annotated[datetime.datetime, primary_key(), partition_key("day")]
     """When it happened, and the partition it lands in -- by day, not by value."""
 
     size: int
@@ -1108,13 +1106,13 @@ class Event(Convertible):
 
 def events(indexes: range, version: int) -> pyarrow.Table:
     """Rows five hours apart, so every partition holds several."""
-    start = datetime.datetime(2026, 1, 1)
+    start = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     return pyarrow.Table.from_pydict(
         {
             "at": [start + datetime.timedelta(hours=index * 5) for index in indexes],
             "size": [version * 1000 + index for index in indexes],
         },
-        schema=Event.into_field().into_arrow_schema(),
+        schema=Event.field().into_arrow_schema(),
     )
 
 
@@ -1123,7 +1121,7 @@ def event_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
     built = []
     for name in ("ours", "theirs"):
         catalog = IcebergCatalog(name=name, properties=catalog_properties(tmp_path, name))
-        built.append(catalog.dataset("trading.events", field=Event.into_field()).create_with())
+        built.append(catalog.dataset("trading.events", field=Event.field()).create_with())
     return built[0], built[1]
 
 
@@ -1150,7 +1148,7 @@ def test_a_transformed_partition_prunes_a_read(event_pair) -> None:
     ours, _ = event_pair
     for start in range(0, 90, 30):
         ours.append_arrow(events(range(start, start + 30), 0), commit_row_size=1_000_000)
-    plan = ours.scan_plan("at >= '2026-01-02T00:00:00' and at < '2026-01-03T00:00:00'")
+    plan = ours.scan_plan("at >= '2026-01-02T00:00:00+00:00' and at < '2026-01-03T00:00:00+00:00'")
     assert plan["skipped"] > 0, "a day is one partition, not the whole table"
     assert plan["files"] < plan["total_files"]
 
@@ -1176,10 +1174,10 @@ def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path, keys: int) -> None:
         size: int
         """Quantity."""
 
-    schema = Level.into_field().into_arrow_schema()
+    schema = Level.field().into_arrow_schema()
     prices = [float(index) for index in range(keys)] + [float("nan")]
     catalog = IcebergCatalog(name="nan", properties=catalog_properties(tmp_path, "nan"))
-    dataset = catalog.dataset("trading.levels", field=Level.into_field())
+    dataset = catalog.dataset("trading.levels", field=Level.field())
     stored = pyarrow.Table.from_pydict({"price": prices, "size": [1] * len(prices)}, schema=schema)
     dataset.append_arrow(stored, commit_row_size=1_000_000)
     chunk = pyarrow.Table.from_pydict({"price": prices, "size": [2] * len(prices)}, schema=schema)
@@ -1235,7 +1233,7 @@ def test_a_chunk_missing_a_column_is_refused(stored) -> None:
     because that is where it casts; on a chunk of new keys it appends happily.
     Refusing either way is the stricter of the two, and the safe one.
     """
-    narrow = Quote.into_field().into_arrow_schema().remove(4)  # `venue`, which is optional
+    narrow = Quote.field().into_arrow_schema().remove(4)  # `venue`, which is optional
     matching = pyarrow.Table.from_pydict(
         {"symbol": ["S1"], "day": [DAY + datetime.timedelta(days=1)], "seq": [1], "size": [99]},
         schema=narrow,
@@ -1256,7 +1254,7 @@ def test_a_merge_after_a_rename_compares_the_column_that_was_renamed(tmp_path: P
     rewrites the whole table.
     """
     catalog = IcebergCatalog(name="renamed", properties=catalog_properties(tmp_path, "renamed"))
-    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
+    dataset = catalog.dataset("trading.quotes", field=Quote.field())
     dataset.append_arrow(quotes(0, 4), commit_row_size=1_000_000)
     with dataset.get_or_create_table().update_schema() as update:
         update.rename_column("venue", "market")

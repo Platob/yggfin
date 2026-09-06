@@ -35,9 +35,28 @@ from rekep.dataset import (
     normalised_keys,
     semi_join,
 )
-from rekep.fields import Field, StructField, arrays
+from rekep.fields import (
+    Field,
+    arrays,
+    field_of,
+    leaf_names,
+    replace_field,
+    strict_cast_batch,
+    strict_cast_reader,
+    strict_cast_table,
+)
+from rekep.fields.field import field_names
 from rekep.iceberg.catalog import IcebergCatalog, _file_location
-from rekep.iceberg.fields import metrics_for
+from rekep.iceberg.fields import (
+    derived_keys,
+    iceberg_partition_spec,
+    iceberg_schema,
+    iceberg_sort_order,
+    iceberg_struct_field,
+    metrics_for,
+    partition_keys,
+    sort_keys,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -211,7 +230,7 @@ class IcebergDataset(Dataset):
     namespace: str
 
     #: The declared row shape, named after the unqualified table.
-    field: StructField
+    field: Field
 
     #: Catalog loading is explicit; the live catalog stays a lazy property.
     catalog_name: str = "default"
@@ -267,16 +286,31 @@ class IcebergDataset(Dataset):
     #: Target files one streamed rewrite commit may replace.
     rewrite_file_count: int = 16
 
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> IcebergDataset:
+        """Build a dataset document containing a native field declaration."""
+        declared = dict(mapping)
+        field = declared.get("field")
+        if isinstance(field, Mapping):
+            declared["field"] = Field.from_dict(field)
+        return super().from_dict(declared)
+
+    def into_dict(self) -> dict[str, Any]:
+        """Serialize the native field as its portable mapping."""
+        declared = super().into_dict()
+        declared["field"] = self.field.into_dict()
+        return declared
+
     def __post_init__(self) -> None:
         """Normalize the declaration and public root spellings once."""
         if not self.name or "." in self.name:
             raise ValueError("an Iceberg dataset name must be non-empty and unqualified")
         if not self.namespace or any(not part for part in self.namespace.split(".")):
             raise ValueError("an Iceberg dataset namespace must be non-empty")
-        field = self.field if isinstance(self.field, Field) else Field.from_(self.field)
-        if not isinstance(field, StructField):
+        field = field_of(self.field)
+        if field.dtype.id != "struct":
             raise TypeError("an Iceberg dataset field must be a struct")
-        self.field = field.with_name(self.name)
+        self.field = replace_field(field, name=self.name)
         self.commit_batch_num = _positive_int(self.commit_batch_num, "commit_batch_num")
         if self.commit_row_size is not None:
             self.commit_row_size = _positive_int(self.commit_row_size, "commit_row_size")
@@ -372,7 +406,7 @@ class IcebergDataset(Dataset):
         except (AttributeError, KeyError, TypeError, ValueError):
             return None
 
-    def create_with_field(self, field: StructField, **kwargs: Any) -> IcebergDataset:
+    def create_with_field(self, field: Field, **kwargs: Any) -> IcebergDataset:
         """Create the table from `field`: schema, keys, partitioning and docs.
 
         Idempotent, and the only place a table is created -- a write that
@@ -390,19 +424,19 @@ class IcebergDataset(Dataset):
         }
         if self.exists:
             return self
-        field = field.with_name(self.name)
+        field = field_of(field, self.name)
         self.store.create_namespace(self.namespace)
-        schema = field.into_iceberg_schema()
+        schema = iceberg_schema(field)
         defaults = {**(COMMIT_PROPERTIES if self.optimize_commits else {}), **metrics_for(field)}
         table = self.catalog.create_table(
             self.identifier,
             schema=schema,
             location=location,
-            partition_spec=field.into_iceberg_partition_spec(schema),
+            partition_spec=iceberg_partition_spec(field, schema),
             # Declared at creation, because Iceberg records a sort order on the
             # table and every writer through it honours it -- a shape that says
             # how it is read is a shape that says how it should be laid out.
-            sort_order=field.into_iceberg_sort_order(schema, self.sort_by),
+            sort_order=iceberg_sort_order(field, schema, self.sort_by),
             properties={**defaults, **creation_properties},
         )
         self.field = field
@@ -412,7 +446,7 @@ class IcebergDataset(Dataset):
             self.identifier,
             table.location(),
             len(schema.fields),
-            field.partition_keys() or "nothing",
+            partition_keys(field) or "nothing",
         )
         return self
 
@@ -438,19 +472,19 @@ class IcebergDataset(Dataset):
     # -- what it holds ------------------------------------------------------
 
     @cached_property
-    def table_field(self) -> StructField:
+    def table_field(self) -> Field:
         """The table's own shape: its schema, docs, keys and partitioning."""
         table = self.iceberg_table
         sort_order = table.sort_order()
         self.__dict__["_table_sort_order_id"] = sort_order.order_id
-        return StructField.from_iceberg_schema(
+        return iceberg_struct_field(
             table.schema(),
             self.name,
             spec=table.spec(),
             sort_order=sort_order,
         )
 
-    def into_struct_field(self) -> StructField:
+    def into_struct_field(self) -> Field:
         """The table's declared shape."""
         return self.field
 
@@ -462,7 +496,7 @@ class IcebergDataset(Dataset):
         back from a table says nothing here -- and saying nothing costs a merge
         pruning, never correctness.
         """
-        return self.field.derived_keys()
+        return derived_keys(self.field)
 
     def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
         """Reported merge keys, with partition sources naming their scope."""
@@ -470,7 +504,7 @@ class IcebergDataset(Dataset):
         if not join:
             return join
         shape = self.table_field if "iceberg_table" in self.__dict__ else self.field
-        return list(dict.fromkeys([*shape.partition_keys(), *join]))
+        return list(dict.fromkeys([*partition_keys(shape), *join]))
 
     def _row_merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
         """Stored columns compared inside one transformed partition."""
@@ -480,18 +514,18 @@ class IcebergDataset(Dataset):
         """Add the columns `source` has and the table lacks; skip when there are none."""
         target = self.target_field(source)
         current = self.table_field
-        held = set(current.leaf_names())
-        added = [name for name in target.leaf_names() if name not in held]
+        held = set(leaf_names(current))
+        added = [name for name in leaf_names(target) if name not in held]
         if not added or dry_run:
             return added
         table = self.iceberg_table
         with table.update_schema() as update:
-            update.union_by_name(target.into_iceberg_schema())
+            update.union_by_name(iceberg_schema(target))
         self.refresh()
         # The declared shape *is* what writes cast onto, so evolving the table
         # without it would drop the new columns at the next write. Keep its
         # outer name because it is the schema's stable display name.
-        self.field = target.with_name(self.name)
+        self.field = replace_field(target, name=self.name)
         LOGGER.info("%s gained %d columns: %s", self.identifier, len(added), ", ".join(added))
         return added
 
@@ -538,12 +572,12 @@ class IcebergDataset(Dataset):
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
         if columns and target is not None:
-            selected = [target.field(name) for name in columns if name in target.names]
+            selected = [target.field(name) for name in columns if name in field_names(target)]
             if not selected:
                 raise ValueError(f"columns={list(columns)!r} shares no columns with `schema`")
-            target = Field.from_arrow_schema(
+            target = field_of(
                 pyarrow.schema(
-                    [field.into_arrow_field() for field in selected],
+                    [field.into_arrow() for field in selected],
                     metadata=target.into_arrow_schema().metadata,
                 )
             )
@@ -587,10 +621,10 @@ class IcebergDataset(Dataset):
             reader = _reader_limit(reader, limit)
         if target is None:
             return reader
-        return target.cast_arrow_reader(_renamed(reader, found))
+        return strict_cast_reader(target, _renamed(reader, found))
 
     def _empty_reader(
-        self, target: StructField | None, columns: Sequence[str] | None
+        self, target: Field | None, columns: Sequence[str] | None
     ) -> pyarrow.RecordBatchReader:
         """No rows, under the shape the caller asked to read.
 
@@ -633,13 +667,14 @@ class IcebergDataset(Dataset):
         """Pin a scan to its validated ref, leaving an unwritten root unpinned."""
         return scan if self._branch_head(table, reference) is None else scan.use_ref(reference)
 
-    def _selected(self, target: StructField, scan: Any) -> dict[str, str]:
+    def _selected(self, target: Field, scan: Any) -> dict[str, str]:
         """`{the scan's name: the target's name}` for every column it can fill."""
         current = {field.name: field.field_id for field in self.iceberg_table.schema().fields}
         pinned = {field.field_id: field.name for field in scan.projection().fields}
         by_name = set(pinned.values())
         wanted = {}
-        for name in target.names:
+        target_names = field_names(target)
+        for name in target_names:
             stored = pinned.get(current.get(name, -1)) or (name if name in by_name else None)
             if stored is not None:
                 wanted[stored] = name
@@ -647,8 +682,8 @@ class IcebergDataset(Dataset):
             "%s projects %d of %d declared columns; unfilled: %s",
             self.identifier,
             len(wanted),
-            len(target.names),
-            ", ".join(sorted(set(target.names) - set(wanted.values()))) or "none",
+            len(target_names),
+            ", ".join(sorted(set(target_names) - set(wanted.values()))) or "none",
         )
         # Nothing in common: one column is named because a scan must project
         # something, and what comes back is a table of no columns and no rows
@@ -726,7 +761,7 @@ class IcebergDataset(Dataset):
                     "replaces the rows whose keys match -- pass True for the primary key "
                     "or the columns to match on, or use append_arrow_* to add rows blindly"
                 )
-            reader = self.target_field(schema).cast_arrow_reader(source)
+            reader = strict_cast_reader(self.target_field(schema), source)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             for chunk in arrow_chunks(reader, rows, batches):
@@ -812,7 +847,7 @@ class IcebergDataset(Dataset):
             if not partitions:
                 raise ValueError("partition overwrite needs a supported table partition spec")
             required = _requiring_columns(source, [column.source for column in partitions])
-            reader = self.target_field(schema).cast_arrow_reader(required)
+            reader = strict_cast_reader(self.target_field(schema), required)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             snapshot = properties or {}
@@ -1062,14 +1097,12 @@ class IcebergDataset(Dataset):
         # hands back, and converting what was *read* costs less than converting
         # what is being written -- a streaming merge reads far fewer rows than
         # it writes.
-        shape = Field.from_(chunk.schema)
+        shape = field_of(chunk.schema)
         derived = self.derived_columns()
         delete_columns = list(
             dict.fromkeys([*(column.source for column in partitions or ()), *join])
         )
-        key_shape = Field.from_(
-            pyarrow.schema([chunk.schema.field(name) for name in delete_columns])
-        )
+        key_shape = field_of(pyarrow.schema([chunk.schema.field(name) for name in delete_columns]))
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         scan = self._branch_scan(table, scan, reference)
         # Range filters are safe supersets. Decode only the keys needed to turn
@@ -1170,7 +1203,7 @@ class IcebergDataset(Dataset):
                 candidate = semi_join(candidate, chunk, join)
                 if not candidate.num_rows:
                     continue
-                candidate = shape.cast_arrow_table(candidate)
+                candidate = strict_cast_table(shape, candidate)
                 positions = _matching_positions(chunk, candidate, join)
                 if len(positions) != candidate.num_rows:
                     raise ValueError("Target table has duplicate rows, aborting upsert")
@@ -1265,7 +1298,7 @@ class IcebergDataset(Dataset):
             rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
-            reader = self.target_field(schema).cast_arrow_reader(source)
+            reader = strict_cast_reader(self.target_field(schema), source)
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             snapshot = properties or {}
@@ -1389,7 +1422,7 @@ class IcebergDataset(Dataset):
         # to: naming it raised `Could not find column`, on a branch every other
         # verb here reads and writes happily. `_under_current_names` puts the
         # names back on the way out.
-        keys = Field.from_(pyarrow.schema([chunk.schema.field(name) for name in join]))
+        keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
         wanted = self._selected(keys, scan)
         if set(wanted.values()) != set(join):
             # That snapshot does not carry every key column -- one added since
@@ -1417,7 +1450,7 @@ class IcebergDataset(Dataset):
                 scan, itertools.chain((first_task,), tasks), group_size=1
             ) as planned:
                 for batch in _under_current_names(table, planned):
-                    stored = pyarrow.Table.from_batches([keys.cast_arrow_batch(batch)])
+                    stored = pyarrow.Table.from_batches([strict_cast_batch(keys, batch)])
                     fresh = fresh.join(
                         stored.select(list(join)), keys=list(join), join_type="left anti"
                     )
@@ -1542,11 +1575,11 @@ class IcebergDataset(Dataset):
         else:
             shape = self.field
             return [
-                (name, _sort_direction(direction)) for name, direction in shape.sort_keys().items()
+                (name, _sort_direction(direction)) for name, direction in sort_keys(shape).items()
             ]
         return [
             (name, _sort_direction(direction))
-            for name, direction in (shape.sort_keys().items() if shape is not None else ())
+            for name, direction in (sort_keys(shape).items() if shape is not None else ())
         ]
 
     def sort_columns(self) -> list[str]:

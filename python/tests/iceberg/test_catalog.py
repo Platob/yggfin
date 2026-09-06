@@ -7,7 +7,8 @@ from typing import Annotated
 import pyarrow.fs
 import pytest
 
-from rekep import Convertible, Field, scalar
+from rekep import Convertible, scalar
+from rekep.fields import field_names, primary_key
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.catalog import PYARROW_FILE_IO
 from rekep.iceberg.file_io import IcebergFileIO
@@ -17,7 +18,7 @@ from rekep.iceberg.file_io import IcebergFileIO
 class Quote(Convertible):
     """One quote."""
 
-    symbol: Annotated[str, Field.primary_key()]
+    symbol: Annotated[str, primary_key()]
     """Instrument."""
 
     size: int
@@ -81,7 +82,7 @@ def test_relative_local_locations_become_absolute_file_uris(
     catalog = IcebergCatalog(properties={"warehouse": "data/warehouse"})
     dataset = catalog.dataset(
         "trading.quotes",
-        field=Quote.into_field(),
+        field=Quote.field(),
         location="data/tables/quotes",
         table_properties={
             "write.data.path": "data/files",
@@ -116,7 +117,7 @@ def test_a_named_file_io_is_wrapped_with_output_ownership(tmp_path: Path) -> Non
             "py-io-impl": f"{__name__}.CustomArrowFileIO",
         },
     )
-    table = catalog.dataset("t.quotes", field=Quote.into_field()).get_or_create_table()
+    table = catalog.dataset("t.quotes", field=Quote.field()).get_or_create_table()
 
     assert catalog.catalog.properties["py-io-impl"] == TRACKED_FILE_IO
     assert isinstance(table.io, TrackedFileIO)
@@ -217,11 +218,11 @@ def test_a_dataset_only_closes_the_catalog_it_owns(monkeypatch: pytest.MonkeyPat
         closed += 1
 
     monkeypatch.setattr(catalog, "close", close)
-    shared = catalog.dataset("trading.quotes", field=Quote.into_field())
+    shared = catalog.dataset("trading.quotes", field=Quote.field())
     shared.close()
     assert closed == 0
 
-    owned = IcebergDataset(name="quotes", namespace="trading", field=Quote.into_field())
+    owned = IcebergDataset(name="quotes", namespace="trading", field=Quote.field())
     owned.__dict__["store"] = catalog
     owned.__dict__["_owns_store"] = True
     owned.close()
@@ -268,7 +269,7 @@ def test_namespace_properties_round_trip(catalog: IcebergCatalog) -> None:
 
 def test_a_namespace_hands_out_its_own_datasets(catalog: IcebergCatalog) -> None:
     space = catalog.create_namespace("trading")
-    dataset = space.dataset("quotes", field=Quote.into_field())
+    dataset = space.dataset("quotes", field=Quote.field())
     assert isinstance(dataset, IcebergDataset)
     assert dataset.name == "quotes"
     assert dataset.identifier == "trading.quotes"
@@ -291,7 +292,7 @@ def test_a_direct_dataset_requires_explicit_coordinates(
     name: str, namespace: str, message: str
 ) -> None:
     with pytest.raises(ValueError, match=message):
-        IcebergDataset(name=name, namespace=namespace, field=Quote.into_field())
+        IcebergDataset(name=name, namespace=namespace, field=Quote.field())
 
 
 # -- tables -----------------------------------------------------------------
@@ -300,8 +301,8 @@ def test_a_direct_dataset_requires_explicit_coordinates(
 def test_tables_are_listed_per_namespace_and_across_them(catalog: IcebergCatalog) -> None:
     catalog.create_namespace("trading")
     catalog.create_namespace("risk")
-    catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
-    catalog.dataset("risk.limits", field=Quote.into_field()).create_with()
+    catalog.dataset("trading.quotes", field=Quote.field()).create_with()
+    catalog.dataset("risk.limits", field=Quote.field()).create_with()
     assert catalog.tables("trading") == ["trading.quotes"]
     assert sorted(catalog.tables()) == ["risk.limits", "trading.quotes"]
 
@@ -313,7 +314,7 @@ def test_tables_reach_nested_namespaces(catalog: IcebergCatalog) -> None:
     `trading.eu.paris.quotes`, and reported no skip.
     """
     for name in ("ops.quotes", "trading.quotes", "trading.eu.quotes", "trading.eu.paris.quotes"):
-        catalog.dataset(name, field=Quote.into_field()).create_with()
+        catalog.dataset(name, field=Quote.field()).create_with()
     assert sorted(catalog.tables()) == [
         "ops.quotes",
         "trading.eu.paris.quotes",
@@ -335,7 +336,7 @@ def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
     import pyiceberg.catalog
 
     for index in range(6):
-        catalog.dataset(f"trading.q{index}", field=Quote.into_field()).create_with()
+        catalog.dataset(f"trading.q{index}", field=Quote.field()).create_with()
     loaded = 0
     original = pyiceberg.catalog.load_catalog
 
@@ -354,7 +355,7 @@ def test_a_sweep_loads_one_catalog(catalog: IcebergCatalog) -> None:
 
 
 def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
-    dataset = catalog.dataset("trading.quotes", field=Quote.into_field())
+    dataset = catalog.dataset("trading.quotes", field=Quote.field())
     dataset.create_with()
     assert catalog.table_exists("trading.quotes")
     catalog.drop_table("trading.quotes")
@@ -363,18 +364,18 @@ def test_a_table_is_dropped_and_purged(catalog: IcebergCatalog) -> None:
 
 
 def test_a_table_is_renamed(catalog: IcebergCatalog) -> None:
-    catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
+    catalog.dataset("trading.quotes", field=Quote.field()).create_with()
     catalog.rename_table("trading.quotes", "trading.ticks")
     assert catalog.tables("trading") == ["trading.ticks"]
 
 
 def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
-    catalog.dataset("trading.quotes", field=Quote.into_field()).create_with()
-    catalog.dataset("trading.ticks", field=Quote.into_field()).create_with()
+    catalog.dataset("trading.quotes", field=Quote.field()).create_with()
+    catalog.dataset("trading.ticks", field=Quote.field()).create_with()
     found = {dataset.name for dataset in catalog.datasets("trading")}
     assert found == {"quotes", "ticks"}
     for dataset in catalog.datasets("trading"):
-        assert dataset.into_struct_field().names == ["symbol", "size"]
+        assert field_names(dataset.into_struct_field()) == ["symbol", "size"]
 
 
 def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:

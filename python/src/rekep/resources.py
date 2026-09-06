@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import os
-import pathlib
 import re
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping
 
 import pyarrow.fs
-from yggdryl import IOBase, Url
+from yggdryl import IOBase
 
 HTTP = frozenset({"http", "https"})
 WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
@@ -45,14 +44,10 @@ def resource(
     scheme = _scheme(spelled)
     if scheme in HTTP:
         raise ValueError(f"{scheme} resources are byte streams; read them with read_bytes")
-    if scheme == "file":
-        return IOBase(Url(spelled).into_path())
     if scheme:
-        owner, path = pyarrow.fs.FileSystem.from_uri(spelled)
-        return IOBase.from_fs(owner, path)
+        return IOBase.from_uri(spelled)
 
-    path = pathlib.Path(spelled).expanduser().resolve()
-    return IOBase(path)
+    return IOBase.from_uri(os.path.abspath(os.path.expanduser(spelled)))
 
 
 def read_bytes(
@@ -96,6 +91,6 @@ def _scheme(location: str) -> str:
 
 def _is_relative(location: str) -> bool:
     """Whether ``location`` can be derived from another bound resource."""
-    if _scheme(location) or pathlib.PureWindowsPath(location).drive:
+    if _scheme(location) or os.path.splitdrive(location)[0]:
         return False
-    return not pathlib.PurePosixPath(location).is_absolute()
+    return not os.path.isabs(location)

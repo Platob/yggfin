@@ -19,7 +19,8 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, scalar
+from rekep import Convertible, scalar
+from rekep.fields import partition_key, primary_key
 from rekep.iceberg import IcebergDataset
 from rekep.logs import COMMAND_LEVEL, ROOT, TASK_LEVEL, Stage, configure
 
@@ -30,10 +31,10 @@ from .conftest import catalog_properties
 class Quote(Convertible):
     """One quote."""
 
-    symbol: Annotated[str, Field.primary_key()]
+    symbol: Annotated[str, primary_key()]
     """Instrument."""
 
-    day: Annotated[datetime.date, Field.partition_key()]
+    day: Annotated[datetime.date, partition_key()]
     """Trading day."""
 
 
@@ -43,7 +44,7 @@ def quotes(count: int) -> pyarrow.Table:
             "symbol": [f"S{index}" for index in range(count)],
             "day": [datetime.date(2026, 8, 14)] * count,
         },
-        schema=Quote.into_field().into_arrow_schema(),
+        schema=Quote.field().into_arrow_schema(),
     )
 
 
@@ -110,7 +111,7 @@ def test_a_write_is_one_record_however_many_chunks_it_commits(
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
-        field=Quote.into_field(),
+        field=Quote.field(),
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
         commit_row_size=2,
@@ -130,7 +131,7 @@ def test_the_detail_under_it_is_debug(tmp_path: Path, caplog: pytest.LogCaptureF
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
-        field=Quote.into_field(),
+        field=Quote.field(),
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
     )
@@ -155,7 +156,7 @@ def test_maintenance_records_what_it_returned(
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
-        field=Quote.into_field(),
+        field=Quote.field(),
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
     )
@@ -187,17 +188,15 @@ def test_every_emitting_module_is_named_by_its_own_path() -> None:
 
 
 def test_every_task_returns_the_same_keys(caplog: pytest.LogCaptureFixture) -> None:
-    """Seven applications agreeing on a shape by hand is seven chances to
-    disagree, and they had: `read` was an integer in five and a mapping in the
-    sixth."""
+    """A task-specific result extends the shared stage shape."""
     with caplog.at_level(logging.INFO, logger=ROOT):
         stage = Stage(
-            "parse_fix_market",
-            sources={"messages": "logs.messages"},
-            targets={"market": "fix.market"},
+            "parse_messages",
+            sources={"capture": "data/capture"},
+            targets={"messages": "logs.messages"},
             window=(1_755_000_000_000_000_000, 1_755_003_600_000_000_000),
         )
-        result = stage.finished(read=11, written=9, category="market")
+        result = stage.finished(read=11, written=9, media="text")
 
     assert set(result) == {
         "task",
@@ -208,34 +207,34 @@ def test_every_task_returns_the_same_keys(caplog: pytest.LogCaptureFixture) -> N
         "targets",
         "window",
         "elapsed_ms",
-        "category",
+        "media",
     }
-    assert result["task"] == "parse_fix_market"
+    assert result["task"] == "parse_messages"
     assert result["skipped"] == 2, "what was read and not written, unless a task says otherwise"
     assert result["window"] == {
         "start": 1_755_000_000_000_000_000,
         "end": 1_755_003_600_000_000_000,
     }
     assert isinstance(result["elapsed_ms"], int)
-    assert result["category"] == "market", "what a task alone knows keeps its own name"
+    assert result["media"] == "text", "what a task alone knows keeps its own name"
 
 
 def test_a_stage_records_the_numbers_it_returns(caplog: pytest.LogCaptureFixture) -> None:
     """The record and the result are the same numbers or one of them is wrong."""
     with caplog.at_level(logging.INFO, logger=ROOT):
-        stage = Stage("flatten_orders", sources={"books": "market.books"})
-        stage.targets["orders"] = "market.orders"
-        stage.says("projected %d orders out of the books in the window", 2)
+        stage = Stage("parse_messages", sources={"capture": "data/capture"})
+        stage.targets["messages"] = "logs.messages"
+        stage.says("parsed %d messages from the capture", 2)
         result = stage.finished(read=2, written=2)
 
     opened, said, closed = (one.getMessage() for one in caplog.records)
-    assert opened == "flatten_orders reading books=market.books"
-    assert said == "flatten_orders projected 2 orders out of the books in the window"
+    assert opened == "parse_messages reading capture=data/capture"
+    assert said == "parse_messages parsed 2 messages from the capture"
     assert closed.startswith(
-        f"flatten_orders finished: {result['read']} read, {result['written']} written, "
+        f"parse_messages finished: {result['read']} read, {result['written']} written, "
         f"{result['skipped']} skipped"
     )
-    assert "orders=market.orders" in closed, "and where it put them"
+    assert "messages=logs.messages" in closed, "and where it put them"
 
 
 def test_a_run_with_no_interval_says_so_rather_than_spelling_two_nulls(

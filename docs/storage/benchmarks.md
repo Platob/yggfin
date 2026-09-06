@@ -1,195 +1,57 @@
 # Benchmarks
 
-Reusable internal paths, not task applications or orchestration. Each script
-asserts its result before timing it.
+## Message parsing
+
+The focused parser benchmark generates 200,000 realistic header-plus-body
+records and verifies the schema, row count, first and last rows before timing.
+The table reports the fastest of three warmed runs on the reference Windows
+host.
+
+| source | Yggdryl rows/s | Message rows/s | decoded MiB/s | first batch ms |
+| --- | ---: | ---: | ---: | ---: |
+| URI local plain | 85,660 | 96,848 | 12.2 | 684 |
+| URI local gzip | 99,359 | 97,813 | 12.3 | 653 |
 
 ```bash
 cd python
-uv run python benchmarks/bench_cast.py --quick
-uv run python benchmarks/bench_fix.py --quick
-uv run python benchmarks/bench_fix_registry.py --quick
-uv run python benchmarks/bench_fixmsg.py --quick
-uv run python benchmarks/bench_market.py --quick
+uv run python benchmarks/bench_message.py --rows 200000 --repeat 3
+```
+
+The Yggdryl column drains native text batches. The Message column includes the
+source-column rename and strict schema cast used by `parse_messages`.
+
+A separate gzip diagnostic that included copying to a local staging resource
+reached 83,868 Message rows/s and a 733 ms first batch, against 97,813 rows/s
+and 653 ms direct. `IOBase.buffered()` is a positional-read cache that the
+sequential record reader bypasses. Staging and that cache therefore add no
+useful layer to this one-pass scan; a remote source stays streamed directly.
+
+## Message-to-Iceberg run
+
+Three separate 100,000-row gzip objects were parsed by fresh task processes
+and written into one local Iceberg table. The final table held 300,000 rows in
+three data files and three snapshots.
+
+| interval | stage rows/s | fresh-process wall rows/s |
+| --- | ---: | ---: |
+| 1, including table creation | 7,207 | 3,107 |
+| 2 | 15,347 | 7,656 |
+| 3 | 15,131 | 6,290 |
+
+Replaying one complete interval read 100,000 rows, wrote zero, skipped 100,000,
+and created neither a data file nor a snapshot. Its stage rate was 16,841 rows/s
+and fresh-process wall rate was 8,825 rows/s.
+
+These measurements used release-built Yggdryl 0.1.1 at `bfadd39f`, PyArrow
+25.0.1, and PyIceberg 0.11.1. They include local PyIceberg transaction work and
+fresh Python/Marimo startup; they are not portable service-level guarantees.
+
+## Iceberg internals
+
+```bash
+cd python
 uv run python benchmarks/bench_iceberg.py --quick
 ```
 
-All six finish in about five minutes together, which is what makes running
-them a normal part of a change rather than an occasion.
-
-| page | path | script |
-| --- | --- | --- |
-| [Types](../contracts/types.md) | recursive Arrow casts | `bench_cast.py` |
-| [FixMsg](../fix/fixmsg.md) | raw `Message` to parsed `FixMsg` | `bench_fixmsg.py` |
-| [FIX](../fix/index.md) | parsing and registry lookup | `bench_fix.py`, `bench_fix_registry.py` |
-| [Market](../market/index.md) | identities, conversion, book folding | `bench_market.py` |
-| [Iceberg](iceberg.md) | reads, writes, merges, maintenance | `bench_iceberg.py` |
-
-Report the counts a reader pays for — planned files, manifests, requests, rows
-— beside elapsed time, from warm repeated runs, keeping adverse
-configurations.
-
-## Latest quick run
-
-2026-08-30, Linux 6.18, Python 3.12.3, PyArrow 25.0.1, `--quick` throughout.
-Directional, not comparable across machines.
-
-| path | fixture | result |
-| --- | ---: | ---: |
-| Wire parse, vectorised | 10,000 rows | 175,927 rows/s |
-| Rendered parse, vectorised | 10,000 rows | 53,314 rows/s |
-| Key column to tags, named keys | 112,500 keys, 6,133 names | 52.4M keys/s |
-| Recursive Arrow reshape | 50,000 rows | 314.4M rows/s |
-| Book summary, 10 levels/side | 200 books | 304,538 books/s |
-| Stateful book fold | 200 events | 10,623 books/s |
-| Replay shape matrix | 1,000–2,000 events | 6,422–6,993 events/s |
-| Snapshot / recovery | 2,000 orders, 100 levels | 16.9 ms / 19.3 ms |
-| Iceberg append | 5,000 rows, 4 partitions | 45,623–47,007 rows/s |
-| Iceberg merge, all new | 5,000 rows | 12,029–15,022 rows/s |
-| Iceberg merge, half stored | 5,000 rows | 15,131–20,631 rows/s |
-
-Append remains the fastest write by a wide margin; prefer it and monotonic
-insert where their semantics fit.
-
-### Empty-table keyed writes
-
-2026-08-31, Windows 11, Python 3.12.13, PyArrow 25.0.1, local SQLite catalog
-and filesystem warehouse. The before and after runs used the same generated
-log and benchmark command.
-
-| path | rows / partitions | before | after |
-| --- | ---: | ---: | ---: |
-| Fresh keyed merge, quick | 5,000 / 4 | 6,567–8,156 rows/s; 4 snapshots | 20,571–21,289 rows/s; 1 snapshot |
-| Fresh keyed merge, one commit | 100,000 / 8 | 48,095 rows/s; 8 snapshots | 204,535 rows/s; 1 snapshot |
-| Monotonic insert, six bounded commits | 100,000 | — | 226,128 rows/s |
-| Read one partition, three columns | 1,250 of 5,000 | — | 42,765 rows/s; 1 of 4 files planned |
-| Delete one partition | 1,250 of 5,000 | — | 11,745 removed rows/s; 2 files planned |
-| Delete part of one file | 625 of 5,000 | — | 5,915 removed rows/s; 1 file planned |
-| Delete with no match | 5,000 | — | 23 ms; 0 files planned; 0 snapshots |
-| Cached store calls, one-partition read | 1,250 of 5,000 | 6 GETs without cache | 2 GETs with cache; data files only |
-
-The changed path removes partition-recursive commits only while the selected
-branch has no snapshot. Once rows exist, exact per-partition matching and
-bounded rewrites remain unchanged.
-
-## Where the parse stages spend their time
-
-2026-08-27, same machine, over `bench_fixmsg.py`'s mixed capture — 100,000
-rows at 60% OTHER, 25% FIX, 15% FIXML, batches of 65,536, warm:
-
-| stage | rows/s |
-| --- | ---: |
-| text | ~68,000 |
-| FIX | ~50,000 |
-| both | ~29,000 |
-
-Recorded with their profiles, because three optimization proposals were parked
-pending exactly this measurement:
-
-| proposal | what the profile said |
-| --- | --- |
-| collapse the classification probe scans | worth about a tenth; entry tokenization is ~¾ of `MessageParser.parse_arrow` and the probes ~⅐. RE2 cannot express the before-checksum guard in one pass — no lookahead, no per-row slice — so value and position stay two scans. Parked. |
-| cut per-call kernel dispatch | ~85% of a warm batch runs inside Arrow kernels, over a millisecond per call across ~2,000 calls, so wrapper overhead is under a tenth. Group-by fragmentation grows with distinct protocol/version groups, which this fixture keeps small. |
-| the two seconds at the front | one-time: a fresh codec materializes the merged field table and per-version declarations, then caches them. Dominates a short profile, vanishes over a long run. |
-| a bridge fast path | the reference path costs ~0.5 s/batch against the flat FIX path's 0.2 s, and per *field* a named read is already on par with a wire one — the row-rate gap is message size. Worth doing against a real FIXML-heavy capture, not this fixture. |
-
-Reproduce with `bench_fixmsg.py --only stages` and `--only kernels`, which
-account one batch by transcription stage and by Arrow kernel and call site.
-`cProfile` cannot: nine tenths of this boundary runs inside kernels, and it
-reports one `pyarrow.compute` wrapper for all of them.
-
-### What the boundary cost, and what it costs now
-
-2026-09-01, Linux 6.18, Python 3.12, PyArrow 25.0.1, four cores, over
-`bench_fixmsg.py`'s 20,000-row raw `Message` batches. The four protocol mixes
-were checked batchwise and rowwise before timing.
-
-| mix | before | after | median |
-| --- | ---: | ---: | ---: |
-| mixed 60/25/15 | 15,507–19,797 rows/s | 21,520–26,308 rows/s | 1.36x |
-| wire FIX only | 25,099–32,707 rows/s | 29,133–38,118 rows/s | 1.24x |
-| bridge FIXML only | 9,157–12,371 rows/s | 13,439–16,145 rows/s | 1.38x |
-| unparsed text only | 27,328–35,022 rows/s | 39,505–49,881 rows/s | 1.44x |
-
-Alternating runs of the two trees, `--only mix --rows 20000`, ranges as well as
-the ratio because this host's spread is wider than some of the wins. On three
-of the four mixes the ranges do not overlap at all — the slowest run after
-beats the fastest run before. Wire FIX overlaps, and takes the flat
-specialization rather than the registry path, so its 1.24x is the weakest
-number here.
-
-Where the milliseconds went, over one 20,000-row mixed batch, `--only stages`
-(1,285 ms before, 915 ms after):
-
-| stage | before | after | what changed |
-| --- | ---: | ---: | --- |
-| resolve per version | 371.9 ms | 268.6 ms | the split is inverted once per batch, not once per column |
-| classify protocol | 248.9 ms | 258.7 ms | unchanged; see the parked row above |
-| identify | 240.2 ms | 177.6 ms | a digest part that frames alike in every row is one constant |
-| lift component groups | 164.6 ms | 46.7 ms | a component path is read once per distinct spelling |
-| transcription errors | 85.7 ms | 34.8 ms | an empty diagnostic side is not joined row by row |
-| classify direction | 31.8 ms | 19.8 ms | an anchor scans only the rows carrying its protocol |
-
-The three call sites that led the profile are the three that moved: the
-identity framing join went 100.5 ms to 63.5 ms, and `fix/components.py`'s
-91.2 ms path scan and `fields/arrays.py`'s 34.9 ms of repeated
-`array_sort_indices` left the top fifteen entirely. Read a single `--only
-kernels` figure as indicative: two post-change runs of that sweep accounted
-766 ms and 968 ms of the same batch.
-
-What leads now is `text/entries.py`'s `_parse_style` at 67 ms over two calls,
-tokenizing the bridge and text payloads — the same scan
-`Rules.into_arrow_protocol_array` is parked on above, which is why classify is
-the one stage that did not move. A batch still costs about 80 ms before any of
-its rows do, so 256 rows run at 2,666 rows/s against 26,261 for 20,000: hand
-this large batches.
-
-Three more were priced and left alone:
-
-| proposal | what the measurement said |
-| --- | --- |
-| skip the per-group `take` of wholly-null columns | 5.1 ms of the 8.2 ms those takes cost per 8,000-row mixed batch, but a dropped key changes which columns `_resolved_columns` sees, and the two groups' key sets must match or the scatter raises. 1% of the boundary for a behaviour change. |
-| stop re-inferring versions in `_resolved_batch_columns` | 17.5 ms per mixed 8,000-row batch, and not a duplicate: `_versions_arrow` is passed the newly *versioned* protocols and a `_begin_strings_arrow` rebuilt from them, and the two readings can legitimately disagree. |
-| a direction split on a nearly-homogeneous batch | the per-protocol split reads 0.93x where one anchored protocol takes 90% of the rows and the whole-column shortcut does not fire. Direction is 2% of the boundary, so this is ~0.2% there, and a per-category task batch is exactly that shape. Kept, because the mixed capture it is measured on is the one the pipeline reads. |
-
-## What moved, and what only looked like it
-
-Collapsing each rule's pattern list into one alternation nearly doubled
-classification: **1.9x** on `Rules.into_arrow_protocol_array` over the same
-65,536-row batch (571,000 → 1,076,000 rows/s), interleaved against the
-pre-change module in one process, protocol answers asserted identical first.
-Direction resolution was unchanged by it, and moved on its own later — the
-section above. That beats the 1.53x a position-based
-combined pass measured on real captures, and it kept
-first-configured-rule-wins.
-
-## Why the parser is fast where it is
-
-A key column is read through its **distinct spellings**, not its rows. A
-message keys its fields from a bounded vocabulary, so a batch of a hundred
-thousand entries carries a few dozen spellings; every scan of them —
-`FixCodec.structure`, `TagIndex.resolve_with_match`, `_tag_numbers` — runs
-over the column's dictionary and is taken back across the entries. On a
-captured batch: **10x** structuring a wire message, **18x** a bridge one, and
-**25x** resolving a bridge one's names.
-
-Everything a translation needs from a dictionary — a name's wire tag, the tags
-the shapes store, the ones kept for audit — resolves once per
-`(registry, version)` and is read by every message (`MarketTags`,
-`FieldAccess.tag_text`). Rebuilding those per message was a third of what
-converting one cost.
-
-Neither instrument path is the faster one on this fixture: a package-authored
-row decodes ~30 promoted fields by name against one row's entries, and the
-registry path builds the message once and translates it.
-
-A changed bid rebuilds only bid levels and bid summaries; ask values carry
-from the preceding Book before cross-side prices derive, and vice versa. Book
-value identity includes every ordered live Order `vhash`, so dense-book
-throughput also measures that linear input; duplicate-event shortcuts skip the
-walk when no Book is emitted.
-
-The [task smoke run](../pipeline/operations/run.md) exercises all six
-jobs, all three log routes, registry-backed instrument enrichment, book
-recovery rows, auditable rejection, and a zero-write replay. The bounded
-market benchmark separately rejected 10 of 200 malformed events and emitted 70
-auditable `INTERNAL_EXPIRED` deltas while enforcing `max_side_alive=10`.
+That benchmark covers bounded writes, scans, keyed insertion, maintenance, and
+deletion over synthetic rows. It does not duplicate the application pipeline.

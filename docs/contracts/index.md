@@ -1,124 +1,28 @@
-# Schema contracts
+# Portable schema
 
-![One declaration produces Arrow, a portable contract, and an Iceberg
-table](../assets/compatibility-tree.svg#only-dark)
-![One declaration produces Arrow, a portable contract, and an Iceberg
-table](../assets/compatibility-tree-light.svg#only-light)
-
-`schemas/rekep/` publishes every persisted pipeline shape:
-
-| Contract | Version | Rows |
-| --- | ---: | --- |
-| `message.yaml` | 2 | Physical source rows: URL, row number, four optional header captures, and exact binary `body`. |
-| `fixmsg.yaml` | 1 | Parsed FIX records, with reference facts in a nested `Instrument` component. |
-| `instrument.yaml` | 1 | Immutable `InstUpdate` events carrying that component. |
-| `book.yaml` | 1 | Book deltas, executions, and recovery state. |
-| `order.yaml` | 1 | Flattened auditable order events. |
-| `execution.yaml` | 1 | Flattened auditable executions. |
+[`schemas/rekep/message.yaml`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.yaml)
+is the checked portable contract for `logs.messages`.
 
 ```python
-from rekep import Field
+from pathlib import Path
 
-message = Field.from_yaml("schemas/rekep/message.yaml")
-schema = message.into_arrow_schema()          # what a producer writes
-print(len(schema), message.cast_arrow(schema.empty_table()).num_columns)
+from yggdryl import Field
+
+document = Path("schemas/rekep/message.yaml").read_text(encoding="utf-8")
+field = Field.from_yaml(document)
+print(field.into_arrow_schema())
 ```
 
-```text
-7 7
-```
+The file is native Yggdryl `Field` YAML. It carries the Arrow types,
+nullability, field metadata, and Iceberg key markers needed to reproduce the
+table shape. Rekep has no parallel schema class or document implementation.
 
-A contract preserves exact Arrow types, order, nullability, descriptions,
-nested kinds, keys, partition transforms, field ids, and protocol metadata.
-YAML and JSON use the same document model; the extension selects the codec.
-The reference nests — `FixMsg.instrument`, `InstUpdate.instrument`, and
-`Instrument.legs` — remain last in their owners so Iceberg's default column
-bounds cover the flat leaves.
-
-## Metadata
-
-- `iceberg: { ... }` stores keys, partitions, sort order, and assigned field ids.
-- `fix: { ... }` says which FIX field a column reads: its tag, its canonical
-  name and its FIX datatype. Not the rest of the record — the
-  versions that declare it, the messages that carry it, the sources that
-  answered and the values it enumerates stay in the registry, which is what
-  keeps a contract a contract rather than a second copy of the dictionary.
-- `enum: { ... }` stores code key/value types and members.
-- `metadata: { ... }` keeps protocol-neutral facts such as units and the schema namespace.
-
-The document maps are restored to Arrow's collision-safe `iceberg:*`, `fix:*`,
-and `enum:*` metadata keys when loaded.
-
-## Names
-
-Every column in every contract is **folded**: lowercase, with everything that
-is not a letter or a digit dropped. `OrigClOrdID` is `origclordid`,
-`SourceURL` is `sourceurl`, `bid_levels` is `bidlevels`. One name serves as
-the Arrow column, the Python attribute and the stored document's, so a grep
-for a column reaches its declaration, its parser and its test.
-
-The fold is also how a name is *matched*: a spelling is looked up by what it
-folds to, which is what makes `MsgType`, `msgtype` and `MSGTYPE` one field
-against the FIX registry rather than three.
-
-When a folded column reads a FIX field, `fix: { name: ... }` keeps the
-dictionary's spelling (`OrigClOrdID`). A package column whose readable name
-differs from its folded key uses the same metadata (`SourceURL`, `AltIDs`).
-The venue column uses `LastMkt` and the packed `MIC` enum.
-
-```python
-from rekep import Field
-
-order = Field.from_yaml("schemas/rekep/order.yaml")
-for name in ("timeinforce", "lastmkt", "lastpx", "unixpartition"):
-    print(f"{name:16} {order.field(name).fix.canonical}")
-```
-
-```text
-timeinforce      TimeInForce
-lastmkt          LastMkt
-lastpx           Price
-unixpartition    UnixPartition
-```
-
-A column that reads a FIX field is named after that field, so a reader who
-knows the dictionary knows the column: `TimeInForce <59>` is `timeinforce`,
-`MinPriceIncrement <969>` is `minpriceincrement`. Lifecycle identifiers are
-the deliberate map-shaped exception: Order and Execution keep every source
-identifier under its folded name in `altids`. A `MarketEvent` uses the
-flat summary slots `lastpx` and `lastqty`: an Order holds limit price and
-remaining live quantity, an Execution holds `LastPx <31>` and `LastQty <32>`,
-and a Book holds midpoint and touch-size sum. A nested book `Level` keeps
-compact `px` and `qty`; its nesting supplies the `MDEntryPx <270>` and
-`MDEntrySize <271>` context. A nested protocol struct likewise drops the wire
-prefix, so a leg's `LegCFICode <608>` is `cficode`, exactly as its
-instrument's `CFICode <461>` is.
-
-## Evolution
-
-`message.yaml` is version 2; every other contract is version 1. Schema changes
-update the declaration and generated contract together. Data written to
-another shape is rebuilt.
-
-The version is not part of a table's identity either: PyIceberg carries no
-schema-level metadata, so it never survives the round trip and no write is
-refused over it. What a reader actually depends on is the columns, and each
-`parse_fix_*` task says so directly: it reads `logs.messages` through the
-seven-column raw `Message` declaration rather than accepting a partially
-parsed predecessor.
-
-## Publishing
+Regenerate it from the declaration:
 
 ```bash
-cd python
-uv run rekep fields dump --pyclass rekep.text.message:Message \
-  --target ../schemas/rekep/message.yaml
-uv run rekep fields dump --pyclass rekep.text.fixmsg:FixMsg \
-  --target ../schemas/rekep/fixmsg.yaml
-uv run rekep fields dump --pyclass rekep.market.instrument:InstUpdate \
-  --target ../schemas/rekep/instrument.yaml
-uv run pytest tests/test_schemas.py
+rekep fields dump --pyclass rekep.text.message:Message \
+  --target schemas/rekep/message.yaml
+rekep fields load --target schemas/rekep/message.yaml
 ```
 
-Schema tests parse, dump, and parse every file, then compare each package
-contract with its owning declaration.
+Schema changes update `Message` and this generated document together.

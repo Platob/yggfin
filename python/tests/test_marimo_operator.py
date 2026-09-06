@@ -51,7 +51,7 @@ RESULT = {
     "written": 2,
     "skipped": 0,
     "sources": {"input": "logs.messages"},
-    "targets": {"output": "market.orders"},
+    "targets": {"output": "logs.messages"},
     "window": {"start": None, "end": None},
     "elapsed_ms": 5,
 }
@@ -257,29 +257,17 @@ def test_the_document_defaults_reach_the_application(kept: Held) -> None:
     operator().execute(context())
 
     parameters = written()
-    assert parameters["target"] == "logs.messages"
-    assert parameters["technical_plugins"] == ["jolokia"]
+    assert parameters["filesystem"] == "file:data/capture"
+    assert parameters["branch"] == "root"
     assert parameters["catalog"]["properties"]["type"] == "sql"
 
 
-def test_a_declared_param_replaces_the_document_default_with_its_native_value(
-    kept: Held,
-) -> None:
-    """`books=false` is the boolean, never the truthy string `"False"`."""
-    market = operator(task_id="parse_market", document="tasks/parse_market/parse_market.yml")
-    market.execute(context(params={"branch": "wip", "books": False}))
-
-    parameters = written()
-    assert parameters["books"] is False
-    assert parameters["branch"] == "wip"
-
-
 def test_a_param_the_task_does_not_declare_is_not_injected(kept: Held) -> None:
-    """`books` is `parse_market`'s question; nothing else is handed it."""
-    operator().execute(context(params={"branch": "wip", "books": False}))
+    """Only parameters declared by message ingestion reach its application."""
+    operator().execute(context(params={"branch": "wip", "unknown": False}))
 
     parameters = written()
-    assert "books" not in parameters
+    assert "unknown" not in parameters
     assert parameters["branch"] == "wip"
 
 
@@ -290,14 +278,6 @@ def test_the_interval_fills_only_a_declared_start_and_end(kept: Held) -> None:
     upper = datetime.datetime(2026, 8, 21, 11, tzinfo=datetime.UTC)
 
     operator().execute(context(data_interval_start=lower, data_interval_end=upper))
-    assert written()["start"] == "2026-08-21T10:00:00+00:00"
-    assert written()["end"] == "2026-08-21T11:00:00+00:00"
-
-    Ran.calls = []
-    maintenance = operator(
-        task_id="optimize_iceberg", document="tasks/optimize_iceberg/optimize_iceberg.yml"
-    )
-    maintenance.execute(context(data_interval_start=lower, data_interval_end=upper))
     parameters = written()
     assert "start" not in parameters and "end" not in parameters
 
@@ -306,13 +286,11 @@ def test_an_explicit_parameter_is_overridden_by_the_param_of_the_same_name(
     kept: Held,
 ) -> None:
     """Sources merge once, in one order: document, operator, Params, interval."""
-    operator(parameters={"branch": "operator", "limit": 5}).execute(
-        context(params={"branch": "params"})
-    )
+    parser = operator(parameters={"filesystem": "file:data/operator"})
+    parser.execute(context(params={"filesystem": "file:data/params"}))
 
     parameters = written()
-    assert parameters["branch"] == "params"
-    assert parameters["limit"] == 5
+    assert parameters["filesystem"] == "file:data/params"
 
 
 def test_an_explicit_parameter_the_document_does_not_declare_is_refused() -> None:
@@ -331,12 +309,11 @@ def test_a_nested_parameter_survives_the_document_the_operator_writes(kept: Held
             "glue.region": "eu-west-1",
         },
     }
-    operator(parameters={"catalog": catalog, "null_values": ["", "n/a"]}).execute(context())
+    parser = operator(parameters={"catalog": catalog})
+    parser.execute(context())
 
     parameters = written()
     assert parameters["catalog"] == catalog
-    assert parameters["null_values"] == ["", "n/a"]
-    assert parameters["limit"] is None, "and a null stays a null"
 
 
 # -- the attempt directory ---------------------------------------------------
@@ -440,8 +417,8 @@ def test_a_malformed_result_is_refused_rather_than_pushed_to_xcom(published: Any
 def test_the_counts_reach_every_outlet_the_task_says_it_wrote() -> None:
     from airflow.sdk import Asset
 
-    written_asset = Asset(name="market.orders")
-    other = Asset(name="market.books")
+    written_asset = Asset(name="logs.messages")
+    other = Asset(name="logs.archive")
     events: dict[Any, Any] = {
         written_asset: SimpleNamespace(extra={}),
         other: SimpleNamespace(extra={}),
@@ -533,7 +510,7 @@ def test_a_real_child_publishes_a_result_through_the_locked_environment(
         repository=str(ROOT),
         document="tasks/parse_messages/parse_messages.yml",
         parameters={
-            "source": "python/tests/data/app_messages_sample.txt",
+            "filesystem": (ROOT / "python/tests/data/app_messages_sample.txt").as_uri(),
             "catalog": catalog,
         },
     )
@@ -541,7 +518,7 @@ def test_a_real_child_publishes_a_result_through_the_locked_environment(
     result = built.execute(context())
 
     assert result["task"] == "parse_messages"
-    assert (result["read"], result["written"]) == (11, 11)
+    assert (result["read"], result["written"]) == (14, 14)
     assert built.hook is None
 
 

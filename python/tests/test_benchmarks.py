@@ -1,15 +1,4 @@
-"""The benchmarks have to still run against the code they measure.
-
-Nothing else imports them, so a rename in `src/` leaves a benchmark that
-raises on its first line and says so to nobody. Three of them had rotted
-that way -- two on a name that no longer existed, one on a column that had
-become NOT NULL -- and every one was an import or a first call, which is what
-this catches for the price of importing each module.
-
-Running them is the integration-marked half. `--quick` is one complete smoke
-pass through every assertion; statistically repeated timings remain the
-standalone benchmark's job. Scalar references use bounded samples there.
-"""
+"""Retained benchmarks import and complete one quick smoke pass."""
 
 from __future__ import annotations
 
@@ -22,16 +11,10 @@ import pytest
 
 BENCHMARKS = Path(__file__).resolve().parents[1] / "benchmarks"
 
-#: Every benchmark, and whether `--quick` can run here. All six do: the
-#: registry one reads the published archive and a copy of it on disk, and
-#: answers every question from both rather than fetching anything.
+#: Every retained benchmark supports one complete quick smoke pass.
 SCRIPTS = {
-    "bench_cast": True,
-    "bench_fix": True,
-    "bench_fix_registry": True,
-    "bench_fixmsg": True,
     "bench_iceberg": True,
-    "bench_market": True,
+    "bench_message": True,
 }
 
 

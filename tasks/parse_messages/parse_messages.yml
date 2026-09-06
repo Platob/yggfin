@@ -1,59 +1,13 @@
 name: parse_messages
 application: parse_messages.py
 parameters:
-  project_root: .
-  # Raw input is a yggdryl resource. Calendar tokens select only the closed
-  # start/end window: s3://example-bucket/capture/{year}/{month}/{day}
-  # The table catalog does not configure this source; inject a configured
-  # Arrow filesystem below when it needs a non-default endpoint or credentials.
-  source: data/capture
-  # Null resolves the URI through PyArrow and binds the result to IOBase. A
-  # caller may inject any pyarrow.fs.FileSystem; `source` is then its raw path.
-  filesystem: null
-  pattern: "*.log*"
-  # A prefix regex naming any of `timestamp`, `threadname`, `plugin`, and
-  # `level`. The matched prefix is removed; yggdryl supplies the binary `body`.
-  # Null admits the three timestamp spellings declared by `rekep.times`.
-  header: null
-  recursive: true
-  # These bounds select calendar-token source roots; raw rows are not filtered
-  # by their timestamp text.
-  start: null
-  end: null
-  # AWS Glue with an S3 warehouse (replace the active local block). Needs the
-  # `glue` extra -- pyiceberg reaches Glue through boto3, which `iceberg` does
-  # not pull. docs/pipeline/operations/deploy.md#aws-s3 is the walkthrough.
-  # catalog:
-  #   name: rekep-production
-  #   properties:
-  #     type: glue
-  #     warehouse: s3://example-bucket/rekep/warehouse
-  #     glue.region: eu-west-1   # Catalog region.
-  #     s3.region: eu-west-1     # Warehouse region.
-  #     glue.id: "123456789012"  # Optional cross-account catalog ID.
-  #     # Standard s3.endpoint and s3.* credential properties configure a
-  #     # compatible store; keep those settings out of the warehouse URI.
-  #     # Configure KMS on the bucket; per-request s3.sse.* is unsupported.
+  # Yggdryl resolves the filesystem and reads every text leaf beneath it.
+  # S3: s3://example-bucket/capture?region=eu-west-1
+  # S3-compatible: s3://example-bucket/capture?endpoint_override=minio%3A9000&scheme=http&region=eu-west-1&force_path_style=true
+  filesystem: file:data/capture
   catalog:
     name: rekep
     properties:
       type: sql
       uri: sqlite:///data/catalog.db
       warehouse: data/warehouse
-  table_properties:
-    history.expire.max-snapshot-age-ms: "604800000"
-    # Bound metadata from the first commit; maintenance applies the same values.
-    write.metadata.previous-versions-max: "20"
-    write.metadata.delete-after-commit.enabled: "true"
-  # root, main, and master name the same Iceberg root branch.
-  branch: root
-  # Retained so protocol parsers can be rerun without reading the source files.
-  target: logs.messages
-  merge_by: true
-  batch_row_size: 65536
-  # Commit after eight yggdryl RecordBatches; an optional row cap may end sooner.
-  commit_batch_num: 8
-  commit_row_size: null
-  limit: null
-  # DEBUG for per-file and per-plan detail; INFO for what each stage finished.
-  log_level: INFO

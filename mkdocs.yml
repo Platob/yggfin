@@ -1,5 +1,5 @@
 site_name: rekep
-site_description: Trading logs, Arrow-native fields, and Iceberg datasets
+site_description: Stream text records through Arrow into Iceberg
 site_url: https://platob.github.io/yggfin/
 repo_url: https://github.com/Platob/yggfin
 repo_name: Platob/yggfin
@@ -13,7 +13,6 @@ theme:
   font: false
   features:
     - content.code.copy
-    - content.tabs.link
     - navigation.footer
     - navigation.path
     - navigation.sections
@@ -39,103 +38,31 @@ theme:
 
 extra_css:
   - stylesheets/terminal.css
-  - stylesheets/ascii-codes.css
   - stylesheets/home.css
-  - stylesheets/fix-registry.css
-  - stylesheets/fix-transcribe.css
-  - stylesheets/product-lineage.css
-
-extra_javascript:
-  - javascripts/ascii-codes.js
-  - javascripts/fix-declaration.js
-  - javascripts/fix-registry.js
-  - javascripts/fix-transcribe.js
-  # Reads the decoder `fix-transcribe.js` publishes, so it is loaded after it.
-  - javascripts/product-lineage.js
-
-hooks:
-  - docs_hooks.py
 
 nav:
   - Overview:
       - Start here: index.md
-      - Foundations:
-          - Why Arrow: overview/arrow.md
-          - Design rules: overview/design.md
-  - Products:
-      - Overview: products/index.md
-      - Text:
-          - Message: products/message.md
-          - FixMsg: products/fixmsg.md
-      - Market:
-          - Instrument update: products/instrument.md
-          - Order: products/order.md
-          - Execution: products/execution.md
-          - Book: products/book.md
-      - Declarations:
-          - Types: contracts/types.md
-          - Schema contracts: contracts/index.md
-          - Binary identities: contracts/identity.md
-          - Time-anchored hashes: contracts/txhash.md
-  - Enums:
-      - Overview: enums/index.md
-      - ASCII codes: enums/ascii-codes.md
-      - Messages:
-          - Direction: enums/direction.md
-          - Plugin: enums/plugin.md
-          - Protocol: enums/protocol.md
-      - Events:
-          - Event type: enums/event-type.md
-          - State: enums/state.md
-      - Instruments:
-          - Asset kind: enums/asset-kind.md
-          - Market identifier: enums/mic.md
-          - Currency: enums/currency.md
-          - Security ID source: enums/security-id-source.md
-          - Option kind: enums/option-kind.md
-      - Market:
-          - Side: enums/side.md
-          - Market kind: enums/market-kind.md
-          - Time in force: enums/time-in-force.md
-  - FIX:
-      - Messages:
-          - FixMsg: fix/fixmsg.md
-          - Transcribe: fix/transcribe.md
-      - FIX registry:
-          - Browse registry: fix/registry.md
-          - Fields: fix/fields.md
-          - Components: fix/components.md
-          - Repeating groups: fix/repeating-groups.md
-          - Bridge configurations: fix/cfb.md
-          - Encode values: fix/encode.md
-          - Decode values: fix/decode.md
-          - Registry CLI: fix/shell.md
-          - Registry internals: fix/index.md
-          - Parse configuration: fix/configuring.md
-  - Market:
-      - Lifecycle: market/index.md
+      - Why Arrow: overview/arrow.md
+      - Design rules: overview/design.md
+  - Message:
+      - Raw record: products/message.md
+      - Field contract: contracts/types.md
+      - Portable schema: contracts/index.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md
   - Pipeline:
       - Overview: pipeline/index.md
-      - Operations:
-          - Deploy from scratch: pipeline/operations/deploy.md
-          - Airflow deployment: pipeline/operations/airflow.md
-          - End-to-end run: pipeline/operations/run.md
-          - Logs: pipeline/operations/logs.md
-      - Tasks:
-          - Parse messages: pipeline/tasks/parse-messages.md
-          - Parse FIX: pipeline/tasks/parse-fix.md
-          - Parse instruments: pipeline/tasks/parse-instruments.md
-          - Parse market: pipeline/tasks/parse-market.md
-          - Flatten orders: pipeline/tasks/flatten-orders.md
-          - Flatten executions: pipeline/tasks/flatten-executions.md
+      - Parse messages: pipeline/tasks/parse-messages.md
+      - Run: pipeline/operations/run.md
+      - Deploy: pipeline/operations/deploy.md
+      - Logs: pipeline/operations/logs.md
+  - Next work:
+      - Yggdryl text streaming: prompts/yggdryl-text-streaming.md
+      - Yggdryl strict casts: prompts/yggdryl-strict-arrow-cast.md
+      - Yggdryl FIX vertical slice: prompts/yggdryl-fix-refactor.md
 
-# Every page carries its own measurements, so the links into them are anchors
-# rather than page names -- and an anchor mkdocs cannot find is only logged at
-# INFO by default, which is a broken link that ships. Raised to a warning, so
-# --strict fails on it in CI like any other broken link.
 validation:
   links:
     anchors: warn
@@ -153,11 +80,6 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.superfences:
       custom_fences:
-        # Diagrams live in the page as text, so a change to a stage is a
-        # change to the paragraph beside it and never to a binary asset.
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
-      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}

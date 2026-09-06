@@ -15,7 +15,16 @@ from typing import Any
 
 import pyarrow
 
-from rekep.fields import DESCRIPTION, FIELD_ID, SORT_ORDER, Field, StructField
+from rekep.fields import (
+    DESCRIPTION,
+    FIELD_ID,
+    SORT_ORDER,
+    Field,
+    arrow_type,
+    field_of,
+    fields,
+    replace_field,
+)
 from rekep.require import require
 
 #: Arrow field metadata key pyiceberg reads a column comment from, and writes
@@ -34,7 +43,65 @@ PARQUET_FIELD_ID = b"PARQUET:field_id"
 ICEBERG_FIELD_ID = FIELD_ID.encode()
 
 
-def iceberg_schema(source: StructField) -> Any:
+def primary_keys(source: Field) -> list[str]:
+    """Top-level identifier columns in declaration order."""
+    keys = [
+        member
+        for member in fields(source)
+        if str(member.iceberg.get("primary_key") or "").casefold() == "true"
+    ]
+    nullable = [member.name for member in keys if member.nullable]
+    if nullable:
+        raise ValueError(f"primary key columns must not be nullable: {', '.join(nullable)}")
+    return [member.name for member in keys]
+
+
+def partition_keys(source: Field) -> dict[str, str]:
+    """Top-level partition columns mapped to their transforms."""
+    return {
+        member.name: transform
+        for member in fields(source)
+        if (transform := _enabled(member.iceberg.get("partition_key")))
+    }
+
+
+def sort_keys(source: Field) -> dict[str, str]:
+    """Top-level sort columns mapped to directions in physical order."""
+    encoded = source.metadata.get(SORT_ORDER)
+    declared = {
+        member.name: direction
+        for member in fields(source)
+        if (direction := _enabled(member.iceberg.get("sort_key")))
+    }
+    if not encoded:
+        return declared
+    try:
+        ordered = [(str(name), str(direction)) for name, direction in json.loads(encoded)]
+    except (TypeError, ValueError):
+        raise ValueError(f"field {source.name!r} has an invalid {SORT_ORDER!r}") from None
+    if len({name for name, _ in ordered}) != len(ordered):
+        raise ValueError(f"field {source.name!r} repeats a column in {SORT_ORDER!r}")
+    if declared != dict(ordered):
+        raise ValueError(f"field {source.name!r} has inconsistent {SORT_ORDER!r} metadata")
+    return dict(ordered)
+
+
+def derived_keys(source: Field) -> dict[str, tuple[str, ...]]:
+    """Top-level derived columns mapped to their source columns."""
+    return {
+        member.name: tuple(name for name in derived.split(",") if name)
+        for member in fields(source)
+        if (derived := str(member.iceberg.get("derived_from") or ""))
+    }
+
+
+def _enabled(value: Any) -> str:
+    """One enabled string metadata value; empty and false are unset."""
+    spelled = str(value or "")
+    return "" if spelled.casefold() == "false" else spelled
+
+
+def iceberg_schema(source: Field) -> Any:
     """`source` as a `pyiceberg.schema.Schema`, ids numbered from one.
 
     The ids come from pyiceberg's own fresh assignment -- siblings before any
@@ -45,7 +112,7 @@ def iceberg_schema(source: StructField) -> Any:
     from pyiceberg.schema import Schema
 
     schema = _fresh(_documented(source.into_arrow_schema()))
-    keys = source.primary_keys()
+    keys = primary_keys(source)
     if not keys:
         return schema
     return Schema(
@@ -59,11 +126,11 @@ def iceberg_field(source: Field, field_id: int = 1) -> Any:
     """One field as a `pyiceberg` NestedField, ids numbered from `field_id`."""
     require("pyiceberg", "iceberg")
     counter = itertools.count(field_id)
-    documented = _documented(pyarrow.schema([source.into_arrow_field()]))
+    documented = _documented(pyarrow.schema([source.into_arrow()]))
     return _fresh(documented, next_id=lambda: next(counter)).fields[0]
 
 
-def iceberg_partition_spec(source: StructField, schema: Any = None) -> Any:
+def iceberg_partition_spec(source: Field, schema: Any = None) -> Any:
     """The `pyiceberg.partitioning.PartitionSpec` `source` declares."""
     require("pyiceberg", "iceberg")
     from pyiceberg.partitioning import PartitionField, PartitionSpec
@@ -71,7 +138,7 @@ def iceberg_partition_spec(source: StructField, schema: Any = None) -> Any:
 
     schema = schema if schema is not None else iceberg_schema(source)
     partitions = []
-    for index, (name, transform) in enumerate(source.partition_keys().items()):
+    for index, (name, transform) in enumerate(partition_keys(source).items()):
         partitions.append(
             PartitionField(
                 source_id=schema.find_field(name).field_id,
@@ -89,7 +156,7 @@ def _kind(transform: str) -> str:
 
 
 def iceberg_sort_order(
-    source: StructField,
+    source: Field,
     schema: Any = None,
     sort_by: Sequence[str] | None = None,
 ) -> Any:
@@ -100,13 +167,13 @@ def iceberg_sort_order(
     Iceberg's own "unsorted", which is what a shape declaring none gets.
 
     What a sort key *is* -- where a row sits inside its file, against a
-    partition, which decides which file -- is on `Field.is_sort_key`.
+    partition, which decides which file -- is in its ``iceberg:`` metadata.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.table.sorting import NullOrder, SortDirection, SortField, SortOrder
     from pyiceberg.transforms import IdentityTransform
 
-    declared = source.sort_keys() if sort_by is None else dict.fromkeys(sort_by, "ascending")
+    declared = sort_keys(source) if sort_by is None else dict.fromkeys(sort_by, "ascending")
     if not declared:
         return SortOrder()
     schema = schema if schema is not None else iceberg_schema(source)
@@ -132,25 +199,27 @@ def iceberg_struct_field(
     name: str = "",
     spec: Any = None,
     sort_order: Any = None,
-) -> StructField:
+) -> Field:
     """A `pyiceberg` schema as a struct field: types, docs and keys.
 
-    Reached through `StructField.from_iceberg_schema`, which is the entry every
-    caller uses; this side of it only keeps the pyiceberg import lazy.
+    This side keeps the pyiceberg import lazy and restores Rekep's table
+    metadata onto a native field.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.io.pyarrow import schema_to_pyarrow
 
     arrow = _described(narrowed(schema_to_pyarrow(schema, include_field_ids=True)))
-    field = Field.from_arrow_schema(arrow, name)
+    field = field_of(arrow, name)
+    members = {member.name: member for member in fields(field)}
     for field_id in schema.identifier_field_ids:
         column = schema.find_column_name(field_id)
         if column and "." not in column:  # a nested key is Iceberg's, not a column here
-            field.field(column).is_primary_key = True
+            members[column].iceberg["primary_key"] = "true"
     for partition in getattr(spec, "fields", ()):
         column = schema.find_column_name(partition.source_id)
         if column and "." not in column:
-            field.field(column).is_partition_key = str(partition.transform)
+            members[column].iceberg["partition_key"] = str(partition.transform)
+    metadata = dict(field.metadata)
     if sort_order is not None:
         from pyiceberg.table.sorting import NullOrder, SortDirection
         from pyiceberg.transforms import IdentityTransform
@@ -170,12 +239,13 @@ def iceberg_struct_field(
             ordered.append((column, direction))
         if ordered:
             for column, direction in ordered:
-                field.field(column).is_sort_key = direction
-            field.metadata = {
-                **field.metadata,
-                SORT_ORDER: json.dumps(ordered, separators=(",", ":")),
-            }
-    return field
+                members[column].iceberg["sort_key"] = direction
+            metadata[SORT_ORDER] = json.dumps(ordered, separators=(",", ":"))
+    return replace_field(
+        field,
+        dtype=pyarrow.struct([member.into_arrow() for member in members.values()]),
+        metadata=metadata,
+    )
 
 
 # -- arrow metadata: `description` is ours, `doc` is pyiceberg's -------------
@@ -183,20 +253,79 @@ def iceberg_struct_field(
 
 def _fresh(arrow: pyarrow.Schema, next_id: Any = None) -> Any:
     """An Arrow schema as an Iceberg schema, keeping the ids it already carries."""
-    from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids, pyarrow_to_schema
+    from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids
     from pyiceberg.schema import assign_fresh_schema_ids
 
-    if next_id is None and all(_has_ids(field) for field in arrow):
-        return pyarrow_to_schema(arrow)
-    return assign_fresh_schema_ids(_pyarrow_to_schema_without_ids(arrow), next_id)
+    plain = _pyarrow_to_schema_without_ids(arrow)
+    if next_id is not None:
+        return assign_fresh_schema_ids(plain, next_id)
+
+    planned = _planned_ids(arrow)
+    declared = [(path, field_id) for path, field_id in planned if field_id is not None]
+    paths_by_id: dict[int, str] = {}
+    for path, field_id in declared:
+        assert field_id is not None
+        if previous := paths_by_id.get(field_id):
+            raise ValueError(
+                f"Iceberg field id {field_id} is repeated by {previous!r} and {path!r}"
+            )
+        paths_by_id[field_id] = path
+
+    fresh = itertools.count(max(paths_by_id, default=0) + 1)
+    ids = iter(field_id for _, field_id in planned)
+
+    def allocate() -> int:
+        return next(ids) or next(fresh)
+
+    return assign_fresh_schema_ids(plain, allocate)
 
 
-def _has_ids(field: pyarrow.Field) -> bool:
-    """Whether `field` and everything under it carries an Iceberg column id."""
-    if PARQUET_FIELD_ID not in (field.metadata or {}):
-        return False
-    dtype = field.type
-    return all(_has_ids(dtype.field(index)) for index in range(dtype.num_fields))
+def _planned_ids(schema: pyarrow.Schema) -> list[tuple[str, int | None]]:
+    """Declared ids in PyIceberg's sibling-first assignment order."""
+    return _planned_field_ids(list(schema), "")
+
+
+def _planned_field_ids(members: list[pyarrow.Field], prefix: str) -> list[tuple[str, int | None]]:
+    planned = [
+        (f"{prefix}.{member.name}" if prefix else member.name, _declared_id(member))
+        for member in members
+    ]
+    for member in members:
+        path = f"{prefix}.{member.name}" if prefix else member.name
+        planned.extend(_planned_type_ids(member.type, path))
+    return planned
+
+
+def _planned_type_ids(dtype: pyarrow.DataType, path: str) -> list[tuple[str, int | None]]:
+    kinds = pyarrow.types
+    if kinds.is_struct(dtype):
+        return _planned_field_ids(list(dtype), path)
+    if kinds.is_list(dtype) or kinds.is_large_list(dtype):
+        item = dtype.value_field
+        return [(f"{path}.item", _declared_id(item)), *_planned_type_ids(item.type, f"{path}.item")]
+    if kinds.is_map(dtype):
+        key, value = dtype.key_field, dtype.item_field
+        return [
+            (f"{path}.key", _declared_id(key)),
+            (f"{path}.value", _declared_id(value)),
+            *_planned_type_ids(key.type, f"{path}.key"),
+            *_planned_type_ids(value.type, f"{path}.value"),
+        ]
+    return []
+
+
+def _declared_id(field: pyarrow.Field) -> int | None:
+    """One positive Iceberg id from Arrow's bridge metadata."""
+    encoded = (field.metadata or {}).get(PARQUET_FIELD_ID)
+    if encoded is None:
+        return None
+    try:
+        field_id = int(encoded)
+    except (TypeError, ValueError):
+        raise ValueError(f"field {field.name!r} has invalid Iceberg field id {encoded!r}") from None
+    if field_id <= 0:
+        raise ValueError(f"field {field.name!r} has non-positive Iceberg field id {field_id}")
+    return field_id
 
 
 def _documented(schema: pyarrow.Schema) -> pyarrow.Schema:
@@ -210,7 +339,7 @@ def _document(field: pyarrow.Field) -> pyarrow.Field:
     if description:
         metadata[DOC] = description
     column_id = metadata.get(ICEBERG_FIELD_ID)
-    if column_id:
+    if column_id is not None:
         # A declaration that names its ids is one that came from a table, and
         # keeping them is what makes the round trip an identity rather than a
         # rename of every column. pyiceberg reads them under parquet's key.
@@ -324,15 +453,17 @@ MAX_INFERRED = 1_000
 COLUMN_METRICS = "write.metadata.metrics.column"
 
 
-def metrics_for(source: StructField) -> dict[str, str]:
+def metrics_for(source: Field) -> dict[str, str]:
     """Table properties that keep the columns a reader filters on prunable."""
     declared = {
-        **source.partition_keys(),
-        **source.sort_keys(),
-        **dict.fromkeys(source.primary_keys(), ""),
+        **partition_keys(source),
+        **sort_keys(source),
+        **dict.fromkeys(primary_keys(source), ""),
     }
-    properties = {f"{COLUMN_METRICS}.{name}": _mode(source.field(name).dtype) for name in declared}
-    counted = len(_leaves(source.dtype))
+    properties = {
+        f"{COLUMN_METRICS}.{name}": _mode(arrow_type(source.field(name))) for name in declared
+    }
+    counted = len(_leaves(arrow_type(source)))
     if counted > DEFAULT_INFERRED:
         properties[INFERRED_METRICS] = str(min(counted, MAX_INFERRED))
     return properties

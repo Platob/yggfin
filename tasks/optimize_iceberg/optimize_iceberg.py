@@ -21,7 +21,6 @@ def _():
 
     Compact tables, retain recent snapshots, and sweep unreachable files.
     """)
-    return
 
 
 @app.cell

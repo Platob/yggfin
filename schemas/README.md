@@ -1,76 +1,13 @@
 # Contracts
 
-`schemas/rekep/` contains the six persisted pipeline shapes:
+`schemas/rekep/message.yaml` is the generated native Yggdryl `Field` document
+for `logs.messages`.
 
-```text
-book.yaml
-execution.yaml
-fixmsg.yaml
-instrument.yaml
-message.yaml
-order.yaml
+```bash
+rekep fields dump --pyclass rekep.text.message:Message \
+  --target schemas/rekep/message.yaml
+rekep fields load --target schemas/rekep/message.yaml
 ```
 
-Each file is one Arrow `Field` document with exact types, order, nullability,
-keys, partitioning, descriptions, enum members, FIX metadata, and Iceberg ids.
-`fixmsg.yaml` carries reference facts in its final `instrument` struct;
-`instrument.yaml` is the flat `InstUpdate` event envelope followed by
-the same `Instrument` struct. Those two structs and `Instrument.legs` stay
-last in their owners so Iceberg's default column bounds still cover the flat
-leaves. `FixMsg.error` records row-local transcription degradation without
-changing content identity. Every contract is version 1.
-
-```python
-from rekep import Field
-
-shape = Field.from_yaml("schemas/rekep/message.yaml")
-reader = shape.cast_arrow(reader)
-```
-
-The committed contracts keep exact event links wide and preserve explicitly
-UTC FIX fields:
-
-```python
-from rekep import Field
-
-order = Field.from_yaml("schemas/rekep/order.yaml")
-fixmsg = Field.from_yaml("schemas/rekep/fixmsg.yaml")
-for shape, name in (
-    (order, "altids"),
-    (order, "lastmkt"),
-    (order, "xhash"),
-    (order, "linkhashes"),
-    (fixmsg, "creationtime"),
-    (fixmsg, "expiretime"),
-):
-    print(f"{name:12} {shape.field(name).dtype}")
-```
-
-```text
-altids       map<string, string>
-lastmkt      int32
-xhash        fixed_size_binary[16]
-linkhashes   list<item: fixed_size_binary[16] not null>
-creationtime timestamp[us, tz=UTC]
-expiretime   timestamp[us, tz=UTC]
-```
-
-```python
-venue = order.field("lastmkt")
-print(venue.fix.canonical, venue.enum.name)
-```
-
-```text
-LastMkt MIC
-```
-
-Descriptions are short contract facts. Protocol identity uses top-level
-`fix: { ... }`, `enum: { ... }`, and `iceberg: { ... }` maps; loading restores
-their members as prefixed Arrow metadata. Repeated FIX data uses ordered lists
-rather than maps.
-
-Schema changes update declarations and generated contracts together. Data
-written to another shape is rebuilt.
-
-Regenerate a package contract from its declaration and run
-`python/tests/test_schemas.py` before publishing it.
+The schema and `Message` declaration change together. FIX and market contracts
+will return only when that layer is rebuilt directly on `yggdryl.fix`.

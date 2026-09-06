@@ -1,59 +1,35 @@
 # Why Apache Arrow
 
-Arrow is the in-memory contract every stage meets at. Not a database, not a
-table format, not a compute engine — a columnar shape, and standard ways to
-hand it over.
+Arrow is the one in-memory boundary between Yggdryl text media and Iceberg.
 
-![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](../assets/arrow-hub.svg#only-dark)
-![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases; zero-copy sharing requires compatible buffers.](../assets/arrow-hub-light.svg#only-light)
-
-One declaration becomes every boundary:
+![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases.](../assets/arrow-hub.svg)
 
 ```python
 import polars
-from rekep import Execution, Field
 
-shape = Field.from_class(Execution)
-arrow = shape.into_arrow_schema()
+from rekep import Message
+from rekep.iceberg import iceberg_schema
 
-print(len(arrow), len(shape.into_iceberg_schema().fields))
-print(polars.from_arrow(arrow.empty_table()).width)
+field = Message.field()
+arrow = field.into_arrow_schema()
+
+print(arrow)
+print(iceberg_schema(field))
+print(polars.from_arrow(arrow.empty_table()))
 ```
 
-```text
-43 43
-43
-```
+Yggdryl emits `RecordBatch` objects. Rekep checks required values, then the
+native `Field` reconciles order and types; PyIceberg accepts the resulting
+Arrow stream. No row model or project filesystem sits between those boundaries.
 
-## What the boundary buys
+The remaining strict-preflight behavior belongs upstream; its exact target is
+the [strict cast prompt](../prompts/yggdryl-strict-arrow-cast.md).
 
-Each stage stays a stream of typed record batches, so parsing, casts, storage
-and downstream compute agree on one schema — without an Iceberg table or a
-DataFrame becoming the application's data model.
+Arrow does not make every hand-off zero-copy. Compatible in-process buffers can
+be shared, while Iceberg and encoded files necessarily read or write storage.
+The schema remains the same either way.
 
-The [format spec](https://arrow.apache.org/docs/format/Intro.html) is
-language-independent: compatible libraries in one process share buffers
-through the C Data Interface or PyCapsule without copying, and IPC and Flight
-move batches between processes. Zero-copy is a property of compatible types,
-buffers and ownership — not of every arrow drawn on a diagram.
-
-| boundary | what meets Arrow there |
-| --- | --- |
-| tables | [Iceberg](https://iceberg.apache.org/spec/) via [PyIceberg](https://py.iceberg.apache.org/api/), which reads to Arrow and accepts Arrow for writes |
-| files | Arrow's own [Parquet](https://arrow.apache.org/docs/python/parquet.html) reader and writer; Avro and ORC through adapters that encode, not share |
-| DataFrames | [Polars](https://docs.pola.rs/user-guide/misc/arrow/), [pandas](https://pandas.pydata.org/docs/user_guide/pyarrow.html), [cuDF](https://docs.rapids.ai/api/cudf/stable/cudf/10min/) (host↔device) |
-| engines | [DataFusion](https://datafusion.apache.org/) natively, [DuckDB](https://duckdb.org/docs/stable/guides/python/export_arrow.html) in and out, [Spark](https://spark.apache.org/docs/latest/api/python/tutorial/sql/arrow_pandas.html) for JVM↔Python transfer |
-| SQL | [ADBC](https://arrow.apache.org/adbc/) drivers and [Flight SQL](https://arrow.apache.org/docs/format/FlightSql.html); [Doris](https://doris.apache.org/docs/4.x/connection-integration/arrow-flight-sql/) labels its own support experimental, as the diagram says |
-
-Engines do not share internals; each can *meet* the pipeline at an Arrow
-boundary instead of demanding a bespoke row model.
-
-## Why this project chooses it
-
-- a declaration becomes an Arrow schema once;
-- readers stay streaming and batch-oriented;
-- Iceberg, Parquet, DataFrames and database drivers meet the same records;
-- language and engine choices change without redesigning persisted identities.
-
-Fewer conversions owned by application code, one portable contract, and no
-requirement that every consumer adopt the same storage or compute engine.
+Useful boundaries include [PyIceberg](https://py.iceberg.apache.org/api/),
+[Polars](https://docs.pola.rs/user-guide/misc/arrow/),
+[DataFusion](https://datafusion.apache.org/), and
+[DuckDB](https://duckdb.org/docs/stable/guides/python/export_arrow.html).

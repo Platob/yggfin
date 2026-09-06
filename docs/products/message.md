@@ -1,53 +1,49 @@
 # Message
 
-One raw text record. `Message` preserves the source position, captured log
-header, and exact binary body; it does not inspect the body.
+One `Message` is one physical text record. It keeps the source position,
+captured log header, and exact binary body without interpreting the body.
 
 ```python
 from rekep import Message
 
-line = b"8=FIX.4.4|35=D|11=C1|10=000"
 row = Message.from_text(
-    line,
-    sourceurl="s3://logs/capture.log",
+    b"8=FIX.4.4|35=D|11=C1|10=000",
+    sourceurl="s3://logs/capture.log.gz",
     sourcerownum=17,
     timestamp="2026-01-01 10:00:00.000_000",
-    threadname="fix-reader",
-    plugin="VenueBridge",
+    threadname="reader",
+    plugin="venue",
     level="INFO",
 )
 
-assert row.body == line
-assert row.sourceurl == "s3://logs/capture.log"
-assert row.sourcerownum == 17
+assert row.body == b"8=FIX.4.4|35=D|11=C1|10=000"
+assert (row.sourceurl, row.sourcerownum) == (
+    "s3://logs/capture.log.gz",
+    17,
+)
 ```
 
-The persisted contract is deliberately small:
-
-| column | meaning |
+| column | contract |
 | --- | --- |
-| `sourceurl` | absolute URI of the source text object |
+| `sourceurl` | URI reported by Yggdryl for the source object |
 | `sourcerownum` | 1-based physical row number in that object |
-| `timestamp` | timestamp spelling captured from the log header |
-| `threadname` | thread spelling captured from the log header |
-| `plugin` | plugin spelling captured from the log header |
-| `level` | severity spelling captured from the log header |
-| `body` | exact bytes after the matched header prefix |
+| `timestamp` | timestamp text captured from the header |
+| `threadname` | thread text captured from the header |
+| `plugin` | plugin text captured from the header |
+| `level` | severity text captured from the header |
+| `body` | bytes after the matched header prefix |
 
-`sourceurl` and `sourcerownum` are the raw table identity. Header captures are
-nullable because a text row may not match the configured header. `plugin` and
-`timestamp` remain source spellings rather than enum or event values.
-
-There is no `protocol`, `direction`, `msgtype`, `eventtype`, `entries`, FIX
-session header, event envelope, or payload-derived hash in a `Message`.
-[`FixMsg`](fixmsg.md) owns UTF-8 repair, protocol classification, tokenization,
-session-field lifting, typed values, diagnostics, clocks, and event identity.
+`sourceurl` and `sourcerownum` form the Iceberg merge key. Header captures are
+nullable because a line may not match the configured expression.
 
 ## Text source
 
-`parse_messages` obtains these columns from yggdryl text media. Its native
-`url`, `rownum`, and `body` columns become `sourceurl`, `sourcerownum`, and
-`body`; named `rowheader` captures supply the remaining columns. A caller may
-provide any Arrow filesystem through `IOBase.from_fs`.
+```yaml
+parameters:
+  filesystem: file:data/capture
+  # filesystem: s3://example-bucket/capture?region=eu-west-1
+```
 
-Next: [FixMsg](fixmsg.md) interprets the raw body under the FIX registry.
+The task passes the URI to `IOBase.from_uri`. `TextOptions` enables row numbers,
+applies `rekep.times.MESSAGE_HEADER`, disables type guessing, and leaves
+Yggdryl to traverse and decompress the selected text resources.

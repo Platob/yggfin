@@ -203,8 +203,7 @@ def _suffixes(name: str) -> list[str]:
 #: Types that encode as themselves, matched on the **exact** type rather than
 #: with `isinstance`. Almost every field of almost every row is one of these,
 #: and settling them in one frozenset probe is what stopped `_encode` walking
-#: a six-branch subclass chain per field: on ten thousand `Order` rows it was
-#: 678,000 `isinstance` calls and 56.5 us a row.
+#: a six-branch subclass chain per field on wide dataclass rows.
 #:
 #: Exact, and that is the point: a stable code is an `int` and must not pass
 #: through, `datetime` is a `date` and must not either. A subclass falls to the

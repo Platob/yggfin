@@ -13,14 +13,9 @@ ROOT = Path(__file__).resolve().parents[3]
 #: Every job this repository schedules, as the document that configures it.
 DOCUMENTS = sorted((ROOT / "tasks").glob("*/*.yml"))
 
-#: The seven the workflow and the maintenance DAG are made of.
+#: Message ingestion and generic Iceberg maintenance.
 NAMES = (
-    "flatten_executions",
-    "flatten_orders",
     "optimize_iceberg",
-    "parse_fix",
-    "parse_instruments",
-    "parse_market",
     "parse_messages",
 )
 
@@ -46,7 +41,11 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
 
     assert parameters, "a task with no parameters would have nothing to configure"
     assert all(isinstance(name, str) for name in parameters)
-    assert "log_level" in parameters and "catalog" in parameters
+    assert "catalog" in parameters
+    if document.stem == "parse_messages":
+        assert set(parameters) == {"filesystem", "catalog"}
+    else:
+        assert "log_level" in parameters
 
 
 def _written(tmp_path: Path, body: str, *, application: str = "job.py") -> Path:

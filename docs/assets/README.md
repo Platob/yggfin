@@ -1,29 +1,4 @@
 # Diagram assets
 
-`rkp-logo.svg`, `arrow-hub.svg`, `workflow-run.svg`, `compatibility-tree.svg`,
-and `schema-lineage.svg`
-are original assets licensed with this repository under Apache-2.0. Third-party
-marks identify interoperability or pipeline dependencies only; no project
-endorses rekep.
-
-Each is authored once, for the dark scheme. `docs_hooks.py` derives the
-`-light.svg` beside it by inverting the lightness of every neutral, and the
-page names both with Material's `#only-dark` / `#only-light` fragments. Edit
-the authored file; the other one is built.
-
-The marks below are carried into the built diagrams as data, because a browser
-renders `<img src="a.svg">` in a context that loads no external resource -- a
-mark referenced by path never arrives. Their colours and geometry are
-unmodified either way, and the white plate each sits on is the one thing the
-derivation leaves alone.
-
-| Local asset | Primary source | Terms |
-| --- | --- | --- |
-| `logos/apache-arrow.svg` | [Apache Arrow Triple Chevron](https://arrow.apache.org/visual_identity/) | Apache-2.0; Apache Arrow and its logo are ASF trademarks. |
-| `logos/apache-airflow.svg` | [Apache Airflow icon](https://www.apache.org/logos/originals/airflow-3.svg) and [brand resources](https://airflow.apache.org/community/resources/) | Apache-2.0; Apache Airflow and its logo are ASF trademarks. |
-| `logos/apache-iceberg.svg` | [Apache Iceberg project SVG](https://github.com/apache/iceberg/blob/main/site/docs/assets/images/Iceberg-logo.svg) | Apache-2.0; Apache Iceberg and its logo are ASF trademarks. |
-| `logos/github-mark.svg` | [Primer Octicons GitHub mark](https://github.com/primer/octicons/blob/main/icons/mark-github-24.svg) | [MIT](logos/GITHUB-OCTICONS-LICENSE.txt) plus the [GitHub Logo Policy](https://docs.github.com/en/site-policy/other-site-policies/github-logo-policy). |
-
-The Apache marks follow the [ASF trademark policy](https://www.apache.org/foundation/marks/).
-Logo geometry and colors are unmodified; the diagrams only size and position
-the marks.
+`rkp-logo.svg` and `arrow-hub.svg` are original assets licensed with this
+repository under Apache-2.0.

@@ -1,37 +1,55 @@
 name: Message
-type: struct
-description: One source line and the header fields yggdryl captured from it.
-metadata: {namespace: rekep.text.message, version: '2'}
-fields:
-- name: sourceurl
-  type: string
-  description: Absolute URI of the source text object.
-  iceberg: {primary_key: 'true'}
-  fix: {name: SourceURL}
-- name: sourcerownum
-  type: int64
-  description: 1-based physical line number within the source object.
-  iceberg: {primary_key: 'true'}
-  fix: {name: SourceRownum}
-- name: timestamp
-  type: string
-  nullable: true
-  description: Timestamp spelling captured from the line header.
-- name: threadname
-  type: string
-  nullable: true
-  description: Thread spelling captured from the line header.
-  fix: {name: ThreadName}
-- name: plugin
-  type: string
-  nullable: true
-  description: Plugin spelling captured from the line header.
-  fix: {name: Plugin}
-- name: level
-  type: string
-  nullable: true
-  description: Severity spelling captured from the line header.
-  fix: {name: Level}
-- name: body
-  type: binary
-  description: Exact bytes after the matched line-header prefix.
+dtype:
+  type: struct
+  fields:
+    - name: sourceurl
+      dtype:
+        type: utf8
+      nullable: false
+      metadata:
+        description: Yggdryl URL of the source text object.
+        "iceberg:primary_key": "true"
+    - name: sourcerownum
+      dtype:
+        type: int64
+      nullable: false
+      metadata:
+        description: 1-based physical line number within the source object.
+        "iceberg:primary_key": "true"
+    - name: timestamp
+      dtype:
+        type: utf8
+      nullable: true
+      metadata:
+        description: Timestamp spelling captured from the line header.
+    - name: threadname
+      dtype:
+        type: utf8
+      nullable: true
+      metadata:
+        description: Thread spelling captured from the line header.
+    - name: plugin
+      dtype:
+        type: utf8
+      nullable: true
+      metadata:
+        description: Plugin spelling captured from the line header.
+    - name: level
+      dtype:
+        type: utf8
+      nullable: true
+      metadata:
+        description: Severity spelling captured from the line header.
+    - name: body
+      dtype:
+        type: binary
+      nullable: false
+      metadata:
+        description: Exact bytes after the matched line-header prefix.
+nullable: false
+metadata:
+  description: One source line and the header fields yggdryl captured from it.
+  python.class: Message
+  python.kind: field
+  python.module: rekep.text.message
+  python.qualname: Message

@@ -1,98 +1,71 @@
 # Parse messages
 
-`parse_messages` streams text records into `logs.messages`. yggdryl owns the
-filesystem and text-media read; yggfin owns the Iceberg table and commit.
-Nothing in this task interprets the record body.
-
-## Run this step
+`parse_messages` recursively reads physical text records and merges raw
+`Message` rows into `logs.messages`.
 
 ```bash
-uv run --project python --group runner rekep task run \
-  tasks/parse_messages/parse_messages.yml \
-  --parameter source=python/tests/data/app_messages_sample.txt
+rekep task run tasks/parse_messages/parse_messages.yml
 ```
-
-The command runs `tasks/parse_messages/parse_messages.py`; the adjacent YAML
-document supplies the source, text options, and Iceberg write settings.
-
-Calendar-partitioned paths expand before objects are opened:
 
 ```yaml
-source: s3://example-bucket/capture/{year}/{month}/{day}
-start: 2026-08-30
-end: 2026-08-31
+parameters:
+  filesystem: file:data/capture
+  # filesystem: s3://example-bucket/capture?region=eu-west-1
 ```
 
-`year`, `month`, and `day` are zero-padded. A templated source requires both
-bounds; a date-only `end` includes that whole day.
+The URI is passed unchanged to `IOBase.from_uri`. Yggdryl selects supported
+text leaves, opens each once, derives gzip or zstd decoding from the filename
+or declared media type, and emits row-bounded Arrow batches. No remote object
+is staged locally.
 
-Deploy the catalog first: [deploy from scratch](../operations/deploy.md).
+The task configures `TextOptions` with:
 
-## Text media
+- physical `rownum` output;
+- the fixed named header expression from `rekep.times.MESSAGE_HEADER`;
+- type inference disabled, preserving source spellings and body bytes.
 
-The row-header expression matches and removes only the log prefix. It names
-the header columns; `body` remains yggdryl's exact binary remainder.
+Yggdryl names source columns `url` and `rownum`; the task renames them to
+`sourceurl` and `sourcerownum`, strictly casts the batch to `Message.field()`,
+and sends the iterator directly to Iceberg. It never accumulates the source or
+an output table in memory. Transport read-ahead is 1 MiB and batches default to
+65,536 rows; one individual record remains bounded only when
+`TextOptions.max_record_byte_size` is set. Its current truncation policy would
+change `body`, so this task leaves it unset until Yggdryl exposes the
+error-on-overflow mode specified in the streaming prompt.
 
-```python
-import pyarrow.fs
-from yggdryl import IOBase, TextOptions
+The table merge key is `(sourceurl, sourcerownum)`. On replay, existing keys
+are skipped before a commit; a fully repeated source creates no data file or
+snapshot.
 
-options = TextOptions()
-options.with_rownum = 1
-options.autotype = False
-options.rowheader = (
-    r"^(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}_\d{3}) "
-    r"\[(?<threadname>[^]]*)\] \[(?<plugin>[^]]*)\] "
-    r"(?:\((?<level>[A-Za-z]{1,12})\) )?"
-)
+## Compressed input
 
-source = IOBase.from_fs(
-    pyarrow.fs.S3FileSystem(region="eu-west-1"),
-    "example-bucket/capture/app.log.gz",
-).into_text(options)
-reader = source.read_arrow_reader()
+Single-member gzip and zstd inputs stream correctly, and concatenated zstd
+frames are already read in order. Concatenated gzip members currently need the
+Yggdryl change described in
+[`yggdryl-text-streaming.md`](../../prompts/yggdryl-text-streaming.md); staging
+remote objects locally is not a replacement for fixing the decoder.
+
+## Throughput
+
+The focused benchmark generates 200,000 log rows and reports the fastest of
+three warmed runs. On the reference Windows development host:
+
+| source | native rows/s | Message rows/s | first batch |
+| --- | ---: | ---: | ---: |
+| `file:` plain | 85,660 | 96,848 | 684 ms |
+| `file:` gzip | 99,359 | 97,813 | 653 ms |
+
+Run the same focused measurement:
+
+```bash
+cd python
+uv run python benchmarks/bench_message.py --rows 200000 --repeat 3
 ```
 
-`IOBase.from_fs` accepts a local, S3, subtree, or caller-defined Arrow
-filesystem. yggdryl infers content encoding from the object and returns a
-`RecordBatchReader`; yggfin renames `url` and `rownum` to `sourceurl` and
-`sourcerownum`, casts the raw contract, and appends those batches to Iceberg.
+`native rows/s` measures Yggdryl text emission. `Message rows/s` includes the
+rename and strict schema cast used by the task. Timing is a diagnostic, not a
+portable performance guarantee.
 
-## Output
-
-One retained source row becomes one raw [`Message`](../../products/message.md):
-
-```yaml
-sourceurl: file:///capture.log
-sourcerownum: 1
-timestamp: "2026-08-21 12:00:00.123_000"
-threadname: fix-reader
-plugin: VenueBridge
-level: INFO
-body: !!binary OD1GSVguNC40fDM1PUR8MTE9T1JELTF8MTA9MDAxfA==
-```
-
-The table contains no `protocol`, `direction`, `msgtype`, `eventtype`, session
-fields, `entries`, event lifecycle, or payload-derived identity. Source URL and
-row number are its key. Header captures remain their source spellings.
-
-The three `parse_fix_*` runs read `body` and own UTF-8 repair, protocol and
-direction classification, MsgType filtering, entry tokenization, dictionary
-resolution, diagnostics, clocks, and event identity. Changing those rules
-reruns parse_fix without reopening the original text objects.
-
-## Bounds
-
-`batch_row_size` controls the Arrow batches yggdryl yields. `limit` bounds the
-task result, while `commit_batch_num` and `commit_row_size` control yggfin's
-Iceberg commit cadence. These are independent: a text batch is not an Iceberg
-commit.
-
-```yaml
-commit_batch_num: 8
-commit_row_size: null
-```
-
-Current yggdryl text media emits one record per physical line. The proposed
-logical-record framing and per-record byte diagnostic are tracked in
-[`docs/prompts/yggdryl-text-records.md`](../../prompts/yggdryl-text-records.md).
+The sequential text path already has encoded transport read-ahead. Yggdryl's
+positional `buffered()` cache is not used by record reads, and a local-staging
+diagnostic was slower, so remote objects remain direct streams.

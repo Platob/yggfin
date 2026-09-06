@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="420" height="230" viewBox="0 0 420 230" role="img" aria-labelledby="rkp-title rkp-desc">
   <title id="rkp-title">RKP</title>
-  <desc id="rkp-desc">A bold geometric RKP trading wordmark above an ordered market-data signal.</desc>
+  <desc id="rkp-desc">A bold geometric RKP wordmark above an Arrow-to-Iceberg signal.</desc>
   <defs>
     <style>
       .rkp-word{fill:#fafafa}
@@ -30,6 +30,6 @@
     <rect class="rkp-signal--base" x="32" y="171" width="358" height="4" rx="2"/>
     <rect class="rkp-signal rkp-signal--red" x="32" y="171" width="42" height="4" rx="2"/>
     <rect class="rkp-signal rkp-signal--orange" x="82" y="171" width="66" height="4" rx="2"/>
-    <text class="rkp-tagline" x="210" y="211" text-anchor="middle" textLength="250" lengthAdjust="spacing">ORDERED MARKET DATA</text>
+    <text class="rkp-tagline" x="210" y="211" text-anchor="middle" textLength="250" lengthAdjust="spacing">ARROW TO ICEBERG</text>
   </g>
 </svg>

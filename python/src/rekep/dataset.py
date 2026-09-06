@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import Field, StructField
+from rekep.fields import Field, arrow_type, field_of, strict_cast_table
 
 #: Marker columns the key joins below carry, named like pyiceberg's reserved
 #: pair so a merge key of either name is refused with the library's own
@@ -105,21 +105,21 @@ class Dataset(Convertible, abc.ABC):
     # -- what it holds ------------------------------------------------------
 
     @abc.abstractmethod
-    def into_struct_field(self) -> StructField:
+    def into_struct_field(self) -> Field:
         """The shape this dataset holds."""
 
     def into_arrow_schema(self) -> pyarrow.Schema:
         """That shape as an Arrow schema."""
         return self.into_struct_field().into_arrow_schema()
 
-    def target_field(self, schema: Any = None) -> StructField:
+    def target_field(self, schema: Any = None) -> Field:
         """The shape a cast should land on: `schema` if given, else ours.
 
         Every read and write takes an optional schema, and they all mean the
         same by it -- a field, an Arrow schema, field or type, a `@scalar`
         class, or nothing at all -- so none of them decides that for itself.
         """
-        return self.into_struct_field() if schema is None else Field.from_(schema)
+        return self.into_struct_field() if schema is None else field_of(schema)
 
     def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
         """Columns a write merges on: the primary key for True, else what is named.
@@ -130,11 +130,13 @@ class Dataset(Convertible, abc.ABC):
         if not merge_by:
             return []
         if merge_by is True:
-            keys = self.into_struct_field().primary_keys()
+            from rekep.iceberg.fields import primary_keys
+
+            keys = primary_keys(self.into_struct_field())
             if not keys:
                 raise ValueError(
                     f"{type(self).__name__} cannot merge on its primary key: no member declares "
-                    "one; mark it with Field.primary_key() or name the columns to merge on"
+                    "one; mark it with primary_key() or name the columns to merge on"
                 )
             return keys
         return list(merge_by)
@@ -158,7 +160,7 @@ class Dataset(Convertible, abc.ABC):
         """Whether this dataset is there yet."""
 
     @abc.abstractmethod
-    def create_with_field(self, field: StructField, **kwargs: Any) -> Self:
+    def create_with_field(self, field: Field, **kwargs: Any) -> Self:
         """Make this dataset exist, shaped by `field`, and hand it back.
 
         Idempotent by contract: creating one that is already there is not an
@@ -175,11 +177,11 @@ class Dataset(Convertible, abc.ABC):
 
     def create_with_arrow_schema(self, schema: pyarrow.Schema, **kwargs: Any) -> Self:
         """`create_with_field`, from an Arrow schema."""
-        return self.create_with_field(Field.from_(schema), **kwargs)
+        return self.create_with_field(field_of(schema), **kwargs)
 
     def create_with_arrow_field(self, field: pyarrow.Field, **kwargs: Any) -> Self:
         """`create_with_field`, from an Arrow field."""
-        return self.create_with_field(Field.from_(field), **kwargs)
+        return self.create_with_field(field_of(field), **kwargs)
 
     def get_or_create(self, source: Any = None, **kwargs: Any) -> Self:
         """This dataset, created with that shape when it is not there yet.
@@ -366,9 +368,7 @@ class Dataset(Convertible, abc.ABC):
         return self.append_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
 
 
-def _polars_reader(
-    source: Any, target: StructField, batch_row_size: int
-) -> pyarrow.RecordBatchReader:
+def _polars_reader(source: Any, target: Field, batch_row_size: int) -> pyarrow.RecordBatchReader:
     """A DataFrame or streaming LazyFrame cast onto `target` batch by batch."""
     if batch_row_size <= 0:
         raise ValueError("batch_row_size must be positive")
@@ -394,12 +394,12 @@ def _polars_reader(
     return pyarrow.RecordBatchReader.from_batches(target.into_arrow_schema(), batches())
 
 
-def _polars_table(frame: Any, target: StructField, polars: Any) -> pyarrow.Table:
+def _polars_table(frame: Any, target: Field, polars: Any) -> pyarrow.Table:
     """Export at the newest compatible level, then enforce the Arrow contract."""
     options = {}
-    if not _needs_compatible_polars_arrow(target.dtype):
+    if not _needs_compatible_polars_arrow(arrow_type(target)):
         options["compat_level"] = polars.CompatLevel.newest()
-    return target.cast_arrow_table(frame.to_arrow(**options))
+    return strict_cast_table(target, frame.to_arrow(**options))
 
 
 def _needs_compatible_polars_arrow(dtype: pyarrow.DataType) -> bool:

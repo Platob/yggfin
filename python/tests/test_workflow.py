@@ -1,10 +1,4 @@
-"""The seven applications, run in order over the checked-in fixture.
-
-This is the parity contract: the counts each task returns and the rows each
-table holds, for a first run, a replay of the same input, the direct market
-mode and a maintenance pass. Every number here was measured, so a producer
-that starts writing something else cannot move both sides of the assertion.
-"""
+"""Message ingestion over the checked-in fixture and a replay."""
 
 from __future__ import annotations
 
@@ -23,29 +17,11 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "python" / "tests" / "data" / "app_messages_sample.txt"
 
-#: The message categories `parse_fix` runs once each.
-CATEGORIES = ("market", "misc", "unknown")
-
-#: The workflow, in dependency order. One document runs three times.
-WORKFLOW = (
-    ("parse_messages", {}),
-    *(("parse_fix", {"category": category}) for category in CATEGORIES),
-    ("parse_instruments", {}),
-    ("parse_market", {}),
-    ("flatten_orders", {}),
-    ("flatten_executions", {}),
-)
+WORKFLOW = (("parse_messages", {}),)
 
 #: What the fixture's fourteen physical rows produce, first run.
 FIRST = {
     "parse_messages": {"read": 14, "written": 14, "skipped": 0},
-    "parse_fix_market": {"read": 2, "written": 2, "skipped": 0},
-    "parse_fix_misc": {"read": 11, "written": 11, "skipped": 0},
-    "parse_fix_unknown": {"read": 0, "written": 0, "skipped": 0},
-    "parse_instruments": {"read": 1, "written": 1, "skipped": 0},
-    "parse_market": {"read": 2, "written": 2, "skipped": 0},
-    "flatten_orders": {"read": 2, "written": 2, "skipped": 0},
-    "flatten_executions": {"read": 1, "written": 1, "skipped": 0},
 }
 
 #: What a replay of the same input produces: the same reads, no writes.
@@ -57,13 +33,6 @@ REPLAY = {
 #: Stored rows, and the one snapshot each table holds after both runs.
 STORED = {
     "logs.messages": 14,
-    "fix.market": 2,
-    "fix.misc": 11,
-    "fix.unknown": 0,
-    "market.instruments": 1,
-    "market.books": 2,
-    "market.orders": 2,
-    "market.executions": 1,
 }
 
 
@@ -100,7 +69,7 @@ class Ran:
         """Every publishing task instance, in dependency order, by stage name."""
         results = {}
         for name, held in WORKFLOW:
-            first = {"source": str(FIXTURE)} if name == "parse_messages" else {}
+            first = {"filesystem": FIXTURE.as_uri()} if name == "parse_messages" else {}
             result = self.task(name, **first, **held, **overrides)
             results[result["task"]] = result
         return results
@@ -140,26 +109,11 @@ def counted(result: dict[str, Any]) -> dict[str, int]:
 def test_the_workflow_publishes_the_fixture_and_a_replay_writes_nothing(ran: Ran) -> None:
     first = ran.workflow()
     assert {name: counted(result) for name, result in first.items()} == FIRST
-
-    assert [first[f"parse_fix_{one}"]["category"] for one in CATEGORIES] == list(CATEGORIES)
-    assert sum(first[f"parse_fix_{one}"]["errors"] for one in CATEGORIES) == 0
-    assert sum(first[f"parse_fix_{one}"]["tickered"] for one in CATEGORIES) == 5
-    resolved: dict[str, int] = {}
-    for one in CATEGORIES:
-        for rung, count in first[f"parse_fix_{one}"]["unixsource"].items():
-            resolved[rung] = resolved.get(rung, 0) + count
-    assert resolved == {"": 3, "SendingTime": 1, "TransactTime": 1, "recorded": 8}
-    assert first["parse_market"]["mode"] == "books"
-    assert first["parse_market"]["products"]["read"] == {"books": 2, "orders": 2, "executions": 1}
-    assert first["parse_market"]["flatten"] == {"orders": 2, "executions": 1}
     assert ran.rows() == STORED
 
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY
-    assert replay["parse_fix_market"]["read"] == 2, "and it still routes its consumers"
     assert ran.rows() == STORED, "an idempotent replay adds no row"
-    # One commit each, the first run's -- and none at all for the category no
-    # row fell in, whose table is created empty.
     assert ran.snapshots() == {name: int(bool(rows)) for name, rows in STORED.items()}
 
 
@@ -178,7 +132,7 @@ def test_an_empty_capture_is_read_and_produces_nothing(ran: Ran, tmp_path: Path)
     empty.mkdir()
     (empty / "quiet.log").write_text("", encoding="utf-8")
 
-    result = ran.task("parse_messages", source=str(empty))
+    result = ran.task("parse_messages", filesystem=empty.as_uri())
 
     assert counted(result) == {"read": 0, "written": 0, "skipped": 0}
     assert result["targets"] == {"messages": "logs.messages"}
@@ -192,7 +146,7 @@ def test_a_capture_missing_altogether_is_reported(ran: Ran, tmp_path: Path) -> N
         "--parameter",
         f"catalog={json.dumps(ran.catalog)}",
         "--parameter",
-        f"source={json.dumps(str(tmp_path / 'absent'))}",
+        f"filesystem={json.dumps((tmp_path / 'absent').as_uri())}",
     ]
     assert cli.main(argv) == 1
 
@@ -205,42 +159,10 @@ def test_several_files_are_one_capture(ran: Ran, tmp_path: Path) -> None:
     (capture / "a.log").write_text("".join(lines[:6]), encoding="utf-8")
     (capture / "b.log").write_text("".join(lines[6:]), encoding="utf-8")
 
-    result = ran.task("parse_messages", source=str(capture))
+    result = ran.task("parse_messages", filesystem=capture.as_uri())
 
     assert counted(result) == {"read": 14, "written": 14, "skipped": 0}
     assert ran.rows() == {"logs.messages": 14}
-
-
-def test_a_batch_bound_below_the_input_changes_nothing_but_the_batches(ran: Ran) -> None:
-    """One row per batch crosses every boundary the streaming path has."""
-    result = ran.task("parse_messages", source=str(FIXTURE), batch_row_size=1, commit_batch_num=1)
-
-    assert counted(result) == {"read": 14, "written": 14, "skipped": 0}
-    assert ran.rows() == {"logs.messages": 14}
-
-
-def test_a_limit_stops_the_read_where_it_says(ran: Ran) -> None:
-    result = ran.task("parse_messages", source=str(FIXTURE), limit=4)
-
-    assert counted(result) == {"read": 4, "written": 4, "skipped": 0}
-
-
-def test_direct_market_mode_writes_the_events_and_leaves_nothing_to_flatten(ran: Ran) -> None:
-    """`books: false` bypasses the fold and writes the FIX-carried events."""
-    ran.task("parse_messages", source=str(FIXTURE))
-    ran.task("parse_fix", category="market")
-    result = ran.task("parse_market", books=False)
-
-    assert result["mode"] == "events"
-    assert result["flatten"] == {"orders": 0, "executions": 0}
-    assert counted(result) == {"read": 3, "written": 3, "skipped": 0}
-    assert result["products"]["read"] == {"books": 0, "orders": 2, "executions": 1}
-    assert ran.rows() == {
-        "logs.messages": 14,
-        "fix.market": 2,
-        "market.orders": 2,
-        "market.executions": 1,
-    }
 
 
 def test_maintenance_visits_every_table_and_reports_what_it_changed(ran: Ran) -> None:

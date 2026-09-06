@@ -218,9 +218,6 @@ __marimo__/
 .streamlit/secrets.toml
 site/
 
-# Registry caches a doc example may leave behind.
-data/.fix-*
-
 # What a local end-to-end run leaves behind: the SQLite Iceberg catalog and
 # the file warehouse its tables live in.
 data/catalog.db

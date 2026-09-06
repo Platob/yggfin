@@ -10,7 +10,7 @@ Levels are the whole policy, so they are stated once, here:
   maintenance pass settled. One record per public verb, whatever it did
   inside -- a write that commits forty chunks is one INFO, not forty.
 - **DEBUG** is the detail under it: a cast, a projection, a scan plan, a file
-  opened, a registry index built. Per stream and per file, never per batch or
+  opened or a scan planned. Per stream and per file, never per batch or
   per row.
 
 Nothing here runs at import. A library that configures logging has decided for
@@ -83,11 +83,8 @@ class Stage:
     """One task's run: what it opened on, and the result it closes with.
 
     The numbers are the application's -- a task is a job, and jobs live under
-    `tasks/`. What lives here is the *shape* they are reported in and the two
-    records that say them, because seven applications agreeing on that by hand
-    is seven chances to disagree, and they had: `read` was an integer in five
-    of them and a mapping in the sixth, `skipped` was in three, and the table a
-    stage wrote was `target` in four and `targets` in two, spelled two ways.
+    `tasks/`. This class owns the one result shape and its opening and closing
+    records, so every application and runner reads the same contract.
 
     Every task returns the same keys -- `task`, `read`, `written`, `skipped`,
     `sources`, `targets`, `window`, `elapsed_ms` -- and whatever else it alone
@@ -112,8 +109,8 @@ class Stage:
     task: str
 
     #: What was read and what was written, keyed by the role this stage calls
-    #: them: `{"messages": "logs.messages"}`, `{"market": "fix.market"}`. A
-    #: role a run did not use is left out rather than stored as null.
+    #: them: `{"capture": "file:///capture"}` or
+    #: `{"messages": "logs.messages"}`. A role a run did not use is left out.
     sources: dict[str, str] = dataclasses.field(default_factory=dict)
     targets: dict[str, str] = dataclasses.field(default_factory=dict)
 
@@ -209,7 +206,7 @@ def _count(value: Any, name: str) -> int:
 
 
 def _named(places: dict[str, str]) -> str:
-    """`{"orders": "market.orders"}` as `orders=market.orders`, in one string."""
+    """`{"messages": "logs.messages"}` as one readable assignment."""
     return ", ".join(f"{role}={name}" for role, name in places.items())
 
 

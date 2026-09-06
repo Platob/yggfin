@@ -5,15 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "rekep"
 version = "1.0.0"
-description = "Trading log parser"
+description = "Arrow-native text ingestion into Iceberg"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "pyarrow>=17.0",
-    "yggdryl",
-    # Hashes are persisted identities, so every environment must use the same
-    # implementation rather than a platform-dependent fallback.
-    "xxhash>=3.4",
+    "yggdryl>=0.1.1",
     # Windows ships no IANA time zone database, so `zoneinfo` -- and through
     # it every pyarrow conversion that names a zone, "UTC" included -- needs
     # the package there. Everywhere else the system database serves.
@@ -86,7 +83,7 @@ bench = [
 default-groups = ["dev", "runner", "airflow"]
 
 [tool.uv.sources]
-yggdryl = { path = "../../yggdryl/python", editable = true }
+yggdryl = { git = "https://github.com/Platob/yggdryl", rev = "bfadd39fb0be3bec53298e8e00b100b638a69d90", subdirectory = "python" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

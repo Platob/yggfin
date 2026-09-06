@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from yggdryl import Url
 
 from rekep.convert import Convertible
-from rekep.fields import Field, StructField
+from rekep.fields import field_of
 from rekep.require import require
 
 if TYPE_CHECKING:
@@ -215,14 +215,16 @@ class IcebergCatalog(Convertible):
         table = None
         if field is None:
             table = self.load_table(identifier)
-            field = StructField.from_iceberg_schema(
+            from rekep.iceberg.fields import iceberg_struct_field
+
+            field = iceberg_struct_field(
                 table.schema(),
                 name,
                 spec=table.spec(),
                 sort_order=table.sort_order(),
             )
         else:
-            field = Field.from_(field).with_name(name)
+            field = field_of(field, name)
         built = IcebergDataset(
             name=name,
             namespace=namespace,

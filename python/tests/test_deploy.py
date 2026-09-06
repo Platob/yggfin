@@ -7,7 +7,7 @@ import pytest
 
 from rekep import cli
 from rekep.deploy import TABLES, deploy
-from rekep.fix.rules import MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY
+from rekep.fields import field_names
 from rekep.iceberg import IcebergCatalog
 
 from .conftest import catalog_properties
@@ -23,19 +23,11 @@ def run(*argv: str) -> int:
 def test_every_declared_table_builds_the_shape_it_names() -> None:
     """A table identifier is a namespace and a name, and it names its schema."""
     for shape in TABLES:
-        field = shape.into_field()
+        field = shape.field()
         assert field.name == shape.table
         assert "." in shape.table
-        built = field.into_arrow_schema()
         for column in shape.sort_by or ():
-            assert column in built.names, f"{shape.table} sorts by a column it has not got"
-
-
-def test_the_fix_tables_are_the_routers_own_categories() -> None:
-    """Adding a category to the router adds a table here, not a second spelling."""
-    routed = {MARKET_CATEGORY, MISC_CATEGORY, UNKNOWN_CATEGORY}
-    deployed = {shape.table.partition(".")[2] for shape in TABLES if shape.table.startswith("fix.")}
-    assert deployed == routed
+            assert column in field_names(field), f"{shape.table} sorts by a column it has not got"
 
 
 def test_pipeline_tables_do_not_prescribe_a_physical_sort() -> None:
@@ -44,7 +36,7 @@ def test_pipeline_tables_do_not_prescribe_a_physical_sort() -> None:
 
 def test_deploying_a_table_the_pipeline_does_not_write_is_refused() -> None:
     with pytest.raises(ValueError, match="no such table"):
-        deploy(IcebergCatalog(name="rekep"), tables=["market.quotes"])
+        deploy(IcebergCatalog(name="rekep"), tables=["logs.unknown"])
 
 
 @pytest.mark.integration
@@ -67,14 +59,13 @@ def test_a_deployment_creates_every_table_once(tmp_path: Path) -> None:
 
 
 @pytest.mark.integration
-def test_deployed_pipeline_tables_have_no_implicit_sort_order(tmp_path: Path) -> None:
+def test_deployed_message_table_has_no_implicit_sort_order(tmp_path: Path) -> None:
     properties = catalog_properties(tmp_path)
     store = IcebergCatalog(name="rekep", properties=properties)
     try:
-        deploy(store, tables=["fix.market", "market.instruments"])
-        assert not store.load_table("fix.market").sort_order().fields
-        assert store.namespace_exists("fix")
-        assert not store.load_table("market.instruments").sort_order().fields
+        deploy(store, tables=["logs.messages"])
+        assert store.namespace_exists("logs")
+        assert not store.load_table("logs.messages").sort_order().fields
     finally:
         store.close()
 
@@ -89,7 +80,7 @@ def test_the_command_reads_the_catalog_a_task_document_names(
         run(
             "iceberg",
             "deploy",
-            str(TASKS / "parse_fix" / "parse_fix.yml"),
+            str(TASKS / "parse_messages" / "parse_messages.yml"),
             "--property",
             f"uri={properties['uri']}",
             "--property",

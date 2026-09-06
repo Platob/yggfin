@@ -1,159 +1,45 @@
-"""The six persisted contracts must match their owning declarations."""
+"""The raw Message contract matches its owning declaration."""
 
 from pathlib import Path
 
-import pyarrow
-import pytest
+from yggdryl import Field
 
-from rekep import Field, FixMsg, FixRegistry, Message
-from rekep.fields import column_name
-from rekep.market import Book, Execution, InstUpdate, Order
+from rekep import Message
+from rekep.iceberg import partition_keys, primary_keys
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
-CONTRACTS = sorted(
-    path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
-)
-#: What each contract's stored shape is on, so a bump is a deliberate edit
-#: here and not a number that drifted with a declaration.
-VERSIONS = dict.fromkeys(
-    ("fixmsg.yaml", "message.yaml", "instrument.yaml", "book.yaml", "order.yaml", "execution.yaml"),
-    "1",
-)
-VERSIONS["message.yaml"] = "2"
-
-PUBLISHED = {
-    "fixmsg.yaml": FixMsg,
-    "message.yaml": Message,
-    "instrument.yaml": InstUpdate,
-    "book.yaml": Book,
-    "order.yaml": Order,
-    "execution.yaml": Execution,
-}
+CONTRACT = SCHEMAS / "rekep" / "message.yaml"
 
 
-def test_only_pipeline_outputs_are_published() -> None:
-    assert len(CONTRACTS) == 6
-    assert {path.name for path in CONTRACTS} == set(PUBLISHED)
+def load_contract() -> Field:
+    """Read the native Yggdryl field contract."""
+    return Field.from_yaml(CONTRACT.read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
-def test_contract_round_trip_keeps_shape_and_identity(path: Path) -> None:
-    contract = Field.from_(str(path))
-    assert path.read_bytes() == contract.into_yaml()
+def test_only_the_message_output_is_published() -> None:
+    contracts = sorted(
+        path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
+    )
+    assert contracts == [CONTRACT]
+
+
+def test_contract_round_trip_keeps_shape_and_identity() -> None:
+    contract = load_contract()
+    assert CONTRACT.read_text(encoding="utf-8") == contract.into_yaml()
     assert Field.from_dict(contract.into_dict()) == contract
-    assert Field.from_arrow_schema(contract.into_arrow_schema()) == contract
-    assert contract.metadata["version"] == VERSIONS[path.name], "a stored shape changed"
+    assert Field.from_arrow(contract.into_arrow()) == contract
 
 
-@pytest.mark.parametrize("name,shape", sorted(PUBLISHED.items()))
-def test_contract_matches_its_declaration(name: str, shape: type) -> None:
-    published = Field.from_yaml(str(SCHEMAS / "rekep" / name))
-    declared = shape.into_field()
+def test_contract_matches_the_message_declaration() -> None:
+    published = load_contract()
+    declared = Message.field()
     assert published == declared
     assert published.into_arrow_schema().equals(declared.into_arrow_schema(), check_metadata=True)
-    assert published.primary_keys() == declared.primary_keys()
-    assert published.partition_keys() == declared.partition_keys()
+    assert primary_keys(published) == primary_keys(declared)
+    assert partition_keys(published) == partition_keys(declared)
 
 
 def test_raw_message_contract_keeps_source_keys() -> None:
-    message = Field.from_yaml(str(SCHEMAS / "rekep" / "message.yaml"))
-    assert message.primary_keys() == ["sourceurl", "sourcerownum"]
-    assert message.partition_keys() == {}
-
-
-def test_fixmsg_contract_keeps_time_keys() -> None:
-    message = Field.from_yaml(str(SCHEMAS / "rekep" / "fixmsg.yaml"))
-    assert message.primary_keys() == ["unix", "hash"]
-    assert message.partition_keys() == {"unixpartition": "identity"}
-
-
-def test_market_contract_keeps_protocol_metadata() -> None:
-    order = Field.from_yaml(str(SCHEMAS / "rekep" / "order.yaml"))
-    assert order.field("timeinforce").fix["tag"] == "59"
-    assert order.field("lastpx").fix["name"] == "Price"
-    assert order.field("side").fix["tag"] == "54"
-    assert "fix:tag" not in order.field("code").metadata, "a lifecycle is not a FIX field"
-    assert "instrument" not in order.names
-
-
-def test_published_contracts_have_no_nested_table_keys() -> None:
-    for name in PUBLISHED:
-        contract = Field.from_yaml(str(SCHEMAS / "rekep" / name))
-        for member in contract.fields:
-            for inner in member.fields:
-                assert not inner.is_primary_key, f"{name}: {member.name}.{inner.name}"
-                assert not inner.is_partition_key, f"{name}: {member.name}.{inner.name}"
-
-
-# -- names ------------------------------------------------------------------
-#
-# A column name is folded, and the fold is also how a spelling is matched --
-# so these hold both halves of one rule, on the shapes that are published.
-
-#: What Arrow calls the parts of a container when nobody named them. They are
-#: not columns and nothing looks them up, so they are exempt from the rule.
-_CONTAINER_PARTS = frozenset({"item", "key", "value"})
-
-
-def _columns(field: Field) -> list[Field]:
-    """Every member of a contract, nested ones included, container parts aside."""
-    found = []
-    for member in field.fields:
-        if member.name not in _CONTAINER_PARTS:
-            found.append(member)
-        found.extend(_columns(member))
-    return found
-
-
-def test_fix_backed_persisted_dates_are_microsecond_timestamps() -> None:
-    found = [
-        member
-        for shape in PUBLISHED.values()
-        for member in _columns(shape.into_field())
-        if member.fix.get("tag") and pyarrow.types.is_temporal(member.dtype)
-    ]
-    assert found
-    assert all(not pyarrow.types.is_date(member.dtype) for member in found)
-    assert all(
-        not pyarrow.types.is_timestamp(member.dtype) or member.dtype.unit == "us"
-        for member in found
-    )
-
-
-@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
-def test_every_column_is_folded(path: Path) -> None:
-    """The name a contract stores is the name a fold produces: lowercase, and
-    nothing that is not a letter or a digit. One name, so a reader who has the
-    column has the attribute and the document key too."""
-    for member in _columns(Field.from_(str(path))):
-        assert member.name == column_name(member.name), f"{path.name}: {member.name}"
-
-
-@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
-def test_no_column_repeats_its_fix_name_as_display(path: Path) -> None:
-    for member in _columns(Field.from_(str(path))):
-        assert "fix:display" not in member.metadata, f"{path.name}: {member.name}"
-
-
-@pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.name)
-def test_a_folded_column_matches_the_registry_by_its_own_name(path: Path) -> None:
-    """A column that reads a FIX field resolves in the registry spelled as the
-    column spells it -- which is the point of matching case-insensitively, and
-    of there being no snake-cased spelling to strip first."""
-    registry = FixRegistry.from_builtin()
-    for member in _columns(Field.from_(str(path))):
-        tag = member.fix.tag
-        if not tag or member.fix.name is None:
-            continue
-        found = registry.field(column_name(member.fix.name))
-        assert found is not None, f"{path.name}: {member.name} names no registry field"
-        assert found.fix.tag == tag, f"{path.name}: {member.name}"
-
-
-def test_a_registry_lookup_ignores_case_and_not_the_letters() -> None:
-    """One field however a feed spells it, and no fold across two fields."""
-    registry = FixRegistry.from_builtin()
-    for spelling in ("MsgType", "msgtype", "MSGTYPE", "mSgTyPe"):
-        found = registry.field(spelling)
-        assert found is not None and found.fix.tag == 35, spelling
-    assert FixMsg.into_field().field("MsgType") is FixMsg.into_field().field("msgtype")
+    message = load_contract()
+    assert primary_keys(message) == ["sourceurl", "sourcerownum"]
+    assert partition_keys(message) == {}

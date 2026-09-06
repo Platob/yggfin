@@ -1,7 +1,7 @@
-"""The seven Marimo applications this repository schedules.
+"""The two retained Marimo applications this repository schedules.
 
 An application is a job, not a feature of the package, so what is pinned here
-is the contract the runner and the DAG hold it to: it exports an `app`, its
+is the contract the runner holds it to: it exports an `app`, its
 parameter cell defines exactly what its document declares and reads its
 defaults out of it, every name is defined once, and `marimo check --strict`
 is clean.
@@ -21,14 +21,9 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "tasks"
 
-#: Every job the workflow and the maintenance DAG are made of.
+#: Message ingestion and generic Iceberg maintenance.
 NAMES = (
-    "flatten_executions",
-    "flatten_orders",
     "optimize_iceberg",
-    "parse_fix",
-    "parse_instruments",
-    "parse_market",
     "parse_messages",
 )
 
