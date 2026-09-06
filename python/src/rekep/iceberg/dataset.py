@@ -41,11 +41,7 @@ from rekep.fields import (
     field_of,
     leaf_names,
     replace_field,
-    strict_cast_batch,
-    strict_cast_reader,
-    strict_cast_table,
 )
-from rekep.fields.field import field_names
 from rekep.iceberg.catalog import IcebergCatalog, _file_location
 from rekep.iceberg.fields import (
     derived_keys,
@@ -571,18 +567,18 @@ class IcebergDataset(Dataset):
         ordering = tuple(name for name, _ in ordering_fields)
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
+        requested: tuple[str, ...] | None = None
         if columns and target is not None:
-            selected = [target.field(name) for name in columns if name in field_names(target)]
-            if not selected:
+            target_names = {member.name for member in target}
+            requested = tuple(name for name in columns if name in target_names)
+            if not requested:
                 raise ValueError(f"columns={list(columns)!r} shares no columns with `schema`")
-            target = field_of(
-                pyarrow.schema(
-                    [field.into_arrow() for field in selected],
-                    metadata=target.into_arrow_schema().metadata,
-                )
-            )
+            result_target = _field_projection(target, requested)
+            target = _applied_projection(target, requested)
+        else:
+            result_target = target
         if not self.exists:
-            return self._empty_reader(target, None if target is not None else columns)
+            return self._empty_reader(result_target, None if result_target is not None else columns)
         table = self.iceberg_table
         # Pinned *before* the projection is chosen: a scan on a ref or a
         # snapshot id projects under that snapshot's schema, so which names it
@@ -606,7 +602,8 @@ class IcebergDataset(Dataset):
             found = self._selected(target, scan)
             scan = scan.select(*found)
         projected = {field.name for field in scan.projection().fields}
-        missing = [name for name in ordering if name not in projected]
+        visible = set(requested) if requested is not None else projected
+        missing = [name for name in ordering if name not in visible]
         if missing:
             raise ValueError(
                 f"order_by={order_by!r} is not projected; include {missing!r} in "
@@ -621,7 +618,12 @@ class IcebergDataset(Dataset):
             reader = _reader_limit(reader, limit)
         if target is None:
             return reader
-        return strict_cast_reader(target, _renamed(reader, found))
+        applied = target.apply_arrow_reader(
+            _renamed(reader, found),
+            safe=False,
+            nullability="strict",
+        )
+        return _projected(applied, requested) if requested is not None else applied
 
     def _empty_reader(
         self, target: Field | None, columns: Sequence[str] | None
@@ -673,7 +675,7 @@ class IcebergDataset(Dataset):
         pinned = {field.field_id: field.name for field in scan.projection().fields}
         by_name = set(pinned.values())
         wanted = {}
-        target_names = field_names(target)
+        target_names = [member.name for member in target]
         for name in target_names:
             stored = pinned.get(current.get(name, -1)) or (name if name in by_name else None)
             if stored is not None:
@@ -694,7 +696,7 @@ class IcebergDataset(Dataset):
 
     def overwrite_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
@@ -718,7 +720,7 @@ class IcebergDataset(Dataset):
 
     def _overwrite_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
@@ -741,8 +743,7 @@ class IcebergDataset(Dataset):
             partitions = _partition_columns(table)
             if partitions and not join:
                 # The partition writer owns the source from entry. Do not close
-                # it again here: an injected iterator need not make `close`
-                # idempotent, and the direct public call must have the same
+                # it again here: the direct public call must have the same
                 # ownership as this dispatch.
                 delegated = True
                 self.overwrite_partition_arrow_reader(
@@ -761,7 +762,11 @@ class IcebergDataset(Dataset):
                     "replaces the rows whose keys match -- pass True for the primary key "
                     "or the columns to match on, or use append_arrow_* to add rows blindly"
                 )
-            reader = strict_cast_reader(self.target_field(schema), source)
+            reader = self.target_field(schema).apply_arrow_reader(
+                source,
+                safe=False,
+                nullability="strict",
+            )
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             for chunk in arrow_chunks(reader, rows, batches):
@@ -789,7 +794,7 @@ class IcebergDataset(Dataset):
 
     def overwrite_partition_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
@@ -813,7 +818,7 @@ class IcebergDataset(Dataset):
 
     def _overwrite_partition_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
@@ -846,8 +851,17 @@ class IcebergDataset(Dataset):
             partitions = _partition_columns(table)
             if not partitions:
                 raise ValueError("partition overwrite needs a supported table partition spec")
-            required = _requiring_columns(source, [column.source for column in partitions])
-            reader = strict_cast_reader(self.target_field(schema), required)
+            target = self.target_field(schema)
+            required = _requiring_columns(
+                source,
+                [column.source for column in partitions],
+                derived_keys(target),
+            )
+            reader = target.apply_arrow_reader(
+                required,
+                safe=False,
+                nullability="strict",
+            )
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             snapshot = properties or {}
@@ -1203,7 +1217,11 @@ class IcebergDataset(Dataset):
                 candidate = semi_join(candidate, chunk, join)
                 if not candidate.num_rows:
                     continue
-                candidate = strict_cast_table(shape, candidate)
+                candidate = shape.apply_arrow_reader(
+                    candidate.to_reader(),
+                    safe=False,
+                    nullability="strict",
+                ).read_all()
                 positions = _matching_positions(chunk, candidate, join)
                 if len(positions) != candidate.num_rows:
                     raise ValueError("Target table has duplicate rows, aborting upsert")
@@ -1259,7 +1277,7 @@ class IcebergDataset(Dataset):
 
     def append_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
@@ -1283,7 +1301,7 @@ class IcebergDataset(Dataset):
 
     def _append_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
@@ -1298,7 +1316,11 @@ class IcebergDataset(Dataset):
             rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             table = self.get_or_create_table()
             join = self._row_merge_columns(merge_by)
-            reader = strict_cast_reader(self.target_field(schema), source)
+            reader = self.target_field(schema).apply_arrow_reader(
+                source,
+                safe=False,
+                nullability="strict",
+            )
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
             snapshot = properties or {}
@@ -1450,7 +1472,15 @@ class IcebergDataset(Dataset):
                 scan, itertools.chain((first_task,), tasks), group_size=1
             ) as planned:
                 for batch in _under_current_names(table, planned):
-                    stored = pyarrow.Table.from_batches([strict_cast_batch(keys, batch)])
+                    stored = pyarrow.Table.from_batches(
+                        [
+                            keys.apply_arrow_batch(
+                                batch,
+                                safe=False,
+                                nullability="strict",
+                            )
+                        ]
+                    )
                     fresh = fresh.join(
                         stored.select(list(join)), keys=list(join), join_type="left anti"
                     )
@@ -3535,6 +3565,54 @@ def _renamed(reader: pyarrow.RecordBatchReader, names: dict[str, str]) -> Any:
     return OwnedRecordBatchReader(schema, batches(), reader.close)
 
 
+def _field_projection(source: Field, names: Sequence[str]) -> Field:
+    """One top-level Field projection, retaining its root metadata."""
+    return field_of(
+        pyarrow.schema(
+            [source.field(name).into_arrow() for name in names],
+            metadata=source.into_arrow_schema().metadata,
+        )
+    )
+
+
+def _applied_projection(source: Field, requested: Sequence[str]) -> Field:
+    """A projection widened only for native apply dependencies."""
+    available = [member.name for member in source]
+    present = set(requested)
+    dependencies = derived_keys(source)
+    pending = list(requested)
+    while pending:
+        for path in dependencies.get(pending.pop(), ()):
+            root = path.split(".", 1)[0]
+            if root in available and root not in present:
+                present.add(root)
+                pending.append(root)
+    if any(source.field(name).digest.get("role") == "holder" for name in present):
+        # A retained holder may have been reached through a partition
+        # dependency. An absent or `*` digest source means every non-holder
+        # sibling, so keep the complete input and let Yggdryl own selection.
+        return source
+    return _field_projection(source, [name for name in available if name in present])
+
+
+def _projected(
+    reader: pyarrow.RecordBatchReader, names: Sequence[str]
+) -> pyarrow.RecordBatchReader:
+    """Select streamed output after hidden apply dependencies have run."""
+    if list(names) == reader.schema.names:
+        return reader
+    schema = pyarrow.schema(
+        [reader.schema.field(name) for name in names],
+        metadata=reader.schema.metadata,
+    )
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for batch in reader:
+            yield batch.select(names)
+
+    return OwnedRecordBatchReader(schema, batches(), reader.close)
+
+
 def _manifests(table: Any) -> Iterator[tuple[Any, Any]]:
     """`(snapshot, manifest)` for every manifest any retained snapshot reaches.
 
@@ -3781,32 +3859,25 @@ def _ensure_name_mapping(transaction: Any) -> None:
 
 
 def _requiring_columns(
-    source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch], columns: Sequence[str]
-) -> pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch]:
-    """Refuse an omitted partition column before a nullable cast can invent it."""
-
-    def validate(schema: pyarrow.Schema) -> None:
-        missing = [name for name in columns if not _schema_has_column(schema, name)]
-        if missing:
-            raise ValueError(
-                f"partition columns {missing} are missing from the source; "
-                "partition overwrite cannot infer which partitions to replace"
-            )
-
-    if isinstance(source, pyarrow.RecordBatchReader):
-        validate(source.schema)
-        return source
-
-    def batches() -> Iterator[pyarrow.RecordBatch]:
-        try:
-            for batch in source:
-                validate(batch.schema)
-                yield batch
-        finally:
-            if (close := getattr(source, "close", None)) is not None:
-                close()
-
-    return batches()
+    source: pyarrow.RecordBatchReader,
+    columns: Sequence[str],
+    derived: Mapping[str, Sequence[str]] | None = None,
+) -> pyarrow.RecordBatchReader:
+    """Refuse partition columns neither supplied nor derivable by the target."""
+    missing = []
+    for name in columns:
+        if _schema_has_column(source.schema, name):
+            continue
+        sources = None if derived is None else derived.get(name)
+        if sources and all(_schema_has_column(source.schema, value) for value in sources):
+            continue
+        missing.append(name)
+    if missing:
+        raise ValueError(
+            f"partition columns {missing} are missing from the source; "
+            "partition overwrite cannot infer which partitions to replace"
+        )
+    return source
 
 
 def _schema_has_column(schema: pyarrow.Schema, name: str) -> bool:

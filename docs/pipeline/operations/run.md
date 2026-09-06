@@ -28,6 +28,7 @@ Then run exactly that document:
 
 ```bash
 rekep task run tasks/parse_messages/parse_messages.json
+rekep task run tasks/parse_fix/parse_fix.json
 ```
 
 The command prints one compact JSON result to stdout and progress to stderr.
@@ -36,6 +37,11 @@ The default source path is illustrative and is not created by the package.
 Replaying an unchanged source is safe. Rows already stored under `(url, rownum)`
 are counted as skipped and do not create another
 Iceberg snapshot.
+
+`parse_fix` reads `logs.messages`, uses the non-empty process Yggdryl registry
+when its `registry` parameter is `null`, and writes `fix.messages`. Point that
+parameter at a registry directory when the deployment does not install a
+process default.
 
 Override one source without editing the document:
 

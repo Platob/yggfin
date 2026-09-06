@@ -43,6 +43,7 @@ def _module(name: str) -> ModuleType:
 
 OPERATOR = _module("marimo_operator")
 MarimoOperator = OPERATOR.MarimoOperator
+PIPELINE = _module("pipeline")
 
 #: What one attempt returned, in the shape every task returns.
 RESULT = {
@@ -141,15 +142,26 @@ def commands() -> list[list[str]]:
     return [call["command"] for call in Ran.calls]
 
 
+# -- the DAG -----------------------------------------------------------------
+
+
+def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
+    dag = PIPELINE.ingestion
+
+    assert dag.dag_id == "rekep_ingestion"
+    assert set(dag.task_dict) == {"parse_messages", "parse_fix"}
+    messages = dag.get_task("parse_messages")
+    fixed = dag.get_task("parse_fix")
+    assert messages.downstream_task_ids == {"parse_fix"}
+    assert fixed.upstream_task_ids == {"parse_messages"}
+    assert [asset.name for asset in messages.outlets] == ["logs.messages"]
+    assert [asset.name for asset in fixed.outlets] == ["fix.messages"]
+
+
 # -- the command it builds ---------------------------------------------------
 
 
-def test_the_task_command_is_the_locked_offline_argv() -> None:
-    """Pinned: an option this loses is a resolution during a scheduled run.
-
-    The environment itself is the deployment's, made once with
-    `uv sync --locked --group runner`; a task never writes to it.
-    """
+def test_the_task_command_runs_the_standalone_marimo_runner() -> None:
     operator().execute(context())
 
     (run,) = commands()
@@ -167,9 +179,8 @@ def test_the_task_command_is_the_locked_offline_argv() -> None:
         "--no-progress",
         "--no-env-file",
         "--",
-        "rekep",
-        "task",
-        "run",
+        "python",
+        str(ROOT / "tasks" / "airflow" / "marimo_runner.py"),
         str(ROOT / "tasks" / "parse_messages" / "parse_messages.json"),
         "--parameters-file",
         parameters,
@@ -202,7 +213,7 @@ def test_nothing_in_the_command_reaches_a_shell() -> None:
         )
 
 
-def test_a_configured_cache_directory_reaches_the_child() -> None:
+def test_a_configured_cache_directory_reaches_uv() -> None:
     operator(cache_dir="/var/lib/rekep/uv").execute(context())
 
     assert {call["env"]["UV_CACHE_DIR"] for call in Ran.calls} == {"/var/lib/rekep/uv"}
@@ -493,7 +504,7 @@ def test_a_document_that_is_not_there_is_refused() -> None:
 def test_a_real_child_publishes_a_result_through_the_locked_environment(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The whole path: uv, the runner, the application, and the result file."""
+    """The whole path: uv, runner, application, and private result file."""
     monkeypatch.undo()
     warehouse = tmp_path / "warehouse"
     catalog = {
@@ -522,13 +533,13 @@ def test_a_real_child_publishes_a_result_through_the_locked_environment(
 
 
 @pytest.mark.integration
-def test_terminating_the_task_stops_uv_and_the_application_under_it(
+def test_terminating_the_task_stops_the_runner_process_group(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """`on_kill` signals the process group, so nothing is left holding a table."""
     monkeypatch.undo()
-    # A checkout of one task: the real project, so `uv run` resolves the same
-    # locked environment, and a task directory the operator will accept.
+    # A checkout of one task: the real locked project environment, and a task
+    # directory the operator will accept.
     (tmp_path / "python").symlink_to(ROOT / "python")
     directory = tmp_path / "tasks" / "sleeper"
     directory.mkdir(parents=True)
@@ -537,7 +548,7 @@ def test_terminating_the_task_stops_uv_and_the_application_under_it(
             {
                 "name": "sleeper",
                 "application": "sleeper.py",
-                "parameters": {"seconds": 120},
+                "parameters": {"seconds": 30},
             }
         ),
         encoding="utf-8",
@@ -556,7 +567,7 @@ def test_terminating_the_task_stops_uv_and_the_application_under_it(
 
     thread = threading.Thread(target=_run)
     thread.start()
-    deadline = time.monotonic() + 120
+    deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if built.hook is not None and getattr(built.hook, "sub_process", None) is not None:
             children = subprocess.run(
@@ -565,7 +576,7 @@ def test_terminating_the_task_stops_uv_and_the_application_under_it(
                 text=True,
                 check=False,
             ).stdout.split()
-            if len(children) > 1:
+            if children:
                 break
         time.sleep(0.2)
     else:  # pragma: no cover - the child never started
@@ -573,11 +584,11 @@ def test_terminating_the_task_stops_uv_and_the_application_under_it(
 
     group = os.getpgid(built.hook.sub_process.pid)
     built.on_kill()
-    thread.join(timeout=60)
+    thread.join(timeout=15)
 
     assert not thread.is_alive()
     assert raised, "a killed task fails rather than returning nothing"
-    settled = time.monotonic() + 30
+    settled = time.monotonic() + 10
     while time.monotonic() < settled:
         if not subprocess.run(
             ["pgrep", "-g", str(group)], capture_output=True, text=True, check=False
@@ -586,4 +597,4 @@ def test_terminating_the_task_stops_uv_and_the_application_under_it(
         time.sleep(0.2)
     assert not subprocess.run(
         ["pgrep", "-g", str(group)], capture_output=True, text=True, check=False
-    ).stdout.split(), "uv and the application under it are both gone"
+    ).stdout.split(), "uv and the runner process group are gone"

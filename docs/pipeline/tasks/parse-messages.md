@@ -3,6 +3,9 @@
 `parse_messages` recursively reads physical text records and merges raw
 `Message` rows into `logs.messages`.
 
+It deliberately leaves `body` uninterpreted. The downstream
+[`parse_fix`](parse-fix.md) task owns the native protocol pass.
+
 ```bash
 rekep task run tasks/parse_messages/parse_messages.json
 ```
@@ -30,17 +33,20 @@ The task configures `TextOptions` with:
 - general type inference disabled, leaving header captures as text and the body
   as bytes.
 
-`Message.cast_arrow_batch` uses Arrow kernels to normalize the captured
-timestamp without Python row loops. An offset-free header means UTC; fractional
-digits are padded or truncated to microseconds. A missing header stays null and
-an invalid captured instant fails the batch. The result is a nullable
-`timestamp[us, UTC]` column.
+`Message.apply_arrow_batch` uses Arrow kernels to normalize the captured
+timestamp without Python row loops, then native `Field.apply_arrow_batch`
+derives `timepartition`. An offset-free header means UTC; fractional digits are
+padded or truncated to microseconds. A missing header stays null and an invalid
+captured instant fails the batch. Both timestamp columns are nullable
+`timestamp[us, UTC]`; Iceberg applies its `hour` transform to `timepartition`.
 
 Yggdryl names source columns `url` and `rownum`; the task applies this Message
-boundary to each batch and sends the iterator directly to Iceberg. It never
-accumulates the source or an output table in memory. Transport read-ahead is
-1 MiB and batches default to 65,536 rows; one individual record remains bounded
-only when
+boundary to each batch, captures the second header bracket as `branch`, and
+exposes the batches as one schema-bearing
+`RecordBatchReader` to Iceberg. Yggdryl compiles the native writer apply once;
+neither boundary accumulates the source or an output table in memory. Transport
+read-ahead is 1 MiB and batches default to 65,536 rows; one individual record
+remains bounded only when
 `TextOptions.max_record_byte_size` is set. Its current truncation policy would
 change `body`, so this task leaves it unset until Yggdryl exposes the
 error-on-overflow mode specified in the streaming prompt.
@@ -64,7 +70,7 @@ times both native Yggdryl emission and the complete Message boundary:
 
 ```bash
 cd python
-uv run python benchmarks/bench_message.py --rows 200000 --repeat 5
+uv run python benchmarks/bench_message.py
 ```
 
 The measured parser and complete Message-to-Iceberg results, including build

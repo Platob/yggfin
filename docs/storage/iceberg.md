@@ -22,7 +22,7 @@ messages = catalog.dataset("logs.messages", field=Message.field())
 
 ```python
 written = messages.append_arrow_reader(
-    batches,
+    reader,
     Message.field(),
     merge_by=True,
 )
@@ -34,7 +34,8 @@ optional `commit_row_size` bound each storage commit independently from input
 batch size.
 
 `overwrite_arrow_reader` replaces rows matching the declared key and inserts
-the remainder. Both APIs consume one batch at a time.
+the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
+consume one batch at a time. The batch and table helpers build that reader.
 
 Before either write, the native Field applies its declarations in dependency
 order: cast, derived partition columns, then digest holders. Yggdryl
@@ -102,28 +103,12 @@ Configure warehouse S3 behavior with standard catalog properties:
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
 never in committed task documents.
 
-## Message schema migration
+## Message schema replacement
 
-If a table already stores `timestamp` as `timestamptz` and only uses the former
-source names, rename those columns in place before ingestion resumes. Their
-field and identifier IDs remain stable:
-
-```python
-table = catalog.load_table("logs.messages")
-with table.update_schema() as update:
-    update.rename_column("sourceurl", "url")
-    update.rename_column("sourcerownum", "rownum")
-```
-
-Iceberg cannot evolve the legacy `string` timestamp column to `timestamptz`.
-Such a table needs a replacement created from `Message.field()`. Prefer
-reingesting the original captures; otherwise stream the old rows through an
-explicit UTC timestamp conversion into the replacement. Validate row counts
-and `(url, rownum)` keys before switching consumers. Do not update the timestamp
-type in place.
-
-This is an operator migration, not a runtime compatibility path. Fresh tables
-use `url`, `rownum`, and the nullable microsecond `timestamptz` directly.
+The current table contract uses `url`, `rownum`, `branch`, and a derived
+`timepartition` with an Iceberg `hour` transform. Recreate an older messages
+table from `Message.field()` and reingest its source captures; Rekep carries no
+legacy name, timestamp-type, or partition-layout compatibility path.
 
 ## Maintenance
 
@@ -152,6 +137,8 @@ compaction threshold; `retain` and `snapshot_age_days` preserve recent time
 travel; `orphan_age_days` protects files from active or recently failed
 writers. `root`, `main`, and `master` select the same Iceberg root branch.
 `remove_orphans` enables the sweep; `metadata` includes the metadata directory
-in it. Set `log_level` to `DEBUG` for file and plan details.
+in it. The result keys each table report by its full identifier, such as
+`logs.messages` or `fix.messages`, so equal table names in different namespaces
+cannot collide. Set `log_level` to `DEBUG` for file and plan details.
 
 Run long transaction checks explicitly with `pytest -m integration`.

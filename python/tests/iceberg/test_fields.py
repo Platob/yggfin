@@ -8,10 +8,7 @@ import pytest
 
 from rekep import Convertible, Field, scalar
 from rekep.fields import (
-    arrow_type,
-    field_names,
     field_of,
-    fields,
     partition_key,
     primary_key,
     replace_field,
@@ -217,7 +214,7 @@ def test_a_repeated_partition_source_stays_authoritative_in_iceberg(schema: obje
 
     built = iceberg_struct_field(schema, "Quote", spec)
 
-    assert field_names(built) == ["symbol", "day", "venue"]
+    assert [member.name for member in built] == ["symbol", "day", "venue"]
     assert partition_keys(built) == {}
     assert not built.field("day").is_partition
     assert built.field("day").iceberg.get("partition_key") is None
@@ -236,7 +233,7 @@ def test_nothing_declared_is_an_unpartitioned_spec() -> None:
 
 def test_a_schema_comes_back_as_a_struct_field(schema: object) -> None:
     built = iceberg_struct_field(schema, "Quote")
-    assert field_names(built) == ["symbol", "day", "venue"]
+    assert [member.name for member in built] == ["symbol", "day", "venue"]
     assert primary_keys(built) == ["symbol"], "the identifier fields come back as the key"
     assert built.field("symbol").metadata["description"] == "Instrument."
     assert not built.field("symbol").nullable
@@ -262,7 +259,7 @@ def test_the_widths_are_arrow_s_narrow_ones(schema: object) -> None:
     measured over 400,000 rows, interleaved in one process.
     """
     built = iceberg_struct_field(schema)
-    assert arrow_type(built.field("symbol")) == pyarrow.string()
+    assert built.field("symbol").dtype.into_arrow() == pyarrow.string()
 
 
 def test_the_round_trip_keeps_names_types_and_keys(schema: object) -> None:
@@ -274,7 +271,9 @@ def test_the_round_trip_keeps_names_types_and_keys(schema: object) -> None:
 
 
 def test_the_module_functions_take_a_field_directly() -> None:
-    assert [f.name for f in iceberg_schema(Quote.field()).fields] == field_names(Quote.field())
+    assert [f.name for f in iceberg_schema(Quote.field()).fields] == [
+        member.name for member in Quote.field()
+    ]
     assert [f.name for f in iceberg_partition_spec(Quote.field()).fields] == ["day"]
 
 
@@ -297,7 +296,7 @@ def test_a_schema_read_back_carries_its_column_ids() -> None:
         identifier_field_ids=[5],
     )
     field = iceberg_struct_field(schema, "Venue")
-    assert [(member.name, int(member.iceberg["field_id"])) for member in fields(field)] == [
+    assert [(member.name, int(member.iceberg["field_id"])) for member in field] == [
         ("mic", 5),
         ("venue", 9),
     ]
@@ -451,7 +450,7 @@ def _widened(leaves: int) -> Field:
     """`Wide` grown to `leaves` members, the two declared ones included."""
     source = Wide.field()
     grown = pyarrow.struct(
-        [member.into_arrow() for member in fields(source)]
+        [member.into_arrow() for member in source]
         + [pyarrow.field(f"pad{index}", pyarrow.int64()) for index in range(leaves - 2)]
     )
     return replace_field(source, dtype=grown)

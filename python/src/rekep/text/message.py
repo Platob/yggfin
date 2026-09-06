@@ -9,7 +9,7 @@ import pyarrow
 from yggdryl import scalar
 
 from rekep.convert import Convertible
-from rekep.fields import primary_key, strict_cast_batch
+from rekep.fields import derived_from, partition_key, primary_key
 from rekep.times import SHAPES, Stamp, datetime_of
 
 
@@ -26,11 +26,18 @@ class Message(Convertible):
     timestamp: datetime.datetime | None = None
     """UTC instant captured from the line header, at microsecond resolution."""
 
+    timepartition: Annotated[
+        datetime.datetime | None,
+        partition_key("hour"),
+        derived_from("timestamp"),
+    ] = None
+    """Timestamp partitioned by its UTC hour in Iceberg."""
+
     threadname: str | None = None
     """Thread spelling captured from the line header."""
 
-    plugin: str | None = None
-    """Plugin spelling captured from the line header."""
+    branch: str | None = None
+    """Branch spelling captured from the line header."""
 
     level: str | None = None
     """Severity spelling captured from the line header."""
@@ -53,11 +60,16 @@ class Message(Convertible):
             self.body = bytes(self.body)
 
     @classmethod
-    def cast_arrow_batch(cls, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
+    def apply_arrow_batch(cls, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
         """Apply the raw Message contract to one Yggdryl text batch."""
         field = cls.field()
         timestamp = field.into_arrow_schema().field("timestamp")
-        return strict_cast_batch(field, _canonical_timestamp(batch, timestamp))
+        return field.apply_arrow_batch(
+            _canonical_timestamp(batch, timestamp),
+            digest=False,
+            safe=False,
+            nullability="strict",
+        )
 
     @classmethod
     def from_text(cls, text: str | bytes, **declared: Any) -> Self:

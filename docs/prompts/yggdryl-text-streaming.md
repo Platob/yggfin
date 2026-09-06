@@ -1,6 +1,6 @@
 # Yggdryl prompt: finish compressed text streaming
 
-Start at merged main `083da992`. Keep the public Rust, Python, and JavaScript
+Start at merged main `179b34df`. Keep the public Rust, Python, and JavaScript
 shape and optimize the Rust core first.
 
 Decode every RFC 1952 gzip member in order. Replace single-member

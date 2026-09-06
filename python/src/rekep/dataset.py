@@ -13,7 +13,7 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.convert import Convertible
-from rekep.fields import Field, arrow_type, field_of, strict_cast_table
+from rekep.fields import Field, field_of
 
 #: Marker columns the key joins below carry, named like pyiceberg's reserved
 #: pair so a merge key of either name is refused with the library's own
@@ -43,9 +43,6 @@ _OVERWRITES = MappingProxyType(
         pyarrow.RecordBatch: "arrow_batch",
         pyarrow.Table: "arrow_table",
         pyarrow.RecordBatchReader: "arrow_reader",
-        Iterator: "arrow_reader",
-        list: "arrow_reader",
-        tuple: "arrow_reader",
     }
 )
 
@@ -229,7 +226,7 @@ class Dataset(Convertible, abc.ABC):
     @abc.abstractmethod
     def overwrite_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
@@ -250,9 +247,9 @@ class Dataset(Convertible, abc.ABC):
     def overwrite_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
         """Replaces the rows whose keys match and inserts the rest, whatever the shape.
 
-        A batch, a table, a reader or a plain iterator of batches each have
-        their own `overwrite_arrow_*`; this redirects to the one that fits
-        rather than making every call site branch.
+        A batch, table, or schema-bearing reader each has its own
+        `overwrite_arrow_*`; this redirects to the one that fits rather than
+        making every call site branch.
         """
         return getattr(self, f"overwrite_{self.redirect_of(source, _OVERWRITES)}")(
             source, *args, **kwargs
@@ -267,7 +264,8 @@ class Dataset(Convertible, abc.ABC):
         **kwargs: Any,
     ) -> None:
         """Replaces the rows whose keys match and inserts the rest, for one batch."""
-        self.overwrite_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
+        reader = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
+        self.overwrite_arrow_reader(reader, schema, merge_by, commit_row_size, **kwargs)
 
     def overwrite_arrow_table(
         self,
@@ -308,7 +306,7 @@ class Dataset(Convertible, abc.ABC):
     @abc.abstractmethod
     def append_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
@@ -337,7 +335,8 @@ class Dataset(Convertible, abc.ABC):
         **kwargs: Any,
     ) -> int:
         """`append_arrow_reader` for one batch."""
-        return self.append_arrow_reader(iter([batch]), schema, merge_by, commit_row_size, **kwargs)
+        reader = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
+        return self.append_arrow_reader(reader, schema, merge_by, commit_row_size, **kwargs)
 
     def append_arrow_table(
         self,
@@ -397,9 +396,10 @@ def _polars_reader(source: Any, target: Field, batch_row_size: int) -> pyarrow.R
 def _polars_table(frame: Any, target: Field, polars: Any) -> pyarrow.Table:
     """Export at the newest compatible level, then enforce the Arrow contract."""
     options = {}
-    if not _needs_compatible_polars_arrow(arrow_type(target)):
+    if not _needs_compatible_polars_arrow(target.dtype.into_arrow()):
         options["compat_level"] = polars.CompatLevel.newest()
-    return strict_cast_table(target, frame.to_arrow(**options))
+    source = frame.to_arrow(**options).to_reader()
+    return target.apply_arrow_reader(source, safe=False, nullability="strict").read_all()
 
 
 def _needs_compatible_polars_arrow(dtype: pyarrow.DataType) -> bool:

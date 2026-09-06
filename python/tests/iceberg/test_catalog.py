@@ -8,7 +8,7 @@ import pyarrow.fs
 import pytest
 
 from rekep import Convertible, scalar
-from rekep.fields import field_names, primary_key
+from rekep.fields import primary_key
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.catalog import PYARROW_FILE_IO
 from rekep.iceberg.file_io import IcebergFileIO
@@ -390,7 +390,7 @@ def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
     found = {dataset.name for dataset in catalog.datasets("trading")}
     assert found == {"quotes", "ticks"}
     for dataset in catalog.datasets("trading"):
-        assert field_names(dataset.into_struct_field()) == ["symbol", "size"]
+        assert [member.name for member in dataset.into_struct_field()] == ["symbol", "size"]
 
 
 def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:

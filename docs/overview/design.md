@@ -23,7 +23,7 @@ memory.
 
 ## Keep ownership narrow
 
-- Yggdryl owns filesystems, byte streams, compression, text media, and fields.
+- Yggdryl owns filesystems, byte streams, compression, text media, FIX, and fields.
 - Arrow owns columnar kernels and schema casts.
 - PyIceberg owns tables, snapshots, planning, and commits.
 - Rekep owns the `Message` contract and the small seam between those systems.
@@ -31,10 +31,12 @@ memory.
 ## Refuse ambiguity
 
 Missing required columns, nulls in non-null fields, invalid merge keys, and
-unresolved resources fail at their boundary. Rekep's strict preflight remains
-small until Yggdryl exposes the same opt-in nullability policy natively.
+unresolved resources fail at their boundary. Yggdryl's strict native apply
+policy owns Arrow casts, declared derivations, nullability checks, and full
+error paths.
 
 ## Keep orchestration outside the package
 
-`tasks/parse_messages/` contains the Marimo application and its JSON input.
-Package code contains reusable models and storage behavior only.
+`tasks/parse_messages/` and `tasks/parse_fix/` contain the Marimo applications
+and their JSON inputs. Package code contains reusable models and storage
+behavior only.

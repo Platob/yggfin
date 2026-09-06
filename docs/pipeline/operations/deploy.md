@@ -47,3 +47,9 @@ pip install "rekep[glue]"
 Omit `glue.id` unless the catalog belongs to another AWS account. Configure
 KMS encryption on the bucket; per-request `s3.sse.*` properties are not
 supported by this boundary.
+
+`fix.messages` is created by `parse_fix` on its first run. Its field depends on
+the selected Yggdryl registry, so the static raw-table deployment command does
+not invent it ahead of that native reader. Install or name a non-empty registry
+before the first run and keep it stable; schema changes are explicit table
+migrations.

@@ -104,7 +104,7 @@ def _(
     reports = {}
     # `stage` is a ref so the opening record precedes the per-table ones.
     for _dataset in store.datasets(namespace):
-        reports[_dataset.name] = _dataset.optimize(
+        reports[_dataset.identifier] = _dataset.optimize(
             branch=branch,
             min_files=min_files,
             retain=retain,

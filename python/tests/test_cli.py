@@ -8,7 +8,7 @@ import pyarrow
 import pytest
 
 from rekep import Field, cli
-from rekep.fields import field_names, field_of
+from rekep.fields import field_of
 
 
 def run(*argv: str) -> int:
@@ -96,7 +96,7 @@ def test_dump_takes_a_plain_dataclass(capsysbinary: pytest.CaptureFixture) -> No
     """The CLI projects an undecorated dataclass through the same field adapter."""
     assert run("fields", "dump", "--pyclass", "tests.test_cli:Venue") == 0
     dumped = Field.from_json(capsysbinary.readouterr().out.decode())
-    assert field_names(dumped) == ["mic", "country"]
+    assert [member.name for member in dumped] == ["mic", "country"]
     assert dumped.field("country").nullable is True
 
 

@@ -7,7 +7,6 @@ import pytest
 
 from rekep import cli
 from rekep.deploy import TABLES, deploy
-from rekep.fields import field_names
 from rekep.iceberg import IcebergCatalog
 
 from .conftest import catalog_properties
@@ -27,7 +26,9 @@ def test_every_declared_table_builds_the_shape_it_names() -> None:
         assert field.name == shape.table
         assert "." in shape.table
         for column in shape.sort_by or ():
-            assert column in field_names(field), f"{shape.table} sorts by a column it has not got"
+            assert column in [member.name for member in field], (
+                f"{shape.table} sorts by a column it has not got"
+            )
 
 
 def test_pipeline_tables_do_not_prescribe_a_physical_sort() -> None:

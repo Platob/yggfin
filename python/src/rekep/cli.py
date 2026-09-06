@@ -17,7 +17,7 @@ from typing import Any
 from rekep import __version__
 from rekep.console import Console
 from rekep.deploy import TABLES, deploy
-from rekep.fields import Field, arrow_type, field_of, fields
+from rekep.fields import Field, field_of
 from rekep.iceberg import IcebergCatalog, partition_keys, primary_keys
 from rekep.logs import COMMAND_LEVEL, Stage, configure
 from rekep.resources import read_bytes, resource
@@ -89,8 +89,8 @@ def load(arguments: argparse.Namespace) -> int:
     shape = Field.from_json(read_bytes(arguments.target).decode())
     schema = shape.into_arrow_schema()
     print(f"{shape.name or '<unnamed>'}: {len(schema.names)} columns, builds")
-    for member in fields(shape):
-        print(f"  {member.name}: {arrow_type(member)}{_marks(member)}")
+    for member in shape:
+        print(f"  {member.name}: {member.dtype.into_arrow()}{_marks(member)}")
     if shape.dtype.id == "struct":
         print(f"  primary keys: {primary_keys(shape) or '-'}")
         print(f"  partition keys: {partition_keys(shape) or '-'}")

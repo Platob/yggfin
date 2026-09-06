@@ -32,6 +32,7 @@ For AWS S3, set `filesystem` to
 
 ```bash
 rekep task run tasks/parse_messages/parse_messages.json
+rekep task run tasks/parse_fix/parse_fix.json
 ```
 
 The task recursively reads every supported text leaf beneath `filesystem`,
@@ -40,11 +41,15 @@ Replaying the same source skips its `(url, rownum)` keys.
 
 ```text
 IOBase / TextOptions -> Message batches -> logs.messages
+logs.messages -> Yggdryl FIX reader -> fix.messages
 ```
 
-The legacy Rekep FIX registry, parser, market models, tasks, contracts, tests,
-and benchmarks have been removed. A later change can rebuild that layer
-directly on `yggdryl.fix`; it must not restore the deleted compatibility stack.
+`parse_fix` reads the stored binary bodies through Yggdryl's native FIX reader.
+It preserves source identity, streams the registry-typed Arrow rows into
+`fix.messages`, and introduces no Rekep FIX registry, parser, or row model.
+The generated [`FixMsg` schema snapshot](schemas/rekep/fix-message.json) can be
+loaded with `Field.from_json` for schema review and mock Iceberg writes without
+parsing input.
 
 Development:
 

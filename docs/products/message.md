@@ -14,7 +14,7 @@ row = Message.from_text(
     rownum=17,
     timestamp="2026-01-01 10:00:00.123_456",
     threadname="reader",
-    plugin="venue",
+    branch="venue",
     level="INFO",
 )
 
@@ -33,12 +33,15 @@ assert row.timestamp == datetime.datetime(
 | `url` | URI reported by Yggdryl for the source object |
 | `rownum` | 1-based physical row number in that object |
 | `timestamp` | nullable Arrow `timestamp[us, UTC]`; an offset-free header means UTC |
+| `timepartition` | `timestamp[us, UTC]` copied from `timestamp`; Iceberg partitions it with the `hour` transform |
 | `threadname` | thread text captured from the header |
-| `plugin` | plugin text captured from the header |
+| `branch` | branch text captured from the header |
 | `level` | severity text captured from the header |
 | `body` | bytes after the matched header prefix |
 
-`url` and `rownum` form the Iceberg merge key. Header captures are
+`url` and `rownum` form the Iceberg merge key. `timepartition` is nullable
+because its source is nullable. Yggdryl derives it during Arrow application;
+PyIceberg applies the UTC hourly partition transform. Other header captures are
 nullable because a line may not match the configured expression.
 
 ## Text source
@@ -58,3 +61,7 @@ The task passes the URI to `IOBase.from_uri`. `TextOptions` enables row numbers,
 applies `rekep.times.MESSAGE_HEADER`, disables general type guessing, and leaves
 Yggdryl to traverse and decompress the selected text resources. The Message
 boundary alone normalizes a matched timestamp to UTC microseconds.
+
+The downstream [`parse_fix`](../pipeline/tasks/parse-fix.md) task interprets
+`body` through Yggdryl while preserving this row's source identity and header
+columns.

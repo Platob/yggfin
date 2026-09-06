@@ -49,21 +49,20 @@ dev = [
     "ruff>=0.6",
     "rekep[iceberg,polars]",
 ]
-# What `rekep task run` needs on the machine to execute a task document:
-# Marimo imports the application and runs its cells, and Glue is the catalog a
-# production warehouse is behind. Nothing here is imported by `src/` -- a task
-# is a job, not a feature of the package -- so it is a group rather than an
-# extra, installed with `uv sync --locked --group runner`.
+# What either task runner needs to execute a Marimo document: Marimo imports
+# the application and runs its cells, and Glue is the catalog a production
+# warehouse is behind. Nothing here is imported by `src/` -- a task is a job,
+# not a feature of the package -- so it is a group rather than an extra.
 runner = [
     "marimo>=0.16,<1",
     "rekep[glue,iceberg,polars]",
 ]
 # What the Airflow DAG and its operator are tested against. Airflow is an
 # orchestrator this repository is deployed into, never a runtime dependency of
-# `rekep`, so it stays out of every extra and out of `runner`: a task worker
-# runs `rekep task run` and imports none of this. Airflow runs on POSIX only,
-# so the marker keeps CI's Windows leg syncable and the tests skip themselves
-# there through `pytest.importorskip`.
+# `rekep`, so it stays out of every extra and out of `runner`: the operator
+# launches the standalone Marimo runner under that group. Airflow runs on POSIX
+# only, so the marker keeps CI's Windows leg syncable and the tests skip
+# themselves there through `pytest.importorskip`.
 airflow = [
     "apache-airflow>=3.0,<4; sys_platform != 'win32'",
     "apache-airflow-providers-standard>=1.0,<2; sys_platform != 'win32'",
@@ -83,7 +82,7 @@ bench = [
 default-groups = ["dev", "runner", "airflow"]
 
 [tool.uv.sources]
-yggdryl = { git = "https://github.com/Platob/yggdryl", rev = "083da9924beb1ca6edbdcda0bd725e447876ed16", subdirectory = "python" }
+yggdryl = { git = "https://github.com/Platob/yggdryl", rev = "c9c84b24722354c31710a213b4618cb30ca98fd1", subdirectory = "python" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

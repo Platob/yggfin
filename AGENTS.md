@@ -15,7 +15,8 @@ behavior.
 ## Ownership
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
-  streams, codecs, decompression, text media, and general FIX primitives.
+  streams, codecs, decompression, text media, FIX registries, and FIX batch
+  parsing.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
 - Yggfin owns the raw `Message` contract and its narrow PyArrow/PyIceberg seam.
@@ -23,7 +24,6 @@ behavior.
   registry in yggfin.
 
 The deleted Rekep FIX and market implementation is not a compatibility target.
-Use `docs/prompts/yggdryl-fix-refactor.md` for the next vertical slice.
 
 ## Fields and Arrow
 
@@ -32,8 +32,7 @@ Use `docs/prompts/yggdryl-fix-refactor.md` for the next vertical slice.
 - Arrow schema metadata is authoritative; portable JSON derives from it.
 - Use Yggdryl `Field.apply_arrow_*` at producer and consumer boundaries so
   cast, derived partitions, and digests run in their native order.
-- Keep Rekep strict preflight limited to missing or null non-null fields until
-  Yggdryl exposes the same opt-in policy.
+- Use Yggdryl's strict nullability policy directly at every Arrow boundary.
 - Do not use Python row loops for Arrow shape conversion.
 
 ## Resources and text
@@ -71,12 +70,16 @@ Use `docs/prompts/yggdryl-fix-refactor.md` for the next vertical slice.
 The supported graph is:
 
 ```text
-filesystem URI -> parse_messages -> logs.messages
+filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 ```
 
-`tasks/parse_messages/` contains the Marimo application beside its JSON
-document. The application passes `filesystem` to `IOBase.from_uri`, applies
-`Message.field()` to each batch, and writes the iterator directly to Iceberg.
+Each task directory contains one Marimo application beside its JSON document.
+`parse_messages` passes `filesystem` to `IOBase.from_uri`, applies
+`Message.field()` to each batch, and writes one schema-bearing reader directly
+to Iceberg. `parse_fix` passes that stored reader through Yggdryl's native FIX
+Arrow reader and writes its registry-defined schema without a yggfin FIX model.
+Airflow launches the adjacent standalone runner through the locked `uv`
+`runner` group; the operator never calls the Rekep CLI.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
@@ -95,12 +98,14 @@ on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
 
 ```text
 python/src/rekep/
-  fields/       native Field helpers and strict Arrow boundary checks
+  fields/       native Field metadata helpers
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
   tasks/        application configuration only
   text/         raw Message declaration
   resources.py  Yggdryl binding and required byte reads
 tasks/
+  airflow/
+  parse_fix/
   parse_messages/
   optimize_iceberg/
 schemas/rekep/message.json

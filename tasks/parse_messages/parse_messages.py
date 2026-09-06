@@ -8,6 +8,7 @@ with app.setup:
     from contextlib import ExitStack
 
     import marimo as mo
+    import pyarrow
     from yggdryl import IOBase, TextOptions
 
     from rekep.iceberg import IcebergCatalog
@@ -76,11 +77,16 @@ def _(catalog, filesystem, records):
 
         def _batches():
             for batch in reader:
-                parsed = Message.cast_arrow_batch(batch)
+                parsed = Message.apply_arrow_batch(batch)
                 counts["read"] += parsed.num_rows
                 yield parsed
 
-        written = messages.append_arrow_reader(_batches(), field, merge_by=True)
+        parsed = pyarrow.RecordBatchReader.from_batches(
+            field.into_arrow_schema(),
+            _batches(),
+        )
+        opened.callback(parsed.close)
+        written = messages.append_arrow_reader(parsed, field, merge_by=True)
         _outcome = stage.finished(read=counts["read"], written=written)
     outcome = _outcome
     return (outcome,)

@@ -228,7 +228,7 @@ MESSAGE_HEADER = (
     r"^[ \t]*"
     rf"(?P<timestamp>{_MESSAGE_TIMESTAMP})[ \t]+"
     r"\[(?P<threadname>[^]]*)\][ \t]+"
-    r"\[(?P<plugin>[^]]*)\][ \t]*"
+    r"\[(?P<branch>[^]]*)\][ \t]*"
     r"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
 )
 """Default yggdryl row-header expression for physical message records."""

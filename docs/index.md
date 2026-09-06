@@ -24,6 +24,7 @@ pip install "rekep[iceberg]"
 
 ```bash
 rekep task run tasks/parse_messages/parse_messages.json
+rekep task run tasks/parse_fix/parse_fix.json
 ```
 
 ```mermaid
@@ -31,12 +32,14 @@ flowchart LR
     S[filesystem URI] --> Y[yggdryl IOBase / TextOptions]
     Y --> M[Message batches]
     M --> I[(logs.messages)]
+    I --> F[yggdryl FIX reader]
+    F --> O[(fix.messages)]
 ```
 
 The task accepts one filesystem URI. Yggdryl owns binding, recursive discovery,
-decompression, header capture, and physical-line batches. Rekep strictly applies
-those batches to the native Yggdryl `Message.field()` and writes them through
-the PyIceberg boundary.
+decompression, header capture, and physical-line batches. Rekep uses Yggdryl's
+strict native `Field.apply_arrow_*` boundary to cast each batch, derive its
+partition column, and write the stream through PyIceberg.
 
 ```python
 from rekep import Field, Message
@@ -46,6 +49,7 @@ assert Field is YggdrylField
 print(Message.field().into_arrow_schema())
 ```
 
-The checked contract is [`schemas/rekep/message.json`](contracts/index.md).
-The removed Rekep FIX and market implementation is intentionally deferred to a
-separate refactor built directly on `yggdryl.fix`.
+The checked raw contract is
+[`schemas/rekep/message.json`](contracts/index.md). `parse_fix` derives its
+registry-dependent output contract from Yggdryl's native reader instead of
+checking in a second FIX schema.

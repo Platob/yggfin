@@ -40,6 +40,14 @@ def test_false_partition_and_sort_annotations_are_unset() -> None:
     assert not built.iceberg.get("sort_key")
 
 
+def test_identity_partitions_use_the_native_field_projection() -> None:
+    member = Field.from_pyhint("value", Annotated[str, partition_key()])
+    root = Field.from_arrow_schema(pyarrow.schema([member.into_arrow()]), "Row")
+
+    assert root.partition_field_names == ["value"]
+    assert partition_keys(root) == {"value": "identity"}
+
+
 @pytest.mark.parametrize(
     "declaration",
     [

@@ -18,13 +18,10 @@ print(iceberg_schema(field))
 print(polars.from_arrow(arrow.empty_table()))
 ```
 
-Yggdryl emits `RecordBatch` objects. Rekep checks required values, then the
-native `Field` casts and applies any declared partition and digest columns;
-PyIceberg accepts the resulting Arrow stream. No row model or project
-filesystem sits between those boundaries.
-
-The remaining strict-preflight behavior belongs upstream; its exact target is
-the [strict cast prompt](../prompts/yggdryl-strict-arrow-cast.md).
+Yggdryl emits `RecordBatch` objects. Its native `Field` validates, casts, and
+applies any declared partition and digest columns; PyIceberg accepts the
+resulting Arrow stream. No row model, project cast layer, or project filesystem
+sits between those boundaries.
 
 Arrow does not make every hand-off zero-copy. Compatible in-process buffers can
 be shared, while Iceberg and encoded files necessarily read or write storage.

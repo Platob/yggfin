@@ -1,4 +1,4 @@
-"""The two retained Marimo applications this repository schedules.
+"""The retained Marimo applications this repository schedules.
 
 An application is a job, not a feature of the package, so what is pinned here
 is the contract the runner holds it to: it exports an `app`, its
@@ -21,9 +21,10 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "tasks"
 
-#: Message ingestion and generic Iceberg maintenance.
+#: Text ingestion, native FIX parsing, and generic Iceberg maintenance.
 NAMES = (
     "optimize_iceberg",
+    "parse_fix",
     "parse_messages",
 )
 

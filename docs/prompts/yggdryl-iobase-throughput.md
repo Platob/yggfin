@@ -1,6 +1,6 @@
 # Yggdryl prompt: remove IOBase transfer bottlenecks
 
-Start at merged main `083da992`. Optimize Rust first, then keep Python and
+Start at merged main `179b34df`. Optimize Rust first, then keep Python and
 JavaScript thin. Preserve injected Arrow filesystem identity, opaque paths,
 lazy construction, missing-as-empty reads, sticky first errors, and close-once
 behavior. Add no filesystem or compatibility layer.

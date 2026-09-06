@@ -85,7 +85,7 @@ def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
     reader = source.read_arrow_reader(options=OPTIONS)
     try:
         for batch in reader:
-            yield Message.cast_arrow_batch(batch)
+            yield Message.apply_arrow_batch(batch)
     finally:
         reader.close()
         source.close()
@@ -119,11 +119,13 @@ def first_batch(case: Case) -> int:
 
 def expected(index: int) -> dict[str, object]:
     """The endpoint values independent of the resource's diagnostic URL."""
+    instant = datetime_of(timestamp(index))
     return {
         "rownum": index + 1,
-        "timestamp": datetime_of(timestamp(index)),
+        "timestamp": instant,
+        "timepartition": instant,
         "threadname": f"worker-{index % 16}",
-        "plugin": f"feed-{index % 4}",
+        "branch": f"feed-{index % 4}",
         "level": "WARN" if index % 7 == 0 else "INFO",
         "body": body(index),
     }
@@ -204,9 +206,9 @@ def sweep(rows: int, repeat: int) -> None:
 
 
 def main() -> int:
-    options = parser(__doc__, rows=100_000, repeat=3)
+    options = parser(__doc__, rows=70_000, repeat=2)
     arguments = options.parse_args()
-    rows = 10_000 if arguments.quick else arguments.rows
+    rows = 2_000 if arguments.quick else arguments.rows
     repeat = 1 if arguments.quick else arguments.repeat
     if rows <= 0:
         options.error("--rows must be positive")

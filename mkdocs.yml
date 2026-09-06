@@ -49,20 +49,23 @@ nav:
       - Raw record: products/message.md
       - Field contract: contracts/types.md
       - Portable schema: contracts/index.md
+      - FIX registry browser (tool): tools/fix-registry.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md
   - Pipeline:
       - Overview: pipeline/index.md
       - Parse messages: pipeline/tasks/parse-messages.md
+      - Parse FIX: pipeline/tasks/parse-fix.md
       - Run: pipeline/operations/run.md
       - Deploy: pipeline/operations/deploy.md
       - Logs: pipeline/operations/logs.md
   - Next work:
       - Yggdryl text streaming: prompts/yggdryl-text-streaming.md
       - Yggdryl IOBase throughput: prompts/yggdryl-iobase-throughput.md
-      - Yggdryl strict casts: prompts/yggdryl-strict-arrow-cast.md
-      - Yggdryl FIX vertical slice: prompts/yggdryl-fix-refactor.md
+      - Yggdryl Arrow apply: prompts/yggdryl-arrow-apply.md
+      - Yggdryl FIX Arrow throughput: prompts/yggdryl-fix-arrow-throughput.md
+      - Yggdryl FIX schema bindings: prompts/yggdryl-fix-schema-bindings.md
 
 validation:
   links:

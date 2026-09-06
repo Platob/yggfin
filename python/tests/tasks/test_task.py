@@ -15,9 +15,10 @@ ROOT = Path(__file__).resolve().parents[3]
 #: Every job this repository schedules, as the document that configures it.
 DOCUMENTS = sorted((ROOT / "tasks").glob("*/*.json"))
 
-#: Message ingestion and generic Iceberg maintenance.
+#: Text ingestion, native FIX parsing, and generic Iceberg maintenance.
 NAMES = (
     "optimize_iceberg",
+    "parse_fix",
     "parse_messages",
 )
 
@@ -48,6 +49,8 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
     assert "catalog" in parameters
     if document.stem == "parse_messages":
         assert set(parameters) == {"filesystem", "catalog"}
+    elif document.stem == "parse_fix":
+        assert set(parameters) == {"registry", "catalog"}
     else:
         assert "log_level" in parameters
 
@@ -113,7 +116,7 @@ def test_native_nested_values_survive_the_document(tmp_path: Path) -> None:
                     "name": "rekep",
                     "properties": {"type": "sql", "uri": "sqlite:///data/catalog.db"},
                 },
-                "plugin_keys": {"XmlApi": {"clientid": "ClOrdID"}},
+                "branch_keys": {"XmlApi": {"clientid": "ClOrdID"}},
             },
         },
     )
@@ -125,7 +128,7 @@ def test_native_nested_values_survive_the_document(tmp_path: Path) -> None:
     assert parameters["commit_batch_num"] == 8
     assert parameters["null_values"] == ["", "null"]
     assert parameters["catalog"]["properties"]["uri"] == "sqlite:///data/catalog.db"
-    assert parameters["plugin_keys"] == {"XmlApi": {"clientid": "ClOrdID"}}
+    assert parameters["branch_keys"] == {"XmlApi": {"clientid": "ClOrdID"}}
 
 
 def test_an_application_outside_the_task_directory_is_refused(tmp_path: Path) -> None:

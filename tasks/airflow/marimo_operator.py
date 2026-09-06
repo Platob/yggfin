@@ -18,8 +18,7 @@ from airflow.sdk.exceptions import AirflowException
 if TYPE_CHECKING:
     from airflow.sdk import Asset, Context
 
-#: The dependency group holding what a task application imports. `uv` installs
-#: it from the lock; nothing resolves while a task runs.
+#: The locked dependency group imported by task applications.
 GROUP = "runner"
 
 #: Interval bounds, and the parameter each fills. A task that declares neither
@@ -32,12 +31,11 @@ UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 class MarimoOperator(BaseOperator):
-    """Run one task document's Marimo application in the locked uv environment.
+    """Run one task document's Marimo application in an isolated child.
 
-    The child is `rekep task run`, which is what a person runs locally, so a
-    laptop and a worker differ in nothing but the machine. Airflow supplies
-    what only a scheduler knows -- the declared Params and the data interval --
-    and gets back the one small result mapping the task returned.
+    The child is the adjacent standalone runner, not the Rekep CLI. Airflow
+    supplies what only a scheduler knows -- declared Params and the data
+    interval -- and gets back the one small result mapping the task returned.
     """
 
     template_fields: ClassVar[tuple[str, ...]] = (
@@ -111,7 +109,7 @@ class MarimoOperator(BaseOperator):
             self.hook = None
 
     def on_kill(self) -> None:
-        """Stop the child process group: uv, the interpreter, and the task."""
+        """Stop the child process group running the application."""
         if self.hook is not None:
             self.hook.send_sigterm()
 
@@ -138,13 +136,10 @@ class MarimoOperator(BaseOperator):
         return parameters
 
     def _argv(self, repository: Path, document: Path, parameters: Path, result: Path) -> list[str]:
-        """The command, as a list: nothing here reaches a shell.
-
-        `--no-sync --offline` because the environment is the deployment's, made
-        once from the lock with `uv sync --locked --group runner`. A task never
-        resolves a dependency, reaches an index, or writes to the environment
-        it runs in.
-        """
+        """The locked offline runner command, as a list: nothing reaches a shell."""
+        runner = repository / "tasks" / "airflow" / "marimo_runner.py"
+        if not runner.is_file():
+            raise AirflowException(f"{runner} is not a Marimo runner")
         return [
             "uv",
             "run",
@@ -157,9 +152,8 @@ class MarimoOperator(BaseOperator):
             "--no-progress",
             "--no-env-file",
             "--",
-            "rekep",
-            "task",
-            "run",
+            "python",
+            str(runner),
             str(document),
             "--parameters-file",
             str(parameters),

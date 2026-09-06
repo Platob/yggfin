@@ -20,9 +20,7 @@ from rekep.fields import (
     FIELD_ID,
     SORT_ORDER,
     Field,
-    arrow_type,
     field_of,
-    fields,
     replace_field,
 )
 from rekep.require import require
@@ -47,7 +45,7 @@ def primary_keys(source: Field) -> list[str]:
     """Top-level identifier columns in declaration order."""
     keys = [
         member
-        for member in fields(source)
+        for member in source
         if str(member.iceberg.get("primary_key") or "").casefold() == "true"
     ]
     nullable = [member.name for member in keys if member.nullable]
@@ -58,14 +56,15 @@ def primary_keys(source: Field) -> list[str]:
 
 def partition_keys(source: Field) -> dict[str, str]:
     """Top-level partition columns mapped to their transforms."""
+    identities = set(source.partition_field_names)
     declared = {}
-    for member in fields(source):
+    for member in source:
         transform = _enabled(member.iceberg.get("partition_key"))
-        if member.is_partition and transform:
+        if member.name in identities and transform:
             raise ValueError(
                 f"partition column {member.name!r} declares both identity and {transform!r}"
             )
-        if member.is_partition:
+        if member.name in identities:
             declared[member.name] = "identity"
         elif transform:
             declared[member.name] = transform
@@ -77,7 +76,7 @@ def sort_keys(source: Field) -> dict[str, str]:
     encoded = source.metadata.get(SORT_ORDER)
     declared = {
         member.name: direction
-        for member in fields(source)
+        for member in source
         if (direction := _enabled(member.iceberg.get("sort_key")))
     }
     if not encoded:
@@ -97,7 +96,7 @@ def derived_keys(source: Field) -> dict[str, tuple[str, ...]]:
     """Top-level derived columns mapped to their source columns."""
     return {
         member.name: tuple(sources)
-        for member in fields(source)
+        for member in source
         if (sources := member.partition.sources) is not None
     }
 
@@ -217,7 +216,7 @@ def iceberg_struct_field(
 
     arrow = _described(narrowed(schema_to_pyarrow(schema, include_field_ids=True)))
     field = field_of(arrow, name)
-    members = {member.name: member for member in fields(field)}
+    members = {member.name: member for member in field}
     for field_id in schema.identifier_field_ids:
         column = schema.find_column_name(field_id)
         if column and "." not in column:  # a nested key is Iceberg's, not a column here
@@ -481,9 +480,10 @@ def metrics_for(source: Field) -> dict[str, str]:
         **dict.fromkeys(primary_keys(source), ""),
     }
     properties = {
-        f"{COLUMN_METRICS}.{name}": _mode(arrow_type(source.field(name))) for name in declared
+        f"{COLUMN_METRICS}.{name}": _mode(source.field(name).dtype.into_arrow())
+        for name in declared
     }
-    counted = len(_leaves(arrow_type(source)))
+    counted = len(_leaves(source.dtype.into_arrow()))
     if counted > DEFAULT_INFERRED:
         properties[INFERRED_METRICS] = str(min(counted, MAX_INFERRED))
     return properties

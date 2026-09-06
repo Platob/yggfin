@@ -42,6 +42,24 @@
         }
       },
       {
+        "name": "timepartition",
+        "dtype": {
+          "type": "datetime64",
+          "unit": "microsecond",
+          "timezone": "UTC"
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "Timestamp partitioned by its UTC hour in Iceberg.",
+          "iceberg:partition_key": "hour",
+          "partition:sources": "[\"timestamp\"]",
+          "python.class": "datetime",
+          "python.kind": "class",
+          "python.module": "datetime",
+          "python.qualname": "datetime"
+        }
+      },
+      {
         "name": "threadname",
         "dtype": {
           "type": "utf8"
@@ -52,13 +70,13 @@
         }
       },
       {
-        "name": "plugin",
+        "name": "branch",
         "dtype": {
           "type": "utf8"
         },
         "nullable": true,
         "metadata": {
-          "description": "Plugin spelling captured from the line header."
+          "description": "Branch spelling captured from the line header."
         }
       },
       {

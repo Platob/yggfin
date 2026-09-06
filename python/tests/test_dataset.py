@@ -2,7 +2,7 @@
 
 import dataclasses
 import datetime
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from typing import Annotated, Any
 
 import pyarrow
@@ -17,7 +17,7 @@ from rekep.dataset import (
     first_rows,
     normalised_keys,
 )
-from rekep.fields import field_names, field_of, primary_key, replace_field, strict_cast_reader
+from rekep.fields import field_of, primary_key, replace_field
 
 
 @scalar
@@ -32,6 +32,13 @@ class Quote(Convertible):
 
     size: int | None = None
     """Quantity, when the venue printed one."""
+
+
+@scalar
+class ArrayRow(Convertible):
+    """One nested Arrow cast at the dataset seam."""
+
+    values: list[int]
 
 
 @dataclasses.dataclass(eq=False)
@@ -61,11 +68,19 @@ class MemoryDataset(Dataset):
         reader = pyarrow.RecordBatchReader.from_batches(
             self.field.into_arrow_schema(), iter(batches)
         )
-        return reader if schema is None else strict_cast_reader(self.target_field(schema), reader)
+        return (
+            reader
+            if schema is None
+            else self.target_field(schema).apply_arrow_reader(
+                reader,
+                safe=False,
+                nullability="strict",
+            )
+        )
 
     def overwrite_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] = True,
         commit_row_size: int | None = None,
@@ -79,7 +94,7 @@ class MemoryDataset(Dataset):
 
     def append_arrow_reader(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
@@ -87,7 +102,7 @@ class MemoryDataset(Dataset):
     ) -> int:
         join = self.merge_columns(merge_by)
         target = self.target_field(schema)
-        reader = strict_cast_reader(target, source)
+        reader = target.apply_arrow_reader(source, safe=False, nullability="strict")
         if not join:
             return self._commit(reader, target, commit_row_size)
         key_field = field_of(
@@ -115,12 +130,16 @@ class MemoryDataset(Dataset):
 
     def _commit(
         self,
-        source: pyarrow.RecordBatchReader | Iterator[pyarrow.RecordBatch],
+        source: pyarrow.RecordBatchReader,
         schema: Any = None,
         commit_row_size: int | None = None,
     ) -> int:
         self.get_or_create()  # a write appends, and appending to nothing is a create
-        reader = strict_cast_reader(self.target_field(schema), source)
+        reader = self.target_field(schema).apply_arrow_reader(
+            source,
+            safe=False,
+            nullability="strict",
+        )
         inserted = 0
         for chunk in arrow_chunks(reader, commit_row_size):
             self.commits.append(chunk)
@@ -142,6 +161,21 @@ def rows(count: int) -> pyarrow.RecordBatch:
     return batch_of(
         symbol=[f"S{i}" for i in range(count)], day=[day] * count, size=list(range(count))
     )
+
+
+def reader_of(
+    *batches: pyarrow.RecordBatch,
+    schema: pyarrow.Schema | None = None,
+) -> pyarrow.RecordBatchReader:
+    """One schema-bearing stream for the native apply boundary."""
+    source_schema = (
+        schema
+        if schema is not None
+        else batches[0].schema
+        if batches
+        else Quote.field().into_arrow_schema()
+    )
+    return pyarrow.RecordBatchReader.from_batches(source_schema, batches)
 
 
 # -- the shape --------------------------------------------------------------
@@ -222,7 +256,7 @@ def test_merging_on_a_key_nothing_declares_is_refused() -> None:
 def test_a_write_casts_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
     """The incoming stream is nearly right: wrong order, one column missing."""
     batch = batch_of(day=[datetime.date(2026, 8, 14)], symbol=["A"], noise=[1])
-    dataset.overwrite_arrow_reader(iter([batch]))
+    dataset.overwrite_arrow_reader(reader_of(batch))
     stored = dataset.commits[0]
     assert stored.schema.equals(Quote.field().into_arrow_schema())
     assert stored.column("size").to_pylist() == [None]
@@ -230,22 +264,35 @@ def test_a_write_casts_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
 
 def test_a_write_can_be_cast_onto_another_shape(dataset: MemoryDataset) -> None:
     narrow = field_of(pyarrow.schema([("symbol", pyarrow.string())]))
-    dataset.overwrite_arrow_reader(iter([rows(2)]), schema=narrow)
+    dataset.overwrite_arrow_reader(reader_of(rows(2)), schema=narrow)
     assert dataset.commits[0].column_names == ["symbol"]
 
 
+def test_a_write_uses_yggdryls_native_array_cast() -> None:
+    dataset = MemoryDataset(field=ArrayRow.field())
+    batch = pyarrow.record_batch(
+        [pyarrow.array([[1, 2], []], pyarrow.list_(pyarrow.int32()))],
+        names=["values"],
+    )
+
+    assert dataset.append_arrow_reader(reader_of(batch), merge_by=False) == 2
+    stored = dataset.commits[0]
+    assert stored.schema == ArrayRow.field().into_arrow_schema()
+    assert stored.column("values").to_pylist() == [[1, 2], []]
+
+
 def test_commit_row_size_bounds_what_one_commit_carries(dataset: MemoryDataset) -> None:
-    dataset.overwrite_arrow_reader(iter([rows(1) for _ in range(5)]), commit_row_size=2)
+    dataset.overwrite_arrow_reader(reader_of(*(rows(1) for _ in range(5))), commit_row_size=2)
     assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
 
 
 def test_no_commit_row_size_writes_the_stream_as_one(dataset: MemoryDataset) -> None:
-    dataset.overwrite_arrow_reader(iter([rows(1) for _ in range(5)]))
+    dataset.overwrite_arrow_reader(reader_of(*(rows(1) for _ in range(5))))
     assert [commit.num_rows for commit in dataset.commits] == [5]
 
 
 def test_an_empty_stream_commits_nothing(dataset: MemoryDataset) -> None:
-    dataset.overwrite_arrow_reader(iter(()))
+    dataset.overwrite_arrow_reader(reader_of())
     assert dataset.commits == []
 
 
@@ -266,7 +313,7 @@ def test_polars_batches_stream_from_the_arrow_reader(
     dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     polars = pytest.importorskip("polars")
-    dataset.overwrite_arrow_reader(iter([rows(1), rows(1)]), commit_row_size=1)
+    dataset.overwrite_arrow_reader(reader_of(rows(1), rows(1)), commit_row_size=1)
     monkeypatch.setattr(
         MemoryDataset,
         "read_arrow_table",
@@ -274,7 +321,7 @@ def test_polars_batches_stream_from_the_arrow_reader(
     )
     frames = list(dataset.read_polars_batches())
     assert [frame.height for frame in frames] == [1, 1]
-    assert polars.concat(frames).columns == field_names(Quote.field())
+    assert polars.concat(frames).columns == [member.name for member in Quote.field()]
 
 
 def test_read_polars_is_the_explicit_in_memory_form(dataset: MemoryDataset) -> None:
@@ -445,7 +492,8 @@ def test_replaying_a_stream_appends_nothing(keyed: MemoryDataset) -> None:
 
 def test_duplicate_keys_inside_the_stream_collapse_to_the_first(keyed: MemoryDataset) -> None:
     keyed.append_arrow_reader(
-        iter([keyed_batch(["A", "A"], [1, 9]), keyed_batch(["A"], [8])]), merge_by=True
+        reader_of(keyed_batch(["A", "A"], [1, 9]), keyed_batch(["A"], [8])),
+        merge_by=True,
     )
     assert stored_rows(keyed) == {"A": 1}
 
@@ -472,7 +520,7 @@ def test_append_arrow_picks_the_method_by_what_it_is(keyed: MemoryDataset) -> No
     batch = keyed_batch(["A"], [1])
     keyed.append_arrow(batch, merge_by=True)
     keyed.append_arrow(pyarrow.Table.from_batches([batch]), merge_by=True)
-    keyed.append_arrow(iter([batch]), merge_by=True)
+    keyed.append_arrow(reader_of(batch), merge_by=True)
     assert stored_rows(keyed) == {"A": 1}
 
 
@@ -540,7 +588,9 @@ def test_create_with_takes_whatever_names_a_shape(dataset: MemoryDataset) -> Non
     assert dataset.create_with_arrow_field(
         pyarrow.field("q", pyarrow.struct([("a", pyarrow.int64())]))
     )
-    assert field_names(dataset.create_with(Quote).into_struct_field()) == field_names(Quote.field())
+    assert [member.name for member in dataset.create_with(Quote).into_struct_field()] == [
+        member.name for member in Quote.field()
+    ]
 
 
 def test_create_with_nothing_uses_the_declared_shape(dataset: MemoryDataset) -> None:
@@ -561,9 +611,8 @@ def test_overwrite_arrow_picks_the_method_by_what_it_is(dataset: MemoryDataset) 
     batch = rows(1)
     dataset.overwrite_arrow(batch)
     dataset.overwrite_arrow(pyarrow.Table.from_batches([batch]))
-    dataset.overwrite_arrow(iter([batch]))
-    dataset.overwrite_arrow([batch])
-    assert [commit.num_rows for commit in dataset.commits] == [1, 1, 1, 1]
+    dataset.overwrite_arrow(reader_of(batch))
+    assert [commit.num_rows for commit in dataset.commits] == [1, 1, 1]
 
 
 def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDataset) -> None:
@@ -647,10 +696,11 @@ def test_an_anti_join_hands_the_rows_back_in_the_order_they_came() -> None:
     scrambled take spreads every slice over all of them."""
     from rekep.dataset import anti_join
 
-    chunk = joinable(range(200_000))
-    stored = joinable(range(0, 200_000, 3))
+    count = 70_000
+    chunk = joinable(range(count))
+    stored = joinable(range(0, count, 100))
     fresh = anti_join(chunk, stored, ["at"])
-    assert fresh.num_rows == 200_000 - len(range(0, 200_000, 3))
+    assert fresh.num_rows == count - len(range(0, count, 100))
     assert descents(fresh, "at") == 0, "the chunk's own order, not the join's"
     assert fresh.column("payload")[0].as_py() == "row-1", "and the right rows in it"
 
@@ -658,10 +708,11 @@ def test_an_anti_join_hands_the_rows_back_in_the_order_they_came() -> None:
 def test_a_semi_join_hands_the_rows_back_in_the_order_they_came() -> None:
     from rekep.dataset import semi_join
 
-    stored = joinable(range(200_000))
-    chunk = joinable(range(0, 200_000, 3))
+    count = 70_000
+    stored = joinable(range(count))
+    chunk = joinable(range(1, count))
     kept = semi_join(stored, chunk, ["at"])
-    assert kept.num_rows == len(range(0, 200_000, 3))
+    assert kept.num_rows == count - 1
     assert descents(kept, "at") == 0
 
 

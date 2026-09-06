@@ -14,7 +14,7 @@ import pyarrow.compute
 import pytest
 
 from rekep import Convertible, scalar
-from rekep.fields import field_names, field_of, partition_key, primary_key, sort_key
+from rekep.fields import field_of, partition_key, primary_key, sort_key
 from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_schema, partition_keys
 from rekep.iceberg.dataset import MERGE_IN_LIMIT
 
@@ -220,7 +220,7 @@ def test_a_streamed_merge_agrees_with_a_single_one(pair) -> None:
     ours.append_arrow(quotes(0, 24, "XPAR"), commit_row_size=1_000_000)
     theirs.append_arrow(quotes(0, 24, "XPAR"), commit_row_size=1_000_000)
     ours.overwrite_arrow_reader(
-        iter(quotes(12, 24, "XETR").to_batches(max_chunksize=5)),
+        quotes(12, 24, "XETR").to_reader(max_chunksize=5),
         merge_by=True,
         commit_row_size=5,
     )
@@ -267,9 +267,10 @@ def test_the_report_says_what_moved(pair) -> None:
 # -- reading ----------------------------------------------------------------
 
 
-@pytest.fixture
-def stored(tmp_path: Path) -> IcebergDataset:
-    catalog = IcebergCatalog(name="read", properties=catalog_properties(tmp_path, "read"))
+@pytest.fixture(scope="module")
+def stored(tmp_path_factory: pytest.TempPathFactory) -> IcebergDataset:
+    root = tmp_path_factory.mktemp("read")
+    catalog = IcebergCatalog(name="read", properties=catalog_properties(root, "read"))
     dataset = catalog.dataset("trading.quotes", field=Quote.field())
     dataset.append_arrow(quotes(0, 300, days=5), commit_row_size=100)
     return dataset
@@ -307,7 +308,7 @@ def test_a_projection_does_not_read_the_columns_it_drops(stored) -> None:
     assert stored._selected(narrow, scan) == {"seq": "seq"}, "the scan is told, not the cast"
     assert stored.read_arrow_table(narrow).column_names == ["seq"]
     assert stored.read_arrow_table(columns=["size"]).column_names == ["size"], "an explicit list"
-    assert stored.read_arrow_table().column_names == field_names(Quote.field()), (
+    assert stored.read_arrow_table().column_names == [member.name for member in Quote.field()], (
         "no shape, every column"
     )
 
@@ -650,10 +651,11 @@ def test_an_update_past_the_in_limit_still_prunes(tmp_path: Path) -> None:
     dataset = catalog.dataset("trading.quotes", field=Quote.field())
     # One commit per key range, so the files carry disjoint bounds -- which is
     # what makes a range predicate able to skip any of them at all.
-    for start in range(0, 1_000, 200):
-        dataset.append_arrow(quotes(start, 200), commit_row_size=1_000_000)
+    file_rows = MERGE_IN_LIMIT // 2 + 1
+    for start in range(0, file_rows * 3, file_rows):
+        dataset.append_arrow(quotes(start, file_rows), commit_row_size=1_000_000)
 
-    updates = quotes(0, 250, "XETR")  # 250 keys: past the 200-literal ceiling
+    updates = quotes(0, MERGE_IN_LIMIT + 1, "XETR")
     exact = create_match_filter(updates, ["seq"])
     assert dataset.scan_plan(exact)["skipped"] == 0, "the exact filter alone cannot prune"
     narrowed = And(exact, _key_ranges(updates, ["seq"]))

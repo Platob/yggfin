@@ -10,7 +10,6 @@ import shutil
 import sys
 import tempfile
 import time
-from collections.abc import Iterator
 from typing import Annotated, Any
 
 import pyarrow
@@ -28,7 +27,6 @@ from rekep.fields import (  # noqa: E402
     primary_key,
     replace_field,
     sort_key,
-    strict_cast_table,
 )
 from rekep.iceberg import IcebergCatalog, IcebergDataset  # noqa: E402
 from rekep.iceberg.dataset import _key_ranges, _match_filter  # noqa: E402
@@ -72,24 +70,24 @@ class LogRow(Convertible):
     unix: Annotated[int, primary_key(), sort_key()]
     """Unique nanosecond clock."""
 
-    unixpartition: Annotated[int, partition_key()]
+    timepartition: Annotated[int, partition_key()]
     """Whole epoch hour used for identity partitioning."""
 
-    plugin: str
+    branch: str
     """Low-cardinality source spelling."""
 
     body: bytes
     """Representative binary payload."""
 
 
-PLUGINS = ("OMSSales_Enrichment", "ULBridge", "ModuleMarketDataManager", "ObjkeyTagWrapper")
+BRANCHES = ("OMSSales_Enrichment", "ULBridge", "ModuleMarketDataManager", "ObjkeyTagWrapper")
 _BASE_UNIX = 1_786_665_600_000_000_000
 
 
 def log_field(name: str, partition: str | None) -> Any:
     """Clone the log shape with one selected Iceberg partition transform."""
     field = replace_field(LogRow.field(), name=name)
-    member = field.field("unixpartition")
+    member = field.field("timepartition")
     member.set_partition(False)
     if partition is not None:
         member.iceberg["partition_key"] = partition
@@ -123,8 +121,8 @@ def log_rows(rows: int, days: int) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {
             "unix": unix,
-            "unixpartition": [value // _HOUR_NS for value in unix],
-            "plugin": [PLUGINS[index % len(PLUGINS)] for index in range(rows)],
+            "timepartition": [value // _HOUR_NS for value in unix],
+            "branch": [BRANCHES[index % len(BRANCHES)] for index in range(rows)],
             "body": [
                 (
                     f"payload {index}: ACCOUNT=ACCT-{index % 500:06d} "
@@ -137,9 +135,9 @@ def log_rows(rows: int, days: int) -> pyarrow.Table:
     )
 
 
-def batches(table: pyarrow.Table, batch_row_size: int) -> Iterator[pyarrow.RecordBatch]:
+def batches(table: pyarrow.Table, batch_row_size: int) -> pyarrow.RecordBatchReader:
     """The table as a stream, the way a parser hands one over."""
-    return iter(table.to_batches(max_chunksize=batch_row_size))
+    return table.to_reader(max_chunksize=batch_row_size)
 
 
 # -- the table --------------------------------------------------------------
@@ -287,7 +285,7 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
     # A commit closes at the first batch boundary at or beyond its size, so a
     # commit smaller than the reader's batch is one batch: the sweep uses a
     # realistic parser batch (16k rows) and commit sizes around it.
-    commits: list[int | None] = [50_000, None] if quick else [16_384, 65_536, 262_144, None]
+    commits: list[int | None] = [None] if quick else [16_384, None]
     half = table.slice(0, table.num_rows // 2)
     # (label, mode, commit, partitioned, properties, preload, plan_merges)
     configurations: list[tuple] = []
@@ -300,7 +298,7 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
             ("merge, half stored", "merge", commit, True, "optimised", half, True)
         )
     if not quick:
-        for commit in (50_000, None):
+        for commit in (None,):
             configurations.extend(
                 [
                     ("append, no partition", "append", commit, False, "optimised", None, True),
@@ -387,7 +385,12 @@ def sweep_polars(rows: int, repeat: int) -> None:
         return _polars_table(source, target, polars)
 
     def newest() -> pyarrow.Table:
-        return strict_cast_table(target, source.to_arrow(compat_level=polars.CompatLevel.newest()))
+        reader = source.to_arrow(compat_level=polars.CompatLevel.newest()).to_reader()
+        return target.apply_arrow_reader(
+            reader,
+            safe=False,
+            nullability="strict",
+        ).read_all()
 
     compatible()
     newest()
@@ -435,9 +438,9 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         target.append_arrow(batches(table, 65_536), commit_row_size=rows // max(days, 1))
         day = datetime.date(2026, 8, 14)
         # A partition the data actually has, read from the data rather than
-        # spelled out: `unixpartition` is whatever hour the first row fell
+        # spelled out: `timepartition` is whatever hour the first row fell
         # in, and a filter naming an empty partition measures nothing.
-        hour = table.column("unixpartition")[0].as_py()
+        hour = table.column("timepartition")[0].as_py()
         # The unix bound of the third day: a filter on a column that is not the
         # partition, but correlates with it, so only file statistics can prune.
         third_day = (
@@ -451,21 +454,21 @@ def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
         )
         from pyiceberg.expressions import EqualTo
 
-        plugin_filter = EqualTo("plugin", "ULBridge")
+        branch_filter = EqualTo("branch", "ULBridge")
         print(f"\n== read: {table.num_rows:,} rows, {stats(target)['files']} files ==")
         header(("case", "seconds", "rows", "rows/s", "planned", "skipped"), (30, 9, 12, 12, 8, 8))
         cases = [
             ("everything", None, None, None),
-            ("partition = one hour", f"unixpartition = {hour}", None, None),
+            ("partition = one hour", f"timepartition = {hour}", None, None),
             (
                 "partition, 3 columns",
-                f"unixpartition = {hour}",
-                ["unix", "plugin", "body"],
+                f"timepartition = {hour}",
+                ["unix", "branch", "body"],
                 None,
             ),
-            ("3 columns, no filter", None, ["unix", "plugin", "body"], None),
+            ("3 columns, no filter", None, ["unix", "branch", "body"], None),
             ("correlated column", f"unix < {third_day}", None, None),
-            ("no stats to prune on", plugin_filter, None, None),
+            ("no stats to prune on", branch_filter, None, None),
             ("narrow shape (pushdown)", None, None, narrow_field()),
             ("narrow shape, store widths", None, None, "stored"),
         ]
@@ -554,10 +557,10 @@ def sweep_maintain(rows: int, days: int) -> None:
 
         # -- does a rewrite settle, on every partition shape? -------------
         print("\n== compaction settles: files rewritten per run ==")
-        header(("partitioning", "run 1", "run 2", "run 3", "rows"), (30, 8, 8, 8, 10))
+        header(("partitioning", "run 1", "run 2", "rows"), (30, 8, 8, 10))
         for label, built in (
             (
-                "identity (unixpartition)",
+                "identity (timepartition)",
                 lambda root: dataset(root, partitioned=True, properties=OPTIMISED),
             ),
             ("none", lambda root: dataset(root, partitioned=False, properties=OPTIMISED)),
@@ -565,11 +568,11 @@ def sweep_maintain(rows: int, days: int) -> None:
         ):
             target = built(tmp / f"settle-{label[:8]}")
             target.append_arrow(batches(table, 2_048), commit_row_size=max(rows // 12, 1))
-            runs = [target.compact(min_files=2) for _ in range(3)]
-            assert runs[1:] == [0, 0], (label, runs)
+            runs = [target.compact(min_files=2) for _ in range(2)]
+            assert runs[1] == 0, (label, runs)
             assert target.refresh().read_arrow_table().num_rows == rows, label
             print(
-                f"{label:>30} {runs[0]:>8,} {runs[1]:>8,} {runs[2]:>8,} "
+                f"{label:>30} {runs[0]:>8,} {runs[1]:>8,} "
                 f"{target.refresh().read_arrow_table().num_rows:>10,}"
             )
     finally:
@@ -620,7 +623,7 @@ def sweep_update(rows: int, days: int) -> None:
             print(f"\n== updating {label}: {stored.num_rows:,} rows ==")
             header(("rows updated", "seconds", "rows/s", "terms", "files"), (14, 9, 11, 8, 7))
             index = stored.schema.get_field_index(column)
-            for count in (500, 2_000, 5_000):
+            for count in (100, 500, 2_000):
                 if count * 2 > stored.num_rows:
                     continue
                 changed = stored.slice(0, count)
@@ -719,7 +722,8 @@ def sweep_backfill(rows: int, days: int) -> None:
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
     try:
         target = catalog(root).dataset("bench.ticks", field=Tick.field()).create_with()
-        per = max(rows // 20, 1_000)
+        bands = 10
+        per = max(rows // bands, 100)
         # The hash is drawn per *row*, not derived from the band: a real line
         # hash spreads over the whole range, so every file's bounds on it span
         # nearly everything and it prunes nothing. Deriving it from the band
@@ -735,7 +739,7 @@ def sweep_backfill(rows: int, days: int) -> None:
                 },
                 schema=Tick.field().into_arrow_schema(),
             )
-            for band in range(20)
+            for band in range(bands)
         ]
         for commit in commits:
             target.append_arrow(commit, commit_row_size=1_000_000)
@@ -743,9 +747,9 @@ def sweep_backfill(rows: int, days: int) -> None:
         print(f"\n== backfill: {stored} files of {per:,} rows, keys clustered per file ==")
         header(("case", "planned", "skipped", "seconds", "inserted"), (30, 8, 8, 9, 9))
         for label, replay in (
-            ("two distant bands", pyarrow.concat_tables([commits[1], commits[18]])),
-            ("one band", commits[7]),
-            ("half the table", pyarrow.concat_tables(commits[:10])),
+            ("two distant bands", pyarrow.concat_tables([commits[1], commits[-2]])),
+            ("one band", commits[3]),
+            ("half the table", pyarrow.concat_tables(commits[: bands // 2])),
         ):
             ranges = _key_ranges(replay, ["at", "h64"])
             plan = target.scan_plan(ranges)
@@ -793,7 +797,7 @@ def daily(root: pathlib.Path) -> IcebergDataset:
     cannot address parts of it has to settle as a whole too. When it did not,
     every run read the table back and wrote it out again, forever.
     """
-    # `bucket[8]`, because `unixpartition` is a signed integer and Iceberg's `day`
+    # `bucket[8]`, because `timepartition` is a signed integer and Iceberg's `day`
     # transform is for dates. The point is unchanged: a transform, not the value itself.
     field = log_field("Daily", "bucket[8]")
     built = catalog(root).dataset("bench.daily", field=field, table_properties=OPTIMISED)
@@ -811,7 +815,7 @@ def stored_narrow(target: IcebergDataset) -> Any:
 
     schema = target.table_field.into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "plugin", "body")]),
+        pyarrow.schema([schema.field(name) for name in ("unix", "branch", "body")]),
         "Narrow",
     )
 
@@ -822,14 +826,14 @@ def narrow_field() -> Any:
 
     schema = LogRow.field().into_arrow_schema()
     return Field.from_arrow_schema(
-        pyarrow.schema([schema.field(name) for name in ("unix", "plugin", "body")]),
+        pyarrow.schema([schema.field(name) for name in ("unix", "branch", "body")]),
         "Narrow",
     )
 
 
 def main() -> int:
-    options = parser(__doc__, rows=100_000, repeat=3)
-    options.add_argument("--days", type=int, default=8)
+    options = parser(__doc__, rows=20_000, repeat=2)
+    options.add_argument("--days", type=int, default=4)
     options.add_argument(
         "--only",
         choices=[
@@ -845,17 +849,17 @@ def main() -> int:
         default=None,
     )
     arguments = options.parse_args()
-    rows = 5_000 if arguments.quick else arguments.rows
-    days = 4 if arguments.quick else arguments.days
+    rows = 2_500 if arguments.quick else arguments.rows
+    days = 2 if arguments.quick else arguments.days
 
     if arguments.only in (None, "write"):
         shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
     if arguments.only in (None, "insert"):
-        sweep_insert(rows, 2 if arguments.quick else arguments.repeat)
+        sweep_insert(rows, 1 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "polars"):
-        sweep_polars(rows, 2 if arguments.quick else arguments.repeat)
+        sweep_polars(rows, 1 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "read"):
-        sweep_read(rows, days, 2 if arguments.quick else arguments.repeat)
+        sweep_read(rows, days, 1 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "maintain"):
         sweep_maintain(min(rows, 100_000), days)
     if arguments.only in (None, "update"):

@@ -1,4 +1,4 @@
-"""Retained benchmarks import and complete one quick smoke pass."""
+"""Retained benchmarks import and complete one representative smoke path."""
 
 from __future__ import annotations
 
@@ -11,10 +11,11 @@ import pytest
 
 BENCHMARKS = Path(__file__).resolve().parents[1] / "benchmarks"
 
-#: Every retained benchmark supports one complete quick smoke pass.
+#: One representative command per retained benchmark. The benchmark itself owns
+#: the exhaustive sweep; this test only proves its executable boundary.
 SCRIPTS = {
-    "bench_iceberg": True,
-    "bench_message": True,
+    "bench_iceberg": ("--quick", "--only", "write"),
+    "bench_message": ("--quick",),
 }
 
 
@@ -37,14 +38,14 @@ def test_a_benchmark_still_imports(name: str) -> None:
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("name", sorted(one for one, runs in SCRIPTS.items() if runs))
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
 def test_a_benchmark_still_runs(name: str) -> None:
-    """`--quick` end to end: an assertion inside one is a claim about the code."""
+    """Run one cheap end-to-end path; exhaustive timing stays opt-in."""
     done = subprocess.run(  # noqa: S603
-        [sys.executable, str(BENCHMARKS / f"{name}.py"), "--quick"],
+        [sys.executable, str(BENCHMARKS / f"{name}.py"), *SCRIPTS[name]],
         capture_output=True,
         text=True,
         check=False,
-        timeout=600,
+        timeout=120,
     )
     assert done.returncode == 0, done.stderr[-4000:]

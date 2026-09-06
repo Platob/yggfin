@@ -63,7 +63,7 @@ def test_navigation_names_existing_pages() -> None:
     assert all((DOCS / page).is_file() for page in declared)
 
 
-def test_docs_publish_only_the_native_message_contract() -> None:
+def test_docs_publish_only_the_static_native_message_contract() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
 
@@ -72,12 +72,14 @@ def test_docs_publish_only_the_native_message_contract() -> None:
         "url",
         "rownum",
         "timestamp",
+        "timepartition",
         "threadname",
-        "plugin",
+        "branch",
         "level",
         "body",
     ]
-    assert "fix/" not in config and "market/" not in config
+    assert "pipeline/tasks/parse-fix.md" in config
+    assert "market/" not in config
     assert list((ROOT / "schemas" / "rekep").glob("*.json")) == [
         ROOT / "schemas" / "rekep" / "message.json"
     ]
@@ -88,18 +90,19 @@ def test_docs_record_the_measured_message_rates() -> None:
     benchmark = (DOCS / "storage" / "benchmarks.md").read_text(encoding="utf-8")
     task = (DOCS / "pipeline" / "tasks" / "parse-messages.md").read_text(encoding="utf-8")
 
-    assert "200,000" in benchmark
+    assert "70,000" in benchmark
     assert "timestamp[us, UTC]" in benchmark
-    assert "fastest of five warmed runs" in benchmark
+    assert "fastest of two warmed runs" in benchmark
     assert "buffered()" in benchmark
     assert "300,000 rows" in benchmark
     assert "Concatenated gzip" in task
     assert "yggdryl-text-streaming.md" in task
 
 
-def test_next_fix_session_starts_from_yggdryl() -> None:
-    prompt = (DOCS / "prompts" / "yggdryl-fix-refactor.md").read_text(encoding="utf-8")
+def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
+    task = (DOCS / "pipeline" / "tasks" / "parse-fix.md").read_text(encoding="utf-8")
+    schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
-    assert "yggdryl.fix.FixRegistry" in prompt
-    assert "Do not restore" in prompt
-    assert "Rust first" in prompt
+    assert "parse_arrow_reader" in task
+    assert "Field.from_arrow_schema" in task
+    assert "no checked schema" in schemas
