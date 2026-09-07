@@ -604,6 +604,7 @@ def test_an_external_order_uses_bounded_merge_fan_in(
 
 def test_a_nearly_right_batch_is_cast_on_the_way_in(dataset: IcebergDataset) -> None:
     """Wrong order, a narrow integer, a column the source never produced."""
+    assert dataset.merge_schema is False
     dataset.get_or_create_table()
     batch = pyarrow.RecordBatch.from_pydict(
         {
@@ -617,6 +618,7 @@ def test_a_nearly_right_batch_is_cast_on_the_way_in(dataset: IcebergDataset) -> 
     stored = dataset.read_arrow_table(Quote.field())
     assert stored.column("size").to_pylist() == [7]
     assert stored.column("venue").to_pylist() == [None], "the missing nullable column was filled"
+    assert "noise" not in dataset.iceberg_table.schema()
 
 
 def test_commit_row_size_commits_one_snapshot_per_chunk(dataset: IcebergDataset) -> None:
@@ -1942,12 +1944,14 @@ def test_partition_sources_scope_default_and_explicit_merge_keys(
 
 def test_a_dataset_round_trips_through_json(dataset: IcebergDataset) -> None:
     """Its configuration -- the declared shape included -- is a file."""
+    dataset.merge_schema = True
     document = dataset.into_dict()
     assert document["name"] == "quotes"
     assert document["namespace"] == "trading"
     assert document["field"]["name"] == "quotes"
     assert document["catalog_name"] == dataset.catalog_name
     assert document["catalog_properties"] == dataset.catalog_properties
+    assert document["merge_schema"] is True
     rebuilt = IcebergDataset.from_json(dataset.into_json())
     assert (
         rebuilt.name,
@@ -1963,6 +1967,7 @@ def test_a_dataset_round_trips_through_json(dataset: IcebergDataset) -> None:
     assert rebuilt.identifier == dataset.identifier
     assert isinstance(rebuilt.field, Field)
     assert rebuilt.field == dataset.field
+    assert rebuilt.merge_schema is True
     assert "store" not in rebuilt.__dict__, "reading configuration stays lazy"
 
 
@@ -2402,6 +2407,144 @@ def test_a_wider_batch_lands_after_the_columns_are_added(dataset: IcebergDataset
     assert set(dataset.read_arrow_table().column("desk").to_pylist()) == {None, "EQ"}
 
 
+def test_merge_schema_creates_a_missing_table_from_the_write_field(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.merge_schema = True
+    wider = field_of(
+        pyarrow.schema(
+            [
+                *Quote.field().into_arrow_schema(),
+                pyarrow.field("desk", pyarrow.string(), nullable=False),
+            ]
+        ),
+        Quote.field().name,
+    )
+    source = quotes(1).append_column("desk", pyarrow.array(["EQ"]))
+
+    assert dataset.append_arrow_reader(source.to_reader(), wider, merge_by=False) == 1
+
+    table = dataset.iceberg_table
+    assert len(table.schemas()) == 1, "creation needs no follow-up schema commit"
+    assert table.schema().find_field("desk").required
+    assert dataset.read_arrow_table().column("desk").to_pylist() == ["EQ"]
+
+
+def test_merge_schema_adds_once_before_a_streamed_write(dataset: IcebergDataset) -> None:
+    dataset.append_arrow_table(quotes(1))
+    dataset.merge_schema = True
+    before_schemas = len(dataset.iceberg_table.schemas())
+    before_ids = {field.name: field.field_id for field in dataset.iceberg_table.schema().fields}
+    before_spec = dataset.iceberg_table.spec()
+    desk = pyarrow.field(
+        "desk",
+        pyarrow.string(),
+        metadata={b"description": b"Execution desk.", b"fix:tag": b"999"},
+    )
+    wider = field_of(
+        pyarrow.schema([*Quote.field().into_arrow_schema(), desk]),
+        Quote.field().name,
+    )
+    source = pyarrow.Table.from_pydict(
+        {
+            **quotes(2).to_pydict(),
+            "desk": ["EQ", "FX"],
+        },
+        schema=wider.into_arrow_schema(),
+    )
+
+    written = dataset.append_arrow_reader(
+        source.to_reader(max_chunksize=1),
+        wider,
+        merge_by=False,
+        commit_batch_num=1,
+    )
+
+    table = dataset.iceberg_table
+    after_ids = {field.name: field.field_id for field in table.schema().fields}
+    assert written == 2
+    assert len(table.schemas()) == before_schemas + 1, "one schema update, not one per batch"
+    assert {name: after_ids[name] for name in before_ids} == before_ids
+    assert after_ids["desk"] > max(before_ids.values()), "Iceberg assigned the new id"
+    assert table.schema().find_field("desk").doc == "Execution desk."
+    assert dataset.field["desk"].metadata["fix:tag"] == "999"
+    assert table.spec() == before_spec, "schema merging does not rewrite partition layout"
+    assert set(dataset.read_arrow_table().column("desk").to_pylist()) == {None, "EQ", "FX"}
+
+    reopened = dataset.store.dataset(
+        dataset.identifier,
+        field=Quote.field(),
+        merge_schema=True,
+    )
+    reopened.append_arrow_reader(
+        quotes(1, "reopened").append_column("desk", pyarrow.array(["OPS"])).to_reader(),
+        wider,
+        merge_by=False,
+    )
+    assert "OPS" in reopened.read_arrow_table().column("desk").to_pylist()
+
+
+def test_merge_schema_refuses_a_required_addition_before_writing(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.append_arrow_table(quotes(1))
+    before_schemas = len(dataset.iceberg_table.schemas())
+    before_snapshots = len(dataset.iceberg_table.snapshots())
+    wider = field_of(
+        pyarrow.schema(
+            [
+                *Quote.field().into_arrow_schema(),
+                pyarrow.field("desk", pyarrow.string(), nullable=False),
+            ]
+        ),
+        Quote.field().name,
+    )
+    source = quotes(1).append_column("desk", pyarrow.array(["EQ"]))
+
+    with pytest.raises(ValueError, match="cannot add required column: desk"):
+        dataset.append_arrow_reader(source.to_reader(), wider, merge_schema=True)
+
+    assert len(dataset.refresh().iceberg_table.schemas()) == before_schemas
+    assert len(dataset.iceberg_table.snapshots()) == before_snapshots
+    assert dataset.records == 1
+
+
+def test_merge_schema_validates_a_branch_before_its_table_wide_update(
+    dataset: IcebergDataset,
+) -> None:
+    dataset.append_arrow_table(quotes(1))
+    dataset.create_branch("dev")
+    wider = field_of(
+        pyarrow.schema([*Quote.field().into_arrow_schema(), ("desk", pyarrow.string())]),
+        Quote.field().name,
+    )
+    source = quotes(1, "dev").append_column("desk", pyarrow.array(["EQ"]))
+    before_schemas = len(dataset.iceberg_table.schemas())
+
+    with pytest.raises(ValueError, match="unknown ref=missing"):
+        dataset.append_arrow_reader(
+            source.to_reader(),
+            wider,
+            merge_by=False,
+            merge_schema=True,
+            branch="missing",
+        )
+    assert len(dataset.refresh().iceberg_table.schemas()) == before_schemas
+
+    dataset.append_arrow_reader(
+        source.to_reader(),
+        wider,
+        merge_by=False,
+        merge_schema=True,
+        branch="dev",
+    )
+    assert dataset.read_arrow_table().column("desk").to_pylist() == [None]
+    assert set(dataset.read_arrow_table(branch="dev").column("desk").to_pylist()) == {
+        None,
+        "EQ",
+    }
+
+
 # -- snapshots and branches -------------------------------------------------
 
 
@@ -2816,8 +2959,51 @@ def test_a_filtered_compaction_marks_nothing(dataset: IcebergDataset) -> None:
     assert dataset.compaction_plan(min_files=2) != [], "the partition is still planned"
 
 
+def test_a_nested_addition_does_not_rewrite_its_parent(tmp_path: Path) -> None:
+    nested = pyarrow.struct([pyarrow.field("a", pyarrow.string())])
+    narrow = field_of(
+        pyarrow.schema(
+            [
+                pyarrow.field(
+                    "nested",
+                    nested,
+                    nullable=False,
+                    metadata={b"description": b"Held parent."},
+                )
+            ]
+        ),
+        "NestedRows",
+    )
+    wider = field_of(
+        pyarrow.schema(
+            [
+                pyarrow.field(
+                    "nested",
+                    pyarrow.struct([*nested, pyarrow.field("b", pyarrow.string())]),
+                    metadata={b"description": b"Incoming parent."},
+                )
+            ]
+        ),
+        "NestedRows",
+    )
+    catalog = IcebergCatalog(name="parent", properties=catalog_properties(tmp_path))
+    rows = catalog.dataset("trading.parent", field=narrow)
+    rows.append_arrow(
+        pyarrow.Table.from_pylist(
+            [{"nested": {"a": "A"}}],
+            schema=narrow.into_arrow_schema(),
+        )
+    )
+
+    assert rows.add_fields(wider) == ["nested.b"]
+
+    parent = rows.iceberg_table.schema().find_field("nested")
+    assert parent.required
+    assert parent.doc == "Held parent."
+
+
 def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
-    """`union_by_name` adds it; comparing top-level names never asked for it."""
+    """The direct leaf update finds additions below an existing parent."""
 
     @scalar
     class Venue(Convertible):
@@ -2849,7 +3035,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
     wide = field_of(
         pyarrow.schema(
             [
-                pyarrow.field("symbol", pyarrow.string()),
+                pyarrow.field("symbol", pyarrow.string(), nullable=False),
                 pyarrow.field(
                     "venue",
                     pyarrow.struct(
@@ -2884,6 +3070,62 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
     )
     stored = sorted(quotes_.refresh().read_arrow_table().to_pylist(), key=lambda row: row["symbol"])
     assert stored[1]["venue"] == {"mic": "XLON", "country": "GB"}, "the value survived the write"
+
+
+def test_a_member_added_inside_a_list_struct_is_added(tmp_path: Path) -> None:
+    """FIX repeating groups evolve through Iceberg's list element wrapper."""
+    narrow = field_of(
+        pyarrow.schema(
+            [
+                pyarrow.field("symbol", pyarrow.string(), nullable=False),
+                pyarrow.field(
+                    "groups",
+                    pyarrow.list_(pyarrow.struct([pyarrow.field("tag", pyarrow.int32())])),
+                ),
+            ]
+        ),
+        "ListRows",
+    )
+    wide = field_of(
+        pyarrow.schema(
+            [
+                pyarrow.field("symbol", pyarrow.string(), nullable=False),
+                pyarrow.field(
+                    "groups",
+                    pyarrow.list_(
+                        pyarrow.struct(
+                            [
+                                pyarrow.field("tag", pyarrow.int32()),
+                                pyarrow.field("value", pyarrow.string()),
+                            ]
+                        )
+                    ),
+                ),
+            ]
+        ),
+        "ListRows",
+    )
+    catalog = IcebergCatalog(name="list_nested", properties=catalog_properties(tmp_path))
+    rows = catalog.dataset("trading.list_nested", field=narrow)
+    rows.append_arrow(
+        pyarrow.Table.from_pylist(
+            [{"symbol": "A", "groups": [{"tag": 35}]}],
+            schema=narrow.into_arrow_schema(),
+        )
+    )
+
+    assert rows.add_fields(wide) == ["groups.element.value"]
+    assert rows.add_fields(wide) == []
+    rows.append_arrow(
+        pyarrow.Table.from_pylist(
+            [{"symbol": "B", "groups": [{"tag": 35, "value": "D"}]}],
+            schema=wide.into_arrow_schema(),
+        )
+    )
+
+    stored = sorted(rows.refresh().read_arrow_table().to_pylist(), key=lambda row: row["symbol"])
+    assert stored[0]["groups"] == [{"tag": 35, "value": None}]
+    assert stored[1]["groups"] == [{"tag": 35, "value": "D"}]
 
 
 def test_a_filter_compacts_only_that_part(dataset: IcebergDataset) -> None:

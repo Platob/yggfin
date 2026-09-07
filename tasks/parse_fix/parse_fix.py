@@ -177,7 +177,7 @@ def _(catalog, dedup, records, registry, version):
             nullability="strict",
         )
         opened.callback(applied.close)
-        fixes = store.dataset(TARGET, field=field)
+        fixes = store.dataset(TARGET, field=field, merge_schema=True)
         opened.callback(fixes.close)
         written = fixes.append_arrow_reader(applied, field, merge_by=True)
         _outcome = stage.finished(read=counts["read"], written=written)
