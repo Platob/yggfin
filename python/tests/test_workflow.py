@@ -381,6 +381,7 @@ def test_fix_parsing_preserves_source_identity_and_emits_native_columns(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     handed_to_iceberg: list[pyarrow.Schema] = []
+    schema_modes: dict[str, bool] = {}
     append = IcebergDataset.append_arrow_reader
 
     def observed_append(
@@ -390,6 +391,7 @@ def test_fix_parsing_preserves_source_identity_and_emits_native_columns(
         **kwargs: Any,
     ) -> int:
         assert isinstance(source, pyarrow.RecordBatchReader)
+        schema_modes[dataset.identifier] = dataset.merge_schema
         if dataset.identifier == "fix.messages":
             handed_to_iceberg.append(source.schema)
         return append(dataset, source, *args, **kwargs)
@@ -398,6 +400,7 @@ def test_fix_parsing_preserves_source_identity_and_emits_native_columns(
     ran.workflow()
 
     fixes = ran.table("fix.messages")
+    assert schema_modes == {"logs.messages": False, "fix.messages": True}
     assert len(handed_to_iceberg) == 1
     assert handed_to_iceberg[0].names == fixes.schema.names
     assert fixes.num_rows == 4

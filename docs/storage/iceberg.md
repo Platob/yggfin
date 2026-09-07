@@ -37,6 +37,31 @@ batch size.
 the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
 consume one batch at a time. The batch and table helpers build that reader.
 
+Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
+`overwrite_arrow_*` write, to add columns from its authoritative write Field
+before the first batch is consumed:
+
+```python
+from yggdryl import Field
+
+fix_field = Field.from_arrow_schema(reader.schema, name="FixMessage")
+fixes = catalog.dataset(
+    "fix.messages",
+    field=fix_field,
+    merge_schema=True,
+)
+fixes.append_arrow_reader(reader, fix_field)
+```
+
+Pass the current Field explicitly when its reader may be newer than the stored
+table. This mode is enabled by `parse_fix`; the raw `Message` contract remains
+fixed. It is additive only: existing types, nullability, comments, field IDs,
+identifier fields, partition specs, and sort orders do not change. Iceberg
+assigns IDs to additions. A column added to an existing table must be nullable
+because older rows have no value for it; the first write creates a missing
+table directly from its Field. Schema updates are table-wide even when rows are
+written to a branch. A write with no new column makes no schema commit.
+
 Before either write, the native `Field` applies its declarations in dependency
 order: **cast → derived partition columns → digest holders**.
 
