@@ -39,7 +39,6 @@ from rekep.fields import (
     Field,
     arrays,
     field_of,
-    leaf_names,
     replace_field,
 )
 from rekep.iceberg.catalog import IcebergCatalog, _file_location
@@ -235,6 +234,10 @@ class IcebergDataset(Dataset):
     #: Branch reads and writes use unless a call names another. None, `root`,
     #: `main`, and `master` all mean the table's root state.
     branch: str | None = None
+
+    #: Add columns declared by a write before its rows land. Existing columns,
+    #: partition specs, identifier fields, and sort orders are left unchanged.
+    merge_schema: bool = False
 
     #: Source batches one commit carries; the producer's batch size bounds the
     #: retained bytes without guessing how wide a row is.
@@ -446,8 +449,8 @@ class IcebergDataset(Dataset):
         )
         return self
 
-    def get_or_create_table(self) -> Any:
-        """The pyiceberg table, created from the declared shape when absent.
+    def get_or_create_table(self, field: Any = None) -> Any:
+        """The pyiceberg table, created from `field` or the declaration when absent.
 
         A table already loaded is handed straight back: `exists` is a catalog
         round trip, which is free on SQLite and a network hop on a REST or Glue
@@ -456,7 +459,7 @@ class IcebergDataset(Dataset):
         if "iceberg_table" in self.__dict__:
             return self.iceberg_table
         if not self.exists:
-            self.create_with_field(self.field)
+            self.create_with_field(self.target_field(field))
         return self.iceberg_table
 
     def refresh(self) -> IcebergDataset:
@@ -509,21 +512,49 @@ class IcebergDataset(Dataset):
     def add_fields(self, source: Any = None, *, dry_run: bool = False) -> list[str]:
         """Add the columns `source` has and the table lacks; skip when there are none."""
         target = self.target_field(source)
-        current = self.table_field
-        held = set(leaf_names(current))
-        added = [name for name in leaf_names(target) if name not in held]
+        incoming = iceberg_schema(target)
+        held = set(self.iceberg_table.schema().column_names)
+        missing = [name for name in incoming.column_names if name not in held]
+        added = [
+            name
+            for name in missing
+            if not (parent := name.rpartition(".")[0]) or parent in held
+        ]
         if not added or dry_run:
             return added
         table = self.iceberg_table
         with table.update_schema() as update:
-            update.union_by_name(iceberg_schema(target))
+            for name in added:
+                field = incoming.find_field(name)
+                update.add_column(
+                    tuple(name.split(".")),
+                    field.field_type,
+                    doc=field.doc,
+                    required=field.required,
+                )
         self.refresh()
-        # The declared shape *is* what writes cast onto, so evolving the table
-        # without it would drop the new columns at the next write. Keep its
-        # outer name because it is the schema's stable display name.
-        self.field = replace_field(target, name=self.name)
+        # Keep the write declaration's Yggdryl protocols and add the physical
+        # ids Iceberg assigned to the columns it accepted.
+        self.field = target.merge_with(self.table_field, upscale=False)
         LOGGER.info("%s gained %d columns: %s", self.identifier, len(added), ", ".join(added))
         return added
+
+    def _write_field(
+        self,
+        schema: Any,
+        merge_schema: bool | None,
+    ) -> Field:
+        """The applied write field, after its opt-in additive table evolution."""
+        target = self.target_field(schema)
+        if self._merge_schema_enabled(merge_schema):
+            self.add_fields(target)
+            self.field = target.merge_with(self.table_field, upscale=False)
+            return self.field
+        return target
+
+    def _merge_schema_enabled(self, merge_schema: bool | None) -> bool:
+        """Resolve a write override against the dataset default."""
+        return self.merge_schema if merge_schema is None else merge_schema
 
     # -- reading ------------------------------------------------------------
 
@@ -702,18 +733,21 @@ class IcebergDataset(Dataset):
         commit_row_size: int | None = None,
         *,
         commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
     ) -> None:
         """Upsert a stream, then expire snapshots under the configured cutoff."""
-        with self._write(snapshot_expiry):
+        create_with = schema if self._merge_schema_enabled(merge_schema) else None
+        with self._write(snapshot_expiry, create_with=create_with):
             self._overwrite_arrow_reader(
                 source,
                 schema,
                 merge_by,
                 commit_row_size,
                 commit_batch_num=commit_batch_num,
+                merge_schema=merge_schema,
                 branch=branch,
                 properties=properties,
             )
@@ -726,6 +760,7 @@ class IcebergDataset(Dataset):
         commit_row_size: int | None = None,
         *,
         commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
@@ -739,6 +774,8 @@ class IcebergDataset(Dataset):
             rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
             join = self._row_merge_columns(merge_by)
             partitions = _partition_columns(table)
             if partitions and not join:
@@ -752,6 +789,7 @@ class IcebergDataset(Dataset):
                     merge_by,
                     commit_row_size=rows,
                     commit_batch_num=batches,
+                    merge_schema=merge_schema,
                     branch=branch,
                     properties=properties,
                 )
@@ -762,13 +800,13 @@ class IcebergDataset(Dataset):
                     "replaces the rows whose keys match -- pass True for the primary key "
                     "or the columns to match on, or use append_arrow_* to add rows blindly"
                 )
-            reader = self.target_field(schema).apply_arrow_reader(
+            target = self._write_field(schema, merge_schema)
+            table = self.iceberg_table
+            reader = target.apply_arrow_reader(
                 source,
                 safe=False,
                 nullability="strict",
             )
-            reference = self._branch_name(branch)
-            self._branch_head(table, reference)
             for chunk in arrow_chunks(reader, rows, batches):
                 if self.plan_merges or partitions:
                     self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
@@ -800,18 +838,21 @@ class IcebergDataset(Dataset):
         commit_row_size: int | None = None,
         *,
         commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
     ) -> None:
         """Replace partition runs, then expire snapshots under the configured cutoff."""
-        with self._write(snapshot_expiry):
+        create_with = schema if self._merge_schema_enabled(merge_schema) else None
+        with self._write(snapshot_expiry, create_with=create_with):
             self._overwrite_partition_arrow_reader(
                 source,
                 schema,
                 merge_by,
                 commit_row_size,
                 commit_batch_num=commit_batch_num,
+                merge_schema=merge_schema,
                 branch=branch,
                 properties=properties,
             )
@@ -824,6 +865,7 @@ class IcebergDataset(Dataset):
         commit_row_size: int | None = None,
         *,
         commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
@@ -835,6 +877,8 @@ class IcebergDataset(Dataset):
             rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             self.__dict__.pop("_insert_upper", None)
             table = self.get_or_create_table()
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
             join = self._row_merge_columns(merge_by)
             if join:
                 delegated = True
@@ -844,6 +888,7 @@ class IcebergDataset(Dataset):
                     merge_by,
                     commit_row_size=rows,
                     commit_batch_num=batches,
+                    merge_schema=merge_schema,
                     branch=branch,
                     properties=properties,
                 )
@@ -851,7 +896,8 @@ class IcebergDataset(Dataset):
             partitions = _partition_columns(table)
             if not partitions:
                 raise ValueError("partition overwrite needs a supported table partition spec")
-            target = self.target_field(schema)
+            target = self._write_field(schema, merge_schema)
+            table = self.iceberg_table
             required = _requiring_columns(
                 source,
                 [column.source for column in partitions],
@@ -862,8 +908,6 @@ class IcebergDataset(Dataset):
                 safe=False,
                 nullability="strict",
             )
-            reference = self._branch_name(branch)
-            self._branch_head(table, reference)
             snapshot = properties or {}
             pending: list[_StagedPartition] = []
             consumed_rows = 0
@@ -1283,18 +1327,21 @@ class IcebergDataset(Dataset):
         commit_row_size: int | None = None,
         *,
         commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
     ) -> int:
         """Append a stream, then expire snapshots under the configured cutoff."""
-        with self._write(snapshot_expiry):
+        create_with = schema if self._merge_schema_enabled(merge_schema) else None
+        with self._write(snapshot_expiry, create_with=create_with):
             return self._append_arrow_reader(
                 source,
                 schema,
                 merge_by,
                 commit_row_size,
                 commit_batch_num=commit_batch_num,
+                merge_schema=merge_schema,
                 branch=branch,
                 properties=properties,
             )
@@ -1307,6 +1354,7 @@ class IcebergDataset(Dataset):
         commit_row_size: int | None = None,
         *,
         commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> int:
@@ -1315,14 +1363,16 @@ class IcebergDataset(Dataset):
         try:
             rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             table = self.get_or_create_table()
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
+            target = self._write_field(schema, merge_schema)
+            table = self.iceberg_table
             join = self._row_merge_columns(merge_by)
-            reader = self.target_field(schema).apply_arrow_reader(
+            reader = target.apply_arrow_reader(
                 source,
                 safe=False,
                 nullability="strict",
             )
-            reference = self._branch_name(branch)
-            self._branch_head(table, reference)
             snapshot = properties or {}
             if not join:
                 self.__dict__.pop("_insert_upper", None)
@@ -1617,7 +1667,12 @@ class IcebergDataset(Dataset):
         return [name for name, _ in self.sort_fields()]
 
     @contextmanager
-    def _write(self, snapshot_expiry: SnapshotExpiry) -> Iterator[None]:
+    def _write(
+        self,
+        snapshot_expiry: SnapshotExpiry,
+        *,
+        create_with: Any = None,
+    ) -> Iterator[None]:
         """Expire once after the outermost successful public write.
 
         The audit record is here for the same reason the expiry is: this is
@@ -1626,7 +1681,10 @@ class IcebergDataset(Dataset):
         """
         depth = int(self.__dict__.get("_write_depth", 0))
         expiry = (
-            self._resolved_snapshot_expiry(snapshot_expiry, self.get_or_create_table())
+            self._resolved_snapshot_expiry(
+                snapshot_expiry,
+                self.get_or_create_table(create_with),
+            )
             if depth == 0
             else snapshot_expiry
         )
