@@ -1,6 +1,6 @@
 # Local configuration
 
-`fix/` is the native Yggdryl FIX dictionary this checkout parses against: the
+`fix/` is the native FIX dictionary this checkout parses against: the
 canonical `primitive/` and `nested/` JSON shards `FixRegistry.write_into`
 emits, read back by `FixRegistry.from_handle`. It is the default `registry` of
 `parse_fix`, and it is what types every FIX column in `fix.messages`.

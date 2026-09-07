@@ -2,10 +2,11 @@ site_name: rekep
 site_description: Stream text records through Arrow into Iceberg
 site_url: https://platob.github.io/yggfin/
 repo_url: https://github.com/Platob/yggfin
-repo_name: Platob/yggfin
+repo_name: rekep
 docs_dir: docs
 exclude_docs: |
   assets/README.md
+  prompts/
 
 theme:
   name: material
@@ -50,19 +51,22 @@ extra_javascript:
 nav:
   - Overview:
       - Start here: index.md
+      - Architecture: overview/architecture.md
       - Why Arrow: overview/arrow.md
       - Design rules: overview/design.md
-  - Message:
-      - Raw record: products/message.md
+  - Data products:
+      - Two tables: products/index.md
+      - logs.messages: products/message.md
+      - fix.messages: products/fix-message.md
       - Field contract: contracts/types.md
       - Portable schema: contracts/index.md
-      - FIX registry browser (tool): tools/fix-registry.md
   - FIX:
       - Overview: fix/index.md
       - Registry: fix/registry.md
       - Decode: fix/decode.md
       - Encode: fix/encode.md
       - Quality: fix/quality.md
+      - Registry browser (tool): tools/fix-registry.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md
@@ -70,15 +74,10 @@ nav:
       - Overview: pipeline/index.md
       - Parse messages: pipeline/tasks/parse-messages.md
       - Parse FIX: pipeline/tasks/parse-fix.md
+      - Airflow: pipeline/airflow.md
       - Run: pipeline/operations/run.md
       - Deploy: pipeline/operations/deploy.md
       - Logs: pipeline/operations/logs.md
-  - Next work:
-      - Yggdryl text streaming: prompts/yggdryl-text-streaming.md
-      - Yggdryl IOBase throughput: prompts/yggdryl-iobase-throughput.md
-      - Yggdryl Arrow apply: prompts/yggdryl-arrow-apply.md
-      - Yggdryl FIX Arrow throughput: prompts/yggdryl-fix-arrow-throughput.md
-      - Final FixMsg schema and registry: prompts/yggdryl-fix-schema-bindings.md
 
 validation:
   links:
@@ -95,6 +94,12 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
+  # Lets a page include a file from the checkout, so a documented application
+  # is the application rather than a copy of it that drifts.
+  - pymdownx.snippets:
+      base_path:
+        - .
+      check_paths: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

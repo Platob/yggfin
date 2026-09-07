@@ -38,8 +38,8 @@ Replaying an unchanged source is safe. Rows already stored under `(url, rownum)`
 are counted as skipped and do not create another
 Iceberg snapshot.
 
-`parse_fix` reads `logs.messages`, uses the non-empty process Yggdryl registry
-when its `registry` parameter is `null`, and writes `fix.messages`. Point that
+`parse_fix` reads `logs.messages`, uses the non-empty process registry when
+its `registry` parameter is `null`, and writes `fix.messages`. Point that
 parameter at a registry directory when the deployment does not install a
 process default.
 

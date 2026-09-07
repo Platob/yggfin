@@ -1,6 +1,6 @@
 # Registry
 
-A FIX field is an ordinary Yggdryl `Field` whose `fix:` metadata the protocol
+A FIX field is an ordinary `Field` whose `fix:` metadata the protocol
 view `field.fix` reads and writes as typed properties. There is no second field
 class, and nesting needs no second type: a component is a Struct field, a
 repeating group is a `List` of that Struct, and the group's counter tag is the
@@ -137,8 +137,8 @@ than silently shadowing one.
 
 ## The fields this crate adds
 
-Adding a definition is not the only way a dictionary grows. Yggdryl derives
-seven facts no standard tag names, on its own branch, and `with_crate_fields`
+Adding a definition is not the only way a dictionary grows. Seven facts no
+standard tag names are derived on their own branch, and `with_crate_fields`
 puts them in the dictionary:
 
 ```python

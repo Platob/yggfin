@@ -68,7 +68,7 @@ around it gone. [Decode](decode.md#locating-the-frame) is that scan.
 | 9 | `BodyLength` | always second; the bytes after `9=...<SOH>` up to and including the separator before `10=` |
 | 10 | `CheckSum` | always last; the low byte of the sum of every preceding byte, three digits, zero-padded |
 
-Yggdryl computes none of the three, and checks none of them. `to_bytes` writes
+The reader computes none of the three, and checks none of them. `to_bytes` writes
 the entries and nothing else: no `9=` appears unless one arrived, and a `10=`
 that arrived is copied whatever it sums to. There is no checksum arithmetic
 anywhere in the crate. Tag 10 is where the scan stops -- whatever a log wrote

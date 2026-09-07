@@ -1,6 +1,6 @@
 # Iceberg
 
-Yggfin keeps Iceberg at the PyIceberg/PyArrow boundary. Yggdryl does not own
+rekep keeps Iceberg at the PyIceberg/PyArrow boundary. Nothing below it owns
 catalogs, snapshots, scan planning, or commits.
 
 ```python
@@ -37,24 +37,23 @@ batch size.
 the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
 consume one batch at a time. The batch and table helpers build that reader.
 
-Before either write, the native Field applies its declarations in dependency
-order: cast, derived partition columns, then digest holders. Yggdryl
-`partition:sources` describes an executable Arrow derivation. It is distinct
-from the Iceberg partition spec: `field:partition` is Yggdryl's physical-layout
-marker, which yggfin maps to an identity Iceberg spec. Non-identity transforms
-passed to `partition_key(...)` remain under `iceberg:partition_key`. A native
-derived transform such as `day` may also appear under `partition:transform`;
-that declaration computes a separate Arrow column and does not define the
-table spec.
+Before either write, the native `Field` applies its declarations in dependency
+order: **cast → derived partition columns → digest holders**.
 
-The identity and transformed Iceberg markers are mutually exclusive;
-declaration and Iceberg spec conversion reject a field carrying both. A native
-`derived_from(...)` declaration is independent and may be composed with the
-chosen Iceberg marker.
+Three declarations look similar and are not:
 
-Iceberg itself may declare several transforms over one source column. A Field
-member has only one physical marker, so schema projection deliberately omits
-that ambiguous marker and leaves the table's native `PartitionSpec`
+| declaration | key | what it does |
+| --- | --- | --- |
+| `partition_key()` | `field:partition` | physical layout marker; rekep maps it to an identity Iceberg spec |
+| `partition_key("hour")` | `iceberg:partition_key` | a non-identity Iceberg transform |
+| `derived_from(...)` | `partition:sources` | an executable Arrow derivation, computing a real column |
+
+A derived transform such as `day` may also appear under `partition:transform`;
+it computes a separate Arrow column and does not define the table spec. The
+identity and transformed Iceberg markers are mutually exclusive -- a field
+carrying both is rejected at declaration and at spec conversion. Iceberg itself
+may declare several transforms over one source column, so schema projection
+omits that ambiguous marker and leaves the table's `PartitionSpec`
 authoritative for storage planning.
 
 ## Stream reads
@@ -78,7 +77,7 @@ accepts `branch`. `root`, `main`, and `master` address the physical main ref.
 
 ## Filesystem boundary
 
-Capture sources use Yggdryl `IOBase`. Iceberg locations use the table's
+Capture sources are bound with `IOBase`. Iceberg locations use the table's
 configured PyIceberg `FileIO` and PyArrow streams. `IcebergFileIO` only tracks
 transaction outputs so failed commits can clean up their own files; it is not
 a general filesystem abstraction.
@@ -107,7 +106,7 @@ never in committed task documents.
 
 The current table contract uses `url`, `rownum`, `branch`, and a derived
 `timepartition` with an Iceberg `hour` transform. Recreate an older messages
-table from `Message.field()` and reingest its source captures; Rekep carries no
+table from `Message.field()` and reingest its source captures; rekep carries no
 legacy name, timestamp-type, or partition-layout compatibility path.
 
 ## Maintenance
@@ -132,13 +131,17 @@ The checked maintenance job exposes the same controls:
 rekep task run tasks/optimize_iceberg/optimize_iceberg.json
 ```
 
-A null `namespace` visits every namespace recursively. `min_files` is the
-compaction threshold; `retain` and `snapshot_age_days` preserve recent time
-travel; `orphan_age_days` protects files from active or recently failed
-writers. `root`, `main`, and `master` select the same Iceberg root branch.
-`remove_orphans` enables the sweep; `metadata` includes the metadata directory
-in it. The result keys each table report by its full identifier, such as
-`logs.messages` or `fix.messages`, so equal table names in different namespaces
-cannot collide. Set `log_level` to `DEBUG` for file and plan details.
+| parameter | meaning |
+| --- | --- |
+| `namespace` | `null` visits every namespace recursively |
+| `min_files` | compaction threshold |
+| `retain`, `snapshot_age_days` | how much time travel is preserved |
+| `orphan_age_days` | protects files from active or recently failed writers |
+| `remove_orphans`, `metadata` | enable the orphan sweep, and include the metadata directory in it |
+| `branch` | `root`, `main` and `master` all select the Iceberg root branch |
+| `log_level` | `DEBUG` for file and plan details |
+
+Each table reports under its full identifier -- `logs.messages`,
+`fix.messages` -- so equal table names in different namespaces cannot collide.
 
 Run long transaction checks explicitly with `pytest -m integration`.

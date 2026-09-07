@@ -17,12 +17,10 @@ assert f"{field.into_json(indent=2)}\n" == document
 print(field.into_arrow_schema())
 ```
 
-The file is native Yggdryl `Field` JSON. It carries the Arrow types,
-nullability, field metadata, and Iceberg key markers needed to reproduce the
-table shape. Native partition and digest declarations, when present, use the
-same validated metadata and round-trip through `Field.from_json` and
-`Field.into_json`. The raw Message contract declares neither generated
-protocol. Rekep has no parallel schema class or document implementation.
+Native `Field` JSON: Arrow types, nullability, field metadata and Iceberg key
+markers -- everything needed to reproduce the table shape. Partition and digest
+declarations round-trip through the same validated metadata. rekep has no
+parallel schema class or document implementation.
 
 Regenerate it from the declaration:
 
@@ -34,19 +32,22 @@ rekep fields load --target schemas/rekep/message.json
 
 Schema changes update `Message` and this generated document together.
 
-The FIX snapshot has 101 source-first columns: the twelve raw `Message` columns
-(two of them renamed, see [Parse FIX](../pipeline/tasks/parse-fix.md#the-two-renamed-columns)),
-eighty-seven columns named by their canonical tag -- the eighty session and
-order tags Yggdryl's fixed schema carries, typed as
-[`config/fix`](https://github.com/Platob/yggfin/tree/main/config/fix) declares
-them, and the seven Yggdryl derives on its own branch (`30001` through
-`30007`) -- and the closing `entries` and `unmapped` pair lists. The schema is
-a fixed projection rather than a column per definition: a dictionary of six
-thousand fields would otherwise be a table of six thousand columns, and every
-pair the projection does not name is still in `entries`. Every timestamp
-in it is `timestamp[us, UTC]`; `(url, rownum)` remains the primary key and
-`timepartition` retains its hourly Iceberg marker. It is a derived fixture, not
-schema authority: `parse_fix` obtains the live schema from the selected Yggdryl
+The FIX snapshot is 101 source-first columns, described column by column in
+[`fix.messages`](../products/fix-message.md):
+
+| columns | what they are |
+| --- | --- |
+| 12 | the raw `Message` columns, [two renamed](../pipeline/tasks/parse-fix.md#the-two-renamed-columns) |
+| 80 | specification tags, typed as [`config/fix`](https://github.com/Platob/yggfin/tree/main/config/fix) declares them |
+| 7 | derived, on their own branch (`30001`-`30007`) |
+| 2 | `entries` and `unmapped` |
+
+A fixed projection, not a column per definition -- six thousand definitions
+would otherwise be six thousand columns, and every pair the projection does not
+name is still in `entries`. Every timestamp is `timestamp[us, UTC]`,
+`(url, rownum)` remains the primary key, and `timepartition` keeps its hourly
+Iceberg marker. It is a derived fixture, not
+schema authority: `parse_fix` obtains the live schema from the selected
 registry before streaming rows, so a dictionary that types a tag differently --
 or declares a group where a scalar was -- is a differently typed table without a
 code change.

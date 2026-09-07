@@ -1,6 +1,6 @@
 # Contracts
 
-Both files are native Yggdryl `Field` JSON:
+Both files are native `Field` JSON:
 
 - `message.json` is the generated contract for `logs.messages`.
 - `fix-message.json` is a reproducible snapshot of the 101-column `FixMsg`

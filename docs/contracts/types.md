@@ -1,14 +1,14 @@
 # Field contract
 
-Yggdryl `Field` is the public field type:
+The native `Field` is the public field type:
 
 ```python
 import pyarrow
 
 from rekep import Field, Message
-from yggdryl import Field as YggdrylField
+from yggdryl import Field as NativeField
 
-assert Field is YggdrylField
+assert Field is NativeField
 schema = Message.field().into_arrow_schema()
 assert schema.names == [
     "url",
@@ -33,34 +33,37 @@ assert partition.metadata[b"partition:sources"] == b'["timestamp"]'
 assert partition.metadata[b"iceberg:partition_key"] == b"hour"
 ```
 
-`@yggdryl.scalar` derives the cached field from the dataclass annotations.
-`Annotated` options supply the two Iceberg primary-key markers. Native
-`Field.into_arrow_schema`, `from_arrow_schema`, `into_json`, and `from_json`
-own every conversion.
+`@scalar` derives the cached field from the dataclass annotations; `Annotated`
+options supply the Iceberg markers. `Field.into_arrow_schema`,
+`from_arrow_schema`, `into_json` and `from_json` own every conversion.
 
-Iterate a `Field` for its immediate children, use `child.dtype.into_arrow()`
-for one datatype, and use `partition_field_names` and `digest_field_names` for
-the native protocol projections. Rekep adds no wrappers around those views;
-its remaining field helpers declare Iceberg metadata or bridge it to PyIceberg.
+| you want | use |
+| --- | --- |
+| the immediate children | iterate the `Field` |
+| one datatype | `child.dtype.into_arrow()` |
+| the derived columns | `partition_field_names` |
+| the digest holders | `digest_field_names` |
 
-The Message timestamp is an aware UTC instant. Arrow stores it at microsecond
-resolution, and Iceberg maps it to `timestamptz`. Yggdryl derives the nullable
-`timepartition` copy from `timestamp`; PyIceberg's `hour` transform makes that
-column the UTC hourly partition without reducing its stored precision.
+rekep adds no wrappers around those views; its remaining field helpers declare
+Iceberg metadata or bridge it to PyIceberg.
 
-Every Rekep Arrow boundary delegates directly to native Yggdryl application with
-`safe=False` and `nullability="strict"`. Message batches use
-`Field.apply_arrow_batch`; Iceberg streams use `Field.apply_arrow_reader`, which
-compiles once, then casts, computes `partition:sources` columns, and fills
-`digest:role=holder` columns in that order. Missing and null required values,
-protocol exemptions, nested array casts, final verification, and stream
-ownership are Yggdryl contracts rather than Rekep implementations.
+## The three declarations
 
-`digest_key()` declares the third kind: a member that *holds* a digest Yggdryl
-computes over the members it names. The members it reads state nothing, which
-is the point -- a schema marks one holder and leaves its inputs ordinary
-columns. The declared datatype must be the algorithm's exact width, so the
-128-bit default takes `fixed_size_binary[16]`.
+| helper | metadata | meaning |
+| --- | --- | --- |
+| `primary_key()` | `iceberg:primary_key` | part of the merge identity |
+| `partition_key()` | `field:partition` | identity partition; a transform argument writes `iceberg:partition_key` instead |
+| `derived_from(sources, transform)` | `partition:sources` | compute this column from those, natively |
+| `digest_key(sources)` | `digest:role=holder` | this column *holds* a digest over those |
+
+The identity and transformed Iceberg markers are mutually exclusive -- a field
+carrying both is rejected at declaration and at spec conversion. A
+`derived_from(...)` declaration is independent of either.
+
+A digest holder's inputs state nothing, which is the point: a schema marks one
+holder and leaves its sources ordinary columns. The declared datatype must be
+the algorithm's exact width, so the 128-bit default takes
+`fixed_size_binary[16]`.
 
 ```python
 import pyarrow
@@ -77,16 +80,22 @@ assert holder.digest.algorithm == "xxh3-128"
 
 The raw [`Message`](../products/message.md) declares exactly one, over `body`.
 
-Iceberg layout and executable derivation are separate declarations. Yggfin
-maps `partition_key()` to Yggdryl's `field:partition` layout marker and an
-identity Iceberg spec. Non-identity transforms passed to `partition_key(...)`
-remain under `iceberg:partition_key`. Compose
-`derived_from("event", "year")` with a field annotation when Yggdryl should
-compute that field from `event`; its transform is the native expression
-protocol, independent of the Iceberg spec.
+## The apply
 
-Remaining native apply gaps are scoped in the
-[Yggdryl Arrow apply prompt](../prompts/yggdryl-arrow-apply.md).
+```mermaid
+flowchart LR
+    A["RecordBatch"] --> B["cast<br/>safe=False"]
+    B --> C["derive<br/>partition:sources"]
+    C --> D["fill<br/>digest holders"]
+    D --> E["verify<br/>nullability=strict"]
+```
 
-The identity and transformed Iceberg markers are mutually exclusive;
-declaration and Iceberg spec conversion reject a field carrying both.
+Every rekep Arrow boundary delegates to that one apply: batches through
+`Field.apply_arrow_batch`, streams through `Field.apply_arrow_reader`, which
+compiles once. Missing and null required values, protocol exemptions, nested
+array casts, final verification and stream ownership are native contracts, not
+rekep implementations.
+
+The `Message` timestamp is an aware UTC instant: Arrow stores microseconds,
+Iceberg maps it to `timestamptz`, and the `hour` transform over the derived
+`timepartition` copy partitions it without reducing stored precision.

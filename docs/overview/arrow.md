@@ -1,6 +1,6 @@
 # Why Apache Arrow
 
-Arrow is the one in-memory boundary between Yggdryl text media and Iceberg.
+Arrow is the one in-memory boundary between text media and Iceberg.
 
 ![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases.](../assets/arrow-hub.svg)
 
@@ -18,9 +18,9 @@ print(iceberg_schema(field))
 print(polars.from_arrow(arrow.empty_table()))
 ```
 
-Yggdryl emits `RecordBatch` objects. Its native `Field` validates, casts, and
+The text reader emits `RecordBatch` objects. `Field` validates, casts, and
 applies any declared partition and digest columns; PyIceberg accepts the
-resulting Arrow stream. No row model, project cast layer, or project filesystem
+resulting Arrow stream. No row model, cast layer, or filesystem of rekep's own
 sits between those boundaries.
 
 Arrow does not make every hand-off zero-copy. Compatible in-process buffers can

@@ -11,10 +11,10 @@ uv run --project python --group runner --frozen \
 ```
 
 Paste a local path or filesystem URI into **Registry location**, then select
-**Open registry**. A blank location selects Yggdryl's process registry, which
+**Open registry**. A blank location selects the process registry, which
 resolves `YGGDRYL_FIX_REGISTRY` and its normal user configuration. Remote
 locations use the backends already supported by
-`yggdryl.fix.FixRegistry.from_handle`.
+`FixRegistry.from_handle`.
 
 ## Browse and export
 
@@ -35,12 +35,12 @@ Select one result to open six views:
 | Field JSON | `Field.into_json(indent=2)` |
 
 The Field JSON tab is copyable and downloadable. Nested structure stays owned
-by Yggdryl: the browser does not reconstruct components, invent a catalog, or
+natively: the browser does not reconstruct components, invent a catalog, or
 declare a second FIX model.
 
 ## Full FixMsg schema
 
-The schema panel creates an empty Arrow reader, passes it to Yggdryl's native
+The schema panel creates an empty Arrow reader, passes it to the native
 `parse_arrow_reader`, and reads the output schema before any row exists. It then
 uses `Field.from_arrow_schema` and `Field.into_json(indent=2)` to display and
 download the complete registry-defined `FixMsg` schema.

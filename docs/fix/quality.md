@@ -167,7 +167,7 @@ which way the capture saw it move.
 A row carries two, and they answer different questions.
 
 `msghash` is on the raw `Message` contract: a `fixed_size_binary[16]` XXH3-128
-digest of the exact `body` bytes, declared as a holder and filled by Yggdryl
+digest of the exact `body` bytes, declared as a holder and filled
 during Arrow application.
 
 ```python
@@ -183,7 +183,7 @@ The holder is the only field that states anything: `body` stays an ordinary
 column, and a schema declares one holder rather than marking every field that
 contributes to it. `parse_fix` carries the column through unchanged.
 
-Column `30001` is the other one, and Yggdryl derives it over the message rather
+Column `30001` is the other one, derived over the message rather
 than over the bytes -- it is `FixMsg.digest()`, one of the
 [seven fields this crate adds](registry.md#the-fields-this-crate-adds). It is
 XXH3-128 over the entries in arrival order, each value fed as its length and

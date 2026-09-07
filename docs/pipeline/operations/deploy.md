@@ -17,7 +17,7 @@ The task document is the catalog authority. CLI `--catalog`, `--property`,
 `--table-property`, and `--branch` flags override it for one deployment.
 
 For S3, keep the capture source URI and Iceberg warehouse configuration
-separate. The capture URI belongs to Yggdryl; PyIceberg's standard `s3.*`
+separate. The capture URI is bound natively; PyIceberg's standard `s3.*`
 catalog properties configure the warehouse. Glue needs the package extra:
 
 ```bash
@@ -48,8 +48,8 @@ Omit `glue.id` unless the catalog belongs to another AWS account. Configure
 KMS encryption on the bucket; per-request `s3.sse.*` properties are not
 supported by this boundary.
 
-`fix.messages` is created by `parse_fix` on its first run. Its field depends on
-the selected Yggdryl registry, so the static raw-table deployment command does
-not invent it ahead of that native reader. Install or name a non-empty registry
+`fix.messages` is created by `parse_fix` on its first run. Its field depends
+on the selected registry, so the static raw-table deployment command does not
+invent it ahead of the reader. Install or name a non-empty registry
 before the first run and keep it stable; schema changes are explicit table
 migrations.

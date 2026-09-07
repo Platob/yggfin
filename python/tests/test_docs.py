@@ -100,8 +100,10 @@ def test_docs_record_the_measured_message_rates() -> None:
     assert "fastest of two warmed runs" in benchmark
     assert "buffered()" in benchmark
     assert "300,000 rows" in benchmark
-    assert "Concatenated gzip" in task
-    assert "yggdryl-text-streaming.md" in task
+    # The decoder limit stays documented where a reader meets it, and the
+    # staging answer stays beside it: both were removed from the docs once.
+    assert "concatenated gzip members" in task
+    assert "staging locally is not a substitute" in task
 
 
 def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:

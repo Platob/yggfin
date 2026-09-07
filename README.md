@@ -1,8 +1,8 @@
 # rekep
 
-`rekep` streams physical text records through Arrow into Iceberg. Yggdryl owns
-resource binding, filesystem traversal, decompression, text framing, and the
-native `Field`; yggfin keeps the PyIceberg read/write boundary.
+`rekep` streams physical text records through Arrow into Iceberg. Resource
+binding, filesystem traversal, decompression, text framing, FIX parsing and the
+`Field` model are native; rekep keeps the PyIceberg read/write boundary.
 
 ```bash
 pip install "rekep[iceberg]"
@@ -40,13 +40,14 @@ including gzip and zstd objects, and appends raw rows to `logs.messages`.
 Replaying the same source skips its `(url, rownum)` keys.
 
 ```text
-IOBase / TextOptions -> Message batches -> logs.messages
-logs.messages -> Yggdryl FIX reader -> fix.messages
+IOBase / TextOptions -> Message batches -> logs.messages   (12 columns)
+logs.messages        -> FIX reader      -> fix.messages    (101 columns)
 ```
 
-`parse_fix` reads the stored binary bodies through Yggdryl's native FIX reader.
-It preserves source identity, streams the registry-typed Arrow rows into
-`fix.messages`, and introduces no Rekep FIX registry, parser, or row model.
+`parse_fix` reads the stored binary bodies through the native FIX reader. It
+preserves source identity, streams the registry-typed Arrow rows into
+`fix.messages`, and introduces no FIX registry, parser, or row model of its
+own.
 The generated [`FixMsg` schema snapshot](schemas/rekep/fix-message.json) can be
 loaded with `Field.from_json` for schema review and mock Iceberg writes without
 parsing input.
