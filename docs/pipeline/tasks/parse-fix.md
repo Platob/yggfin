@@ -106,6 +106,9 @@ input row is one output row -- prose, an unreadable frame and an empty body
 included -- so `url` and `rownum` still identify the result. `dedup` is the one
 exception and says so.
 
+Cost scales with carried bytes today rather than parsed columns; that is
+[on the roadmap](../../roadmap/fix-throughput.md).
+
 The output schema is available before the first batch: the application builds
 its `Field` with `Field.from_arrow_schema`, applies it to the reader, and hands
 the stream to Iceberg. No FIX parser, registry, or row model of rekep's own

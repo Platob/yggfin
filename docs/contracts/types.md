@@ -92,7 +92,8 @@ flowchart LR
 
 Every rekep Arrow boundary delegates to that one apply: batches through
 `Field.apply_arrow_batch`, streams through `Field.apply_arrow_reader`, which
-compiles once. Missing and null required values, protocol exemptions, nested
+compiles once. What it does not do yet is on the
+[roadmap](../roadmap/arrow-apply.md). Missing and null required values, protocol exemptions, nested
 array casts, final verification and stream ownership are native contracts, not
 rekep implementations.
 

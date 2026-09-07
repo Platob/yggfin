@@ -6,7 +6,6 @@ repo_name: rekep
 docs_dir: docs
 exclude_docs: |
   assets/README.md
-  prompts/
 
 theme:
   name: material
@@ -78,6 +77,12 @@ nav:
       - Run: pipeline/operations/run.md
       - Deploy: pipeline/operations/deploy.md
       - Logs: pipeline/operations/logs.md
+  - Roadmap:
+      - What is open: roadmap/index.md
+      - Compressed text streaming: roadmap/text-streaming.md
+      - Transfer bottlenecks: roadmap/transfer.md
+      - Native Arrow apply: roadmap/arrow-apply.md
+      - Column-native FIX parsing: roadmap/fix-throughput.md
 
 validation:
   links:

@@ -50,7 +50,9 @@ flowchart LR
 
 Neither boundary accumulates the source or an output table in memory. One
 individual record is bounded only when `TextOptions.max_record_byte_size` is
-set; its truncation policy would change `body`, so this task leaves it unset.
+set; its truncation policy would change `body`, so this task leaves it unset
+until [error-on-overflow](../../roadmap/text-streaming.md#a-byte-bound-that-does-not-change-bytes)
+lands.
 
 ## Classification and digest
 
@@ -80,7 +82,7 @@ replay      14 read,  0 written, 14 skipped   → no data file, no snapshot
 | --- | --- |
 | single-member gzip, zstd | streams |
 | concatenated zstd frames | read in order |
-| concatenated gzip members | needs a decoder fix; staging locally is not a substitute |
+| concatenated gzip members | needs a [decoder fix](../../roadmap/text-streaming.md#concatenated-members); staging locally is not a substitute |
 
 ## Throughput
 

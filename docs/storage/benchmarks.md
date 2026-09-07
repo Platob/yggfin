@@ -22,9 +22,12 @@ uv run python benchmarks/bench_message.py
 *native* drains text batches only. *`Message`* adds what `parse_messages` does:
 timestamp conversion to `timestamp[us, UTC]`, derivation of `timepartition`,
 the body digest, and strict final verification -- about 19% of the native rate,
-and the applied partition plan is the visible cost.
+and the applied partition plan is the visible cost. Closing that gap is
+[on the roadmap](../roadmap/arrow-apply.md#one-plan-fewer-passes).
 
-Staging a remote object locally does not help: an earlier diagnostic that
+Whole-byte and record-write limits are
+[on the roadmap](../roadmap/transfer.md). Staging a remote object locally does
+not help either: an earlier diagnostic that
 copied gzip to a local resource reached 83,868 rows/s against 97,813 direct in
 the same run. `IOBase.buffered()` is a positional-read cache the sequential
 record reader bypasses, so a remote source stays streamed directly.
