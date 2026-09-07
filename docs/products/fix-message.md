@@ -7,22 +7,20 @@ projection does not name is kept in `entries`.
 
 ```mermaid
 flowchart LR
-    subgraph R["raw record · 12"]
-        direction TB
-        R1[url · rownum · timestamp · timepartition]
-        R2[threadname · logbranch · level]
-        R3[mimetype · msgtype · direction · msghash · body]
-    end
-    subgraph T["tag columns · 87"]
-        direction TB
-        T1["80 specification tags<br/>named by tag, typed by the dictionary"]
-        T2["7 derived · 30001-30007"]
-    end
-    subgraph L["lists · 2"]
-        direction TB
-        L1[entries -- every pair in arrival order]
-        L2[unmapped -- the pairs nothing placed]
-    end
+    R["raw record · 12
+    ─────────────────
+    url · rownum · timestamp · timepartition
+    threadname · logbranch · level
+    mimetype · msgtype · direction · msghash · body"]
+    T["tag columns · 87
+    ─────────────────
+    80 specification tags
+    named by tag, typed by the dictionary
+    7 derived · 30001-30007"]
+    L["lists · 2
+    ─────────────────
+    entries · every pair in arrival order
+    unmapped · the pairs nothing placed"]
     R --> T --> L
 ```
 

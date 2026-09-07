@@ -6,25 +6,22 @@ identity, and the Iceberg commit.
 
 ```mermaid
 flowchart LR
-    subgraph N["native core — Rust, one Arrow boundary"]
-        direction TB
-        N1["IOBase<br/>bind · traverse · decompress"]
-        N2["TextOptions<br/>header capture · physical lines"]
-        N3["Field<br/>cast · derive · digest · verify"]
-        N4["FixRegistry · FixReader<br/>dictionary · frames · typing"]
-    end
-    subgraph K["rekep"]
-        direction TB
-        K1["Message contract"]
-        K2["IcebergCatalog<br/>IcebergDataset"]
-        K3["Task documents + CLI"]
-    end
-    subgraph I["PyIceberg"]
-        direction TB
-        I1["tables · snapshots<br/>planning · commits"]
-    end
-    N -->|RecordBatchReader| K
-    K -->|RecordBatchReader| I
+    N["native core — Rust
+    ─────────────────
+    IOBase · bind · traverse · decompress
+    TextOptions · header capture · physical lines
+    Field · cast · derive · digest · verify
+    FixRegistry · FixReader · dictionary · frames · typing"]
+    K["rekep
+    ─────────────────
+    Message contract
+    IcebergCatalog / IcebergDataset
+    Task documents + CLI"]
+    I["PyIceberg
+    ─────────────────
+    tables · snapshots
+    planning · commits"]
+    N -->|RecordBatchReader| K -->|RecordBatchReader| I
 ```
 
 ## No second implementation
