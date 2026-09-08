@@ -11,10 +11,9 @@ from typing import Any
 import pyarrow
 import pytest
 from pyiceberg.expressions import EqualTo
-from yggdryl import Field
-from yggdryl.fix import FixRegistry
 
-from rekep import Message, cli
+from rekep import Field, Message, cli
+from rekep.fix import FixRegistry
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 
 pytestmark = pytest.mark.integration
@@ -22,8 +21,6 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fix-message.json"
-REGISTRY = ROOT / "config" / "fix"
-
 WORKFLOW = (("parse_messages", {}), ("parse_fix", {}))
 
 #: What the bridge fixture's 111 physical rows produce, first run. The FIX
@@ -62,10 +59,6 @@ class Ran:
         }
         self._capsys = capsys
 
-    def registry(self) -> str:
-        """The checked dictionary the application and schema snapshot share."""
-        return REGISTRY.as_uri()
-
     def task(self, name: str, **overrides: Any) -> dict[str, Any]:
         """One task, with its result read back off `stdout`."""
         argv = [
@@ -86,8 +79,6 @@ class Ran:
         for name, held in WORKFLOW:
             if name == "parse_messages":
                 first = {"filesystem": FIXTURE.as_uri()}
-            elif name == "parse_fix":
-                first = {"registry": self.registry()}
             else:
                 first = {}
             result = self.task(name, **first, **held, **overrides)

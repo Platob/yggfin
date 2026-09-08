@@ -1,80 +1,56 @@
-# Quality
+# FIX quality and audit
 
-The two stages retain source position, exact bytes, parsed meaning, and
-dictionary coverage as separate facts. No pre-parser classification decides
-whether a row is allowed into `fix.messages`.
+Quality is represented in rows rather than hidden in parser control flow.
 
-## One row in, one row out
+| signal | question |
+| --- | --- |
+| `bodyhash` | did the exact captured bytes change? |
+| `msghash` | did the parsed business record change? |
+| `nofixentries` | exactly which pairs arrived, in what order? |
+| `nounmappedfixentries` | which pairs had no registry definition? |
+| typed null with an arrival | which value failed translation or conversion? |
+| `FixMsg.anomalies()` | which internal protocol claims disagree? |
 
-`parse_messages` stores every physical line. With the task default
-`dedup=false`, `parse_fix` emits one codec row for each stored line, including
-prose, an empty body, or a malformed frame. `(url, rownum)` therefore identifies
-the same position in both tables.
+## Distinct digests
 
-The codec guarantees non-null `beginstring`, `msghash`, `timestamp`, and
-`unixpartition`. Missing body facts use a resolved FIX version, an empty-record
-digest, the source timestamp or Unix epoch, and its derived partition.
+`bodyhash` includes log prose and framing because it hashes `Message.body`.
+`msghash` hashes the parsed arrival record while excluding session-envelope
+tags. Two relayed copies can therefore have different bodies but the same
+parsed identity; a corrected dictionary can change typed columns without
+changing either source digest.
 
-## Two digests
-
-| digest | source | answers |
-| --- | --- | --- |
-| `bodyhash` | exact raw `body` bytes | did this physical capture change? |
-| `msghash` | parsed `nofixentries`, excluding the session envelope | did the message meaning change? |
+## Anomalies
 
 ```python
-from rekep import Message
-from yggdryl.fix import fix_crate_fields
+from rekep.fix import FixCodec, fix_registry
 
-bodyhash = Message.field()["bodyhash"]
-msghash = {field.name: field for field in fix_crate_fields()}["msghash"]
+codec = FixCodec(fix_registry())
+message = codec.transform_line(b"8=FIX.4.4|9=999|35=D|55=AAPL|10=000|")
 
-assert bodyhash.digest.sources == ["body"]
-assert msghash.digest.sources == ["nofixentries"]
-assert bodyhash.digest.algorithm == msghash.digest.algorithm == "xxh3-128"
+for anomaly in message.anomalies():
+    print(anomaly)
 ```
 
-The codec's folded-name rule is why the raw holder is called `bodyhash`.
-Calling it `msghash` would fill the fixed field from source and erase the
-distinction. Neither digest is cryptographic.
+Anomalies are message-level checks such as stated lengths, checksums, and group
+counts. They do not erase the message or its arrivals.
 
-## Source facts fill fixed fields
+## Registry coverage
 
-`timestamp` from the log header outranks clocks inside the message. `msgCtxId`
-fills `msgctxid`; `seqNum` can fill `msgseqnum`; and `plugin` can fill the
-sender or target plugin session. A source fill is not appended to
-`nofixentries`, because it was context around the protocol record rather than a
-pair inside it.
+```python
+import pyarrow.compute as pc
 
-Direction comes from a source `direction` column when present, otherwise from
-a recognized verb before the payload, otherwise the codec's stream default.
-It fills folded `msgdirection` (tag 385) and selects which plugin-session side
-the source `plugin` supplies.
+# `fixed` is a pyarrow.Table read from fix.messages.
+unmapped_rows = pc.greater(pc.list_value_length(fixed["nounmappedfixentries"]), 0)
+needs_dictionary_work = fixed.filter(unmapped_rows)
+```
 
-## Arrival and coverage
+Investigate the original keys in `nounmappedfixentries`, add definitions to an
+explicit registry, replay `parse_fix`, and review the schema diff before
+publishing it as the next bundle.
 
-`nofixentries` preserves every parsed pair in arrival order. It keeps original
-text when a declared type cannot read a value and is the source used by
-`FixMsg.to_bytes()`.
+## Replay guarantees
 
-`nounmappedfixentries` is the subset no registry field resolved. Group it by
-`key` to find missing venue definitions; an empty list means the selected
-registry covered every pair in that row. Adding a definition changes future
-typed output without rewriting what the source originally said.
-
-`FixMsg.anomalies()` reports type failures, repeating-group count mismatch, and
-lossy text decoding for one object. These are observations, not reasons to drop
-the row.
-
-## Deduplication
-
-`dedup=true` drops only a row whose `msghash` equals the previously emitted
-row, carrying the comparison across batch boundaries. It is sequential and
-bounded, not a global set. Enabling it intentionally breaks positional row
-alignment and is therefore explicit; the pipeline default is false.
-
-## Replay
-
-Iceberg insertion is keyed by `(url, rownum)` in both tables. Replaying the
-same source reads and parses all rows, writes none, and creates no data file or
-snapshot. The stage result reports the skipped count rather than hiding it.
+With `dedup=false`, `(url, rownum)` keeps raw and fixed products aligned. A
+replay writes no duplicate and no empty snapshot. Turning deduplication on
+drops only adjacent equal `msghash` values and explicitly gives up positional
+row alignment; use it only for a product whose contract allows that.

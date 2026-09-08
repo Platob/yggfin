@@ -1,4 +1,4 @@
-"""Native Yggdryl fields at Rekep's Arrow and Iceberg boundaries."""
+"""Native fields at rekep's Arrow and Iceberg boundaries."""
 
 from yggdryl import Field, scalar
 

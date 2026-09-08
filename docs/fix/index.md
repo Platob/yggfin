@@ -1,53 +1,59 @@
 # FIX
 
-Yggdryl owns the FIX dictionary, codec, fixed Arrow schema, derived values,
-and arrival record. rekep supplies raw `Message` rows and the Iceberg boundary;
-it has no FIX parser, registry, or row model of its own.
+rekep ships one FIX system: a complete registry, a line codec, `FixMsg`, and a
+fixed Arrow projection. It reads numeric FIX, ULLINK name/value rows, bridge
+configuration JSON, FIXML, and already-split pairs through one builder.
 
-| page | question |
+| page | answers |
 | --- | --- |
-| [Registry](registry.md) | which field, type, alias, branch, and code set does a key resolve to? |
-| [Decode](decode.md) | how does one line or Arrow reader become a `FixMsg`? |
-| [Encode](encode.md) | how is a parsed arrival record emitted again? |
-| [Quality](quality.md) | which identities and guarantees survive both stages? |
+| [Registry](registry.md) | which tag, name, alias, branch, datatype, code set, and group does a key mean? |
+| [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, and `fix.messages`? |
+| [Encode](encode.md) | how is the lossless arrival record emitted again? |
+| [Quality](quality.md) | what survives malformed input, replay, and registry change? |
+| [Registry browser](../tools/fix-registry.md) | how do I search and inspect all 6,262 loaded definitions? |
 
-## Pipeline
+## Default registry
 
-```mermaid
-flowchart LR
-    U["ULBridge capture"] --> T["native text reader"]
-    T --> M[("logs.messages<br/>raw + bodyhash")]
-    M --> C["native FixCodec"]
-    C --> F[("fix.messages<br/>folded fields + arrival lists")]
-    R[["config/fix + ULBridge vocabulary"]] -.types.-> C
-```
-
-`parse_messages` frames and types the log header but never inspects the body.
-`parse_fix` passes every stored body to `parse_arrow_reader`. A line without a
-FIX frame still receives a codec row, preserving source position and the four
-required stamps.
-
-## Registry used by the task
-
-`config/fix` contributes 6,203 stored definitions. Every newly constructed
-registry already contains 16 Yggdryl fields at tags 65000–65015, and
-`with_ulbridge_fields()` adds 43 fields on the `ulbridge` branch.
+The package contains 6,203 specification definitions. Importing `rekep`
+loads them, adds 16 runtime fields and 43 ULBridge fields, and installs the
+result as the process default.
 
 ```python
-from yggdryl import IOBase
-from yggdryl.fix import FixRegistry
+from rekep.fix import fix_registry, global_registry, registry_path
 
-registry = FixRegistry.from_handle(IOBase.from_uri("file:config/fix"))
-assert len(registry) == 6219
-registry.with_ulbridge_fields()
+registry = fix_registry()
+
+assert registry_path().is_dir()
 assert len(registry) == 6262
+assert global_registry() == registry
 ```
 
-The registry types the fixed projection. Arrow columns use folded canonical
-names such as `msgtype`; their numeric FIX tags remain field metadata.
+An application does not need a registry environment variable or an external
+dictionary directory. An explicit registry URI remains available for testing
+or a venue extension.
 
-## Browser diagnostics
+## One line, one typed message
 
-The interactive registry and decoder use generated projections of the same
-dictionary and run entirely in the browser. They are diagnostics, not a
-second parser. The Rust/Python Yggdryl path remains authoritative.
+```python
+from rekep.fix import FixCodec, fix_registry
+
+codec = FixCodec(fix_registry(), branch="ulbridge")
+message = codec.transform_line(
+    b"MSGTYPE=executionreport|SYMBOL=HOLN|SIDE=buy|LASTSHARES=235|LASTPX=72.28|"
+)
+
+assert message.field.name == "executionreport"
+assert message.by_tag(35).as_py() == "8"
+assert message.by_name("side").as_py() == "1"
+assert message.by_name("lastqty").as_py() == 235.0
+```
+
+The registry resolved aliases and code names; the message still retains the
+original spellings in `entries()`.
+
+## Stream contract
+
+`parse_arrow_reader` exposes its output schema before reading its first batch.
+Source columns lead the fixed projection unless a fixed field claims the same
+folded name. By default one input row produces one output row, including prose
+and rows with values that fail conversion.

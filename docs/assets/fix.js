@@ -6,7 +6,7 @@
  * bounds, the same "a checksum closes the message" rule, and the same media
  * type and direction taxonomies -- so a line decoded on this page resolves the
  * way `parse_fix` resolves it. The dictionary is `assets/fix-registry.json`,
- * generated from `config/fix`.
+ * generated from rekep's bundled FIX registry.
  *
  * Nothing here parses on the server, and nothing is uploaded: a pasted line
  * stays in the tab it was pasted into.

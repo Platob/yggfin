@@ -1,4 +1,4 @@
-"""The standalone FIX registry browser is a native Yggdryl view."""
+"""The standalone FIX registry browser is a rekep-native view."""
 
 from __future__ import annotations
 
@@ -10,8 +10,9 @@ from pathlib import Path
 from typing import Any
 
 import pyarrow
-from yggdryl import Field
-from yggdryl.fix import FixRegistry
+
+from rekep import Field
+from rekep.fix import FixRegistry, fix_crate_fields, fix_ulbridge_fields
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOL = ROOT / "tools" / "fix_registry.py"
@@ -66,7 +67,7 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
         "aliases": "ticker",
         "description": "Instrument identifier",
     }
-    assert len(rows) == 1 + len(setup["FixRegistry"]())
+    assert len(rows) == 1 + len(fix_crate_fields()) + len(fix_ulbridge_fields())
     assert setup["metadata_records"](_field(), "codes", "codes") == [
         {"value": "AAPL", "name": "Apple"}
     ]
@@ -102,7 +103,7 @@ def test_tool_uses_native_shape_and_schema_operations() -> None:
     assert Field.from_json(schema.into_json()) == schema
 
 
-def test_tool_is_strict_marimo_and_has_no_task_or_rekep_fix_dependency() -> None:
+def test_tool_is_strict_marimo_and_uses_the_rekep_fix_surface() -> None:
     checked = subprocess.run(  # noqa: S603
         [sys.executable, "-m", "marimo", "check", "--strict", str(TOOL)],
         capture_output=True,
@@ -112,8 +113,8 @@ def test_tool_is_strict_marimo_and_has_no_task_or_rekep_fix_dependency() -> None
     source = TOOL.read_text(encoding="utf-8")
 
     assert checked.returncode == 0, checked.stdout + checked.stderr
-    assert "from yggdryl.fix import FixRegistry, global_registry, parse_arrow_reader" in source
-    assert "rekep" not in source.casefold()
+    assert "from rekep.fix import FixRegistry, fix_registry, parse_arrow_reader" in source
+    assert "yggdryl" not in source.casefold()
     assert "Task" not in source
     assert "Iceberg" not in source
     assert not (ROOT / "tasks" / "fix_registry").exists()
@@ -124,7 +125,8 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
 
     assert "Standalone tool" in page
     assert "uv run --project python --group runner --frozen" in page
-    assert "FixRegistry.from_handle" in page
+    assert "fix_registry" in page
+    assert "6,262" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
     assert "empty Arrow reader" in page

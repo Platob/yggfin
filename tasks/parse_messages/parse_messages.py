@@ -9,8 +9,8 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-    from yggdryl import IOBase
 
+    from rekep import IOBase
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task

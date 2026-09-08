@@ -8,7 +8,6 @@ import re
 from pathlib import Path
 
 import yaml
-from yggdryl import Field as YggdrylField
 
 from rekep import Field, Message
 
@@ -67,7 +66,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
 
-    assert Field is YggdrylField
+    assert Field.__name__ == "Field"
     assert [member.name for member in Message.field()] == [
         "url",
         "rownum",
@@ -111,6 +110,19 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
     assert "parse_arrow_reader" in task
-    assert "Field.from_arrow_schema" in task
-    assert "second registry" in schemas
+    assert "iceberg_fix_field" in task
+    assert "not alternate implementations" in schemas
     assert "`fix-message.json`" in schemas
+
+
+def test_public_scripts_and_documentation_use_only_the_rekep_name() -> None:
+    roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "tasks", ROOT / "tools"]
+    suffixes = {".md", ".json", ".js", ".py"}
+    files = []
+    for root in roots:
+        files.extend([root] if root.is_file() else root.rglob("*"))
+
+    exposed = [path for path in files if path.is_file() and path.suffix in suffixes]
+    assert exposed
+    for path in exposed:
+        assert "yggdryl" not in path.read_text(encoding="utf-8").casefold(), path

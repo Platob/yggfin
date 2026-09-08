@@ -18,7 +18,7 @@ class Message(Convertible):
     """One ULBridge text line, before the FIX codec reads its body."""
 
     url: Annotated[str, primary_key()] = ""
-    """Yggdryl URL of the source text object."""
+    """Canonical URI of the source text object."""
 
     rownum: Annotated[int, primary_key()] = 0
     """1-based physical line number within the source object."""
@@ -55,7 +55,7 @@ class Message(Convertible):
         bytes | None,
         digest_key(["body"], dtype=pyarrow.binary(16)),
     ] = None
-    """XXH3-128 digest of the exact body bytes, filled by Yggdryl."""
+    """XXH3-128 digest of the exact body bytes, filled during field apply."""
 
     body: bytes = b""
     """Exact bytes after the matched line-header prefix."""

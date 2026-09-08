@@ -1,26 +1,44 @@
-# Contracts
+# Schema review snapshots
 
-Both files are native `Field` JSON:
+Both checked files are deterministic `rekep.Field` JSON:
 
-- `message.json` is the generated contract for `logs.messages`.
-- `fix-message.json` is a reproducible snapshot of the 108-column `FixMsg`
-  schema this checkout's dictionary and ULBridge carrier produce.
+| file | runtime owner | product |
+| --- | --- | --- |
+| `rekep/message.json` | `rekep.Message.field()` | `logs.messages` |
+| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` |
+
+They are review artifacts, not alternate implementations. Runtime fields
+remain authoritative and tests require byte-for-byte agreement.
+`fix-message.json` is therefore reviewed as generated output, never edited as
+an independent schema definition.
+
+Regenerate the raw contract:
 
 ```bash
-rekep fields dump --pyclass rekep.text.message:Message \
+uv run --project python rekep fields dump \
+  --pyclass rekep.text.message:Message \
   --target schemas/rekep/message.json
-rekep fields load --target schemas/rekep/message.json
 ```
 
-Each checked JSON file is `Field.into_json(indent=2)` followed by one
-newline and loads with `Field.from_json(document)`. The schema and `Message`
-declaration change together. Native protocol declarations, when present, are
-validated metadata in the same document; source lists remain canonical compact
-JSON strings inside that metadata.
+Regenerate the registry-dependent FIX contract:
 
-The FIX snapshot is for schema review and Iceberg simulations. It is not a
-second registry: production `parse_fix` always asks its selected runtime
-registry for the schema before reading a batch. The dictionary it is generated
-from is `config/fix`, and the regeneration procedure for `fix-message.json`
-is on the [portable schema](../docs/contracts/index.md) page. Regenerate it
-whenever that dictionary changes.
+```python
+from pathlib import Path
+
+from rekep.fix import fix_message_field
+
+target = Path("schemas/rekep/fix-message.json")
+target.write_text(f"{fix_message_field().into_json(indent=2)}\n", encoding="utf-8")
+```
+
+Validate either document:
+
+```bash
+uv run --project python rekep fields load --target schemas/rekep/message.json
+uv run --project python rekep fields load --target schemas/rekep/fix-message.json
+```
+
+The FIX snapshot uses the registry bundled at
+`python/src/rekep/_data/fix`, includes the bridge vocabulary, carries the raw
+`Message` schema, and narrows all nested and top-level nanosecond timestamps to
+the microsecond precision Iceberg v2 stores.

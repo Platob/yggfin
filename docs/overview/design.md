@@ -1,41 +1,50 @@
-# Design
+# Design rules
 
-## One field model
+## One public vocabulary
+
+Applications import resource, field, text, and FIX behavior from `rekep`.
+There are no parallel field classes, path layers, codecs, registries, or FIX
+row models.
 
 ```python
-from rekep import Field, Message
-from yggdryl import Field as NativeField
+from typing import Annotated
 
-assert Field is NativeField
-schema = Message.field().into_arrow_schema()
+from rekep import scalar
+from rekep.fields import primary_key
+
+
+@scalar
+class Row:
+    id: Annotated[str, primary_key()]
+    value: float | None = None
 ```
 
-The native `Field` is the schema authority. rekep adds no wrapper class,
-protocol metadata model, dataclass compiler, or alternate document codec.
+## Arrow is the transport
 
-## Stream by default
+Primary APIs consume and return `pyarrow.RecordBatchReader`. Tables are used
+only where an operation is explicitly memory-sized. Shape conversion remains
+columnar; Python row loops do not sit between parsing and storage.
 
-`IOBase.read_arrow_reader()` and Iceberg reads expose `RecordBatchReader`.
-Row batching bounds retained rows, and write commit limits bound transaction
-size. One exact body has no byte bound until the core exposes error-on-overflow.
-Helpers returning an Arrow table are explicit choices for data known to fit in
-memory.
+## Metadata is executable
 
-## Keep ownership narrow
+Primary keys, partitions, derived values, digests, FIX tags, code sets, and
+descriptions live on `Field`. Producers and consumers call `Field.apply_arrow_*`
+so cast, derivation, digest, and nullability rules execute in their declared
+order.
 
-- The native core owns filesystems, byte streams, compression, text media, FIX, and fields.
-- Arrow owns columnar kernels and schema casts.
-- PyIceberg owns tables, snapshots, planning, and commits.
-- rekep owns the `Message` contract and the small seam between those systems.
+## Raw before interpreted
 
-## Refuse ambiguity
+`logs.messages` preserves exact text bodies. `fix.messages` interprets every
+body while retaining `nofixentries` and `nounmappedfixentries`. A parser update
+can therefore be replayed from Iceberg without rereading the original files.
 
-Missing required columns, nulls in non-null fields, invalid merge keys, and
-unresolved resources fail at their boundary. The strict native apply policy
-owns Arrow casts, declared derivations, nullability checks, and error paths.
+## Replays are ordinary runs
 
-## Keep orchestration outside the package
+Both current products merge on `(url, rownum)`. Reprocessing the same capture
+reads the rows, writes zero new rows, and does not create an empty snapshot.
 
-`tasks/parse_messages/` and `tasks/parse_fix/` contain the Marimo applications
-and their JSON inputs. Package code contains reusable models and storage
-behavior only.
+## Documentation names contracts
+
+Schema JSON derives from the runtime field. Product pages describe its
+meaning and link to the reviewed snapshot. Examples use the same public calls
+as tasks, tests, and operators.

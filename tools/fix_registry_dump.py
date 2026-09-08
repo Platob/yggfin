@@ -1,4 +1,4 @@
-"""Publish the FIX section's two browser assets from `config/fix`.
+"""Publish the FIX section's two browser assets from rekep's registry.
 
 The pages under `docs/fix/` read a projection of the dictionary rather than
 the dictionary itself, because a browser cannot open an `IOBase` folder. Two
@@ -9,7 +9,7 @@ a page load does not owe a reader that:
 - `fix-details.json` is the members, code sets and lineage one entry needs
   only when somebody opens it.
 
-Run from the repository root whenever `config/fix` changes:
+Run from the repository root whenever the bundled registry changes:
 
     python tools/fix_registry_dump.py
 """
@@ -20,11 +20,10 @@ import json
 import pathlib
 from typing import Any
 
-from yggdryl import Field, IOBase
-from yggdryl.fix import FixRegistry
+from rekep import Field
+from rekep.fix import fix_registry
 
 ASSETS = pathlib.Path("docs/assets")
-SOURCE = "file:config/fix"
 
 
 def records(field: Field, key: str, collection: str) -> list[dict[str, Any]]:
@@ -51,8 +50,7 @@ def members(field: Field) -> list[dict[str, Any]]:
 
 def main() -> int:
     """Write both assets, and report what each cost."""
-    registry = FixRegistry.from_handle(IOBase.from_uri(SOURCE))
-    registry.with_ulbridge_fields()
+    registry = fix_registry()
 
     index: list[dict[str, Any]] = []
     detail: dict[str, dict[str, Any]] = {}
@@ -89,7 +87,7 @@ def main() -> int:
 
     index.sort(key=lambda row: row["tag"] or 0)
     published = {
-        "source": "config/fix",
+        "source": "rekep bundle",
         "branches": sorted({row["branch"] for row in index}),
         "fields": index,
     }

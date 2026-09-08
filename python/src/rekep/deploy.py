@@ -16,10 +16,11 @@ fills them.
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from rekep.fields import Field, field_of
+from rekep.fix import fix_message_field
 from rekep.iceberg import IcebergCatalog
 from rekep.text import Message
 
@@ -31,21 +32,22 @@ class Deployed:
     #: Catalog table identifier, `namespace.table`.
     table: str
 
-    #: The declaring class. Its `field` is what the task writing this
-    #: table builds its own schema from, so a deployed table and a written one
-    #: cannot disagree.
-    shape: type
+    #: The field factory used by the task that writes this table.
+    shape: Callable[[], Field]
 
     #: Physical order is opt-in; pipeline reads request their logical order.
     sort_by: tuple[str, ...] | None = None
 
     def field(self) -> Field:
         """The shape this table carries, named as the table."""
-        return field_of(self.shape, self.table)
+        return field_of(self.shape(), self.table)
 
 
-#: The table the supported ingestion task writes.
-TABLES: tuple[Deployed, ...] = (Deployed("logs.messages", Message),)
+#: The tables the supported ingestion graph writes, in production order.
+TABLES: tuple[Deployed, ...] = (
+    Deployed("logs.messages", Message.field),
+    Deployed("fix.messages", fix_message_field),
+)
 
 
 def deploy(

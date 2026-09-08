@@ -2,7 +2,7 @@
   "name": "parse_fix",
   "application": "parse_fix.py",
   "parameters": {
-    "registry": "file:config/fix",
+    "registry": null,
     "branch": "ulbridge",
     "version": null,
     "dedup": false,

@@ -156,6 +156,10 @@ def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
     assert fixed.upstream_task_ids == {"parse_messages"}
     assert [asset.name for asset in messages.outlets] == ["logs.messages"]
     assert [asset.name for asset in fixed.outlets] == ["fix.messages"]
+    assert dag.params["filesystem"] == "file:data/capture"
+    assert dag.params["registry"] is None
+    assert dag.params["branch"] == "ulbridge"
+    assert dag.params["dedup"] is False
 
 
 # -- the command it builds ---------------------------------------------------

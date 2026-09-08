@@ -11,7 +11,7 @@ import pytest
 from yggdryl import Field as YggdrylField
 
 import rekep
-from rekep import Field, scalar
+from rekep import Field, IOBase, TextOptions, scalar
 from rekep.fields import (
     PARTITION_KEY,
     PRIMARY_KEY,
@@ -20,12 +20,14 @@ from rekep.fields import (
     primary_key,
     sort_key,
 )
+from rekep.fix import fix_registry, global_registry, registry_path
 
 PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 
 PACKAGES = (
     "rekep",
     "rekep.fields",
+    "rekep.fix",
     "rekep.iceberg",
     "rekep.tasks",
     "rekep.text",
@@ -86,3 +88,13 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
 def test_rekep_reexports_the_native_yggdryl_field() -> None:
     """There is no project Field implementation or compatibility subclass."""
     assert Field is YggdrylField
+
+
+def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
+    bundled = fix_registry()
+
+    assert registry_path().is_dir()
+    assert len(bundled) == 6262
+    assert global_registry() == bundled
+    assert IOBase.__module__.startswith("yggdryl")
+    assert TextOptions.__module__.startswith("yggdryl")

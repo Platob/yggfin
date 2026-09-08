@@ -1,155 +1,150 @@
-# Airflow
+# Airflow deployment
 
-[`tasks/airflow/`](https://github.com/Platob/yggfin/tree/main/tasks/airflow)
-holds the DAG folder: one DAG, one operator, one runner. Nothing in the
-installed package knows about Airflow, and the DAG imports nothing from it
-that a plain `rekep task run` does not.
+`tasks/airflow/pipeline.py` declares the ready-to-run `rekep_ingestion` DAG:
 
-```mermaid
-flowchart LR
-    subgraph DAG["rekep_ingestion · schedule=None"]
-        A[parse_messages] --> B[parse_fix]
-    end
-    A -. outlet .-> M[("logs.messages")]
-    B -. outlet .-> F[("fix.messages")]
+```text
+parse_messages -> parse_fix
+     |                |
+     v                v
+logs.messages     fix.messages
 ```
 
-## The DAG
+The DAG exposes the union of both adjacent task documents as Params. A manual
+run can therefore replace `filesystem`, `catalog`, `registry`, `branch`,
+`version`, or `dedup` without creating another DAG.
 
-```python
---8 < --"tasks/airflow/pipeline.py"
+## How a task runs
+
+Each node is `MarimoOperator`. It starts the standalone child runner from the
+same checkout and locked environment:
+
+```text
+uv run --project <repo>/python --group runner --no-sync --offline \
+  --no-progress --no-env-file -- python \
+  <repo>/tasks/airflow/marimo_runner.py <task.json> \
+  --parameters-file <attempt>/parameters.json \
+  --result-file <attempt>/result.json
 ```
 
-| setting | value | why |
-| --- | --- | --- |
-| `schedule` | `None` | `filesystem` must name an immutable capture per run |
-| `catchup` | `False` | there is no backfill window to fill |
-| `max_active_runs` | `1` | two runs would compete for the same Iceberg key |
-| `render_template_as_native_obj` | `True` | a templated `parameters` stays a mapping, not a string |
-| `outlets` | one `Asset` per table | asset-aware schedules downstream, and per-run counts |
+`--no-sync --offline` makes a scheduled run deterministic: deployment must
+resolve and install dependencies before the DAG is enabled. The child runs the
+same Marimo application as `rekep task run`, validates its Stage result, and
+publishes JSON atomically. `on_kill` terminates the child process group.
 
-## The operator
-
-`MarimoOperator` runs one task document's Marimo application in an isolated
-child process.
-
-```python
-MarimoOperator(
-    task_id="parse_messages",
-    repository="/srv/rekep",  # the checkout holding python/ and tasks/
-    document="tasks/parse_messages/parse_messages.json",
-    parameters={"filesystem": "s3://capture/2026-09-06/"},  # optional overrides
-    environment={"AWS_PROFILE": "ingest"},  # optional child env
-    cache_dir="/var/cache/uv",  # optional shared uv cache
-    outlets=[Asset(name="logs.messages")],
-)
-```
-
-| argument | templated | contract |
-| --- | --- | --- |
-| `document` | yes | path to the task JSON, refused when outside `repository` |
-| `repository` | yes | must hold `python/pyproject.toml` |
-| `parameters` | yes (`json`) | only names the document already declares; an undeclared one raises |
-| `environment` | yes (`json`) | added to the worker environment for the child |
-| `cache_dir` | no | sets `UV_CACHE_DIR` for the child |
-| `outlets` | no | assets updated with this run's counts |
-
-### What the child actually runs
+## Install a worker checkout
 
 ```bash
-uv run --project <repository>/python --group runner \
-       --no-sync --offline --no-progress --no-env-file -- \
-  python <repository>/tasks/airflow/marimo_runner.py <document> \
-    --parameters-file <attempt>/parameters.json \
-    --result-file <attempt>/result.json
+export REKEP_ROOT=/opt/rekep
+git clone https://github.com/Platob/yggfin.git "$REKEP_ROOT"
+uv sync --project "$REKEP_ROOT/python" --locked --group runner --group airflow
 ```
 
-It never calls the `rekep` CLI. `--no-sync --offline` means a scheduled run
-cannot resolve or change dependencies -- install the locked `runner` group on
-the worker first, and point `cache_dir` at its shared uv cache.
+The `uv` executable must be on the scheduler and worker PATH. Every worker must
+see the checkout at the same absolute path, or use a deployment mechanism that
+sets the operator's `repository` to its local checkout.
 
-### One attempt, one directory
-
-```mermaid
-sequenceDiagram
-    participant A as Airflow
-    participant O as MarimoOperator
-    participant C as uv child
-    A->>O: execute(context)
-    O->>O: mkdtemp("<dag>-<task>-<run>-<map>-<try>-")
-    O->>O: write parameters.json, mode 0600
-    O->>C: uv run -- marimo_runner.py
-    C->>C: app.run(defs=parameters)
-    C->>O: result.json, written atomically
-    O->>A: validated result → XCom + outlet extras
-    O->>O: rmtree(attempt) — on success and on failure
-```
-
-The parameter document may hold a credential, so it is written with mode
-`0600` inside a directory unique to one attempt and removed either way. Every
-character outside `[A-Za-z0-9._-]` in the attempt name becomes `_`, so a run id
-carrying `:` or `+` cannot escape the directory it names.
-
-### Parameter precedence
-
-```mermaid
-flowchart LR
-    D["task JSON defaults"] --> P["operator parameters"] --> R["DAG run Params"] --> I["data interval"]
-```
-
-Later wins, and only a name the document already declares is ever set -- a task
-that does not take `books` is not handed the scheduler's. The interval fills
-`start` and `end` when, and only when, the document declares them:
-
-| context key | parameter |
-| --- | --- |
-| `data_interval_start` | `start` |
-| `data_interval_end` | `end` |
-
-### What comes back
-
-The child publishes one small mapping; the operator validates it, returns it
-(so it lands in XCom), and copies the counts onto every outlet the task says it
-wrote:
-
-```json
-{
-  "task": "parse_messages",
-  "read": 14,
-  "written": 14,
-  "skipped": 0,
-  "sources": {"capture": "file:data/capture"},
-  "targets": {"messages": "logs.messages"},
-  "window": {"start": null, "end": null},
-  "elapsed_ms": 932
-}
-```
-
-XCom carries a summary, never a payload. The runner also refuses a result whose
-`task` is not the document's name, so a mis-wired document fails the task
-instead of publishing under the wrong identity.
-
-### Failure and cancellation
-
-| situation | what happens |
-| --- | --- |
-| `repository` has no `python/pyproject.toml` | refused before a process starts |
-| `document` resolves outside `repository` | refused before a process starts |
-| application exits non-zero | `AirflowException` naming the exit code |
-| application exits 0 but publishes nothing | `AirflowException` -- a silent success is not a success |
-| task cleared or killed | `on_kill` sends `SIGTERM` to the whole child process group, so `uv` and the runner both go |
-
-## Enable it
-
-1. Install Airflow 3 and the locked `runner` group on the worker.
-2. Point the Airflow DAG bundle at `tasks/airflow/`.
-3. Configure the catalog and source in the two task documents -- the local
-   SQLite catalog is a one-host smoke test, not a deployment.
-4. [Deploy the table](operations/deploy.md) if catalog creation belongs to a
-   separate operator.
-5. Trigger `rekep_ingestion`.
+Point Airflow at the DAG folder:
 
 ```bash
-airflow dags trigger rekep_ingestion
-airflow tasks test rekep_ingestion parse_messages 2026-09-06
+export AIRFLOW_HOME=/var/lib/airflow
+export AIRFLOW__CORE__DAGS_FOLDER="$REKEP_ROOT/tasks/airflow"
+uv run --project "$REKEP_ROOT/python" --group airflow airflow db migrate
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags list
 ```
+
+For a local evaluation, `airflow standalone` starts all components:
+
+```bash
+uv run --project "$REKEP_ROOT/python" --group airflow airflow standalone
+```
+
+## Local-files trigger
+
+First deploy the tables, then trigger with an absolute source path visible to
+the worker:
+
+```bash
+uv run --project "$REKEP_ROOT/python" rekep iceberg deploy \
+  "$REKEP_ROOT/tasks/parse_messages/parse_messages.json"
+
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
+  rekep_ingestion \
+  --conf '{"filesystem":"file:///srv/capture/2026-08-14"}'
+```
+
+The default SQLite catalog is suitable only when scheduler and task execution
+share one durable host filesystem.
+
+## S3 capture with SQL catalog
+
+Deploy the warehouse as described in [S3 deployment](operations/deploy.md#s3-with-a-sql-catalog),
+then pass both source and catalog Params:
+
+```bash
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
+  rekep_ingestion \
+  --conf '{
+    "filesystem":"s3://market-capture/ulbridge/2026/08/14?region=eu-west-1",
+    "catalog":{
+      "name":"rekep",
+      "properties":{
+        "type":"sql",
+        "uri":"sqlite:////var/lib/rekep/catalog.db",
+        "warehouse":"s3://market-warehouse/rekep",
+        "s3.region":"eu-west-1"
+      }
+    }
+  }'
+```
+
+Use a shared SQL service instead of SQLite for distributed workers.
+
+## AWS Glue and S3
+
+Give scheduler/workers an IAM role and set their region. Deploy both tables
+once with the same role and settings:
+
+```bash
+export AWS_REGION=eu-west-1
+uv run --project "$REKEP_ROOT/python" rekep iceberg deploy \
+  --catalog rekep \
+  --property type=glue \
+  --property warehouse=s3://market-warehouse/rekep \
+  --property glue.region=eu-west-1 \
+  --property s3.region=eu-west-1
+```
+
+Trigger:
+
+```bash
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
+  rekep_ingestion \
+  --conf '{
+    "filesystem":"s3://market-capture/ulbridge/2026/08/14?region=eu-west-1",
+    "catalog":{
+      "name":"rekep",
+      "properties":{
+        "type":"glue",
+        "warehouse":"s3://market-warehouse/rekep",
+        "glue.region":"eu-west-1",
+        "s3.region":"eu-west-1"
+      }
+    }
+  }'
+```
+
+Do not pass AWS keys in `--conf`. Use an EC2 instance profile, ECS task role,
+EKS web identity, or the worker's standard AWS credential chain.
+
+## Production checklist
+
+1. Pin and deploy one repository revision to every worker.
+2. Run `uv sync --locked` while network access is allowed.
+3. Deploy both tables and rerun deploy to see `present`.
+4. Confirm the worker can list/read capture objects and read/write the
+   warehouse prefix.
+5. Trigger one immutable capture manually and compare stage counts.
+6. Replay it and require zero writes and zero new snapshots.
+7. Inspect `nounmappedfixentries` before enabling a recurring schedule.
+8. Keep `max_active_runs=1` unless catalog and source-window ownership are
+   designed for concurrent commits.

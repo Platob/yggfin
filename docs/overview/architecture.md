@@ -1,95 +1,75 @@
 # Architecture
 
-rekep is a seam, not a second implementation. Yggdryl owns bytes through
-typed Arrow rows; PyIceberg owns tables and commits; rekep declares the raw
-row and connects the two.
+rekep presents one public API over a native, Arrow-first data path. Tasks,
+tools, and documentation use `rekep` names; implementation dependencies do not
+leak into an application.
 
 ```mermaid
 flowchart LR
-    N["Yggdryl<br/>IOBase · TextOptions · Field · FixCodec · FixRegistry"]
-    K["rekep<br/>Message · tasks · Iceberg seam"]
-    I["PyIceberg<br/>planning · snapshots · commits"]
-    N -->|RecordBatchReader| K -->|RecordBatchReader| I
+    U["local or S3 capture"] --> R["rekep.IOBase"]
+    R --> T["rekep.TextOptions"]
+    T --> M[("logs.messages")]
+    M --> C["rekep.fix.parse_arrow_reader"]
+    D[["bundled FIX registry"]] -.types.-> C
+    C --> F[("fix.messages")]
+    F --> P["orders · executions · book"]
 ```
 
 ## Ownership
 
-| owner | contract |
+| layer | owns |
 | --- | --- |
-| Yggdryl | resources, streams, compression, text rows, field application, FIX dictionaries and codecs |
-| Arrow | columnar shape, kernels, and casts |
-| PyIceberg | ids, table schemas, partition specs, scans, snapshots, and commits |
-| rekep | `Message`, task configuration, and the Arrow/PyIceberg boundary |
+| resource | URI binding, local and object-store traversal, decompression, bounded reads |
+| text | physical-line framing, header capture, source URL and row number |
+| field | schema metadata, casts, digests, partitions, Arrow conversion |
+| FIX | dictionary, branches, code sets, line classification, parsing, fixed Arrow projection |
+| Iceberg | table conversion, identifiers, snapshots, scan planning, commits |
+| tasks | application parameters, stage boundaries, counts, and orchestration |
 
-`rekep.Field` is Yggdryl's native field type. There is no rekep FIX model,
-text reader, filesystem layer, or registry.
-
-```python
-from rekep import Field, Message
-from yggdryl import Field as NativeField
-
-assert Field is NativeField
-assert len(Message.field()) == 12
-```
-
-## One reader at each stage
-
-```mermaid
-sequenceDiagram
-    participant U as capture URI
-    participant T as Yggdryl text reader
-    participant M as logs.messages
-    participant F as Yggdryl FIX codec
-    participant X as fix.messages
-    U->>T: IOBase.from_uri + Message.text_options
-    T->>M: schema-bearing Message reader
-    M->>F: schema-bearing Message reader
-    F->>X: schema-bearing FixMessage reader
-```
-
-`Message.text_options()` installs `Message.field()` on the native text reader.
-The reader therefore casts header captures, derives `timepartition`, fills
-`bodyhash`, and verifies strict nullability without a Python row loop or a
-second apply pass.
+There is one `Field`, one resource handle, one text reader, one codec, and one
+FIX registry. rekep re-exports those types rather than wrapping them in
+compatibility classes.
 
 ```python
-from rekep import Message
-from rekep.iceberg import IcebergCatalog
-from yggdryl import IOBase
+from rekep import Field, IOBase, Message, TextOptions
+from rekep.fix import FixCodec, FixRegistry, fix_registry
 
-
-def ingest(filesystem, catalog):
-    source = IOBase.from_uri(filesystem)
-    reader = source.read_arrow_reader(options=Message.text_options())
-    store = IcebergCatalog.from_dict(catalog)
-    dataset = store.dataset("logs.messages", field=Message.field())
-    return dataset.append_arrow_reader(reader, Message.field(), merge_by=True)
+assert isinstance(Message.field(), Field)
+assert isinstance(Message.text_options(), TextOptions)
+assert isinstance(fix_registry(), FixRegistry)
+assert FixCodec(fix_registry())
+assert IOBase.from_uri("file:data/capture")
 ```
 
-The production task closes every resource shown in the compact example.
+## Streaming boundary
 
-## Two stable boundaries
+The text reader yields `RecordBatch` objects. `parse_messages` applies the
+`Message` field and gives one `RecordBatchReader` directly to Iceberg.
+`parse_fix` reads that table as another reader, passes it to the FIX parser,
+applies the parser's field once, and writes it. No production stage converts
+rows through Python dictionaries or stages an S3 object on local disk.
 
-```mermaid
-flowchart LR
-    C["ULBridge capture"] --> P1[parse_messages]
-    P1 --> M[("logs.messages · 12 columns")]
-    M --> P2[parse_fix]
-    P2 --> F[("fix.messages · 108 columns")]
-    R[["config/fix + ULBridge fields"]] -.types.-> P2
+## Stable identity
+
+The source object URI and 1-based physical row number are retained through
+both products. That pair is the primary key and the lossless join:
+
+```text
+logs.messages(url, rownum) == fix.messages(url, rownum)
 ```
 
-`parse_messages` does not inspect the body. `parse_fix` does not pre-classify
-or filter rows. The codec reads every body and preserves one output row per
-input row unless `dedup` is explicitly enabled.
+`bodyhash` identifies exact source bytes. `msghash` identifies the parsed FIX
+arrival record after session-envelope exclusions. They intentionally answer
+different questions.
 
 ## Repository layout
 
 ```text
-python/src/rekep/     Message and the Iceberg seam
-tasks/parse_messages/ native text → logs.messages
-tasks/parse_fix/      logs.messages → native FIX codec → fix.messages
-tasks/airflow/        DAG, operator, and locked runner
-config/fix/           runtime FIX dictionary
-schemas/rekep/        checked schema snapshots
+python/src/rekep/       public package and bundled registry
+tasks/parse_messages/   raw-line Marimo application + JSON parameters
+tasks/parse_fix/        FIX Marimo application + JSON parameters
+tasks/airflow/          DAG, operator, and standalone child runner
+schemas/rekep/          reviewed product schemas
+docs/                   contracts, operations, products, and roadmap
+tools/                  registry browser and documentation projection
 ```

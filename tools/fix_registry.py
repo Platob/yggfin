@@ -8,12 +8,13 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-    from yggdryl import Field
-    from yggdryl.fix import FixRegistry, global_registry, parse_arrow_reader
+
+    from rekep import Field
+    from rekep.fix import FixRegistry, fix_registry, parse_arrow_reader
 
     def open_registry(location):
-        """Open one native registry location; blank selects the process registry."""
-        return global_registry() if not location else FixRegistry.from_handle(location)
+        """Open one registry location; blank selects rekep's bundled registry."""
+        return fix_registry(location)
 
     def into_registry_rows(dictionary):
         """Small display rows over the native registry iterator."""
@@ -88,7 +89,7 @@ def _():
     mo.md("""
     # FIX registry
 
-    Inspect a native Yggdryl dictionary. Open any supported registry URI,
+    Inspect a rekep dictionary. Open any supported registry URI,
     search fields and repeating groups, export a definition, or snapshot the
     complete `FixMsg` parser schema without parsing a row.
     """)
@@ -97,13 +98,13 @@ def _():
 @app.cell
 def _():
     registry_location = mo.ui.text(
-        placeholder="file:///srv/config/fix or s3://bucket/fix",
-        label="Registry location (blank uses the process registry)",
+        placeholder="file:///srv/fix or s3://bucket/fix",
+        label="Registry location (blank uses the rekep bundle)",
         full_width=True,
     ).form(
         submit_button_label="Open registry",
         show_clear_button=True,
-        clear_button_label="Use process registry",
+        clear_button_label="Use bundled registry",
     )
     mo.vstack([registry_location])
     return (registry_location,)
@@ -119,7 +120,7 @@ def _(registry_location):
     except (OSError, ValueError) as _error:
         dictionary = FixRegistry()
         registry_error = f"{type(_error).__name__}: {_error}"
-    registry_source = "process registry" if _location is None else str(_location)
+    registry_source = "rekep bundle" if _location is None else str(_location)
     registry_rows = into_registry_rows(dictionary)
     return dictionary, registry_error, registry_rows, registry_source
 
@@ -150,7 +151,7 @@ def _(dictionary, registry_rows):
     mo.stop(
         not registry_rows,
         mo.callout(
-            "This registry is empty. Enter a populated Yggdryl registry location above.",
+            "This registry is empty. Enter a populated registry location above.",
             kind="warn",
         ),
     )
@@ -167,7 +168,7 @@ def _(fixmsg_schema, fixmsg_schema_json):
         disabled=True,
         min_height=520,
         show_copy_button=True,
-        label="Native FixMsg Field JSON",
+        label="FixMsg Field JSON",
     )
     _schema_download = mo.download(
         data=fixmsg_schema_json.encode("utf-8"),
@@ -352,7 +353,7 @@ def _(dictionary, registry_table):
                 disabled=True,
                 min_height=520,
                 show_copy_button=True,
-                label="Yggdryl Field JSON",
+                label="rekep Field JSON",
             ),
         ]
     )

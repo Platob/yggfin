@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from airflow.sdk import Asset, dag
 from marimo_operator import MarimoOperator
 
 ROOT = str(Path(__file__).resolve().parents[2])
+
+
+def _defaults(name: str) -> dict[str, object]:
+    """The parameters owned by one adjacent task document."""
+    document = Path(ROOT, "tasks", name, f"{name}.json")
+    return json.loads(document.read_text(encoding="utf-8"))["parameters"]
+
+
+MESSAGE_DEFAULTS = _defaults("parse_messages")
+FIX_DEFAULTS = _defaults("parse_fix")
+PARAMS = {**MESSAGE_DEFAULTS, **FIX_DEFAULTS}
 
 
 def _task(name: str, target: str) -> MarimoOperator:
@@ -28,6 +40,7 @@ def _task(name: str, target: str) -> MarimoOperator:
     catchup=False,
     max_active_runs=1,
     render_template_as_native_obj=True,
+    params=PARAMS,
     tags=["rekep", "arrow", "iceberg", "fix", "marimo"],
 )
 def _ingestion() -> None:

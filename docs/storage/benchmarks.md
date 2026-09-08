@@ -25,9 +25,8 @@ installs `Message.field()` on that same native reader, adding conversion to
 strict final verification. The contract path measured 9–10% below framing
 alone on this run; there is no Python row pass between them.
 
-Whole-byte and record-write limits are
-[on the roadmap](../roadmap/transfer.md). Staging a remote object locally does
-not help either: an earlier diagnostic that
+The remaining product work is [on the roadmap](../roadmap/index.md). Staging a
+remote object locally does not help ingestion: an earlier diagnostic that
 copied gzip to a local resource reached 83,868 rows/s against 97,813 direct in
 the same run. `IOBase.buffered()` is a positional-read cache the sequential
 record reader bypasses, so a remote source stays streamed directly.

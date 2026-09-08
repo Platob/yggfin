@@ -1,4 +1,4 @@
-"""Bind resource locations to yggdryl and read required byte sources."""
+"""Bind resource locations and read required byte sources."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def resource(
     *,
     root: Location | None = None,
 ) -> IOBase:
-    """One location bound to its yggdryl resource.
+    """One location bound to its native resource.
 
     An injected filesystem owns its path spelling. Plain local paths become
     absolute; a relative location under ``root`` derives from the bound root
@@ -58,7 +58,7 @@ def read_bytes(
     timeout: float | None = None,
     headers: Mapping[str, str] | None = None,
 ) -> bytes:
-    """Read one required resource through its composed yggdryl handle."""
+    """Read one required resource through its composed native handle."""
     request = source if isinstance(source, urllib.request.Request) else None
     location = request.full_url if request is not None else os.fspath(source)
     if filesystem is None and _scheme(location) in HTTP:

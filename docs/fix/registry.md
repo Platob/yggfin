@@ -1,127 +1,200 @@
-# Registry
+# FIX registry
 
-A FIX definition is a native Yggdryl `Field` with `fix:` metadata. Scalar,
-struct, and list datatypes already express primitive fields, components, and
-repeating groups, so there is no second FIX field class.
+The registry is a collection of ordinary `rekep.Field` definitions. FIX
+identity and behavior live in each field's `fix` view; nested datatypes express
+components and repeating groups without another model.
 
-| property | metadata | contract |
-| --- | --- | --- |
-| branch | `fix:branch` | dialect; empty means standard |
-| tag | `fix:tag` | canonical numeric tag |
-| alternate tags | `fix:tags` | identifier aliases, in priority order |
-| aliases | `fix:aliases` | name aliases, in priority order |
-| description | `description` | generic field description |
+## Loaded inventory
 
-The canonical column name is the field's folded `name`; display capitalization
-stays in `display`.
-
-## Browse
-
-Search by tag, name, alias, or description. Opening a row shows its Arrow type,
-members, code set, and lineage.
-
-<div data-fix="registry">Loading the dictionary…</div>
-
-## Resolution
-
-Within a branch, the registry tries canonical tag then alternate tags, followed
-by canonical folded name then folded aliases. A tag lookup never guesses from
-a name. Without an explicit branch, standard fields win before named branches.
+| source | count | branch |
+| --- | ---: | --- |
+| bundled specification | 6,203 | standard |
+| runtime fields | 16 | standard, tags 65000–65015 |
+| bridge vocabulary | 43 | `ulbridge` |
+| process total | 6,262 | 2 branches |
 
 ```python
-from yggdryl import IOBase
-from yggdryl.fix import FixRegistry
+from rekep.fix import fix_registry
 
-registry = FixRegistry.from_handle(IOBase.from_uri("file:config/fix"))
+registry = fix_registry()
+assert [branch.name for branch in registry.branches()] == ["", "ulbridge"]
+```
+
+## What a field carries
+
+| property | API | meaning |
+| --- | --- | --- |
+| canonical id | `field.fix.id` | tag plus branch identity |
+| canonical tag | `field.fix.tag` | integer protocol tag |
+| alternate tags | `field.fix.tags` | historical or equivalent identifiers |
+| storage name | `field.name` | folded canonical Arrow column name |
+| display name | `field.display` | specification capitalization |
+| aliases | `field.fix.aliases` | alternate folded name lookups |
+| datatype | `field.dtype` | scalar, struct, or list storage shape |
+| description | `field.fix.description` | specification meaning |
+| code set | `field.fix["codes"]` | versioned wire value/name translations |
+| lineage | `field.fix["lineage"]` | names and datatypes by FIX version |
+
+```python
+import json
+
+from rekep.fix import fix_registry
+
+registry = fix_registry()
 side = registry.field_by_tag(54)
+codes = json.loads(side.fix["codes"])["codes"]
 
 assert side.name == "side"
 assert side.display == "Side"
-assert registry.field_by_name("SIDE").name == "side"
-assert registry.get_field_by_name("Px") is None
+assert side.fix.id == "54:"
+assert str(side.dtype.into_arrow()) == "fixed_size_binary[4]"
+assert codes[0]["value"] == "1"
+assert codes[0]["name"] == "Buy"
 ```
 
-`get_*` returns `None` where `field_*` raises. `registry[key]` and
-`key in registry` use the same tag-or-name resolution.
+## Lookup methods
 
-## Seeded and bridge fields
+Raising methods are useful when absence is an invalid contract; `get_*`
+methods return `None` for exploratory code.
 
-Every registry contains the 16 Yggdryl fields at construction, even when its
-storage location is empty. They use standard tags 65000–65015 and are listed
-by `fix_crate_fields()`; callers do not install them.
+| strict | optional | key |
+| --- | --- | --- |
+| `field(key)` / `registry[key]` | `get_field(key)` / `get(key)` | integer tag or string name |
+| `field_by_id(id)` | `get_field_by_id(id)` | exact branch-qualified identifier |
+| `field_by_tag(tag)` | `get_field_by_tag(tag)` | canonical or alternate tag |
+| `field_by_name(name, branch)` | `get_field_by_name(...)` | canonical name or alias |
+| `field_by_path(path, branch)` | `get_field_by_path(...)` | nested component/group path |
 
 ```python
-from yggdryl.fix import FixRegistry, fix_crate_fields
+from rekep.fix import fix_registry
 
-registry = FixRegistry()
-fields = fix_crate_fields()
+registry = fix_registry()
 
-assert len(registry) == len(fields) == 16
-assert [field.fix.tag for field in fields] == list(range(65000, 65016))
+assert registry[54] == registry.field_by_tag(54)
+assert registry["SIDE"] == registry.field_by_name("side")
+assert registry.get_field_by_name("not-a-field") is None
+assert 55 in registry
+assert "Symbol" in registry
 ```
 
-`with_ulbridge_fields()` adds 43 ULBridge management fields on branch
-`ulbridge`. `parse_fix` calls it because its source is a ULBridge log. This is
-idempotent and enriches the selected registry in place.
+Name lookup is ASCII case-insensitive and ignores the separators used by the
+FIX name fold. Tag lookup never guesses from a textual name. An exact id does
+not fall through to another branch.
 
-## Stored dictionary
+## Resolution tiers
 
-A registry reads and writes one `IOBase` folder:
+For a message read on a named branch, a bare key resolves in this order:
 
-```text
-<root>/primitive/<shard>.json
-<root>/primitive/<branch>/<shard>.json
-<root>/nested/<shard>.json
-<root>/nested/<branch>/<shard>.json
-<root>/branches.json
-```
+1. the message branch;
+2. the standard branch;
+3. for capture-column fill only, any declared branch;
+4. bridge capture aliases such as `seqNum` → `MsgSeqNum`.
 
-Primitive and nested definitions are sharded by `tag / 100`. Seeded crate
-fields are runtime-owned and are not written to the folder. A missing folder
-loads as a registry containing only those seeded fields; `parse_fix` rejects
-that as an empty external dictionary.
+A branch-qualified identifier bypasses those tiers. Standard tags remain
+standard even while a message is read under `ulbridge`; named branches may
+claim only their user-tag range.
 
 ```python
-from yggdryl import IOBase
-from yggdryl.fix import FixRegistry
+from rekep.fix import STANDARD_BRANCH, fix_registry
 
-registry = FixRegistry.from_handle(IOBase.from_uri("file:config/fix"))
-copy = IOBase.from_uri("file:/tmp/fix-copy")
-registry.write_into(copy)
+registry = fix_registry()
+standard = registry.field_by_name("MsgType", STANDARD_BRANCH)
+bridge = registry.field_by_name("PriorityLevel", "ulbridge")
+
+assert standard.fix.tag == 35
+assert bridge.fix.branch == "ulbridge"
 ```
 
-## Add a definition
+## Repeating groups and paths
+
+A counter field is a list whose item is a struct. Inspect the declaration
+instead of reconstructing members from names:
 
 ```python
-from yggdryl import Field
+from rekep.fix import fix_registry
 
-field = Field("venueorderflag", "bool", nullable=True)
-field.fix.branch = "venue"
-field.fix.tag = 20001
-field.fix.description = "Whether the venue accepted the order."
+registry = fix_registry()
+parties = registry.field_by_tag(453)
+members = [
+    member.name
+    for expanded in parties.explode_fields()
+    for member in expanded.unnest_fields()
+]
 
-registry.insert(field)
-assert registry.field_by_name("venueorderflag", "venue").fix.tag == 20001
+assert parties.name == "nopartyids"
+assert members == ["partyid", "partyidsource", "partyrole", "partyrolequalifier"]
 ```
 
-`insert` replaces only the same canonical identity and name; `update` folds
-metadata into a matching field and refuses a name or datatype conflict.
+`field_by_path` walks component and group declarations. `FixMsg.by_path`
+walks values and therefore requires a numeric occurrence when entering a list,
+for example `NoPartyIDs.0.PartyID`.
 
-## Generated browser projection
+## Code sets and version lineage
 
-The browser cannot open an `IOBase` folder, so
-`tools/fix_registry_dump.py` writes two derived assets:
+Code translation happens before datatype conversion. For `Side(54)`, both
+`1` and `buy` can resolve to the stored code `1`; for `MsgType(35)`,
+`executionreport` resolves to `8`. A pinned version selects the code spellings
+valid at that version without renaming the Arrow column.
 
-| asset | content |
+Lineage explains how one field evolved while preserving one current identity:
+
+```python
+import json
+
+from rekep.fix import fix_registry
+
+msgtype = fix_registry().field_by_tag(35)
+lineage = json.loads(msgtype.fix["lineage"])["entries"]
+
+assert lineage[0]["since"] == "2.7"
+assert lineage[-1]["name"] == "msgtype"
+```
+
+## Runtime fields
+
+Every registry starts with tags 65000–65015. They are generated by the codec
+and are not stored in dictionary shards.
+
+| tag range | fields |
 | --- | --- |
-| `docs/assets/fix-registry.json` | searchable field index |
-| `docs/assets/fix-details.json` | members, code sets, and lineage |
+| 65000–65004 | message digest, version, normalized symbol, market time, Unix partition |
+| 65005–65008 | parent order ids, session id, message context |
+| 65009–65012 | sender/target plugin ids and sessions |
+| 65013–65015 | resolved ISIN, MIC, and lifecycle state |
 
-Regenerate them whenever `config/fix` or the Yggdryl registry fields change:
+```python
+from rekep.fix import fix_crate_fields
 
-```bash
-uv run --project python --frozen python tools/fix_registry_dump.py
+assert [field.fix.tag for field in fix_crate_fields()] == list(range(65000, 65016))
 ```
 
-The generated projection is for documentation only. `parse_fix` always asks
-its live registry for the reader schema before consuming a batch.
+## Iterate, filter, and export
+
+```python
+from pathlib import Path
+
+from rekep.fix import fix_registry
+
+registry = fix_registry()
+groups = [field for field in registry if field.dtype.is_nested]
+priced = [
+    field
+    for field in registry
+    if "price" in (field.fix.description or "").casefold()
+]
+
+registry.write_into(Path("build/fix-registry-copy"))
+assert groups
+assert priced
+```
+
+An explicit registry loaded with `fix_registry(path_or_uri)` receives the same
+runtime and bridge fields. A location containing no specification fields is
+rejected, preventing a pipeline from silently creating a narrow table.
+
+## Browser
+
+The [registry browser](../tools/fix-registry.md) exposes search, branches,
+groups, members, code sets, lineage, raw metadata, Field JSON, and the complete
+`FixMsg` schema. Its generated web assets are read-only projections of this
+same bundled registry.

@@ -1,66 +1,60 @@
 # rekep
 
-`rekep` streams ULBridge text records through Arrow into Iceberg. Yggdryl
-owns resource binding, traversal, decompression, text framing, field
-application, FIX registries, and FIX parsing. rekep owns the raw `Message`
-contract and the PyArrow/PyIceberg seam.
+`rekep` turns ULBridge text captures into typed, queryable Iceberg products.
+Its public Python surface includes resource binding, text framing, fields, the
+FIX codec, and a complete FIX registry; applications and examples import only
+`rekep`.
 
 ```bash
 pip install "rekep[iceberg]"
 ```
 
-```json
-{
-  "name": "parse_messages",
-  "application": "parse_messages.py",
-  "parameters": {
-    "filesystem": "file:data/capture",
-    "catalog": {
-      "name": "rekep",
-      "properties": {
-        "type": "sql",
-        "uri": "sqlite:///data/catalog.db",
-        "warehouse": "data/warehouse"
-      }
-    }
-  }
-}
+The package ships its registry, so no dictionary path or environment variable
+is required:
+
+```python
+from rekep.fix import FixCodec, fix_registry
+
+codec = FixCodec(fix_registry(), branch="ulbridge")
+message = codec.transform_line(
+    b"Sending : 8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|"
+)
+
+assert message.by_name("symbol").as_py() == "AAPL"
+assert message.by_tag(38).as_py() == 12.0
 ```
 
-For AWS S3, set `filesystem` to
-`s3://example-bucket/capture?region=eu-west-1`. An S3-compatible store can add
-`endpoint_override`, `scheme`, and `force_path_style` URI query parameters.
-
-```bash
-rekep task run tasks/parse_messages/parse_messages.json
-rekep task run tasks/parse_fix/parse_fix.json
-```
-
-The first task recursively reads supported text leaves, including gzip and
-zstd objects, and writes one raw row per physical line. The second sends every
-stored body through Yggdryl's FIX codec. Both stages retain `(url, rownum)`, so
-replaying a source writes no duplicate rows.
+The supported ingestion graph is deliberately short:
 
 ```text
-IOBase + Message.text_options -> logs.messages  (12 columns)
-logs.messages + FixCodec      -> fix.messages   (108 columns)
+capture URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 ```
 
-`logs.messages.bodyhash` identifies the exact captured bytes.
-`fix.messages.msghash` identifies what the codec parsed after excluding the
-session envelope. The generated [Message](schemas/rekep/message.json) and
-[FixMessage](schemas/rekep/fix-message.json) contracts are review snapshots;
-the runtime registry remains authoritative for FIX types.
+Run it locally from the repository root:
+
+```bash
+uv sync --project python --all-extras --dev
+uv run --project python rekep iceberg deploy tasks/parse_messages/parse_messages.json
+uv run --project python rekep task run tasks/parse_messages/parse_messages.json
+uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+```
+
+`logs.messages` stores one physical line with its exact body bytes and source
+identity. `fix.messages` stores one codec result for that row, including typed
+columns, the complete arrival record, unmapped pairs, and derived identities.
+Both use `(url, rownum)` as their primary key, so replay is idempotent.
+
+The reviewed contracts are [Message](schemas/rekep/message.json) and
+[FixMessage](schemas/rekep/fix-message.json). The [pipeline guide](docs/pipeline/index.md)
+covers local files, S3, AWS Glue, Airflow, and operations; the
+[data-product guide](docs/products/index.md) defines every published column.
 
 Development:
 
 ```bash
 cd python
-uv sync --all-extras --dev
 uv run pytest
 uv run pytest -m integration
-uv run ruff check .
+uv run ruff check . ../tasks ../tools
+uv run mkdocs build --strict --config-file ../mkdocs.yml
 ```
-
-See the [documentation](https://platob.github.io/yggfin/) or the local
-[pipeline guide](docs/pipeline/index.md).

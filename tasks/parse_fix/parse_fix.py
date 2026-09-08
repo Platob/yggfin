@@ -9,9 +9,8 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-    from yggdryl import Field, IOBase
-    from yggdryl.fix import FixRegistry, fix_crate_fields, global_registry, parse_arrow_reader
 
+    from rekep.fix import fix_registry, iceberg_fix_field, parse_arrow_reader
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
@@ -20,72 +19,12 @@ with app.setup:
     SOURCE = "logs.messages"
     TARGET = "fix.messages"
 
-    def open_registry(location):
-        """One specification dictionary plus the bridge's own vocabulary.
-
-        The location is bound through `IOBase`, so `registry` accepts exactly
-        the URI spellings `filesystem` does - a relative `file:` path, an
-        absolute one, or `s3://bucket/prefix?region=...`. Every Yggdryl
-        registry already holds the crate fields; the bridge fields are added
-        here because this task reads bridge captures.
-        """
-        dictionary = (
-            global_registry()
-            if location is None
-            else FixRegistry.from_handle(IOBase.from_uri(location))
-        )
-        if len(dictionary) == len(fix_crate_fields()):
-            raise ValueError(
-                "parse_fix requires a non-empty Yggdryl FIX registry; "
-                "set registry or YGGDRYL_FIX_REGISTRY"
-            )
-        dictionary.with_ulbridge_fields()
-        return dictionary
-
-    def iceberg_field(schema):
-        """The parser's schema as Iceberg v2 can hold it.
-
-        A venue stamps nanoseconds and Yggdryl reads them, so the dictionary
-        declares its clocks -- and this crate its derived one -- at that
-        resolution. Iceberg v2 has no nanosecond timestamp: its column is
-        microseconds, and a `timestamp[ns]` handed to PyIceberg is refused
-        outright.
-
-        So every nanosecond clock is declared here at the resolution the table
-        holds, and the native apply narrows it once in the cast it already
-        runs. It is a stated loss rather than a hidden one:
-        `nofixentries` keeps the wire text of every pair, so what a venue
-        actually stamped is still in the row.
-        """
-        members = [member.with_type(microseconds(member.type)) for member in schema]
-        return Field.from_arrow_schema(pyarrow.schema(members), name="FixMessage")
-
-    def microseconds(dtype):
-        """One Arrow type with every nanosecond clock in it narrowed.
-
-        A clock nested in a repeating group is a clock: the walk is the whole
-        type rather than its top level, because `TrdRegTimestamp` sits inside
-        group 768 and Iceberg refuses it there for the same reason.
-        """
-        if pyarrow.types.is_timestamp(dtype) and dtype.unit == "ns":
-            return pyarrow.timestamp("us", tz=dtype.tz)
-        if pyarrow.types.is_list(dtype):
-            item = dtype.field(0)
-            return pyarrow.list_(item.with_type(microseconds(item.type)))
-        if pyarrow.types.is_large_list(dtype):
-            item = dtype.field(0)
-            return pyarrow.large_list(item.with_type(microseconds(item.type)))
-        if pyarrow.types.is_struct(dtype):
-            return pyarrow.struct([member.with_type(microseconds(member.type)) for member in dtype])
-        return dtype
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md("""
     # Parse FIX
 
-    Parse raw message bodies into the fixed Yggdryl FIX Arrow schema.
+    Parse raw message bodies into the fixed rekep FIX Arrow schema.
     """)
 
 
@@ -135,7 +74,7 @@ def _(branch, catalog, dedup, records, registry, version):
             _batches(),
         )
         opened.callback(counted.close)
-        dictionary = open_registry(registry)
+        dictionary = fix_registry(registry)
         parsed = parse_arrow_reader(
             counted,
             dictionary,
@@ -145,7 +84,7 @@ def _(branch, catalog, dedup, records, registry, version):
             dedup=dedup,
         )
         opened.callback(parsed.close)
-        field = iceberg_field(parsed.schema)
+        field = iceberg_fix_field(parsed.schema)
         applied = field.apply_arrow_reader(
             parsed,
             safe=False,

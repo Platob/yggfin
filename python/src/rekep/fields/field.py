@@ -1,4 +1,4 @@
-"""Generic Arrow boundaries over Yggdryl's native ``Field``."""
+"""Generic Arrow boundaries over rekep's native ``Field``."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ def derived_from(
     transform: str | None = None,
     **declared: Any,
 ) -> dict[str, Any]:
-    """Declare a column computed by Yggdryl from the named source fields."""
+    """Declare a column computed natively from the named source fields."""
     metadata = dict(declared.pop("metadata", None) or {})
     protocol = Field("", "null")
     protocol.partition.sources = [sources] if isinstance(sources, str) else sources
@@ -93,7 +93,7 @@ def digest_key(
     algorithm: str = "xxh3-128",
     **declared: Any,
 ) -> dict[str, Any]:
-    """Mark one member as the row digest Yggdryl computes beside it.
+    """Mark one member as the row digest computed beside it.
 
     The member holds the digest; the members it reads stay ordinary columns,
     so `sources` is the only place the input is named. Omitting `sources`

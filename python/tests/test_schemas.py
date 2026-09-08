@@ -2,9 +2,7 @@
 
 from pathlib import Path
 
-from yggdryl import Field
-
-from rekep import Message
+from rekep import Field, Message
 from rekep.iceberg import derived_keys, partition_keys, primary_keys
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
@@ -13,7 +11,7 @@ FIX_CONTRACT = SCHEMAS / "rekep" / "fix-message.json"
 
 
 def load_contract() -> Field:
-    """Read the native Yggdryl field contract."""
+    """Read the native field contract."""
     return Field.from_json(CONTRACT.read_text(encoding="utf-8"))
 
 

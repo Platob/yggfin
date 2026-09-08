@@ -1,66 +1,46 @@
-# Encode
+# Encode and round-trip
 
-`FixMsg.to_bytes()` emits the parsed arrival record in order. It reads
-`FixMsg.entries()`, the same data published as `nofixentries` in the fixed
-Arrow row; typed projection columns are views over that record and are not a
-second encoding source.
-
-## Round trip
+`FixMsg.to_bytes()` emits the arrival record, not the fixed table projection.
+Derived stamps and source-column fills are therefore not invented on the wire.
 
 ```python
-from yggdryl import IOBase
-from yggdryl.fix import FixCodec, FixRegistry
+from rekep.fix import FixCodec, fix_registry
 
-registry = FixRegistry.from_handle(IOBase.from_uri("file:config/fix"))
-codec = FixCodec(registry)
-message = codec.transform_line(b"8=FIX.4.4|35=D|55=AAPL|10=000|")
+wire = b"8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|"
+message = FixCodec(fix_registry()).transform_line(wire)
 
-wire = message.to_bytes()
-assert b"\x01" in wire
-assert codec.transform_line(wire).entries() == message.entries()
-
-printed = message.to_bytes(ord("|"))
-assert printed == b"8=FIX.4.4|35=D|55=AAPL|10=000|"
+assert message.to_bytes(ord("|")) == wire
 ```
 
-The default separator is SOH (`0x01`). Supplying another byte changes only the
-emitted separator. Pair order, repeated keys, empty values, and the exact key
-spelling remain the arrival record's.
+## What round-trips
 
-## Build from pairs
+| input fact | emitted |
+| --- | --- |
+| original key and value text | yes |
+| duplicate tags and arrival order | yes |
+| nested group occurrences | yes, in normalized path spelling when decoded from packed bridge groups |
+| unknown fields | yes |
+| source `url`, `rownum`, `plugin`, or timestamp | no |
+| derived `msghash`, market timestamp, MIC, state | no |
+| typed-column canonical value | only through its original arrival pair |
+
+A message constructed only from pairs has no obligation to synthesize
+`BeginString`; the codec may add it to the typed message so the row has a
+version, but it remains absent from `entries()` and from re-encoding.
+
+## Choose a separator
 
 ```python
-from yggdryl import IOBase
-from yggdryl.fix import FixCodec, FixRegistry
+from rekep.fix import FixCodec, fix_registry
 
-registry = FixRegistry.from_handle(IOBase.from_uri("file:config/fix"))
-codec = FixCodec(registry)
-message = codec.transform_pairs(
-    [("8", "FIX.4.4"), ("35", "D"), ("55", "AAPL"), ("10", "000")]
+message = FixCodec(fix_registry()).transform_pairs(
+    [("35", "D"), ("11", "ORD-1"), ("55", "AAPL")]
 )
 
-assert message.by_tag(55).as_py() == "AAPL"
-assert message.to_bytes(ord("|")) == b"8=FIX.4.4|35=D|55=AAPL|10=000|"
+assert message.to_bytes(ord("|")) == b"35=D|11=ORD-1|55=AAPL|"
+assert message.to_bytes(1) == b"35=D\x0111=ORD-1\x0155=AAPL\x01"
 ```
 
-`transform_pairs` parses values through the same registry as byte input. A
-value that does not type stays in `entries()` while the typed field remains
-null. `null_values` on `FixCodec` controls which input spellings mean absence.
-
-## Envelope fields
-
-Encoding is lossless reproduction, not session repair. `to_bytes()` does not
-invent, reorder, or recalculate `BodyLength(9)` or `CheckSum(10)`; it emits
-exactly what the arrival record held. A session component that wants a valid
-new wire frame owns those transport calculations.
-
-The parsed-message `msghash` excludes the session envelope, so changing a
-sequence number or sending time can change the exact bytes without changing
-message identity. The raw `bodyhash` still distinguishes those captures.
-
-## Arrow rows
-
-`fix.messages` keeps the complete arrival record in `nofixentries`. Python's
-current binding exposes object-level `to_bytes()` rather than an Arrow writer;
-read one row into the codec object only when re-emission is actually required.
-Analytics should stay on typed Arrow columns.
+Use numeric FIX input when byte-for-byte wire framing matters. Bridge rows can
+normalize group paths during decoding because their packed member delimiters
+are a logging representation, not a FIX wire format.

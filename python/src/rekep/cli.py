@@ -216,7 +216,7 @@ def _publish(path: pathlib.Path, payload: str) -> None:
 
 
 def deploy_tables(arguments: argparse.Namespace) -> int:
-    """Create the raw-message Iceberg table ahead of ingestion."""
+    """Create every selected pipeline table ahead of ingestion."""
     settings = _catalog_settings(arguments)
     catalog = settings["catalog"]
     try:
@@ -334,7 +334,7 @@ def _parser() -> argparse.ArgumentParser:
     iceberg = commands.add_parser(
         "iceberg",
         help="deploy ingestion tables",
-        description="Create the Iceberg table the ingestion task writes.",
+        description="Create the Iceberg tables the ingestion tasks write.",
     )
     deploying = iceberg.add_subparsers(
         dest="action", required=True, title="commands", metavar="COMMAND"

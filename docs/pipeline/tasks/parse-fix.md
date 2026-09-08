@@ -1,131 +1,113 @@
-# Parse FIX
+# parse_fix
 
-Streams every row in `logs.messages` through Yggdryl's native FIX codec and
-merges the result into [`fix.messages`](../../products/fix-message.md).
+`parse_fix` streams every stored raw row through the FIX codec and publishes
+the complete fixed projection to `fix.messages`.
 
-```bash
-rekep task run tasks/parse_fix/parse_fix.json
-```
+## Task document
 
 ```json
 {
+  "name": "parse_fix",
+  "application": "parse_fix.py",
   "parameters": {
-    "registry": "file:config/fix",
+    "registry": null,
     "branch": "ulbridge",
     "version": null,
-    "dedup": false
+    "dedup": false,
+    "catalog": {
+      "name": "rekep",
+      "properties": {
+        "type": "sql",
+        "uri": "sqlite:///data/catalog.db",
+        "warehouse": "data/warehouse"
+      }
+    }
   }
 }
 ```
 
-| parameter | contract |
-| --- | --- |
-| `registry` | dictionary URI; `null` selects `YGGDRYL_FIX_REGISTRY` |
-| `branch` | dialect used to resolve ULBridge names before standard FIX names |
-| `version` | optional FIX version at which values are read; `null` lets each row answer |
-| `dedup` | drop only an output whose message digest equals the previous emitted row |
-| `catalog` | the PyIceberg catalog containing both tables |
+| parameter | default | meaning |
+| --- | --- | --- |
+| `registry` | `null` | use the 6,262-definition bundled registry; an explicit path/URI overrides it |
+| `branch` | `ulbridge` | resolve bridge names before standard names |
+| `version` | `null` | infer version per row; otherwise pin code translation |
+| `dedup` | `false` | retain one output row per raw input row |
+| `catalog` | local SQL | same catalog and warehouse that hold `logs.messages` |
 
-## One codec pass
+## Read, parse, apply, write
 
 ```mermaid
 flowchart LR
-    M[("logs.messages<br/>Message reader")] --> F["parse_arrow_reader<br/>column=body"]
-    R[["config/fix"]] --> V["with_ulbridge_fields"]
-    V -.registry.-> F
-    F --> S["Field.from_arrow_schema"]
-    S --> U["narrow timestamp ns → us"]
-    U --> W[("fix.messages")]
+    M[("logs.messages")] --> R["RecordBatchReader"]
+    R --> P["parse_arrow_reader"]
+    D[["fix_registry()"]] --> P
+    P --> N["Iceberg timestamp field"]
+    N --> A["Field.apply_arrow_reader"]
+    A --> F[("fix.messages")]
 ```
 
-There is no `msgtype` filter and no carrier-column rename. The codec receives
-the stored `Message` reader directly. It reads FIX, ULLINK, and bridge forms
-from `body`; a prose or empty body still becomes one stamped output row. With
-the default `dedup=false`, 111 input lines produce 111 output rows.
-
-The call is the complete protocol boundary:
+The parser receives the full raw reader and the name `body`. Source columns
+lead the result unless a fixed field owns the same folded name. The output
+schema is known before the first batch, converted to a `Field`, narrowed to
+Iceberg-supported microseconds recursively, then applied with strict
+nullability.
 
 ```python
-from yggdryl.fix import parse_arrow_reader
+from rekep.fix import fix_registry, iceberg_fix_field, parse_arrow_reader
 
 parsed = parse_arrow_reader(
-    messages,
-    registry,
+    source,
+    fix_registry(),
     "body",
     branch="ulbridge",
     version=None,
     dedup=False,
 )
+field = iceberg_fix_field(parsed.schema)
+applied = field.apply_arrow_reader(parsed, safe=False, nullability="strict")
 ```
 
-## Registry
+See [Decode rules](../../fix/decode.md) for numeric FIX, ULLINK, packed groups,
+configuration JSON, FIXML, registry translation, source-column fill, and
+content-level failures.
 
-Every `FixRegistry` is born with Yggdryl's 16 crate fields. The task rejects a
-location containing only those seeded fields, then calls
-`with_ulbridge_fields()` to add the bridge vocabulary. No compatibility call
-or second registry exists in rekep.
+## Schema and precision
 
-`registry` is bound with `IOBase.from_uri`, so it accepts the same local and
-remote URI forms as `filesystem`. Registry types determine the live output
-schema. The checked JSON is a review snapshot, not parser authority.
+The bundled configuration yields [108 columns](../../products/fix-message.md#complete-schema).
+Venue clocks may parse at nanosecond precision, while Iceberg v2 stores
+microseconds. Every top-level and nested timestamp is narrowed once at the
+storage boundary. Original text remains in `nofixentries`, so the wire value
+is still auditable.
 
-## Carrier columns and fills
+## Registry override
 
-The codec keeps source columns first unless a fixed column claims the same
-folded name. For the `Message` contract:
+An explicit registry is useful for validating a venue extension:
 
-| source fact | result |
-| --- | --- |
-| `url`, `rownum`, `timepartition`, `threadId`, `sessionUid`, `seqNum`, `plugin`, `level`, `bodyhash`, `body` | retained as the first ten columns |
-| `timestamp` | stamps fixed `timestamp`; not duplicated |
-| `msgCtxId` | fills fixed `msgctxid`; not duplicated |
-| `seqNum` | also fills `msgseqnum` when the frame does not state tag 34 |
-| `plugin` | also fills the sender or target plugin session according to direction |
+```bash
+uv run --project python rekep task run \
+  tasks/parse_fix/parse_fix.json \
+  --parameter 'registry="file:/srv/rekep/fix-candidate"'
+```
 
-`bodyhash` remains separate from `msghash`. The first identifies exact source
-bytes; the second is the codec-owned digest over `nofixentries` with the
-session envelope excluded.
+The location must contain specification fields. Runtime and bridge fields are
+added automatically. The task refuses an empty external dictionary before
+creating a narrow table.
 
-## Output contract
+## Row behavior
 
-The checked registry and raw carrier produce 108 columns:
+- With `dedup=false`, every source row produces one fixed row.
+- Prose and unreadable content produce an `unknown` row with required stamps.
+- Unknown fields stay in both arrival lists and, for one-message inspection,
+  as nullable text fields.
+- A conversion failure leaves the typed column null and preserves its arrival.
+- The source message wins over a same-field source-column fill.
+- The writer merges on `(url, rownum)` and can create a missing table.
 
-| count | columns |
-| ---: | --- |
-| 10 | retained source columns |
-| 80 | standard projected FIX fields |
-| 16 | Yggdryl crate fields, tags `65000` through `65015` |
-| 2 | `nofixentries` and `nounmappedfixentries` |
+## Run
 
-Fixed columns use folded canonical names such as `msgtype`, `sendingtime`, and
-`orderqty`. Their numeric tags remain in `fix:tag` metadata; there is no
-numeric-name schema and no snake-case alias layer.
+```bash
+uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+```
 
-Four codec columns are non-null for every row:
-
-| column | fallback when the body states none |
-| --- | --- |
-| `beginstring` | resolved version, ultimately FIX 4.4 |
-| `msghash` | digest of the possibly empty parsed arrival record |
-| `timestamp` | source row clock, else a message clock, else Unix epoch |
-| `unixpartition` | partition derived from `timestamp` |
-
-All other fixed columns are nullable. `nofixentries` preserves every parsed
-pair in arrival order; `nounmappedfixentries` is the subset no registry field
-explained.
-
-## Iceberg precision and evolution
-
-Yggdryl can type venue clocks at nanoseconds. Iceberg v2 cannot store that
-unit, including inside a repeating group. The task recursively declares every
-`timestamp[ns]` as `timestamp[us]`, then applies that field once with strict
-nullability. Wire text remains in `nofixentries`.
-
-`fix.messages` is opened with `merge_schema=True`, so a selected registry can
-add nullable output columns before data is consumed. Existing column types,
-ids, keys, and partition rules are never rewritten implicitly.
-
-## Replay
-
-The codec output keeps `(url, rownum)` and the hourly `timepartition` marker.
-A replay reads every stored message, writes none, and creates no snapshot.
+`logs.messages` must already exist. A missing source table, invalid registry,
+incompatible existing target schema, or failed Iceberg commit fails the task.

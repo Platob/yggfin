@@ -42,7 +42,7 @@ Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
 before the first batch is consumed:
 
 ```python
-from yggdryl import Field
+from rekep import Field
 
 fix_field = Field.from_arrow_schema(reader.schema, name="FixMessage")
 fixes = catalog.dataset(

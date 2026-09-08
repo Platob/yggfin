@@ -1,66 +1,53 @@
 # FIX registry browser
 
-**Standalone tool.** This Marimo application inspects a dictionary; it is not
-a pipeline task, scheduler target, registry editor, or table writer.
-
-Launch it from the repository root with the locked runner environment:
+**Standalone tool.** It reads a registry and creates no tables,
+edits no definitions, and runs no pipeline task.
 
 ```bash
 uv run --project python --group runner --frozen \
   marimo run tools/fix_registry.py
 ```
 
-Paste a local path or filesystem URI into **Registry location**, then select
-**Open registry**. A blank location selects the process registry, which
-resolves `YGGDRYL_FIX_REGISTRY` and its normal user configuration. Remote
-locations use the backends already supported by
-`FixRegistry.from_handle`.
+A blank location opens rekep's bundled default. Enter a local path, `file:`
+URI, or supported object-store URI to inspect an explicit dictionary; runtime
+and bridge fields are added exactly as they are for parsing.
 
-## Browse and export
+## Search and filter
 
-The summary counts native definitions, repeating groups, branches, and typed
-fields. Search is case-insensitive and covers tags, alternate tags, canonical
-and display names, aliases, and descriptions. Branch and shape controls filter
-the same native iterator.
+Search covers canonical tags, alternate tags, storage/display names, aliases,
+and descriptions. Branch and shape filters narrow to standard/bridge fields or
+scalar/repeating-group definitions.
 
-Select one result to open six views:
+The summary reports definition, group, branch, and typed-field counts. The
+bundled registry should report 6,262 definitions across two branches.
 
-| View | Native source |
+## Definition views
+
+| view | source |
 | --- | --- |
-| Overview | `Field` and its typed `field.fix` view |
-| Members | `Field.explode_fields()` then `Field.unnest_fields()` |
-| Lineage | validated `fix:lineage` metadata |
-| Codes | validated `fix:codes` metadata |
-| Metadata | `Field.metadata.items()` |
-| Field JSON | `Field.into_json(indent=2)` |
+| Overview | identity, branch, type, nullability, description |
+| Members | `Field.explode_fields()` and `Field.unnest_fields()` |
+| Lineage | validated version history metadata |
+| Codes | validated wire-value/name translations |
+| Metadata | the complete field metadata mapping |
+| Field JSON | deterministic `Field.into_json(indent=2)` |
 
-The Field JSON tab is copyable and downloadable. Nested structure stays owned
-natively: the browser does not reconstruct components, invent a catalog, or
-declare a second FIX model.
-
-## Full FixMsg schema
-
-The schema panel creates an empty Arrow reader, passes it to the native
-`parse_arrow_reader`, and reads the output schema before any row exists. It then
-uses `Field.from_arrow_schema` and `Field.into_json(indent=2)` to display and
-download the complete registry-defined `FixMsg` schema.
-
-The equivalent schema-only call is:
+The full-schema panel creates an empty Arrow reader and asks
+`parse_arrow_reader` for its output schema. It therefore displays the actual
+registry-dependent `FixMsg` projection without parsing or fabricating a row.
 
 ```python
 import pyarrow
-from yggdryl import Field
-from yggdryl.fix import FixRegistry, parse_arrow_reader
 
-registry = FixRegistry.from_handle("file:///srv/config/fix")
+from rekep import Field
+from rekep.fix import fix_registry, parse_arrow_reader
+
 empty = pyarrow.RecordBatchReader.from_batches(pyarrow.schema([]), [])
-parsed = parse_arrow_reader(empty, registry=registry)
-fixmsg = Field.from_arrow_schema(parsed.schema, name="FixMsg")
+parsed = parse_arrow_reader(empty, registry=fix_registry())
+field = Field.from_arrow_schema(parsed.schema, name="FixMsg")
 
-print(fixmsg.into_json(indent=2))
+print(field.into_json(indent=2))
 ```
 
-The empty source deliberately contributes no provenance columns. The result is
-the native parser's full registry-dependent shape. A pipeline that supplies raw
-message columns keeps those columns first, exactly as `parse_arrow_reader`
-defines.
+Downloads are diagnostic snapshots. The packaged registry and runtime field
+remain authoritative.
