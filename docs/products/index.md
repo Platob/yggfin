@@ -1,68 +1,63 @@
 # Two tables
 
-rekep publishes two Iceberg tables. One keeps the line exactly as it was
-captured; the other keeps what the FIX frame inside it said.
+rekep publishes one raw text table and one codec-shaped FIX table.
 
 ```mermaid
 flowchart LR
-    C["capture<br/>file · directory · s3://"] --> P1[parse_messages]
+    C["ULBridge capture"] --> P1[parse_messages]
     P1 --> M[("logs.messages<br/>12 columns")]
-    M -- "msgtype != 'unknown'" --> P2[parse_fix]
-    P2 --> F[("fix.messages<br/>101 columns")]
+    M --> P2[parse_fix]
+    P2 --> F[("fix.messages<br/>108 columns")]
 ```
 
 | | [`logs.messages`](message.md) | [`fix.messages`](fix-message.md) |
 | --- | --- | --- |
-| one row is | one physical line | one FIX frame |
-| body | stored, never parsed | parsed into typed columns |
-| columns | 12 | 101 |
-| schema fixed by | `Message` | the tag projection, typed by the dictionary |
+| one row is | one physical line | one codec result for that line |
+| body | exact bytes, uninterpreted | retained and parsed into fixed columns |
+| columns | 12 | 108 for the checked registry |
+| schema owner | `Message` | Yggdryl FIX schema + runtime registry |
 | key | `(url, rownum)` | `(url, rownum)` |
 | partition | `timepartition`, hourly | `timepartition`, hourly |
-| written by | `parse_messages` | `parse_fix` |
-| contract | [`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | [`schemas/rekep/fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) |
+| exact-byte digest | `bodyhash` | carried as `bodyhash` |
+| parsed-message digest | none | `msghash` |
 
-Both merge on their key, so replaying a capture reads every row, writes none,
-and creates no snapshot.
+The codec deliberately emits a row for prose and malformed input. That keeps
+the tables positionally aligned unless `parse_fix.dedup` is explicitly enabled.
+Both writers merge on their key, so replay creates no duplicate rows or empty
+snapshot.
 
-## Read either one
+## Read either table
 
 ```python
 from rekep.iceberg import IcebergCatalog
 
-catalog = {
-    "name": "rekep",
-    "properties": {
-        "type": "sql",
-        "uri": "sqlite:///data/catalog.db",
-        "warehouse": "data/warehouse",
-    },
-}
-store = IcebergCatalog.from_dict(catalog)
+store = IcebergCatalog.from_dict(
+    {
+        "name": "rekep",
+        "properties": {
+            "type": "sql",
+            "uri": "sqlite:///data/catalog.db",
+            "warehouse": "data/warehouse",
+        },
+    }
+)
 messages = store.dataset("logs.messages").read_arrow_table()
 fixes = store.dataset("fix.messages").read_arrow_table()
 store.close()
 ```
 
-## The join between them
+## Join and compare identities
 
-`fix.messages` carries the raw record's own columns forward, so the two tables
-join on the key they share -- and rarely need to, since the FIX row already
-holds the line it came from.
+Both rows retain `url` and `rownum`, which is the lossless join. `bodyhash`
+also arrives unchanged in the fixed row; `msghash` answers a different
+question and is not expected to equal it.
 
 ```python
-import pyarrow
-
 joined = fixes.join(messages, keys=["url", "rownum"], right_suffix="_raw")
-assert pyarrow.compute.all(
-    pyarrow.compute.equal(joined.column("msghash"), joined.column("msghash_raw"))
-).as_py()
+
+assert joined.column("bodyhash").equals(joined.column("bodyhash_raw"))
 ```
 
-Two columns are renamed on the way in, because the FIX reader reads five of a
-capture's own column names as per-row parameters:
-
-| raw column | in `fix.messages` | why |
-| --- | --- | --- |
-| `branch` | `logbranch` | on a raw record this is the driver that printed the line, not a FIX dialect |
-| `msgdirection` | `direction` | this *is* a reader parameter, so the reading already made is the one used |
+The codec folds source columns into fixed fields where their names match. Raw
+`timestamp` therefore becomes fixed `timestamp`, and `msgCtxId` becomes
+`msgctxid`, without duplicate carrier columns.

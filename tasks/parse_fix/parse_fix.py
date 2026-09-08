@@ -9,55 +9,38 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-    from pyiceberg.expressions import NotEqualTo
     from yggdryl import Field, IOBase
-    from yggdryl.fix import FixRegistry, global_registry, parse_arrow_reader
+    from yggdryl.fix import FixRegistry, fix_crate_fields, global_registry, parse_arrow_reader
 
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
-    from rekep.text import UNKNOWN, Message
+    from rekep.text import Message
 
     SOURCE = "logs.messages"
     TARGET = "fix.messages"
 
     def open_registry(location):
-        """One dictionary, with this crate's own derived fields registered.
+        """One specification dictionary plus the bridge's own vocabulary.
 
         The location is bound through `IOBase`, so `registry` accepts exactly
         the URI spellings `filesystem` does - a relative `file:` path, an
-        absolute one, or `s3://bucket/prefix?region=...`. `with_crate_fields`
-        registers the seven facts Yggdryl derives beside the specification's
-        own: the digest, the version read, the ticker, the market clock, the
-        partition it falls in, and the two parent order identifiers.
+        absolute one, or `s3://bucket/prefix?region=...`. Every Yggdryl
+        registry already holds the crate fields; the bridge fields are added
+        here because this task reads bridge captures.
         """
         dictionary = (
             global_registry()
             if location is None
             else FixRegistry.from_handle(IOBase.from_uri(location))
         )
-        if not dictionary:
+        if len(dictionary) == len(fix_crate_fields()):
             raise ValueError(
                 "parse_fix requires a non-empty Yggdryl FIX registry; "
                 "set registry or YGGDRYL_FIX_REGISTRY"
             )
-        dictionary.with_crate_fields()
+        dictionary.with_ulbridge_fields()
         return dictionary
-
-    #: How a raw column is spelled on the way into the reader.
-    #:
-    #: The reader reads five of a capture's own columns as per-row parameters,
-    #: and two of the raw contract's names land on them. `branch` on a raw
-    #: record is the driver that printed the line, not a FIX dialect, so it is
-    #: renamed out of the way rather than pinning every row to a dialect nobody
-    #: declared. `msgdirection` is renamed *into* the parameter, so the reader
-    #: uses the direction the raw layer already read instead of reading it
-    #: again.
-    CARRIED = {"branch": "logbranch", "msgdirection": "direction"}
-
-    def carried(schema):
-        """One capture schema under the names the reader reads it by."""
-        return [CARRIED.get(name, name) for name in schema.names]
 
     def iceberg_field(schema):
         """The parser's schema as Iceberg v2 can hold it.
@@ -70,9 +53,9 @@ with app.setup:
 
         So every nanosecond clock is declared here at the resolution the table
         holds, and the native apply narrows it once in the cast it already
-        runs. It is a stated loss rather than a hidden one: `entries` keeps
-        the wire text of every pair, so what a venue actually stamped is still
-        in the row.
+        runs. It is a stated loss rather than a hidden one:
+        `nofixentries` keeps the wire text of every pair, so what a venue
+        actually stamped is still in the row.
         """
         members = [member.with_type(microseconds(member.type)) for member in schema]
         return Field.from_arrow_schema(pyarrow.schema(members), name="FixMessage")
@@ -112,10 +95,11 @@ def parameters():
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     registry = _defaults["registry"]
+    branch = _defaults["branch"]
     version = _defaults["version"]
     dedup = _defaults["dedup"]
     catalog = _defaults["catalog"]
-    return catalog, dedup, registry, version
+    return branch, catalog, dedup, registry, version
 
 
 @app.cell
@@ -125,7 +109,7 @@ def _():
 
 
 @app.cell
-def _(catalog, dedup, records, registry, version):
+def _(branch, catalog, dedup, records, registry, version):
     _ = records
     with ExitStack() as opened:
         stage = Stage(
@@ -137,27 +121,17 @@ def _(catalog, dedup, records, registry, version):
         opened.callback(store.close)
         messages = store.dataset(SOURCE, field=Message.field())
         opened.callback(messages.close)
-        # A record the raw layer could not name a MsgType for carries no FIX
-        # frame, so it stays in `logs.messages` rather than becoming a row of
-        # nulls here. The classification is read, never recomputed.
-        source = messages.read_arrow_reader(
-            Message.field(),
-            row_filter=NotEqualTo("msgtype", UNKNOWN),
-        )
+        source = messages.read_arrow_reader(Message.field())
         opened.callback(source.close)
         counts = {"read": 0}
-
-        names = carried(source.schema)
 
         def _batches():
             for batch in source:
                 counts["read"] += batch.num_rows
-                yield batch.rename_columns(names)
+                yield batch
 
         counted = pyarrow.RecordBatchReader.from_batches(
-            pyarrow.schema(
-                [field.with_name(name) for field, name in zip(source.schema, names, strict=True)]
-            ),
+            source.schema,
             _batches(),
         )
         opened.callback(counted.close)
@@ -166,7 +140,8 @@ def _(catalog, dedup, records, registry, version):
             counted,
             dictionary,
             "body",
-            target_version=version,
+            branch=branch,
+            version=version,
             dedup=dedup,
         )
         opened.callback(parsed.close)

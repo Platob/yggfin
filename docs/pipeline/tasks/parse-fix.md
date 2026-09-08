@@ -1,7 +1,7 @@
 # Parse FIX
 
-Streams the classified rows of `logs.messages` through the native FIX reader
-and merges the result into [`fix.messages`](../../products/fix-message.md).
+Streams every row in `logs.messages` through Yggdryl's native FIX codec and
+merges the result into [`fix.messages`](../../products/fix-message.md).
 
 ```bash
 rekep task run tasks/parse_fix/parse_fix.json
@@ -11,147 +11,121 @@ rekep task run tasks/parse_fix/parse_fix.json
 {
   "parameters": {
     "registry": "file:config/fix",
-    "version": "FIX.4.4",
-    "dedup": true
+    "branch": "ulbridge",
+    "version": null,
+    "dedup": false
   }
 }
 ```
 
-| parameter | what it names |
+| parameter | contract |
 | --- | --- |
-| `registry` | the dictionary; `null` selects the process registry (`YGGDRYL_FIX_REGISTRY`) |
-| `version` | the version built messages are expressed in |
-| `dedup` | drop a record whose digest repeats the previous emitted one's |
-| `catalog` | the PyIceberg catalog to write into |
+| `registry` | dictionary URI; `null` selects `YGGDRYL_FIX_REGISTRY` |
+| `branch` | dialect used to resolve ULBridge names before standard FIX names |
+| `version` | optional FIX version at which values are read; `null` lets each row answer |
+| `dedup` | drop only an output whose message digest equals the previous emitted row |
+| `catalog` | the PyIceberg catalog containing both tables |
 
-## The pass
+## One codec pass
 
 ```mermaid
 flowchart LR
-    M[("logs.messages")] --> Q["scan filter<br/>msgtype != 'unknown'"]
-    Q --> R["rename<br/>branch→logbranch · msgdirection→direction"]
-    R --> P["parse_arrow_reader(registry, 'body')"]
-    P --> N["narrow every ns clock → us"]
-    N --> W[("fix.messages")]
-    D[["config/fix"]] -. types .-> P
+    M[("logs.messages<br/>Message reader")] --> F["parse_arrow_reader<br/>column=body"]
+    R[["config/fix"]] --> V["with_ulbridge_fields"]
+    V -.registry.-> F
+    F --> S["Field.from_arrow_schema"]
+    S --> U["narrow timestamp ns → us"]
+    U --> W[("fix.messages")]
 ```
 
-## The dictionary
+There is no `msgtype` filter and no carrier-column rename. The codec receives
+the stored `Message` reader directly. It reads FIX, ULLINK, and bridge forms
+from `body`; a prose or empty body still becomes one stamped output row. With
+the default `dedup=false`, 111 input lines produce 111 output rows.
 
-`registry` is bound through `IOBase.from_uri`, so it accepts a relative `file:`
-path, an absolute one, or `s3://example-bucket/config/fix?region=eu-west-1`. An
-empty registry is refused before `fix.messages` is created.
-
-The task then calls `with_crate_fields`, registering the seven derived facts on
-their own branch, so no standard tag is claimed. The registry types the table:
-it must stay the same for the life of `fix.messages`, and changing it is an
-explicit table-schema migration rather than implicit evolution during
-ingestion.
-
-### Nanoseconds
-
-A venue stamps nanoseconds and the reader reads them; Iceberg v2 has no
-nanosecond timestamp and refuses one outright. So every nanosecond clock in the
-parser's schema -- the dictionary's own, the derived market clock, and any
-clock nested inside a repeating group -- is declared at microseconds, and the
-native apply narrows it once in the cast it already runs.
+The call is the complete protocol boundary:
 
 ```python
-import pyarrow
+from yggdryl.fix import parse_arrow_reader
 
-
-def microseconds(dtype):
-    """One Arrow type with every nanosecond clock in it narrowed."""
-    if pyarrow.types.is_timestamp(dtype) and dtype.unit == "ns":
-        return pyarrow.timestamp("us", tz=dtype.tz)
-    if pyarrow.types.is_list(dtype):
-        item = dtype.field(0)
-        return pyarrow.list_(item.with_type(microseconds(item.type)))
-    if pyarrow.types.is_struct(dtype):
-        return pyarrow.struct([m.with_type(microseconds(m.type)) for m in dtype])
-    return dtype
-
-
-assert microseconds(pyarrow.timestamp("ns", tz="UTC")) == pyarrow.timestamp("us", tz="UTC")
+parsed = parse_arrow_reader(
+    messages,
+    registry,
+    "body",
+    branch="ulbridge",
+    version=None,
+    dedup=False,
+)
 ```
 
-It is a stated loss, not a hidden one: `entries` keeps the wire text of every
-pair, so what a venue actually stamped is still in the row.
+## Registry
 
-## What it reads
+Every `FixRegistry` is born with Yggdryl's 16 crate fields. The task rejects a
+location containing only those seeded fields, then calls
+`with_ulbridge_fields()` to add the bridge vocabulary. No compatibility call
+or second registry exists in rekep.
 
-`logs.messages` under `msgtype != 'unknown'`, pushed into scan planning. A
-record the raw layer could not name a `MsgType` for carries no FIX frame, so it
-stays where it is rather than becoming a row of nulls here. The classification
-is read, never recomputed.
+`registry` is bound with `IOBase.from_uri`, so it accepts the same local and
+remote URI forms as `filesystem`. Registry types determine the live output
+schema. The checked JSON is a review snapshot, not parser authority.
 
-### The two renamed columns
+## Carrier columns and fills
 
-The reader reads five of a capture's own columns as per-row parameters, and two
-of the raw contract's names land on them:
+The codec keeps source columns first unless a fixed column claims the same
+folded name. For the `Message` contract:
 
-| raw column | carried as | why |
-| --- | --- | --- |
-| `branch` | `logbranch` | on a raw record this is the driver that printed the line, not a FIX dialect; left alone it would pin every row to a dialect nobody declared |
-| `msgdirection` | `direction` | this *is* the parameter, so the reader uses the direction already read instead of reading it again |
-
-The rename is what makes column `385` equal the raw layer's own reading rather
-than a second, independent one. [Decode](../../fix/decode.md) lists all five
-parameter columns.
-
-## What it writes
-
-101 columns: the raw record, 87 named by tag, and `entries`/`unmapped`. One
-input row is one output row -- prose, an unreadable frame and an empty body
-included -- so `url` and `rownum` still identify the result. `dedup` is the one
-exception and says so.
-
-Cost scales with carried bytes today rather than parsed columns; that is
-[on the roadmap](../../roadmap/fix-throughput.md).
-
-The output schema is available before the first batch: the application builds
-its `Field` with `Field.from_arrow_schema`, applies it to the reader, and hands
-the stream to Iceberg. No FIX parser, registry, or row model of rekep's own
-exists. [Decode](../../fix/decode.md) states the frame location, the separator
-spellings and the typing rules in full.
-
-### Derived columns
-
-| column | contract |
+| source fact | result |
 | --- | --- |
-| `30001` | `fixed_size_binary[16]`, XXH3-128 over the parsed message |
-| `30002` | the FIX version the row was read as |
-| `30003` | the cross-venue ticker |
-| `30004` | the market clock: the first clock the message answers, in microseconds |
-| `30005` | `int64`, the partition that clock falls in |
-| `30006`, `30007` | the two parent order identifiers |
+| `url`, `rownum`, `timepartition`, `threadId`, `sessionUid`, `seqNum`, `plugin`, `level`, `bodyhash`, `body` | retained as the first ten columns |
+| `timestamp` | stamps fixed `timestamp`; not duplicated |
+| `msgCtxId` | fills fixed `msgctxid`; not duplicated |
+| `seqNum` | also fills `msgseqnum` when the frame does not state tag 34 |
+| `plugin` | also fills the sender or target plugin session according to direction |
 
-`msghash` is separate and comes from the raw layer: it digests the exact body
-bytes rather than the parsed message. [Quality](../../fix/quality.md) says when
-each one is the right key.
+`bodyhash` remains separate from `msghash`. The first identifies exact source
+bytes; the second is the codec-owned digest over `nofixentries` with the
+session envelope excluded.
 
-## Deduplication and standardization
+## Output contract
 
-`dedup` drops a record whose digest repeats the previous emitted record's. It
-is sequential rather than global, which removes a retransmitted order or a
-repeated heartbeat without collapsing two genuine events. Switching it on
-surrenders the row-in/row-out correspondence: the output no longer aligns with
-the input by position, and what went is counted rather than silent.
+The checked registry and raw carrier produce 108 columns:
 
-`version` is the version built messages are expressed in. A capture spans
-dialects -- one session writes `FIX.4.2`, another `FIX.4.4` -- and declaring one
-resolves every row against the same field lineage whatever it arrived as.
-Column `30002` records what each row was actually read as, so the
-standardization never hides what the wire said.
+| count | columns |
+| ---: | --- |
+| 10 | retained source columns |
+| 80 | standard projected FIX fields |
+| 16 | Yggdryl crate fields, tags `65000` through `65015` |
+| 2 | `nofixentries` and `nounmappedfixentries` |
+
+Fixed columns use folded canonical names such as `msgtype`, `sendingtime`, and
+`orderqty`. Their numeric tags remain in `fix:tag` metadata; there is no
+numeric-name schema and no snake-case alias layer.
+
+Four codec columns are non-null for every row:
+
+| column | fallback when the body states none |
+| --- | --- |
+| `beginstring` | resolved version, ultimately FIX 4.4 |
+| `msghash` | digest of the possibly empty parsed arrival record |
+| `timestamp` | source row clock, else a message clock, else Unix epoch |
+| `unixpartition` | partition derived from `timestamp` |
+
+All other fixed columns are nullable. `nofixentries` preserves every parsed
+pair in arrival order; `nounmappedfixentries` is the subset no registry field
+explained.
+
+## Iceberg precision and evolution
+
+Yggdryl can type venue clocks at nanoseconds. Iceberg v2 cannot store that
+unit, including inside a repeating group. The task recursively declares every
+`timestamp[ns]` as `timestamp[us]`, then applies that field once with strict
+nullability. Wire text remains in `nofixentries`.
+
+`fix.messages` is opened with `merge_schema=True`, so a selected registry can
+add nullable output columns before data is consumed. Existing column types,
+ids, keys, and partition rules are never rewritten implicitly.
 
 ## Replay
 
-```text
-first run    4 read, 4 written, 0 skipped
-replay       4 read, 0 written, 4 skipped   → no data file, no snapshot
-```
-
-`fix.messages` keeps the source `(url, rownum)` key and the source
-`timepartition` hourly declaration. The
-[checked snapshot](../../products/fix-message.md) is the 101-column schema this
-checkout's dictionary generates; the runtime registry stays authoritative.
+The codec output keeps `(url, rownum)` and the hourly `timepartition` marker.
+A replay reads every stored message, writes none, and creates no snapshot.

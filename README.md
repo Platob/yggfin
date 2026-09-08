@@ -1,8 +1,9 @@
 # rekep
 
-`rekep` streams physical text records through Arrow into Iceberg. Resource
-binding, filesystem traversal, decompression, text framing, FIX parsing and the
-`Field` model are native; rekep keeps the PyIceberg read/write boundary.
+`rekep` streams ULBridge text records through Arrow into Iceberg. Yggdryl
+owns resource binding, traversal, decompression, text framing, field
+application, FIX registries, and FIX parsing. rekep owns the raw `Message`
+contract and the PyArrow/PyIceberg seam.
 
 ```bash
 pip install "rekep[iceberg]"
@@ -35,22 +36,21 @@ rekep task run tasks/parse_messages/parse_messages.json
 rekep task run tasks/parse_fix/parse_fix.json
 ```
 
-The task recursively reads every supported text leaf beneath `filesystem`,
-including gzip and zstd objects, and appends raw rows to `logs.messages`.
-Replaying the same source skips its `(url, rownum)` keys.
+The first task recursively reads supported text leaves, including gzip and
+zstd objects, and writes one raw row per physical line. The second sends every
+stored body through Yggdryl's FIX codec. Both stages retain `(url, rownum)`, so
+replaying a source writes no duplicate rows.
 
 ```text
-IOBase / TextOptions -> Message batches -> logs.messages   (12 columns)
-logs.messages        -> FIX reader      -> fix.messages    (101 columns)
+IOBase + Message.text_options -> logs.messages  (12 columns)
+logs.messages + FixCodec      -> fix.messages   (108 columns)
 ```
 
-`parse_fix` reads the stored binary bodies through the native FIX reader. It
-preserves source identity, streams the registry-typed Arrow rows into
-`fix.messages`, and introduces no FIX registry, parser, or row model of its
-own.
-The generated [`FixMsg` schema snapshot](schemas/rekep/fix-message.json) can be
-loaded with `Field.from_json` for schema review and mock Iceberg writes without
-parsing input.
+`logs.messages.bodyhash` identifies the exact captured bytes.
+`fix.messages.msghash` identifies what the codec parsed after excluding the
+session envelope. The generated [Message](schemas/rekep/message.json) and
+[FixMessage](schemas/rekep/fix-message.json) contracts are review snapshots;
+the runtime registry remains authoritative for FIX types.
 
 Development:
 
@@ -58,13 +58,8 @@ Development:
 cd python
 uv sync --all-extras --dev
 uv run pytest
-uv run ruff check .
-```
-
-Long Iceberg checks are explicit:
-
-```bash
 uv run pytest -m integration
+uv run ruff check .
 ```
 
 See the [documentation](https://platob.github.io/yggfin/) or the local

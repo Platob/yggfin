@@ -1,6 +1,6 @@
 # Field contract
 
-The native `Field` is the public field type:
+The public field type is Yggdryl's native `Field`.
 
 ```python
 import pyarrow
@@ -15,55 +15,34 @@ assert schema.names == [
     "rownum",
     "timestamp",
     "timepartition",
-    "threadname",
-    "branch",
+    "threadId",
+    "sessionUid",
+    "msgCtxId",
+    "seqNum",
+    "plugin",
     "level",
-    "mimetype",
-    "msgtype",
-    "msgdirection",
-    "msghash",
+    "bodyhash",
     "body",
 ]
-timestamp = schema.field("timestamp")
-assert timestamp.type == pyarrow.timestamp("us", tz="UTC")
-assert timestamp.nullable
-partition = schema.field("timepartition")
-assert partition.type == timestamp.type
-assert partition.metadata[b"partition:sources"] == b'["timestamp"]'
-assert partition.metadata[b"iceberg:partition_key"] == b"hour"
+assert schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
 ```
 
-`@scalar` derives the cached field from the dataclass annotations; `Annotated`
-options supply the Iceberg markers. `Field.into_arrow_schema`,
-`from_arrow_schema`, `into_json` and `from_json` own every conversion.
+`@yggdryl.scalar` derives the cached field from the dataclass annotations.
+`Annotated` options supply digest, derivation, primary-key, and Iceberg
+partition metadata. `Field.into_arrow_schema`, `from_arrow_schema`,
+`into_json`, and `from_json` own all conversions.
 
-| you want | use |
+| declaration | meaning |
 | --- | --- |
-| the immediate children | iterate the `Field` |
-| one datatype | `child.dtype.into_arrow()` |
-| the derived columns | `partition_field_names` |
-| the digest holders | `digest_field_names` |
+| `primary_key()` | part of merge identity |
+| `partition_key()` | identity Iceberg partition |
+| `partition_key("hour")` | transformed Iceberg partition |
+| `derived_from(sources, transform)` | native computed Arrow column |
+| `digest_key(sources)` | native digest holder |
 
-rekep adds no wrappers around those views; its remaining field helpers declare
-Iceberg metadata or bridge it to PyIceberg.
-
-## The three declarations
-
-| helper | metadata | meaning |
-| --- | --- | --- |
-| `primary_key()` | `iceberg:primary_key` | part of the merge identity |
-| `partition_key()` | `field:partition` | identity partition; a transform argument writes `iceberg:partition_key` instead |
-| `derived_from(sources, transform)` | `partition:sources` | compute this column from those, natively |
-| `digest_key(sources)` | `digest:role=holder` | this column *holds* a digest over those |
-
-The identity and transformed Iceberg markers are mutually exclusive -- a field
-carrying both is rejected at declaration and at spec conversion. A
-`derived_from(...)` declaration is independent of either.
-
-A digest holder's inputs state nothing, which is the point: a schema marks one
-holder and leaves its sources ordinary columns. The declared datatype must be
-the algorithm's exact width, so the 128-bit default takes
-`fixed_size_binary[16]`.
+The identity and transformed partition markers are mutually exclusive. A
+digest holder alone names its inputs; source fields remain ordinary fields.
+The holder type must match the algorithm width.
 
 ```python
 import pyarrow
@@ -72,31 +51,28 @@ from yggdryl import Field
 from rekep.fields import digest_key
 
 options = digest_key(["body"], dtype=pyarrow.binary(16))["metadata"]
-holder = Field("msghash", "fixed_size_binary[16]", True, options)
+holder = Field("bodyhash", "fixed_size_binary[16]", True, options)
+
 assert holder.digest.is_holder()
 assert holder.digest.sources == ["body"]
 assert holder.digest.algorithm == "xxh3-128"
 ```
 
-The raw [`Message`](../products/message.md) declares exactly one, over `body`.
-
-## The apply
+## Native application order
 
 ```mermaid
 flowchart LR
-    A["RecordBatch"] --> B["cast<br/>safe=False"]
-    B --> C["derive<br/>partition:sources"]
-    C --> D["fill<br/>digest holders"]
-    D --> E["verify<br/>nullability=strict"]
+    A["source arrays"] --> B["cast"]
+    B --> C["derive columns"]
+    C --> D["fill digest holders"]
+    D --> E["verify nullability"]
 ```
 
-Every rekep Arrow boundary delegates to that one apply: batches through
-`Field.apply_arrow_batch`, streams through `Field.apply_arrow_reader`, which
-compiles once. What it does not do yet is on the
-[roadmap](../roadmap/arrow-apply.md). Missing and null required values, protocol exemptions, nested
-array casts, final verification and stream ownership are native contracts, not
-rekep implementations.
+For `parse_messages`, `Message.field()` is installed directly on
+`TextOptions`, so the text reader performs that sequence while producing each
+batch. Other Arrow boundaries call `Field.apply_arrow_batch` or
+`Field.apply_arrow_reader`; rekep does not reproduce the plan.
 
-The `Message` timestamp is an aware UTC instant: Arrow stores microseconds,
-Iceberg maps it to `timestamptz`, and the `hour` transform over the derived
-`timepartition` copy partitions it without reducing stored precision.
+The raw timestamp is aware UTC at microsecond resolution. `timepartition`
+copies it and carries Iceberg's hour transform without reducing the stored
+timestamp precision.

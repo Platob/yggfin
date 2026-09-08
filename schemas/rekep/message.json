@@ -60,23 +60,53 @@
         }
       },
       {
-        "name": "threadname",
+        "name": "threadId",
         "dtype": {
-          "type": "utf8"
+          "type": "int64"
         },
         "nullable": true,
         "metadata": {
-          "description": "Thread spelling captured from the line header."
+          "description": "Bridge thread identifier captured from the line header."
         }
       },
       {
-        "name": "branch",
+        "name": "sessionUid",
         "dtype": {
           "type": "utf8"
         },
         "nullable": true,
         "metadata": {
-          "description": "Branch spelling captured from the line header."
+          "description": "Bridge session identifier captured from a message-context header."
+        }
+      },
+      {
+        "name": "msgCtxId",
+        "dtype": {
+          "type": "utf8"
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "Bridge message-context identifier captured from the line header."
+        }
+      },
+      {
+        "name": "seqNum",
+        "dtype": {
+          "type": "int64"
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "Bridge sequence number captured from a message-context header."
+        }
+      },
+      {
+        "name": "plugin",
+        "dtype": {
+          "type": "utf8"
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "Bridge plugin that wrote the line."
         }
       },
       {
@@ -90,37 +120,7 @@
         }
       },
       {
-        "name": "mimetype",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": false,
-        "metadata": {
-          "description": "Media type Yggdryl's shallow scan infers for the body."
-        }
-      },
-      {
-        "name": "msgtype",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": false,
-        "metadata": {
-          "description": "Raw `MsgType` the body's frame spells, or `unknown`."
-        }
-      },
-      {
-        "name": "msgdirection",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": false,
-        "metadata": {
-          "description": "`SENT`, `RECV`, or `unknown`, from the verbs beside the frame."
-        }
-      },
-      {
-        "name": "msghash",
+        "name": "bodyhash",
         "dtype": {
           "type": "fixed_size_binary",
           "width": 16
@@ -147,7 +147,7 @@
   },
   "nullable": false,
   "metadata": {
-    "description": "One source line and the header fields yggdryl captured from it.",
+    "description": "One ULBridge text line, before the FIX codec reads its body.",
     "python.class": "Message",
     "python.kind": "field",
     "python.module": "rekep.text.message",

@@ -45,13 +45,27 @@ def test_fix_contract_is_a_native_field_snapshot_for_iceberg_simulation() -> Non
     fixed = Field.from_json(document)
 
     assert document == f"{fixed.into_json(indent=2)}\n"
-    assert len(fixed) == 101
+    assert len(fixed) == 108
     assert primary_keys(fixed) == ["url", "rownum"]
     assert partition_keys(fixed) == {"timepartition": "hour"}
+    schema = fixed.into_arrow_schema()
+    # Columns use the dictionary's folded names; their tags remain metadata.
+    assert "35" not in schema.names
+    assert schema.field("msgtype").metadata[b"fix:tag"] == b"35"
+    assert schema.names[-2:] == ["nofixentries", "nounmappedfixentries"]
     # Every timestamp is microseconds, which is what Iceberg v2 stores
-    # without a precision shim -- the derived market clock included.
-    assert fixed.into_arrow_schema().field("52").type.unit == "us"
-    assert fixed.into_arrow_schema().field("30004").type.unit == "us"
+    # without a precision shim -- the codec's market clock included.
+    assert schema.field("sendingtime").type.unit == "us"
+    assert schema.field("timestamp").type.unit == "us"
+    assert [member.name for member in fixed if not member.nullable] == [
+        "url",
+        "rownum",
+        "body",
+        "beginstring",
+        "msghash",
+        "timestamp",
+        "unixpartition",
+    ]
 
 
 def test_raw_message_contract_keeps_source_keys() -> None:
@@ -59,6 +73,14 @@ def test_raw_message_contract_keeps_source_keys() -> None:
     assert primary_keys(message) == ["url", "rownum"]
     assert partition_keys(message) == {"timepartition": "hour"}
     assert derived_keys(message) == {"timepartition": ("timestamp",)}
-    assert [member.name for member in message if member.digest.is_holder()] == ["msghash"]
-    assert message["msghash"].digest.sources == ["body"]
+    assert [member.name for member in message if member.digest.is_holder()] == ["bodyhash"]
+    assert message["bodyhash"].digest.sources == ["body"]
+    assert [member.name for member in message][4:10] == [
+        "threadId",
+        "sessionUid",
+        "msgCtxId",
+        "seqNum",
+        "plugin",
+        "level",
+    ]
     assert all(member.partition.transform is None for member in message)

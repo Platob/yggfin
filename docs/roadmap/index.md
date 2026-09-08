@@ -24,7 +24,7 @@ flowchart LR
 | [Transfer bottlenecks](transfer.md) | open | whole-object reads and writes that do not buy memory proportional to the object |
 | [Native Arrow apply](arrow-apply.md) | open | derived and digest columns below nested containers, and a no-protocol path as fast as a plain cast |
 | [Column-native FIX parsing](fix-throughput.md) | open | `parse_fix` cost scaling with parsed columns rather than carried bytes |
-| FIX schema and registry JSON | **landed** | the checked [`fix.messages` snapshot](../products/fix-message.md) and the [`config/fix` dictionary](../fix/index.md#the-dictionary-this-checkout-parses-against) |
+| FIX schema and registry JSON | **landed** | the checked [`fix.messages` snapshot](../products/fix-message.md) and the [`config/fix` dictionary](../fix/index.md#registry-used-by-the-task) |
 
 ## What every item shares
 

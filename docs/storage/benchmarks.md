@@ -16,14 +16,14 @@ uv run python benchmarks/bench_message.py
 
 | source | native rows/s | `Message` rows/s | decoded MiB/s | first batch ms |
 | --- | ---: | ---: | ---: | ---: |
-| URI local plain | 126,920 | 90,296 | 11.4 | 739 |
-| URI local gzip | 108,307 | 87,195 | 11.0 | 725 |
+| URI local plain | 107,322 | 96,420 | 13.5 | 714 |
+| URI local gzip | 98,351 | 89,443 | 12.5 | 689 |
 
-*native* drains text batches only. *`Message`* adds what `parse_messages` does:
-timestamp conversion to `timestamp[us, UTC]`, derivation of `timepartition`,
-the body digest, and strict final verification -- about 19% of the native rate,
-and the applied partition plan is the visible cost. Closing that gap is
-[on the roadmap](../roadmap/arrow-apply.md#one-plan-fewer-passes).
+*native* drains header-framed text batches without an output field. *`Message`*
+installs `Message.field()` on that same native reader, adding conversion to
+`timestamp[us, UTC]`, derivation of `timepartition`, the `bodyhash` digest, and
+strict final verification. The contract path measured 9–10% below framing
+alone on this run; there is no Python row pass between them.
 
 Whole-byte and record-write limits are
 [on the roadmap](../roadmap/transfer.md). Staging a remote object locally does

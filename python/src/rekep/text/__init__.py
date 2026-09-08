@@ -1,5 +1,5 @@
 """Raw text records."""
 
-from rekep.text.message import UNKNOWN, Message
+from rekep.text.message import Message
 
-__all__ = ["UNKNOWN", "Message"]
+__all__ = ["Message"]

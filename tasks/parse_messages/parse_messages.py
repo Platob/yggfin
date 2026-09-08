@@ -9,13 +9,12 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-    from yggdryl import IOBase, TextOptions
+    from yggdryl import IOBase
 
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
     from rekep.text import Message
-    from rekep.times import MESSAGE_HEADER
 
     TARGET = "logs.messages"
 
@@ -35,9 +34,8 @@ def parameters():
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     filesystem = _defaults["filesystem"]
-    direction = _defaults["direction"]
     catalog = _defaults["catalog"]
-    return catalog, direction, filesystem
+    return catalog, filesystem
 
 
 @app.cell
@@ -47,7 +45,7 @@ def _():
 
 
 @app.cell
-def _(catalog, direction, filesystem, records):
+def _(catalog, filesystem, records):
     _ = records
     with ExitStack() as opened:
         source = IOBase.from_uri(filesystem)
@@ -61,10 +59,7 @@ def _(catalog, direction, filesystem, records):
             targets={"messages": TARGET},
         )
         field = Message.field()
-        options = TextOptions()
-        options.with_rownum = 1
-        options.rowheader = MESSAGE_HEADER
-        options.autotype = False
+        options = Message.text_options()
         counts = {"read": 0}
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
@@ -78,9 +73,8 @@ def _(catalog, direction, filesystem, records):
 
         def _batches():
             for batch in reader:
-                parsed = Message.apply_arrow_batch(batch, direction)
-                counts["read"] += parsed.num_rows
-                yield parsed
+                counts["read"] += batch.num_rows
+                yield batch
 
         parsed = pyarrow.RecordBatchReader.from_batches(
             field.into_arrow_schema(),

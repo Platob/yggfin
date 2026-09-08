@@ -3,7 +3,6 @@
   "application": "parse_messages.py",
   "parameters": {
     "filesystem": "file:data/capture",
-    "direction": "sent",
     "catalog": {
       "name": "rekep",
       "properties": {

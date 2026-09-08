@@ -520,7 +520,7 @@ def test_a_real_child_publishes_a_result_through_the_locked_environment(
         repository=str(ROOT),
         document="tasks/parse_messages/parse_messages.json",
         parameters={
-            "filesystem": (ROOT / "python/tests/data/app_messages_sample.txt").as_uri(),
+            "filesystem": (ROOT / "python/tests/data/ulbridge.log").as_uri(),
             "catalog": catalog,
         },
     )
@@ -528,7 +528,7 @@ def test_a_real_child_publishes_a_result_through_the_locked_environment(
     result = built.execute(context())
 
     assert result["task"] == "parse_messages"
-    assert (result["read"], result["written"]) == (14, 14)
+    assert (result["read"], result["written"]) == (111, 111)
     assert built.hook is None
 
 

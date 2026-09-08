@@ -3,8 +3,9 @@
   "application": "parse_fix.py",
   "parameters": {
     "registry": "file:config/fix",
-    "version": "FIX.4.4",
-    "dedup": true,
+    "branch": "ulbridge",
+    "version": null,
+    "dedup": false,
     "catalog": {
       "name": "rekep",
       "properties": {

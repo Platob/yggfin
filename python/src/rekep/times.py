@@ -223,15 +223,13 @@ COMPACT = Stamp(
 #: where the separators sit tells them apart.
 SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 
-_MESSAGE_TIMESTAMP = "|".join(f"(?:{stamp.pattern})" for stamp in SHAPES)
 MESSAGE_HEADER = (
-    r"^[ \t]*"
-    rf"(?P<timestamp>{_MESSAGE_TIMESTAMP})[ \t]+"
-    r"\[(?P<threadname>[^]]*)\][ \t]+"
-    r"\[(?P<branch>[^]]*)\][ \t]*"
-    r"(?:\((?P<level>[A-Za-z]{1,12})\)[ \t]*)?"
+    r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
+    r"\[(?P<threadId>[1-9]\d*)"
+    r"(?:-(?P<sessionUid>[0-9a-f]{8}):(?P<msgCtxId>[0-9a-f]{10}):(?P<seqNum>\d+))?\] "
+    r"\[(?P<plugin>[^\]]+)\] \((?P<level>[A-Z]+)\) "
 )
-"""Default yggdryl row-header expression for physical message records."""
+"""The ULBridge row-header expression for physical message records."""
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are
 #: tried. The three shapes above lead, because they are what a capture

@@ -129,10 +129,11 @@ never in committed task documents.
 
 ## Message schema replacement
 
-The current table contract uses `url`, `rownum`, `branch`, and a derived
-`timepartition` with an Iceberg `hour` transform. Recreate an older messages
-table from `Message.field()` and reingest its source captures; rekep carries no
-legacy name, timestamp-type, or partition-layout compatibility path.
+The current raw contract uses `url`, `rownum`, the ULBridge header fields,
+`bodyhash`, and a derived `timepartition` with an Iceberg `hour` transform.
+Recreate an older messages table from `Message.field()` and reingest its source
+captures; rekep carries no legacy name, timestamp-type, digest-name, or
+partition-layout compatibility path.
 
 ## Maintenance
 

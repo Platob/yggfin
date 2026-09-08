@@ -82,7 +82,7 @@ bench = [
 default-groups = ["dev", "runner", "airflow"]
 
 [tool.uv.sources]
-yggdryl = { git = "https://github.com/Platob/yggdryl", rev = "4f271d53ed470fee33deb56b9deea407808f2b8d", subdirectory = "python" }
+yggdryl = { git = "https://github.com/Platob/yggdryl", rev = "6cfc361cb67bddfdb792402de9b32dcf9d8ecfdd", subdirectory = "python" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

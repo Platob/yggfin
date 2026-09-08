@@ -1,10 +1,15 @@
-# Portable schema
+# Portable schemas
 
-[`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json)
-is the checked portable contract for `logs.messages`.
-[`schemas/rekep/fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json)
-is the `FixMsg` snapshot this checkout's dictionary produces, used for review
-and mock Iceberg writes.
+Two generated Yggdryl `Field` documents make the table contracts reviewable:
+
+| file | describes | authority |
+| --- | --- | --- |
+| [`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | fixed 12-column `Message` | `rekep.text.Message` |
+| [`schemas/rekep/fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 108-column checked-registry FIX result | runtime registry and codec |
+
+The documents retain Arrow types, nullability, descriptions, FIX metadata,
+digest declarations, primary keys, and Iceberg partition markers. rekep has no
+parallel schema model.
 
 ```python
 from pathlib import Path
@@ -13,16 +18,14 @@ from yggdryl import Field
 
 document = Path("schemas/rekep/message.json").read_text(encoding="utf-8")
 field = Field.from_json(document)
+
 assert f"{field.into_json(indent=2)}\n" == document
-print(field.into_arrow_schema())
+assert field.into_arrow_schema().names[-2:] == ["bodyhash", "body"]
 ```
 
-Native `Field` JSON: Arrow types, nullability, field metadata and Iceberg key
-markers -- everything needed to reproduce the table shape. Partition and digest
-declarations round-trip through the same validated metadata. rekep has no
-parallel schema class or document implementation.
+## Message generation
 
-Regenerate it from the declaration:
+Change the Python declaration and regenerate its document together:
 
 ```bash
 rekep fields dump --pyclass rekep.text.message:Message \
@@ -30,81 +33,38 @@ rekep fields dump --pyclass rekep.text.message:Message \
 rekep fields load --target schemas/rekep/message.json
 ```
 
-Schema changes update `Message` and this generated document together.
+## FixMessage generation
 
-The FIX snapshot is 101 source-first columns, described column by column in
-[`fix.messages`](../products/fix-message.md):
+The FIX snapshot is derived, not hand-maintained:
 
-| columns | what they are |
-| --- | --- |
-| 12 | the raw `Message` columns, [two renamed](../pipeline/tasks/parse-fix.md#the-two-renamed-columns) |
-| 80 | specification tags, typed as [`config/fix`](https://github.com/Platob/yggfin/tree/main/config/fix) declares them |
-| 7 | derived, on their own branch (`30001`-`30007`) |
-| 2 | `entries` and `unmapped` |
+1. create an empty reader with `Message.field()`;
+2. load `config/fix`, whose registry already contains 16 Yggdryl fields;
+3. add the ULBridge vocabulary with `with_ulbridge_fields()`;
+4. call `parse_arrow_reader(..., branch="ulbridge")`;
+5. recursively narrow nanosecond timestamps to Iceberg microseconds;
+6. serialize `Field.from_arrow_schema`.
 
-A fixed projection, not a column per definition -- six thousand definitions
-would otherwise be six thousand columns, and every pair the projection does not
-name is still in `entries`. Every timestamp is `timestamp[us, UTC]`,
-`(url, rownum)` remains the primary key, and `timepartition` keeps its hourly
-Iceberg marker. It is a derived fixture, not
-schema authority: `parse_fix` obtains the live schema from the selected
-registry before streaming rows, so a dictionary that types a tag differently --
-or declares a group where a scalar was -- is a differently typed table without a
-code change.
+An empty reader is sufficient because the codec answers its output schema
+before consuming a row. For the checked inputs the shape is:
 
-Generate it without parsing a message:
+| count | source |
+| ---: | --- |
+| 10 | carrier fields not claimed by folded fixed names |
+| 80 | standard FIX projection |
+| 16 | seeded Yggdryl fields, tags 65000–65015 |
+| 2 | `nofixentries`, `nounmappedfixentries` |
+| 108 | total |
 
-```python
-import pathlib
+The integration test also loads this JSON, constructs one schema-shaped batch,
+writes it through the regular Iceberg path, and reads all 108 columns back.
 
-import pyarrow
-from yggdryl import Field, IOBase
-from yggdryl.fix import FixRegistry, parse_arrow_reader
+## What stays outside the snapshot
 
-from rekep.text import Message
+The live registry remains authoritative. A registry can type a projected field
+differently or add a nullable projection, and `parse_fix` derives that reader's
+field at runtime. `merge_schema=True` may add those columns; it does not mutate
+existing types, ids, keys, or partition rules.
 
-CARRIED = {"branch": "logbranch", "msgdirection": "direction"}
-
-registry = FixRegistry.from_handle(IOBase.from_uri("file:config/fix"))
-registry.with_crate_fields()
-capture = Message.field().into_arrow_schema()
-capture = pyarrow.schema(
-    [member.with_name(CARRIED.get(member.name, member.name)) for member in capture]
-)
-empty = pyarrow.RecordBatchReader.from_batches(capture, [])
-parsed = parse_arrow_reader(empty, registry, "body")
-
-
-def microseconds(dtype):
-    """One Arrow type with every nanosecond clock in it narrowed.
-
-    The same walk `parse_fix` runs, and for the same reason: Iceberg v2 has
-    no nanosecond timestamp, and a clock nested in a repeating group is a
-    clock.
-    """
-    if pyarrow.types.is_timestamp(dtype) and dtype.unit == "ns":
-        return pyarrow.timestamp("us", tz=dtype.tz)
-    if pyarrow.types.is_list(dtype):
-        item = dtype.field(0)
-        return pyarrow.list_(item.with_type(microseconds(item.type)))
-    if pyarrow.types.is_large_list(dtype):
-        item = dtype.field(0)
-        return pyarrow.large_list(item.with_type(microseconds(item.type)))
-    if pyarrow.types.is_struct(dtype):
-        return pyarrow.struct([member.with_type(microseconds(member.type)) for member in dtype])
-    return dtype
-
-
-members = [member.with_type(microseconds(member.type)) for member in parsed.schema]
-fixed = Field.from_arrow_schema(pyarrow.schema(members), name="FixMessage")
-parsed.close()
-pathlib.Path("schemas/rekep/fix-message.json").write_text(
-    f"{fixed.into_json(indent=2)}\n", encoding="utf-8"
-)
-```
-
-That is the same shape `parse_fix` builds at runtime, which is why the two
-agree without either reading the other. The integration test loads the JSON
-with `Field.from_json`, constructs one schema-shaped mock batch, streams it
-through the regular Iceberg writer, and reads back all 101 columns. This
-isolates schema compatibility from parser behavior.
+`(url, rownum)` is the primary key in both snapshots. `timepartition` carries
+the Iceberg hour transform. Every FIX timestamp is stored as
+`timestamp[us, UTC]`, including clocks nested in repeating groups.

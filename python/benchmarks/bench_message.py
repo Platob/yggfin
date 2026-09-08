@@ -20,7 +20,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import best_of, parser  # noqa: E402
 
 from rekep.text import Message  # noqa: E402
-from rekep.times import MESSAGE_HEADER, datetime_of  # noqa: E402
+from rekep.times import datetime_of  # noqa: E402
 
 # Yggdryl's default when TextOptions leaves the bound unset.
 BATCH_ROW_SIZE = 65_536
@@ -30,7 +30,7 @@ SCHEMA = FIELD.into_arrow_schema()
 
 def timestamp(index: int) -> str:
     """The deterministic source spelling for one row."""
-    return f"2026-08-14 00:05:{index % 60:02d}.{index % 1_000:03d}_{index % 997:03d}"
+    return f"2026-08-14 00:05:{index % 60:02d}.{index % 1_000:03d}"
 
 
 def body(index: int) -> bytes:
@@ -45,7 +45,11 @@ def line(index: int) -> bytes:
     """One log row matched by the current default message header."""
     level = "WARN" if index % 7 == 0 else "INFO"
     return (
-        (f"{timestamp(index)} [worker-{index % 16}] [feed-{index % 4}] ({level}) ").encode()
+        (
+            f"{timestamp(index)} "
+            f"[{index % 16 + 1}-{index % 2**32:08x}:{index % 2**40:010x}:{index}] "
+            f"[feed-{index % 4}] ({level}) "
+        ).encode()
         + body(index)
         + b"\n"
     )
@@ -60,15 +64,16 @@ def corpus(rows: int) -> bytes:
 
 
 def text_options() -> TextOptions:
-    """The options used by `parse_messages`."""
-    options = TextOptions()
-    options.with_rownum = 1
-    options.rowheader = MESSAGE_HEADER
-    options.autotype = False
-    return options
+    """The complete native read used by `parse_messages`."""
+    return Message.text_options()
 
 
 OPTIONS = text_options()
+RAW_OPTIONS = TextOptions()
+RAW_OPTIONS.start_rownum = OPTIONS.start_rownum
+RAW_OPTIONS.parse_mtime = OPTIONS.parse_mtime
+RAW_OPTIONS.rowheader = OPTIONS.rowheader
+RAW_OPTIONS.timezone = OPTIONS.timezone
 
 
 @dataclass(frozen=True)
@@ -81,11 +86,10 @@ class Case:
 
 
 def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
-    """The exact yggdryl-to-Message boundary used by `parse_messages`."""
+    """The exact native Message reader used by `parse_messages`."""
     reader = source.read_arrow_reader(options=OPTIONS)
     try:
-        for batch in reader:
-            yield Message.apply_arrow_batch(batch)
+        yield from reader
     finally:
         reader.close()
         source.close()
@@ -94,7 +98,7 @@ def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
 def raw_drain(case: Case) -> int:
     """Drain yggdryl batches before the Message boundary."""
     source = case.source()
-    reader = source.read_arrow_reader(options=OPTIONS)
+    reader = source.read_arrow_reader(options=RAW_OPTIONS)
     try:
         return sum(batch.num_rows for batch in reader)
     finally:
@@ -124,12 +128,12 @@ def expected(index: int) -> dict[str, object]:
         "rownum": index + 1,
         "timestamp": instant,
         "timepartition": instant,
-        "threadname": f"worker-{index % 16}",
-        "branch": f"feed-{index % 4}",
+        "threadId": index % 16 + 1,
+        "sessionUid": f"{index % 2**32:08x}",
+        "msgCtxId": f"{index % 2**40:010x}",
+        "seqNum": index,
+        "plugin": f"feed-{index % 4}",
         "level": "WARN" if index % 7 == 0 else "INFO",
-        "mimetype": "text/fix",
-        "msgtype": "D",
-        "msgdirection": "SENT",
         "body": body(index),
     }
 
@@ -146,7 +150,7 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
         url = row.pop("url")
-        digest = row.pop("msghash")
+        digest = row.pop("bodyhash")
         assert isinstance(url, str) and url.endswith(case.filename)
         assert isinstance(digest, bytes) and len(digest) == 16
         assert row == expected(index)

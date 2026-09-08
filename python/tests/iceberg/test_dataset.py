@@ -2263,8 +2263,11 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         url="capture.log",
         rownum=7,
         timestamp="2026-08-14 09:30:00.123",
-        threadname="worker-1",
-        branch="bridge",
+        threadId=250,
+        sessionUid="e7256476",
+        msgCtxId="9effef3e6a",
+        seqNum=72504,
+        plugin="ULBridge",
         level="INFO",
         body=b"opaque",
     )
@@ -2281,7 +2284,7 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     stored = reopened.read_arrow_table(Message.field()).to_pylist()
     # The declaration's digest holder is filled on the way in, so the stored
     # row carries a digest the literal below cannot spell.
-    digest = stored[0].pop("msghash")
+    digest = stored[0].pop("bodyhash")
     assert isinstance(digest, bytes) and len(digest) == 16
     assert stored == [
         {
@@ -2289,12 +2292,12 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "rownum": 7,
             "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
             "timepartition": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
-            "threadname": "worker-1",
-            "branch": "bridge",
+            "threadId": 250,
+            "sessionUid": "e7256476",
+            "msgCtxId": "9effef3e6a",
+            "seqNum": 72504,
+            "plugin": "ULBridge",
             "level": "INFO",
-            "mimetype": "application/octet-stream",
-            "msgtype": "unknown",
-            "msgdirection": "unknown",
             "body": b"opaque",
         }
     ]

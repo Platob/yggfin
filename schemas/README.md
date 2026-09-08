@@ -3,8 +3,8 @@
 Both files are native `Field` JSON:
 
 - `message.json` is the generated contract for `logs.messages`.
-- `fix-message.json` is a reproducible snapshot of the 101-column `FixMsg`
-  schema this checkout's dictionary produces.
+- `fix-message.json` is a reproducible snapshot of the 108-column `FixMsg`
+  schema this checkout's dictionary and ULBridge carrier produce.
 
 ```bash
 rekep fields dump --pyclass rekep.text.message:Message \
@@ -21,6 +21,6 @@ JSON strings inside that metadata.
 The FIX snapshot is for schema review and Iceberg simulations. It is not a
 second registry: production `parse_fix` always asks its selected runtime
 registry for the schema before reading a batch. The dictionary it is generated
-from is `config/fix`, and the exact snippet that regenerates `fix-message.json`
+from is `config/fix`, and the regeneration procedure for `fix-message.json`
 is on the [portable schema](../docs/contracts/index.md) page. Regenerate it
 whenever that dictionary changes.

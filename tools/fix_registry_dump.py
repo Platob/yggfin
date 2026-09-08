@@ -52,7 +52,7 @@ def members(field: Field) -> list[dict[str, Any]]:
 def main() -> int:
     """Write both assets, and report what each cost."""
     registry = FixRegistry.from_handle(IOBase.from_uri(SOURCE))
-    registry.with_crate_fields()
+    registry.with_ulbridge_fields()
 
     index: list[dict[str, Any]] = []
     detail: dict[str, dict[str, Any]] = {}
@@ -96,7 +96,7 @@ def main() -> int:
     for name, held in (("fix-registry.json", published), ("fix-details.json", detail)):
         target = ASSETS / name
         target.write_text(json.dumps(held, separators=(",", ":")) + "\n", encoding="utf-8")
-        print(f"  ✓ {target} ({target.stat().st_size:,} bytes)")
+        print(f"  wrote {target} ({target.stat().st_size:,} bytes)")
     print(f"{len(index):,} definitions, {len(detail):,} with deep records")
     return 0
 

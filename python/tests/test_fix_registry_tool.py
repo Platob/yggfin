@@ -52,21 +52,21 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
 
     dictionary = setup["open_registry"](location.as_uri())
 
-    assert setup["into_registry_rows"](dictionary) == [
-        {
-            "_id": "55:",
-            "_search": "55 symbol symbol ticker instrument identifier",
-            "tag": 55,
-            "name": "Symbol",
-            "branch": "standard",
-            "shape": "field",
-            "Arrow kind": "text",
-            "FIX type": "String",
-            "since": "2.7",
-            "aliases": "ticker",
-            "description": "Instrument identifier",
-        }
-    ]
+    rows = setup["into_registry_rows"](dictionary)
+    assert next(row for row in rows if row["tag"] == 55) == {
+        "_id": "55:",
+        "_search": "55 symbol symbol ticker instrument identifier",
+        "tag": 55,
+        "name": "Symbol",
+        "branch": "standard",
+        "shape": "field",
+        "Arrow kind": "text",
+        "FIX type": "String",
+        "since": "2.7",
+        "aliases": "ticker",
+        "description": "Instrument identifier",
+    }
+    assert len(rows) == 1 + len(setup["FixRegistry"]())
     assert setup["metadata_records"](_field(), "codes", "codes") == [
         {"value": "AAPL", "name": "Apple"}
     ]
@@ -93,8 +93,12 @@ def test_tool_uses_native_shape_and_schema_operations() -> None:
     assert [row["path"] for row in setup["member_rows"](group)] == ["partyid", "partyrole"]
     schema = setup["into_fixmsg_schema"](FixRegistry.from_fields([_field()]))
     assert schema.name == "FixMsg"
-    assert schema["55"].display == "Symbol"
-    assert {member.name for member in schema} >= {"55", "entries", "unmapped"}
+    assert schema["symbol"].display == "Symbol"
+    assert {member.name for member in schema} >= {
+        "symbol",
+        "nofixentries",
+        "nounmappedfixentries",
+    }
     assert Field.from_json(schema.into_json()) == schema
 
 

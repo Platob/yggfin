@@ -1,213 +1,125 @@
 # fix.messages
 
-One row is one FIX frame, read from a `logs.messages` body. The schema is a
-fixed projection of tags -- not a column per dictionary definition -- so a
-six-thousand-field dictionary is still a 101-column table, and every pair the
-projection does not name is kept in `entries`.
+One row is one Yggdryl FIX-codec result for a stored `Message`. Every input row
+produces an output row unless `dedup` is enabled, so prose and unreadable bodies
+remain visible instead of disappearing before the protocol boundary.
+
+## Shape
+
+The checked registry produces 108 columns:
 
 ```mermaid
 flowchart LR
-    R["raw record · 12
-    ─────────────────
-    url · rownum · timestamp · timepartition
-    threadname · logbranch · level
-    mimetype · msgtype · direction · msghash · body"]
-    T["tag columns · 87
-    ─────────────────
-    80 specification tags
-    named by tag, typed by the dictionary
-    7 derived · 30001-30007"]
-    L["lists · 2
-    ─────────────────
-    entries · every pair in arrival order
-    unmapped · the pairs nothing placed"]
-    R --> T --> L
+    C["carrier · 10<br/>url · rownum · timepartition<br/>threadId · sessionUid · seqNum<br/>plugin · level · bodyhash · body"]
+    S["standard projection · 80<br/>folded field names<br/>numeric tags in metadata"]
+    Y["Yggdryl fields · 16<br/>65000–65015"]
+    L["arrival lists · 2<br/>nofixentries<br/>nounmappedfixentries"]
+    C --> S --> Y --> L
 ```
 
 | property | value |
 | --- | --- |
-| columns | 101 |
+| columns | 108 |
 | primary key | `(url, rownum)` |
-| partition | `timepartition`, Iceberg `hour` transform |
-| every clock | `timestamp[us, UTC]` |
-| written by | [`parse_fix`](../pipeline/tasks/parse-fix.md) |
+| partition | `timepartition`, Iceberg hour transform |
+| timestamp storage | `timestamp[us, UTC]` |
+| schema authority | runtime `FixRegistry` |
+| checked snapshot | `schemas/rekep/fix-message.json` |
 
-## The raw record it carries forward
+## Carrier behavior
 
-The twelve [`logs.messages`](message.md) columns arrive unchanged except for
-two renames, so the FIX row still identifies the line it came from.
+Ten raw columns lead the row. Raw `timestamp` and `msgCtxId` do not appear a
+second time: folded-name matching lets them fill fixed `timestamp` and
+`msgctxid`. `seqNum` also fills `msgseqnum` when tag 34 is absent, while the
+original `seqNum` carrier remains. `plugin` can fill the sender or target plugin
+session according to the direction read from the body.
 
-| column | type | note |
-| --- | --- | --- |
-| `url`, `rownum` | `string`, `int64` | primary key, unchanged |
-| `timestamp`, `timepartition` | `timestamp[us, UTC]` | the capture's clock, not the market's |
-| `threadname`, `level` | `string` | header captures |
-| `logbranch` | `string` | the raw `branch`, renamed out of the dialect parameter |
-| `mimetype`, `msgtype` | `string` | the reading `parse_messages` already made |
-| `direction` | `string` | the raw `msgdirection`, renamed *into* the reader's parameter |
-| `msghash` | `fixed_size_binary[16]` | digest of the body bytes |
-| `body` | `binary` | the exact bytes that were parsed |
+The two hashes are intentionally distinct:
 
-## The 87 tag columns
+| column | identity |
+| --- | --- |
+| `bodyhash` | XXH3-128 over exact captured `body` bytes; carried from `logs.messages` |
+| `msghash` | XXH3-128 over `nofixentries` with the session envelope excluded; built by the codec |
 
-Columns are named by tag, because a tag is the one name a field keeps across
-every version and dialect. The dictionary types them; the
-[registry browser](../fix/registry.md#browse-the-dictionary) opens any of them.
+## Fixed names and tags
 
-??? note "Session and envelope (28)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `8` | BeginString | `string` |
-    | `9` | BodyLength | `int32` |
-    | `35` | MsgType | `fixed_size_binary[8]` |
-    | `385` | MsgDirection | `fixed_size_binary[4]` |
-    | `49` | SenderCompID | `string` |
-    | `56` | TargetCompID | `string` |
-    | `50` | SenderSubID | `string` |
-    | `142` | SenderLocationID | `string` |
-    | `57` | TargetSubID | `string` |
-    | `143` | TargetLocationID | `string` |
-    | `115` | OnBehalfOfCompID | `string` |
-    | `116` | OnBehalfOfSubID | `string` |
-    | `144` | OnBehalfOfLocationID | `string` |
-    | `128` | DeliverToCompID | `string` |
-    | `129` | DeliverToSubID | `string` |
-    | `145` | DeliverToLocationID | `string` |
-    | `34` | MsgSeqNum | `int64` |
-    | `43` | PossDupFlag | `bool` |
-    | `97` | PossResend | `bool` |
-    | `52` | SendingTime | `timestamp[us, tz=UTC]` |
-    | `122` | OrigSendingTime | `timestamp[us, tz=UTC]` |
-    | `90` | SecureDataLen | `int32` |
-    | `91` | SecureData | `binary` |
-    | `212` | XmlDataLen | `int32` |
-    | `213` | XmlData | `binary` |
-    | `93` | SignatureLength | `int32` |
-    | `89` | Signature | `binary` |
-    | `10` | CheckSum | `string` |
-
-??? note "Identifiers (11)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `1` | Account | `string` |
-    | `11` | ClOrdID | `string` |
-    | `41` | OrigClOrdID | `string` |
-    | `526` | SecondaryClOrdID | `string` |
-    | `37` | OrderID | `string` |
-    | `198` | SecondaryOrderID | `string` |
-    | `17` | ExecID | `string` |
-    | `1003` | TradeID | `string` |
-    | `131` | QuoteReqID | `string` |
-    | `117` | QuoteID | `string` |
-    | `693` | QuoteRespID | `string` |
-
-??? note "Instrument (10)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `55` | Symbol | `string` |
-    | `48` | SecurityID | `string` |
-    | `22` | SecurityIDSource | `string` |
-    | `454` | NoSecurityAltID | `list<item: struct<securityaltid: string, securityaltidsource: string, symbolpositionnumber: int32> not null>` |
-    | `167` | SecurityType | `string` |
-    | `762` | SecuritySubType | `string` |
-    | `207` | SecurityExchange | `fixed_size_binary[4]` |
-    | `461` | CFICode | `string` |
-    | `541` | MaturityDate | `date32[day]` |
-    | `460` | Product | `int32` |
-
-??? note "Order, price and quantity (17)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `54` | Side | `fixed_size_binary[4]` |
-    | `40` | OrdType | `string` |
-    | `44` | Price | `double` |
-    | `38` | OrderQty | `double` |
-    | `53` | Quantity | `double` |
-    | `854` | QtyType | `int32` |
-    | `15` | Currency | `fixed_size_binary[3]` |
-    | `120` | SettlCurrency | `fixed_size_binary[3]` |
-    | `132` | BidPx | `double` |
-    | `133` | OfferPx | `double` |
-    | `134` | BidSize | `double` |
-    | `135` | OfferSize | `double` |
-    | `31` | LastPx | `double` |
-    | `32` | LastQty | `double` |
-    | `6` | AvgPx | `double` |
-    | `14` | CumQty | `double` |
-    | `151` | LeavesQty | `double` |
-
-??? note "State and reasons (8)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `39` | OrdStatus | `string` |
-    | `150` | ExecType | `string` |
-    | `297` | QuoteStatus | `int32` |
-    | `301` | QuoteResponseLevel | `int32` |
-    | `368` | QuoteEntryRejectReason | `int32` |
-    | `103` | OrdRejReason | `int32` |
-    | `102` | CxlRejReason | `int32` |
-    | `58` | Text | `string` |
-
-??? note "Clocks (5)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `60` | TransactTime | `timestamp[us, tz=UTC]` |
-    | `64` | SettlDate | `date32[day]` |
-    | `75` | TradeDate | `date32[day]` |
-    | `126` | ExpireTime | `timestamp[us, tz=UTC]` |
-    | `768` | NoTrdRegTimestamps | `list<item: struct<trdregtimestamp: timestamp[us, tz=UTC], trdregtimestamptype: int32, trdregtimestamporigin: string, trdregtimestampmanualindicator: bool, desktype: string, desktypesource: int32, deskorderhandlinginst: string, informationbarrierid: string, nbboentrytype: int32, nbboprice: double, nbboqty: double, nbbosource: int32> not null>` |
-
-??? note "Parties (1)"
-    | tag | field | type |
-    | --- | --- | --- |
-    | `453` | NoPartyIDs | `list<item: struct<partyid: string, partyidsource: string, partyrole: int32, partyrolequalifier: int32> not null>` |
-
-### Derived, on their own branch
-
-Seven facts no standard tag names, computed from the message:
-
-| tag | column | type | what it is |
-| --- | --- | --- | --- |
-| `30001` | `msghash` | `fixed_size_binary[16]` | XXH3-128 over the entries in arrival order |
-| `30002` | `version` | `string` | the version the row was read as |
-| `30003` | `symbolticker` | `string` | the cross-venue ticker |
-| `30004` | `timestamp` | `timestamp[us, UTC]` | the market clock: the first clock the message answers |
-| `30005` | `unixpartition` | `int64` | the partition that clock falls in |
-| `30006` | `parentclordid` | `string` | parent `ClOrdID` |
-| `30007` | `parentorderid` | `string` | parent `OrderID` |
-
-`30001` digests the *parsed* message; `msghash` beside it digests the raw
-bytes. [Quality](../fix/quality.md) says when each is the right key.
-
-### The two lists
-
-```text
-entries  : list<struct<tag: int32, branch: string, key: string, value: string>>
-unmapped : list<struct<tag: int32, branch: string, key: string, value: string>>
-```
-
-`entries` is every wire pair in arrival order -- the lossless record, and what
-[re-encoding](../fix/encode.md) reads. `unmapped` is the subset nothing placed:
-the coverage metric, and the work list for
-[adding a definition](../fix/registry.md#adding-a-definition).
-
-## Read the contract
+Every projected field uses its folded canonical name: `msgtype`, not `35` or
+`msg_type`; `sendingtime`, not `52`. The tag remains authoritative metadata.
 
 ```python
-import pathlib
+from pathlib import Path
 
 from yggdryl import Field
 
-field = Field.from_json(pathlib.Path("schemas/rekep/fix-message.json").read_text())
+field = Field.from_json(Path("schemas/rekep/fix-message.json").read_text())
 schema = field.into_arrow_schema()
 
-assert len(schema) == 101
-assert schema.field("30004").type.unit == "us"
-assert str(schema.field("453").type).startswith("list<item: struct<partyid:")
-assert schema.names[-2:] == ["entries", "unmapped"]
+assert len(schema) == 108
+assert "35" not in schema.names
+assert schema.field("msgtype").metadata[b"fix:tag"] == b"35"
+assert schema.names[-2:] == ["nofixentries", "nounmappedfixentries"]
 ```
 
-The file is a snapshot for review and schema-only tests. The runtime registry
-is the authority: `parse_fix` asks it for the schema before it reads a batch,
-so a dictionary that types a tag differently is a differently typed table with
-no code change.
+The 80 standard fields cover the session envelope, identifiers, instruments,
+orders, prices, quantities, clocks, state, three repeating groups, signature,
+and checksum. The JSON snapshot is the exact column-by-column reference.
+
+## Yggdryl fields
+
+Every registry contains these 16 fields on the standard branch above
+venue-published tags:
+
+| tag | column | contract |
+| ---: | --- | --- |
+| 65000 | `msghash` | parsed-message digest |
+| 65001 | `version` | version used to read the row |
+| 65002 | `symbolticker` | normalized cross-venue ticker |
+| 65003 | `timestamp` | source clock, then message clock, then epoch |
+| 65004 | `unixpartition` | whole-second partition of `timestamp` |
+| 65005 | `parentclordid` | parent client order id |
+| 65006 | `parentorderid` | parent venue order id |
+| 65007 | `sessionid` | session named by the message |
+| 65008 | `msgctxid` | bridge message context |
+| 65009 | `senderpluginid` | source plugin id |
+| 65010 | `targetpluginid` | destination plugin id |
+| 65011 | `senderpluginsession` | source plugin session |
+| 65012 | `targetpluginsession` | destination plugin session |
+| 65013 | `isincode` | resolved ISIN |
+| 65014 | `miccode` | resolved ISO 10383 MIC |
+| 65015 | `state` | normalized order lifecycle state |
+
+`msgdirection` is the folded standard field for tag 385 and follows this block
+in the fixed projection.
+
+## Required stamps
+
+The codec guarantees four non-null columns for every row:
+
+| column | source order |
+| --- | --- |
+| `beginstring` | body, selected version, branch/default registry version, FIX 4.4 |
+| `msghash` | parsed arrival record, including an empty one |
+| `timestamp` | source `timestamp`, message clocks, Unix epoch |
+| `unixpartition` | derived from `timestamp` |
+
+Every other fixed field is nullable. This guarantee is why non-FIX prose can
+remain in the same positional stream without violating the schema.
+
+## Arrival record
+
+```text
+nofixentries         list<fixentry>  every parsed pair in arrival order
+nounmappedfixentries list<fixentry>  pairs no registry field explained
+```
+
+The first list is the lossless protocol record and the source for re-encoding.
+The second is the dictionary-coverage work list. Scalar type failures remain
+null in their typed column while the original text stays in `nofixentries`.
+
+## Runtime authority
+
+The JSON file is generated from an empty `Message` reader through the selected
+registry and codec, then narrowed from nanosecond to microsecond timestamps for
+Iceberg v2. At runtime `parse_fix` derives the same field from the live reader
+schema with `Field.from_arrow_schema`; registry changes therefore remain
+explicit schema changes rather than hidden parser behavior.
