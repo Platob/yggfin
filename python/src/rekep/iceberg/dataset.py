@@ -516,9 +516,7 @@ class IcebergDataset(Dataset):
         held = set(self.iceberg_table.schema().column_names)
         missing = [name for name in incoming.column_names if name not in held]
         added = [
-            name
-            for name in missing
-            if not (parent := name.rpartition(".")[0]) or parent in held
+            name for name in missing if not (parent := name.rpartition(".")[0]) or parent in held
         ]
         if not added or dry_run:
             return added

@@ -295,9 +295,7 @@ def test_messages_stream_through_hour_partitions(
     capture.mkdir()
     line = FIXTURE.read_bytes().split(b"\n", 1)[0] + b"\n"
     (capture / "14.log").write_bytes(line)
-    (capture / "15.log").write_bytes(
-        line.replace(b"2026-08-14 14:", b"2026-08-14 15:", 1)
-    )
+    (capture / "15.log").write_bytes(line.replace(b"2026-08-14 14:", b"2026-08-14 15:", 1))
 
     handed_to_iceberg: list[pyarrow.Schema] = []
     append = IcebergDataset.append_arrow_reader
@@ -399,9 +397,7 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         fixes.column_names
     )
     assert fixes.column_names[-2:] == ["nofixentries", "nounmappedfixentries"]
-    assert not {"35", "30001", "entries", "unmapped", "msgCtxId"} & set(
-        fixes.column_names
-    )
+    assert not {"35", "30001", "entries", "unmapped", "msgCtxId"} & set(fixes.column_names)
     for required in ("beginstring", "msghash", "timestamp", "unixpartition"):
         assert fixes.schema.field(required).nullable is False
         assert fixes.column(required).null_count == 0
