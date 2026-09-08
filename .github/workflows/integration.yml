@@ -26,7 +26,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # A cold Windows build of the pinned native dependency can take 15-18
+    # minutes before the integration suite starts. Keep enough room for the
+    # tests and teardown without weakening any test or failure condition.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: python
