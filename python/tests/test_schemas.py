@@ -95,6 +95,11 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
         b"description": b"XXH3-128 digest of the exact body bytes, filled during field apply.",
         b"iceberg:field_id": b"11",
     }
+    # A column's description survives as Iceberg's `doc`; the struct's own does
+    # not, and neither do the `python.*` keys naming the class that declared it.
+    assert Message.field().metadata["description"].startswith("One ULBridge text line")
+    assert Message.field().metadata["python.qualname"] == "Message"
+    assert dict(published.metadata) == {}
 
 
 def test_fix_contract_is_a_table_contract_for_iceberg_simulation() -> None:

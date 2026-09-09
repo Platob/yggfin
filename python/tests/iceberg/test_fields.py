@@ -26,6 +26,7 @@ from rekep.iceberg import (
     metrics_for,
     partition_keys,
     primary_keys,
+    sort_keys,
 )
 from rekep.iceberg.fields import (
     COLUMN_METRICS,
@@ -544,6 +545,58 @@ def test_a_contract_round_trip_is_a_fixed_point() -> None:
     assert iceberg_contract(rebuilt) == document
     assert partition_keys(rebuilt) == {"at": "hour"}
     assert primary_keys(rebuilt) == ["mic"]
+
+
+def test_a_sorted_contract_comes_back_sorted() -> None:
+    """The read side of `sort-order`: both published shapes are unsorted."""
+    document = iceberg_contract(Venue.field(), sort_by=["mic"])
+    rebuilt = iceberg_contract_field(document, "Venue")
+
+    assert sort_keys(rebuilt) == {"mic": "asc"}
+    assert iceberg_contract(rebuilt) == document
+
+
+def test_a_layout_no_member_can_hold_is_refused_rather_than_dropped() -> None:
+    """A table read back has `table.spec()` beside it; a document has nothing."""
+    document = json.loads(iceberg_contract(Venue.field()))
+    dangling = dict(
+        document, **{"partition-spec": {"spec-id": 0, "fields": [{**PARTITION, "source-id": 99}]}}
+    )
+    with pytest.raises(ValueError, match="partition field 99 names no column"):
+        iceberg_contract_field(json.dumps(dangling))
+    twice = dict(
+        document,
+        **{
+            "partition-spec": {
+                "spec-id": 0,
+                "fields": [PARTITION, {**PARTITION, "field-id": 1001, "transform": "day"}],
+            }
+        },
+    )
+    with pytest.raises(ValueError, match="partitions 'at' more than once"):
+        iceberg_contract_field(json.dumps(twice))
+    nulls_first = dict(
+        document,
+        **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "null-order": "nulls-first"}]}},
+    )
+    with pytest.raises(ValueError, match="orders nulls"):
+        iceberg_contract_field(json.dumps(nulls_first))
+    bucketed = dict(
+        document,
+        **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "transform": "bucket[8]"}]}},
+    )
+    with pytest.raises(ValueError, match="sorts 'mic' by bucket"):
+        iceberg_contract_field(json.dumps(bucketed))
+
+
+#: The one partition `Venue` declares, and one identity sort over its key.
+PARTITION = {"source-id": 2, "field-id": 1000, "transform": "hour", "name": "at_hour"}
+SORTING = {
+    "source-id": 1,
+    "transform": "identity",
+    "direction": "asc",
+    "null-order": "nulls-last",
+}
 
 
 def test_an_unsorted_shape_records_the_order_a_created_table_records() -> None:

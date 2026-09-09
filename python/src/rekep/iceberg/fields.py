@@ -276,9 +276,11 @@ def iceberg_struct_field(
 
 # -- the published contract document ----------------------------------------
 
-#: The three things a table contract states, spelled as Iceberg's own table
-#: metadata spells them. A table has more -- a location, a uuid, snapshots --
-#: but none of those is a property of the shape, so none of them is here.
+#: The three things a table contract states, each key named for the pyiceberg
+#: model whose own JSON it holds. A table has more -- a location, a uuid,
+#: snapshots -- but none of those is a property of the shape, so none is here.
+#: Iceberg's table metadata spells its own lists in the plural (`schemas`,
+#: `partition-specs`, `sort-orders`); one contract is one of each.
 CONTRACT_KEYS = ("schema", "partition-spec", "sort-order")
 
 
@@ -318,6 +320,11 @@ def iceberg_contract_field(document: str, name: str = "") -> Field:
 
     A contract names no struct: a table's name belongs to the catalog it is
     in, so the caller says which shape it just read.
+
+    Refuses a document stating a layout one Field cannot hold. `iceberg_struct_field`
+    drops such a layout rather than raising, because a table it reads back has
+    `table.spec()` still authoritative beside it; a document has nothing beside
+    it, so a silent drop would be a file saying the opposite of what it holds.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.partitioning import PartitionSpec
@@ -330,13 +337,50 @@ def iceberg_contract_field(document: str, name: str = "") -> Field:
     missing = [key for key in CONTRACT_KEYS if key not in loaded]
     if missing:
         raise ValueError(f"table contract is missing {', '.join(missing)}")
-    schema, spec, sort_order = CONTRACT_KEYS
-    return iceberg_struct_field(
-        Schema.model_validate(loaded[schema]),
-        name,
-        PartitionSpec.model_validate(loaded[spec]),
-        SortOrder.model_validate(loaded[sort_order]),
-    )
+    schema_key, spec_key, order_key = CONTRACT_KEYS
+    schema = Schema.model_validate(loaded[schema_key])
+    spec = PartitionSpec.model_validate(loaded[spec_key])
+    sort_order = SortOrder.model_validate(loaded[order_key])
+    _projectable(schema, spec, sort_order)
+    return iceberg_struct_field(schema, name, spec, sort_order)
+
+
+def _projectable(schema: Any, spec: Any, sort_order: Any) -> None:
+    """Raise unless every partition and sort field lands on one Field member."""
+    from pyiceberg.table.sorting import NullOrder, SortDirection
+    from pyiceberg.transforms import IdentityTransform
+
+    partitioned: set[str] = set()
+    for partition in spec.fields:
+        column = _column(schema, partition.source_id, "partition")
+        if column in partitioned:
+            # Iceberg permits more than one transform over one source; one
+            # Field member has one physical slot.
+            raise ValueError(f"table contract partitions {column!r} more than once")
+        partitioned.add(column)
+    for sorting in sort_order.fields:
+        column = _column(schema, sorting.source_id, "sort")
+        if not isinstance(sorting.transform, IdentityTransform):
+            raise ValueError(
+                f"table contract sorts {column!r} by {sorting.transform}, "
+                "and a sort key is a column"
+            )
+        if sorting.null_order != NullOrder.NULLS_LAST:
+            spelled = "ascending" if sorting.direction == SortDirection.ASC else "descending"
+            raise ValueError(
+                f"table contract sorts {column!r} {spelled} with {sorting.null_order}, "
+                f"and a sort key orders nulls {NullOrder.NULLS_LAST}"
+            )
+
+
+def _column(schema: Any, field_id: int, role: str) -> str:
+    """The top-level column `field_id` names, or why it names none."""
+    column = schema.find_column_name(field_id)
+    if not column:
+        raise ValueError(f"table contract {role} field {field_id} names no column")
+    if "." in column:
+        raise ValueError(f"table contract {role} column {column!r} is nested, and a member is not")
+    return column
 
 
 # -- arrow metadata: `description` is ours, `doc` is pyiceberg's -------------

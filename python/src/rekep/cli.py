@@ -11,6 +11,7 @@ import os
 import pathlib
 import sys
 import traceback
+import urllib.parse
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -106,8 +107,12 @@ def load(arguments: argparse.Namespace) -> int:
 
 
 def _stem(target: str) -> str:
-    """The name a target spells, whether it is a path or a URI."""
-    return pathlib.PurePosixPath(target.replace("\\", "/").rstrip("/")).stem
+    """The name a target spells, whether it is a path or a URI.
+
+    A presigned URL carries slashes in its query; only the path names the file.
+    """
+    spelled = urllib.parse.urlsplit(target).path or target
+    return pathlib.PurePosixPath(spelled.replace("\\", "/").rstrip("/")).stem
 
 
 def _marks(member: Field) -> str:

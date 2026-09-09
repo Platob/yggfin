@@ -167,7 +167,7 @@ def test_a_document_that_does_not_build_is_refused(
 def test_a_document_in_the_previous_field_format_is_refused(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    """The field document format has no reader left anywhere in the tree."""
+    """`fields load` no longer routes it; `Field.from_json` still reads declarations."""
     stale = tmp_path / "stale.json"
     stale.write_text(
         json.dumps(

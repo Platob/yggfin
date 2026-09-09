@@ -58,7 +58,7 @@ nav:
       - logs.messages: products/message.md
       - fix.messages: products/fix-message.md
       - Field contract: contracts/types.md
-      - Portable schema: contracts/index.md
+      - Portable contracts: contracts/index.md
   - FIX:
       - Overview: fix/index.md
       - Registry: fix/registry.md

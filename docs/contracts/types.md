@@ -67,9 +67,9 @@ assert applied.schema.equals(Message.field().into_arrow_schema(), check_metadata
 There are two, and which one a document uses says what the document is for.
 
 `Field.into_json(indent=2)` is the **runtime declaration** form: deterministic,
-metadata-bearing, and restored in full by `Field.from_json`. Task and dataset
-documents carry it, because they need what only Arrow metadata states -- a
-digest's sources, a derived column's sources, a FIX tag.
+metadata-bearing, and restored in full by `Field.from_json`. `IcebergDataset`
+documents carry it, because `derived_columns()` needs what only Arrow metadata
+states -- a digest's sources, a derived column's sources, a FIX tag.
 
 `iceberg_contract(field)` is the **published contract** form: the `schema`,
 `partition-spec` and `sort-order` PyIceberg itself serializes, and what the

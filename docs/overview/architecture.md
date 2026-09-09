@@ -70,7 +70,7 @@ tasks/parse_messages/   raw-line Marimo application + JSON parameters
 tasks/parse_fix/        FIX Marimo application + JSON parameters
 tasks/optimize_iceberg/ maintenance Marimo application + JSON parameters
 tasks/airflow/          DAG, operator, and standalone child runner
-schemas/rekep/          reviewed product schemas
+schemas/rekep/          reviewed table contracts
 docs/                   contracts, operations, products, and roadmap
 tools/                  registry browser and documentation projection
 data/                   default capture, catalog and warehouse locations

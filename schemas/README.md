@@ -14,8 +14,8 @@ an independent schema definition.
 
 ## What a contract holds
 
-Three keys, spelled as Iceberg's own table metadata spells them, each value
-produced by PyIceberg's own model serialization:
+Three keys, each named for the PyIceberg model whose own serialization it
+holds:
 
 | key | PyIceberg model | what it decides |
 | --- | --- | --- |
@@ -39,6 +39,7 @@ from the runtime declaration instead:
 | a digest's algorithm and sources | `Message.field()`, `python/tests/test_message.py` |
 | a derived column's source columns | `Message.field()`, `python/tests/test_message.py` |
 | a FIX tag, alias or display name | the registry under `python/src/rekep/_data/fix`, and the `tag` column of the [FIX product page](../docs/products/fix-message.md) |
+| the struct's own description and `python.*` declaration keys | `Message.field()`, and the class docstring behind it |
 | the struct's own name | the table above, and `rekep.deploy.TABLES` |
 
 `python/tests/test_schemas.py` pins each loss as an assertion, so the cost of
