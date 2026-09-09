@@ -126,3 +126,24 @@ def test_public_scripts_and_documentation_use_only_the_rekep_name() -> None:
     assert exposed
     for path in exposed:
         assert "yggdryl" not in path.read_text(encoding="utf-8").casefold(), path
+
+
+def test_each_task_page_publishes_its_document_verbatim() -> None:
+    """A pasted document is only documentation while it still matches.
+
+    `mkdocs.yml` enables `pymdownx.snippets` so a page can include a file from
+    the checkout, but these two pages paste the JSON instead, which nothing
+    stops from drifting. This is what stops it.
+    """
+    pages = {
+        "pipeline/tasks/parse-messages.md": "parse_messages",
+        "pipeline/tasks/parse-fix.md": "parse_fix",
+    }
+
+    for page, name in pages.items():
+        document = json.loads((ROOT / "tasks" / name / f"{name}.json").read_text(encoding="utf-8"))
+        shown = [
+            json.loads(source)
+            for source in JSON_FENCE.findall((DOCS / page).read_text(encoding="utf-8"))
+        ]
+        assert document in shown, f"{page} no longer shows {name}.json as it is"
