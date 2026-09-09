@@ -243,7 +243,7 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert fixes.append_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
-        assert stored.num_columns == 108
+        assert stored.num_columns == 111
         assert stored.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
         assert stored.select(("url", "rownum", "body")).to_pylist() == [
             {
@@ -377,7 +377,7 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
     assert len(handed_to_iceberg) == 1
     assert handed_to_iceberg[0].names == fixes.schema.names
     assert fixes.num_rows == 111
-    assert fixes.num_columns == 108
+    assert fixes.num_columns == 111
     # Source identity and header facts the fixed schema does not own lead the
     # row. `msgCtxId` and `timestamp` fold into the codec's own columns;
     # `bodyhash` remains distinct from the codec's parsed-message `msghash`.

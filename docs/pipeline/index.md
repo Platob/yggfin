@@ -7,8 +7,8 @@ flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["parse_fix"]
-    R[["bundled registry<br/>6,262 definitions"]] -.types.-> F
-    F --> X[("fix.messages<br/>108 columns")]
+    R[["bundled registry<br/>6,265 definitions"]] -.types.-> F
+    F --> X[("fix.messages<br/>111 columns")]
 ```
 
 | task | reads | writes | key | default behavior |

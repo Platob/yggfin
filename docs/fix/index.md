@@ -10,12 +10,12 @@ configuration JSON, FIXML, and already-split pairs through one builder.
 | [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, and `fix.messages`? |
 | [Encode](encode.md) | how is the lossless arrival record emitted again? |
 | [Quality](quality.md) | what survives malformed input, replay, and registry change? |
-| [Registry browser](../tools/fix-registry.md) | how do I search and inspect all 6,262 loaded definitions? |
+| [Registry browser](../tools/fix-registry.md) | how do I search and inspect all 6,265 loaded definitions? |
 
 ## Default registry
 
 The package contains 6,203 specification definitions. Importing `rekep`
-loads them, adds 16 runtime fields and 43 ULBridge fields, and installs the
+loads them, adds 19 runtime fields and 43 ULBridge fields, and installs the
 result as the process default.
 
 ```python
@@ -24,7 +24,7 @@ from rekep.fix import fix_registry, global_registry, registry_path
 registry = fix_registry()
 
 assert registry_path().is_dir()
-assert len(registry) == 6262
+assert len(registry) == 6265
 assert global_registry() == registry
 ```
 

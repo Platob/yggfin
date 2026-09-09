@@ -2556,7 +2556,7 @@ requires-dist = [
     { name = "pyiceberg", extras = ["pyiceberg-core", "sql-sqlite"], marker = "extra == 'iceberg'", specifier = ">=0.11.1" },
     { name = "rekep", extras = ["glue", "iceberg", "polars"], marker = "extra == 'all'" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
-    { name = "yggdryl", git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=6cfc361cb67bddfdb792402de9b32dcf9d8ecfdd" },
+    { name = "yggdryl", specifier = ">=0.1.3" },
 ]
 provides-extras = ["iceberg", "glue", "polars", "all"]
 
@@ -3398,10 +3398,37 @@ wheels = [
 
 [[package]]
 name = "yggdryl"
-version = "0.1.2"
-source = { git = "https://github.com/Platob/yggdryl?subdirectory=python&rev=6cfc361cb67bddfdb792402de9b32dcf9d8ecfdd#6cfc361cb67bddfdb792402de9b32dcf9d8ecfdd" }
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyarrow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/62/78/71a20b917e2ee9bc2e9290ca9e0a50d8e000b271b764e6aaa0662e25785f/yggdryl-0.1.3.tar.gz", hash = "sha256:adc81a02b9b325a450344ffc01abe7ff048854ae564c88cacc154fdb9a32a391", size = 2843974, upload-time = "2026-09-09T01:42:55.847Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/9f/71dfd88728f431a1fa798ed4f3476b9947353a2f0de2f0409a3a24c831ee/yggdryl-0.1.3-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:309302c452a7e543de99a8daa19ee9fe2a5efd6b5f436485507b3f4d2856a38b", size = 23168629, upload-time = "2026-09-09T01:41:33.103Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/56/56881a40a415a956ac09a9c4a907f4b6ce1df8c6b656e3ca9395685005cc/yggdryl-0.1.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:3e6e8e260938f172ccc95ac5f37de34db5dab7b34287ed8575f1ee81fde8608b", size = 21204733, upload-time = "2026-09-09T01:41:36.253Z" },
+    { url = "https://files.pythonhosted.org/packages/80/c0/55c6a5d90e2bc7b3e9ec7f810b3fd60002b40c61ecfa5b5f8823573e1ff3/yggdryl-0.1.3-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b24d780a94a607c0a297a29d3ee1043752113fa0734fb20ece4ce961f76e0540", size = 22230416, upload-time = "2026-09-09T01:41:39.585Z" },
+    { url = "https://files.pythonhosted.org/packages/22/cd/ba2038f0ba57875c4ee474968dac48fe7e59a23c335b79f65a93adf0f909/yggdryl-0.1.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:53914043813a39eca5b3e7a744e8815c5684768ce22ddff294555d1cc49ea3e2", size = 24243032, upload-time = "2026-09-09T01:41:43.388Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/d3/7df45a7823b86b5dcdd9d0242963f1793f7d03393ed4a2bd434889903f5e/yggdryl-0.1.3-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:ce1ca6d1700c9b6ff4b59cb36d7507137db73c4575ea407e808ae7ded85fc2fc", size = 22327806, upload-time = "2026-09-09T01:41:47.059Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/18/b511e0545f46e993fafa2a0e28ae1cea08e01f8ae6d5eaafb84240b67f42/yggdryl-0.1.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:a148771ae9ce16de077ee421d2e0777549b1b554d7f601931963b14b5f126af6", size = 24689360, upload-time = "2026-09-09T01:41:50.441Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/59/006dd31666c242da6a533f3d1c9b2bd8aaa5c3f6549df77dda03f9048614/yggdryl-0.1.3-cp312-cp312-win_amd64.whl", hash = "sha256:16d13584b728a44068bcb894fcb2eaee1f4ed4acb756189b71c288855f4b1742", size = 25329698, upload-time = "2026-09-09T01:41:54.204Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/b7/7dfe0a1ab1bb0bbd86f1d2248d55ad10f60245e83c5deb27711fb1211c25/yggdryl-0.1.3-cp312-cp312-win_arm64.whl", hash = "sha256:e96649bd463becb37b4a9d7ac1946ddc2d8d1ca42e68e7366e470bb4e82154ed", size = 22933275, upload-time = "2026-09-09T01:41:57.454Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/58/c3e304a85de216ccd225dcb8b3f902da29a20fa9e6d535c6a9c1aa3e0a01/yggdryl-0.1.3-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:79591ef26c8d046e7fe82df848c4444e1e7f05253b1feab839efab6b4e28a390", size = 23171112, upload-time = "2026-09-09T01:42:01.308Z" },
+    { url = "https://files.pythonhosted.org/packages/87/02/1abc34bf2d406596dada337f7381a2481035a9fbb18e95c69bd92123a9ea/yggdryl-0.1.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:559309b13f80fb690ab73272cd09173e847f8b4346360602a7b3ff0cc6782969", size = 21203713, upload-time = "2026-09-09T01:42:04.341Z" },
+    { url = "https://files.pythonhosted.org/packages/63/e6/c7309a9138c5ab283779e3af3bfae87dbb05d86b33f6ec1bc16b808c069f/yggdryl-0.1.3-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f9b6e8e82b4a15182f7b0f7b432b29fb0eab147bdb2235ee79c2c3781fda43ce", size = 22235053, upload-time = "2026-09-09T01:42:07.535Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/47/76252d6c58266731910b90eed87eb0d6bc5a4b3b54aed5e2ee7bfe9b45fd/yggdryl-0.1.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b890214dca92c9de9a5890e6b41b2d28575f0a372bca939f15022313a9c090f1", size = 24249714, upload-time = "2026-09-09T01:42:11.635Z" },
+    { url = "https://files.pythonhosted.org/packages/09/ce/efdf40186b3d1dccb32217d9a3e2d09dc04dc8c18937deb48176b643fc4f/yggdryl-0.1.3-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:7f5a3d1783ae5c9b4e7728413f46fe08ca03cf8717b213ac27771182ee6e94de", size = 22329053, upload-time = "2026-09-09T01:42:15.047Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/a3/bd3ef7eb24ef9378b3a032509ac334c42a6dfd8641da60942159572a73cf/yggdryl-0.1.3-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:363209686b5319b3b391004a319e5677570469e0f9aee2021fa227bb579c407a", size = 24696975, upload-time = "2026-09-09T01:42:18.444Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/0f/2700c884b95759e616c070f80464575ed80a18b8d18ef759ef3b0eb6672b/yggdryl-0.1.3-cp313-cp313-win_amd64.whl", hash = "sha256:f172a04b559dc9a16c6e0afb793bb58657d8ac6d01e5aef4aa26886d6eec4825", size = 25337408, upload-time = "2026-09-09T01:42:21.748Z" },
+    { url = "https://files.pythonhosted.org/packages/24/02/c4bdfa61a43f9eb73cecf3b75adf855907e8308e9c962f48adf7299fb5b0/yggdryl-0.1.3-cp313-cp313-win_arm64.whl", hash = "sha256:063d3c66553b3742d335b7bb054066fb62ed1cf28a2909813fbee1b86bb37ac2", size = 22936662, upload-time = "2026-09-09T01:42:25.122Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/44/b30cfb35bbbc7c87cf25aa41dc44613d7270418210d34ecb71be6ae7bc8c/yggdryl-0.1.3-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:46a96bd6d41bfd1eb744a7ef43bf24bdd06ed076f664dcc6da76667d5f7b1f83", size = 23173551, upload-time = "2026-09-09T01:42:28.421Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/c8/80751d93c46d397f8fdb7c8178c7aa2dc8dceec2de06aaab815bbdececde/yggdryl-0.1.3-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:69ac3e3c042021d5701c5d855299f1ba11376244be93c7e7c541df931fc0c2b0", size = 21206075, upload-time = "2026-09-09T01:42:31.507Z" },
+    { url = "https://files.pythonhosted.org/packages/99/d4/b989e34c0d7b3e11ac2db2f491b2271ed3753cae6a6315746b8131b896f8/yggdryl-0.1.3-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4db5e0d0d62533e87a5a452721fa68d4f796c56fb80860acb076387b50740f1f", size = 22235788, upload-time = "2026-09-09T01:42:34.667Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/73/cd1a48550b245b6f8c6aec94225b1174afa35aa1ad6e95e7bd0f89a81e47/yggdryl-0.1.3-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5822b4bef904475903786a7439018f054c6dae7dee660b22fe5b1c05eafb19a5", size = 24251651, upload-time = "2026-09-09T01:42:37.899Z" },
+    { url = "https://files.pythonhosted.org/packages/20/52/30d622ad227192a893a733e7dc158c7239eadb977ef460e382136d2957aa/yggdryl-0.1.3-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:c10bde1b4eca616da8ac581b16281fcd4d71c2a021734365bcee077ecf4475f8", size = 22331362, upload-time = "2026-09-09T01:42:41.697Z" },
+    { url = "https://files.pythonhosted.org/packages/14/04/c259c8d37615152f010a8ec7d3a68f9fef496f0fb05baf62bc14df46b41a/yggdryl-0.1.3-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:653df54443e9a7210dfa0f018743d529f3385f35ecd82d9609648a1994ecc4ce", size = 24698594, upload-time = "2026-09-09T01:42:45.712Z" },
+    { url = "https://files.pythonhosted.org/packages/99/3c/4218ae734040c734b8b8fe1eadbde914f79ef01343c8c6ffc44a746a7ef6/yggdryl-0.1.3-cp314-cp314-win_amd64.whl", hash = "sha256:98c01ae309f1181fbe23a4112e9c1a38054006aee3bcab3c444977fe1d89c668", size = 25336671, upload-time = "2026-09-09T01:42:49.617Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/03/a0264be8956860173869ae335c625386715fe8b5971a4bcf5de9cf6697b4/yggdryl-0.1.3-cp314-cp314-win_arm64.whl", hash = "sha256:850e434d351dfeb77c53deb102242e8dc5cb94b80fa28781e54881911ef29812", size = 22936085, upload-time = "2026-09-09T01:42:53.099Z" },
 ]
 
 [[package]]

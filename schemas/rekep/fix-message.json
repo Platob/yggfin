@@ -1568,7 +1568,7 @@
       {
         "name": "isincode",
         "dtype": {
-          "type": "utf8"
+          "type": "isin"
         },
         "nullable": true,
         "metadata": {
@@ -1599,6 +1599,45 @@
           "description": "The state the order is in: OrdStatus, else ExecType, read as one lifecycle vocabulary.",
           "display": "State",
           "fix:tag": "65015"
+        }
+      },
+      {
+        "name": "instid",
+        "dtype": {
+          "type": "fixed_size_binary",
+          "width": 16
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "The instrument's own identity: the xxh128 digest of its market, its classification, its ISIN - else its symbol - and its currency.",
+          "display": "InstId",
+          "fix:tag": "65016"
+        }
+      },
+      {
+        "name": "id",
+        "dtype": {
+          "type": "fixed_size_binary",
+          "width": 16
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "The message's own identity: the instant closest to the market impact in microseconds, then the xxh3 digest of what it said.",
+          "display": "Id",
+          "fix:tag": "65017"
+        }
+      },
+      {
+        "name": "persistentid",
+        "dtype": {
+          "type": "fixed_size_binary",
+          "width": 16
+        },
+        "nullable": true,
+        "metadata": {
+          "description": "The order chain's identity: the instant it was created, then the xxh3 digest of its instrument and first identifier, carried by every later message sharing one of its identifiers.",
+          "display": "PersistentId",
+          "fix:tag": "65018"
         }
       },
       {

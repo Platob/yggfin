@@ -28,7 +28,7 @@ the complete fixed projection to `fix.messages`.
 
 | parameter | default | meaning |
 | --- | --- | --- |
-| `registry` | `null` | use the 6,262-definition bundled registry; an explicit path/URI overrides it |
+| `registry` | `null` | use the 6,265-definition bundled registry; an explicit path/URI overrides it |
 | `branch` | `ulbridge` | resolve bridge names before standard names |
 | `version` | `null` | infer version per row; otherwise pin code translation |
 | `dedup` | `false` | retain one output row per raw input row |
@@ -73,7 +73,7 @@ content-level failures.
 
 ## Schema and precision
 
-The bundled configuration yields [108 columns](../../products/fix-message.md#complete-schema).
+The bundled configuration yields [111 columns](../../products/fix-message.md#complete-schema).
 Venue clocks may parse at nanosecond precision, while Iceberg v2 stores
 microseconds. Every top-level and nested timestamp is narrowed once at the
 storage boundary. Original text remains in `nofixentries`, so the wire value

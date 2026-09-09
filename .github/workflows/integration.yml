@@ -26,9 +26,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    # A cold Windows build of the pinned native dependency can take 15-18
-    # minutes before the integration suite starts. Keep enough room for the
-    # tests and teardown without weakening any test or failure condition.
+    # The native dependency is a published wheel on every leg, so nothing is
+    # compiled before the suite starts. The room left here is for the full
+    # Iceberg transactions and the Airflow children they run, not a build.
     timeout-minutes: 30
     defaults:
       run:

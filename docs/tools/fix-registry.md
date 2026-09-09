@@ -19,7 +19,7 @@ and descriptions. Branch and shape filters narrow to standard/bridge fields or
 scalar/repeating-group definitions.
 
 The summary reports definition, group, branch, and typed-field counts. The
-bundled registry should report 6,262 definitions across two branches.
+bundled registry should report 6,265 definitions across two branches.
 
 ## Definition views
 

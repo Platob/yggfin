@@ -6,7 +6,7 @@ reviewable:
 | snapshot | columns | runtime constructor |
 | --- | ---: | --- |
 | [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.field()` |
-| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 108 | `fix_message_field()` |
+| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 111 | `fix_message_field()` |
 
 ## Verify a snapshot
 
@@ -48,7 +48,7 @@ Path("schemas/rekep/fix-message.json").write_text(
 )
 ```
 
-The 108 columns are 10 carried source columns, 80 selected specification
-columns, 16 derived/runtime columns, `msgdirection`, and two arrival lists.
+The 111 columns are 10 carried source columns, 80 selected specification
+columns, 19 derived/runtime columns, `msgdirection`, and two arrival lists.
 The runtime registry remains authoritative; a registry change must produce a
 visible schema diff.

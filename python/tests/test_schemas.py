@@ -43,7 +43,7 @@ def test_fix_contract_is_a_native_field_snapshot_for_iceberg_simulation() -> Non
     fixed = Field.from_json(document)
 
     assert document == f"{fixed.into_json(indent=2)}\n"
-    assert len(fixed) == 108
+    assert len(fixed) == 111
     assert primary_keys(fixed) == ["url", "rownum"]
     assert partition_keys(fixed) == {"timepartition": "hour"}
     schema = fixed.into_arrow_schema()

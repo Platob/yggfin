@@ -12,7 +12,7 @@ typed remain observable instead of disappearing.
 | row grain | one FIX-codec result per raw source line |
 | primary key | `(url, rownum)` |
 | partition | `timepartition`, Iceberg `hour` transform |
-| columns | 108 with the bundled registry |
+| columns | 111 with the bundled registry |
 | exact source identity | `bodyhash` |
 | parsed message identity | `msghash` |
 | lossless protocol record | `nofixentries` |
@@ -132,9 +132,12 @@ fields.
 | 103 | `isincode` | `string` | yes | 65013 | resolved ISIN |
 | 104 | `miccode` | `fixed_size_binary[4]` | yes | 65014 | resolved ISO 10383 MIC |
 | 105 | `state` | `fixed_size_binary[10]` | yes | 65015 | normalized order lifecycle state |
-| 106 | `msgdirection` | `fixed_size_binary[4]` | yes | 385 | sent/received direction |
-| 107 | `nofixentries` | `list<FixEntry>` | yes | — | every parsed pair in arrival order |
-| 108 | `nounmappedfixentries` | `list<FixEntry>` | yes | — | arrival pairs no registry field explained |
+| 106 | `instid` | `fixed_size_binary[16]` | yes | 65016 | instrument identity: xxh128 of market, classification, ISIN else symbol, currency |
+| 107 | `id` | `fixed_size_binary[16]` | yes | 65017 | message identity: the instant closest to market impact, then an xxh3 digest of what it said |
+| 108 | `persistentid` | `fixed_size_binary[16]` | yes | 65018 | order-chain identity, carried by every later message sharing one of its identifiers |
+| 109 | `msgdirection` | `fixed_size_binary[4]` | yes | 385 | sent/received direction |
+| 110 | `nofixentries` | `list<FixEntry>` | yes | — | every parsed pair in arrival order |
+| 111 | `nounmappedfixentries` | `list<FixEntry>` | yes | — | arrival pairs no registry field explained |
 
 ### Nested columns
 
@@ -190,7 +193,7 @@ from rekep.fix import fix_message_field
 field = fix_message_field()
 schema = field.into_arrow_schema()
 
-assert len(schema) == 108
+assert len(schema) == 111
 assert schema.field("msgtype").metadata[b"fix:tag"] == b"35"
 assert schema.names[-2:] == ["nofixentries", "nounmappedfixentries"]
 ```
