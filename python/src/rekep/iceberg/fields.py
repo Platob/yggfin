@@ -169,19 +169,26 @@ def iceberg_sort_order(
     """The `pyiceberg.table.sorting.SortOrder` `source` declares, in declaration order.
 
     Iceberg records it and every engine that writes through the table honours
-    it; nothing here has to sort on read. `SortOrder()` with no fields is
-    Iceberg's own "unsorted", which is what a shape declaring none gets.
+    it; nothing here has to sort on read. A shape declaring none gets
+    `UNSORTED_SORT_ORDER`, which is order 0 -- what a created table records,
+    and not the order 1 a bare `SortOrder()` carries.
 
     What a sort key *is* -- where a row sits inside its file, against a
     partition, which decides which file -- is in its ``iceberg:`` metadata.
     """
     require("pyiceberg", "iceberg")
-    from pyiceberg.table.sorting import NullOrder, SortDirection, SortField, SortOrder
+    from pyiceberg.table.sorting import (
+        UNSORTED_SORT_ORDER,
+        NullOrder,
+        SortDirection,
+        SortField,
+        SortOrder,
+    )
     from pyiceberg.transforms import IdentityTransform
 
     declared = sort_keys(source) if sort_by is None else dict.fromkeys(sort_by, "ascending")
     if not declared:
-        return SortOrder()
+        return UNSORTED_SORT_ORDER
     schema = schema if schema is not None else iceberg_schema(source)
     return SortOrder(
         *[
@@ -265,6 +272,115 @@ def iceberg_struct_field(
         dtype=pyarrow.struct([member.into_arrow() for member in members.values()]),
         metadata=metadata,
     )
+
+
+# -- the published contract document ----------------------------------------
+
+#: The three things a table contract states, each key named for the pyiceberg
+#: model whose own JSON it holds. A table has more -- a location, a uuid,
+#: snapshots -- but none of those is a property of the shape, so none is here.
+#: Iceberg's table metadata spells its own lists in the plural (`schemas`,
+#: `partition-specs`, `sort-orders`); one contract is one of each.
+CONTRACT_KEYS = ("schema", "partition-spec", "sort-order")
+
+
+def iceberg_contract(source: Field, sort_by: Sequence[str] | None = None) -> str:
+    """`source` as the table contract document: the JSON Iceberg is asked for.
+
+    Every value is pyiceberg's own model JSON, so the ids, the identifier
+    fields, the partition transforms and the sort order read exactly as the
+    created table records them.
+
+    Arrow field metadata has no place in that format, so what only metadata
+    states -- a digest's algorithm and sources, a derived column's sources, a
+    FIX tag -- is not in the document. Those are read from the runtime
+    declaration that produced it.
+    """
+    require("pyiceberg", "iceberg")
+    schema = iceberg_schema(source)
+    document = dict(
+        zip(
+            CONTRACT_KEYS,
+            (
+                json.loads(part.model_dump_json())
+                for part in (
+                    schema,
+                    iceberg_partition_spec(source, schema),
+                    iceberg_sort_order(source, schema, sort_by),
+                )
+            ),
+            strict=True,
+        )
+    )
+    return json.dumps(document, indent=2, ensure_ascii=False)
+
+
+def iceberg_contract_field(document: str, name: str = "") -> Field:
+    """The struct field one contract document declares, named `name`.
+
+    A contract names no struct: a table's name belongs to the catalog it is
+    in, so the caller says which shape it just read.
+
+    Refuses a document stating a layout one Field cannot hold. `iceberg_struct_field`
+    drops such a layout rather than raising, because a table it reads back has
+    `table.spec()` still authoritative beside it; a document has nothing beside
+    it, so a silent drop would be a file saying the opposite of what it holds.
+    """
+    require("pyiceberg", "iceberg")
+    from pyiceberg.partitioning import PartitionSpec
+    from pyiceberg.schema import Schema
+    from pyiceberg.table.sorting import SortOrder
+
+    loaded = json.loads(document)
+    if not isinstance(loaded, dict):
+        raise TypeError(f"a table contract is a JSON object, not {type(loaded).__name__}")
+    missing = [key for key in CONTRACT_KEYS if key not in loaded]
+    if missing:
+        raise ValueError(f"table contract is missing {', '.join(missing)}")
+    schema_key, spec_key, order_key = CONTRACT_KEYS
+    schema = Schema.model_validate(loaded[schema_key])
+    spec = PartitionSpec.model_validate(loaded[spec_key])
+    sort_order = SortOrder.model_validate(loaded[order_key])
+    _projectable(schema, spec, sort_order)
+    return iceberg_struct_field(schema, name, spec, sort_order)
+
+
+def _projectable(schema: Any, spec: Any, sort_order: Any) -> None:
+    """Raise unless every partition and sort field lands on one Field member."""
+    from pyiceberg.table.sorting import NullOrder, SortDirection
+    from pyiceberg.transforms import IdentityTransform
+
+    partitioned: set[str] = set()
+    for partition in spec.fields:
+        column = _column(schema, partition.source_id, "partition")
+        if column in partitioned:
+            # Iceberg permits more than one transform over one source; one
+            # Field member has one physical slot.
+            raise ValueError(f"table contract partitions {column!r} more than once")
+        partitioned.add(column)
+    for sorting in sort_order.fields:
+        column = _column(schema, sorting.source_id, "sort")
+        if not isinstance(sorting.transform, IdentityTransform):
+            raise ValueError(
+                f"table contract sorts {column!r} by {sorting.transform}, "
+                "and a sort key is a column"
+            )
+        if sorting.null_order != NullOrder.NULLS_LAST:
+            spelled = "ascending" if sorting.direction == SortDirection.ASC else "descending"
+            raise ValueError(
+                f"table contract sorts {column!r} {spelled} with {sorting.null_order}, "
+                f"and a sort key orders nulls {NullOrder.NULLS_LAST}"
+            )
+
+
+def _column(schema: Any, field_id: int, role: str) -> str:
+    """The top-level column `field_id` names, or why it names none."""
+    column = schema.find_column_name(field_id)
+    if not column:
+        raise ValueError(f"table contract {role} field {field_id} names no column")
+    if "." in column:
+        raise ValueError(f"table contract {role} column {column!r} is nested, and a member is not")
+    return column
 
 
 # -- arrow metadata: `description` is ours, `doc` is pyiceberg's -------------

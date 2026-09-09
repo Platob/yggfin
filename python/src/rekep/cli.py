@@ -1,4 +1,4 @@
-"""Run ingestion tasks and manage their native field and Iceberg declarations."""
+"""Run ingestion tasks and manage their Iceberg table contracts."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import os
 import pathlib
 import sys
 import traceback
+import urllib.parse
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -18,7 +19,13 @@ from rekep import __version__
 from rekep.console import Console
 from rekep.deploy import TABLES, deploy
 from rekep.fields import Field, field_of
-from rekep.iceberg import IcebergCatalog, partition_keys, primary_keys
+from rekep.iceberg import (
+    IcebergCatalog,
+    iceberg_contract,
+    iceberg_contract_field,
+    partition_keys,
+    primary_keys,
+)
 from rekep.logs import COMMAND_LEVEL, Stage, configure
 from rekep.resources import read_bytes, resource
 from rekep.tasks import Task
@@ -69,9 +76,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def dump(arguments: argparse.Namespace) -> int:
-    """Write a Python class's native field as a document."""
+    """Write a Python class's table contract as a document."""
     shape = field_of(_imported(arguments.pyclass))
-    payload = f"{shape.into_json(indent=2)}\n"
+    payload = f"{iceberg_contract(shape)}\n"
     if arguments.target:
         output = resource(arguments.target)
         try:
@@ -85,16 +92,27 @@ def dump(arguments: argparse.Namespace) -> int:
 
 
 def load(arguments: argparse.Namespace) -> int:
-    """Read and validate a native field document."""
-    shape = Field.from_json(read_bytes(arguments.target).decode())
+    """Read and validate a table contract document."""
+    document = read_bytes(arguments.target).decode()
+    # A contract names no struct -- the catalog owns a table's name -- so the
+    # file that holds it does, and its stem is what a reader already calls it.
+    shape = iceberg_contract_field(document, _stem(arguments.target))
     schema = shape.into_arrow_schema()
     print(f"{shape.name or '<unnamed>'}: {len(schema.names)} columns, builds")
     for member in shape:
         print(f"  {member.name}: {member.dtype.into_arrow()}{_marks(member)}")
-    if shape.dtype.id == "struct":
-        print(f"  primary keys: {primary_keys(shape) or '-'}")
-        print(f"  partition keys: {partition_keys(shape) or '-'}")
+    print(f"  primary keys: {primary_keys(shape) or '-'}")
+    print(f"  partition keys: {partition_keys(shape) or '-'}")
     return 0
+
+
+def _stem(target: str) -> str:
+    """The name a target spells, whether it is a path or a URI.
+
+    A presigned URL carries slashes in its query; only the path names the file.
+    """
+    spelled = urllib.parse.urlsplit(target).path or target
+    return pathlib.PurePosixPath(spelled.replace("\\", "/").rstrip("/")).stem
 
 
 def _marks(member: Field) -> str:
@@ -109,9 +127,6 @@ def _marks(member: Field) -> str:
         partition.casefold() != "false"
     ):
         marks.append(f"partition {partition}")
-    if sources := member.partition.sources:
-        transform = member.partition.transform or "identity"
-        marks.append(f"derived {transform}({', '.join(sources)})")
     if field_id := metadata.get("field_id"):
         marks.append(f"id {field_id}")
     if member.nullable:
@@ -357,17 +372,21 @@ def _parser() -> argparse.ArgumentParser:
     deploying.set_defaults(run=deploy_tables)
 
     field_commands = commands.add_parser(
-        "fields", help="publish fields", description="Dump and validate native field documents."
+        "fields",
+        help="publish table contracts",
+        description="Dump and validate Iceberg table contract documents.",
     )
     actions = field_commands.add_subparsers(
         dest="action", required=True, title="commands", metavar="COMMAND"
     )
-    dumping = actions.add_parser("dump", help="write a class's field as a document")
+    dumping = actions.add_parser("dump", help="write a class's field as a table contract")
     dumping.add_argument("--pyclass", required=True, help="class as module:Attribute")
-    dumping.add_argument("--target", default=None, help="JSON path or URI; stdout when omitted")
+    dumping.add_argument(
+        "--target", default=None, help="contract JSON path or URI; stdout when omitted"
+    )
     dumping.set_defaults(run=dump)
-    loading = actions.add_parser("load", help="read and validate a field document")
-    loading.add_argument("--target", required=True, help="JSON path or URI")
+    loading = actions.add_parser("load", help="read and validate a table contract document")
+    loading.add_argument("--target", required=True, help="contract JSON path or URI")
     loading.set_defaults(run=load)
     return parser
 

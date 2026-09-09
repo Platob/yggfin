@@ -1,156 +1,111 @@
 {
-  "name": "Message",
-  "dtype": {
+  "schema": {
     "type": "struct",
     "fields": [
       {
+        "id": 1,
         "name": "url",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": false,
-        "metadata": {
-          "description": "Canonical URI of the source text object.",
-          "iceberg:primary_key": "true"
-        }
+        "type": "string",
+        "required": true,
+        "doc": "Canonical URI of the source text object."
       },
       {
+        "id": 2,
         "name": "rownum",
-        "dtype": {
-          "type": "int64"
-        },
-        "nullable": false,
-        "metadata": {
-          "description": "1-based physical line number within the source object.",
-          "iceberg:primary_key": "true"
-        }
+        "type": "long",
+        "required": true,
+        "doc": "1-based physical line number within the source object."
       },
       {
+        "id": 3,
         "name": "timestamp",
-        "dtype": {
-          "type": "datetime64",
-          "unit": "microsecond",
-          "timezone": "UTC"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "UTC instant captured from the line header, at microsecond resolution.",
-          "python.class": "datetime",
-          "python.kind": "class",
-          "python.module": "datetime",
-          "python.qualname": "datetime"
-        }
+        "type": "timestamptz",
+        "required": false,
+        "doc": "UTC instant captured from the line header, at microsecond resolution."
       },
       {
+        "id": 4,
         "name": "timepartition",
-        "dtype": {
-          "type": "datetime64",
-          "unit": "microsecond",
-          "timezone": "UTC"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Timestamp partitioned by its UTC hour in Iceberg.",
-          "iceberg:partition_key": "hour",
-          "partition:sources": "[\"timestamp\"]",
-          "python.class": "datetime",
-          "python.kind": "class",
-          "python.module": "datetime",
-          "python.qualname": "datetime"
-        }
+        "type": "timestamptz",
+        "required": false,
+        "doc": "Timestamp partitioned by its UTC hour in Iceberg."
       },
       {
+        "id": 5,
         "name": "threadId",
-        "dtype": {
-          "type": "int64"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Bridge thread identifier captured from the line header."
-        }
+        "type": "long",
+        "required": false,
+        "doc": "Bridge thread identifier captured from the line header."
       },
       {
+        "id": 6,
         "name": "sessionUid",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Bridge session identifier captured from a message-context header."
-        }
+        "type": "string",
+        "required": false,
+        "doc": "Bridge session identifier captured from a message-context header."
       },
       {
+        "id": 7,
         "name": "msgCtxId",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Bridge message-context identifier captured from the line header."
-        }
+        "type": "string",
+        "required": false,
+        "doc": "Bridge message-context identifier captured from the line header."
       },
       {
+        "id": 8,
         "name": "seqNum",
-        "dtype": {
-          "type": "int64"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Bridge sequence number captured from a message-context header."
-        }
+        "type": "long",
+        "required": false,
+        "doc": "Bridge sequence number captured from a message-context header."
       },
       {
+        "id": 9,
         "name": "plugin",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Bridge plugin that wrote the line."
-        }
+        "type": "string",
+        "required": false,
+        "doc": "Bridge plugin that wrote the line."
       },
       {
+        "id": 10,
         "name": "level",
-        "dtype": {
-          "type": "utf8"
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "Severity spelling captured from the line header."
-        }
+        "type": "string",
+        "required": false,
+        "doc": "Severity spelling captured from the line header."
       },
       {
+        "id": 11,
         "name": "bodyhash",
-        "dtype": {
-          "type": "fixed_size_binary",
-          "width": 16
-        },
-        "nullable": true,
-        "metadata": {
-          "description": "XXH3-128 digest of the exact body bytes, filled during field apply.",
-          "digest:algorithm": "xxh3-128",
-          "digest:role": "holder",
-          "digest:sources": "[\"body\"]"
-        }
+        "type": "fixed[16]",
+        "required": false,
+        "doc": "XXH3-128 digest of the exact body bytes, filled during field apply."
       },
       {
+        "id": 12,
         "name": "body",
-        "dtype": {
-          "type": "binary"
-        },
-        "nullable": false,
-        "metadata": {
-          "description": "Exact bytes after the matched line-header prefix."
-        }
+        "type": "binary",
+        "required": true,
+        "doc": "Exact bytes after the matched line-header prefix."
+      }
+    ],
+    "schema-id": 0,
+    "identifier-field-ids": [
+      1,
+      2
+    ]
+  },
+  "partition-spec": {
+    "spec-id": 0,
+    "fields": [
+      {
+        "source-id": 4,
+        "field-id": 1000,
+        "transform": "hour",
+        "name": "timepartition_hour"
       }
     ]
   },
-  "nullable": false,
-  "metadata": {
-    "description": "One ULBridge text line, before the FIX codec reads its body.",
-    "python.class": "Message",
-    "python.kind": "field",
-    "python.module": "rekep.text.message",
-    "python.qualname": "Message"
+  "sort-order": {
+    "order-id": 0,
+    "fields": []
   }
 }

@@ -1,6 +1,7 @@
 """Projecting a field onto Iceberg, and reading one back."""
 
 import datetime
+import json
 from typing import Annotated
 
 import pyarrow
@@ -14,13 +15,18 @@ from rekep.fields import (
     replace_field,
 )
 from rekep.iceberg import (
+    CONTRACT_KEYS,
+    iceberg_contract,
+    iceberg_contract_field,
     iceberg_field,
     iceberg_partition_spec,
     iceberg_schema,
+    iceberg_sort_order,
     iceberg_struct_field,
     metrics_for,
     partition_keys,
     primary_keys,
+    sort_keys,
 )
 from rekep.iceberg.fields import (
     COLUMN_METRICS,
@@ -310,7 +316,9 @@ def test_declared_ids_are_kept_rather_than_renumbered() -> None:
     from pyiceberg.types import NestedField, StringType
 
     schema = Schema(NestedField(5, "mic", StringType(), required=True))
-    published = Field.from_json(iceberg_struct_field(schema, "Venue").into_json())
+    document = iceberg_contract(iceberg_struct_field(schema, "Venue"))
+    published = iceberg_contract_field(document, "Venue")
+    assert json.loads(document)["schema"]["fields"][0]["id"] == 5
     assert int(published.field("mic").iceberg["field_id"]) == 5
     assert [(f.field_id, f.name) for f in iceberg_schema(published).fields] == [(5, "mic")]
 
@@ -497,3 +505,121 @@ def test_the_property_names_are_the_ones_iceberg_reads() -> None:
 
     assert COLUMN_METRICS == TableProperties.METRICS_MODE_COLUMN_CONF_PREFIX
     assert INFERRED_METRICS == "write.metadata.metrics.max-inferred-column-defaults"
+
+
+# -- the published contract document ----------------------------------------
+
+
+def test_a_contract_is_pyiceberg_json_under_three_iceberg_keys() -> None:
+    document = json.loads(iceberg_contract(field_of(Quote, "Quote")))
+
+    assert list(document) == list(CONTRACT_KEYS)
+    assert document["schema"] == json.loads(
+        iceberg_schema(field_of(Quote, "Quote")).model_dump_json()
+    )
+    assert document["partition-spec"]["spec-id"] == 0
+    assert document["sort-order"] == {"order-id": 0, "fields": []}
+
+
+def test_a_contract_states_the_partition_and_sort_a_schema_alone_cannot() -> None:
+    """The two keys beside `schema` are why the document is not one `Schema`."""
+    document = json.loads(iceberg_contract(Venue.field(), sort_by=["mic"]))
+
+    assert document["partition-spec"]["fields"] == [
+        {"source-id": 2, "field-id": 1000, "transform": "hour", "name": "at_hour"}
+    ]
+    assert document["sort-order"]["fields"] == [
+        {
+            "source-id": 1,
+            "transform": "identity",
+            "direction": "asc",
+            "null-order": "nulls-last",
+        }
+    ]
+
+
+def test_a_contract_round_trip_is_a_fixed_point() -> None:
+    document = iceberg_contract(Venue.field())
+    rebuilt = iceberg_contract_field(document, "Venue")
+
+    assert iceberg_contract(rebuilt) == document
+    assert partition_keys(rebuilt) == {"at": "hour"}
+    assert primary_keys(rebuilt) == ["mic"]
+
+
+def test_a_sorted_contract_comes_back_sorted() -> None:
+    """The read side of `sort-order`: both published shapes are unsorted."""
+    document = iceberg_contract(Venue.field(), sort_by=["mic"])
+    rebuilt = iceberg_contract_field(document, "Venue")
+
+    assert sort_keys(rebuilt) == {"mic": "asc"}
+    assert iceberg_contract(rebuilt) == document
+
+
+def test_a_layout_no_member_can_hold_is_refused_rather_than_dropped() -> None:
+    """A table read back has `table.spec()` beside it; a document has nothing."""
+    document = json.loads(iceberg_contract(Venue.field()))
+    dangling = dict(
+        document, **{"partition-spec": {"spec-id": 0, "fields": [{**PARTITION, "source-id": 99}]}}
+    )
+    with pytest.raises(ValueError, match="partition field 99 names no column"):
+        iceberg_contract_field(json.dumps(dangling))
+    twice = dict(
+        document,
+        **{
+            "partition-spec": {
+                "spec-id": 0,
+                "fields": [PARTITION, {**PARTITION, "field-id": 1001, "transform": "day"}],
+            }
+        },
+    )
+    with pytest.raises(ValueError, match="partitions 'at' more than once"):
+        iceberg_contract_field(json.dumps(twice))
+    nulls_first = dict(
+        document,
+        **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "null-order": "nulls-first"}]}},
+    )
+    with pytest.raises(ValueError, match="orders nulls"):
+        iceberg_contract_field(json.dumps(nulls_first))
+    bucketed = dict(
+        document,
+        **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "transform": "bucket[8]"}]}},
+    )
+    with pytest.raises(ValueError, match="sorts 'mic' by bucket"):
+        iceberg_contract_field(json.dumps(bucketed))
+
+
+#: The one partition `Venue` declares, and one identity sort over its key.
+PARTITION = {"source-id": 2, "field-id": 1000, "transform": "hour", "name": "at_hour"}
+SORTING = {
+    "source-id": 1,
+    "transform": "identity",
+    "direction": "asc",
+    "null-order": "nulls-last",
+}
+
+
+def test_an_unsorted_shape_records_the_order_a_created_table_records() -> None:
+    """`SortOrder()` is order 1; Iceberg's own unsorted order is 0."""
+    from pyiceberg.table.sorting import UNSORTED_SORT_ORDER
+
+    assert iceberg_sort_order(Venue.field()) == UNSORTED_SORT_ORDER
+    assert json.loads(iceberg_contract(Venue.field()))["sort-order"]["order-id"] == 0
+
+
+def test_a_document_that_is_not_a_contract_names_what_it_lacks() -> None:
+    with pytest.raises(ValueError, match="missing partition-spec, sort-order"):
+        iceberg_contract_field(json.dumps({"schema": {"type": "struct", "fields": []}}))
+    with pytest.raises(TypeError, match="JSON object, not list"):
+        iceberg_contract_field("[]")
+
+
+@scalar
+class Venue(Convertible):
+    """A shape with an identifier column and an hour-partitioned clock."""
+
+    mic: Annotated[str, primary_key()]
+    """Market."""
+
+    at: Annotated[datetime.datetime, partition_key("hour")]
+    """When it traded."""

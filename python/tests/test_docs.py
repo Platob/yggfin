@@ -87,7 +87,10 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "fix-message.json",
         "message.json",
     ]
-    assert "fix:name" not in schema
+    # An Iceberg contract carries no Arrow metadata, so FIX vocabulary can only
+    # leak into the raw product as a column -- which is what this looks for.
+    assert '"name": "body"' in schema
+    assert '"name": "msgtype"' not in schema
 
 
 def test_docs_record_the_measured_message_rates() -> None:
@@ -113,6 +116,7 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
     assert "iceberg_fix_field" in task
     assert "not alternate implementations" in schemas
     assert "`fix-message.json`" in schemas
+    assert "iceberg_contract" in schemas
 
 
 def test_public_scripts_and_documentation_use_only_the_rekep_name() -> None:

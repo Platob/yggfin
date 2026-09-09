@@ -30,6 +30,9 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - `rekep.Field is yggdryl.Field`.
 - Use native `@yggdryl.scalar` and `Annotated` options for declarations.
 - Arrow schema metadata is authoritative; portable JSON derives from it.
+- `Field` JSON is the runtime declaration form; `iceberg_contract` is the
+  published one, and it states only what an Iceberg schema, spec and sort
+  order can.
 - Use Yggdryl `Field.apply_arrow_*` at producer and consumer boundaries so
   cast, derived partitions, and digests run in their native order.
 - Use Yggdryl's strict nullability policy directly at every Arrow boundary.

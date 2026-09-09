@@ -45,9 +45,11 @@ columns, the complete arrival record, unmapped pairs, and derived identities.
 Both use `(url, rownum)` as their primary key, so replay is idempotent.
 
 The reviewed contracts are [Message](schemas/rekep/message.json) and
-[FixMessage](schemas/rekep/fix-message.json). The [pipeline guide](docs/pipeline/index.md)
-covers local files, S3, AWS Glue, Airflow, and operations; the
-[data-product guide](docs/products/index.md) defines every published column.
+[FixMessage](schemas/rekep/fix-message.json), each the Iceberg schema,
+partition spec and sort order PyIceberg records for its table.
+The [pipeline guide](docs/pipeline/index.md) covers local files, S3, AWS Glue,
+Airflow, and operations; the [data-product guide](docs/products/index.md)
+defines every published column.
 
 Development:
 
