@@ -7,8 +7,10 @@ separators.
 
 The workflow integration test reads it through `Message.text_options()`, writes
 all 111 physical rows to `logs.messages`, reads that table through the native
-FIX codec, and writes all 111 results to `fix.messages`. Its Git-blob SHA-256
-is:
+FIX codec, and writes all 111 results to `fix.messages`. The Airflow operator
+tests run the same fixture through the scheduled route.
+
+Its content SHA-256, as `sha256sum` prints it, is:
 
 ```text
 6407fa90d4149be2f2e4047e22501bafedd71c5fe5fa3b34db5c77dbe9705074

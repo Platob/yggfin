@@ -109,5 +109,9 @@ creating a narrow table.
 uv run --project python rekep task run tasks/parse_fix/parse_fix.json
 ```
 
-`logs.messages` must already exist. A missing source table, invalid registry,
-incompatible existing target schema, or failed Iceberg commit fails the task.
+Run `parse_messages` first: `parse_fix` reads the stored raw product, never
+source files. A `logs.messages` that is not there yet reads as zero rows and
+succeeds, so a first interval against a fresh catalog is a run rather than a
+failure — it is an empty capture that publishes nothing, not a missing
+dependency the task can detect. An invalid registry, an incompatible existing
+target schema, or a failed Iceberg commit fails the task.

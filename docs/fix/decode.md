@@ -268,3 +268,11 @@ converts content-level failures into an `unknown` message so one damaged cell
 cannot terminate a capture. I/O errors, an invalid payload column, malformed
 root options, and an invalid registry remain errors. With deduplication off,
 one source row always yields one result row.
+
+## Try one line
+
+Paste a captured line — numeric FIX, a ULLINK bridge row, configuration JSON,
+or FIXML — and read the pairs the codec resolves out of it, each against the
+bundled registry:
+
+<div data-fix="decode"></div>

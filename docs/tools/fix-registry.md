@@ -51,3 +51,27 @@ print(field.into_json(indent=2))
 
 Downloads are diagnostic snapshots. The packaged registry and runtime field
 remain authoritative.
+
+## Regenerate the published assets
+
+The FIX pages embed their own widgets — the
+[registry search](../fix/registry.md#browser),
+[decoder](../fix/decode.md#try-one-line) and
+[encoder](../fix/encode.md#build-a-message) — reading a projection of the same
+dictionary, because a browser cannot open an `IOBase` folder. Two files, so a
+page load does not carry five megabytes of code sets:
+
+| file | holds |
+| --- | --- |
+| `docs/assets/fix-registry.json` | the index every widget needs to resolve a key |
+| `docs/assets/fix-details.json` | members, code sets and lineage, fetched when an entry is opened |
+
+Both are generated and committed. Rebuild them from the repository root
+whenever the bundled registry changes, and commit the result:
+
+```bash
+uv run --project python python tools/fix_registry_dump.py
+```
+
+Nothing rebuilds them automatically, so a registry change that skips this step
+leaves the published pages showing the previous dictionary.

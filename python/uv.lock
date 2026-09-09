@@ -2562,7 +2562,7 @@ provides-extras = ["iceberg", "glue", "polars", "all"]
 
 [package.metadata.requires-dev]
 airflow = [
-    { name = "apache-airflow", marker = "sys_platform != 'win32'", specifier = ">=3.0,<4" },
+    { name = "apache-airflow", marker = "sys_platform != 'win32'", specifier = ">=3.1,<4" },
     { name = "apache-airflow-providers-standard", marker = "sys_platform != 'win32'", specifier = ">=1.0,<2" },
     { name = "rekep" },
 ]

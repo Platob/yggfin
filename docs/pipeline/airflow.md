@@ -29,7 +29,50 @@ uv run --project <repo>/python --group runner --no-sync --offline \
 `--no-sync --offline` makes a scheduled run deterministic: deployment must
 resolve and install dependencies before the DAG is enabled. The child runs the
 same Marimo application as `rekep task run`, validates its Stage result, and
-publishes JSON atomically. `on_kill` terminates the child process group.
+publishes JSON atomically. `on_kill` terminates the child process group. The
+child's working directory is the checkout, so a relative `catalog` setting
+resolves there and not in the scheduler's own directory.
+
+### Operator arguments
+
+| argument | required | what it does |
+| --- | :---: | --- |
+| `document` | yes | task JSON, relative to `repository`; one outside it is refused |
+| `repository` | yes | checkout root holding `python/` and `tasks/`; also the child's working directory |
+| `parameters` | no | per-task overrides; a name the task document does not declare fails the task |
+| `environment` | no | variables for the child, over the worker's own |
+| `cache_dir` | no | sets `UV_CACHE_DIR`, to point `uv` at a shared worker cache |
+| `outlets` | no | the Assets this task publishes |
+
+`document`, `repository`, `parameters` and `environment` are template fields.
+`environment` is the supported way to give one task a credential-bearing
+variable without putting it in Params or in task JSON.
+
+Parameters merge in one order, later winning: task document defaults, then the
+operator's `parameters`, then the DAG run's Params, then the data interval —
+and only for a name the task document already declares, so a task that does
+not take `branch` is never handed the scheduler's.
+
+### Assets and what a run returns
+
+Each node declares one `Asset` outlet named exactly for the table it writes,
+`logs.messages` and `fix.messages`, so a downstream DAG can be scheduled on
+either. When a run finishes, the operator attaches `task`, `read`, `written`
+and `skipped` to the event of every outlet its result names as a target — a
+table this run did not write claims nothing.
+
+`execute` returns the validated Stage mapping, so the same counts land in XCom
+under `return_value`. Its fields are listed in
+[Logs and task results](operations/logs.md#result-schema); it is a summary, never rows.
+
+### Retries
+
+The DAG sets no `retries`, so every task is `retries=0` and one transient S3
+or catalog error fails the run. Raising it is safe and is the recommended
+configuration: each attempt writes into its own private directory keyed on the
+try number, that directory is removed whether the attempt lands or raises, and
+both writers merge on `(url, rownum)` — so a retry re-reads the same rows,
+reports them as skipped and commits nothing.
 
 ## Install a worker checkout
 
@@ -64,6 +107,7 @@ First deploy the tables, then trigger with an absolute source path visible to
 the worker:
 
 ```bash
+cd "$REKEP_ROOT"
 uv run --project "$REKEP_ROOT/python" rekep iceberg deploy \
   "$REKEP_ROOT/tasks/parse_messages/parse_messages.json"
 
@@ -71,6 +115,21 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
   rekep_ingestion \
   --conf '{"filesystem":"file:///srv/capture/2026-08-14"}'
 ```
+
+The `cd` matters: the checked-in document's `uri` and `warehouse` are both
+relative, and the operator runs its child with the checkout as the working
+directory. Deploying from anywhere else creates a second catalog next to
+wherever the command was typed, and the DAG then writes to an empty one. Pass
+absolute settings instead if the deploy cannot run from the checkout:
+
+```bash
+uv run --project "$REKEP_ROOT/python" rekep iceberg deploy \
+  --property type=sql \
+  --property uri=sqlite:////var/lib/rekep/catalog.db \
+  --property warehouse=/var/lib/rekep/warehouse
+```
+
+and name the same catalog in `--conf`, as the S3 example below does.
 
 The default SQLite catalog is suitable only when scheduler and task execution
 share one durable host filesystem.
@@ -148,3 +207,5 @@ EKS web identity, or the worker's standard AWS credential chain.
 7. Inspect `nounmappedfixentries` before enabling a recurring schedule.
 8. Keep `max_active_runs=1` unless catalog and source-window ownership are
    designed for concurrent commits.
+9. Set `retries` and `retry_delay`; the default is no retry, and a retried
+   attempt is idempotent.

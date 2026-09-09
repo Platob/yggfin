@@ -44,3 +44,10 @@ assert message.to_bytes(1) == b"35=D\x0111=ORD-1\x0155=AAPL\x01"
 Use numeric FIX input when byte-for-byte wire framing matters. Bridge rows can
 normalize group paths during decoding because their packed member delimiters
 are a logging representation, not a FIX wire format.
+
+## Build a message
+
+Enter tags or names and their values, choose a separator, and read the bytes
+`FixMsg.to_bytes()` emits for them:
+
+<div data-fix="encode"></div>

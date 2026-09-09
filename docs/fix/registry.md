@@ -194,7 +194,11 @@ rejected, preventing a pipeline from silently creating a narrow table.
 
 ## Browser
 
-The [registry browser](../tools/fix-registry.md) exposes search, branches,
-groups, members, code sets, lineage, raw metadata, Field JSON, and the complete
-`FixMsg` schema. Its generated web assets are read-only projections of this
-same bundled registry.
+Search the same 6,262 definitions here, by tag, name, alias or description:
+
+<div data-fix="registry"></div>
+
+The [registry browser](../tools/fix-registry.md) is the Marimo tool over the
+same dictionary; it exposes branches, groups, members, code sets, lineage, raw
+metadata, Field JSON, and the complete `FixMsg` schema. Both read generated
+assets that are read-only projections of this same bundled registry.

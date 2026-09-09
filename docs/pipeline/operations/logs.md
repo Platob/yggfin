@@ -14,7 +14,7 @@ atomic result file.
 | `skipped` | integer | read rows not inserted |
 | `sources` | object | logical source names to masked locations |
 | `targets` | object | logical target names to table identifiers |
-| `window` | object or null | scheduler interval where declared |
+| `window` | object | `start` and `end`, each epoch nanoseconds or null |
 | `elapsed_ms` | integer | wall-clock stage duration |
 
 The closing INFO record and returned JSON agree on every field. A result is
@@ -30,10 +30,16 @@ small enough for Airflow XCom because it contains no rows or schemas.
   "skipped": 0,
   "sources": {"messages": "logs.messages"},
   "targets": {"fix": "fix.messages"},
-  "window": null,
+  "window": {"start": null, "end": null},
   "elapsed_ms": 208
 }
 ```
+
+`window` is always an object. A task that declares no interval reports the
+open one, `{"start": null, "end": null}`; it is never `null`, and
+`Stage.validated` — which both the runner and the operator call before a
+result is published or pushed to XCom — refuses anything that is not a
+mapping of exactly `start` and `end`.
 
 ## Monitoring rules
 

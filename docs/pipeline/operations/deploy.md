@@ -22,7 +22,7 @@ Expected result shape:
     "properties": {
       "type": "sql",
       "uri": "sqlite:///data/catalog.db",
-      "warehouse": "data/warehouse"
+      "warehouse": "file:///srv/rekep/data/warehouse"
     }
   },
   "tables": {
@@ -31,6 +31,13 @@ Expected result shape:
   }
 }
 ```
+
+The printed `warehouse` is the resolved one: building the catalog handle
+rewrites a scheme-less path into an absolute `file://` URL against the current
+working directory. The `uri` is left as written, so a relative SQLite path
+stays relative and also resolves against the working directory. Run deploy
+from the checkout root, or give both settings absolute values, so the tables
+land where the tasks later look for them.
 
 Preview without creating anything:
 

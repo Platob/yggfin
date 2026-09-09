@@ -9,6 +9,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import stat
 import string
 import subprocess
@@ -503,37 +504,153 @@ def test_a_document_that_is_not_there_is_refused() -> None:
 
 # -- against a real child ----------------------------------------------------
 
+#: The bridge fixture the CLI route is pinned against in `test_workflow.py`,
+#: so scheduling it changes the counts nowhere.
+FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 
-@pytest.mark.integration
-def test_a_real_child_publishes_a_result_through_the_locked_environment(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """The whole path: uv, runner, application, and private result file."""
-    monkeypatch.undo()
-    warehouse = tmp_path / "warehouse"
-    catalog = {
+#: What each stage returns the first time it sees those 111 physical rows, and
+#: what a replay of the same capture returns.
+LANDED = {
+    "parse_messages": {"read": 111, "written": 111, "skipped": 0},
+    "parse_fix": {"read": 111, "written": 111, "skipped": 0},
+}
+REPLAYED = {
+    name: {"read": counts["read"], "written": 0, "skipped": counts["read"]}
+    for name, counts in LANDED.items()
+}
+
+#: The table each node publishes, which is also the Asset it declares.
+PUBLISHED = {"parse_messages": "logs.messages", "parse_fix": "fix.messages"}
+
+
+def counted(result: dict[str, Any]) -> dict[str, int]:
+    """The three numbers a schedule is compared on."""
+    return {name: result[name] for name in ("read", "written", "skipped")}
+
+
+def _scheduled(tmp_path: Path) -> dict[str, Any]:
+    """A SQLite catalog and file warehouse of this test's own."""
+    return {
         "name": "rekep",
         "properties": {
             "type": "sql",
             "uri": f"sqlite:///{tmp_path / 'catalog.db'}",
-            "warehouse": f"file://{warehouse}",
+            "warehouse": f"file://{tmp_path / 'warehouse'}",
         },
     }
-    built = MarimoOperator(
-        task_id="parse_messages",
-        repository=str(ROOT),
-        document="tasks/parse_messages/parse_messages.json",
-        parameters={
-            "filesystem": (ROOT / "python/tests/data/ulbridge.log").as_uri(),
-            "catalog": catalog,
-        },
+
+
+def _pass(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Every DAG node, in its declared order, run through its own operator.
+
+    The outlets come off the shipped DAG rather than being spelled again here,
+    so a node that stops declaring the Asset it writes fails this test.
+    """
+    landed = {}
+    for task_id in [task.task_id for task in PIPELINE.ingestion.topological_sort()]:
+        node = PIPELINE.ingestion.get_task(task_id)
+        held: dict[str, Any] = {"catalog": catalog}
+        if task_id == "parse_messages":
+            held["filesystem"] = FIXTURE.as_uri()
+        built = MarimoOperator(
+            task_id=task_id,
+            repository=str(ROOT),
+            document=f"tasks/{task_id}/{task_id}.json",
+            parameters=held,
+            outlets=list(node.outlets),
+        )
+        events = {asset: SimpleNamespace(extra={}) for asset in node.outlets}
+        result = built.execute(context(outlet_events=events))
+        assert built.hook is None, "a landed attempt keeps no child"
+        landed[result["task"]] = {
+            "result": result,
+            "assets": {asset.name: dict(event.extra) for asset, event in events.items()},
+        }
+    return landed
+
+
+def _rows(catalog: dict[str, Any]) -> dict[str, int]:
+    from rekep.iceberg import IcebergCatalog
+
+    store = IcebergCatalog.from_dict(catalog)
+    try:
+        return {
+            dataset.identifier: dataset.read_arrow_table().num_rows
+            for dataset in store.datasets(None)
+        }
+    finally:
+        store.close()
+
+
+def _snapshots(catalog: dict[str, Any]) -> dict[str, int]:
+    from rekep.iceberg import IcebergCatalog
+
+    store = IcebergCatalog.from_dict(catalog)
+    try:
+        return {
+            dataset.identifier: len(store.catalog.load_table(dataset.identifier).metadata.snapshots)
+            for dataset in store.datasets(None)
+        }
+    finally:
+        store.close()
+
+
+@pytest.mark.integration
+def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The whole scheduled route: uv, runner, both applications, both tables.
+
+    `test_workflow.py` pins these same counts for `rekep task run`. Pinning
+    them here as well is what says the two routes are one pipeline: a
+    scheduled run reads the same capture into the same two products, and its
+    replay writes nothing, exactly as the command-line run does.
+    """
+    monkeypatch.undo()
+    catalog = _scheduled(tmp_path)
+
+    landed = _pass(catalog)
+
+    assert {name: counted(held["result"]) for name, held in landed.items()} == LANDED
+    for name, table in PUBLISHED.items():
+        assert landed[name]["result"]["targets"] == {
+            "messages" if name == "parse_messages" else "fix": table
+        }
+        # The counts ride on the Asset event, which is what a downstream DAG
+        # scheduled on that table reads.
+        assert landed[name]["assets"] == {
+            table: {"task": name, **LANDED[name]},
+        }
+    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 111}
+
+    replayed = _pass(catalog)
+
+    assert {name: counted(held["result"]) for name, held in replayed.items()} == REPLAYED
+    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 111}
+    assert _snapshots(catalog) == {"logs.messages": 1, "fix.messages": 1}, (
+        "a replayed schedule commits no empty snapshot"
     )
 
-    result = built.execute(context())
 
-    assert result["task"] == "parse_messages"
-    assert (result["read"], result["written"]) == (111, 111)
-    assert built.hook is None
+@pytest.mark.integration
+def test_a_scheduled_result_is_the_shape_a_route_reads(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """What the operator pushes to XCom, checked as the contract it is."""
+    from rekep.logs import Stage
+
+    monkeypatch.undo()
+
+    landed = _pass(_scheduled(tmp_path))
+
+    for name, held in landed.items():
+        result = held["result"]
+        assert Stage.validated(result) == result
+        assert result["task"] == name
+        # `window` is a mapping in every result, never null: both the runner
+        # and the operator validate it, so the contract is the same both ways.
+        assert result["window"] == {"start": None, "end": None}
+        assert len(json.dumps(result)) < 4096, "XCom carries a summary, never a payload"
 
 
 @pytest.mark.integration
@@ -605,3 +722,75 @@ def test_terminating_the_task_stops_the_runner_process_group(
     assert not subprocess.run(
         ["pgrep", "-g", str(group)], capture_output=True, text=True, check=False
     ).stdout.split(), "uv and the runner process group are gone"
+
+
+@pytest.mark.integration
+def test_a_real_dag_run_publishes_both_tables_from_its_conf(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The scheduler itself, not just the operator: `airflow dags test`.
+
+    Everything above builds operators by hand, so nothing there proves the DAG
+    parses under Airflow's own bundle loading, serializes, or that a run's
+    `--conf` reaches both nodes as declared Params. This runs the shipped DAG
+    the way `docs/pipeline/airflow.md` says to trigger it, in a private
+    `AIRFLOW_HOME`, and reads the two products back.
+    """
+    from rekep.iceberg import IcebergCatalog
+
+    monkeypatch.undo()
+    home = tmp_path / "airflow"
+    home.mkdir()
+    catalog = _scheduled(tmp_path)
+    environment = {
+        **os.environ,
+        "AIRFLOW_HOME": str(home),
+        "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN": f"sqlite:///{home / 'airflow.db'}",
+        "AIRFLOW__CORE__DAGS_FOLDER": str(DAGS),
+        "AIRFLOW__CORE__LOAD_EXAMPLES": "False",
+    }
+    migrated = subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "airflow", "db", "migrate"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert migrated.returncode == 0, migrated.stdout + migrated.stderr
+
+    run = subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            "-m",
+            "airflow",
+            "dags",
+            "test",
+            "rekep_ingestion",
+            "--conf",
+            json.dumps({"filesystem": FIXTURE.as_uri(), "catalog": catalog}),
+        ],
+        env=environment,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    printed = run.stdout + run.stderr
+    assert run.returncode == 0, printed
+    # The scheduler's own record of the run, not the CLI's prose: that line is
+    # only printed to a terminal, and this child has none.
+    assert re.search(r"DagRun Finished:.*state=success", printed), printed
+    # Both nodes ran the locked runner, and the run's conf reached them: the
+    # catalog they wrote is this test's, not the document's relative default.
+    for task_id in PUBLISHED:
+        assert f"tasks/{task_id}/{task_id}.json" in printed, printed
+    store = IcebergCatalog.from_dict(catalog)
+    try:
+        stored = {
+            dataset.identifier: dataset.read_arrow_table().num_rows
+            for dataset in store.datasets(None)
+        }
+    finally:
+        store.close()
+    assert stored == {"logs.messages": 111, "fix.messages": 111}

@@ -68,8 +68,15 @@ different questions.
 python/src/rekep/       public package and bundled registry
 tasks/parse_messages/   raw-line Marimo application + JSON parameters
 tasks/parse_fix/        FIX Marimo application + JSON parameters
+tasks/optimize_iceberg/ maintenance Marimo application + JSON parameters
 tasks/airflow/          DAG, operator, and standalone child runner
 schemas/rekep/          reviewed product schemas
 docs/                   contracts, operations, products, and roadmap
 tools/                  registry browser and documentation projection
+data/                   default capture, catalog and warehouse locations
+config/                 an operator's own FIX dictionary, when one is used
 ```
+
+`optimize_iceberg` is maintenance rather than ingestion: it is not in the
+scheduled graph, and it is documented with the storage it settles, under
+[Iceberg maintenance](../storage/iceberg.md#maintenance).

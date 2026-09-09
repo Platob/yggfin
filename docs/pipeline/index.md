@@ -76,7 +76,7 @@ Every successful task returns the same small result contract:
   "skipped": 0,
   "sources": {"capture": "file:///data/capture"},
   "targets": {"messages": "logs.messages"},
-  "window": null,
+  "window": {"start": null, "end": null},
   "elapsed_ms": 92
 }
 ```

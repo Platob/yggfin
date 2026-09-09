@@ -98,3 +98,24 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     assert global_registry() == bundled
     assert IOBase.__module__.startswith("yggdryl")
     assert TextOptions.__module__.startswith("yggdryl")
+
+
+def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> None:
+    """A skipped Airflow suite must not be able to read as a green one.
+
+    `tests/test_marimo_operator.py` opens with `importorskip("airflow")`, so
+    dropping the `airflow` group would delete the operator and DAG tests from
+    the run without failing anything. This is the one assertion that notices,
+    on every platform Airflow supports.
+    """
+    import importlib.util
+    import sys
+
+    if sys.platform == "win32":  # pragma: no cover - Airflow is POSIX-only
+        pytest.skip("Airflow does not run on Windows")
+
+    for name in ("airflow", "airflow.providers.standard.hooks.subprocess", "marimo"):
+        assert importlib.util.find_spec(name) is not None, (
+            f"{name} is missing: the operator, DAG and runner tests would silently skip. "
+            "Sync the default groups (dev, runner, airflow)."
+        )

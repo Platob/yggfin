@@ -64,3 +64,42 @@ def test_the_runner_executes_an_application_without_the_rekep_cli(
     assert json.loads(result.read_text(encoding="utf-8"))["read"] == 2
     assert not list(tmp_path.glob("*.partial"))
     assert "rekep.cli" not in RUNNER.read_text(encoding="utf-8")
+
+
+@pytest.mark.integration
+def test_the_runner_runs_the_shipped_application_and_publishes_its_result(
+    tmp_path: Path,
+) -> None:
+    """No stand-in application: the runner executes `parse_messages.py` itself.
+
+    Everything above replaces `_application`, so nothing there proves the
+    runner can import and run a real Marimo document. This does, over the same
+    bridge fixture the rest of the pipeline is pinned against.
+    """
+    parameters = tmp_path / "parameters.json"
+    published = tmp_path / "result.json"
+    parameters.write_text(
+        json.dumps(
+            {
+                "filesystem": (ROOT / "python/tests/data/ulbridge.log").as_uri(),
+                "catalog": {
+                    "name": "rekep",
+                    "properties": {
+                        "type": "sql",
+                        "uri": f"sqlite:///{tmp_path / 'catalog.db'}",
+                        "warehouse": f"file://{tmp_path / 'warehouse'}",
+                    },
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _runner().run(ROOT / "tasks" / "parse_messages" / "parse_messages.json", parameters, published)
+
+    result = json.loads(published.read_text(encoding="utf-8"))
+    assert result["task"] == "parse_messages"
+    assert (result["read"], result["written"], result["skipped"]) == (111, 111, 0)
+    assert result["targets"] == {"messages": "logs.messages"}
+    assert result["window"] == {"start": None, "end": None}
+    assert not list(tmp_path.glob("*.partial"))

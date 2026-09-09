@@ -22,7 +22,22 @@ uv run --project <repository>/python --group runner --no-sync --offline \
 
 Install that locked environment and Airflow on the worker before enabling the
 DAG. `--no-sync --offline` prevents a scheduled run from resolving or changing
-dependencies; `cache_dir` may point uv at the worker's shared cache.
+dependencies.
+
+The operator takes:
+
+| argument | required | what it does |
+| --- | :---: | --- |
+| `document` | yes | task JSON, relative to `repository`; one outside it is refused |
+| `repository` | yes | checkout root holding `python/` and `tasks/`, and the child's working directory |
+| `parameters` | no | per-task overrides; a name the document does not declare fails the task |
+| `environment` | no | variables for the child, over the worker's own |
+| `cache_dir` | no | sets `UV_CACHE_DIR`, pointing uv at the worker's shared cache |
+| `outlets` | no | the Assets this task publishes |
+
+`environment` is how one task gets a credential-bearing variable without it
+passing through Params or task JSON. The counts of a finished run are attached
+to each outlet's asset event, and the whole result is returned into XCom.
 
 The runner loads the adjacent JSON task document, replaces the Marimo
 `parameters` cell, runs the application, validates its small result mapping,

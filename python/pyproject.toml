@@ -63,8 +63,13 @@ runner = [
 # launches the standalone Marimo runner under that group. Airflow runs on POSIX
 # only, so the marker keeps CI's Windows leg syncable and the tests skip
 # themselves there through `pytest.importorskip`.
+#
+# 3.1 is the floor the operator's own imports set, not a preference: it reads
+# `AirflowException` out of `airflow.sdk.exceptions`, which the task SDK grew
+# in 1.1.0. Airflow 3.0.x pins `apache-airflow-task-sdk<1.1.0`, so resolving to
+# it makes the operator -- and with it the whole DAG -- fail to import.
 airflow = [
-    "apache-airflow>=3.0,<4; sys_platform != 'win32'",
+    "apache-airflow>=3.1,<4; sys_platform != 'win32'",
     "apache-airflow-providers-standard>=1.0,<2; sys_platform != 'win32'",
     "rekep",
 ]

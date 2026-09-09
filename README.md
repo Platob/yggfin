@@ -56,5 +56,10 @@ cd python
 uv run pytest
 uv run pytest -m integration
 uv run ruff check . ../tasks ../tools
-uv run mkdocs build --strict --config-file ../mkdocs.yml
+uv run ruff format --check . ../tasks ../tools
+uv run --group docs mkdocs build --strict --config-file ../mkdocs.yml
 ```
+
+`mkdocs-material` is in the `docs` group, which is not a default group, so the
+documentation build names it; everything above it runs under the default
+`dev`, `runner` and `airflow` groups.
