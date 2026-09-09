@@ -17,7 +17,7 @@ typed remain observable instead of disappearing.
 | parsed message identity | `msghash` |
 | lossless protocol record | `nofixentries` |
 | registry misses | `nounmappedfixentries` |
-| reviewed field | `schemas/rekep/fix-message.json` |
+| reviewed contract | `schemas/rekep/fix-message.json` |
 
 ## Complete schema
 
@@ -148,9 +148,10 @@ fields.
 | `notrdregtimestamps` | timestamp, type, origin, manual indicator, desk attributes, NBBO price/quantity/source |
 | `FixEntry` | `tag:int32`, `branch:int32`, `key:string`, `value:string`, recursively nested `nofixentries` |
 
-The exact nested Arrow types and all metadata are in the
+The exact nested types, column ids and nullability are in the
 [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json)
-snapshot.
+contract. The `tag` column above is the registry's, not the contract's: an
+Iceberg schema carries no field metadata.
 
 ## Source-column folding
 

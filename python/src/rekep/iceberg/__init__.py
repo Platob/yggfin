@@ -3,7 +3,10 @@
 from rekep.iceberg.catalog import IcebergCatalog, IcebergNamespace
 from rekep.iceberg.dataset import IcebergDataset
 from rekep.iceberg.fields import (
+    CONTRACT_KEYS,
     derived_keys,
+    iceberg_contract,
+    iceberg_contract_field,
     iceberg_field,
     iceberg_partition_spec,
     iceberg_schema,
@@ -16,10 +19,13 @@ from rekep.iceberg.fields import (
 )
 
 __all__ = [
+    "CONTRACT_KEYS",
     "IcebergCatalog",
     "IcebergDataset",
     "IcebergNamespace",
     "derived_keys",
+    "iceberg_contract",
+    "iceberg_contract_field",
     "iceberg_field",
     "iceberg_partition_spec",
     "iceberg_schema",

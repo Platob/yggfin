@@ -169,19 +169,26 @@ def iceberg_sort_order(
     """The `pyiceberg.table.sorting.SortOrder` `source` declares, in declaration order.
 
     Iceberg records it and every engine that writes through the table honours
-    it; nothing here has to sort on read. `SortOrder()` with no fields is
-    Iceberg's own "unsorted", which is what a shape declaring none gets.
+    it; nothing here has to sort on read. A shape declaring none gets
+    `UNSORTED_SORT_ORDER`, which is order 0 -- what a created table records,
+    and not the order 1 a bare `SortOrder()` carries.
 
     What a sort key *is* -- where a row sits inside its file, against a
     partition, which decides which file -- is in its ``iceberg:`` metadata.
     """
     require("pyiceberg", "iceberg")
-    from pyiceberg.table.sorting import NullOrder, SortDirection, SortField, SortOrder
+    from pyiceberg.table.sorting import (
+        UNSORTED_SORT_ORDER,
+        NullOrder,
+        SortDirection,
+        SortField,
+        SortOrder,
+    )
     from pyiceberg.transforms import IdentityTransform
 
     declared = sort_keys(source) if sort_by is None else dict.fromkeys(sort_by, "ascending")
     if not declared:
-        return SortOrder()
+        return UNSORTED_SORT_ORDER
     schema = schema if schema is not None else iceberg_schema(source)
     return SortOrder(
         *[
@@ -264,6 +271,71 @@ def iceberg_struct_field(
         field,
         dtype=pyarrow.struct([member.into_arrow() for member in members.values()]),
         metadata=metadata,
+    )
+
+
+# -- the published contract document ----------------------------------------
+
+#: The three things a table contract states, spelled as Iceberg's own table
+#: metadata spells them. A table has more -- a location, a uuid, snapshots --
+#: but none of those is a property of the shape, so none of them is here.
+CONTRACT_KEYS = ("schema", "partition-spec", "sort-order")
+
+
+def iceberg_contract(source: Field, sort_by: Sequence[str] | None = None) -> str:
+    """`source` as the table contract document: the JSON Iceberg is asked for.
+
+    Every value is pyiceberg's own model JSON, so the ids, the identifier
+    fields, the partition transforms and the sort order read exactly as the
+    created table records them.
+
+    Arrow field metadata has no place in that format, so what only metadata
+    states -- a digest's algorithm and sources, a derived column's sources, a
+    FIX tag -- is not in the document. Those are read from the runtime
+    declaration that produced it.
+    """
+    require("pyiceberg", "iceberg")
+    schema = iceberg_schema(source)
+    document = dict(
+        zip(
+            CONTRACT_KEYS,
+            (
+                json.loads(part.model_dump_json())
+                for part in (
+                    schema,
+                    iceberg_partition_spec(source, schema),
+                    iceberg_sort_order(source, schema, sort_by),
+                )
+            ),
+            strict=True,
+        )
+    )
+    return json.dumps(document, indent=2, ensure_ascii=False)
+
+
+def iceberg_contract_field(document: str, name: str = "") -> Field:
+    """The struct field one contract document declares, named `name`.
+
+    A contract names no struct: a table's name belongs to the catalog it is
+    in, so the caller says which shape it just read.
+    """
+    require("pyiceberg", "iceberg")
+    from pyiceberg.partitioning import PartitionSpec
+    from pyiceberg.schema import Schema
+    from pyiceberg.table.sorting import SortOrder
+
+    loaded = json.loads(document)
+    if not isinstance(loaded, dict):
+        raise TypeError(f"a table contract is a JSON object, not {type(loaded).__name__}")
+    missing = [key for key in CONTRACT_KEYS if key not in loaded]
+    if missing:
+        raise ValueError(f"table contract is missing {', '.join(missing)}")
+    schema, spec, sort_order = CONTRACT_KEYS
+    return iceberg_struct_field(
+        Schema.model_validate(loaded[schema]),
+        name,
+        PartitionSpec.model_validate(loaded[spec]),
+        SortOrder.model_validate(loaded[sort_order]),
     )
 
 

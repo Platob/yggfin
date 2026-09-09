@@ -14,7 +14,7 @@ from pyiceberg.expressions import EqualTo
 
 from rekep import Field, Message, cli
 from rekep.fix import FixRegistry
-from rekep.iceberg import IcebergCatalog, IcebergDataset
+from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_contract_field, partition_keys
 
 pytestmark = pytest.mark.integration
 
@@ -220,7 +220,10 @@ def test_parse_fix_narrows_a_nanosecond_clock_iceberg_cannot_store(
 
 
 def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> None:
-    field = Field.from_json(FIX_CONTRACT.read_text(encoding="utf-8"))
+    field = iceberg_contract_field(FIX_CONTRACT.read_text(encoding="utf-8"), "FixMsg")
+    # The published contract carries the partition spec, so a table built from
+    # the document alone is laid out the way `parse_fix` lays its own out.
+    assert partition_keys(field) == {"timepartition": "hour"}
     schema = field.into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(
         [

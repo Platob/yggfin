@@ -21,8 +21,11 @@ kept byte-for-byte.
 | 11 | `bodyhash` | `fixed_size_binary[16]` | yes | XXH3-128 of exact `body` bytes |
 | 12 | `body` | `binary` | no | every byte after the matched header |
 
-The reviewed field is
-[`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json).
+The reviewed table contract is
+[`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json):
+the Iceberg schema, partition spec and sort order this table is created with.
+The digest and derived-partition rules above are declared in `Message.field()`,
+which an Iceberg schema has no place for.
 
 ## Header transcription
 

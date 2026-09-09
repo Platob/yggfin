@@ -7,8 +7,9 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep import Field, cli
+from rekep import cli
 from rekep.fields import field_of
+from rekep.iceberg import iceberg_contract, iceberg_contract_field
 
 
 def run(*argv: str) -> int:
@@ -46,14 +47,18 @@ def test_version_is_available_without_entering_a_command(capsys: pytest.CaptureF
 def test_dump_writes_the_declaration_to_stdout(capsysbinary: pytest.CaptureFixture) -> None:
     assert run("fields", "dump", "--pyclass", "tests.test_cli:Venue") == 0
     written = capsysbinary.readouterr().out
-    assert written.decode() == f"{field_of(Venue).into_json(indent=2)}\n"
-    assert Field.from_json(written.decode()) == field_of(Venue)
+    assert written.decode() == f"{iceberg_contract(field_of(Venue))}\n"
+    assert json.loads(written)["schema"]["fields"] == [
+        {"id": 1, "name": "mic", "type": "string", "required": True},
+        {"id": 2, "name": "country", "type": "string", "required": False},
+    ]
 
 
 def test_dump_takes_a_dotted_class_too(capsysbinary: pytest.CaptureFixture) -> None:
     """`module:Attribute` is what an entry point writes; the dot is what a docstring does."""
     assert run("fields", "dump", "--pyclass", "tests.test_cli.Venue") == 0
-    assert Field.from_json(capsysbinary.readouterr().out.decode()) == field_of(Venue)
+    written = capsysbinary.readouterr().out.decode()
+    assert written == f"{iceberg_contract(field_of(Venue))}\n"
 
 
 def test_dump_writes_json_to_the_target(tmp_path: Path) -> None:
@@ -69,8 +74,10 @@ def test_dump_writes_json_to_the_target(tmp_path: Path) -> None:
         )
         == 0
     )
-    assert target.read_text() == f"{field_of(Venue).into_json(indent=2)}\n"
-    assert Field.from_json(target.read_text()) == field_of(Venue)
+    assert target.read_text() == f"{iceberg_contract(field_of(Venue))}\n"
+    assert iceberg_contract(iceberg_contract_field(target.read_text(), "Venue")) + "\n" == (
+        target.read_text()
+    )
 
 
 def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -95,7 +102,7 @@ def test_only_the_document_reaches_stdout(tmp_path: Path, capsys: pytest.Capture
 def test_dump_takes_a_plain_dataclass(capsysbinary: pytest.CaptureFixture) -> None:
     """The CLI projects an undecorated dataclass through the same field adapter."""
     assert run("fields", "dump", "--pyclass", "tests.test_cli:Venue") == 0
-    dumped = Field.from_json(capsysbinary.readouterr().out.decode())
+    dumped = iceberg_contract_field(capsysbinary.readouterr().out.decode(), "Venue")
     assert [member.name for member in dumped] == ["mic", "country"]
     assert dumped.field("country").nullable is True
 
@@ -142,14 +149,40 @@ def test_a_document_that_does_not_build_is_refused(
     broken.write_text(
         json.dumps(
             {
-                "name": "Broken",
-                "dtype": {"type": "struct", "fields": [{"name": "x"}]},
-                "nullable": False,
+                "schema": {
+                    "type": "struct",
+                    "fields": [{"id": 1, "name": "x", "type": "string", "required": True}],
+                    "schema-id": 0,
+                    "identifier-field-ids": [99],
+                },
+                "partition-spec": {"spec-id": 0, "fields": []},
+                "sort-order": {"order-id": 0, "fields": []},
             }
         )
     )
     assert run("fields", "load", "--target", str(broken)) == 1
-    assert "missing field `dtype`" in capsys.readouterr().err
+    assert "Could not find field with id: 99" in capsys.readouterr().err
+
+
+def test_a_document_in_the_previous_field_format_is_refused(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """The field document format has no reader left anywhere in the tree."""
+    stale = tmp_path / "stale.json"
+    stale.write_text(
+        json.dumps(
+            {
+                "name": "Venue",
+                "dtype": {
+                    "type": "struct",
+                    "fields": [{"name": "mic", "dtype": {"type": "utf8"}, "nullable": False}],
+                },
+                "nullable": False,
+            }
+        )
+    )
+    assert run("fields", "load", "--target", str(stale)) == 1
+    assert "missing schema, partition-spec, sort-order" in capsys.readouterr().err
 
 
 def test_a_document_with_an_unknown_type_is_refused(
@@ -159,12 +192,12 @@ def test_a_document_with_an_unknown_type_is_refused(
     broken.write_text(
         json.dumps(
             {
-                "name": "Broken",
-                "dtype": {
+                "schema": {
                     "type": "struct",
-                    "fields": [{"name": "x", "dtype": {"type": "int65"}, "nullable": False}],
+                    "fields": [{"id": 1, "name": "x", "type": "int65", "required": True}],
                 },
-                "nullable": False,
+                "partition-spec": {"spec-id": 0, "fields": []},
+                "sort-order": {"order-id": 0, "fields": []},
             }
         )
     )
@@ -176,9 +209,10 @@ def test_a_document_extension_does_not_select_another_codec(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
     unknown = tmp_path / "log.txt"
-    unknown.write_text(field_of(Venue).into_json())
+    unknown.write_text(iceberg_contract(field_of(Venue)))
     assert run("fields", "load", "--target", str(unknown)) == 0
-    assert "Venue: 2 columns, builds" in capsys.readouterr().out
+    # A contract names no struct, so `load` names it after the file holding it.
+    assert "log: 2 columns, builds" in capsys.readouterr().out
 
 
 def test_a_missing_document_is_reported(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -206,15 +240,20 @@ def test_dump_then_load_is_the_contract_workflow(
         == 0
     )
     assert run("fields", "load", "--target", str(target)) == 0
-    assert Field.from_json(target.read_text()) == field_of(Venue)
+    assert iceberg_contract_field(target.read_text(), "Venue").into_arrow_schema().names == [
+        "mic",
+        "country",
+    ]
     assert "builds" in capsys.readouterr().out
 
 
-def test_native_document_codecs_consume_and_return_text(tmp_path: Path) -> None:
+def test_contract_document_codecs_consume_and_return_text(tmp_path: Path) -> None:
     target = tmp_path / "shape.json"
     shape = field_of(pyarrow.schema([("a", pyarrow.int32())]), "Shape")
-    target.write_text(shape.into_json())
-    assert Field.from_json(target.read_text()) == shape
+    target.write_text(f"{iceberg_contract(shape)}\n")
+    rebuilt = iceberg_contract_field(target.read_text(), "Shape")
+    assert rebuilt.into_arrow_schema().equals(shape.into_arrow_schema())
+    assert f"{iceberg_contract(rebuilt)}\n" == target.read_text()
 
 
 # -- running a task ----------------------------------------------------------

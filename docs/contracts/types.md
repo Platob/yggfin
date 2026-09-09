@@ -62,8 +62,27 @@ assert applied.schema.equals(Message.field().into_arrow_schema(), check_metadata
 `safe=True` refuses lossy casts. The FIX-to-Iceberg boundary explicitly uses
 `safe=False` only after its field has declared microsecond timestamp storage.
 
-## Portable form
+## Portable forms
 
-`Field.into_json(indent=2)` is deterministic and `Field.from_json` restores the
-same metadata-bearing tree. Arrow IPC metadata remains authoritative; the JSON
-form exists for review, deployment checks, and cross-process contracts.
+There are two, and which one a document uses says what the document is for.
+
+`Field.into_json(indent=2)` is the **runtime declaration** form: deterministic,
+metadata-bearing, and restored in full by `Field.from_json`. Task and dataset
+documents carry it, because they need what only Arrow metadata states -- a
+digest's sources, a derived column's sources, a FIX tag.
+
+`iceberg_contract(field)` is the **published contract** form: the `schema`,
+`partition-spec` and `sort-order` PyIceberg itself serializes, and what the
+snapshots under `schemas/` hold. `iceberg_contract_field` reads one back.
+
+```python
+from rekep import Message
+from rekep.iceberg import iceberg_contract, iceberg_contract_field
+
+document = iceberg_contract(Message.field())
+assert iceberg_contract(iceberg_contract_field(document, "Message")) == document
+```
+
+Arrow IPC metadata remains authoritative for both. The contract form derives
+from it and derives less: it states what Iceberg stores, and nothing Iceberg
+has no place for.
