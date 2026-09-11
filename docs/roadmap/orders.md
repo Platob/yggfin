@@ -31,15 +31,15 @@ a guessed order.
 | `parentclordid` | `string` | yes | parent client order id |
 | `parentorderid` | `string` | yes | parent venue order id |
 | `symbolticker` | `string` | yes | normalized instrument identity |
-| `side` | `fixed_size_binary[4]` | yes | normalized side |
+| `side` | `string` | yes | normalized side |
 | `ordtype` | `string` | yes | order type |
 | `price` | `double` | yes | limit/working price |
 | `orderqty` | `double` | yes | ordered quantity |
 | `cumqty` | `double` | yes | cumulative filled quantity stated by event |
 | `leavesqty` | `double` | yes | remaining quantity stated by event |
 | `avgpx` | `double` | yes | average fill price stated by event |
-| `state` | `fixed_size_binary[10]` | yes | normalized lifecycle state |
-| `exectype` | `fixed_size_binary[10]` | yes | event reason/type |
+| `state` | `string` | yes | normalized lifecycle state |
+| `exectype` | `string` | yes | event reason/type |
 | `ordrejreason` | `int32` | yes | rejection code |
 | `text` | `string` | yes | protocol explanation |
 | `parties` | `list<struct>` | yes | copied party identities/roles |
@@ -80,7 +80,7 @@ FIX.
 | identifiers | same types as events | current client, venue, parent, session, account |
 | instrument/order terms | same types as events | symbol, side, type, price, quantity |
 | execution totals | `double` | latest stated cumulative/leaves/average values |
-| `state` | `fixed_size_binary[10]` | latest normalized state |
+| `state` | `string` | latest normalized state |
 | `eventcount` | `int64` | number of events folded into the row |
 
 Acceptance requires replacement-chain fixtures, out-of-order events,

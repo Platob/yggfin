@@ -89,7 +89,7 @@
       {
         "id": 13,
         "name": "msgtype",
-        "type": "fixed[8]",
+        "type": "string",
         "required": false,
         "doc": "Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)"
       },
@@ -355,7 +355,7 @@
       {
         "id": 51,
         "name": "securityexchange",
-        "type": "fixed[4]",
+        "type": "string",
         "required": false,
         "doc": "Market used to help identify a security."
       },
@@ -383,7 +383,7 @@
       {
         "id": 55,
         "name": "side",
-        "type": "fixed[4]",
+        "type": "string",
         "required": false,
         "doc": "Side of order (see Volume : \"Glossary\" for value definitions)"
       },
@@ -425,14 +425,14 @@
       {
         "id": 61,
         "name": "currency",
-        "type": "fixed[3]",
+        "type": "string",
         "required": false,
         "doc": "Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent."
       },
       {
         "id": 62,
         "name": "settlcurrency",
-        "type": "fixed[3]",
+        "type": "string",
         "required": false,
         "doc": "Currency code of settlement denomination."
       },
@@ -530,14 +530,14 @@
       {
         "id": 76,
         "name": "ordstatus",
-        "type": "fixed[10]",
+        "type": "string",
         "required": false,
         "doc": "Identifies current status of order. *** SOME VALUES HAVE BEEN REPLACED - See \"Replaced Features and Supported Approach\" *** (see Volume : \"Glossary\" for value definitions)"
       },
       {
         "id": 77,
         "name": "exectype",
-        "type": "fixed[10]",
+        "type": "string",
         "required": false,
         "doc": "Describes the specific ExecutionRpt (e.g. Pending Cancel) while OrdStatus(39) will always identify the current order status (e.g. Partially Filled)."
       },
@@ -860,21 +860,21 @@
       {
         "id": 103,
         "name": "isincode",
-        "type": "fixed[12]",
+        "type": "string",
         "required": false,
         "doc": "The instrument's ISIN: the message's own, else SecurityID or a SecurityAltID whose source is ISIN."
       },
       {
         "id": 104,
         "name": "miccode",
-        "type": "fixed[4]",
+        "type": "string",
         "required": false,
         "doc": "The market the message names, as an ISO 10383 MIC: the message's own, else SecurityExchange, ExDestination or LastMkt."
       },
       {
         "id": 105,
         "name": "state",
-        "type": "fixed[10]",
+        "type": "string",
         "required": false,
         "doc": "The state the order is in: OrdStatus, else ExecType, read as one lifecycle vocabulary."
       },
@@ -902,7 +902,7 @@
       {
         "id": 109,
         "name": "msgdirection",
-        "type": "fixed[4]",
+        "type": "string",
         "required": false,
         "doc": "Specifies the direction of the message."
       },

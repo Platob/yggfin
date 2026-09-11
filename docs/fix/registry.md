@@ -47,7 +47,7 @@ codes = json.loads(side.fix["codes"])["codes"]
 assert side.name == "side"
 assert side.display == "Side"
 assert side.fix.id == "54:"
-assert str(side.dtype.into_arrow()) == "fixed_size_binary[4]"
+assert str(side.dtype.into_arrow()) == "string"
 assert codes[0]["value"] == "1"
 assert codes[0]["name"] == "Buy"
 ```

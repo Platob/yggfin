@@ -30,16 +30,16 @@ cancels retain both their own event identity and the execution they reference.
 | `orderid` | `string` | yes | venue order id at execution |
 | `symbolticker` | `string` | yes | normalized instrument |
 | `isincode` | `string` | yes | ISIN |
-| `miccode` | `fixed_size_binary[4]` | yes | execution venue MIC |
-| `side` | `fixed_size_binary[4]` | yes | economic side |
+| `miccode` | `string` | yes | execution venue MIC |
+| `side` | `string` | yes | economic side |
 | `lastqty` | `double` | no | quantity changed by this occurrence |
 | `lastpx` | `double` | no | occurrence price |
-| `currency` | `fixed_size_binary[3]` | yes | price currency |
+| `currency` | `string` | yes | price currency |
 | `cumqty` | `double` | yes | source cumulative quantity |
 | `leavesqty` | `double` | yes | source remaining quantity |
 | `avgpx` | `double` | yes | source average price |
-| `exectype` | `fixed_size_binary[10]` | no | fill/correct/cancel semantic |
-| `state` | `fixed_size_binary[10]` | yes | order state after event |
+| `exectype` | `string` | no | fill/correct/cancel semantic |
+| `state` | `string` | yes | order state after event |
 | `liquidity` | `string` | yes | added/removed/auction where stated |
 | `parties` | `list<struct>` | yes | executing/client/trader roles |
 | `regulatorytimestamps` | `list<struct>` | yes | copied regulatory clocks |

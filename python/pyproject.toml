@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "pyarrow>=17.0",
-    "yggdryl>=0.1.3",
+    "yggdryl>=0.2.0",
     # Windows ships no IANA time zone database, so `zoneinfo` -- and through
     # it every pyarrow conversion that names a zone, "UTC" included -- needs
     # the package there. Everywhere else the system database serves.

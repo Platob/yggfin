@@ -39,7 +39,7 @@ fields.
 | 10 | `body` | `binary` | no | — | exact raw body |
 | 11 | `beginstring` | `string` | no | 8 | wire or inferred FIX version marker |
 | 12 | `bodylength` | `int32` | yes | 9 | stated body byte length |
-| 13 | `msgtype` | `fixed_size_binary[8]` | yes | 35 | canonical message type |
+| 13 | `msgtype` | `string` | yes | 35 | canonical message type |
 | 14 | `sendercompid` | `string` | yes | 49 | sending firm |
 | 15 | `targetcompid` | `string` | yes | 56 | receiving firm |
 | 16 | `onbehalfofcompid` | `string` | yes | 115 | represented origin firm |
@@ -77,18 +77,18 @@ fields.
 | 48 | `securityidsource` | `string` | yes | 22 | identifier scheme |
 | 49 | `securitytype` | `string` | yes | 167 | instrument type |
 | 50 | `securitysubtype` | `string` | yes | 762 | instrument subtype |
-| 51 | `securityexchange` | `fixed_size_binary[4]` | yes | 207 | instrument market MIC |
+| 51 | `securityexchange` | `string` | yes | 207 | instrument market MIC |
 | 52 | `cficode` | `string` | yes | 461 | ISO 10962 classification |
 | 53 | `maturitydate` | `timestamp[us]` | yes | 541 | maturity date |
 | 54 | `product` | `int32` | yes | 460 | FIX product class |
-| 55 | `side` | `fixed_size_binary[4]` | yes | 54 | buy/sell side code |
+| 55 | `side` | `string` | yes | 54 | buy/sell side code |
 | 56 | `ordtype` | `string` | yes | 40 | order type code |
 | 57 | `price` | `double` | yes | 44 | order price |
 | 58 | `orderqty` | `double` | yes | 38 | ordered quantity |
 | 59 | `quantity` | `double` | yes | 53 | generic total quantity |
 | 60 | `qtytype` | `int32` | yes | 854 | quantity unit kind |
-| 61 | `currency` | `fixed_size_binary[3]` | yes | 15 | trading currency |
-| 62 | `settlcurrency` | `fixed_size_binary[3]` | yes | 120 | settlement currency |
+| 61 | `currency` | `string` | yes | 15 | trading currency |
+| 62 | `settlcurrency` | `string` | yes | 120 | settlement currency |
 | 63 | `bidpx` | `double` | yes | 132 | bid price |
 | 64 | `offerpx` | `double` | yes | 133 | offer price |
 | 65 | `bidsize` | `double` | yes | 134 | bid quantity |
@@ -102,8 +102,8 @@ fields.
 | 73 | `settldate` | `timestamp[us]` | yes | 64 | settlement date |
 | 74 | `tradedate` | `timestamp[us]` | yes | 75 | trading date |
 | 75 | `expiretime` | `timestamp[us, UTC]` | yes | 126 | order expiry |
-| 76 | `ordstatus` | `fixed_size_binary[10]` | yes | 39 | current order status |
-| 77 | `exectype` | `fixed_size_binary[10]` | yes | 150 | execution-report event type |
+| 76 | `ordstatus` | `string` | yes | 39 | current order status |
+| 77 | `exectype` | `string` | yes | 150 | execution-report event type |
 | 78 | `quotestatus` | `int32` | yes | 297 | quote status |
 | 79 | `quoteresponselevel` | `int32` | yes | 301 | requested quote response level |
 | 80 | `quoteentryrejectreason` | `int32` | yes | 368 | quote-entry rejection reason |
@@ -130,12 +130,12 @@ fields.
 | 101 | `senderpluginsession` | `string` | yes | 65011 | source plugin session |
 | 102 | `targetpluginsession` | `string` | yes | 65012 | destination plugin session |
 | 103 | `isincode` | `string` | yes | 65013 | resolved ISIN |
-| 104 | `miccode` | `fixed_size_binary[4]` | yes | 65014 | resolved ISO 10383 MIC |
-| 105 | `state` | `fixed_size_binary[10]` | yes | 65015 | normalized order lifecycle state |
+| 104 | `miccode` | `string` | yes | 65014 | resolved ISO 10383 MIC |
+| 105 | `state` | `string` | yes | 65015 | normalized order lifecycle state |
 | 106 | `instid` | `fixed_size_binary[16]` | yes | 65016 | instrument identity: xxh128 of market, classification, ISIN else symbol, currency |
 | 107 | `id` | `fixed_size_binary[16]` | yes | 65017 | message identity: the instant closest to market impact, then an xxh3 digest of what it said |
 | 108 | `persistentid` | `fixed_size_binary[16]` | yes | 65018 | order-chain identity, carried by every later message sharing one of its identifiers |
-| 109 | `msgdirection` | `fixed_size_binary[4]` | yes | 385 | sent/received direction |
+| 109 | `msgdirection` | `string` | yes | 385 | sent/received direction |
 | 110 | `nofixentries` | `list<FixEntry>` | yes | — | every parsed pair in arrival order |
 | 111 | `nounmappedfixentries` | `list<FixEntry>` | yes | — | arrival pairs no registry field explained |
 

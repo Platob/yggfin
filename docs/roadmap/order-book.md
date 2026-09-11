@@ -24,8 +24,8 @@ entry, addressed by source position and entry index.
 | `bookkey` | `fixed_size_binary[16]` | no | venue/session/instrument/book identity |
 | `symbolticker` | `string` | yes | normalized instrument |
 | `securityid` | `string` | yes | source instrument id |
-| `miccode` | `fixed_size_binary[4]` | yes | venue MIC |
-| `side` | `fixed_size_binary[4]` | no | bid or offer |
+| `miccode` | `string` | yes | venue MIC |
+| `side` | `string` | no | bid or offer |
 | `action` | `string` | no | snapshot/new/change/delete/clear |
 | `level` | `int32` | yes | source depth position |
 | `entryid` | `string` | yes | source quote/order identity |
@@ -57,7 +57,7 @@ from a valid reset plus contiguous updates.
 | `throughsequence` | `int64` | last applied sequence |
 | `throughupdatekey` | `fixed_size_binary[16]` | exact final mutation lineage |
 | `symbolticker` | `string` | normalized instrument |
-| `miccode` | `fixed_size_binary[4]` | venue |
+| `miccode` | `string` | venue |
 | `bids` | `list<struct<price,size,ordercount>>` | best-to-worst bid levels |
 | `offers` | `list<struct<price,size,ordercount>>` | best-to-worst offer levels |
 | `bestbid` / `bestoffer` | `double` | query accelerators derived from lists |
