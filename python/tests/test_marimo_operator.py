@@ -160,7 +160,8 @@ def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
     assert dag.params["branch"] == "ulbridge"
-    assert dag.params["dedup"] is False
+    assert dag.params["version"] is None
+    assert "dedup" not in dag.params
 
 
 # -- the command it builds ---------------------------------------------------

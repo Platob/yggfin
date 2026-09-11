@@ -112,11 +112,11 @@ counted by tag `N` in the column before it.
 | 81 | `cxlrejreason` | `int32` | yes | 102 | cancel/replace rejection reason |
 | 82 | `text` | `string` | yes | 58 | free-form protocol text |
 | 83 | `nopartyids` | `int32` | yes | 453 | party occurrence count |
-| 84 | `parties` | `list&lt;struct&gt;` | yes | counter 453 | party identifiers and roles, one occurrence per `nopartyids` |
+| 84 | `parties` | `list<struct>` | yes | counter 453 | party identifiers and roles, one occurrence per `nopartyids` |
 | 85 | `nosecurityaltid` | `int32` | yes | 454 | alternate-identifier occurrence count |
-| 86 | `secaltidgrp` | `list&lt;struct&gt;` | yes | counter 454 | alternate instrument identifiers, one occurrence per `nosecurityaltid` |
+| 86 | `secaltidgrp` | `list<struct>` | yes | counter 454 | alternate instrument identifiers, one occurrence per `nosecurityaltid` |
 | 87 | `notrdregtimestamps` | `int32` | yes | 768 | regulatory-timestamp occurrence count |
-| 88 | `trdregtimestamps` | `list&lt;struct&gt;` | yes | counter 768 | regulatory timestamps, one occurrence per `notrdregtimestamps` |
+| 88 | `trdregtimestamps` | `list<struct>` | yes | counter 768 | regulatory timestamps, one occurrence per `notrdregtimestamps` |
 | 89 | `signaturelength` | `int32` | yes | 93 | signature byte length |
 | 90 | `signature` | `binary` | yes | 89 | electronic signature bytes |
 | 91 | `checksum` | `string` | yes | 10 | wire checksum spelling |
@@ -141,8 +141,8 @@ counted by tag `N` in the column before it.
 | 110 | `persistentid` | `fixed_size_binary[16]` | yes | 65018 | order-chain identity, carried by every later message sharing one of its identifiers |
 | 111 | `targetsessionid` | `string` | yes | 65019 | session the message went to, as it states it |
 | 112 | `msgdirection` | `fixed_size_binary[4]` | yes | 385 | sent/received direction |
-| 113 | `nofixentries` | `list&lt;struct&gt;` | yes | — | every parsed pair in arrival order |
-| 114 | `nounmappedfixentries` | `list&lt;struct&gt;` | yes | — | arrival pairs no registry field explained |
+| 113 | `nofixentries` | `list<struct>` | yes | — | every parsed pair in arrival order |
+| 114 | `nounmappedfixentries` | `list<struct>` | yes | — | arrival pairs no registry field explained |
 
 ### Nested columns
 
