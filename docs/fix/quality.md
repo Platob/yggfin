@@ -22,26 +22,47 @@ changing either source digest.
 ## Anomalies
 
 ```python
-from rekep.fix import FixCodec, fix_registry
+from rekep.fix import fix_codec
 
-codec = FixCodec(fix_registry())
-message = codec.transform_line(b"8=FIX.4.4|9=999|35=D|55=AAPL|10=000|")
+message, = fix_codec().parse_line(b"8=FIX.4.4|35=D|453=3|448=BROKER|10=000|")
 
-for anomaly in message.anomalies():
-    print(anomaly)
+assert message.anomalies() == ["parties (453) states 3 occurrences and holds 1"]
+assert message.by_path("Parties[0].PartyID").as_py() == "BROKER"
 ```
 
 Anomalies are message-level checks such as stated lengths, checksums, and group
-counts. They do not erase the message or its arrivals.
+counts. They do not erase the message or its arrivals: the row above still
+carries the one party that arrived, and the record still carries both pairs.
 
 ## Registry coverage
 
 ```python
+import pyarrow
 import pyarrow.compute as pc
 
-# `fixed` is a pyarrow.Table read from fix.messages.
+from rekep.fix import fix_codec, fix_message_field
+
+# In a pipeline `fixed` is read from fix.messages; here it is one parsed line.
+codec = fix_codec()
+source = pyarrow.RecordBatchReader.from_batches(
+    pyarrow.schema([pyarrow.field("body", pyarrow.large_binary())]),
+    [
+        pyarrow.RecordBatch.from_pylist(
+            [{"body": b"MSGTYPE=executionreport|SYMBOL=HOLN|VENUEPRIVATEKEY=x|"}],
+            schema=pyarrow.schema([pyarrow.field("body", pyarrow.large_binary())]),
+        )
+    ],
+)
+fixed = codec.parse_text_arrow_reader(source).read_all()
+
 unmapped_rows = pc.greater(pc.list_value_length(fixed["nounmappedfixentries"]), 0)
 needs_dictionary_work = fixed.filter(unmapped_rows)
+
+assert needs_dictionary_work.num_rows == 1
+assert [entry["key"] for entry in needs_dictionary_work["nounmappedfixentries"][0].as_py()] == [
+    "VENUEPRIVATEKEY"
+]
+assert len(list(fix_message_field())) == 114
 ```
 
 Investigate the original keys in `nounmappedfixentries`, add definitions to an
@@ -50,7 +71,17 @@ publishing it as the next bundle.
 
 ## Replay guarantees
 
-With `dedup=false`, `(url, rownum)` keeps raw and fixed products aligned. A
-replay writes no duplicate and no empty snapshot. Turning deduplication on
-drops only adjacent equal `msghash` values and explicitly gives up positional
-row alignment; use it only for a product whose contract allows that.
+`(url, rownum)` keeps raw and fixed products joinable, and
+`(url, rownum, msghash)` is what identifies a fixed row: a bridge
+configuration line states one message per MBean, so the line's own identity is
+a key prefix rather than the whole key. A replay writes no duplicate and no
+empty snapshot. Nothing drops a row unasked — `parse_fix` has no deduplication
+switch, and a product that wants adjacent republications collapsed does it
+downstream, where giving up positional row alignment is a stated choice rather
+than a parser flag.
+
+`msghash` is a digest of the arrival record, so it changes when the parse
+changes. An upgrade that changes how a line is framed changes the digest, and
+with it the identity of an already-stored row: a replay after such an upgrade
+inserts rather than matches. Replay into a fresh table, or accept both
+generations, rather than expecting the merge to reconcile them.

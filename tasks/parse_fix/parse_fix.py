@@ -10,7 +10,7 @@ with app.setup:
     import marimo as mo
     import pyarrow
 
-    from rekep.fix import fix_registry, iceberg_fix_field, parse_arrow_reader
+    from rekep.fix import PAYLOAD_COLUMN, FixCodec, fix_registry, iceberg_fix_field
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
@@ -37,9 +37,8 @@ def parameters():
     registry = _defaults["registry"]
     branch = _defaults["branch"]
     version = _defaults["version"]
-    dedup = _defaults["dedup"]
     catalog = _defaults["catalog"]
-    return branch, catalog, dedup, registry, version
+    return branch, catalog, registry, version
 
 
 @app.cell
@@ -49,7 +48,7 @@ def _():
 
 
 @app.cell
-def _(branch, catalog, dedup, records, registry, version):
+def _(branch, catalog, records, registry, version):
     _ = records
     with ExitStack() as opened:
         stage = Stage(
@@ -59,11 +58,11 @@ def _(branch, catalog, dedup, records, registry, version):
         )
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
-        messages = store.dataset(SOURCE, field=Message.field())
+        messages = store.dataset(SOURCE, field=Message.into_field())
         opened.callback(messages.close)
-        source = messages.read_arrow_reader(Message.field())
+        source = messages.read_arrow_reader(Message.into_field())
         opened.callback(source.close)
-        counts = {"read": 0}
+        counts = {"read": 0, "parsed": 0}
 
         def _batches():
             for batch in source:
@@ -75,15 +74,13 @@ def _(branch, catalog, dedup, records, registry, version):
             _batches(),
         )
         opened.callback(counted.close)
-        dictionary = fix_registry(registry)
-        parsed = parse_arrow_reader(
-            counted,
-            dictionary,
-            "body",
+        codec = FixCodec(
+            fix_registry(registry),
             branch=branch,
             version=version,
-            dedup=dedup,
+            payload_column=PAYLOAD_COLUMN,
         )
+        parsed = codec.parse_text_arrow_reader(counted)
         opened.callback(parsed.close)
         field = iceberg_fix_field(parsed.schema)
         applied = field.apply_arrow_reader(
@@ -92,10 +89,28 @@ def _(branch, catalog, dedup, records, registry, version):
             nullability="strict",
         )
         opened.callback(applied.close)
+
+        def _messages():
+            for batch in applied:
+                counts["parsed"] += batch.num_rows
+                yield batch
+
+        # A bridge configuration line states several messages, so the rows the
+        # codec answers are counted separately from the lines that were read:
+        # `skipped` is what the merge already held, never a line-to-row gap.
+        measured = pyarrow.RecordBatchReader.from_batches(
+            applied.schema,
+            _messages(),
+        )
+        opened.callback(measured.close)
         fixes = store.dataset(TARGET, field=field, merge_schema=True)
         opened.callback(fixes.close)
-        written = fixes.append_arrow_reader(applied, field, merge_by=True)
-        _outcome = stage.finished(read=counts["read"], written=written)
+        written = fixes.append_arrow_reader(measured, field, merge_by=True)
+        _outcome = stage.finished(
+            read=counts["read"],
+            written=written,
+            skipped=counts["parsed"] - written,
+        )
     outcome = _outcome
     return (outcome,)
 

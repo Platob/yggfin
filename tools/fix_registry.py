@@ -10,16 +10,32 @@ with app.setup:
     import pyarrow
 
     from rekep import Field
-    from rekep.fix import FixRegistry, fix_registry, parse_arrow_reader
+    from rekep.fix import PAYLOAD_COLUMN, FixCodec, FixRegistry, fix_registry
 
     def open_registry(location):
         """Open one registry location; blank selects rekep's bundled registry."""
         return fix_registry(location)
 
+    def shown(dictionary):
+        """Every definition the browser lists, beside the shape it is listed as.
+
+        Iterating a registry walks its tagged scalars, and a repeating group is
+        a named definition rather than one of them, so the groups are asked for
+        by name or none would be listed.
+        """
+        scalars = [(field, "field") for field in dictionary]
+        return scalars + [(field, "group") for field in dictionary.definitions("groups")]
+
+    def resolve(dictionary, row):
+        """The definition one display row names, in its own category."""
+        if row["shape"] == "group":
+            return dictionary.definition("groups", row["_name"])
+        return dictionary.field_by_id(row["_id"])
+
     def into_registry_rows(dictionary):
         """Small display rows over the native registry iterator."""
         rows = []
-        for field in dictionary:
+        for field, shape in shown(dictionary):
             fix = field.fix
             lineage = json.loads(fix.get("lineage", '{"entries":[]}'))["entries"]
             aliases = fix.aliases
@@ -29,6 +45,7 @@ with app.setup:
             rows.append(
                 {
                     "_id": fix.id,
+                    "_name": field.name,
                     "_search": " ".join(
                         (
                             str(fix.tag or ""),
@@ -42,7 +59,7 @@ with app.setup:
                     "tag": fix.tag,
                     "name": name,
                     "branch": fix.branch or "standard",
-                    "shape": "group" if field.dtype.is_nested else "field",
+                    "shape": shape,
                     "Arrow kind": field.dtype.kind,
                     "FIX type": lineage[-1].get("type", "") if lineage else "",
                     "since": lineage[0].get("since", "") if lineage else "",
@@ -74,9 +91,15 @@ with app.setup:
         ]
 
     def into_fixmsg_schema(dictionary):
-        """The registry's full parser schema without reading a row."""
-        source = pyarrow.RecordBatchReader.from_batches(pyarrow.schema([]), [])
-        parsed = parse_arrow_reader(source, registry=dictionary)
+        """The registry's full parser schema without reading a row.
+
+        The codec answers a schema from the capture it is given, so the
+        carrier states the payload column and nothing else: what comes back
+        is the dictionary's own fixed columns.
+        """
+        carrier = pyarrow.schema([pyarrow.field(PAYLOAD_COLUMN, pyarrow.large_binary())])
+        source = pyarrow.RecordBatchReader.from_batches(carrier, [])
+        parsed = FixCodec(dictionary).parse_text_arrow_reader(source)
         try:
             return Field.from_arrow_schema(parsed.schema, name="FixMsg")
         finally:
@@ -261,7 +284,7 @@ def _(branch, query, registry_rows, shape):
 def _(dictionary, registry_table):
     _selected = registry_table.value
     mo.stop(not _selected, mo.callout("Select one definition to inspect it."))
-    _field = dictionary.field_by_id(_selected[0]["_id"])
+    _field = resolve(dictionary, _selected[0])
     _fix = _field.fix
     _overview = mo.ui.table(
         [

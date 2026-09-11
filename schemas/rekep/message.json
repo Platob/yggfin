@@ -60,10 +60,10 @@
       },
       {
         "id": 9,
-        "name": "plugin",
+        "name": "pluginid",
         "type": "string",
         "required": false,
-        "doc": "Bridge plugin that wrote the line."
+        "doc": "Bridge plugin that logged the line, and the dialect it is read under."
       },
       {
         "id": 10,

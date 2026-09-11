@@ -45,8 +45,8 @@ class Message(Convertible):
     seqNum: int | None = None
     """Bridge sequence number captured from a message-context header."""
 
-    plugin: str | None = None
-    """Bridge plugin that wrote the line."""
+    pluginid: str | None = None
+    """Bridge plugin that logged the line, and the dialect it is read under."""
 
     level: str | None = None
     """Severity spelling captured from the line header."""
@@ -87,7 +87,7 @@ class Message(Convertible):
         options.rowheader = MESSAGE_HEADER
         options.timezone = "UTC"
         options.safe = False
-        options.field = cls.field()
+        options.field = cls.into_field()
         return options
 
     @classmethod

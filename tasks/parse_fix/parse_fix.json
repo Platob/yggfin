@@ -5,7 +5,6 @@
     "registry": null,
     "branch": "ulbridge",
     "version": null,
-    "dedup": false,
     "catalog": {
       "name": "rekep",
       "properties": {

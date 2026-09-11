@@ -9,7 +9,7 @@ from rekep.times import MESSAGE_HEADER
 
 
 def test_message_declares_the_text_row_and_its_storage_columns() -> None:
-    field = Message.field()
+    field = Message.into_field()
 
     assert [member.name for member in field] == [
         "url",
@@ -20,7 +20,7 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
         "sessionUid",
         "msgCtxId",
         "seqNum",
-        "plugin",
+        "pluginid",
         "level",
         "bodyhash",
         "body",
@@ -40,14 +40,14 @@ def test_message_text_options_own_the_complete_native_read() -> None:
     assert options.rowheader == MESSAGE_HEADER
     assert str(options.timezone) == "UTC"
     assert options.safe is False
-    assert options.field == Message.field()
+    assert options.field == Message.into_field()
     assert options.capture_names == (
         "timestamp",
         "threadId",
         "sessionUid",
         "msgCtxId",
         "seqNum",
-        "plugin",
+        "pluginid",
         "level",
     )
 
@@ -66,9 +66,9 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
     finally:
         reader.close()
 
-    assert table.schema.equals(Message.field().into_arrow_schema(), check_metadata=True)
+    assert table.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
     assert table.select(
-        ("rownum", "timestamp", "threadId", "sessionUid", "msgCtxId", "seqNum", "plugin")
+        ("rownum", "timestamp", "threadId", "sessionUid", "msgCtxId", "seqNum", "pluginid")
     ).to_pylist() == [
         {
             "rownum": 1,
@@ -77,7 +77,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
             "sessionUid": "e7256476",
             "msgCtxId": "9effef3e6a",
             "seqNum": 72504,
-            "plugin": "ULBridge",
+            "pluginid": "ULBridge",
         },
         {
             "rownum": 2,
@@ -86,7 +86,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
             "sessionUid": None,
             "msgCtxId": None,
             "seqNum": None,
-            "plugin": "Spot_FX_TradeCapture",
+            "pluginid": "Spot_FX_TradeCapture",
         },
     ]
     assert table.column("timepartition").equals(table.column("timestamp"))

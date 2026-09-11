@@ -67,7 +67,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
     schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
 
     assert Field.__name__ == "Field"
-    assert [member.name for member in Message.field()] == [
+    assert [member.name for member in Message.into_field()] == [
         "url",
         "rownum",
         "timestamp",
@@ -76,7 +76,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "sessionUid",
         "msgCtxId",
         "seqNum",
-        "plugin",
+        "pluginid",
         "level",
         "bodyhash",
         "body",
@@ -112,7 +112,7 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
     task = (DOCS / "pipeline" / "tasks" / "parse-fix.md").read_text(encoding="utf-8")
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
-    assert "parse_arrow_reader" in task
+    assert "parse_text_arrow_reader" in task
     assert "iceberg_fix_field" in task
     assert "not alternate implementations" in schemas
     assert "`fix-message.json`" in schemas

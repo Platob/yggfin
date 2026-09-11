@@ -44,7 +44,7 @@ def quotes(count: int) -> pyarrow.Table:
             "symbol": [f"S{index}" for index in range(count)],
             "day": [datetime.date(2026, 8, 14)] * count,
         },
-        schema=Quote.field().into_arrow_schema(),
+        schema=Quote.into_field().into_arrow_schema(),
     )
 
 
@@ -111,7 +111,7 @@ def test_a_write_is_one_record_however_many_chunks_it_commits(
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
-        field=Quote.field(),
+        field=Quote.into_field(),
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
         commit_row_size=2,
@@ -131,7 +131,7 @@ def test_the_detail_under_it_is_debug(tmp_path: Path, caplog: pytest.LogCaptureF
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
-        field=Quote.field(),
+        field=Quote.into_field(),
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
     )
@@ -155,7 +155,7 @@ def test_maintenance_records_what_it_returned(
     dataset = IcebergDataset(
         name="quotes",
         namespace="trading",
-        field=Quote.field(),
+        field=Quote.into_field(),
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
     )

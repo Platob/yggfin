@@ -24,7 +24,7 @@ from rekep.times import datetime_of  # noqa: E402
 
 # Yggdryl's default when TextOptions leaves the bound unset.
 BATCH_ROW_SIZE = 65_536
-FIELD = Message.field()
+FIELD = Message.into_field()
 SCHEMA = FIELD.into_arrow_schema()
 
 
@@ -132,7 +132,7 @@ def expected(index: int) -> dict[str, object]:
         "sessionUid": f"{index % 2**32:08x}",
         "msgCtxId": f"{index % 2**40:010x}",
         "seqNum": index,
-        "plugin": f"feed-{index % 4}",
+        "pluginid": f"feed-{index % 4}",
         "level": "WARN" if index % 7 == 0 else "INFO",
         "body": body(index),
     }

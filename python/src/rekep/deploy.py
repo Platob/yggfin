@@ -45,7 +45,7 @@ class Deployed:
 
 #: The tables the supported ingestion graph writes, in production order.
 TABLES: tuple[Deployed, ...] = (
-    Deployed("logs.messages", Message.field),
+    Deployed("logs.messages", Message.into_field),
     Deployed("fix.messages", fix_message_field),
 )
 

@@ -20,7 +20,7 @@ uv run python benchmarks/bench_message.py
 | URI local gzip | 98,351 | 89,443 | 12.5 | 689 |
 
 *native* drains header-framed text batches without an output field. *`Message`*
-installs `Message.field()` on that same native reader, adding conversion to
+installs `Message.into_field()` on that same native reader, adding conversion to
 `timestamp[us, UTC]`, derivation of `timepartition`, the `bodyhash` digest, and
 strict final verification. The contract path measured 9–10% below framing
 alone on this run; there is no Python row pass between them.

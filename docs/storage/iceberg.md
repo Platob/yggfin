@@ -15,7 +15,7 @@ catalog = IcebergCatalog(
         "warehouse": "warehouse",
     },
 )
-messages = catalog.dataset("logs.messages", field=Message.field())
+messages = catalog.dataset("logs.messages", field=Message.into_field())
 ```
 
 ## Stream writes
@@ -23,7 +23,7 @@ messages = catalog.dataset("logs.messages", field=Message.field())
 ```python
 written = messages.append_arrow_reader(
     reader,
-    Message.field(),
+    Message.into_field(),
     merge_by=True,
 )
 ```
@@ -131,7 +131,7 @@ never in committed task documents.
 
 The current raw contract uses `url`, `rownum`, the ULBridge header fields,
 `bodyhash`, and a derived `timepartition` with an Iceberg `hour` transform.
-Recreate an older messages table from `Message.field()` and reingest its source
+Recreate an older messages table from `Message.into_field()` and reingest its source
 captures; rekep carries no legacy name, timestamp-type, digest-name, or
 partition-layout compatibility path.
 

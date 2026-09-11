@@ -46,574 +46,614 @@
       },
       {
         "id": 7,
-        "name": "plugin",
-        "type": "string",
-        "required": false,
-        "doc": "Bridge plugin that wrote the line."
-      },
-      {
-        "id": 8,
         "name": "level",
         "type": "string",
         "required": false,
         "doc": "Severity spelling captured from the line header."
       },
       {
-        "id": 9,
+        "id": 8,
         "name": "bodyhash",
         "type": "fixed[16]",
         "required": false,
         "doc": "XXH3-128 digest of the exact body bytes, filled during field apply."
       },
       {
-        "id": 10,
+        "id": 9,
         "name": "body",
         "type": "binary",
         "required": true,
         "doc": "Exact bytes after the matched line-header prefix."
       },
       {
-        "id": 11,
+        "id": 10,
         "name": "beginstring",
         "type": "string",
         "required": true,
         "doc": "Identifies beginning of new message and session protocol version by means of a session profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)."
       },
       {
-        "id": 12,
+        "id": 11,
         "name": "bodylength",
         "type": "int",
         "required": false,
         "doc": "Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)"
       },
       {
-        "id": 13,
+        "id": 12,
         "name": "msgtype",
-        "type": "fixed[8]",
+        "type": "string",
         "required": false,
         "doc": "Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)"
       },
       {
-        "id": 14,
+        "id": 13,
         "name": "sendercompid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify firm sending message."
       },
       {
-        "id": 15,
+        "id": 14,
         "name": "targetcompid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify receiving firm."
       },
       {
-        "id": 16,
+        "id": 15,
         "name": "onbehalfofcompid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID field and the firm originating the message in this field."
       },
       {
-        "id": 17,
+        "id": 16,
         "name": "delivertocompid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID (56) field and the ultimate receiver firm ID in this field."
       },
       {
-        "id": 18,
+        "id": 17,
         "name": "securedatalen",
         "type": "int",
         "required": false,
         "doc": "Length of encrypted message"
       },
       {
-        "id": 19,
+        "id": 18,
         "name": "securedata",
         "type": "binary",
         "required": false,
         "doc": "Actual encrypted data stream"
       },
       {
-        "id": 20,
+        "id": 19,
         "name": "msgseqnum",
         "type": "long",
         "required": false,
         "doc": "Integer message sequence number."
       },
       {
-        "id": 21,
+        "id": 20,
         "name": "sendersubid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message originator (desk, trader, etc.)"
       },
       {
-        "id": 22,
+        "id": 21,
         "name": "senderlocationid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader)"
       },
       {
-        "id": 23,
+        "id": 22,
         "name": "targetsubid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific individual or unit intended to receive message. \"ADMIN\" reserved for administrative messages not intended for a specific user."
       },
       {
-        "id": 24,
+        "id": 23,
         "name": "targetlocationid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message destination's location (i.e. geographic location and/or desk, trader)"
       },
       {
-        "id": 25,
+        "id": 24,
         "name": "onbehalfofsubid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
       },
       {
-        "id": 26,
+        "id": 25,
         "name": "onbehalfoflocationid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party"
       },
       {
-        "id": 27,
+        "id": 26,
         "name": "delivertosubid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message recipient (i.e. trader) if the message is delivered by a third party"
       },
       {
-        "id": 28,
+        "id": 27,
         "name": "delivertolocationid",
         "type": "string",
         "required": false,
         "doc": "Assigned value used to identify specific message recipient's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party"
       },
       {
-        "id": 29,
+        "id": 28,
         "name": "possdupflag",
         "type": "boolean",
         "required": false,
         "doc": "Indicates possible retransmission of message with this sequence number"
       },
       {
-        "id": 30,
+        "id": 29,
         "name": "possresend",
         "type": "boolean",
         "required": false,
         "doc": "Indicates that message may contain information that has been sent under another sequence number."
       },
       {
-        "id": 31,
+        "id": 30,
         "name": "sendingtime",
         "type": "timestamptz",
         "required": false,
         "doc": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
       },
       {
-        "id": 32,
+        "id": 31,
         "name": "origsendingtime",
         "type": "timestamptz",
         "required": false,
         "doc": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request."
       },
       {
-        "id": 33,
+        "id": 32,
         "name": "xmldatalen",
         "type": "int",
         "required": false,
         "doc": "Length of the XmlData data block."
       },
       {
-        "id": 34,
+        "id": 33,
         "name": "xmldata",
         "type": "binary",
         "required": false,
         "doc": "Actual XML data stream (e.g. FIXML). See appropriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
       },
       {
-        "id": 35,
+        "id": 34,
         "name": "account",
         "type": "string",
         "required": false,
         "doc": "Account mnemonic as agreed between buy and sell sides, e.g. broker and institution or investor/intermediary and fund manager."
       },
       {
-        "id": 36,
+        "id": 35,
         "name": "clordid",
         "type": "string",
         "required": false,
         "doc": "Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field."
       },
       {
-        "id": 37,
+        "id": 36,
         "name": "origclordid",
         "type": "string",
         "required": false,
         "doc": "ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests."
       },
       {
-        "id": 38,
+        "id": 37,
         "name": "secondaryclordid",
         "type": "string",
         "required": false,
         "doc": "Assigned by the party which originates the order. Can be used to provide the ClOrdID (11) used by an exchange or executing system."
       },
       {
-        "id": 39,
+        "id": 38,
         "name": "orderid",
         "type": "string",
         "required": false,
         "doc": "Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days."
       },
       {
-        "id": 40,
+        "id": 39,
         "name": "secondaryorderid",
         "type": "string",
         "required": false,
         "doc": "Assigned by the party which accepts the order. Can be used to provide the OrderID (37) used by an exchange or executing system."
       },
       {
-        "id": 41,
+        "id": 40,
         "name": "execid",
         "type": "string",
         "required": false,
         "doc": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status))."
       },
       {
-        "id": 42,
+        "id": 41,
         "name": "tradeid",
         "type": "string",
         "required": false,
         "doc": "The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty."
       },
       {
-        "id": 43,
+        "id": 42,
         "name": "quotereqid",
         "type": "string",
         "required": false,
         "doc": "Unique identifier for a QuoteRequest(35=R)."
       },
       {
-        "id": 44,
+        "id": 43,
         "name": "quoteid",
         "type": "string",
         "required": false,
         "doc": "Unique identifier for quote"
       },
       {
-        "id": 45,
+        "id": 44,
         "name": "quoterespid",
         "type": "string",
         "required": false,
         "doc": "Message reference for Quote Response"
       },
       {
-        "id": 46,
+        "id": 45,
         "name": "symbol",
         "type": "string",
         "required": false,
         "doc": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles)"
       },
       {
-        "id": 47,
+        "id": 46,
         "name": "securityid",
         "type": "string",
         "required": false,
         "doc": "Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
       },
       {
-        "id": 48,
+        "id": 47,
         "name": "securityidsource",
         "type": "string",
         "required": false,
         "doc": "Identifies class or source of the SecurityID(48) value."
       },
       {
-        "id": 49,
+        "id": 48,
         "name": "securitytype",
         "type": "string",
         "required": false,
         "doc": "Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties."
       },
       {
-        "id": 50,
+        "id": 49,
         "name": "securitysubtype",
         "type": "string",
         "required": false,
         "doc": "Sub-type qualification/identification of the SecurityType. As an example for SecurityType(167)=\"REPO\", the SecuritySubType=\"General Collateral\" can be used to further specify the type of REPO."
       },
       {
-        "id": 51,
+        "id": 50,
         "name": "securityexchange",
         "type": "fixed[4]",
         "required": false,
         "doc": "Market used to help identify a security."
       },
       {
-        "id": 52,
+        "id": 51,
         "name": "cficode",
         "type": "string",
         "required": false,
         "doc": "Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See \"Appendix 6-B FIX Fields Based Upon Other Standards\". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments."
       },
       {
-        "id": 53,
+        "id": 52,
         "name": "maturitydate",
         "type": "timestamp",
         "required": false,
         "doc": "Date of maturity."
       },
       {
-        "id": 54,
+        "id": 53,
         "name": "product",
         "type": "int",
         "required": false,
         "doc": "Indicates the type of product the security is associated with. See also the CFICode (461) and SecurityType (167) fields."
       },
       {
-        "id": 55,
+        "id": 54,
         "name": "side",
         "type": "fixed[4]",
         "required": false,
         "doc": "Side of order (see Volume : \"Glossary\" for value definitions)"
       },
       {
-        "id": 56,
+        "id": 55,
         "name": "ordtype",
         "type": "string",
         "required": false,
         "doc": "Order type."
       },
       {
-        "id": 57,
+        "id": 56,
         "name": "price",
         "type": "double",
         "required": false,
         "doc": "Price per unit of quantity (e.g. per share)"
       },
       {
-        "id": 58,
+        "id": 57,
         "name": "orderqty",
         "type": "double",
         "required": false,
         "doc": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments."
       },
       {
-        "id": 59,
+        "id": 58,
         "name": "quantity",
         "type": "double",
         "required": false,
         "doc": "Overall/total quantity (e.g. number of shares)"
       },
       {
-        "id": 60,
+        "id": 59,
         "name": "qtytype",
         "type": "int",
         "required": false,
         "doc": "Type of quantity specified in quantity field. ContractMultiplier (tag 231) is required when QtyType = 1 (Contracts). UnitOfMeasure (tag 996) and TimeUnit (tag 997) are required when QtyType = 2 (Units of Measure per Time Unit)."
       },
       {
-        "id": 61,
+        "id": 60,
         "name": "currency",
         "type": "fixed[3]",
         "required": false,
         "doc": "Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent."
       },
       {
-        "id": 62,
+        "id": 61,
         "name": "settlcurrency",
         "type": "fixed[3]",
         "required": false,
         "doc": "Currency code of settlement denomination."
       },
       {
-        "id": 63,
+        "id": 62,
         "name": "bidpx",
         "type": "double",
         "required": false,
         "doc": "Bid price/rate"
       },
       {
-        "id": 64,
+        "id": 63,
         "name": "offerpx",
         "type": "double",
         "required": false,
         "doc": "Offer price/rate"
       },
       {
-        "id": 65,
+        "id": 64,
         "name": "bidsize",
         "type": "double",
         "required": false,
         "doc": "Quantity of bid"
       },
       {
-        "id": 66,
+        "id": 65,
         "name": "offersize",
         "type": "double",
         "required": false,
         "doc": "Quantity of offer"
       },
       {
-        "id": 67,
+        "id": 66,
         "name": "lastpx",
         "type": "double",
         "required": false,
         "doc": "Price of this (last) fill."
       },
       {
-        "id": 68,
+        "id": 67,
         "name": "lastqty",
         "type": "double",
         "required": false,
         "doc": "Quantity (e.g. shares) bought/sold on this (last) fill."
       },
       {
-        "id": 69,
+        "id": 68,
         "name": "avgpx",
         "type": "double",
         "required": false,
         "doc": "Calculated average price of all fills on this order."
       },
       {
-        "id": 70,
+        "id": 69,
         "name": "cumqty",
         "type": "double",
         "required": false,
         "doc": "Total quantity (e.g. number of shares) filled."
       },
       {
-        "id": 71,
+        "id": 70,
         "name": "leavesqty",
         "type": "double",
         "required": false,
         "doc": "Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14)."
       },
       {
-        "id": 72,
+        "id": 71,
         "name": "transacttime",
         "type": "timestamptz",
         "required": false,
         "doc": "Timestamp when the business transaction represented by the message occurred."
       },
       {
-        "id": 73,
+        "id": 72,
         "name": "settldate",
         "type": "timestamp",
         "required": false,
         "doc": "Specific date of trade settlement (SettlementDate) in YYYYMMDD format."
       },
       {
-        "id": 74,
+        "id": 73,
         "name": "tradedate",
         "type": "timestamp",
         "required": false,
         "doc": "Indicates date of trading day. Absence of this field indicates current day (expressed in local time at place of trade)."
       },
       {
-        "id": 75,
+        "id": 74,
         "name": "expiretime",
         "type": "timestamptz",
         "required": false,
         "doc": "Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
       },
       {
-        "id": 76,
+        "id": 75,
         "name": "ordstatus",
         "type": "fixed[10]",
         "required": false,
         "doc": "Identifies current status of order. *** SOME VALUES HAVE BEEN REPLACED - See \"Replaced Features and Supported Approach\" *** (see Volume : \"Glossary\" for value definitions)"
       },
       {
-        "id": 77,
+        "id": 76,
         "name": "exectype",
         "type": "fixed[10]",
         "required": false,
         "doc": "Describes the specific ExecutionRpt (e.g. Pending Cancel) while OrdStatus(39) will always identify the current order status (e.g. Partially Filled)."
       },
       {
-        "id": 78,
+        "id": 77,
         "name": "quotestatus",
         "type": "int",
         "required": false,
         "doc": "Identifies the status of the quote acknowledgement."
       },
       {
-        "id": 79,
+        "id": 78,
         "name": "quoteresponselevel",
         "type": "int",
         "required": false,
         "doc": "Level of Response requested from receiver of quote messages. A default value should be bilaterally agreed."
       },
       {
-        "id": 80,
+        "id": 79,
         "name": "quoteentryrejectreason",
         "type": "int",
         "required": false,
         "doc": "Reason Quote Entry was rejected:"
       },
       {
-        "id": 81,
+        "id": 80,
         "name": "ordrejreason",
         "type": "int",
         "required": false,
         "doc": "Code to identify reason for order rejection. Note: Values 3, 4, and 5 will be used when rejecting an order due to pre-allocation information errors."
       },
       {
-        "id": 82,
+        "id": 81,
         "name": "cxlrejreason",
         "type": "int",
         "required": false,
         "doc": "Code to identify reason for rejection of cancellation or modification."
       },
       {
-        "id": 83,
+        "id": 82,
         "name": "text",
         "type": "string",
         "required": false,
         "doc": "Free format text string"
       },
       {
-        "id": 84,
+        "id": 83,
         "name": "nopartyids",
+        "type": "int",
+        "required": false,
+        "doc": "Number of PartyID (448), PartyIDSource (447), and PartyRole (452) entries"
+      },
+      {
+        "id": 84,
+        "name": "parties",
         "type": {
           "type": "list",
-          "element-id": 112,
+          "element-id": 115,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 113,
+                "id": 116,
                 "name": "partyid",
                 "type": "string",
-                "required": false
+                "required": false,
+                "doc": "Party identifier/code. See PartyIDSource (447) and PartyRole (452)."
               },
               {
-                "id": 114,
+                "id": 117,
                 "name": "partyidsource",
                 "type": "string",
-                "required": false
+                "required": false,
+                "doc": "Identifies class or source of the PartyID (448) value. Required if PartyID is specified. Note: applicable values depend upon PartyRole (452) specified."
               },
               {
-                "id": 115,
+                "id": 118,
                 "name": "partyrole",
                 "type": "int",
-                "required": false
+                "required": false,
+                "doc": "Identifies the type or role of the PartyID (448) specified."
               },
               {
-                "id": 116,
+                "id": 119,
                 "name": "partyrolequalifier",
                 "type": "int",
+                "required": false,
+                "doc": "Used to further qualify the value of PartyRole(452)."
+              },
+              {
+                "id": 120,
+                "name": "nopartysubids",
+                "type": "int",
+                "required": false,
+                "doc": "Number of PartySubID (523)and PartySubIDType (803) entries"
+              },
+              {
+                "id": 121,
+                "name": "ptyssubgrp",
+                "type": {
+                  "type": "list",
+                  "element-id": 122,
+                  "element": {
+                    "type": "struct",
+                    "fields": [
+                      {
+                        "id": 123,
+                        "name": "partysubid",
+                        "type": "string",
+                        "required": false,
+                        "doc": "Sub-identifier (e.g. Clearing Account for PartyRole (452)=Clearing Firm, Locate ID # for PartyRole=Locate/Lending Firm, etc). Not required when using PartyID (448), PartyIDSource (447), and PartyRole."
+                      },
+                      {
+                        "id": 124,
+                        "name": "partysubidtype",
+                        "type": "int",
+                        "required": false,
+                        "doc": "Type of PartySubID(523) value."
+                      }
+                    ]
+                  },
+                  "element-required": true
+                },
                 "required": false
               }
             ]
@@ -621,392 +661,409 @@
           "element-required": true
         },
         "required": false,
-        "doc": "Number of PartyID (448), PartyIDSource (447), and PartyRole (452) entries"
+        "doc": "Repeating group below should contain unique combinations of PartyID, PartyIDSource, and PartyRole"
       },
       {
         "id": 85,
         "name": "nosecurityaltid",
-        "type": {
-          "type": "list",
-          "element-id": 117,
-          "element": {
-            "type": "struct",
-            "fields": [
-              {
-                "id": 118,
-                "name": "securityaltid",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 119,
-                "name": "securityaltidsource",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 120,
-                "name": "symbolpositionnumber",
-                "type": "int",
-                "required": false
-              }
-            ]
-          },
-          "element-required": true
-        },
+        "type": "int",
         "required": false,
         "doc": "Number of SecurityAltID (455) entries."
       },
       {
         "id": 86,
-        "name": "notrdregtimestamps",
+        "name": "secaltidgrp",
         "type": {
           "type": "list",
-          "element-id": 121,
+          "element-id": 125,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 122,
-                "name": "trdregtimestamp",
-                "type": "timestamptz",
-                "required": false
-              },
-              {
-                "id": 123,
-                "name": "trdregtimestamptype",
-                "type": "int",
-                "required": false
-              },
-              {
-                "id": 124,
-                "name": "trdregtimestamporigin",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 125,
-                "name": "trdregtimestampmanualindicator",
-                "type": "boolean",
-                "required": false
-              },
-              {
                 "id": 126,
-                "name": "desktype",
+                "name": "securityaltid",
                 "type": "string",
-                "required": false
+                "required": false,
+                "doc": "Alternate Security identifier value for this security of SecurityAltIDSource (456) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityAltIDSource."
               },
               {
                 "id": 127,
-                "name": "desktypesource",
-                "type": "int",
-                "required": false
+                "name": "securityaltidsource",
+                "type": "string",
+                "required": false,
+                "doc": "Identifies class or source of the SecurityAltID(455) value."
               },
               {
                 "id": 128,
-                "name": "deskorderhandlinginst",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 129,
-                "name": "informationbarrierid",
-                "type": "string",
-                "required": false
-              },
+                "name": "symbolpositionnumber",
+                "type": "int",
+                "required": false,
+                "doc": "Reference to the first or second currency or digital asset in Symbol(55) for FX-style trading."
+              }
+            ]
+          },
+          "element-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 87,
+        "name": "notrdregtimestamps",
+        "type": "int",
+        "required": false,
+        "doc": "Number of timestamp entries."
+      },
+      {
+        "id": 88,
+        "name": "trdregtimestamps",
+        "type": {
+          "type": "list",
+          "element-id": 129,
+          "element": {
+            "type": "struct",
+            "fields": [
               {
                 "id": 130,
-                "name": "nbboentrytype",
-                "type": "int",
-                "required": false
+                "name": "trdregtimestamp",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "Traded / Regulatory timestamp value."
               },
               {
                 "id": 131,
-                "name": "nbboprice",
-                "type": "double",
-                "required": false
+                "name": "trdregtimestamptype",
+                "type": "int",
+                "required": false,
+                "doc": "Trading / Regulatory timestamp type."
               },
               {
                 "id": 132,
-                "name": "nbboqty",
-                "type": "double",
-                "required": false
+                "name": "trdregtimestamporigin",
+                "type": "string",
+                "required": false,
+                "doc": "Text which identifies the \"origin\" (i.e. system which was used to generate the timestamp) for the Traded / Regulatory timestamp value."
               },
               {
                 "id": 133,
+                "name": "trdregtimestampmanualindicator",
+                "type": "boolean",
+                "required": false,
+                "doc": "Indicates whether a given timestamp was manually captured."
+              },
+              {
+                "id": 134,
+                "name": "desktype",
+                "type": "string",
+                "required": false,
+                "doc": "Identifies the type of Trading Desk."
+              },
+              {
+                "id": 135,
+                "name": "desktypesource",
+                "type": "int",
+                "required": false,
+                "doc": "Identifies the class or source of DeskType(1033) values. Conditionally required when DeskType(1033) is specified."
+              },
+              {
+                "id": 136,
+                "name": "deskorderhandlinginst",
+                "type": "string",
+                "required": false,
+                "doc": "Codes that apply special information that the broker-dealer needs to report."
+              },
+              {
+                "id": 137,
+                "name": "informationbarrierid",
+                "type": "string",
+                "required": false,
+                "doc": "The identifier of the information barrier in place for a trading unit that will meet the criteria of the \"no-knowledge\" exception in FINRA Rule 5320.02."
+              },
+              {
+                "id": 138,
+                "name": "nbboentrytype",
+                "type": "int",
+                "required": false,
+                "doc": "Type of NBBO information."
+              },
+              {
+                "id": 139,
+                "name": "nbboprice",
+                "type": "double",
+                "required": false,
+                "doc": "Price related to NBBO. NBBOEntryType(2831) may be used to indicate entry type, e.g. bid or offer."
+              },
+              {
+                "id": 140,
+                "name": "nbboqty",
+                "type": "double",
+                "required": false,
+                "doc": "Quantity related to NBBO. NBBOEntryType(2831) may be used to indicte entry type, e.g. bid or offer."
+              },
+              {
+                "id": 141,
                 "name": "nbbosource",
                 "type": "int",
-                "required": false
+                "required": false,
+                "doc": "Source of NBBO information."
               }
             ]
           },
           "element-required": true
         },
         "required": false,
-        "doc": "Number of timestamp entries."
+        "doc": "Required if NoTrdRegTimestamps(768) > 0."
       },
       {
-        "id": 87,
+        "id": 89,
         "name": "signaturelength",
         "type": "int",
         "required": false,
         "doc": "Number of bytes in signature field"
       },
       {
-        "id": 88,
+        "id": 90,
         "name": "signature",
         "type": "binary",
         "required": false,
         "doc": "Electronic signature"
       },
       {
-        "id": 89,
+        "id": 91,
         "name": "checksum",
         "type": "string",
         "required": false,
         "doc": "Three byte, simple checksum (see Volume 2: \"Checksum Calculation\" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted)"
       },
       {
-        "id": 90,
+        "id": 92,
         "name": "msghash",
         "type": "fixed[16]",
         "required": true,
         "doc": "The xxh128 digest of what the message said, over the arrival record with the envelope tags left out."
       },
       {
-        "id": 91,
+        "id": 93,
         "name": "version",
         "type": "string",
         "required": false,
         "doc": "The FIX version the message was read at, which is not always the one its BeginString claims."
       },
       {
-        "id": 92,
+        "id": 94,
         "name": "symbolticker",
         "type": "string",
         "required": false,
         "doc": "One instrument symbol that is the same across venues, qualified by its scheme and its exchange where the message states them."
       },
       {
-        "id": 93,
+        "id": 95,
         "name": "timestamp",
         "type": "timestamptz",
         "required": true,
         "doc": "The timestamp a capture is ordered by: the row's own clock, else the first clock the message answers in decreasing exactness."
       },
       {
-        "id": 94,
+        "id": 96,
         "name": "unixpartition",
         "type": "long",
         "required": true,
         "doc": "The partition the market timestamp falls in, as whole seconds since the epoch floored to the partition width."
       },
       {
-        "id": 95,
+        "id": 97,
         "name": "parentclordid",
         "type": "string",
         "required": false,
         "doc": "The client order identifier this order descends from, which no standard tag names."
       },
       {
-        "id": 96,
+        "id": 98,
         "name": "parentorderid",
         "type": "string",
         "required": false,
         "doc": "The venue order identifier this order descends from, which no standard tag names."
       },
       {
-        "id": 97,
-        "name": "sessionid",
+        "id": 99,
+        "name": "sendersessionid",
         "type": "string",
         "required": false,
-        "doc": "The session a message belongs to, as the message states it."
+        "doc": "The session a message came from: the message's own statement, else the session instance its bridge handled the line on."
       },
       {
-        "id": 98,
+        "id": 100,
         "name": "msgctxid",
         "type": "string",
         "required": false,
         "doc": "The message context a bridge handled the message in, as its own log names it."
       },
       {
-        "id": 99,
-        "name": "senderpluginid",
-        "type": "string",
-        "required": false,
-        "doc": "The plugin a message came from inside a bridge, as the bridge names it."
-      },
-      {
-        "id": 100,
-        "name": "targetpluginid",
-        "type": "string",
-        "required": false,
-        "doc": "The plugin a message went to inside a bridge, as the bridge names it."
-      },
-      {
         "id": 101,
-        "name": "senderpluginsession",
+        "name": "pluginid",
         "type": "string",
         "required": false,
-        "doc": "The plugin session a message came from: the bridge row's own statement, else the plugin that logged the line it sent."
+        "doc": "The plugin that logged the line inside a bridge, as the bridge names it: the row's own pluginid column, never derived."
       },
       {
         "id": 102,
-        "name": "targetpluginsession",
+        "name": "prevpluginid",
         "type": "string",
         "required": false,
-        "doc": "The plugin session a message went to: the bridge row's own statement, else the plugin that logged the line it received."
+        "doc": "The plugin the message came through before the one that logged it, as the bridge names it: the row's own prevpluginid column, never derived."
       },
       {
         "id": 103,
+        "name": "sendersessionname",
+        "type": "string",
+        "required": false,
+        "doc": "The name of the session a message came from, as the bridge row states it."
+      },
+      {
+        "id": 104,
+        "name": "targetsessionname",
+        "type": "string",
+        "required": false,
+        "doc": "The name of the session a message went to, as the bridge row states it."
+      },
+      {
+        "id": 105,
         "name": "isincode",
         "type": "fixed[12]",
         "required": false,
         "doc": "The instrument's ISIN: the message's own, else SecurityID or a SecurityAltID whose source is ISIN."
       },
       {
-        "id": 104,
+        "id": 106,
         "name": "miccode",
         "type": "fixed[4]",
         "required": false,
         "doc": "The market the message names, as an ISO 10383 MIC: the message's own, else SecurityExchange, ExDestination or LastMkt."
       },
       {
-        "id": 105,
+        "id": 107,
         "name": "state",
         "type": "fixed[10]",
         "required": false,
         "doc": "The state the order is in: OrdStatus, else ExecType, read as one lifecycle vocabulary."
       },
       {
-        "id": 106,
+        "id": 108,
         "name": "instid",
         "type": "fixed[16]",
         "required": false,
         "doc": "The instrument's own identity: the xxh128 digest of its market, its classification, its ISIN - else its symbol - and its currency."
       },
       {
-        "id": 107,
+        "id": 109,
         "name": "id",
         "type": "fixed[16]",
         "required": false,
         "doc": "The message's own identity: the instant closest to the market impact in microseconds, then the xxh3 digest of what it said."
       },
       {
-        "id": 108,
+        "id": 110,
         "name": "persistentid",
         "type": "fixed[16]",
         "required": false,
         "doc": "The order chain's identity: the instant it was created, then the xxh3 digest of its instrument and first identifier, carried by every later message sharing one of its identifiers."
       },
       {
-        "id": 109,
+        "id": 111,
+        "name": "targetsessionid",
+        "type": "string",
+        "required": false,
+        "doc": "The session a message went to, as the message states it."
+      },
+      {
+        "id": 112,
         "name": "msgdirection",
         "type": "fixed[4]",
         "required": false,
         "doc": "Specifies the direction of the message."
       },
       {
-        "id": 110,
+        "id": 113,
         "name": "nofixentries",
         "type": {
           "type": "list",
-          "element-id": 134,
+          "element-id": 142,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 135,
+                "id": 143,
                 "name": "tag",
                 "type": "int",
                 "required": false
               },
               {
-                "id": 136,
-                "name": "branch",
-                "type": "int",
-                "required": true
-              },
-              {
-                "id": 137,
+                "id": 144,
                 "name": "key",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 138,
+                "id": 145,
                 "name": "value",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 139,
+                "id": 146,
                 "name": "nofixentries",
                 "type": {
                   "type": "list",
-                  "element-id": 140,
+                  "element-id": 147,
                   "element": {
                     "type": "struct",
                     "fields": [
                       {
-                        "id": 141,
+                        "id": 148,
                         "name": "tag",
                         "type": "int",
                         "required": false
                       },
                       {
-                        "id": 142,
-                        "name": "branch",
-                        "type": "int",
-                        "required": true
-                      },
-                      {
-                        "id": 143,
+                        "id": 149,
                         "name": "key",
                         "type": "string",
                         "required": false
                       },
                       {
-                        "id": 144,
+                        "id": 150,
                         "name": "value",
                         "type": "string",
                         "required": false
                       },
                       {
-                        "id": 145,
+                        "id": 151,
                         "name": "nofixentries",
                         "type": {
                           "type": "list",
-                          "element-id": 146,
+                          "element-id": 152,
                           "element": {
                             "type": "struct",
                             "fields": [
                               {
-                                "id": 147,
+                                "id": 153,
                                 "name": "tag",
                                 "type": "int",
                                 "required": false
                               },
                               {
-                                "id": 148,
-                                "name": "branch",
-                                "type": "int",
-                                "required": true
-                              },
-                              {
-                                "id": 149,
+                                "id": 154,
                                 "name": "key",
                                 "type": "string",
                                 "required": false
                               },
                               {
-                                "id": 150,
+                                "id": 155,
                                 "name": "value",
                                 "type": "string",
                                 "required": false
                               },
                               {
-                                "id": 151,
+                                "id": 156,
                                 "name": "nofixentries",
                                 "type": "binary",
                                 "required": true
@@ -1031,106 +1088,88 @@
         "doc": "Every pair the message carried, in arrival order and untranslated."
       },
       {
-        "id": 111,
+        "id": 114,
         "name": "nounmappedfixentries",
         "type": {
           "type": "list",
-          "element-id": 152,
+          "element-id": 157,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 153,
+                "id": 158,
                 "name": "tag",
                 "type": "int",
                 "required": false
               },
               {
-                "id": 154,
-                "name": "branch",
-                "type": "int",
-                "required": true
-              },
-              {
-                "id": 155,
+                "id": 159,
                 "name": "key",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 156,
+                "id": 160,
                 "name": "value",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 157,
+                "id": 161,
                 "name": "nofixentries",
                 "type": {
                   "type": "list",
-                  "element-id": 158,
+                  "element-id": 162,
                   "element": {
                     "type": "struct",
                     "fields": [
                       {
-                        "id": 159,
+                        "id": 163,
                         "name": "tag",
                         "type": "int",
                         "required": false
                       },
                       {
-                        "id": 160,
-                        "name": "branch",
-                        "type": "int",
-                        "required": true
-                      },
-                      {
-                        "id": 161,
+                        "id": 164,
                         "name": "key",
                         "type": "string",
                         "required": false
                       },
                       {
-                        "id": 162,
+                        "id": 165,
                         "name": "value",
                         "type": "string",
                         "required": false
                       },
                       {
-                        "id": 163,
+                        "id": 166,
                         "name": "nofixentries",
                         "type": {
                           "type": "list",
-                          "element-id": 164,
+                          "element-id": 167,
                           "element": {
                             "type": "struct",
                             "fields": [
                               {
-                                "id": 165,
+                                "id": 168,
                                 "name": "tag",
                                 "type": "int",
                                 "required": false
                               },
                               {
-                                "id": 166,
-                                "name": "branch",
-                                "type": "int",
-                                "required": true
-                              },
-                              {
-                                "id": 167,
+                                "id": 169,
                                 "name": "key",
                                 "type": "string",
                                 "required": false
                               },
                               {
-                                "id": 168,
+                                "id": 170,
                                 "name": "value",
                                 "type": "string",
                                 "required": false
                               },
                               {
-                                "id": 169,
+                                "id": 171,
                                 "name": "nofixentries",
                                 "type": "binary",
                                 "required": true
@@ -1158,7 +1197,8 @@
     "schema-id": 0,
     "identifier-field-ids": [
       1,
-      2
+      2,
+      92
     ]
   },
   "partition-spec": {

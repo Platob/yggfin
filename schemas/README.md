@@ -4,7 +4,7 @@ Both checked files are Iceberg table contracts, serialized by PyIceberg:
 
 | file | runtime owner | product |
 | --- | --- | --- |
-| `rekep/message.json` | `rekep.Message.field()` | `logs.messages` |
+| `rekep/message.json` | `rekep.Message.into_field()` | `logs.messages` |
 | `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` |
 
 They are review artifacts, not alternate implementations. Runtime fields
@@ -36,10 +36,10 @@ from the runtime declaration instead:
 
 | fact | where it is asserted |
 | --- | --- |
-| a digest's algorithm and sources | `Message.field()`, `python/tests/test_message.py` |
-| a derived column's source columns | `Message.field()`, `python/tests/test_message.py` |
+| a digest's algorithm and sources | `Message.into_field()`, `python/tests/test_message.py` |
+| a derived column's source columns | `Message.into_field()`, `python/tests/test_message.py` |
 | a FIX tag, alias or display name | the registry under `python/src/rekep/_data/fix`, and the `tag` column of the [FIX product page](../docs/products/fix-message.md) |
-| the struct's own description and `python.*` declaration keys | `Message.field()`, and the class docstring behind it |
+| the struct's own description and `python:` declaration keys | `Message.into_field()`, and the class docstring behind it |
 | the struct's own name | the table above, and `rekep.deploy.TABLES` |
 
 `python/tests/test_schemas.py` pins each loss as an assertion, so the cost of

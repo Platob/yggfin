@@ -32,6 +32,16 @@ def records(field: Field, key: str, collection: str) -> list[dict[str, Any]]:
     return [] if held is None else json.loads(held).get(collection, [])
 
 
+def shape_of(field: Field, shape: str) -> str:
+    """The Arrow type a row shows.
+
+    A group's own type is its whole nested subtree, which one definition
+    spells in two hundred kilobytes. The members are published beside it, so
+    the row states the shape and leaves the tree to them.
+    """
+    return "list<struct>" if shape == "group" else str(field.dtype.into_arrow())
+
+
 def members(field: Field) -> list[dict[str, Any]]:
     """A repeating group's members, exploded and flattened natively."""
     if not field.dtype.is_nested:
@@ -41,11 +51,23 @@ def members(field: Field) -> list[dict[str, Any]]:
             "path": member.name,
             "tag": member.fix.tag,
             "name": member.display or member.name,
-            "type": str(member.dtype.into_arrow()),
+            "type": "list<struct>" if member.dtype.is_nested else str(member.dtype.into_arrow()),
         }
         for expanded in field.explode_fields()
         for member in expanded.unnest_fields()
     ]
+
+
+def shown(registry: Any) -> list[tuple[Field, str]]:
+    """Every definition a widget shows, beside the shape it is shown as.
+
+    Iterating a registry walks its tagged scalars, and a repeating group is a
+    named definition rather than one of them -- so the groups are asked for by
+    name, or the browser would show none.
+    """
+    scalars = [(field, "field") for field in registry]
+    groups = [(field, "group") for field in registry.definitions("groups")]
+    return scalars + groups
 
 
 def main() -> int:
@@ -54,15 +76,15 @@ def main() -> int:
 
     index: list[dict[str, Any]] = []
     detail: dict[str, dict[str, Any]] = {}
-    for field in registry:
+    for field, shape in shown(registry):
         fix = field.fix
         row: dict[str, Any] = {
             "tag": fix.tag,
             "name": field.name,
             "display": field.display or field.name,
             "branch": fix.branch or "standard",
-            "shape": "group" if field.dtype.is_nested else "field",
-            "type": str(field.dtype.into_arrow()),
+            "shape": shape,
+            "type": shape_of(field, shape),
             "nullable": field.nullable,
             "description": fix.description or field.comment or "",
         }

@@ -51,7 +51,7 @@ from rekep import IOBase, Message
 source = IOBase.from_uri("file:data/capture")
 reader = source.read_arrow_reader(options=Message.text_options())
 
-assert reader.schema.equals(Message.field().into_arrow_schema(), check_metadata=True)
+assert reader.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
 ```
 
 The header parser captures timestamp, thread, session, message context,
@@ -79,7 +79,7 @@ for a streaming decoder fix.
 
 ## Write step
 
-The task opens `logs.messages` with `Message.field()` and appends the reader
+The task opens `logs.messages` with `Message.into_field()` and appends the reader
 with `merge_by=True`. A missing table is created. Existing `(url, rownum)` keys
 are skipped; new keys are inserted.
 

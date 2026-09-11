@@ -2,7 +2,7 @@
 
 from importlib.metadata import version as package_version
 
-from yggdryl import DataType, IOBase, Scalar, TextOptions, Uri, Url
+from yggdryl import DataType, FieldPath, IOBase, Scalar, TextLine, TextOptions, Uri, Url
 
 from rekep.convert import Convertible
 from rekep.dataset import Dataset
@@ -19,6 +19,7 @@ __all__ = [
     "DataType",
     "Dataset",
     "Field",
+    "FieldPath",
     "FixCodec",
     "FixMsg",
     "FixRegistry",
@@ -26,6 +27,7 @@ __all__ = [
     "Message",
     "Scalar",
     "Task",
+    "TextLine",
     "TextOptions",
     "Uri",
     "Url",

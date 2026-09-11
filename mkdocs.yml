@@ -63,6 +63,7 @@ nav:
       - Overview: fix/index.md
       - Registry: fix/registry.md
       - Decode: fix/decode.md
+      - Capture columns: fix/capture.md
       - Encode: fix/encode.md
       - Quality: fix/quality.md
       - Registry browser (tool): tools/fix-registry.md

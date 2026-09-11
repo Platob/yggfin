@@ -7,14 +7,14 @@ flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["parse_fix"]
-    R[["bundled registry<br/>6,265 definitions"]] -.types.-> F
-    F --> X[("fix.messages<br/>111 columns")]
+    R[["bundled registry<br/>6,303 definitions"]] -.types.-> F
+    F --> X[("fix.messages<br/>114 columns")]
 ```
 
 | task | reads | writes | key | default behavior |
 | --- | --- | --- | --- | --- |
 | [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem` | `logs.messages` | `(url, rownum)` | header capture, exact body retention |
-| [`parse_fix`](tasks/parse-fix.md) | every row of `logs.messages` | `fix.messages` | `(url, rownum)` | bundled registry, `ulbridge` branch, no dedup |
+| [`parse_fix`](tasks/parse-fix.md) | every row of `logs.messages` | `fix.messages` | `(url, rownum, msghash)` | bundled registry, `ulbridge` branch, one row per parsed message |
 
 Each task is a Marimo application beside a JSON document that owns its
 defaults. The CLI and Airflow execute that same document; there is no separate
@@ -56,7 +56,6 @@ the command line.
 | `registry` | FIX | `null` | bundled dictionary; explicit URI overrides it |
 | `branch` | FIX | `ulbridge` | dictionary branch used for bare names |
 | `version` | FIX | `null` | infer per row; a value pins code translation |
-| `dedup` | FIX | `false` | preserve one output row per input row |
 
 ## Run semantics
 

@@ -26,7 +26,7 @@ small enough for Airflow XCom because it contains no rows or schemas.
 {
   "task": "parse_fix",
   "read": 111,
-  "written": 111,
+  "written": 112,
   "skipped": 0,
   "sources": {"messages": "logs.messages"},
   "targets": {"fix": "fix.messages"},
@@ -45,8 +45,11 @@ mapping of exactly `start` and `end`.
 
 - A first immutable-capture run normally has `read == written`.
 - A complete replay normally has `read == skipped` and `written == 0`.
-- `parse_fix.read` should equal the selected `logs.messages` row count when
-  `dedup=false`.
+- `parse_fix.read` should equal the selected `logs.messages` row count.
+  `written` counts parsed messages, so it is at least `read`: a bridge
+  configuration line states one message per MBean.
+- `parse_fix.skipped` is the parsed messages the merge already held, never
+  `read - written`.
 - A successful zero-row run is not a failure.
 - Missing result JSON, non-zero child exit, or mismatched task name fails the
   operator.

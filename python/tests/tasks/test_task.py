@@ -50,7 +50,7 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
     if document.stem == "parse_messages":
         assert set(parameters) == {"filesystem", "catalog"}
     elif document.stem == "parse_fix":
-        assert set(parameters) == {"registry", "branch", "version", "dedup", "catalog"}
+        assert set(parameters) == {"registry", "branch", "version", "catalog"}
     else:
         assert "log_level" in parameters
 

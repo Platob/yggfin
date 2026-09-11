@@ -9,7 +9,7 @@ flowchart LR
     U["local or S3 capture"] --> R["rekep.IOBase"]
     R --> T["rekep.TextOptions"]
     T --> M[("logs.messages")]
-    M --> C["rekep.fix.parse_arrow_reader"]
+    M --> C["FixCodec.parse_text_arrow_reader"]
     D[["bundled FIX registry"]] -.types.-> C
     C --> F[("fix.messages")]
     F --> P["orders · executions · book"]
@@ -34,11 +34,11 @@ compatibility classes.
 from rekep import Field, IOBase, Message, TextOptions
 from rekep.fix import FixCodec, FixRegistry, fix_registry
 
-assert isinstance(Message.field(), Field)
+assert isinstance(Message.into_field(), Field)
 assert isinstance(Message.text_options(), TextOptions)
 assert isinstance(fix_registry(), FixRegistry)
 assert FixCodec(fix_registry())
-assert IOBase.from_uri("file:data/capture")
+assert IOBase.from_uri("file:data/capture").exists()
 ```
 
 ## Streaming boundary

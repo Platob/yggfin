@@ -28,11 +28,13 @@ rekep task run tasks/parse_messages/parse_messages.json
 rekep task run tasks/parse_fix/parse_fix.json
 ```
 
-The checked ULBridge fixture demonstrates the complete contract:
+The checked ULBridge fixture demonstrates the complete contract. `parse_fix`
+writes one row more than it read, because one of those lines is a bridge
+configuration document stating two messages:
 
 ```text
 parse_messages  111 read, 111 written, 0 skipped  → logs.messages
-parse_fix        111 read, 111 written, 0 skipped  → fix.messages
+parse_fix        111 read, 112 written, 0 skipped  → fix.messages
 ```
 
 ```mermaid
@@ -40,7 +42,7 @@ flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["native FIX codec<br/>ULBridge vocabulary"]
-    F --> O[("fix.messages<br/>111 columns")]
+    F --> O[("fix.messages<br/>114 columns")]
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
@@ -52,7 +54,7 @@ present.
 ```python
 from rekep import Message
 
-print(Message.field().into_arrow_schema())
+print(Message.into_field().into_arrow_schema())
 ```
 
 ## Where to go

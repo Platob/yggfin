@@ -28,6 +28,8 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 ## Fields and Arrow
 
 - `rekep.Field is yggdryl.Field`.
+- A `@scalar` class answers `into_field()`; `Message.into_field()` is the raw
+  contract.
 - Use native `@yggdryl.scalar` and `Annotated` options for declarations.
 - Arrow schema metadata is authoritative; portable JSON derives from it.
 - `Field` JSON is the runtime declaration form; `iceberg_contract` is the
@@ -78,9 +80,13 @@ filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 
 Each task directory contains one Marimo application beside its JSON document.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, applies
-`Message.field()` to each batch, and writes one schema-bearing reader directly
-to Iceberg. `parse_fix` passes that stored reader through Yggdryl's native FIX
-Arrow reader and writes its registry-defined schema without a yggfin FIX model.
+`Message.into_field()` to each batch, and writes one schema-bearing reader
+directly to Iceberg. `parse_fix` passes that stored reader through one
+`FixCodec` -- a pin on the codec, a stage as a call -- and writes its
+registry-defined schema without a yggfin FIX model. One line is one message
+except a bridge configuration document, so `fix.messages` keys on
+`(url, rownum, msghash)` and `parse_fix` reports `skipped` as the parsed
+messages the merge already held.
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI.
 

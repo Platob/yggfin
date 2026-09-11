@@ -1,12 +1,15 @@
 /*
  * The browser half of the FIX section: one scanner, three widgets.
  *
- * The scanner mirrors the Rust core's own: the same frame location, the same
- * six separator spellings, the same printed-SOH unescape, the same key/value
- * bounds, the same "a checksum closes the message" rule, and the same media
- * type and direction taxonomies -- so a line decoded on this page resolves the
- * way `parse_fix` resolves it. The dictionary is `assets/fix-registry.json`,
- * generated from rekep's bundled FIX registry.
+ * The scanner is a preview of the native one, not a second implementation of
+ * it: the same frame location, the same six separator spellings, the same
+ * printed-SOH unescape, the same "a checksum closes the message" rule, and the
+ * same media type and direction taxonomies. Where a key or value bound is
+ * decided differently -- a trailing punctuation mark, a key holding a space, a
+ * data field read to its stated length only where the frame stated a boundary
+ * -- the native reader decides, and `parse_fix` is the answer of record. The
+ * dictionary is `assets/fix-registry.json`, generated from rekep's bundled FIX
+ * registry.
  *
  * Nothing here parses on the server, and nothing is uploaded: a pasted line
  * stays in the tab it was pasted into.

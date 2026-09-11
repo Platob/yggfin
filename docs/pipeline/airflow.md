@@ -11,7 +11,7 @@ logs.messages     fix.messages
 
 The DAG exposes the union of both adjacent task documents as Params. A manual
 run can therefore replace `filesystem`, `catalog`, `registry`, `branch`,
-`version`, or `dedup` without creating another DAG.
+or `version` without creating another DAG.
 
 ## How a task runs
 

@@ -36,6 +36,9 @@ from rekep.dataset import (
     semi_join,
 )
 from rekep.fields import (
+    DIGEST_ALGORITHM,
+    DIGEST_ROLE,
+    DIGEST_SOURCES,
     Field,
     arrays,
     field_of,
@@ -1158,7 +1161,7 @@ class IcebergDataset(Dataset):
         delete_columns = list(
             dict.fromkeys([*(column.source for column in partitions or ()), *join])
         )
-        key_shape = field_of(pyarrow.schema([chunk.schema.field(name) for name in delete_columns]))
+        key_shape = _stored_shape(chunk.schema, delete_columns)
         scan = table.scan(row_filter=_key_ranges(chunk, join, derived))
         scan = self._branch_scan(table, scan, reference)
         # Range filters are safe supersets. Decode only the keys needed to turn
@@ -1492,7 +1495,7 @@ class IcebergDataset(Dataset):
         # to: naming it raised `Could not find column`, on a branch every other
         # verb here reads and writes happily. `_under_current_names` puts the
         # names back on the way out.
-        keys = field_of(pyarrow.schema([chunk.schema.field(name) for name in join]))
+        keys = _stored_shape(chunk.schema, join)
         wanted = self._selected(keys, scan)
         if set(wanted.values()) != set(join):
             # That snapshot does not carry every key column -- one added since
@@ -3081,6 +3084,31 @@ def _in_sort_order(
 ) -> bool:
     """Whether `chunk` follows the directional lexicographic sort fields."""
     return _reader_in_sort_order(chunk, names)
+
+
+#: What a key column must not carry into a projection. A digest holder is
+#: filled from columns a key projection does not select -- `msghash` reads
+#: `nofixentries` -- so applying the declaration to the key columns alone
+#: would raise rather than read the stored value, which is the only value a
+#: key comparison may use.
+_COMPUTED_KEYS = (DIGEST_ROLE, DIGEST_ALGORITHM, DIGEST_SOURCES)
+
+
+def _stored_shape(schema: pyarrow.Schema, names: Sequence[str]) -> Field:
+    """The named columns as they are stored, with nothing left to compute."""
+    members = []
+    for name in names:
+        member = schema.field(name)
+        metadata = {
+            (key.decode() if isinstance(key, bytes) else key): value
+            for key, value in (member.metadata or {}).items()
+        }
+        if any(key in metadata for key in _COMPUTED_KEYS):
+            for key in _COMPUTED_KEYS:
+                metadata.pop(key, None)
+            member = member.with_metadata(metadata)
+        members.append(member)
+    return field_of(pyarrow.schema(members))
 
 
 def _key_ranges(

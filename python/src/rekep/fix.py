@@ -15,10 +15,11 @@ from yggdryl.fix import (
     USER_TAG_MIN,
     FixBranch,
     FixCodec,
+    FixMessages,
     FixMsg,
     FixRegistry,
+    MsgType,
     UlPlugin,
-    classify_arrow_array,
     fix_cfb_fields,
     fix_crate_fields,
     fix_schema,
@@ -27,12 +28,22 @@ from yggdryl.fix import (
     fix_ulbridge_fields,
     global_registry,
     install_global_registry,
-    parse_arrow_reader,
 )
 
-from rekep.fields import Field
+from rekep.fields import PRIMARY_KEY, Field
 
 _REGISTRY_PATH = Path(__file__).with_name("_data") / "fix"
+
+#: The payload column every bundled codec reads a line's bytes from. It is
+#: `Message.body`, and naming it here keeps the codec and the raw contract
+#: from drifting apart.
+PAYLOAD_COLUMN = "body"
+
+#: The parsed-message digest, which completes the fixed table's identity. One
+#: captured line is one message everywhere except a bridge configuration
+#: document, which states several -- so `(url, rownum)` alone stops being a key
+#: exactly there, and a merge on it would keep one of them and drop the rest.
+MESSAGE_DIGEST_COLUMN = "msghash"
 
 
 def registry_path() -> Path:
@@ -75,10 +86,39 @@ def fix_registry(location: str | os.PathLike[str] | None = None) -> FixRegistry:
     return _DEFAULT_REGISTRY if location is None else _load_registry(location)
 
 
+def fix_codec(
+    registry: FixRegistry | None = None,
+    *,
+    branch: str | None = ULBRIDGE_BRANCH,
+    version: str | None = None,
+) -> FixCodec:
+    """One codec over the bundled registry, pinned to the capture dialect."""
+    return FixCodec(
+        registry or fix_registry(),
+        branch=branch,
+        version=version,
+        payload_column=PAYLOAD_COLUMN,
+    )
+
+
 def iceberg_fix_field(schema: pyarrow.Schema, name: str = "FixMessage") -> Field:
     """A parser schema narrowed to the timestamp precision Iceberg v2 stores."""
-    members = [member.with_type(_microseconds(member.type)) for member in schema]
+    members = [_identified(member.with_type(_microseconds(member.type))) for member in schema]
     return Field.from_arrow_schema(pyarrow.schema(members), name=name)
+
+
+def _identified(member: pyarrow.Field) -> pyarrow.Field:
+    """Add the parsed-message digest to the carrier's declared identity."""
+    if member.name != MESSAGE_DIGEST_COLUMN or member.nullable:
+        return member
+    metadata = {
+        (key.decode() if isinstance(key, bytes) else key): (
+            value.decode() if isinstance(value, bytes) else value
+        )
+        for key, value in (member.metadata or {}).items()
+    }
+    metadata[PRIMARY_KEY] = "true"
+    return member.with_metadata(metadata)
 
 
 def fix_message_field(
@@ -91,9 +131,9 @@ def fix_message_field(
     if carrier is None:
         from rekep.text import Message
 
-        carrier = Message.field()
+        carrier = Message.into_field()
     source = pyarrow.RecordBatchReader.from_batches(carrier.into_arrow_schema(), [])
-    parsed = parse_arrow_reader(source, registry or fix_registry(), "body", branch=ULBRIDGE_BRANCH)
+    parsed = fix_codec(registry).parse_text_arrow_reader(source)
     try:
         return iceberg_fix_field(parsed.schema, name)
     finally:
@@ -117,17 +157,20 @@ def _microseconds(dtype: pyarrow.DataType) -> pyarrow.DataType:
 
 
 __all__ = [
+    "PAYLOAD_COLUMN",
     "STANDARD_BRANCH",
     "ULBRIDGE_BRANCH",
     "USER_TAG_MAX",
     "USER_TAG_MIN",
     "FixBranch",
     "FixCodec",
+    "FixMessages",
     "FixMsg",
     "FixRegistry",
+    "MsgType",
     "UlPlugin",
-    "classify_arrow_array",
     "fix_cfb_fields",
+    "fix_codec",
     "fix_crate_fields",
     "fix_message_field",
     "fix_registry",
@@ -137,6 +180,5 @@ __all__ = [
     "fix_ulbridge_fields",
     "global_registry",
     "iceberg_fix_field",
-    "parse_arrow_reader",
     "registry_path",
 ]

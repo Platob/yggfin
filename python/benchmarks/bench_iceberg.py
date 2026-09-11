@@ -86,7 +86,7 @@ _BASE_UNIX = 1_786_665_600_000_000_000
 
 def log_field(name: str, partition: str | None) -> Any:
     """Clone the log shape with one selected Iceberg partition transform."""
-    field = replace_field(LogRow.field(), name=name)
+    field = replace_field(LogRow.into_field(), name=name)
     member = field.field("timepartition")
     member.set_partition(False)
     if partition is not None:
@@ -131,7 +131,7 @@ def log_rows(rows: int, days: int) -> pyarrow.Table:
                 for index in range(rows)
             ],
         },
-        schema=LogRow.field().into_arrow_schema(),
+        schema=LogRow.into_field().into_arrow_schema(),
     )
 
 
@@ -158,7 +158,7 @@ def catalog(root: pathlib.Path) -> IcebergCatalog:
 
 def dataset(root: pathlib.Path, *, partitioned: bool, properties: dict[str, str]) -> IcebergDataset:
     """A fresh table, partitioned by hour or not at all."""
-    field = LogRow.field() if partitioned else log_field("Flat", None)
+    field = LogRow.into_field() if partitioned else log_field("Flat", None)
     built = catalog(root).dataset("bench.logs", field=field, table_properties=properties)
     return built.create_with()
 
@@ -228,7 +228,7 @@ def monotonic_insert_case(table: pyarrow.Table, commit_rows: int) -> dict:
     """Insert increasing chunks the way a chronological stream commits them."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-insert-"))
     try:
-        target = catalog(root).dataset("bench.ticks", field=Tick.field()).create_with()
+        target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
 
         def write() -> None:
             for start in range(0, table.num_rows, commit_rows):
@@ -349,7 +349,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
     """Write one converted result and report the storage a reader inherits."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
     try:
-        target = catalog(root).dataset("bench.quotes", field=Quote.field()).create_with()
+        target = catalog(root).dataset("bench.quotes", field=Quote.into_field()).create_with()
         target.append_arrow_table(table, commit_row_size=1_000_000)
         plan = target.scan_plan("day = '2026-08-14'")
         report = {
@@ -358,7 +358,7 @@ def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
             "planned": plan["files"],
             "skipped": plan["skipped"],
         }
-        return report, target.read_arrow_table(Quote.field()).sort_by("symbol")
+        return report, target.read_arrow_table(Quote.into_field()).sort_by("symbol")
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -379,7 +379,7 @@ def sweep_polars(rows: int, repeat: int) -> None:
             "venue": ["XPAR"] * rows,
         }
     )
-    target = Quote.field()
+    target = Quote.into_field()
 
     def compatible() -> pyarrow.Table:
         return _polars_table(source, target, polars)
@@ -604,14 +604,14 @@ def sweep_update(rows: int, days: int) -> None:
         cases = (
             (
                 "(symbol, day) — day repeats",
-                Quote.field(),
+                Quote.into_field(),
                 quote_rows(wide, days),
                 ["symbol", "day"],
                 "venue",
             ),
             (
                 "(at, h64) — nothing repeats",
-                Tick.field(),
+                Tick.into_field(),
                 tick_rows(wide * days),
                 ["at", "h64"],
                 "payload",
@@ -668,7 +668,7 @@ def sweep_delete(rows: int, days: int, repeat: int) -> None:
             try:
                 target = (
                     catalog(root)
-                    .dataset("bench.quotes", field=Quote.field(), table_properties=OPTIMISED)
+                    .dataset("bench.quotes", field=Quote.into_field(), table_properties=OPTIMISED)
                     .create_with()
                 )
                 target.append_arrow(
@@ -707,7 +707,7 @@ def tick_rows(count: int) -> pyarrow.Table:
             "h64": [source.getrandbits(62) for _ in range(count)],
             "payload": ["XPAR"] * count,
         },
-        schema=Tick.field().into_arrow_schema(),
+        schema=Tick.into_field().into_arrow_schema(),
     )
 
 
@@ -721,7 +721,7 @@ def sweep_backfill(rows: int, days: int) -> None:
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-backfill-"))
     try:
-        target = catalog(root).dataset("bench.ticks", field=Tick.field()).create_with()
+        target = catalog(root).dataset("bench.ticks", field=Tick.into_field()).create_with()
         bands = 10
         per = max(rows // bands, 100)
         # The hash is drawn per *row*, not derived from the band: a real line
@@ -737,7 +737,7 @@ def sweep_backfill(rows: int, days: int) -> None:
                     "h64": [source.getrandbits(62) for _ in range(per)],
                     "payload": ["x" * 40] * per,
                 },
-                schema=Tick.field().into_arrow_schema(),
+                schema=Tick.into_field().into_arrow_schema(),
             )
             for band in range(bands)
         ]
@@ -777,7 +777,7 @@ def quote_rows(symbols: int, days: int) -> pyarrow.Table:
             "size": list(range(len(pairs))),
             "venue": ["XPAR"] * len(pairs),
         },
-        schema=Quote.field().into_arrow_schema(),
+        schema=Quote.into_field().into_arrow_schema(),
     )
 
 
@@ -824,7 +824,7 @@ def narrow_field() -> Any:
     """Three stored columns, as a declared shape rather than a column list."""
     from rekep.fields import Field
 
-    schema = LogRow.field().into_arrow_schema()
+    schema = LogRow.into_field().into_arrow_schema()
     return Field.from_arrow_schema(
         pyarrow.schema([schema.field(name) for name in ("unix", "branch", "body")]),
         "Narrow",

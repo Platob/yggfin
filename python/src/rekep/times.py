@@ -227,7 +227,7 @@ MESSAGE_HEADER = (
     r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
     r"\[(?P<threadId>[1-9]\d*)"
     r"(?:-(?P<sessionUid>[0-9a-f]{8}):(?P<msgCtxId>[0-9a-f]{10}):(?P<seqNum>\d+))?\] "
-    r"\[(?P<plugin>[^\]]+)\] \((?P<level>[A-Z]+)\) "
+    r"\[(?P<pluginid>[^\]]+)\] \((?P<level>[A-Z]+)\) "
 )
 """The ULBridge row-header expression for physical message records."""
 

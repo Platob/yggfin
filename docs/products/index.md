@@ -15,7 +15,7 @@ flowchart LR
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |
 | [`logs.messages`](message.md) | one physical source line | `(url, rownum)` | exact replayable capture record |
-| [`fix.messages`](fix-message.md) | one codec result for that line | `(url, rownum)` | typed protocol record plus lossless arrivals |
+| [`fix.messages`](fix-message.md) | one codec result for that line | `(url, rownum, msghash)` | typed protocol record plus lossless arrivals |
 
 Both tables are partitioned by the UTC hour derived from the capture
 timestamp. Both keep the raw `body` and `bodyhash`; the FIX table additionally

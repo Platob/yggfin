@@ -149,7 +149,7 @@ class MemoryDataset(Dataset):
 
 @pytest.fixture
 def dataset() -> MemoryDataset:
-    return MemoryDataset(field=Quote.field())
+    return MemoryDataset(field=Quote.into_field())
 
 
 def batch_of(**columns: list) -> pyarrow.RecordBatch:
@@ -173,7 +173,7 @@ def reader_of(
         if schema is not None
         else batches[0].schema
         if batches
-        else Quote.field().into_arrow_schema()
+        else Quote.into_field().into_arrow_schema()
     )
     return pyarrow.RecordBatchReader.from_batches(source_schema, batches)
 
@@ -182,12 +182,12 @@ def reader_of(
 
 
 def test_a_dataset_says_what_it_holds(dataset: MemoryDataset) -> None:
-    assert dataset.into_struct_field() is Quote.field()
-    assert dataset.into_arrow_schema().equals(Quote.field().into_arrow_schema())
+    assert dataset.into_struct_field() is Quote.into_field()
+    assert dataset.into_arrow_schema().equals(Quote.into_field().into_arrow_schema())
 
 
 def test_the_target_of_a_cast_is_the_dataset_unless_one_is_given(dataset: MemoryDataset) -> None:
-    assert dataset.target_field() is Quote.field()
+    assert dataset.target_field() is Quote.into_field()
     other = field_of(pyarrow.schema([("symbol", pyarrow.string())]))
     assert dataset.target_field(other) is other, "a field is taken as it is"
     assert dataset.target_field(other.into_arrow_schema()) == other, "a schema becomes one"
@@ -196,7 +196,7 @@ def test_the_target_of_a_cast_is_the_dataset_unless_one_is_given(dataset: Memory
 def test_an_incomplete_implementation_cannot_be_built() -> None:
     class Half(Dataset):
         def into_struct_field(self) -> Field:
-            return Quote.field()
+            return Quote.into_field()
 
     with pytest.raises(TypeError, match="abstract"):
         Half()
@@ -223,7 +223,7 @@ def test_merge_by_true_means_the_declared_primary_key() -> None:
         size: int
         """Quantity."""
 
-    assert MemoryDataset(field=Keyed.field()).merge_columns(True) == ["symbol"]
+    assert MemoryDataset(field=Keyed.into_field()).merge_columns(True) == ["symbol"]
 
 
 def test_merge_by_a_list_means_those_columns(dataset: MemoryDataset) -> None:
@@ -247,7 +247,7 @@ def test_merging_on_a_key_nothing_declares_is_refused() -> None:
         """Instrument, and nothing says it identifies one."""
 
     with pytest.raises(ValueError, match="no member declares one"):
-        MemoryDataset(field=Loose.field()).merge_columns(True)
+        MemoryDataset(field=Loose.into_field()).merge_columns(True)
 
 
 # -- reading and writing ----------------------------------------------------
@@ -258,7 +258,7 @@ def test_a_write_casts_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
     batch = batch_of(day=[datetime.date(2026, 8, 14)], symbol=["A"], noise=[1])
     dataset.overwrite_arrow_reader(reader_of(batch))
     stored = dataset.commits[0]
-    assert stored.schema.equals(Quote.field().into_arrow_schema())
+    assert stored.schema.equals(Quote.into_field().into_arrow_schema())
     assert stored.column("size").to_pylist() == [None]
 
 
@@ -269,7 +269,7 @@ def test_a_write_can_be_cast_onto_another_shape(dataset: MemoryDataset) -> None:
 
 
 def test_a_write_uses_yggdryls_native_array_cast() -> None:
-    dataset = MemoryDataset(field=ArrayRow.field())
+    dataset = MemoryDataset(field=ArrayRow.into_field())
     batch = pyarrow.record_batch(
         [pyarrow.array([[1, 2], []], pyarrow.list_(pyarrow.int32()))],
         names=["values"],
@@ -277,7 +277,7 @@ def test_a_write_uses_yggdryls_native_array_cast() -> None:
 
     assert dataset.append_arrow_reader(reader_of(batch), merge_by=False) == 2
     stored = dataset.commits[0]
-    assert stored.schema == ArrayRow.field().into_arrow_schema()
+    assert stored.schema == ArrayRow.into_field().into_arrow_schema()
     assert stored.column("values").to_pylist() == [[1, 2], []]
 
 
@@ -304,7 +304,7 @@ def test_a_table_goes_in_and_comes_back(dataset: MemoryDataset) -> None:
 
 def test_a_read_casts_only_when_asked(dataset: MemoryDataset) -> None:
     dataset.overwrite_arrow_table(pyarrow.Table.from_batches([rows(1)]))
-    assert dataset.read_arrow_reader().schema.equals(Quote.field().into_arrow_schema())
+    assert dataset.read_arrow_reader().schema.equals(Quote.into_field().into_arrow_schema())
     narrow = pyarrow.schema([("symbol", pyarrow.large_string())])
     assert dataset.read_arrow_reader(narrow).schema.field("symbol").type == pyarrow.large_string()
 
@@ -321,7 +321,7 @@ def test_polars_batches_stream_from_the_arrow_reader(
     )
     frames = list(dataset.read_polars_batches())
     assert [frame.height for frame in frames] == [1, 1]
-    assert polars.concat(frames).columns == [member.name for member in Quote.field()]
+    assert polars.concat(frames).columns == [member.name for member in Quote.into_field()]
 
 
 def test_read_polars_is_the_explicit_in_memory_form(dataset: MemoryDataset) -> None:
@@ -343,7 +343,7 @@ def test_a_polars_frame_is_cast_onto_the_datasets_shape(dataset: MemoryDataset) 
     )
     dataset.overwrite_polars(source)
     stored = dataset.commits[0]
-    assert stored.schema.equals(Quote.field().into_arrow_schema())
+    assert stored.schema.equals(Quote.into_field().into_arrow_schema())
     assert stored.to_pydict() == {
         "symbol": ["A"],
         "day": [datetime.date(2026, 8, 14)],
@@ -447,7 +447,7 @@ class Keyed(Convertible):
 
 @pytest.fixture
 def keyed() -> MemoryDataset:
-    return MemoryDataset(field=Keyed.field())
+    return MemoryDataset(field=Keyed.into_field())
 
 
 def keyed_batch(symbols: list[str], sizes: list[int]) -> pyarrow.RecordBatch:
@@ -589,12 +589,12 @@ def test_create_with_takes_whatever_names_a_shape(dataset: MemoryDataset) -> Non
         pyarrow.field("q", pyarrow.struct([("a", pyarrow.int64())]))
     )
     assert [member.name for member in dataset.create_with(Quote).into_struct_field()] == [
-        member.name for member in Quote.field()
+        member.name for member in Quote.into_field()
     ]
 
 
 def test_create_with_nothing_uses_the_declared_shape(dataset: MemoryDataset) -> None:
-    assert dataset.create_with().into_struct_field() is Quote.field()
+    assert dataset.create_with().into_struct_field() is Quote.into_field()
 
 
 def test_get_or_create_is_idempotent(dataset: MemoryDataset) -> None:
@@ -635,7 +635,7 @@ def test_an_implementation_behind_an_optional_dependency_is_imported_by_the_docu
     pytest.importorskip("pyiceberg")
     from rekep.iceberg import IcebergDataset
 
-    field = Quote.field()
+    field = Quote.into_field()
     built = Dataset.from_dict(
         {
             "kind": "iceberg",

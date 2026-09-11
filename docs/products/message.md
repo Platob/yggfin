@@ -16,7 +16,7 @@ kept byte-for-byte.
 | 6 | `sessionUid` | `string` | yes | bridge session identifier |
 | 7 | `msgCtxId` | `string` | yes | message-context identifier |
 | 8 | `seqNum` | `int64` | yes | context sequence number |
-| 9 | `plugin` | `string` | yes | plugin that wrote the line |
+| 9 | `pluginid` | `string` | yes | plugin that logged the line; names the dialect where it names a branch |
 | 10 | `level` | `string` | yes | header severity spelling |
 | 11 | `bodyhash` | `fixed_size_binary[16]` | yes | XXH3-128 of exact `body` bytes |
 | 12 | `body` | `binary` | no | every byte after the matched header |
@@ -24,7 +24,7 @@ kept byte-for-byte.
 The reviewed table contract is
 [`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json):
 the Iceberg schema, partition spec and sort order this table is created with.
-The digest and derived-partition rules above are declared in `Message.field()`,
+The digest and derived-partition rules above are declared in `Message.into_field()`,
 which an Iceberg schema has no place for.
 
 ## Header transcription
@@ -43,7 +43,7 @@ becomes:
 | `sessionUid` | `e7254b12` |
 | `msgCtxId` | `9f03166699` |
 | `seqNum` | `40218` |
-| `plugin` | `OMS_X1_TradeCapture` |
+| `pluginid` | `OMS_X1_TradeCapture` |
 | `level` | `INFO` |
 | `body` | `Receiving : 8=FIX.4.4\|35=8\|...` as bytes |
 
@@ -60,7 +60,7 @@ source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
 reader = source.read_arrow_reader(options=Message.text_options())
 first = next(iter(reader)).slice(0, 1)
 
-assert first.schema.equals(Message.field().into_arrow_schema(), check_metadata=True)
+assert first.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
 assert first.column("rownum")[0].as_py() == 1
 
 reader.close()

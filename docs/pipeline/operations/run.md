@@ -31,8 +31,7 @@ Pin FIX translation to a version:
 ```bash
 uv run --project python rekep task run \
   tasks/parse_fix/parse_fix.json \
-  --parameter 'version="4.4"' \
-  --parameter 'dedup=false'
+  --parameter 'version="4.4"'
 ```
 
 ## Parameters file

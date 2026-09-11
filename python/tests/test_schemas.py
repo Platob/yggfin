@@ -44,7 +44,7 @@ def test_a_contract_is_the_three_things_iceberg_stores() -> None:
 
     assert list(document) == list(CONTRACT_KEYS) == ["schema", "partition-spec", "sort-order"]
     assert [member["name"] for member in document["schema"]["fields"]] == [
-        member.name for member in Message.field()
+        member.name for member in Message.into_field()
     ]
     assert document["schema"]["identifier-field-ids"] == [1, 2]
     assert document["partition-spec"]["fields"] == [
@@ -58,7 +58,7 @@ def test_contract_round_trip_keeps_shape_and_identity() -> None:
     contract = load_contract()
     document = CONTRACT.read_text(encoding="utf-8")
 
-    assert document == f"{iceberg_contract(Message.field())}\n"
+    assert document == f"{iceberg_contract(Message.into_field())}\n"
     # A contract read back and republished is the same bytes, so anything the
     # reader drops shows up here as a diff rather than as a silent loss.
     assert document == f"{iceberg_contract(contract)}\n"
@@ -67,7 +67,7 @@ def test_contract_round_trip_keeps_shape_and_identity() -> None:
 
 def test_contract_matches_the_message_declaration() -> None:
     published = load_contract()
-    declared = Message.field()
+    declared = Message.into_field()
 
     # `check_metadata=False`: an Iceberg schema carries no Arrow metadata, so
     # the published shape loses `digest:*` and `partition:sources` and gains an
@@ -87,18 +87,20 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
     """
     published = load_contract()
 
-    assert derived_keys(Message.field()) == {"timepartition": ("timestamp",)}
+    assert derived_keys(Message.into_field()) == {"timepartition": ("timestamp",)}
     assert derived_keys(published) == {}
-    assert [member.name for member in Message.field() if member.digest.is_holder()] == ["bodyhash"]
+    assert [member.name for member in Message.into_field() if member.digest.is_holder()] == [
+        "bodyhash"
+    ]
     assert [member.name for member in published if member.digest.is_holder()] == []
     assert published.into_arrow_schema().field("bodyhash").metadata == {
         b"description": b"XXH3-128 digest of the exact body bytes, filled during field apply.",
         b"iceberg:field_id": b"11",
     }
     # A column's description survives as Iceberg's `doc`; the struct's own does
-    # not, and neither do the `python.*` keys naming the class that declared it.
-    assert Message.field().metadata["description"].startswith("One ULBridge text line")
-    assert Message.field().metadata["python.qualname"] == "Message"
+    # not, and neither do the `python:` keys naming the class that declared it.
+    assert Message.into_field().metadata["description"].startswith("One ULBridge text line")
+    assert Message.into_field().metadata["python:qualname"] == "Message"
     assert dict(published.metadata) == {}
 
 
@@ -108,8 +110,10 @@ def test_fix_contract_is_a_table_contract_for_iceberg_simulation() -> None:
 
     assert document == f"{iceberg_contract(fix_message_field())}\n"
     assert document == f"{iceberg_contract(fixed)}\n"
-    assert len(fixed) == 111
-    assert primary_keys(fixed) == ["url", "rownum"]
+    assert len(fixed) == 114
+    # A bridge configuration line states several messages, so the line's own
+    # identity is not a key by itself; the parsed-message digest completes it.
+    assert primary_keys(fixed) == ["url", "rownum", "msghash"]
     assert partition_keys(fixed) == {"timepartition": "hour"}
     schema = fixed.into_arrow_schema()
     # Columns use the dictionary's folded names; their tags are metadata, so
@@ -139,7 +143,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     assert schema.field("msgtype").metadata[b"fix:tag"] == b"35"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"iceberg:field_id": b"13",
+        b"iceberg:field_id": b"12",
     }
 
 
@@ -152,7 +156,7 @@ def test_raw_message_contract_keeps_source_keys() -> None:
         "sessionUid",
         "msgCtxId",
         "seqNum",
-        "plugin",
+        "pluginid",
         "level",
     ]
     assert [int(member.iceberg["field_id"]) for member in message] == list(range(1, 13))

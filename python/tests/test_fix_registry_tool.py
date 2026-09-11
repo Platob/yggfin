@@ -56,6 +56,7 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
     rows = setup["into_registry_rows"](dictionary)
     assert next(row for row in rows if row["tag"] == 55) == {
         "_id": "55:",
+        "_name": "symbol",
         "_search": "55 symbol symbol ticker instrument identifier",
         "tag": 55,
         "name": "Symbol",
@@ -113,7 +114,7 @@ def test_tool_is_strict_marimo_and_uses_the_rekep_fix_surface() -> None:
     source = TOOL.read_text(encoding="utf-8")
 
     assert checked.returncode == 0, checked.stdout + checked.stderr
-    assert "from rekep.fix import FixRegistry, fix_registry, parse_arrow_reader" in source
+    assert "from rekep.fix import PAYLOAD_COLUMN, FixCodec, FixRegistry, fix_registry" in source
     assert "yggdryl" not in source.casefold()
     assert "Task" not in source
     assert "Iceberg" not in source
@@ -126,7 +127,7 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
     assert "Standalone tool" in page
     assert "uv run --project python --group runner --frozen" in page
     assert "fix_registry" in page
-    assert "6,265" in page
+    assert "6,883" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
-    assert "empty Arrow reader" in page
+    assert "carrier stating the payload column" in page

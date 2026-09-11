@@ -13,10 +13,9 @@ The package ships its registry, so no dictionary path or environment variable
 is required:
 
 ```python
-from rekep.fix import FixCodec, fix_registry
+from rekep.fix import fix_codec
 
-codec = FixCodec(fix_registry(), branch="ulbridge")
-message = codec.transform_line(
+message, = fix_codec().parse_line(
     b"Sending : 8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|"
 )
 
@@ -42,7 +41,10 @@ uv run --project python rekep task run tasks/parse_fix/parse_fix.json
 `logs.messages` stores one physical line with its exact body bytes and source
 identity. `fix.messages` stores one codec result for that row, including typed
 columns, the complete arrival record, unmapped pairs, and derived identities.
-Both use `(url, rownum)` as their primary key, so replay is idempotent.
+`logs.messages` keys on `(url, rownum)`; `fix.messages` adds `msghash`,
+because a bridge configuration line states one message per MBean. Replay is
+idempotent either way, and the line's identity is a key prefix, so the two
+products still join on it.
 
 The reviewed contracts are [Message](schemas/rekep/message.json) and
 [FixMessage](schemas/rekep/fix-message.json), each the Iceberg schema,

@@ -19,7 +19,10 @@ and descriptions. Branch and shape filters narrow to standard/bridge fields or
 scalar/repeating-group definitions.
 
 The summary reports definition, group, branch, and typed-field counts. The
-bundled registry should report 6,265 definitions across two branches.
+bundled registry should report 6,883 definitions across two branches: its
+6,303 tagged scalars and the 580 repeating groups, which are named definitions
+rather than tagged ones and so are listed beside them rather than by iterating
+the registry.
 
 ## Definition views
 
@@ -32,21 +35,28 @@ bundled registry should report 6,265 definitions across two branches.
 | Metadata | the complete field metadata mapping |
 | Field JSON | deterministic `Field.into_json(indent=2)` |
 
-The full-schema panel creates an empty Arrow reader and asks
-`parse_arrow_reader` for its output schema. It therefore displays the actual
-registry-dependent `FixMsg` projection without parsing or fabricating a row.
+The full-schema panel builds a carrier stating the payload column and nothing
+else, then asks `FixCodec.parse_text_arrow_reader` for its output schema. It
+therefore displays the actual registry-dependent `FixMsg` projection without
+parsing or fabricating a row: a codec answers a schema from the capture it is
+given, so a carrier holding only `body` answers the dictionary's own columns.
 
 ```python
 import pyarrow
 
 from rekep import Field
-from rekep.fix import fix_registry, parse_arrow_reader
+from rekep.fix import PAYLOAD_COLUMN, FixCodec, fix_registry
 
-empty = pyarrow.RecordBatchReader.from_batches(pyarrow.schema([]), [])
-parsed = parse_arrow_reader(empty, registry=fix_registry())
+carrier = pyarrow.schema([pyarrow.field(PAYLOAD_COLUMN, pyarrow.large_binary())])
+empty = pyarrow.RecordBatchReader.from_batches(carrier, [])
+parsed = FixCodec(fix_registry()).parse_text_arrow_reader(empty)
 field = Field.from_arrow_schema(parsed.schema, name="FixMsg")
 
-print(field.into_json(indent=2))
+assert [member.name for member in field][:2] == ["body", "beginstring"]
+assert [member.name for member in field][-2:] == [
+    "nofixentries",
+    "nounmappedfixentries",
+]
 ```
 
 Downloads are diagnostic snapshots. The packaged registry and runtime field

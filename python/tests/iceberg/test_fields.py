@@ -53,7 +53,7 @@ class Quote(Convertible):
 
 @pytest.fixture
 def schema() -> object:
-    return iceberg_schema(Quote.field())
+    return iceberg_schema(Quote.into_field())
 
 
 # -- one field on its own ---------------------------------------------------
@@ -66,7 +66,7 @@ def test_one_field_projects_on_its_own_and_numbers_from_the_id_given() -> None:
     projection and call it were the only lines of `field.py` the whole suite
     never reached.
     """
-    projected = iceberg_field(Quote.field().field("symbol"), field_id=7)
+    projected = iceberg_field(Quote.into_field().field("symbol"), field_id=7)
     assert projected.name == "symbol"
     assert projected.field_id == 7
     assert projected.required is True
@@ -76,7 +76,7 @@ def test_one_field_projects_on_its_own_and_numbers_from_the_id_given() -> None:
 def test_one_field_projects_the_same_way_the_whole_schema_does(schema: object) -> None:
     """Two ways to the same NestedField, which is what makes the short one safe."""
     whole = schema.find_field("venue")
-    alone = iceberg_field(Quote.field().field("venue"), field_id=whole.field_id)
+    alone = iceberg_field(Quote.into_field().field("venue"), field_id=whole.field_id)
     assert alone.name == whole.name
     assert alone.field_type == whole.field_type
     assert alone.required == whole.required
@@ -109,7 +109,7 @@ def test_a_field_without_a_key_declares_no_identifier() -> None:
     class Loose(Convertible):
         symbol: str
 
-    assert iceberg_schema(Loose.field()).identifier_field_ids == []
+    assert iceberg_schema(Loose.into_field()).identifier_field_ids == []
 
 
 def test_false_primary_key_metadata_is_not_an_identifier() -> None:
@@ -152,14 +152,14 @@ def test_ids_match_what_pyiceberg_would_assign_from_the_same_arrow_schema() -> N
     from pyiceberg.io.pyarrow import _pyarrow_to_schema_without_ids
     from pyiceberg.schema import assign_fresh_schema_ids
 
-    arrow = Quote.field().into_arrow_schema()
+    arrow = Quote.into_field().into_arrow_schema()
     fresh = assign_fresh_schema_ids(_pyarrow_to_schema_without_ids(arrow))
-    ours = iceberg_schema(Quote.field())
+    ours = iceberg_schema(Quote.into_field())
     assert {f.name: f.field_id for f in ours.fields} == {f.name: f.field_id for f in fresh.fields}
 
 
 def test_one_field_projects_on_its_own() -> None:
-    built = iceberg_field(Quote.field().field("symbol"), field_id=7)
+    built = iceberg_field(Quote.into_field().field("symbol"), field_id=7)
     assert (built.name, built.field_id, built.required) == ("symbol", 7, True)
     assert built.doc == "Instrument."
 
@@ -172,7 +172,7 @@ def test_a_nested_field_projects_too() -> None:
         venue: Quote
         legs: list[int]
 
-    schema = iceberg_schema(Book.field())
+    schema = iceberg_schema(Book.into_field())
     assert str(schema.find_field("venue").field_type).startswith("struct")
     assert schema.find_field("legs").field_type.element_type.__class__.__name__ == "LongType"
 
@@ -181,7 +181,7 @@ def test_a_nested_field_projects_too() -> None:
 
 
 def test_the_partition_spec_follows_the_declaration(schema: object) -> None:
-    spec = iceberg_partition_spec(Quote.field(), schema)
+    spec = iceberg_partition_spec(Quote.into_field(), schema)
     (partition,) = spec.fields
     assert partition.name == "day", "an identity partition keeps the column name"
     assert partition.source_id == schema.find_field("day").field_id
@@ -194,7 +194,7 @@ def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
         symbol: Annotated[str, partition_key("bucket[16]")]
         stamp: Annotated[datetime.datetime, partition_key("day")]
 
-    spec = iceberg_partition_spec(Bucketed.field())
+    spec = iceberg_partition_spec(Bucketed.into_field())
     assert [str(f.transform) for f in spec.fields] == ["bucket[16]", "day"]
     assert [f.name for f in spec.fields] == ["symbol_bucket", "stamp_day"], (
         "the width is in the spec already, and a partition name is a directory name"
@@ -202,7 +202,7 @@ def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
     for partition in spec.fields:
         assert "[" not in partition.name and "]" not in partition.name
 
-    built = iceberg_struct_field(iceberg_schema(Bucketed.field()), "Bucketed", spec)
+    built = iceberg_struct_field(iceberg_schema(Bucketed.into_field()), "Bucketed", spec)
     assert partition_keys(built) == {"symbol": "bucket[16]", "stamp": "day"}
     assert not built.field("symbol").is_partition
     assert not built.field("stamp").is_partition
@@ -231,7 +231,7 @@ def test_nothing_declared_is_an_unpartitioned_spec() -> None:
     class Flat(Convertible):
         symbol: str
 
-    assert iceberg_partition_spec(Flat.field()).fields == ()
+    assert iceberg_partition_spec(Flat.into_field()).fields == ()
 
 
 # -- reading one back -------------------------------------------------------
@@ -247,7 +247,7 @@ def test_a_schema_comes_back_as_a_struct_field(schema: object) -> None:
 
 
 def test_the_spec_comes_back_as_partition_keys(schema: object) -> None:
-    spec = iceberg_partition_spec(Quote.field(), schema)
+    spec = iceberg_partition_spec(Quote.into_field(), schema)
     built = iceberg_struct_field(schema, "Quote", spec)
     assert partition_keys(built) == {"day": "identity"}
     assert built.field("day").is_partition
@@ -277,10 +277,10 @@ def test_the_round_trip_keeps_names_types_and_keys(schema: object) -> None:
 
 
 def test_the_module_functions_take_a_field_directly() -> None:
-    assert [f.name for f in iceberg_schema(Quote.field()).fields] == [
-        member.name for member in Quote.field()
+    assert [f.name for f in iceberg_schema(Quote.into_field()).fields] == [
+        member.name for member in Quote.into_field()
     ]
-    assert [f.name for f in iceberg_partition_spec(Quote.field()).fields] == ["day"]
+    assert [f.name for f in iceberg_partition_spec(Quote.into_field()).fields] == ["day"]
 
 
 # -- column ids --------------------------------------------------------------
@@ -456,7 +456,7 @@ class Wide(Convertible):
 
 def _widened(leaves: int) -> Field:
     """`Wide` grown to `leaves` members, the two declared ones included."""
-    source = Wide.field()
+    source = Wide.into_field()
     grown = pyarrow.struct(
         [member.into_arrow() for member in source]
         + [pyarrow.field(f"pad{index}", pyarrow.int64()) for index in range(leaves - 2)]
@@ -465,7 +465,7 @@ def _widened(leaves: int) -> Field:
 
 
 def test_the_keys_a_reader_filters_on_are_declared_by_name() -> None:
-    declared = metrics_for(Quote.field())
+    declared = metrics_for(Quote.into_field())
     assert declared == {
         "write.metadata.metrics.column.day": "full",
         "write.metadata.metrics.column.symbol": "truncate(16)",
@@ -473,7 +473,7 @@ def test_the_keys_a_reader_filters_on_are_declared_by_name() -> None:
 
 
 def test_a_shape_inside_the_budget_does_not_restate_it() -> None:
-    assert INFERRED_METRICS not in metrics_for(Quote.field())
+    assert INFERRED_METRICS not in metrics_for(Quote.into_field())
     assert INFERRED_METRICS not in metrics_for(_widened(DEFAULT_INFERRED))
 
 
@@ -523,7 +523,7 @@ def test_a_contract_is_pyiceberg_json_under_three_iceberg_keys() -> None:
 
 def test_a_contract_states_the_partition_and_sort_a_schema_alone_cannot() -> None:
     """The two keys beside `schema` are why the document is not one `Schema`."""
-    document = json.loads(iceberg_contract(Venue.field(), sort_by=["mic"]))
+    document = json.loads(iceberg_contract(Venue.into_field(), sort_by=["mic"]))
 
     assert document["partition-spec"]["fields"] == [
         {"source-id": 2, "field-id": 1000, "transform": "hour", "name": "at_hour"}
@@ -539,7 +539,7 @@ def test_a_contract_states_the_partition_and_sort_a_schema_alone_cannot() -> Non
 
 
 def test_a_contract_round_trip_is_a_fixed_point() -> None:
-    document = iceberg_contract(Venue.field())
+    document = iceberg_contract(Venue.into_field())
     rebuilt = iceberg_contract_field(document, "Venue")
 
     assert iceberg_contract(rebuilt) == document
@@ -549,7 +549,7 @@ def test_a_contract_round_trip_is_a_fixed_point() -> None:
 
 def test_a_sorted_contract_comes_back_sorted() -> None:
     """The read side of `sort-order`: both published shapes are unsorted."""
-    document = iceberg_contract(Venue.field(), sort_by=["mic"])
+    document = iceberg_contract(Venue.into_field(), sort_by=["mic"])
     rebuilt = iceberg_contract_field(document, "Venue")
 
     assert sort_keys(rebuilt) == {"mic": "asc"}
@@ -558,7 +558,7 @@ def test_a_sorted_contract_comes_back_sorted() -> None:
 
 def test_a_layout_no_member_can_hold_is_refused_rather_than_dropped() -> None:
     """A table read back has `table.spec()` beside it; a document has nothing."""
-    document = json.loads(iceberg_contract(Venue.field()))
+    document = json.loads(iceberg_contract(Venue.into_field()))
     dangling = dict(
         document, **{"partition-spec": {"spec-id": 0, "fields": [{**PARTITION, "source-id": 99}]}}
     )
@@ -603,8 +603,8 @@ def test_an_unsorted_shape_records_the_order_a_created_table_records() -> None:
     """`SortOrder()` is order 1; Iceberg's own unsorted order is 0."""
     from pyiceberg.table.sorting import UNSORTED_SORT_ORDER
 
-    assert iceberg_sort_order(Venue.field()) == UNSORTED_SORT_ORDER
-    assert json.loads(iceberg_contract(Venue.field()))["sort-order"]["order-id"] == 0
+    assert iceberg_sort_order(Venue.into_field()) == UNSORTED_SORT_ORDER
+    assert json.loads(iceberg_contract(Venue.into_field()))["sort-order"]["order-id"] == 0
 
 
 def test_a_document_that_is_not_a_contract_names_what_it_lacks() -> None:
