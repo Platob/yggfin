@@ -57,8 +57,8 @@ one commit divided by the chunk:
 | verb | 1 partition | 4 partitions | 24 partitions |
 | --- | ---: | ---: | ---: |
 | `append_arrow_*`, no keys | 1.07 | 1.56 | 1.15 |
-| `append_arrow_*`, `merge_by` | 1.23 | 1.56 | 1.15 |
-| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.56 | 1.15 |
+| `append_arrow_*`, `merge_by` | 1.23 | 1.37 | 1.12 |
+| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.36 | 1.12 |
 
 Those are chunks of keys the table does not hold, which is what a stream
 brings. A chunk that overlaps what is stored also keeps the rows it decided
