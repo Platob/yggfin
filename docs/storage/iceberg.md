@@ -43,9 +43,13 @@ consume one batch at a time. The batch and table helpers build that reader.
 Every verb writes the same way: a bounded chunk is split into its transformed
 partitions, and each partition is taken out of the chunk, written to a local
 Parquet file, uploaded through the table's configured `FileIO`, and committed
-by path. One commit per chunk, whatever the partition count, and what the
-write holds past the chunk it was handed is one partition rather than every
-partition's rows.
+by path. What the write holds past the chunk it was handed is one partition
+rather than every partition's rows.
+
+Everything a chunk *adds* lands in one commit, whatever the partition count.
+A keyed overwrite additionally keeps one bounded commit per partition whose
+stored files it has to rewrite, because the rows replacing a stored row must
+land in the commit that removes it.
 
 Measured on a 70 MiB chunk of 524,288 rows, as the Arrow high-water mark over
 one commit divided by the chunk:

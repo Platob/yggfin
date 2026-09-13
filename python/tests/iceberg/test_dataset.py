@@ -1277,6 +1277,57 @@ def test_partition_cleanup_attempts_every_upload_without_masking_the_source_erro
     assert len(caught.value.exceptions) == 2
 
 
+def test_a_staged_commit_hands_its_files_over_before_it_commits(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The stager deletes on the way out whatever it still owns. Between a
+    commit the catalog had already accepted and the line handing its files
+    over, an interrupt deleted the data files of a live snapshot -- so there
+    must be nothing between them."""
+    from pyiceberg.table import Transaction
+
+    from rekep.iceberg.dataset import _PartitionStager
+
+    order: list[str] = []
+    release, commit = _PartitionStager.release, Transaction.commit_transaction
+
+    def released(self: _PartitionStager, partitions: Any) -> None:
+        order.append("release")
+        release(self, partitions)
+
+    def committed(self: Transaction) -> None:
+        order.append("commit")
+        commit(self)
+
+    monkeypatch.setattr(_PartitionStager, "release", released)
+    monkeypatch.setattr(Transaction, "commit_transaction", committed)
+
+    assert dataset.append_arrow_table(quotes(2), merge_by=False) == 2
+    assert order == ["release", "commit"]
+
+
+def test_partition_cleanup_survives_an_interrupt_closing_its_local_file(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An interrupt is not an ordinary error, and the uploads already made are
+    still this object's to delete when one arrives."""
+    from rekep.iceberg.dataset import _PartitionStager
+
+    table = dataset.get_or_create_table()
+    deleted: list[str] = []
+    monkeypatch.setattr(table.io, "delete", lambda path: deleted.append(path))
+
+    def interrupted(**_kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        with _PartitionStager(table, (), 1) as stager:
+            stager.uploaded.update({"first.parquet", "second.parquet"})
+            monkeypatch.setattr(stager, "_close_file", interrupted)
+
+    assert set(deleted) == {"first.parquet", "second.parquet"}
+
+
 def test_an_interleaved_partition_stream_is_refused_before_its_pending_commit(
     dataset: IcebergDataset,
 ) -> None:

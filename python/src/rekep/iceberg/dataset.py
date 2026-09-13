@@ -4038,10 +4038,13 @@ class _PartitionStager:
         return self
 
     def __exit__(self, exc_type: object, _exc: object, _traceback: object) -> None:
-        errors: list[Exception] = []
+        errors: list[BaseException] = []
         try:
             self._close_file(upload=False)
-        except Exception as error:
+        except BaseException as error:
+            # Whatever stopped the local writer, the uploads it already made
+            # are still this object's to delete, and an interrupt escaping
+            # here left every one of them behind.
             errors.append(error)
         for path in tuple(self.uploaded):
             try:
@@ -4057,7 +4060,10 @@ class _PartitionStager:
         if exc_type is None and errors:
             if len(errors) == 1:
                 raise errors[0]
-            raise ExceptionGroup("partition staging cleanup failed", errors)
+            # `BaseExceptionGroup` and not `ExceptionGroup`, which refuses to
+            # carry an interrupt; it still builds the narrower group when every
+            # error it holds is an ordinary one.
+            raise BaseExceptionGroup("partition staging cleanup failed", errors)
 
     def start(self, partition: Mapping[str, Any]) -> None:
         if self.partition is not None:
@@ -4293,6 +4299,11 @@ def _commit_staged(
 ) -> None:
     """Commit staged files, settling whether a failed acknowledgement landed."""
     staged_paths = {path for partition in staged for path in partition.paths}
+    # Released before the commit rather than after it. The stager deletes on
+    # the way out whatever it still owns, so between a commit the catalog had
+    # already accepted and the line handing its files over, an interrupt left
+    # the stager deleting the data files of a live snapshot.
+    stager.release(staged)
     try:
         transaction.commit_transaction()
     except BaseException:
@@ -4302,18 +4313,14 @@ def _commit_staged(
             candidates.update(_transaction_paths(table, transaction))
         except BaseException:
             pass
-        if _paths_may_be_live(table, candidates):
-            # An unreachable catalog cannot distinguish refusal from a commit
-            # whose acknowledgement was lost. Preserve possible live files;
-            # orphan maintenance settles them once the catalog is reachable.
-            stager.release(staged)
-        else:
-            # The stager owns its uploads; PyIceberg also writes manifests and
-            # preserved rows when a keyed delete splits an existing file.
-            _discard_paths(table.io, candidates - staged_paths)
+        if not _paths_may_be_live(table, candidates):
+            # A definite refusal owns everything it made: the staged uploads,
+            # and the manifests and preserved rows PyIceberg writes when a
+            # keyed delete splits an existing file. An unreachable catalog
+            # cannot tell refusal from a lost acknowledgement, so it keeps
+            # them instead and orphan maintenance settles them later.
+            _discard_paths(table.io, candidates)
         raise
-    else:
-        stager.release(staged)
 
 
 def _commit_generated(table: Any, transaction: Any, generated: Iterable[str]) -> None:
