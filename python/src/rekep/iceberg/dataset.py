@@ -4046,13 +4046,23 @@ class _PartitionStager:
             # are still this object's to delete, and an interrupt escaping
             # here left every one of them behind.
             errors.append(error)
-        for path in tuple(self.uploaded):
-            try:
-                self.table.io.delete(path)
-            except FileNotFoundError:
-                pass
-            except Exception as error:
-                errors.append(error)
+        leftover = tuple(self.uploaded)
+        # The store these were uploaded through, held before the question is
+        # asked: answering it reloads the table, and a reloaded table carries
+        # a fresh `FileIO`.
+        io = self.table.io
+        # Asked before deleting, because a commit that landed and was then
+        # interrupted before its files were handed over leaves them here,
+        # live and referenced. `_paths_may_be_live` answers True for an
+        # unreachable catalog too, which is the answer that keeps rows.
+        if leftover and not _paths_may_be_live(self.table, set(leftover)):
+            for path in leftover:
+                try:
+                    io.delete(path)
+                except FileNotFoundError:
+                    pass
+                except Exception as error:
+                    errors.append(error)
         try:
             self.directory.cleanup()
         except Exception as error:
@@ -4307,11 +4317,6 @@ def _commit_staged(
 ) -> None:
     """Commit staged files, settling whether a failed acknowledgement landed."""
     staged_paths = {path for partition in staged for path in partition.paths}
-    # Released before the commit rather than after it. The stager deletes on
-    # the way out whatever it still owns, so between a commit the catalog had
-    # already accepted and the line handing its files over, an interrupt left
-    # the stager deleting the data files of a live snapshot.
-    stager.release(staged)
     try:
         transaction.commit_transaction()
     except BaseException:
@@ -4321,14 +4326,21 @@ def _commit_staged(
             candidates.update(_transaction_paths(table, transaction))
         except BaseException:
             pass
-        if not _paths_may_be_live(table, candidates):
-            # A definite refusal owns everything it made: the staged uploads,
-            # and the manifests and preserved rows PyIceberg writes when a
-            # keyed delete splits an existing file. An unreachable catalog
-            # cannot tell refusal from a lost acknowledgement, so it keeps
-            # them instead and orphan maintenance settles them later.
-            _discard_paths(table.io, candidates)
+        if _paths_may_be_live(table, candidates):
+            # An unreachable catalog cannot distinguish refusal from a commit
+            # whose acknowledgement was lost. Preserve possible live files;
+            # orphan maintenance settles them once the catalog is reachable.
+            stager.release(staged)
+        else:
+            # The stager keeps its uploads: a retry commits these same files,
+            # and only giving up for good -- the stager's own way out --
+            # deletes them. PyIceberg's manifests and the rows it preserved
+            # when a keyed delete split an existing file are this attempt's,
+            # and go now.
+            _discard_paths(table.io, candidates - staged_paths)
         raise
+    else:
+        stager.release(staged)
 
 
 def _commit_generated(table: Any, transaction: Any, generated: Iterable[str]) -> None:
@@ -4388,18 +4400,23 @@ def _settled_paths(paths: Iterable[str]) -> set[str]:
 
 
 def _paths_may_be_live(table: Any, candidates: set[str]) -> bool:
-    """Whether a refreshed table references a candidate, or cannot answer safely."""
+    """Whether the stored table references a candidate, or cannot answer safely.
+
+    Loaded beside the caller's table rather than through `refresh()`, which
+    swaps that table's `FileIO` for the catalog's newest -- and the caller is
+    about to delete files through the one it wrote them with.
+    """
     if not candidates:
         return False
     try:
-        table.refresh()
-        if str(table.metadata_location) in candidates:
+        stored = table.catalog.load_table(table.name())
+        if str(stored.metadata_location) in candidates:
             return True
         seen: set[str] = set()
-        for snapshot in table.metadata.snapshots:
+        for snapshot in stored.metadata.snapshots:
             if str(snapshot.manifest_list) in candidates:
                 return True
-            for manifest in snapshot.manifests(io=table.io):
+            for manifest in snapshot.manifests(io=stored.io):
                 path = str(manifest.manifest_path)
                 if path in candidates:
                     return True
@@ -4407,7 +4424,7 @@ def _paths_may_be_live(table: Any, candidates: set[str]) -> bool:
                     continue
                 seen.add(path)
                 for entry in manifest.fetch_manifest_entry(
-                    io=table.io,
+                    io=stored.io,
                     discard_deleted=True,
                 ):
                     if str(entry.data_file.file_path) in candidates:

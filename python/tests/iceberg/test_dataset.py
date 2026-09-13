@@ -1277,33 +1277,65 @@ def test_partition_cleanup_attempts_every_upload_without_masking_the_source_erro
     assert len(caught.value.exceptions) == 2
 
 
-def test_a_staged_commit_hands_its_files_over_before_it_commits(
+def test_a_retried_staged_commit_still_has_the_files_it_committed(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The stager deletes on the way out whatever it still owns. Between a
-    commit the catalog had already accepted and the line handing its files
-    over, an interrupt deleted the data files of a live snapshot -- so there
-    must be nothing between them."""
+    """A refusal the catalog is definite about deletes what the attempt made,
+    but a retry commits the same staged files -- so those are the stager's to
+    delete on the way out, not the refusal's."""
+    from pyiceberg.exceptions import CommitFailedException
     from pyiceberg.table import Transaction
 
-    from rekep.iceberg.dataset import _PartitionStager
+    commit = Transaction.commit_transaction
+    attempts = 0
 
-    order: list[str] = []
-    release, commit = _PartitionStager.release, Transaction.commit_transaction
-
-    def released(self: _PartitionStager, partitions: Any) -> None:
-        order.append("release")
-        release(self, partitions)
-
-    def committed(self: Transaction) -> None:
-        order.append("commit")
+    def contended(self: Transaction) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise CommitFailedException("another writer won")
         commit(self)
 
-    monkeypatch.setattr(_PartitionStager, "release", released)
-    monkeypatch.setattr(Transaction, "commit_transaction", committed)
+    monkeypatch.setattr(dataset, "retry_backoff", 0.0)
+    monkeypatch.setattr(Transaction, "commit_transaction", contended)
 
-    assert dataset.append_arrow_table(quotes(2), merge_by=False) == 2
-    assert order == ["release", "commit"]
+    source = pyarrow.concat_tables([quotes(1), other_day(1)])
+    dataset.overwrite_arrow_reader(
+        source.to_reader(max_chunksize=1), merge_by=False, commit_row_size=1_000_000
+    )
+
+    monkeypatch.undo()
+    assert attempts == 2
+    stored = dataset.refresh()
+    io = stored.iceberg_table.io
+    paths = stored.data_files().column("file_path").to_pylist()
+    assert paths and all(io.new_input(path).exists() for path in paths)
+    assert stored.read_arrow_table().num_rows == 2
+
+
+def test_an_interrupt_between_a_commit_and_its_handover_keeps_the_rows(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The stager deletes on the way out whatever it still owns, and a commit
+    the catalog accepted hands its files over on the line after. An interrupt
+    in between used to leave the stager deleting the data files of a live
+    snapshot, so it asks whether they are live before deleting any."""
+    from rekep.iceberg.dataset import _PartitionStager
+
+    def interrupted(_self: _PartitionStager, _partitions: Any) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(_PartitionStager, "release", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        dataset.append_arrow_table(quotes(2), merge_by=False)
+
+    monkeypatch.undo()
+    stored = dataset.refresh()
+    io = stored.iceberg_table.io
+    paths = stored.data_files().column("file_path").to_pylist()
+    assert paths, "the commit landed"
+    assert all(io.new_input(path).exists() for path in paths)
+    assert stored.read_arrow_table().num_rows == 2
 
 
 def test_partition_cleanup_survives_an_interrupt_closing_its_local_file(
