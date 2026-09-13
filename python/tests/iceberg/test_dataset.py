@@ -6147,6 +6147,45 @@ def test_a_staged_file_fills_its_row_groups_whatever_the_batches_are(
     assert sizes[:-1] == [limit] * (written.num_row_groups - 1)
 
 
+def test_a_partition_is_packed_into_files_by_its_own_row_width(tmp_path: Path) -> None:
+    """`write.target-file-size-bytes` is a size in bytes, and rows are not all
+    the same width. One bound taken from a whole chunk's average splits the
+    partition of short rows into files a fraction of the target and packs the
+    partition of wide rows past it."""
+
+    @scalar
+    class Wide(Convertible):
+        ident: Annotated[int, primary_key()]
+        part: Annotated[int, partition_key()]
+        body: str
+
+    rows = 2_000
+    catalog = IcebergCatalog(name="widths", properties=catalog_properties(tmp_path))
+    target = catalog.dataset(
+        "t.widths",
+        field=Wide.field(),
+        table_properties={"write.target-file-size-bytes": "100000"},
+    )
+    target.append_arrow_table(
+        pyarrow.Table.from_pydict(
+            {
+                "ident": list(range(rows)),
+                "part": [index % 2 for index in range(rows)],
+                "body": ["x" * 8 if index % 2 == 0 else "y" * 1_000 for index in range(rows)],
+            },
+            schema=Wide.field().into_arrow_schema(),
+        ),
+        merge_by=False,
+    )
+
+    files = target.data_files().to_pylist()
+    narrow = [row for row in files if "part=0" in row["file_path"]]
+    wide = [row for row in files if "part=1" in row["file_path"]]
+    assert [row["record_count"] for row in narrow] == [rows // 2], "short rows fill one file"
+    assert len(wide) > 1, "wide rows do not fit in one"
+    assert all(row["file_size_in_bytes"] <= 100_000 for row in wide)
+
+
 def test_every_verb_writes_a_table_partitioned_by_void(tmp_path: Path) -> None:
     """`void` is the last transform with an Arrow form, and the staged writer
     needs one for every field of the spec it is placing rows under."""

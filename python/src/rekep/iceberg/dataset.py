@@ -4003,7 +4003,10 @@ class _PartitionStager:
         self.table = table
         self.sort_fields = tuple(sort_by)
         self.sort_by = tuple(name for name, _ in self.sort_fields)
-        self.file_row_size = max(int(file_row_size), 1)
+        #: What a partition uses when it cannot say: a stream staging one
+        #: partition over many calls has no rows to measure until it is done.
+        self.default_file_row_size = max(int(file_row_size), 1)
+        self.file_row_size = self.default_file_row_size
         self.directory = tempfile.TemporaryDirectory(prefix="rekep-iceberg-")
         self.location_provider = load_location_provider(
             table_location=table.metadata.location,
@@ -4075,9 +4078,19 @@ class _PartitionStager:
             # error it holds is an ordinary one.
             raise BaseExceptionGroup("partition staging cleanup failed", errors)
 
-    def start(self, partition: Mapping[str, Any]) -> None:
+    def start(self, partition: Mapping[str, Any], file_row_size: int | None = None) -> None:
+        """Open a partition, sized by its own rows when the caller knows them.
+
+        Its own, because `TARGET_FILE_SIZE` is a size in bytes and rows are
+        not all the same width: one bound taken from a whole chunk's average
+        splits a partition of short rows into files a fraction of the target
+        and packs one of wide rows past it.
+        """
         if self.partition is not None:
             raise RuntimeError("finish the staged partition before starting another")
+        self.file_row_size = (
+            max(int(file_row_size), 1) if file_row_size else self.default_file_row_size
+        )
         self.partition = dict(partition)
         self.paths = []
         self.data_files = []
@@ -4276,13 +4289,13 @@ def _append_files(transaction: Any, reference: str, properties: Mapping[str, str
     return update.merge_append() if merged else update.fast_append()
 
 
-def _target_file_rows(table: Any, chunk: pyarrow.Table) -> int:
-    """Rows per staged file, from `TARGET_FILE_SIZE` and this chunk's row width.
+def _target_file_rows(table: Any, rows: pyarrow.Table) -> int:
+    """Rows per staged file, from `TARGET_FILE_SIZE` and these rows' width.
 
     Sized from in-memory bytes because that is how Iceberg's own writer reads
     the property, so a table keeps one answer to how big its files are
     whoever wrote them. Still a bound per commit and not across commits: a
-    file closes when its partition's rows run out.
+    file closes when the rows it is packing run out.
     """
     from pyiceberg.table import TableProperties
     from pyiceberg.utils.properties import property_as_int
@@ -4292,9 +4305,9 @@ def _target_file_rows(table: Any, chunk: pyarrow.Table) -> int:
         property_name=TableProperties.WRITE_TARGET_FILE_SIZE_BYTES,
         default=TableProperties.WRITE_TARGET_FILE_SIZE_BYTES_DEFAULT,
     )
-    if not chunk.num_rows or not target:
-        return max(chunk.num_rows, 1)
-    return max(1, int(target / max(chunk.nbytes / chunk.num_rows, 1)))
+    if not rows.num_rows or not target:
+        return max(rows.num_rows, 1)
+    return max(1, int(target / max(rows.nbytes / rows.num_rows, 1)))
 
 
 def _stage_partition(
@@ -4303,7 +4316,7 @@ def _stage_partition(
     rows: pyarrow.Table,
 ) -> _StagedPartition:
     """Stage one resolved partition's rows, uncommitted."""
-    stager.start(partition or {})
+    stager.start(partition or {}, _target_file_rows(stager.table, rows))
     stager.write(rows)
     return stager.finish()
 
