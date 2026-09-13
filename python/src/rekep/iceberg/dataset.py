@@ -4198,8 +4198,13 @@ class _PartitionStager:
             self._pending, self._pending_rows = [], 0
             return
         try:
-            self._flush(writer)
-            writer.close()
+            # Closed whatever the flush does: an open writer holds the local
+            # file, and Windows refuses to unlink a file that is still open,
+            # which would replace the error that got here with its own.
+            try:
+                self._flush(writer)
+            finally:
+                writer.close()
             if upload:
                 data_file = _staged_data_file(self.table, local, target, self.partition or {})
                 # A remote copy can create its object and then lose the
