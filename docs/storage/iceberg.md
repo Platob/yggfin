@@ -56,9 +56,9 @@ one commit divided by the chunk:
 
 | verb | 1 partition | 4 partitions | 24 partitions |
 | --- | ---: | ---: | ---: |
-| `append_arrow_*`, no keys | 1.07 | 1.56 | 1.15 |
-| `append_arrow_*`, `merge_by` | 1.23 | 1.37 | 1.12 |
-| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.36 | 1.12 |
+| `append_arrow_*`, no keys | 1.07 | 1.52 | 1.15 |
+| `append_arrow_*`, `merge_by` | 1.23 | 1.52 | 1.12 |
+| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.52 | 1.12 |
 
 Those are chunks of keys the table does not hold, which is what a stream
 brings. A chunk that overlaps what is stored also keeps the rows it decided
@@ -73,10 +73,16 @@ is sorted on every read, through Arrow IPC runs on local disk; over four files
 of that same 524,288-row table, dropping that pass took a warm ordered read
 from 85 ms to 62 ms and wrote no temporary file at all.
 
-The local stage is a bounded file and not a copy of the commit. It is deleted
-as soon as it is uploaded, a refused commit deletes what it uploaded, and a
-commit whose acknowledgement is lost leaves its files for the orphan sweep to
-settle rather than deleting rows that may be live.
+The local stage is a bounded file and not a copy of the commit: one file
+exists at a time and it is deleted as soon as it is uploaded, so a commit
+needs up to `write.target-file-size-bytes` of free space wherever Python puts
+temporary files -- `TMPDIR` on POSIX, which on a container is often a tmpfs
+and therefore memory. A warehouse on that same local disk writes those bytes
+twice, once to the stage and once to the table.
+
+A refused commit deletes what it uploaded, and a commit whose acknowledgement
+is lost leaves its files for the orphan sweep to settle rather than deleting
+rows that may be live.
 
 Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
 `overwrite_arrow_*` write, to add columns from its authoritative write Field

@@ -125,6 +125,16 @@ MERGE_RANGE_BANDS = 8
 #: groups of 50 in 0.23x, and groups of 1.6 in 4.4x.
 MERGE_GROUP_GAIN = 8
 
+#: Rows a staged batch carries before it is worth writing as it came. Putting
+#: one batch on the file's schema costs about the same whatever it holds --
+#: measured at 0.2 ms, nearly all of it walking the schema -- so a run
+#: arriving as many small pieces pays that per piece: 128 source batches over
+#: 256 partitions left every run in 128 chunks of 8 rows, 32,768 conversions
+#: and 6.4s where one conversion per run is 0.05s. Under this, the run is
+#: copied together first, which for pieces that small costs nothing; over it,
+#: the copy is the larger of the two and the pieces are written as they are.
+STAGE_PIECE_ROW_GAIN = 8192
+
 #: Maximum sorted runs merged in memory during one external-sort pass. Each
 #: run contributes one scan batch, so the fan-in bounds memory independently
 #: of how many row groups or files a partition holds.
@@ -4699,6 +4709,11 @@ def _partition_run_tables(
             indices = pyarrow.compute.sort_indices(
                 keys, sort_keys=[(name, "ascending") for name in names]
             )
+            # Held until every partition has taken its rows, so held at the
+            # width this batch needs rather than the 64 bits Arrow sorts with:
+            # on rows narrow enough to make it matter -- two int64 columns --
+            # the difference was 1.51x of the chunk against 1.29x.
+            indices = indices.cast(_index_type(batch.num_rows))
             values = keys.take(indices).columns
         spans: dict[tuple[Any, ...], tuple[int, int]] = {}
         for identity, partition, start, stop in _partition_spans(partitions, values):
@@ -4717,7 +4732,10 @@ def _partition_run_tables(
                 if indices is None
                 else batch.take(indices.slice(start, stop - start))
             )
-        yield partition, pyarrow.Table.from_batches(pieces, chunk.schema)
+        run = pyarrow.Table.from_batches(pieces, chunk.schema)
+        if len(pieces) > 1 and run.num_rows < STAGE_PIECE_ROW_GAIN * len(pieces):
+            run = run.combine_chunks()
+        yield partition, run
 
 
 def _partition_runs(
@@ -4729,6 +4747,15 @@ def _partition_runs(
     values = _partition_values(chunk, partitions)
     for identity, partition, start, stop in _partition_spans(partitions, values):
         yield identity, partition, chunk.slice(start, stop - start)
+
+
+def _index_type(rows: int) -> Any:
+    """The narrowest unsigned Arrow type that can address `rows` of them."""
+    if rows <= 1 << 16:
+        return pyarrow.uint16()
+    if rows <= 1 << 32:
+        return pyarrow.uint32()
+    return pyarrow.uint64()
 
 
 def _partition_values(rows: Any, partitions: Sequence[_PartitionColumn]) -> list[Any]:
