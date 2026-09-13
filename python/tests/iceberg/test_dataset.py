@@ -2075,6 +2075,151 @@ def test_an_initial_keyed_write_lands_all_partitions_in_one_snapshot(
     assert dataset.data_files().num_rows == 2, "PyIceberg still writes one file per partition"
 
 
+@pytest.mark.parametrize("verb", ["insert_arrow_table", "merge_arrow_table"])
+def test_a_keyed_write_over_stored_rows_lands_every_partition_in_one_snapshot(
+    dataset: IcebergDataset, verb: str
+) -> None:
+    """Partitions are resolved one at a time and committed together."""
+    dataset.append_arrow_table(quotes(1))
+    source = pyarrow.concat_tables([keyed("N", 2), other_day(2), third_day(2)])
+
+    before = len(dataset.iceberg_table.snapshots())
+    getattr(dataset, verb)(source)
+
+    assert len(dataset.iceberg_table.snapshots()) == before + 1, "three partitions, one commit"
+    assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {
+        "S0",
+        "N0",
+        "N1",
+        "D0",
+        "D1",
+        "T0",
+        "T1",
+    }
+
+
+def test_a_streamed_keyed_append_commits_per_batch_bound_not_per_partition(
+    dataset: IcebergDataset,
+) -> None:
+    """`commit_batch_num` bounds a partitioned stream's commits as it does a flat one."""
+    dataset.append_arrow_table(quotes(1))
+    source = pyarrow.concat_tables([keyed("N", 2), other_day(2), third_day(2)])
+
+    before = len(dataset.iceberg_table.snapshots())
+    assert (
+        dataset.append_arrow_reader(
+            source.to_reader(max_chunksize=1),
+            merge_by=True,
+            commit_batch_num=6,
+        )
+        == 6
+    )
+
+    assert len(dataset.iceberg_table.snapshots()) == before + 1
+    assert dataset.read_arrow_table().num_rows == 7
+
+
+def test_a_rewriting_partition_keeps_its_own_commit_beside_the_batched_inserts(
+    dataset: IcebergDataset,
+) -> None:
+    """Only a part that replaces its own files pays for a commit of its own."""
+    dataset.append_arrow_table(pyarrow.concat_tables([quotes(1), other_day(1)]))
+    source = pyarrow.concat_tables([quotes(1, "XETR"), keyed("N", 1), third_day(1)])
+
+    before = len(dataset.iceberg_table.snapshots())
+    assert dataset.merge_arrow_table(source) == (1, 2)
+
+    after = len(dataset.iceberg_table.snapshots())
+    assert after - before == 2, "one rewrite, and one append carrying both new partitions"
+    assert stored_sizes(dataset) == {"S0": 0, "D0": 0, "N0": 0, "T0": 0}
+    assert (
+        next(row for row in dataset.read_arrow_table().to_pylist() if row["symbol"] == "S0")[
+            "venue"
+        ]
+        == "XETR"
+    )
+
+
+def test_a_refused_partition_leaves_the_whole_keyed_chunk_uncommitted(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One commit per chunk means one outcome: a refused part strands no other."""
+    from pyiceberg.table.update.snapshot import _FastAppendFiles
+
+    dataset.append_arrow_table(quotes(1))
+    before = len(dataset.iceberg_table.snapshots())
+
+    def refused(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("snapshot refused")
+
+    monkeypatch.setattr(_FastAppendFiles, "append_data_file", refused)
+    with pytest.raises(RuntimeError, match="snapshot refused"):
+        dataset.insert_arrow_table(
+            pyarrow.concat_tables([keyed("N", 1), other_day(1), third_day(1)])
+        )
+
+    assert len(dataset.refresh().iceberg_table.snapshots()) == before
+    assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {"S0"}
+
+
+def test_a_monotonic_partitioned_stream_keeps_one_frontier_per_partition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Filling an empty table bounds each partition it filled, not the whole.
+
+    A later chunk looks a frontier up under the partition it lands in, so one
+    bound covering every partition at once answered none of them. Committing
+    the parts together is what keeps those bounds usable: they all name the
+    one snapshot the chunk left, and a part committed on its own would move
+    the head out from under the parts beside it.
+    """
+
+    @scalar
+    class Daily(Convertible):
+        unix: Annotated[int, primary_key(), sort_key()]
+        day: Annotated[datetime.date, partition_key()]
+
+    target = IcebergDataset(
+        name="daily_frontier",
+        namespace="trading",
+        field=Daily.field(),
+        catalog_name="test",
+        catalog_properties=catalog_properties(tmp_path),
+    )
+    schema = Daily.field().into_arrow_schema()
+    one, two = datetime.date(2026, 8, 14), datetime.date(2026, 8, 15)
+
+    def spanning(*unix: int) -> pyarrow.Table:
+        return pyarrow.Table.from_pydict(
+            {"unix": list(unix), "day": [one, two] * (len(unix) // 2)}, schema=schema
+        )
+
+    table = target.get_or_create_table()
+    scans = 0
+    original = table.scan
+
+    def counted(*args: object, **kwargs: object) -> object:
+        nonlocal scans
+        scans += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(table, "scan", counted)
+    assert target.insert_arrow_table(spanning(1, 2)) == 2
+    assert scans == 0, "an empty table has nothing to look up"
+    assert len(target.iceberg_table.snapshots()) == 1
+
+    assert target.insert_arrow_table(spanning(3, 4)) == 2
+    assert scans == 0, "both partitions are strictly above the bound each was left"
+    assert len(target.iceberg_table.snapshots()) == 2, "two partitions, one commit"
+
+    assert target.insert_arrow_table(spanning(3, 4)) == 0
+    assert scans == 2, "a key equal to a bound may be a replay and is checked in its partition"
+    assert len(target.iceberg_table.snapshots()) == 2, "a replay commits nothing"
+
+    monkeypatch.setattr(table, "scan", original)
+    assert target.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [1, 2, 3, 4]
+
+
 def test_insert_refuses_a_null_or_nan_key(dataset: IcebergDataset) -> None:
     dataset.get_or_create_table()
     day = datetime.date(2026, 8, 14)
@@ -3880,6 +4025,32 @@ def other_day(count: int) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {
             "symbol": [f"D{i}" for i in range(count)],
+            "day": [datetime.date(2026, 8, 15)] * count,
+            "size": list(range(count)),
+            "venue": ["XPAR"] * count,
+        },
+        schema=Quote.field().into_arrow_schema(),
+    )
+
+
+def third_day(count: int) -> pyarrow.Table:
+    """`quotes` in a third partition, so a chunk can span more than two."""
+    return pyarrow.Table.from_pydict(
+        {
+            "symbol": [f"T{i}" for i in range(count)],
+            "day": [datetime.date(2026, 8, 16)] * count,
+            "size": list(range(count)),
+            "venue": ["XPAR"] * count,
+        },
+        schema=Quote.field().into_arrow_schema(),
+    )
+
+
+def other_day_keyed(prefix: str, count: int) -> pyarrow.Table:
+    """`other_day`, under a chosen key prefix."""
+    return pyarrow.Table.from_pydict(
+        {
+            "symbol": [f"{prefix}{i}" for i in range(count)],
             "day": [datetime.date(2026, 8, 15)] * count,
             "size": list(range(count)),
             "venue": ["XPAR"] * count,
