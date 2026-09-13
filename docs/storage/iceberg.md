@@ -65,8 +65,10 @@ brings. A chunk that overlaps what is stored also keeps the rows it decided
 to write, so it holds about two chunks rather than one; a replay that matches
 everything holds neither, because it writes nothing.
 
-Staged files record the table's sort order, which is what lets `order_by` read
-them back without sorting each one again. A file that does not record an order
+Staged files record the order they were written in, which is what lets
+`order_by` read them back without sorting each one again. A table whose
+recorded order the shape cannot hold -- a transformed sort field, a
+nulls-first one, a nested column -- is written unsorted and says so. A file that does not record an order
 is sorted on every read, through Arrow IPC runs on local disk; over four files
 of that same 524,288-row table, dropping that pass took a warm ordered read
 from 85 ms to 62 ms and wrote no temporary file at all.
