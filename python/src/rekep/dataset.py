@@ -676,7 +676,7 @@ def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     else is grouped, and a table with no duplicate keys still comes back
     untouched.
     """
-    if table.num_rows < 2:
+    if table.num_rows < 2 or not join:
         return table
     if in_sort_order(table, join):
         repeats = _repeats_its_neighbour(table, join)
@@ -695,8 +695,9 @@ def _repeats_its_neighbour(table: pyarrow.Table, join: Sequence[str]) -> Any:
     """Which rows carry the key of the row before them, grouping's way.
 
     Two nulls are one key and two NaNs are one key, because that is what a
-    `group_by` on those columns answers; `keys_of` has already made `-0.0`
-    and `0.0` the same number by the time a merge key reaches here.
+    `group_by` on those columns answers. A float key of either sign of zero
+    is one key too, and by both routes: Arrow equality says so here, and
+    `keys_of` normalises it for the group below.
     """
     compute = pyarrow.compute
     same = None
@@ -717,7 +718,5 @@ def _repeats_its_neighbour(table: pyarrow.Table, join: Sequence[str]) -> Any:
                 ),
             )
         same = equal if same is None else compute.and_(same, equal)
-    if same is None:
-        return pyarrow.nulls(table.num_rows, pyarrow.bool_()).fill_null(False)
     # The first row has no neighbour before it, so it is never a repeat.
     return pyarrow.concat_arrays([pyarrow.array([False]), same])
