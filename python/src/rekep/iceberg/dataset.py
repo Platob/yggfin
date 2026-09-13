@@ -4243,7 +4243,13 @@ class _PartitionStager:
             finally:
                 writer.close()
             if upload:
-                data_file = _staged_data_file(self.table, local, target, self.partition or {})
+                data_file = _staged_data_file(
+                    self.table,
+                    local,
+                    target,
+                    self.partition or {},
+                    ordered=bool(self.sort_fields),
+                )
                 # A remote copy can create its object and then lose the
                 # acknowledgement. Own the UUID target before starting it so
                 # context cleanup retries deletion after either outcome.
@@ -4501,8 +4507,23 @@ def _partition_data_files(
     return found
 
 
-def _staged_data_file(table: Any, local: str, target: str, partition: Mapping[str, Any]) -> Any:
-    """A staged Parquet footer plus its already computed non-linear partition."""
+def _staged_data_file(
+    table: Any,
+    local: str,
+    target: str,
+    partition: Mapping[str, Any],
+    *,
+    ordered: bool,
+) -> Any:
+    """A staged Parquet footer plus its already computed non-linear partition.
+
+    `ordered` is whether the writer laid these rows out in the table's
+    recorded order, and only then does the file say so. A shape cannot hold
+    every order Iceberg can record -- a transformed sort field, a nulls-first
+    one, a nested column -- and for those the writer has nothing to sort by,
+    so a file stamped with the order id would be claiming one it was not
+    written in. A reader takes that claim at its word.
+    """
     import pyarrow.parquet
     from pyiceberg.io.pyarrow import (
         compute_statistics_plan,
@@ -4526,7 +4547,7 @@ def _staged_data_file(table: Any, local: str, target: str, partition: Mapping[st
         file_format=FileFormat.PARQUET,
         partition=_partition_key(table, partition).partition,
         file_size_in_bytes=os.path.getsize(local),
-        sort_order_id=table.sort_order().order_id or None,
+        sort_order_id=(table.sort_order().order_id or None) if ordered else None,
         spec_id=table.metadata.default_spec_id,
         equality_ids=None,
         key_metadata=None,

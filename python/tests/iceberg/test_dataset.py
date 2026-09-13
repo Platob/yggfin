@@ -6147,6 +6147,29 @@ def test_a_staged_file_fills_its_row_groups_whatever_the_batches_are(
     assert sizes[:-1] == [limit] * (written.num_row_groups - 1)
 
 
+def test_a_file_claims_no_order_the_writer_could_not_lay_out(tmp_path: Path) -> None:
+    """A reader takes a recorded sort order at its word. A shape cannot hold
+    every order Iceberg can record -- a transformed sort field here -- and for
+    those the writer has nothing to sort by, so its files must not claim one."""
+    from pyiceberg.table.sorting import NullOrder
+    from pyiceberg.transforms import IdentityTransform, TruncateTransform
+
+    catalog = IcebergCatalog(name="claimed", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.claimed", field=Ticked.field())
+    with dataset.get_or_create_table().update_sort_order() as update:
+        update.asc("at", IdentityTransform(), NullOrder.NULLS_LAST)
+        update.asc("payload", TruncateTransform(1), NullOrder.NULLS_LAST)
+    dataset.refresh()
+
+    assert dataset.iceberg_table.sort_order().order_id, "the table records an order"
+    assert dataset.sort_fields() == [], "and the shape cannot hold it"
+
+    dataset.append_arrow_table(ticked([(3, 0), (1, 0), (2, 0)]), merge_by=False)
+
+    assert dataset.data_files().column("sort_order_id").to_pylist() == [None]
+    assert dataset.read_arrow_reader(order_by="at").read_all().column("at").to_pylist() == [1, 2, 3]
+
+
 def test_a_partition_is_packed_into_files_by_its_own_row_width(tmp_path: Path) -> None:
     """`write.target-file-size-bytes` is a size in bytes, and rows are not all
     the same width. One bound taken from a whole chunk's average splits the
