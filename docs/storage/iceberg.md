@@ -80,11 +80,14 @@ temporary files -- `TMPDIR` on POSIX, which on a container is often a tmpfs
 and therefore memory. A warehouse on that same local disk writes those bytes
 twice, once to the stage and once to the table.
 
-A commit's files are written and uploaded one after another, so a warehouse
-on an object store pays one round trip per partition of the chunk rather than
-overlapping them. On the shapes this pipeline writes -- a chunk spanning an
-hour or two -- that is one or two round trips; a table partitioned into many
-parts per commit, a bucket spec among them, pays per part.
+A commit's files are encoded and uploaded one after another, on the thread
+that called the write. It is less work than splitting a chunk and handing the
+parts to a pool -- measured, less processor time -- but none of it overlaps,
+so a chunk spanning many partitions finishes later on a machine with cores to
+spare, and a warehouse on an object store pays one round trip per partition
+rather than overlapping them. On the shapes this pipeline writes -- a chunk
+spanning an hour or two -- that is one or two of each; a table partitioned
+into many parts per commit, a bucket spec among them, pays per part.
 
 A refused commit deletes what it uploaded, and a commit whose acknowledgement
 is lost leaves its files for the orphan sweep to settle rather than deleting
