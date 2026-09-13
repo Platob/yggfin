@@ -2176,6 +2176,30 @@ def test_a_refused_partition_leaves_the_whole_keyed_chunk_uncommitted(
     assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {"S0"}
 
 
+def test_a_merge_refused_in_one_partition_leaves_the_others_as_they_were(
+    dataset: IcebergDataset,
+) -> None:
+    """A chunk the merge refuses changes nothing, in any of its partitions.
+
+    Every part is resolved before any of them commits, so the part that
+    refuses does so while the parts before it are still uncommitted. Parts
+    committed as they were resolved left the refusal half applied.
+    """
+    dataset.append_arrow_table(quotes(1))
+    dataset.append_arrow_table(other_day(1))
+    # A blind append is what puts two rows under one key in the later partition.
+    dataset.append_arrow_table(other_day(1))
+    before = len(dataset.iceberg_table.snapshots())
+
+    with pytest.raises(ValueError, match="duplicate rows"):
+        dataset.merge_arrow_table(pyarrow.concat_tables([quotes(1, "XETR"), other_day(1)]))
+
+    assert len(dataset.iceberg_table.snapshots()) == before, "the refusal committed nothing"
+    assert {row["venue"] for row in dataset.read_arrow_table().to_pylist()} == {"XPAR"}, (
+        "the earlier partition kept the value the refused chunk would have replaced"
+    )
+
+
 def test_a_monotonic_partitioned_stream_keeps_one_frontier_per_partition(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
