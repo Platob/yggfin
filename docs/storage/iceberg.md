@@ -38,6 +38,61 @@ resolved one at a time and committed together.
 the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
 consume one batch at a time. The batch and table helpers build that reader.
 
+### What a commit holds
+
+Every verb writes the same way: a bounded chunk is split into its transformed
+partitions, and each partition is taken out of the chunk, written to a local
+Parquet file, uploaded through the table's configured `FileIO`, and committed
+by path. What the write holds past the chunk it was handed is one partition
+rather than every partition's rows.
+
+Everything a chunk *adds* lands in one commit, whatever the partition count.
+A keyed overwrite additionally keeps one bounded commit per partition whose
+stored files it has to rewrite, because the rows replacing a stored row must
+land in the commit that removes it.
+
+Measured on a 70 MiB chunk of 524,288 rows, as the Arrow high-water mark over
+one commit divided by the chunk:
+
+| verb | 1 partition | 4 partitions | 24 partitions |
+| --- | ---: | ---: | ---: |
+| `append_arrow_*`, no keys | 1.07 | 1.52 | 1.15 |
+| `append_arrow_*`, `merge_by` | 1.23 | 1.52 | 1.12 |
+| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.52 | 1.12 |
+
+Those are chunks of keys the table does not hold, which is what a stream
+brings. A chunk that overlaps what is stored also keeps the rows it decided
+to write, so it holds about two chunks rather than one; a replay that matches
+everything holds neither, because it writes nothing.
+
+Staged files record the order they were written in, which is what lets
+`order_by` read them back without sorting each one again. A table whose
+recorded order the shape cannot hold -- a transformed sort field, a
+nulls-first one, a nested column -- is written unsorted and says so. A file that does not record an order
+is sorted on every read, through Arrow IPC runs on local disk; over four files
+of that same 524,288-row table, dropping that pass took a warm ordered read
+from 85 ms to 62 ms and wrote no temporary file at all.
+
+The local stage is a bounded file and not a copy of the commit: one file
+exists at a time and it is deleted as soon as it is uploaded, so a commit
+needs up to `write.target-file-size-bytes` of free space wherever Python puts
+temporary files -- `TMPDIR` on POSIX, which on a container is often a tmpfs
+and therefore memory. A warehouse on that same local disk writes those bytes
+twice, once to the stage and once to the table.
+
+A commit's files are encoded and uploaded one after another, on the thread
+that called the write. It is less work than splitting a chunk and handing the
+parts to a pool -- measured, less processor time -- but none of it overlaps,
+so a chunk spanning many partitions finishes later on a machine with cores to
+spare, and a warehouse on an object store pays one round trip per partition
+rather than overlapping them. On the shapes this pipeline writes -- a chunk
+spanning an hour or two -- that is one or two of each; a table partitioned
+into many parts per commit, a bucket spec among them, pays per part.
+
+A refused commit deletes what it uploaded, and a commit whose acknowledgement
+is lost leaves its files for the orphan sweep to settle rather than deleting
+rows that may be live.
+
 Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
 `overwrite_arrow_*` write, to add columns from its authoritative write Field
 before the first batch is consumed:

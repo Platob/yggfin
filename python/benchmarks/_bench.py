@@ -58,6 +58,33 @@ def timed(call: Callable[[], Any]) -> tuple[float, Any]:
     return time.perf_counter() - started, result
 
 
+_MEASURED_POOLS: list[Any] = []
+
+
+@contextlib.contextmanager
+def peak_memory() -> Iterator[Callable[[], float]]:
+    """Bytes Arrow held at its highest inside the block, and only inside it.
+
+    `max_memory` is a high-water mark a pool never lowers, so a process that
+    has already allocated answers about the process. A proxy installed as the
+    default pool for the block starts at zero and counts what the block
+    allocates, whoever allocates it.
+    """
+    import pyarrow
+
+    parent = pyarrow.default_memory_pool()
+    proxy = pyarrow.proxy_memory_pool(parent)
+    # A buffer remembers the pool it came from and frees through it, so a
+    # proxy collected while rows allocated under it are still alive takes the
+    # interpreter down with it. Measurement keeps every proxy it installs.
+    _MEASURED_POOLS.append(proxy)
+    pyarrow.set_memory_pool(proxy)
+    try:
+        yield lambda: float(proxy.max_memory())
+    finally:
+        pyarrow.set_memory_pool(parent)
+
+
 def report(
     label: str,
     seconds: float,

@@ -6,7 +6,8 @@ import math
 import os
 import subprocess
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -746,20 +747,22 @@ def _iceberg_artifacts(dataset: IcebergDataset) -> set[Path]:
     }
 
 
-def test_partitioned_insert_paths_use_pyicebergs_direct_writer(
+def test_every_append_path_stages_its_rows_locally_before_committing(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """One writer for every verb: a local Parquet file per partition, uploaded
+    once and committed by path, with nothing read back to describe it."""
     with monkeypatch.context() as observed:
         staged, uploaded, reopened = _observed_staging(dataset, observed)
-        assert dataset.append_arrow_table(quotes(2)) == 2
-        assert dataset.append_arrow_table(quotes(3), merge_by=True) == 1
-        dataset.overwrite_arrow_table(keyed("N", 2), merge_by=True)
+        assert dataset.append_arrow_table(quotes(2), merge_by=False) == 2
+        assert dataset.append_arrow_table(keyed("N", 2), merge_by=True) == 2
 
-    assert staged == [] and uploaded == set() and reopened == []
+    assert len(staged) == len(uploaded) == 2, "one staged file per write, one partition each"
+    assert reopened == [], "the local footer already supplied every DataFile metric"
+    assert not any(path.exists() for path in staged)
     assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {
         "S0",
         "S1",
-        "S2",
         "N0",
         "N1",
     }
@@ -1247,6 +1250,46 @@ def test_a_failed_partition_commit_removes_unreferenced_stages(
     assert {row["file_path"] for row in dataset.refresh().data_files().to_pylist()} == before
 
 
+def test_a_delete_drops_the_rewritten_copy_of_a_file_it_keeps(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file whose bounds admit the filter but whose rows do not match is
+    read, rewritten into a stage, and then kept as it was. The copy goes as
+    soon as that is known: it was never committed, so leaving it for the way
+    out would mean asking the catalog whether it is live -- a table load and
+    a manifest walk, at the end of an operation that succeeded."""
+    from rekep.iceberg.dataset import _PartitionStager
+
+    day = datetime.date(2026, 8, 14)
+    dataset.append_arrow_table(
+        pyarrow.Table.from_pydict(
+            {"symbol": ["A", "C"], "day": [day, day], "size": [1, 3], "venue": ["XPAR"] * 2},
+            schema=Quote.field().into_arrow_schema(),
+        ),
+        merge_by=False,
+    )
+    before = _iceberg_artifacts(dataset)
+
+    discarded: list[tuple[str, ...]] = []
+    discard = _PartitionStager.discard
+
+    def recorded(self: _PartitionStager, partitions: Sequence[Any]) -> None:
+        discarded.extend(partition.paths for partition in partitions)
+        discard(self, partitions)
+
+    monkeypatch.setattr(_PartitionStager, "discard", recorded)
+    assert dataset.delete_where("symbol = 'B'") == 0, "between the file's bounds, matching nothing"
+
+    assert [paths for paths in discarded if paths], "the copy it wrote was dropped"
+    assert not any(
+        Path(pyarrow.fs.FileSystem.from_uri(path)[1]).exists()
+        for paths in discarded
+        for path in paths
+    )
+    assert _iceberg_artifacts(dataset) == before
+    assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {"A", "C"}
+
+
 def test_partition_cleanup_attempts_every_upload_without_masking_the_source_error(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1272,6 +1315,89 @@ def test_partition_cleanup_attempts_every_upload_without_masking_the_source_erro
             stager.uploaded.update({"first.parquet", "second.parquet"})
     assert set(attempted) == {"first.parquet", "second.parquet"}
     assert len(caught.value.exceptions) == 2
+
+
+def test_a_retried_staged_commit_still_has_the_files_it_committed(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refusal the catalog is definite about deletes what the attempt made,
+    but a retry commits the same staged files -- so those are the stager's to
+    delete on the way out, not the refusal's."""
+    from pyiceberg.exceptions import CommitFailedException
+    from pyiceberg.table import Transaction
+
+    commit = Transaction.commit_transaction
+    attempts = 0
+
+    def contended(self: Transaction) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise CommitFailedException("another writer won")
+        commit(self)
+
+    monkeypatch.setattr(dataset, "retry_backoff", 0.0)
+    monkeypatch.setattr(Transaction, "commit_transaction", contended)
+
+    source = pyarrow.concat_tables([quotes(1), other_day(1)])
+    dataset.overwrite_arrow_reader(
+        source.to_reader(max_chunksize=1), merge_by=False, commit_row_size=1_000_000
+    )
+
+    monkeypatch.undo()
+    assert attempts == 2
+    stored = dataset.refresh()
+    io = stored.iceberg_table.io
+    paths = stored.data_files().column("file_path").to_pylist()
+    assert paths and all(io.new_input(path).exists() for path in paths)
+    assert stored.read_arrow_table().num_rows == 2
+
+
+def test_an_interrupt_between_a_commit_and_its_handover_keeps_the_rows(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The stager deletes on the way out whatever it still owns, and a commit
+    the catalog accepted hands its files over on the line after. An interrupt
+    in between used to leave the stager deleting the data files of a live
+    snapshot, so it asks whether they are live before deleting any."""
+    from rekep.iceberg.dataset import _PartitionStager
+
+    def interrupted(_self: _PartitionStager, _partitions: Any) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(_PartitionStager, "release", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        dataset.append_arrow_table(quotes(2), merge_by=False)
+
+    monkeypatch.undo()
+    stored = dataset.refresh()
+    io = stored.iceberg_table.io
+    paths = stored.data_files().column("file_path").to_pylist()
+    assert paths, "the commit landed"
+    assert all(io.new_input(path).exists() for path in paths)
+    assert stored.read_arrow_table().num_rows == 2
+
+
+def test_partition_cleanup_survives_an_interrupt_closing_its_local_file(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An interrupt is not an ordinary error, and the uploads already made are
+    still this object's to delete when one arrives."""
+    from rekep.iceberg.dataset import _PartitionStager
+
+    table = dataset.get_or_create_table()
+    deleted: list[str] = []
+    monkeypatch.setattr(table.io, "delete", lambda path: deleted.append(path))
+
+    def interrupted(**_kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        with _PartitionStager(table, (), 1) as stager:
+            stager.uploaded.update({"first.parquet", "second.parquet"})
+            monkeypatch.setattr(stager, "_close_file", interrupted)
+
+    assert set(deleted) == {"first.parquet", "second.parquet"}
 
 
 def test_an_interleaved_partition_stream_is_refused_before_its_pending_commit(
@@ -5870,66 +5996,6 @@ def test_a_chunk_already_in_order_is_not_sorted_again(tmp_path: Path) -> None:
     assert dataset.sorted(ticked([(2, 0), (1, 0)])) is not tidy
 
 
-@pytest.mark.parametrize(
-    ("pairs", "ordered"),
-    [
-        ([(1, 0), (2, 0), (3, 0)], True),
-        (
-            [(1, 0), (1, 1), (1, 2)],
-            True,
-        ),
-        ([(1, 1), (1, 0)], False),
-        ([(2, 0), (1, 9)], False),
-        ([(1, 0), (1, 0)], True),
-        ([(1, 0)], True),
-    ],
-)
-def test_sortedness_is_lexicographic_over_every_key(
-    pairs: Sequence[tuple[int, int]], ordered: bool
-) -> None:
-    from rekep.iceberg.dataset import _in_sort_order
-
-    assert _in_sort_order(ticked(pairs), ["at", "seq"]) is ordered
-
-
-def test_sort_checks_apply_nulls_last_only_when_the_prefix_ties() -> None:
-    from rekep.iceberg.dataset import _in_sort_order
-
-    rows = ticked([(1, 0), (2, 0)])
-    holed = rows.set_column(
-        rows.schema.get_field_index("seq"),
-        pyarrow.field("seq", pyarrow.int64()),
-        pyarrow.array([None, 1], pyarrow.int64()),
-    )
-    assert _in_sort_order(holed, ["at", "seq"]) is True
-
-    tied = holed.set_column(
-        holed.schema.get_field_index("at"),
-        holed.schema.field("at"),
-        pyarrow.array([1, 1], pyarrow.int64()),
-    )
-    assert _in_sort_order(tied, ["at", "seq"]) is False
-    assert _in_sort_order(tied.take(pyarrow.array([1, 0])), ["at", "seq"]) is True
-
-
-def test_sort_checks_place_nan_after_numbers_and_before_null() -> None:
-    from rekep.iceberg.dataset import _in_sort_order
-
-    ascending = pyarrow.table({"value": [1.0, 2.0, float("nan"), None]})
-    descending = pyarrow.table({"value": [2.0, 1.0, float("nan"), None]})
-
-    assert _in_sort_order(ascending, [("value", "ascending")]) is True
-    assert _in_sort_order(descending, [("value", "descending")]) is True
-    assert _in_sort_order(ascending.take(pyarrow.array([2, 0, 1, 3])), ["value"]) is False
-
-
-def test_an_unknown_sort_direction_is_refused() -> None:
-    from rekep.iceberg.dataset import _sort_fields
-
-    with pytest.raises(ValueError, match="unknown sort direction"):
-        _sort_fields([("value", "sideways")])
-
-
 def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
     """The whole point: a sort order Iceberg records and the writer ignores is
     a wish. A filter can only skip a *row group*, so this is what it buys."""
@@ -5963,6 +6029,324 @@ def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
     assert whole[0] == whole[1], "unsorted, every row group holds the whole range"
     assert declared[0] < declared[1], "sorted, a filter skips most of them"
     assert declared[0] <= 2
+
+
+@scalar
+class Bounded(Convertible):
+    """A wide row under a clock key, spread over transformed partitions."""
+
+    unix: Annotated[int, primary_key(), sort_key()]
+    """Unique clock."""
+
+    hour: Annotated[int, partition_key()]
+    """Whole epoch hour used for identity partitioning."""
+
+    body: bytes
+    """Payload wide enough that the rows are what the memory is."""
+
+
+def bounded_batch(index: int, rows: int, partitions: int) -> pyarrow.RecordBatch:
+    unix = list(range(index * rows, (index + 1) * rows))
+    return pyarrow.RecordBatch.from_pydict(
+        {
+            "unix": unix,
+            # Interleaved on purpose: a chunk whose partitions arrive mixed is
+            # the one a writer is tempted to sort or group as a whole.
+            "hour": [(value * 7919) % partitions for value in unix],
+            "body": [bytes(200)] * rows,
+        },
+        schema=Bounded.field().into_arrow_schema(),
+    )
+
+
+#: Proxy pools this measurement installed, kept for the run. A buffer
+#: remembers the pool it came from and frees through it, so a proxy collected
+#: while rows written under it are still alive takes the interpreter with it.
+_MEASURED_POOLS: list[Any] = []
+
+
+@contextmanager
+def peak_arrow_memory() -> Iterator[Callable[[], int]]:
+    """Bytes Arrow held at its highest inside the block, and only inside it.
+
+    `max_memory` is a high-water mark a pool never lowers, so asking the
+    default pool inside a suite that has already allocated answers about the
+    suite. A proxy installed for the block starts at zero and counts what the
+    block allocates, whoever allocates it.
+    """
+    parent = pyarrow.default_memory_pool()
+    proxy = pyarrow.proxy_memory_pool(parent)
+    _MEASURED_POOLS.append(proxy)
+    pyarrow.set_memory_pool(proxy)
+    try:
+        yield lambda: int(proxy.max_memory())
+    finally:
+        pyarrow.set_memory_pool(parent)
+
+
+@pytest.mark.parametrize("verb", ["append", "insert", "merge"])
+@pytest.mark.parametrize("partitions", [1, 2, 4, 16])
+def test_a_bounded_write_holds_a_bounded_multiple_of_its_chunk(
+    verb: str, partitions: int, tmp_path: Path
+) -> None:
+    """The bound the streaming verbs exist for: a commit holds its chunk and
+    a working copy, not a multiple of the chunk.
+
+    Over these partition counts the staged writer measures 1.05 to 2.01
+    chunks, worst where a chunk splits into two interleaved halves and each
+    has to be gathered out of it; the writer that collected them instead --
+    handing PyIceberg the whole chunk to split, and holding every part's rows
+    until the commit -- measured 1.31 to 5.03 on these very chunks, and 4.06
+    to 5.03 for the keyed verbs at every count. A quarter of a chunk of
+    headroom over the worst case leaves nothing in between that anyone wrote
+    on purpose.
+    """
+    rows, batch_count = 20_000, 8
+    catalog = IcebergCatalog(name="bounded", properties=catalog_properties(tmp_path))
+    target = catalog.dataset("t.bounded", field=Bounded.field())
+    # Something stored for a keyed write to plan against, with keys the
+    # stream never brings, so every streamed row is genuinely new.
+    target.append_arrow_table(
+        pyarrow.Table.from_batches([bounded_batch(batch_count, rows, partitions).slice(0, 8)]),
+        merge_by=False,
+    )
+    chunk = bounded_batch(0, rows, partitions).nbytes * batch_count
+    reader = pyarrow.RecordBatchReader.from_batches(
+        Bounded.field().into_arrow_schema(),
+        (bounded_batch(index, rows, partitions) for index in range(batch_count)),
+    )
+
+    with peak_arrow_memory() as peak:
+        if verb == "merge":
+            target.overwrite_arrow_reader(reader, merge_by=True, commit_batch_num=batch_count)
+        else:
+            target.append_arrow_reader(
+                reader, merge_by=verb == "insert", commit_batch_num=batch_count
+            )
+        held = peak()
+
+    assert target.read_arrow_table().num_rows == rows * batch_count + 8
+    assert held < 2.25 * chunk, f"{held / chunk:.2f} chunks held for one {verb}"
+
+
+def test_an_insert_that_skips_some_keys_holds_the_rows_it_keeps_and_no_more(
+    tmp_path: Path,
+) -> None:
+    """A replay that overlaps part of a chunk: what the write holds past the
+    chunk is the rows it decided to keep. Selecting them by position instead
+    of by mask concatenated every column of the chunk first, which is a copy
+    of the whole chunk to drop a tenth of it -- 3.0 chunks here against 2.1.
+    """
+    rows, batch_count, partitions = 20_000, 8, 1
+    catalog = IcebergCatalog(name="overlap", properties=catalog_properties(tmp_path))
+    target = catalog.dataset("t.overlap", field=Bounded.field())
+    stored = pyarrow.Table.from_batches([bounded_batch(0, rows, partitions).slice(0, rows // 2)])
+    target.append_arrow_table(stored, merge_by=False)
+    chunk = bounded_batch(0, rows, partitions).nbytes * batch_count
+    reader = pyarrow.RecordBatchReader.from_batches(
+        Bounded.field().into_arrow_schema(),
+        (bounded_batch(index, rows, partitions) for index in range(batch_count)),
+    )
+
+    with peak_arrow_memory() as peak:
+        inserted = target.append_arrow_reader(reader, merge_by=True, commit_batch_num=batch_count)
+        held = peak()
+
+    assert inserted == rows * batch_count - rows // 2, "the stored half of a batch is skipped"
+    assert target.read_arrow_table().num_rows == rows * batch_count
+    assert held < 2.5 * chunk, f"{held / chunk:.2f} chunks held for a partial insert"
+
+
+@pytest.mark.parametrize("batch_rows", [8, 700, 1000, 1500])
+def test_a_staged_file_fills_its_row_groups_whatever_the_batches_are(
+    batch_rows: int, tmp_path: Path
+) -> None:
+    """A row group per source batch is what writing each one as it arrives
+    makes, and it costs both ways: too many groups when the batches are small
+    -- 2,000 of 8 rows wrote 2,000 row groups and twice the bytes of the same
+    rows in one -- and half-filled ones whenever the batch size is not a
+    divisor of the limit. A row group is the table's declared size until the
+    rows run out."""
+    limit, batches = 1_000, 8
+    catalog = IcebergCatalog(name="groups", properties=catalog_properties(tmp_path))
+    target = catalog.dataset(
+        "t.groups",
+        field=Bounded.field(),
+        table_properties={"write.parquet.row-group-limit": str(limit)},
+    )
+    reader = pyarrow.RecordBatchReader.from_batches(
+        Bounded.field().into_arrow_schema(),
+        (bounded_batch(index, batch_rows, 1) for index in range(batches)),
+    )
+    target.append_arrow_reader(reader, merge_by=False, commit_batch_num=batches)
+
+    files = target.data_files().to_pylist()
+    assert len(files) == 1
+    written = pyarrow.parquet.ParquetFile(local(files[0]["file_path"])).metadata
+    rows = batch_rows * batches
+    assert written.num_rows == rows
+    assert written.num_row_groups == math.ceil(rows / limit)
+    sizes = [written.row_group(index).num_rows for index in range(written.num_row_groups)]
+    assert sizes[:-1] == [limit] * (written.num_row_groups - 1)
+
+
+def test_a_file_claims_no_order_the_writer_could_not_lay_out(tmp_path: Path) -> None:
+    """A reader takes a recorded sort order at its word. A shape cannot hold
+    every order Iceberg can record -- a transformed sort field here -- and for
+    those the writer has nothing to sort by, so its files must not claim one."""
+    from pyiceberg.table.sorting import NullOrder
+    from pyiceberg.transforms import IdentityTransform, TruncateTransform
+
+    catalog = IcebergCatalog(name="claimed", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.claimed", field=Ticked.field())
+    with dataset.get_or_create_table().update_sort_order() as update:
+        update.asc("at", IdentityTransform(), NullOrder.NULLS_LAST)
+        update.asc("payload", TruncateTransform(1), NullOrder.NULLS_LAST)
+    dataset.refresh()
+
+    assert dataset.iceberg_table.sort_order().order_id, "the table records an order"
+    assert dataset.sort_fields() == [], "and the shape cannot hold it"
+
+    dataset.append_arrow_table(ticked([(3, 0), (1, 0), (2, 0)]), merge_by=False)
+
+    assert dataset.data_files().column("sort_order_id").to_pylist() == [None]
+    assert dataset.read_arrow_reader(order_by="at").read_all().column("at").to_pylist() == [1, 2, 3]
+
+
+def test_no_row_is_lost_splitting_a_chunk_into_its_partitions(tmp_path: Path) -> None:
+    """Every row of a chunk lands in exactly one partition, whatever order its
+    partitions arrive in, including the batches that carry none and the rows
+    whose partition column is null."""
+
+    @scalar
+    class Loose(Convertible):
+        ident: Annotated[int, primary_key()]
+        part: Annotated[int | None, partition_key()] = None
+
+    schema = Loose.field().into_arrow_schema()
+    pattern = [0, 2, None, 1, 0, None, 2, 2, 1, 0]
+    batches = [
+        pyarrow.RecordBatch.from_pydict(
+            {
+                "ident": list(range(index * 10, index * 10 + size)),
+                "part": [pattern[(index * 7 + row) % len(pattern)] for row in range(size)],
+            },
+            schema=schema,
+        )
+        for index, size in enumerate([10, 0, 7, 1, 0, 10])
+    ]
+    catalog = IcebergCatalog(name="split", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.split", field=Loose.field())
+    dataset.append_arrow_reader(
+        pyarrow.RecordBatchReader.from_batches(schema, iter(batches)),
+        merge_by=False,
+        commit_batch_num=len(batches),
+    )
+
+    expected = {(row["ident"], row["part"]) for batch in batches for row in batch.to_pylist()}
+    stored = dataset.read_arrow_table().to_pylist()
+    assert {(row["ident"], row["part"]) for row in stored} == expected
+    assert len(stored) == len(expected)
+    assert all(row["record_count"] > 0 for row in dataset.data_files().to_pylist())
+
+
+def test_a_partition_is_packed_into_files_by_its_own_row_width(tmp_path: Path) -> None:
+    """`write.target-file-size-bytes` is a size in bytes, and rows are not all
+    the same width. One bound taken from a whole chunk's average splits the
+    partition of short rows into files a fraction of the target and packs the
+    partition of wide rows past it."""
+
+    @scalar
+    class Wide(Convertible):
+        ident: Annotated[int, primary_key()]
+        part: Annotated[int, partition_key()]
+        body: str
+
+    rows = 2_000
+    catalog = IcebergCatalog(name="widths", properties=catalog_properties(tmp_path))
+    target = catalog.dataset(
+        "t.widths",
+        field=Wide.field(),
+        table_properties={"write.target-file-size-bytes": "100000"},
+    )
+    target.append_arrow_table(
+        pyarrow.Table.from_pydict(
+            {
+                "ident": list(range(rows)),
+                "part": [index % 2 for index in range(rows)],
+                "body": ["x" * 8 if index % 2 == 0 else "y" * 1_000 for index in range(rows)],
+            },
+            schema=Wide.field().into_arrow_schema(),
+        ),
+        merge_by=False,
+    )
+
+    files = target.data_files().to_pylist()
+    narrow = [row for row in files if "part=0" in row["file_path"]]
+    wide = [row for row in files if "part=1" in row["file_path"]]
+    assert [row["record_count"] for row in narrow] == [rows // 2], "short rows fill one file"
+    assert len(wide) > 1, "wide rows do not fit in one"
+    assert all(row["file_size_in_bytes"] <= 100_000 for row in wide)
+
+
+def test_every_verb_writes_a_table_partitioned_by_void(tmp_path: Path) -> None:
+    """`void` is the last transform with an Arrow form, and the staged writer
+    needs one for every field of the spec it is placing rows under."""
+    from pyiceberg.transforms import VoidTransform
+
+    @scalar
+    class Loose(Convertible):
+        symbol: str | None = None
+        size: int | None = None
+
+    catalog = IcebergCatalog(name="void", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.void", field=Loose.field())
+    with dataset.get_or_create_table().update_spec() as spec:
+        spec.add_field("symbol", VoidTransform(), "symbol_void")
+    dataset.refresh()
+    schema = Loose.field().into_arrow_schema()
+
+    def rows(symbols: Sequence[str], sizes: Sequence[int]) -> pyarrow.Table:
+        return pyarrow.Table.from_pydict(
+            {"symbol": list(symbols), "size": list(sizes)}, schema=schema
+        )
+
+    assert dataset.append_arrow_table(rows(["A", "B"], [1, 2]), merge_by=False) == 2
+    assert dataset.append_arrow_table(rows(["B", "C"], [2, 3]), merge_by=["symbol"]) == 1
+    dataset.overwrite_arrow_table(rows(["A"], [9]), merge_by=["symbol"])
+
+    assert {row["symbol"]: row["size"] for row in dataset.read_arrow_table().to_pylist()} == {
+        "A": 9,
+        "B": 2,
+        "C": 3,
+    }
+    assert [field.name for field in dataset.iceberg_table.spec().fields] == ["symbol_void"]
+
+
+def test_a_written_file_records_the_order_it_was_written_in(tmp_path: Path) -> None:
+    """A file that does not say it is sorted is sorted again on every ordered
+    read, however carefully the writer laid it out -- so every verb that lays
+    rows out in the table's order records that it did."""
+    catalog = IcebergCatalog(name="recorded", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.recorded", field=Ticked.field())
+
+    dataset.append_arrow(ticked([(1, 0), (2, 0)]), merge_by=False)
+    dataset.append_arrow(ticked([(3, 0), (4, 0)]), merge_by=True)
+    dataset.overwrite_arrow(ticked([(1, 0), (5, 0)]), merge_by=True)
+
+    order_id = dataset.refresh().iceberg_table.sort_order().order_id
+    assert order_id, "the declared shape orders this table"
+    assert set(dataset.data_files().column("sort_order_id").to_pylist()) == {order_id}
+
+    from rekep.iceberg import dataset as module
+
+    def refuse(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("a file that records its order is not sorted again")
+
+    with pytest.MonkeyPatch.context() as patched:
+        patched.setattr(module, "_externally_sorted_task_batches", refuse)
+        read = dataset.read_arrow_reader(order_by="at").read_all()
+    assert read.column("at").to_pylist() == [1, 2, 3, 4, 5]
 
 
 def test_a_scan_hands_back_the_narrow_arrow_types(dataset: IcebergDataset) -> None:

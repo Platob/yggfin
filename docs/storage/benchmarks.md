@@ -66,3 +66,50 @@ uv run python benchmarks/bench_iceberg.py --quick   # 2,500 rows over two days
 Bounded writes, scans, keyed insertion, maintenance and deletion over synthetic
 rows. The test suite smokes the quick write path only; exhaustive timing is
 opt-in.
+
+The write sweep reports `peak MiB`: the Arrow high-water mark over one write,
+measured through a proxy memory pool installed for that write alone, because
+a pool never lowers its high-water mark and a process that has already
+allocated would otherwise answer about the process. It is where a writer that
+collects a chunk instead of staging it shows up; the wall clock is much the
+same either way.
+
+## Staged writes
+
+Three verbs over one 70 MiB chunk of 524,288 rows, against the same chunk
+handed whole to PyIceberg's writer. Peak is the Arrow high-water mark over
+the commit, in chunks.
+
+| verb | partitions | peak, whole | peak, staged |
+| --- | ---: | ---: | ---: |
+| append | 1 | 2.01 | 1.07 |
+| append | 4 | 1.78 | 1.52 |
+| append | 24 | 1.21 | 1.15 |
+| keyed append | 1 | 3.12 | 1.23 |
+| keyed append | 4 | 4.95 | 1.52 |
+| keyed append | 24 | 4.95 | 1.12 |
+| merge | 1 | 2.01 | 1.17 |
+| merge | 4 | 3.94 | 1.52 |
+| merge | 24 | 3.94 | 1.12 |
+
+Wall time is not in the table because run-to-run spread swamped the
+difference on this host. What is systematic is where the time goes: handing a
+chunk to PyIceberg's writer submits every partition to a thread pool, and
+staging encodes and uploads them one after another. Measured on 200,000 rows
+of 400-byte payload, best of three:
+
+| partitions | whole: wall, cpu | staged: wall, cpu |
+| ---: | --- | --- |
+| 4 | 0.157s, 0.273s | 0.173s, 0.172s |
+| 8 | 0.132s, 0.205s | 0.177s, 0.175s |
+| 32 | 0.156s, 0.264s | 0.215s, 0.213s |
+
+Staging spends less processor time -- it never copies a partition out of the
+chunk -- and more wall clock, because it spends it on one thread. A chunk
+spanning one or two partitions, which is what this pipeline writes, has
+nothing to parallelize either way.
+
+Splitting a chunk by partition inside PyIceberg copies each partition twice and
+holds every copy at once, because it submits all of them to its pool before
+the first file is written; a keyed write then held its partitions' rows again
+until the commit. Staging takes one partition out of the chunk at a time.
