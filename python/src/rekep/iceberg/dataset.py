@@ -4116,23 +4116,31 @@ class _PartitionStager:
         and twice the bytes of the same rows in one. Held batches are the
         chunk's own, so what this keeps is a reference to rows already there.
         """
-        if self._pending_rows and self._pending_rows + batch.num_rows > self.row_group_size:
-            self._flush()
         self._pending.append(batch)
         self._pending_rows += batch.num_rows
         if self._pending_rows >= self.row_group_size:
             self._flush()
 
-    def _flush(self, writer: Any = None) -> None:
-        """Write what is held as row groups of the declared size."""
-        pending, self._pending, self._pending_rows = self._pending, [], 0
-        if not pending:
+    def _flush(self, writer: Any = None, *, whole: bool = False) -> None:
+        """Write held rows as full row groups, keeping any remainder held.
+
+        The remainder stays because a batch boundary is not a row group
+        boundary: flushing whatever had arrived would size every row group by
+        the source's batch size instead of the table's declared limit, and a
+        70,000-row batch under a 131,072-row limit would fill barely half of
+        each. Only closing the file writes a short one.
+        """
+        if not self._pending:
             return
-        target = self._writer if writer is None else writer
-        target.write_table(
-            pyarrow.Table.from_batches(pending),
-            row_group_size=self.row_group_size,
-        )
+        held = pyarrow.Table.from_batches(self._pending)
+        groups = held.num_rows // self.row_group_size
+        full = held.num_rows if whole else groups * self.row_group_size
+        remainder = held.slice(full)
+        self._pending = remainder.to_batches() if remainder.num_rows else []
+        self._pending_rows = remainder.num_rows
+        if full:
+            target = self._writer if writer is None else writer
+            target.write_table(held.slice(0, full), row_group_size=self.row_group_size)
 
     def finish(self) -> _StagedPartition:
         if self.partition is None:
@@ -4208,7 +4216,7 @@ class _PartitionStager:
             # file, and Windows refuses to unlink a file that is still open,
             # which would replace the error that got here with its own.
             try:
-                self._flush(writer)
+                self._flush(writer, whole=True)
             finally:
                 writer.close()
             if upload:

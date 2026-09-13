@@ -6082,24 +6082,37 @@ def test_an_insert_that_skips_some_keys_holds_the_rows_it_keeps_and_no_more(
     assert held < 2.5 * chunk, f"{held / chunk:.2f} chunks held for a partial insert"
 
 
-def test_a_stream_of_small_batches_still_fills_its_row_groups(tmp_path: Path) -> None:
+@pytest.mark.parametrize("batch_rows", [8, 700, 1000, 1500])
+def test_a_staged_file_fills_its_row_groups_whatever_the_batches_are(
+    batch_rows: int, tmp_path: Path
+) -> None:
     """A row group per source batch is what writing each one as it arrives
-    makes, and it costs both ways: 2,000 batches of 8 rows wrote 2,000 row
-    groups and twice the bytes of the same rows in one."""
+    makes, and it costs both ways: too many groups when the batches are small
+    -- 2,000 of 8 rows wrote 2,000 row groups and twice the bytes of the same
+    rows in one -- and half-filled ones whenever the batch size is not a
+    divisor of the limit. A row group is the table's declared size until the
+    rows run out."""
+    limit, batches = 1_000, 8
     catalog = IcebergCatalog(name="groups", properties=catalog_properties(tmp_path))
-    target = catalog.dataset("t.groups", field=Bounded.field())
-    batches, rows = 500, 8
+    target = catalog.dataset(
+        "t.groups",
+        field=Bounded.field(),
+        table_properties={"write.parquet.row-group-limit": str(limit)},
+    )
     reader = pyarrow.RecordBatchReader.from_batches(
         Bounded.field().into_arrow_schema(),
-        (bounded_batch(index, rows, 1) for index in range(batches)),
+        (bounded_batch(index, batch_rows, 1) for index in range(batches)),
     )
     target.append_arrow_reader(reader, merge_by=False, commit_batch_num=batches)
 
     files = target.data_files().to_pylist()
     assert len(files) == 1
-    groups = pyarrow.parquet.ParquetFile(local(files[0]["file_path"])).metadata
-    assert groups.num_rows == batches * rows
-    assert groups.num_row_groups == 1, "one row group, not one per batch"
+    written = pyarrow.parquet.ParquetFile(local(files[0]["file_path"])).metadata
+    rows = batch_rows * batches
+    assert written.num_rows == rows
+    assert written.num_row_groups == math.ceil(rows / limit)
+    sizes = [written.row_group(index).num_rows for index in range(written.num_row_groups)]
+    assert sizes[:-1] == [limit] * (written.num_row_groups - 1)
 
 
 def test_every_verb_writes_a_table_partitioned_by_void(tmp_path: Path) -> None:
