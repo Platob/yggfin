@@ -6051,6 +6051,40 @@ def test_a_stream_of_small_batches_still_fills_its_row_groups(tmp_path: Path) ->
     assert groups.num_row_groups == 1, "one row group, not one per batch"
 
 
+def test_every_verb_writes_a_table_partitioned_by_void(tmp_path: Path) -> None:
+    """`void` is the last transform with an Arrow form, and the staged writer
+    needs one for every field of the spec it is placing rows under."""
+    from pyiceberg.transforms import VoidTransform
+
+    @scalar
+    class Loose(Convertible):
+        symbol: str | None = None
+        size: int | None = None
+
+    catalog = IcebergCatalog(name="void", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.void", field=Loose.field())
+    with dataset.get_or_create_table().update_spec() as spec:
+        spec.add_field("symbol", VoidTransform(), "symbol_void")
+    dataset.refresh()
+    schema = Loose.field().into_arrow_schema()
+
+    def rows(symbols: Sequence[str], sizes: Sequence[int]) -> pyarrow.Table:
+        return pyarrow.Table.from_pydict(
+            {"symbol": list(symbols), "size": list(sizes)}, schema=schema
+        )
+
+    assert dataset.append_arrow_table(rows(["A", "B"], [1, 2]), merge_by=False) == 2
+    assert dataset.append_arrow_table(rows(["B", "C"], [2, 3]), merge_by=["symbol"]) == 1
+    dataset.overwrite_arrow_table(rows(["A"], [9]), merge_by=["symbol"])
+
+    assert {row["symbol"]: row["size"] for row in dataset.read_arrow_table().to_pylist()} == {
+        "A": 9,
+        "B": 2,
+        "C": 3,
+    }
+    assert [field.name for field in dataset.iceberg_table.spec().fields] == ["symbol_void"]
+
+
 def test_a_written_file_records_the_order_it_was_written_in(tmp_path: Path) -> None:
     """A file that does not say it is sorted is sorted again on every ordered
     read, however carefully the writer laid it out -- so every verb that lays
