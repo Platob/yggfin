@@ -4714,23 +4714,23 @@ def _partition_run_tables(
             # the difference was 1.51x of the chunk against 1.29x.
             indices = indices.cast(_index_type(batch.num_rows))
             values = keys.take(indices).columns
-        spans: dict[tuple[Any, ...], tuple[int, int]] = {}
+        # A list and not one span apiece: ordering the keys is what puts a
+        # partition's rows together, and this does not have to be the only
+        # thing that knows it. Runs that arrive apart are carried apart.
+        spans: dict[tuple[Any, ...], list[tuple[int, int]]] = {}
         for identity, partition, start, stop in _partition_spans(partitions, values):
             found.setdefault(identity, partition)
-            spans[identity] = (start, stop)
+            spans.setdefault(identity, []).append((start, stop))
         planned.append((batch, indices, spans))
     for identity, partition in found.items():
         pieces = []
         for batch, indices, spans in planned:
-            span = spans.get(identity)
-            if span is None:
-                continue
-            start, stop = span
-            pieces.append(
-                batch.slice(start, stop - start)
-                if indices is None
-                else batch.take(indices.slice(start, stop - start))
-            )
+            for start, stop in spans.get(identity, ()):
+                pieces.append(
+                    batch.slice(start, stop - start)
+                    if indices is None
+                    else batch.take(indices.slice(start, stop - start))
+                )
         run = pyarrow.Table.from_batches(pieces, chunk.schema)
         if len(pieces) > 1 and run.num_rows < STAGE_PIECE_ROW_GAIN * len(pieces):
             run = run.combine_chunks()

@@ -6173,6 +6173,43 @@ def test_a_file_claims_no_order_the_writer_could_not_lay_out(tmp_path: Path) -> 
     assert dataset.read_arrow_reader(order_by="at").read_all().column("at").to_pylist() == [1, 2, 3]
 
 
+def test_no_row_is_lost_splitting_a_chunk_into_its_partitions(tmp_path: Path) -> None:
+    """Every row of a chunk lands in exactly one partition, whatever order its
+    partitions arrive in, including the batches that carry none and the rows
+    whose partition column is null."""
+
+    @scalar
+    class Loose(Convertible):
+        ident: Annotated[int, primary_key()]
+        part: Annotated[int | None, partition_key()] = None
+
+    schema = Loose.field().into_arrow_schema()
+    pattern = [0, 2, None, 1, 0, None, 2, 2, 1, 0]
+    batches = [
+        pyarrow.RecordBatch.from_pydict(
+            {
+                "ident": list(range(index * 10, index * 10 + size)),
+                "part": [pattern[(index * 7 + row) % len(pattern)] for row in range(size)],
+            },
+            schema=schema,
+        )
+        for index, size in enumerate([10, 0, 7, 1, 0, 10])
+    ]
+    catalog = IcebergCatalog(name="split", properties=catalog_properties(tmp_path))
+    dataset = catalog.dataset("t.split", field=Loose.field())
+    dataset.append_arrow_reader(
+        pyarrow.RecordBatchReader.from_batches(schema, iter(batches)),
+        merge_by=False,
+        commit_batch_num=len(batches),
+    )
+
+    expected = {(row["ident"], row["part"]) for batch in batches for row in batch.to_pylist()}
+    stored = dataset.read_arrow_table().to_pylist()
+    assert {(row["ident"], row["part"]) for row in stored} == expected
+    assert len(stored) == len(expected)
+    assert all(row["record_count"] > 0 for row in dataset.data_files().to_pylist())
+
+
 def test_a_partition_is_packed_into_files_by_its_own_row_width(tmp_path: Path) -> None:
     """`write.target-file-size-bytes` is a size in bytes, and rows are not all
     the same width. One bound taken from a whole chunk's average splits the
