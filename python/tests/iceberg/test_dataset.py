@@ -5936,9 +5936,9 @@ def bounded_batch(index: int, rows: int, partitions: int) -> pyarrow.RecordBatch
     )
 
 
-#: Proxy pools measurement installed, kept for the run. A buffer remembers the
-#: pool it came from and frees through it, so a proxy that is collected while
-#: rows written under it are still alive takes the interpreter down with it.
+#: Proxy pools this measurement installed, kept for the run. A buffer
+#: remembers the pool it came from and frees through it, so a proxy collected
+#: while rows written under it are still alive takes the interpreter with it.
 _MEASURED_POOLS: list[Any] = []
 
 
