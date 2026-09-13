@@ -53,17 +53,19 @@ one commit divided by the chunk:
 | verb | 1 partition | 4 partitions | 24 partitions |
 | --- | ---: | ---: | ---: |
 | `append_arrow_*`, no keys | 1.07 | 1.56 | 1.15 |
-| `append_arrow_*`, `merge_by` | 1.15 | 1.81 | 1.19 |
-| `overwrite_arrow_*`, `merge_by` | 1.11 | 1.79 | 1.18 |
+| `append_arrow_*`, `merge_by` | 1.23 | 1.56 | 1.15 |
+| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.56 | 1.15 |
 
-A chunk that merges keys the table already holds also keeps the rows it
-decided to write, so it holds about two chunks rather than one; a replay that
-matches everything holds neither, because it writes nothing.
+Those are chunks of keys the table does not hold, which is what a stream
+brings. A chunk that overlaps what is stored also keeps the rows it decided
+to write, so it holds about two chunks rather than one; a replay that matches
+everything holds neither, because it writes nothing.
 
 Staged files record the table's sort order, which is what lets `order_by` read
-them back without sorting each one again: over four files of that same
-524,288-row table, an ordered read fell from 249 ms and 133 MiB to 57 ms and
-51 MiB.
+them back without sorting each one again. A file that does not record an order
+is sorted on every read, through Arrow IPC runs on local disk; over four files
+of that same 524,288-row table, dropping that pass took a warm ordered read
+from 85 ms to 62 ms and wrote no temporary file at all.
 
 The local stage is a bounded file and not a copy of the commit. It is deleted
 as soon as it is uploaded, a refused commit deletes what it uploaded, and a

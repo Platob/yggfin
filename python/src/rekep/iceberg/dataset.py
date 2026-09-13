@@ -1022,13 +1022,14 @@ class IcebergDataset(Dataset):
         copies it twice on the way to Parquet -- once to filter each partition
         out of it and once to give that copy fresh buffers -- with every
         partition's copy alive at once, because it submits them all to its
-        pool before the first file is written. Measured on a 70 MiB chunk,
-        peak Arrow memory was 3.0x the chunk over one partition and 2.9x over
-        four; staged, taking one partition out of the chunk at a time and
-        casting one batch of it at a time, it is 1.1x and 1.6x, and the write
-        itself is no slower. The staged files also record the table's sort
-        order, which PyIceberg's writer leaves null -- and an ordered read of
-        a file that does not say it is sorted has to sort it again.
+        pool before the first file is written. Measured on a 70 MiB chunk of
+        524,288 rows, peak Arrow memory was 2.01x the chunk over one partition
+        and 1.78x over four; staged, taking one partition out of the chunk at
+        a time and casting one batch of it at a time, it is 1.07x and 1.56x,
+        and the write is faster -- 0.87s to 0.24s. The staged files also
+        record the table's sort order, which PyIceberg's writer leaves null,
+        and an ordered read of a file that does not say it is sorted has to
+        sort it again.
         """
         with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
             self._append_staged_once(

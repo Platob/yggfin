@@ -82,13 +82,15 @@ commit, in chunks; seconds is the whole streamed write.
 
 | verb | partitions | peak, whole | peak, staged | seconds, whole | seconds, staged |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| append | 1 | 2.01 | 1.07 | 0.93 | 0.22 |
-| append | 4 | 1.79 | 1.56 | 0.88 | 0.29 |
-| append | 24 | 1.22 | 1.15 | 0.61 | 0.40 |
-| keyed append | 4 | 4.95 | 1.81 | 1.61 | 0.39 |
-| keyed append | 24 | 4.95 | 1.19 | 2.10 | 0.59 |
-| merge | 4 | 4.95 | 1.79 | 2.02 | 0.57 |
-| merge | 24 | 4.36 | 1.18 | 2.07 | 0.95 |
+| append | 1 | 2.01 | 1.07 | 0.87 | 0.24 |
+| append | 4 | 1.78 | 1.56 | 0.86 | 0.29 |
+| append | 24 | 1.21 | 1.15 | 0.59 | 0.33 |
+| keyed append | 1 | 3.12 | 1.23 | 1.49 | 0.50 |
+| keyed append | 4 | 4.95 | 1.56 | 1.85 | 0.33 |
+| keyed append | 24 | 4.95 | 1.15 | 1.84 | 0.43 |
+| merge | 1 | 2.01 | 1.17 | 0.70 | 0.71 |
+| merge | 4 | 3.94 | 1.56 | 1.31 | 0.87 |
+| merge | 24 | 3.94 | 1.15 | 1.87 | 0.52 |
 
 Splitting a chunk by partition inside PyIceberg copies each partition twice and
 holds every copy at once, because it submits all of them to its pool before
