@@ -31,7 +31,8 @@ written = messages.append_arrow_reader(
 `merge_by=True` uses the primary key declared on the native Field. Existing
 keys are skipped; a missing table is created. `commit_batch_num` and the
 optional `commit_row_size` bound each storage commit independently from input
-batch size.
+batch size, however many partitions the bounded chunk spans: its parts are
+resolved one at a time and committed together.
 
 `overwrite_arrow_reader` replaces rows matching the declared key and inserts
 the remainder. Both APIs require a schema-bearing `RecordBatchReader` and

@@ -1134,19 +1134,69 @@ class IcebergDataset(Dataset):
                     rebuild=False,
                 )
                 return 0, fresh.num_rows
-            if len(runs) > 1:
-                updated = inserted = 0
-                for _, _, run in runs:
-                    changed, fresh = self._merge_arrow_table(
-                        run,
-                        join,
-                        branch=branch,
-                        properties=properties,
-                    )
-                    updated += changed
-                    inserted += fresh
-                return updated, inserted
-            _, partition, chunk = runs[0]
+        else:
+            runs = [((), None, chunk)]
+        # Every partition resolves against the head this chunk started on. The
+        # parts that turned out to be pure inserts land in one commit; a part
+        # that has to rewrite files keeps its own bounded commit, because the
+        # files it replaces are its own. Only the commit is batched: each part
+        # still streams its planned files one at a time.
+        additions = []
+        rewrites: list[tuple[pyarrow.Table, pyarrow.Table, Any]] = []
+        updated = inserted = 0
+        for _, partition, run in runs:
+            fresh, rewrite = self._merge_partition_rows(
+                table, run, join, reference, partition, partitions
+            )
+            if rewrite is not None:
+                rewrites.append(rewrite)
+                updated += rewrite[0].num_rows
+                inserted += rewrite[1].num_rows
+                continue
+            if fresh.num_rows:
+                additions.append(fresh)
+                inserted += fresh.num_rows
+        # Rewrites first: they plan against the head they resolved on, and an
+        # append landing before them would offer their scans files that cannot
+        # match but still have to be read to prove it.
+        for updates, inserts, predicate in rewrites:
+            table = self._commit_merge(
+                table,
+                updates,
+                inserts,
+                predicate,
+                reference,
+                properties or {},
+            )
+        if additions:
+            fresh = (
+                additions[0]
+                if len(additions) == 1
+                else pyarrow.concat_tables(additions, promote_options="none")
+            )
+            self._append_chunk(table, fresh, reference, properties or {}, rebuild=False)
+        # No `refresh()`: a commit updates the table object it was made on, in
+        # place, and this runs once per chunk -- reloading it from the catalog
+        # here would be a round trip per commit to learn what we just did.
+        # `refresh()` is for seeing *other* writers, and stays the caller's.
+        return updated, inserted
+
+    def _merge_partition_rows(
+        self,
+        table: Any,
+        chunk: pyarrow.Table,
+        join: Sequence[str],
+        reference: str,
+        partition: Mapping[str, Any] | None,
+        partitions: Sequence[_PartitionColumn] | None,
+    ) -> tuple[pyarrow.Table, tuple[pyarrow.Table, pyarrow.Table, Any] | None]:
+        """What one partition contributes, uncommitted.
+
+        Either rows to append, or the `(updates, inserts, predicate)` of a
+        rewrite that has to replace the files it matched. A part never yields
+        both: rows that replace a stored row must land in the same commit that
+        removes it.
+        """
         chunk = _checked_merge_chunk(table, chunk, join)
         # The chunk's own shape is the one everything is brought onto: an Arrow
         # join refuses to match a `string` key against the `large_string` a scan
@@ -1170,14 +1220,7 @@ class IcebergDataset(Dataset):
             # added. No row under that snapshot can carry the key, so every
             # incoming row is new; projecting an arbitrary fallback column
             # would only turn that append into a schema error.
-            table = self._append_chunk(
-                table,
-                chunk,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-            return 0, chunk.num_rows
+            return chunk, None
         delete_columns = [name for name in delete_columns if name in selected.values()]
         scan = scan.select(*selected)
         scan = _scoped_partition_scan(scan, table, partition)
@@ -1193,14 +1236,7 @@ class IcebergDataset(Dataset):
             # can match: the merge *is* an append, with nothing read and
             # nothing to compare. A stream of new keys -- the log-ingest case
             # this exists for -- lands every chunk here.
-            table = self._append_chunk(
-                table,
-                chunk,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-            return 0, chunk.num_rows
+            return chunk, None
         # The range scan stays one planned file at a time. Its retained positions
         # and exact key rows are bounded by this source chunk, never by the table.
         matched_positions: list[pyarrow.Array] = []
@@ -1226,14 +1262,7 @@ class IcebergDataset(Dataset):
         if not matched_positions:
             # The range overlapped stored rows, but the exact keys did not.
             # There is nothing left to compare or anti-join: this is an append.
-            table = self._append_chunk(
-                table,
-                chunk,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-            return 0, chunk.num_rows
+            return chunk, None
 
         matched = pyarrow.concat_arrays(matched_positions)
         if len(pyarrow.compute.unique(matched)) != len(matched):
@@ -1281,41 +1310,20 @@ class IcebergDataset(Dataset):
             if changed_positions
             else chunk.slice(0, 0)
         )
-        if len(updates) == 0 and len(inserts) == 0:
-            return 0, 0
         if len(updates) == 0:
-            table = self._append_chunk(
-                table,
-                inserts,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-        else:
-            from pyiceberg.expressions import And
+            return inserts, None
+        from pyiceberg.expressions import And
 
-            deleted = pyarrow.concat_tables(delete_rows)
-            # The match filter decides what is *deleted*, so it stays exact;
-            # stored partition sources name the transformed partition without
-            # becoming row equality keys. The ranges only narrow that exact
-            # predicate; they never decide what is removed.
-            predicate = And(
-                _stored_match_filter(deleted, delete_columns),
-                _key_ranges(updates, join, derived),
-            )
-            self._commit_merge(
-                table,
-                updates,
-                inserts,
-                predicate,
-                reference,
-                properties or {},
-            )
-        # No `refresh()`: a commit updates the table object it was made on, in
-        # place, and this runs once per chunk -- reloading it from the catalog
-        # here would be a round trip per commit to learn what we just did.
-        # `refresh()` is for seeing *other* writers, and stays the caller's.
-        return len(updates), len(inserts)
+        deleted = pyarrow.concat_tables(delete_rows)
+        # The match filter decides what is *deleted*, so it stays exact;
+        # stored partition sources name the transformed partition without
+        # becoming row equality keys. The ranges only narrow that exact
+        # predicate; they never decide what is removed.
+        predicate = And(
+            _stored_match_filter(deleted, delete_columns),
+            _key_ranges(updates, join, derived),
+        )
+        return chunk.slice(0, 0), (updates, inserts, predicate)
 
     def append_arrow_reader(
         self,
@@ -1432,16 +1440,25 @@ class IcebergDataset(Dataset):
         reference = self._branch_name(branch)
         head = self._branch_head(table, reference)
         partitions = _partition_columns(table)
-        partition = None
+        runs: list[tuple[Mapping[str, Any] | None, pyarrow.Table]] = [(None, chunk)]
         if partitions:
-            runs = list(_partition_runs(_grouped_partition_chunk(chunk, partitions), partitions))
+            grouped = _grouped_partition_chunk(chunk, partitions)
+            runs = [(partition, run) for _, partition, run in _partition_runs(grouped, partitions)]
             if head is None:
                 # An empty table has no keys to scan. Collapse duplicates
                 # within each transformed partition, then let PyIceberg land
                 # every partition in one append transaction.
-                additions = [first_rows(normalised_keys(run, join), join) for _, _, run in runs]
+                additions = [first_rows(normalised_keys(run, join), join) for _, run in runs]
                 fresh = pyarrow.concat_tables(additions, promote_options="none")
                 _validate_merge_keys(fresh, join)
+                # One frontier per partition, because that is how a later chunk
+                # looks one up. Filling an empty table is what makes each of
+                # them exact: every key this partition holds is one just
+                # written here.
+                spans = [
+                    self._insert_span(run, join, reference, partition)
+                    for (partition, _), run in zip(runs, additions, strict=True)
+                ]
                 table = self._append_chunk(
                     table,
                     fresh,
@@ -1449,20 +1466,49 @@ class IcebergDataset(Dataset):
                     properties or {},
                     rebuild=False,
                 )
-                span = self._insert_span(fresh, join, reference, None)
-                self._remember_inserted(span, table, establish=True)
+                for span in spans:
+                    self._remember_inserted(span, table, establish=True)
                 return fresh.num_rows
-            if len(runs) > 1:
-                return sum(
-                    self._insert_arrow_table(
-                        run,
-                        join,
-                        branch=branch,
-                        properties=properties,
-                    )
-                    for _, _, run in runs
-                )
-            _, partition, chunk = runs[0]
+        # Every partition resolves against the head this chunk started on, and
+        # the rows they all keep land in one commit. Only the commit is
+        # batched: each partition still streams its own planned files one at a
+        # time, and holds nothing but the keys of its own run.
+        additions = []
+        spans: list[_InsertSpan] = []
+        for partition, run in runs:
+            fresh, span = self._insert_partition_rows(table, run, join, reference, partition, head)
+            if not fresh.num_rows:
+                continue
+            additions.append(fresh)
+            if span is not None:
+                spans.append(span)
+        if not additions:
+            return 0
+        fresh = (
+            additions[0]
+            if len(additions) == 1
+            else pyarrow.concat_tables(additions, promote_options="none")
+        )
+        table = self._append_chunk(table, fresh, reference, properties or {}, rebuild=False)
+        for span in spans:
+            self._remember_inserted(span, table, establish=head is None)
+        return fresh.num_rows
+
+    def _insert_partition_rows(
+        self,
+        table: Any,
+        chunk: pyarrow.Table,
+        join: Sequence[str],
+        reference: str,
+        partition: Mapping[str, Any] | None,
+        head: Any,
+    ) -> tuple[pyarrow.Table, _InsertSpan | None]:
+        """One partition's rows that no stored row already holds, uncommitted.
+
+        The span comes back only when the scan could have matched: a snapshot
+        that does not carry every key column proves nothing about the keys a
+        later chunk may bring, so it must not advance the frontier.
+        """
         chunk = first_rows(normalised_keys(chunk, join), join)
         # `_key_ranges` raises on a null or NaN key before the scan is even
         # built, which is the same refusal a merge makes.
@@ -1474,15 +1520,7 @@ class IcebergDataset(Dataset):
             # Once this object has filled an empty table, the upper bound is
             # exact. A later chunk strictly above it cannot match a stored key,
             # so planning manifests and files can only rediscover that fact.
-            table = self._append_chunk(
-                table,
-                chunk,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-            self._remember_inserted(span, table, establish=empty)
-            return chunk.num_rows
+            return chunk, span
         scan = table.scan(row_filter=row_filter)
         scan = self._branch_scan(table, scan, reference)
         # Keys only -- an append never compares a non-key column, so it never
@@ -1498,14 +1536,7 @@ class IcebergDataset(Dataset):
             # That snapshot does not carry every key column -- one added since
             # the branch was cut -- so no row on it can match a key, and every
             # row of the chunk is new.
-            table = self._append_chunk(
-                table,
-                chunk,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-            return chunk.num_rows
+            return chunk, None
         scan = scan.select(*wanted)
         scan = _scoped_partition_scan(scan, table, partition)
         # Planned once, like a merge. Each streamed key batch removes the rows
@@ -1534,19 +1565,10 @@ class IcebergDataset(Dataset):
                     )
                     if not fresh.num_rows:
                         break
-        if fresh.num_rows:
-            positions = fresh.column(SOURCE_INDEX).combine_chunks()
-            fresh = chunk.take(positions.take(pyarrow.compute.sort_indices(positions)))
-        if fresh.num_rows:
-            table = self._append_chunk(
-                table,
-                fresh,
-                reference,
-                properties or {},
-                rebuild=False,
-            )
-            self._remember_inserted(span, table, establish=empty)
-        return fresh.num_rows
+        if not fresh.num_rows:
+            return chunk.slice(0, 0), None
+        positions = fresh.column(SOURCE_INDEX).combine_chunks()
+        return chunk.take(positions.take(pyarrow.compute.sort_indices(positions))), span
 
     def _insert_span(
         self,
