@@ -1987,6 +1987,9 @@ class IcebergDataset(Dataset):
                         stager.write(retained)
                 staged = stager.finish()
                 if kept_rows == read_rows:
+                    # Every row survived the filter, so the file it came from
+                    # stands and the copy just written is not wanted.
+                    stager.discard([staged])
                     continue
                 originals.append(task.file)
                 replacements.append(staged)
@@ -4191,6 +4194,18 @@ class _PartitionStager:
         """Leave successfully committed targets in place on context exit."""
         for partition in partitions:
             self.uploaded.difference_update(partition.paths)
+
+    def discard(self, partitions: Sequence[_StagedPartition]) -> None:
+        """Remove staged files this write turned out not to need.
+
+        Now rather than on the way out: they were never committed, so nothing
+        has to be asked about whether they are live, and a delete that keeps
+        most of the files it read would otherwise carry every rewritten copy
+        of them to the end of the operation.
+        """
+        paths = [path for partition in partitions for path in partition.paths]
+        _discard_paths(self.table.io, paths)
+        self.uploaded.difference_update(paths)
 
     def _requested_batch(self, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
         """One source batch on PyIceberg's sanitized, field-id-bearing file schema."""

@@ -1250,13 +1250,15 @@ def test_a_failed_partition_commit_removes_unreferenced_stages(
     assert {row["file_path"] for row in dataset.refresh().data_files().to_pylist()} == before
 
 
-def test_a_delete_that_keeps_a_file_asks_nothing_about_what_it_staged(
+def test_a_delete_drops_the_rewritten_copy_of_a_file_it_keeps(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A file whose bounds admit the filter but whose rows do not match is
-    read, rewritten into a stage, and then kept as it was. The copy goes at
-    once: it was never committed, so nothing has to be asked about it."""
-    from rekep.iceberg import dataset as module
+    read, rewritten into a stage, and then kept as it was. The copy goes as
+    soon as that is known: it was never committed, so leaving it for the way
+    out would mean asking the catalog whether it is live -- a table load and
+    a manifest walk, at the end of an operation that succeeded."""
+    from rekep.iceberg.dataset import _PartitionStager
 
     day = datetime.date(2026, 8, 14)
     dataset.append_arrow_table(
@@ -1268,19 +1270,23 @@ def test_a_delete_that_keeps_a_file_asks_nothing_about_what_it_staged(
     )
     before = _iceberg_artifacts(dataset)
 
-    asked = 0
-    original = module._paths_may_be_live
+    discarded: list[tuple[str, ...]] = []
+    discard = _PartitionStager.discard
 
-    def counted(table: Any, candidates: set[str]) -> bool:
-        nonlocal asked
-        asked += 1
-        return original(table, candidates)
+    def recorded(self: _PartitionStager, partitions: Sequence[Any]) -> None:
+        discarded.extend(partition.paths for partition in partitions)
+        discard(self, partitions)
 
-    monkeypatch.setattr(module, "_paths_may_be_live", counted)
+    monkeypatch.setattr(_PartitionStager, "discard", recorded)
     assert dataset.delete_where("symbol = 'B'") == 0, "between the file's bounds, matching nothing"
 
-    assert asked == 0, "nothing uncommitted was left for the way out to settle"
-    assert _iceberg_artifacts(dataset) == before, "and no copy of the kept file remains"
+    assert [paths for paths in discarded if paths], "the copy it wrote was dropped"
+    assert not any(
+        Path(pyarrow.fs.FileSystem.from_uri(path)[1]).exists()
+        for paths in discarded
+        for path in paths
+    )
+    assert _iceberg_artifacts(dataset) == before
     assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {"A", "C"}
 
 
