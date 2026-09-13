@@ -1250,6 +1250,40 @@ def test_a_failed_partition_commit_removes_unreferenced_stages(
     assert {row["file_path"] for row in dataset.refresh().data_files().to_pylist()} == before
 
 
+def test_a_delete_that_keeps_a_file_asks_nothing_about_what_it_staged(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file whose bounds admit the filter but whose rows do not match is
+    read, rewritten into a stage, and then kept as it was. The copy goes at
+    once: it was never committed, so nothing has to be asked about it."""
+    from rekep.iceberg import dataset as module
+
+    day = datetime.date(2026, 8, 14)
+    dataset.append_arrow_table(
+        pyarrow.Table.from_pydict(
+            {"symbol": ["A", "C"], "day": [day, day], "size": [1, 3], "venue": ["XPAR"] * 2},
+            schema=Quote.field().into_arrow_schema(),
+        ),
+        merge_by=False,
+    )
+    before = _iceberg_artifacts(dataset)
+
+    asked = 0
+    original = module._paths_may_be_live
+
+    def counted(table: Any, candidates: set[str]) -> bool:
+        nonlocal asked
+        asked += 1
+        return original(table, candidates)
+
+    monkeypatch.setattr(module, "_paths_may_be_live", counted)
+    assert dataset.delete_where("symbol = 'B'") == 0, "between the file's bounds, matching nothing"
+
+    assert asked == 0, "nothing uncommitted was left for the way out to settle"
+    assert _iceberg_artifacts(dataset) == before, "and no copy of the kept file remains"
+    assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {"A", "C"}
+
+
 def test_partition_cleanup_attempts_every_upload_without_masking_the_source_error(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
