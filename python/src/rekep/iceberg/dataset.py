@@ -4640,14 +4640,17 @@ def _partition_run_tables(
             spans[identity] = (start, stop)
         planned.append((batch, indices, spans))
     for identity, partition in found.items():
-        pieces = [
-            batch.slice(start, stop - start)
-            if indices is None
-            else batch.take(indices.slice(start, stop - start))
-            for batch, indices, spans in planned
-            if (span := spans.get(identity)) is not None
-            for start, stop in (span,)
-        ]
+        pieces = []
+        for batch, indices, spans in planned:
+            span = spans.get(identity)
+            if span is None:
+                continue
+            start, stop = span
+            pieces.append(
+                batch.slice(start, stop - start)
+                if indices is None
+                else batch.take(indices.slice(start, stop - start))
+            )
         yield partition, pyarrow.Table.from_batches(pieces, chunk.schema)
 
 
