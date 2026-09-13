@@ -6031,6 +6031,26 @@ def test_an_insert_that_skips_some_keys_holds_the_rows_it_keeps_and_no_more(
     assert held < 2.5 * chunk, f"{held / chunk:.2f} chunks held for a partial insert"
 
 
+def test_a_stream_of_small_batches_still_fills_its_row_groups(tmp_path: Path) -> None:
+    """A row group per source batch is what writing each one as it arrives
+    makes, and it costs both ways: 2,000 batches of 8 rows wrote 2,000 row
+    groups and twice the bytes of the same rows in one."""
+    catalog = IcebergCatalog(name="groups", properties=catalog_properties(tmp_path))
+    target = catalog.dataset("t.groups", field=Bounded.field())
+    batches, rows = 500, 8
+    reader = pyarrow.RecordBatchReader.from_batches(
+        Bounded.field().into_arrow_schema(),
+        (bounded_batch(index, rows, 1) for index in range(batches)),
+    )
+    target.append_arrow_reader(reader, merge_by=False, commit_batch_num=batches)
+
+    files = target.data_files().to_pylist()
+    assert len(files) == 1
+    groups = pyarrow.parquet.ParquetFile(local(files[0]["file_path"])).metadata
+    assert groups.num_rows == batches * rows
+    assert groups.num_row_groups == 1, "one row group, not one per batch"
+
+
 def test_a_written_file_records_the_order_it_was_written_in(tmp_path: Path) -> None:
     """A file that does not say it is sorted is sorted again on every ordered
     read, however carefully the writer laid it out -- so every verb that lays

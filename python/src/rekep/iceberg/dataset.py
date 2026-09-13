@@ -4028,6 +4028,8 @@ class _PartitionStager:
         self._target: str | None = None
         self._file_rows = 0
         self._last_key: tuple[Any, ...] | None = None
+        self._pending: list[pyarrow.RecordBatch] = []
+        self._pending_rows = 0
         self._incoming_arrow_schema: pyarrow.Schema | None = None
         self._incoming_schema: Any | None = None
 
@@ -4084,7 +4086,7 @@ class _PartitionStager:
             for batch in piece_batches:
                 requested = self._requested_batch(batch)
                 self._open_file(requested.schema)
-                self._writer.write_batch(requested, row_group_size=self.row_group_size)
+                self._hold(requested)
             self._file_rows += piece.num_rows
             self.rows += piece.num_rows
             offset += piece.num_rows
@@ -4097,6 +4099,33 @@ class _PartitionStager:
                 )
             if self._file_rows >= self.file_row_size:
                 self._close_file(upload=True)
+
+    def _hold(self, batch: pyarrow.RecordBatch) -> None:
+        """Keep a batch back until it fills a row group.
+
+        A row group per source batch is what writing each one as it arrives
+        makes, and a source that hands over small batches then writes a file
+        of small row groups: 2,000 batches of 8 rows measured 2,000 row groups
+        and twice the bytes of the same rows in one. Held batches are the
+        chunk's own, so what this keeps is a reference to rows already there.
+        """
+        if self._pending_rows and self._pending_rows + batch.num_rows > self.row_group_size:
+            self._flush()
+        self._pending.append(batch)
+        self._pending_rows += batch.num_rows
+        if self._pending_rows >= self.row_group_size:
+            self._flush()
+
+    def _flush(self, writer: Any = None) -> None:
+        """Write what is held as row groups of the declared size."""
+        pending, self._pending, self._pending_rows = self._pending, [], 0
+        if not pending:
+            return
+        target = self._writer if writer is None else writer
+        target.write_table(
+            pyarrow.Table.from_batches(pending),
+            row_group_size=self.row_group_size,
+        )
 
     def finish(self) -> _StagedPartition:
         if self.partition is None:
@@ -4165,8 +4194,10 @@ class _PartitionStager:
         self._file_rows = 0
         self._last_key = None
         if writer is None:
+            self._pending, self._pending_rows = [], 0
             return
         try:
+            self._flush(writer)
             writer.close()
             if upload:
                 data_file = _staged_data_file(self.table, local, target, self.partition or {})
