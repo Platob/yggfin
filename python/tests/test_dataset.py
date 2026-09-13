@@ -15,7 +15,9 @@ from rekep.dataset import (
     anti_join,
     arrow_chunks,
     first_rows,
+    in_sort_order,
     normalised_keys,
+    sort_fields,
 )
 from rekep.fields import field_of, primary_key, replace_field
 
@@ -723,3 +725,132 @@ def test_a_join_that_drops_nothing_is_the_table_itself() -> None:
 
     chunk = joinable(range(10))
     assert anti_join(chunk, joinable([]), ["at"]) is chunk
+
+
+# -- ordering ----------------------------------------------------------------
+
+
+def ordered_pairs(pairs: Sequence[tuple[int, int]]) -> pyarrow.Table:
+    return pyarrow.table(
+        {
+            "at": pyarrow.array([at for at, _ in pairs], pyarrow.int64()),
+            "seq": pyarrow.array([seq for _, seq in pairs], pyarrow.int64()),
+            "payload": pyarrow.array(["x"] * len(pairs)),
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ("pairs", "ordered"),
+    [
+        ([(1, 0), (2, 0), (3, 0)], True),
+        (
+            [(1, 0), (1, 1), (1, 2)],
+            True,
+        ),
+        ([(1, 1), (1, 0)], False),
+        ([(2, 0), (1, 9)], False),
+        ([(1, 0), (1, 0)], True),
+        ([(1, 0)], True),
+    ],
+)
+def test_sortedness_is_lexicographic_over_every_key(
+    pairs: Sequence[tuple[int, int]], ordered: bool
+) -> None:
+    assert in_sort_order(ordered_pairs(pairs), ["at", "seq"]) is ordered
+
+
+def test_sort_checks_apply_nulls_last_only_when_the_prefix_ties() -> None:
+    rows = ordered_pairs([(1, 0), (2, 0)])
+    holed = rows.set_column(
+        rows.schema.get_field_index("seq"),
+        pyarrow.field("seq", pyarrow.int64()),
+        pyarrow.array([None, 1], pyarrow.int64()),
+    )
+    assert in_sort_order(holed, ["at", "seq"]) is True
+
+    tied = holed.set_column(
+        holed.schema.get_field_index("at"),
+        holed.schema.field("at"),
+        pyarrow.array([1, 1], pyarrow.int64()),
+    )
+    assert in_sort_order(tied, ["at", "seq"]) is False
+    assert in_sort_order(tied.take(pyarrow.array([1, 0])), ["at", "seq"]) is True
+
+
+def test_sort_checks_place_nan_after_numbers_and_before_null() -> None:
+    ascending = pyarrow.table({"value": [1.0, 2.0, float("nan"), None]})
+    descending = pyarrow.table({"value": [2.0, 1.0, float("nan"), None]})
+
+    assert in_sort_order(ascending, [("value", "ascending")]) is True
+    assert in_sort_order(descending, [("value", "descending")]) is True
+    assert in_sort_order(ascending.take(pyarrow.array([2, 0, 1, 3])), ["value"]) is False
+
+
+def test_an_unknown_sort_direction_is_refused() -> None:
+    with pytest.raises(ValueError, match="unknown sort direction"):
+        sort_fields([("value", "sideways")])
+
+
+# -- one row per key ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("keys", "kept"),
+    [
+        ([1, 2, 3], [1, 2, 3]),
+        ([1, 1, 2, 2, 2, 3], [1, 2, 3]),
+        ([3, 1, 2], [3, 1, 2]),
+        ([3, 1, 3, 2, 1], [3, 1, 2]),
+        ([1, 1], [1]),
+        ([1], [1]),
+        ([], []),
+    ],
+)
+def test_one_row_per_key_keeps_the_first_in_the_tables_own_order(
+    keys: Sequence[int], kept: Sequence[int]
+) -> None:
+    """Ordered or not, the answer is the same one: the first row of each key."""
+    table = pyarrow.table(
+        {
+            "at": pyarrow.array(keys, pyarrow.int64()),
+            "payload": pyarrow.array([f"row-{index}" for index in range(len(keys))]),
+        }
+    )
+    first = first_rows(table, ["at"])
+    assert first.column("at").to_pylist() == list(kept)
+    assert first.column("payload").to_pylist() == [f"row-{list(keys).index(key)}" for key in kept]
+
+
+def test_one_row_per_key_never_builds_a_key_table_for_an_ordered_stream(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The shape a stream arrives in: sorted on the key it is keyed on. The
+    group that would answer it costs a hash table over every key in the
+    chunk, and comparing neighbours answers the same question in a pass."""
+    import rekep.dataset
+
+    table = pyarrow.table(
+        {
+            "at": pyarrow.array([1, 1, 2, 3, 3, 3], pyarrow.int64()),
+            "payload": pyarrow.array([f"row-{index}" for index in range(6)]),
+        }
+    )
+    monkeypatch.setattr(
+        rekep.dataset,
+        "keys_of",
+        lambda *_args, **_kwargs: pytest.fail("an ordered chunk needs no key table"),
+    )
+
+    first = first_rows(table, ["at"])
+    assert first.column("at").to_pylist() == [1, 2, 3]
+    assert first.column("payload").to_pylist() == ["row-0", "row-2", "row-3"]
+
+
+def test_one_row_per_key_groups_nulls_and_nans_the_way_a_group_by_does() -> None:
+    """Two nulls are one key and two NaNs are one key, ordered or not."""
+    nan = float("nan")
+    ordered = pyarrow.table({"at": pyarrow.array([1.0, 2.0, 2.0, nan, nan, None, None])})
+    assert first_rows(ordered, ["at"]).num_rows == 4
+    shuffled = pyarrow.table({"at": pyarrow.array([None, 2.0, nan, 2.0, None, nan, 1.0])})
+    assert first_rows(shuffled, ["at"]).num_rows == 4

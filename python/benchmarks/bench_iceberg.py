@@ -19,7 +19,7 @@ import pyarrow
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from _bench import parser, timed  # noqa: E402
+from _bench import parser, peak_memory, timed  # noqa: E402
 
 from rekep import Convertible, scalar  # noqa: E402
 from rekep.fields import (  # noqa: E402
@@ -212,8 +212,18 @@ def write_case(
                 )
             )
         )
-        seconds, _ = timed(write)
-        report = {"seconds": seconds, "rows": table.num_rows, **stats(target)}
+        # What the write held: Arrow's high-water mark over it, which is where
+        # a writer that collects its chunk instead of staging it shows up --
+        # the wall clock is much the same either way.
+        with peak_memory() as peak:
+            seconds, _ = timed(write)
+            held = peak()
+        report = {
+            "seconds": seconds,
+            "rows": table.num_rows,
+            "peak": held / 2**20,
+            **stats(target),
+        }
         report["stored"] = target.read_arrow_table().num_rows
         # A merge replaces the rows whose keys match, so a preloaded half is
         # already in the count; anything else stored what it was given.
@@ -278,8 +288,8 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
     write_case(table.slice(0, 1_000), mode="append", commit_row_size=1_000_000)
     print(f"\n== write: {table.num_rows:,} rows over {days} days ==")
     header(
-        ("case", "commit rows", "seconds", "rows/s", "files", "manif", "snaps", "stored"),
-        (26, 12, 9, 11, 7, 6, 6, 9),
+        ("case", "commit rows", "seconds", "rows/s", "peak MiB", "files", "manif", "snaps"),
+        (26, 12, 9, 11, 9, 7, 6, 6),
     )
 
     # A commit closes at the first batch boundary at or beyond its size, so a
@@ -320,8 +330,8 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
         print(
             f"{label:>26} {('one' if commit is None else f'{commit:,}'):>12} "
             f"{report['seconds']:>9.2f} {report['rows'] / report['seconds']:>11,.0f} "
-            f"{report['files']:>7,} {report['manifests']:>6,} {report['snapshots']:>6,} "
-            f"{report['stored']:>9,}"
+            f"{report['peak']:>9.1f} {report['files']:>7,} {report['manifests']:>6,} "
+            f"{report['snapshots']:>6,}"
         )
     return tmp
 

@@ -25,15 +25,19 @@ import pyarrow.fs
 
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.dataset import (
+    SORT_DIRECTIONS,
     SOURCE_INDEX,
     TARGET_INDEX,
     Dataset,
     _positive_int,
     arrow_chunks,
     first_rows,
+    in_sort_order,
     keys_of,
     normalised_keys,
     semi_join,
+    sort_direction,
+    sort_fields,
 )
 from rekep.fields import (
     Field,
@@ -72,12 +76,13 @@ ORPHAN_AGE = datetime.timedelta(days=3)
 #: they disagree.
 _NO_GRACE = datetime.timedelta(0)
 
-#: How big one commit's output files get. Narrower than it sounds: pyiceberg
-#: derives rows-per-file from the *in-memory* size of the table being written
-#: and only ever splits a single commit -- it has no cross-commit state, so it
-#: cannot fill a file across commits. `commit_batch_num`, the optional
-#: `commit_row_size`, and `compact` are the levers on file count; this one
-#: decides how a large commit is sliced.
+#: How big one commit's output files get. Narrower than it sounds: it is read
+#: as rows-per-file from the *in-memory* size of the chunk being written -- by
+#: `_target_file_rows` here, and by pyiceberg the same way wherever it writes
+#: -- and it only ever splits a single commit, because neither has
+#: cross-commit state and so neither can fill a file across commits.
+#: `commit_batch_num`, the optional `commit_row_size`, and `compact` are the
+#: levers on file count; this one decides how a large commit is sliced.
 TARGET_FILE_SIZE = "write.target-file-size-bytes"
 
 #: Table properties that are physical file locations rather than ordinary values.
@@ -587,12 +592,12 @@ class IcebergDataset(Dataset):
             and len(order_by) == 2
             and isinstance(order_by[0], str)
             and isinstance(order_by[1], str)
-            and order_by[1].lower() in _SORT_DIRECTIONS
+            and order_by[1].lower() in SORT_DIRECTIONS
         ):
             requested_order = (order_by,)
         else:
             requested_order = tuple(order_by or ())
-        ordering_fields = list(_sort_fields(requested_order))
+        ordering_fields = list(sort_fields(requested_order))
         ordering = tuple(name for name, _ in ordering_fields)
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
@@ -987,7 +992,7 @@ class IcebergDataset(Dataset):
         *,
         rebuild: bool = True,
     ) -> Any:
-        """Append one bounded chunk through PyIceberg's partition writer.
+        """Append one bounded chunk, staged one partition at a time.
 
         A blind append may rebuild after another writer wins a commit. A
         keyed caller passes `rebuild=False`: its scan belongs to the old head,
@@ -996,7 +1001,6 @@ class IcebergDataset(Dataset):
         """
         if not chunk.num_rows:
             return table
-        chunk = self.sorted(chunk)
         return self._commit_with_retry(
             table,
             reference,
@@ -1012,21 +1016,72 @@ class IcebergDataset(Dataset):
         reference: str,
         properties: Mapping[str, str],
     ) -> None:
-        """One append attempt through PyIceberg's parallel partition writer."""
+        """One append attempt: every partition staged, then one snapshot.
+
+        Not PyIceberg's `Transaction.append`, which takes the whole chunk and
+        copies it twice on the way to Parquet -- once to filter each partition
+        out of it and once to give that copy fresh buffers -- with every
+        partition's copy alive at once, because it submits them all to its
+        pool before the first file is written. Measured on a 70 MiB chunk,
+        peak Arrow memory was 3.0x the chunk over one partition and 2.9x over
+        four; staged, taking one partition out of the chunk at a time and
+        casting one batch of it at a time, it is 1.1x and 1.6x, and the write
+        itself is no slower. The staged files also record the table's sort
+        order, which PyIceberg's writer leaves null -- and an ordered read of
+        a file that does not say it is sorted has to sort it again.
+        """
+        with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
+            self._append_staged_once(
+                table, stager, list(_stage_chunk(table, chunk, stager)), reference, properties
+            )
+
+    def _append_staged(
+        self,
+        table: Any,
+        stager: _PartitionStager,
+        staged: Sequence[_StagedPartition],
+        reference: str,
+        properties: Mapping[str, str],
+        *,
+        rebuild: bool,
+    ) -> Any:
+        """Commit files already staged, as one append snapshot."""
+        if not staged:
+            return table
+        return self._commit_with_retry(
+            table,
+            reference,
+            properties,
+            lambda current, summary: self._append_staged_once(
+                current, stager, staged, reference, summary
+            ),
+            rebuild=rebuild,
+        )
+
+    def _append_staged_once(
+        self,
+        table: Any,
+        stager: _PartitionStager,
+        staged: Sequence[_StagedPartition],
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> None:
+        """One append snapshot over staged files, owning every output it made."""
         with _track_outputs() as generated:
             transaction = table.transaction()
             try:
-                transaction.append(
-                    chunk,
-                    snapshot_properties=dict(properties),
-                    branch=reference,
-                )
+                _ensure_name_mapping(transaction)
+                with _append_files(transaction, reference, properties) as append:
+                    for partition in staged:
+                        for data_file in partition.data_files:
+                            append.append_data_file(data_file)
             except BaseException:
                 _discard_paths(table.io, generated)
                 raise
-            _commit_generated(table, transaction, generated)
-            for path in sorted(_settled_paths(generated)):
-                LOGGER.debug("%s output %s", self.identifier, path)
+            _commit_staged(table, transaction, stager, staged, generated)
+            for partition in staged:
+                for path in partition.paths:
+                    LOGGER.debug("%s output %s", self.identifier, path)
 
     def _commit_merge(
         self,
@@ -1037,9 +1092,12 @@ class IcebergDataset(Dataset):
         reference: str,
         properties: Mapping[str, str],
     ) -> Any:
-        """Rewrite matching files in bounded commits, adding values in the last."""
-        updates = self.sorted(updates)
-        inserts = self.sorted(inserts)
+        """Rewrite matching files in bounded commits, adding values in the last.
+
+        Neither part is sorted here. Whatever these rows land in is written by
+        the stager, which sorts what it is given and starts a new file where
+        the order breaks, so sorting them first would be the same pass twice.
+        """
         additions = pyarrow.concat_tables(
             [part for part in (updates, inserts) if part.num_rows],
             promote_options="none",
@@ -1117,64 +1175,50 @@ class IcebergDataset(Dataset):
         reference = self._branch_name(branch)
         head = self._branch_head(table, reference)
         partitions = _partition_columns(table)
-        partition = None
-        if partitions:
-            runs = list(_partition_runs(_grouped_partition_chunk(chunk, partitions), partitions))
-            if head is None:
-                # PyIceberg already writes every partition of one table in
-                # parallel. With no stored snapshot there is nothing to match,
-                # so the initial merge is one transaction across every part.
-                additions = [_checked_merge_chunk(table, run, join) for _, _, run in runs]
-                fresh = pyarrow.concat_tables(additions, promote_options="none")
-                self._append_chunk(
-                    table,
-                    fresh,
-                    reference,
-                    properties or {},
-                    rebuild=False,
-                )
-                return 0, fresh.num_rows
-        else:
-            runs = [((), None, chunk)]
+        runs = _partition_run_tables(chunk, partitions) if partitions else iter([(None, chunk)])
         # Every partition resolves against the head this chunk started on. The
-        # parts that turned out to be pure inserts land in one commit; a part
-        # that has to rewrite files keeps its own bounded commit, because the
-        # files it replaces are its own. Only the commit is batched: each part
-        # still streams its planned files one at a time.
-        additions = []
+        # parts that turn out to be pure inserts are staged as they resolve and
+        # land in one commit; a part that has to rewrite files keeps its own
+        # bounded commit, because the files it replaces are its own. Only the
+        # commit is batched: each part still streams its planned files one at a
+        # time, and is taken out of the chunk only when its turn comes -- what
+        # this holds past the chunk is one part, not every part's rows.
         rewrites: list[tuple[pyarrow.Table, pyarrow.Table, Any]] = []
         updated = inserted = 0
-        for _, partition, run in runs:
-            fresh, rewrite = self._merge_partition_rows(
-                table, run, join, reference, partition, partitions
-            )
-            if rewrite is not None:
-                rewrites.append(rewrite)
-                updated += rewrite[0].num_rows
-                inserted += rewrite[1].num_rows
-                continue
-            if fresh.num_rows:
-                additions.append(fresh)
-                inserted += fresh.num_rows
-        # Rewrites first: they plan against the head they resolved on, and an
-        # append landing before them would offer their scans files that cannot
-        # match but still have to be read to prove it.
-        for updates, inserts, predicate in rewrites:
-            table = self._commit_merge(
-                table,
-                updates,
-                inserts,
-                predicate,
-                reference,
-                properties or {},
-            )
-        if additions:
-            fresh = (
-                additions[0]
-                if len(additions) == 1
-                else pyarrow.concat_tables(additions, promote_options="none")
-            )
-            self._append_chunk(table, fresh, reference, properties or {}, rebuild=False)
+        with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
+            staged: list[_StagedPartition] = []
+            for partition, run in runs:
+                if head is None:
+                    # Nothing is stored, so nothing can match: every part is an
+                    # insert, and only its shape and keys are worth checking.
+                    fresh, rewrite = _checked_merge_chunk(table, run, join), None
+                else:
+                    fresh, rewrite = self._merge_partition_rows(
+                        table, run, join, reference, partition, partitions
+                    )
+                del run
+                if rewrite is not None:
+                    rewrites.append(rewrite)
+                    updated += rewrite[0].num_rows
+                    inserted += rewrite[1].num_rows
+                    continue
+                if fresh.num_rows:
+                    staged.append(_stage_partition(stager, partition, fresh))
+                    inserted += fresh.num_rows
+                del fresh
+            # Rewrites first: they plan against the head they resolved on, and
+            # an append landing before them would offer their scans files that
+            # cannot match but still have to be read to prove it.
+            for updates, inserts, predicate in rewrites:
+                table = self._commit_merge(
+                    table,
+                    updates,
+                    inserts,
+                    predicate,
+                    reference,
+                    properties or {},
+                )
+            self._append_staged(table, stager, staged, reference, properties or {}, rebuild=False)
         # No `refresh()`: a commit updates the table object it was made on, in
         # place, and this runs once per chunk -- reloading it from the catalog
         # here would be a round trip per commit to learn what we just did.
@@ -1440,59 +1484,48 @@ class IcebergDataset(Dataset):
         reference = self._branch_name(branch)
         head = self._branch_head(table, reference)
         partitions = _partition_columns(table)
-        runs: list[tuple[Mapping[str, Any] | None, pyarrow.Table]] = [(None, chunk)]
-        if partitions:
-            grouped = _grouped_partition_chunk(chunk, partitions)
-            runs = [(partition, run) for _, partition, run in _partition_runs(grouped, partitions)]
-            if head is None:
-                # An empty table has no keys to scan. Collapse duplicates
-                # within each transformed partition, then let PyIceberg land
-                # every partition in one append transaction.
-                additions = [first_rows(normalised_keys(run, join), join) for _, run in runs]
-                fresh = pyarrow.concat_tables(additions, promote_options="none")
-                _validate_merge_keys(fresh, join)
-                # One frontier per partition, because that is how a later chunk
-                # looks one up. Filling an empty table is what makes each of
-                # them exact: every key this partition holds is one just
-                # written here.
-                spans = [
-                    self._insert_span(run, join, reference, partition)
-                    for (partition, _), run in zip(runs, additions, strict=True)
-                ]
-                table = self._append_chunk(
-                    table,
-                    fresh,
-                    reference,
-                    properties or {},
-                    rebuild=False,
-                )
-                for span in spans:
-                    self._remember_inserted(span, table, establish=True)
-                return fresh.num_rows
+        runs = _partition_run_tables(chunk, partitions) if partitions else iter([(None, chunk)])
         # Every partition resolves against the head this chunk started on, and
         # the rows they all keep land in one commit. Only the commit is
         # batched: each partition still streams its own planned files one at a
-        # time, and holds nothing but the keys of its own run.
-        additions = []
+        # time, holds nothing but the keys of its own run, and stages the rows
+        # it keeps before the next run is taken out of the chunk.
+        inserted = 0
         spans: list[_InsertSpan] = []
-        for partition, run in runs:
-            fresh, span = self._insert_partition_rows(table, run, join, reference, partition, head)
-            if not fresh.num_rows:
-                continue
-            additions.append(fresh)
-            if span is not None:
-                spans.append(span)
-        if not additions:
-            return 0
-        fresh = (
-            additions[0]
-            if len(additions) == 1
-            else pyarrow.concat_tables(additions, promote_options="none")
-        )
-        table = self._append_chunk(table, fresh, reference, properties or {}, rebuild=False)
+        with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
+            staged: list[_StagedPartition] = []
+            for partition, run in runs:
+                if head is None:
+                    # An empty table has no keys to scan. Collapse duplicates
+                    # within each transformed partition; every key is new.
+                    fresh = first_rows(normalised_keys(run, join), join)
+                    _validate_merge_keys(fresh, join)
+                    span = self._insert_span(fresh, join, reference, partition)
+                else:
+                    fresh, span = self._insert_partition_rows(
+                        table, run, join, reference, partition, head
+                    )
+                del run
+                if not fresh.num_rows:
+                    continue
+                staged.append(_stage_partition(stager, partition, fresh))
+                inserted += fresh.num_rows
+                del fresh
+                if span is not None:
+                    spans.append(span)
+            if not staged:
+                return 0
+            table = self._append_staged(
+                table, stager, staged, reference, properties or {}, rebuild=False
+            )
+        # One frontier per partition, because that is how a later chunk looks
+        # one up. Filling an empty table is what makes each of them exact:
+        # every key that partition holds is one just written here, and
+        # committing the parts together is what keeps those bounds usable --
+        # a part committed on its own moves the head out from under the rest.
         for span in spans:
             self._remember_inserted(span, table, establish=head is None)
-        return fresh.num_rows
+        return inserted
 
     def _insert_partition_rows(
         self,
@@ -1567,8 +1600,19 @@ class IcebergDataset(Dataset):
                         break
         if not fresh.num_rows:
             return chunk.slice(0, 0), None
+        if fresh.num_rows == chunk.num_rows:
+            # Every key is new -- the log-ingest case this exists for -- and
+            # the rows are already in their own order, so there is nothing to
+            # take out of the chunk at all.
+            return chunk, span
+        # Filtered and not taken. `take` concatenates every column of the
+        # chunk before it selects, so dropping the handful of keys a replay
+        # overlaps on costs a copy of the whole chunk on top of the rows kept;
+        # a mask keeps the chunk's own batches and its own order, which is
+        # also what makes the `sort_indices` an ordering already held.
         positions = fresh.column(SOURCE_INDEX).combine_chunks()
-        return chunk.take(positions.take(pyarrow.compute.sort_indices(positions))), span
+        keep = pyarrow.compute.is_in(arrays.sequence(chunk.num_rows), value_set=positions)
+        return chunk.filter(keep), span
 
     def _insert_span(
         self,
@@ -1646,7 +1690,7 @@ class IcebergDataset(Dataset):
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:
         """`chunk` in `sort_by` order, or exactly as it came when nothing says."""
         fields = self.sort_fields()
-        if not fields or chunk.num_rows < 2 or _in_sort_order(chunk, fields):
+        if not fields or chunk.num_rows < 2 or in_sort_order(chunk, fields):
             return chunk
         return chunk.sort_by(fields)
 
@@ -1675,10 +1719,10 @@ class IcebergDataset(Dataset):
         else:
             shape = self.field
             return [
-                (name, _sort_direction(direction)) for name, direction in sort_keys(shape).items()
+                (name, sort_direction(direction)) for name, direction in sort_keys(shape).items()
             ]
         return [
-            (name, _sort_direction(direction))
+            (name, sort_direction(direction))
             for name, direction in (sort_keys(shape).items() if shape is not None else ())
         ]
 
@@ -2585,7 +2629,7 @@ def _sorted_task_batches(
         for batch in reader:
             if not batch.num_rows:
                 continue
-            if not _reader_in_sort_order(batch, columns):
+            if not in_sort_order(batch, columns):
                 raise ValueError(
                     f"Iceberg file {task.file.file_path!s} is not ordered on {list(columns)!r}"
                 )
@@ -2705,7 +2749,7 @@ def _externally_sorted_task_batches(
                 if not batch.num_rows:
                     continue
                 table = pyarrow.Table.from_batches([batch], schema=reader.schema)
-                if not _in_sort_order(table, columns):
+                if not in_sort_order(table, columns):
                     table = table.sort_by(list(columns))
                 path = os.path.join(directory, f"0-{index}.arrow")
                 _write_ipc_batches(path, reader.schema, table.to_batches())
@@ -2768,35 +2812,6 @@ class _Descending:
         return bool(self.value > other.value)
 
 
-_SORT_DIRECTIONS = {
-    "asc": "ascending",
-    "ascending": "ascending",
-    "desc": "descending",
-    "descending": "descending",
-}
-
-
-def _sort_direction(direction: Any) -> str:
-    """One Arrow direction spelling from a declaration or Iceberg value."""
-    value = str(direction).lower()
-    try:
-        return _SORT_DIRECTIONS[value]
-    except KeyError as error:
-        raise ValueError(f"unknown sort direction {direction!r}") from error
-
-
-def _sort_fields(
-    columns: Sequence[str] | Sequence[tuple[str, str]],
-) -> tuple[tuple[str, str], ...]:
-    """Normalize name-only ascending keys and explicit direction pairs."""
-    return tuple(
-        (column, "ascending")
-        if isinstance(column, str)
-        else (str(column[0]), _sort_direction(column[1]))
-        for column in columns
-    )
-
-
 def _row_key(
     batch: pyarrow.RecordBatch,
     columns: Sequence[str] | Sequence[tuple[str, str]],
@@ -2814,64 +2829,9 @@ def _row_key(
                 else value
             ),
         )
-        for column, direction in _sort_fields(columns)
+        for column, direction in sort_fields(columns)
         for value in (batch.column(column)[index].as_py(),)
     )
-
-
-def _reader_in_sort_order(
-    batch: pyarrow.RecordBatch | pyarrow.Table,
-    columns: Sequence[str] | Sequence[tuple[str, str]],
-) -> bool:
-    """Whether a physical batch follows its directional, null-last ordering."""
-    compute = pyarrow.compute
-    ordered = None
-    for name, direction in reversed(_sort_fields(columns)):
-        column = batch.column(name)
-        if isinstance(column, pyarrow.ChunkedArray):
-            column = column.combine_chunks()
-        before, after = column[:-1], column[1:]
-        before_null, after_null = compute.is_null(before), compute.is_null(after)
-        if pyarrow.types.is_floating(column.type):
-            before_nan = compute.fill_null(compute.is_nan(before), False)
-            after_nan = compute.fill_null(compute.is_nan(after), False)
-        else:
-            before_nan = compute.and_(before_null, compute.invert(before_null))
-            after_nan = compute.and_(after_null, compute.invert(after_null))
-        before_regular = compute.invert(compute.or_(before_null, before_nan))
-        after_regular = compute.invert(compute.or_(after_null, after_nan))
-        regular_precedes = compute.and_(
-            compute.and_(before_regular, after_regular),
-            compute.fill_null(
-                (compute.greater if direction == "descending" else compute.less)(before, after),
-                False,
-            ),
-        )
-        precedes = compute.or_(
-            regular_precedes,
-            compute.or_(
-                compute.and_(before_regular, compute.or_(after_nan, after_null)),
-                compute.and_(before_nan, after_null),
-            ),
-        )
-        equal = compute.or_(
-            compute.or_(
-                compute.and_(before_null, after_null),
-                compute.and_(before_nan, after_nan),
-            ),
-            compute.and_(
-                compute.and_(before_regular, after_regular),
-                compute.fill_null(compute.equal(before, after), False),
-            ),
-        )
-        ordered = (
-            compute.or_(precedes, equal)
-            if ordered is None
-            else compute.or_(precedes, compute.and_(equal, ordered))
-        )
-    if ordered is None:
-        return True
-    return bool(compute.all(ordered, min_count=0).as_py())
 
 
 def _upper_bound(
@@ -3095,14 +3055,6 @@ def _limited_reader(scan: Any, limit: int | None) -> pyarrow.RecordBatchReader:
 def _null_partition(partition: Any) -> bool:
     """Whether a file's partition record holds a null in any field."""
     return any(partition[index] is None for index in range(len(partition)))
-
-
-def _in_sort_order(
-    chunk: pyarrow.Table,
-    names: Sequence[str] | Sequence[tuple[str, str]],
-) -> bool:
-    """Whether `chunk` follows the directional lexicographic sort fields."""
-    return _reader_in_sort_order(chunk, names)
 
 
 def _key_ranges(
@@ -3865,9 +3817,14 @@ def _partition_columns(table: Any) -> tuple[_PartitionColumn, ...] | None:
         IdentityTransform,
         MonthTransform,
         TruncateTransform,
+        VoidTransform,
         YearTransform,
     )
 
+    # Every transform Iceberg names, except the one that stands for a
+    # transform this PyIceberg does not know -- and a table partitioned by
+    # that cannot be written through PyIceberg either, because its own writer
+    # asks the transform for the same Arrow form and is refused.
     supported = (
         IdentityTransform,
         DayTransform,
@@ -3876,6 +3833,7 @@ def _partition_columns(table: Any) -> tuple[_PartitionColumn, ...] | None:
         YearTransform,
         BucketTransform,
         TruncateTransform,
+        VoidTransform,
     )
     schema = table.schema()
     spec = table.spec()
@@ -4110,7 +4068,7 @@ class _PartitionStager:
         """Write one bounded source chunk without mixing partition values."""
         if self.partition is None:
             raise RuntimeError("start a staged partition before writing it")
-        if self.sort_fields and not _in_sort_order(chunk, self.sort_fields):
+        if self.sort_fields and not in_sort_order(chunk, self.sort_fields):
             chunk = chunk.sort_by(list(self.sort_fields))
         offset = 0
         while offset < chunk.num_rows:
@@ -4236,6 +4194,57 @@ def _track_outputs() -> Any:
     from rekep.iceberg.file_io import track_outputs
 
     return track_outputs()
+
+
+def _append_files(transaction: Any, reference: str, properties: Mapping[str, str]) -> Any:
+    """The append producer PyIceberg would pick for this table's properties.
+
+    Read from the table and not chosen here, because `MERGE_MANIFESTS` is a
+    declaration about how the table commits and every writer through it
+    honours the same one.
+    """
+    from pyiceberg.table import TableProperties
+    from pyiceberg.utils.properties import property_as_bool
+
+    update = transaction.update_snapshot(snapshot_properties=dict(properties), branch=reference)
+    merged = property_as_bool(
+        transaction.table_metadata.properties,
+        TableProperties.MANIFEST_MERGE_ENABLED,
+        TableProperties.MANIFEST_MERGE_ENABLED_DEFAULT,
+    )
+    return update.merge_append() if merged else update.fast_append()
+
+
+def _target_file_rows(table: Any, chunk: pyarrow.Table) -> int:
+    """Rows per staged file, from `TARGET_FILE_SIZE` and this chunk's row width.
+
+    Sized from in-memory bytes because that is how Iceberg's own writer reads
+    the property, so a table keeps one answer to how big its files are
+    whoever wrote them. Still a bound per commit and not across commits: a
+    file closes when its partition's rows run out.
+    """
+    from pyiceberg.table import TableProperties
+    from pyiceberg.utils.properties import property_as_int
+
+    target = property_as_int(
+        properties=table.metadata.properties,
+        property_name=TableProperties.WRITE_TARGET_FILE_SIZE_BYTES,
+        default=TableProperties.WRITE_TARGET_FILE_SIZE_BYTES_DEFAULT,
+    )
+    if not chunk.num_rows or not target:
+        return max(chunk.num_rows, 1)
+    return max(1, int(target / max(chunk.nbytes / chunk.num_rows, 1)))
+
+
+def _stage_partition(
+    stager: _PartitionStager,
+    partition: Mapping[str, Any] | None,
+    rows: pyarrow.Table,
+) -> _StagedPartition:
+    """Stage one resolved partition's rows, uncommitted."""
+    stager.start(partition or {})
+    stager.write(rows)
+    return stager.finish()
 
 
 def _commit_staged(
@@ -4536,12 +4545,9 @@ def _staged_partition_chunk(
     partitions: Sequence[_PartitionColumn],
     stager: _PartitionStager,
 ) -> Iterator[_StagedPartition]:
-    """Stage one bounded chunk after grouping equal transformed partitions."""
-    chunk = _grouped_partition_chunk(chunk, partitions)
-    for _, partition, run in _partition_runs(chunk, partitions):
-        stager.start(partition)
-        stager.write(run)
-        yield stager.finish()
+    """Stage one bounded chunk, one transformed partition at a time."""
+    for partition, run in _partition_run_tables(chunk, partitions):
+        yield _stage_partition(stager, partition, run)
 
 
 def _stage_chunk(
@@ -4554,47 +4560,78 @@ def _stage_chunk(
     if partitions:
         yield from _staged_partition_chunk(chunk, partitions, stager)
         return
-    stager.start({})
-    stager.write(chunk)
-    yield stager.finish()
-
-
-def _grouped_partition_chunk(
-    chunk: pyarrow.Table, partitions: Sequence[_PartitionColumn]
-) -> pyarrow.Table:
-    """Put one chunk's equal transformed partitions next to each other."""
-    names = [f"partition_{index}" for index in range(len(partitions))]
-    values = []
-    for partition in partitions:
-        transformed = partition.transform(_arrow_source(chunk, partition.source))
-        values.append(
-            transformed.combine_chunks()
-            if isinstance(transformed, pyarrow.ChunkedArray)
-            else transformed
+    if not table.spec().is_unpartitioned():
+        raise ValueError(
+            f"{table.spec()} names a transform with no Arrow form, so this write cannot tell "
+            "which partition a row belongs to"
         )
-    keys = pyarrow.RecordBatch.from_arrays(values, names=names)
-    if _reader_in_sort_order(keys, names):
-        return chunk
-    indices = pyarrow.compute.sort_indices(
-        keys,
-        sort_keys=[(name, "ascending") for name in names],
-    )
-    return chunk.take(indices)
+    yield _stage_partition(stager, {}, chunk)
+
+
+def _partition_run_tables(
+    chunk: pyarrow.Table, partitions: Sequence[_PartitionColumn]
+) -> Iterator[tuple[dict[str, Any], pyarrow.Table]]:
+    """One transformed partition of `chunk` at a time, taken out one at a time.
+
+    Batch by batch, rather than by sorting the chunk once. Sorting the chunk
+    is a copy of it, held beside it while every run is written; and taking
+    rows out of a table whose columns are chunked concatenates each column
+    first, which is another copy of the chunk per run. Ordering a batch and
+    slicing it costs the batch, and a batch whose partitions are already
+    next to each other -- an hour of a chronological stream -- costs nothing
+    at all, because its runs are views.
+    """
+    if not chunk.num_rows:
+        return
+    names = [f"partition_{index}" for index in range(len(partitions))]
+    found: dict[tuple[Any, ...], dict[str, Any]] = {}
+    planned: list[tuple[pyarrow.RecordBatch, Any, dict[tuple[Any, ...], tuple[int, int]]]] = []
+    for batch in chunk.to_batches():
+        if not batch.num_rows:
+            continue
+        values = _partition_values(batch, partitions)
+        keys = pyarrow.RecordBatch.from_arrays(values, names=names)
+        indices = None
+        if not in_sort_order(keys, names):
+            indices = pyarrow.compute.sort_indices(
+                keys, sort_keys=[(name, "ascending") for name in names]
+            )
+            values = keys.take(indices).columns
+        spans: dict[tuple[Any, ...], tuple[int, int]] = {}
+        for identity, partition, start, stop in _partition_spans(partitions, values):
+            found.setdefault(identity, partition)
+            spans[identity] = (start, stop)
+        planned.append((batch, indices, spans))
+    for identity, partition in found.items():
+        pieces = [
+            batch.slice(start, stop - start)
+            if indices is None
+            else batch.take(indices.slice(start, stop - start))
+            for batch, indices, spans in planned
+            if (span := spans.get(identity)) is not None
+            for start, stop in (span,)
+        ]
+        yield partition, pyarrow.Table.from_batches(pieces, chunk.schema)
 
 
 def _partition_runs(
     chunk: pyarrow.Table, partitions: Sequence[_PartitionColumn]
 ) -> Iterator[tuple[tuple[Any, ...], dict[str, Any], pyarrow.Table]]:
-    """Contiguous transformed-partition runs, found by Arrow comparisons."""
+    """Contiguous transformed-partition runs, as views into `chunk`."""
     if not chunk.num_rows:
         return
-    same = None
+    values = _partition_values(chunk, partitions)
+    for identity, partition, start, stop in _partition_spans(partitions, values):
+        yield identity, partition, chunk.slice(start, stop - start)
+
+
+def _partition_values(rows: Any, partitions: Sequence[_PartitionColumn]) -> list[Any]:
+    """Each partition field's transformed values over a table or batch."""
     values_by_partition: list[Any] = []
     for partition in partitions:
-        values = partition.transform(_arrow_source(chunk, partition.source))
+        values = partition.transform(_arrow_source(rows, partition.source))
         if isinstance(values, pyarrow.ChunkedArray):
             values = values.combine_chunks()
-        values_by_partition.append(values)
         if (
             pyarrow.types.is_floating(values.type)
             and pyarrow.compute.any(
@@ -4605,6 +4642,16 @@ def _partition_runs(
                 f"partition column {partition.source!r} contains NaN, which partition staging "
                 "does not support"
             )
+        values_by_partition.append(values)
+    return values_by_partition
+
+
+def _partition_spans(
+    partitions: Sequence[_PartitionColumn], values_by_partition: Sequence[Any]
+) -> Iterator[tuple[tuple[Any, ...], dict[str, Any], int, int]]:
+    """Where each run of equal transformed values starts and stops."""
+    same = None
+    for values in values_by_partition:
         before, after = values[:-1], values[1:]
         equal = pyarrow.compute.fill_null(pyarrow.compute.equal(before, after), False)
         both_null = pyarrow.compute.and_(
@@ -4612,19 +4659,18 @@ def _partition_runs(
         )
         equal = pyarrow.compute.or_(equal, both_null)
         same = equal if same is None else pyarrow.compute.and_(same, equal)
-    boundaries = (
-        [int(index) + 1 for index in pyarrow.compute.indices_nonzero(pyarrow.compute.invert(same))]
-        if same is not None
-        else []
-    )
-    starts = [0, *boundaries]
-    for start, stop in zip(starts, [*boundaries, chunk.num_rows], strict=True):
+    if same is None:
+        return
+    boundaries = [
+        int(index) + 1 for index in pyarrow.compute.indices_nonzero(pyarrow.compute.invert(same))
+    ]
+    rows = len(values_by_partition[0])
+    for start, stop in zip([0, *boundaries], [*boundaries, rows], strict=True):
         partition = {
             field.name: values[start].as_py()
             for field, values in zip(partitions, values_by_partition, strict=True)
         }
-        identity = _partition_identity(partition)
-        yield identity, partition, chunk.slice(start, stop - start)
+        yield _partition_identity(partition), partition, start, stop
 
 
 def _arrow_source(chunk: pyarrow.Table, source: str) -> Any:

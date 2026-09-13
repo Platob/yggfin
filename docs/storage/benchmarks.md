@@ -66,3 +66,31 @@ uv run python benchmarks/bench_iceberg.py --quick   # 2,500 rows over two days
 Bounded writes, scans, keyed insertion, maintenance and deletion over synthetic
 rows. The test suite smokes the quick write path only; exhaustive timing is
 opt-in.
+
+The write sweep reports `peak MiB`: the Arrow high-water mark over one write,
+measured through a proxy memory pool installed for that write alone, because
+a pool never lowers its high-water mark and a process that has already
+allocated would otherwise answer about the process. It is where a writer that
+collects a chunk instead of staging it shows up; the wall clock is much the
+same either way.
+
+## Staged writes
+
+Three verbs over one 70 MiB chunk of 524,288 rows, against the same chunk
+handed whole to PyIceberg's writer. Peak is the Arrow high-water mark over the
+commit, in chunks; seconds is the whole streamed write.
+
+| verb | partitions | peak, whole | peak, staged | seconds, whole | seconds, staged |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| append | 1 | 2.01 | 1.07 | 0.93 | 0.22 |
+| append | 4 | 1.79 | 1.56 | 0.88 | 0.29 |
+| append | 24 | 1.22 | 1.15 | 0.61 | 0.40 |
+| keyed append | 4 | 4.95 | 1.81 | 1.61 | 0.39 |
+| keyed append | 24 | 4.95 | 1.19 | 2.10 | 0.59 |
+| merge | 4 | 4.95 | 1.79 | 2.02 | 0.57 |
+| merge | 24 | 4.36 | 1.18 | 2.07 | 0.95 |
+
+Splitting a chunk by partition inside PyIceberg copies each partition twice and
+holds every copy at once, because it submits all of them to its pool before
+the first file is written; a keyed write then held its partitions' rows again
+until the commit. Staging takes one partition out of the chunk at a time.

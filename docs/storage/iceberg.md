@@ -38,6 +38,38 @@ resolved one at a time and committed together.
 the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
 consume one batch at a time. The batch and table helpers build that reader.
 
+### What a commit holds
+
+Every verb writes the same way: a bounded chunk is split into its transformed
+partitions, and each partition is taken out of the chunk, written to a local
+Parquet file, uploaded through the table's configured `FileIO`, and committed
+by path. One commit per chunk, whatever the partition count, and what the
+write holds past the chunk it was handed is one partition rather than every
+partition's rows.
+
+Measured on a 70 MiB chunk of 524,288 rows, as the Arrow high-water mark over
+one commit divided by the chunk:
+
+| verb | 1 partition | 4 partitions | 24 partitions |
+| --- | ---: | ---: | ---: |
+| `append_arrow_*`, no keys | 1.07 | 1.56 | 1.15 |
+| `append_arrow_*`, `merge_by` | 1.15 | 1.81 | 1.19 |
+| `overwrite_arrow_*`, `merge_by` | 1.11 | 1.79 | 1.18 |
+
+A chunk that merges keys the table already holds also keeps the rows it
+decided to write, so it holds about two chunks rather than one; a replay that
+matches everything holds neither, because it writes nothing.
+
+Staged files record the table's sort order, which is what lets `order_by` read
+them back without sorting each one again: over four files of that same
+524,288-row table, an ordered read fell from 249 ms and 133 MiB to 57 ms and
+51 MiB.
+
+The local stage is a bounded file and not a copy of the commit. It is deleted
+as soon as it is uploaded, a refused commit deletes what it uploaded, and a
+commit whose acknowledgement is lost leaves its files for the orphan sweep to
+settle rather than deleting rows that may be live.
+
 Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
 `overwrite_arrow_*` write, to add columns from its authoritative write Field
 before the first batch is consumed:
