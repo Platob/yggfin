@@ -2098,6 +2098,20 @@ def test_a_keyed_write_over_stored_rows_lands_every_partition_in_one_snapshot(
     }
 
 
+def test_the_batched_keyed_commit_stays_on_its_branch(dataset: IcebergDataset) -> None:
+    """One commit for many partitions is still one commit on the named ref."""
+    dataset.append_arrow_table(quotes(1))
+    dataset.create_branch("work")
+    source = pyarrow.concat_tables([keyed("N", 1), other_day(1), third_day(1)])
+
+    before = len(dataset.iceberg_table.snapshots())
+    assert dataset.insert_arrow_table(source, branch="work") == 3
+
+    assert len(dataset.refresh().iceberg_table.snapshots()) == before + 1
+    assert dataset.read_arrow_table().num_rows == 1, "main never saw the write"
+    assert dataset.read_arrow_table(branch="work").num_rows == 4
+
+
 def test_a_streamed_keyed_append_commits_per_batch_bound_not_per_partition(
     dataset: IcebergDataset,
 ) -> None:
