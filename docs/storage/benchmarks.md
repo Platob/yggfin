@@ -92,9 +92,22 @@ the commit, in chunks.
 | merge | 4 | 3.94 | 1.52 |
 | merge | 24 | 3.94 | 1.12 |
 
-Wall time is not in the table because it does not separate the two: on this
-host the same write measured between 0.3s and 0.9s either way, run to run.
-Staging is about what a commit holds.
+Wall time is not in the table because run-to-run spread swamped the
+difference on this host. What is systematic is where the time goes: handing a
+chunk to PyIceberg's writer submits every partition to a thread pool, and
+staging encodes and uploads them one after another. Measured on 200,000 rows
+of 400-byte payload, best of three:
+
+| partitions | whole: wall, cpu | staged: wall, cpu |
+| ---: | --- | --- |
+| 4 | 0.157s, 0.273s | 0.173s, 0.172s |
+| 8 | 0.132s, 0.205s | 0.177s, 0.175s |
+| 32 | 0.156s, 0.264s | 0.215s, 0.213s |
+
+Staging spends less processor time -- it never copies a partition out of the
+chunk -- and more wall clock, because it spends it on one thread. A chunk
+spanning one or two partitions, which is what this pipeline writes, has
+nothing to parallelize either way.
 
 Splitting a chunk by partition inside PyIceberg copies each partition twice and
 holds every copy at once, because it submits all of them to its pool before
