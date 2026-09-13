@@ -77,20 +77,24 @@ same either way.
 ## Staged writes
 
 Three verbs over one 70 MiB chunk of 524,288 rows, against the same chunk
-handed whole to PyIceberg's writer. Peak is the Arrow high-water mark over the
-commit, in chunks; seconds is the whole streamed write.
+handed whole to PyIceberg's writer. Peak is the Arrow high-water mark over
+the commit, in chunks.
 
-| verb | partitions | peak, whole | peak, staged | seconds, whole | seconds, staged |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| append | 1 | 2.01 | 1.07 | 0.87 | 0.24 |
-| append | 4 | 1.78 | 1.52 | 0.86 | 0.29 |
-| append | 24 | 1.21 | 1.15 | 0.59 | 0.33 |
-| keyed append | 1 | 3.12 | 1.23 | 1.49 | 0.50 |
-| keyed append | 4 | 4.95 | 1.52 | 1.85 | 0.33 |
-| keyed append | 24 | 4.95 | 1.12 | 1.84 | 0.67 |
-| merge | 1 | 2.01 | 1.17 | 0.70 | 0.30 |
-| merge | 4 | 3.94 | 1.52 | 1.31 | 0.91 |
-| merge | 24 | 3.94 | 1.12 | 1.87 | 0.49 |
+| verb | partitions | peak, whole | peak, staged |
+| --- | ---: | ---: | ---: |
+| append | 1 | 2.01 | 1.07 |
+| append | 4 | 1.78 | 1.52 |
+| append | 24 | 1.21 | 1.15 |
+| keyed append | 1 | 3.12 | 1.23 |
+| keyed append | 4 | 4.95 | 1.52 |
+| keyed append | 24 | 4.95 | 1.12 |
+| merge | 1 | 2.01 | 1.17 |
+| merge | 4 | 3.94 | 1.52 |
+| merge | 24 | 3.94 | 1.12 |
+
+Wall time is not in the table because it does not separate the two: on this
+host the same write measured between 0.3s and 0.9s either way, run to run.
+Staging is about what a commit holds.
 
 Splitting a chunk by partition inside PyIceberg copies each partition twice and
 holds every copy at once, because it submits all of them to its pool before

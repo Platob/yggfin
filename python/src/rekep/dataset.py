@@ -507,7 +507,7 @@ def sort_direction(direction: Any) -> str:
         raise ValueError(f"unknown sort direction {direction!r}") from error
 
 
-def sort_fields(
+def sort_order_fields(
     columns: Sequence[str] | Sequence[tuple[str, str]],
 ) -> tuple[tuple[str, str], ...]:
     """Normalize name-only ascending keys and explicit direction pairs."""
@@ -519,6 +519,17 @@ def sort_fields(
     )
 
 
+def one_array(column: Any) -> Any:
+    """A column as one Arrow array, without copying one that already is one.
+
+    `combine_chunks` copies whatever it is given, a column of one chunk
+    included, and these comparisons read a column rather than keep it.
+    """
+    if not isinstance(column, pyarrow.ChunkedArray):
+        return column
+    return column.chunk(0) if column.num_chunks == 1 else column.combine_chunks()
+
+
 def in_sort_order(
     rows: pyarrow.RecordBatch | pyarrow.Table,
     columns: Sequence[str] | Sequence[tuple[str, str]],
@@ -526,10 +537,8 @@ def in_sort_order(
     """Whether a batch or table follows its directional, null-last ordering."""
     compute = pyarrow.compute
     ordered = None
-    for name, direction in reversed(sort_fields(columns)):
-        column = rows.column(name)
-        if isinstance(column, pyarrow.ChunkedArray):
-            column = column.combine_chunks()
+    for name, direction in reversed(sort_order_fields(columns)):
+        column = one_array(rows.column(name))
         before, after = column[:-1], column[1:]
         before_null, after_null = compute.is_null(before), compute.is_null(after)
         if pyarrow.types.is_floating(column.type):
@@ -702,7 +711,7 @@ def _repeats_its_neighbour(table: pyarrow.Table, join: Sequence[str]) -> Any:
     compute = pyarrow.compute
     same = None
     for name in join:
-        column = table.column(name).combine_chunks()
+        column = one_array(table.column(name))
         before, after = column[:-1], column[1:]
         equal = compute.fill_null(compute.equal(before, after), False)
         equal = compute.or_(

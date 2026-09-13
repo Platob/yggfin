@@ -17,7 +17,7 @@ from rekep.dataset import (
     first_rows,
     in_sort_order,
     normalised_keys,
-    sort_fields,
+    sort_order_fields,
 )
 from rekep.fields import field_of, primary_key, replace_field
 
@@ -789,7 +789,7 @@ def test_sort_checks_place_nan_after_numbers_and_before_null() -> None:
 
 def test_an_unknown_sort_direction_is_refused() -> None:
     with pytest.raises(ValueError, match="unknown sort direction"):
-        sort_fields([("value", "sideways")])
+        sort_order_fields([("value", "sideways")])
 
 
 # -- one row per key ---------------------------------------------------------

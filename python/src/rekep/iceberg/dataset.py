@@ -37,7 +37,7 @@ from rekep.dataset import (
     normalised_keys,
     semi_join,
     sort_direction,
-    sort_fields,
+    sort_order_fields,
 )
 from rekep.fields import (
     Field,
@@ -607,7 +607,7 @@ class IcebergDataset(Dataset):
             requested_order = (order_by,)
         else:
             requested_order = tuple(order_by or ())
-        ordering_fields = list(sort_fields(requested_order))
+        ordering_fields = list(sort_order_fields(requested_order))
         ordering = tuple(name for name, _ in ordering_fields)
         reference = self._reference(branch, snapshot_id)
         target = None if schema is None else self.target_field(schema)
@@ -1035,11 +1035,10 @@ class IcebergDataset(Dataset):
         pool before the first file is written. Measured on a 70 MiB chunk of
         524,288 rows, peak Arrow memory was 2.01x the chunk over one partition
         and 1.78x over four; staged, taking one partition out of the chunk at
-        a time and casting one batch of it at a time, it is 1.07x and 1.56x,
-        and the write is faster -- 0.87s to 0.24s. The staged files also
-        record the table's sort order, which PyIceberg's writer leaves null,
-        and an ordered read of a file that does not say it is sorted has to
-        sort it again.
+        a time and casting one batch of it at a time, it is 1.07x and 1.52x.
+        The staged files also record the order they were written in, which
+        PyIceberg's writer leaves null, and an ordered read of a file that
+        does not say it is sorted has to sort it again.
         """
         with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
             self._append_staged_once(
@@ -2840,7 +2839,7 @@ def _row_key(
                 else value
             ),
         )
-        for column, direction in sort_fields(columns)
+        for column, direction in sort_order_fields(columns)
         for value in (batch.column(column)[index].as_py(),)
     )
 
