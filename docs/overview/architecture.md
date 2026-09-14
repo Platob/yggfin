@@ -9,7 +9,7 @@ flowchart LR
     U["local or S3 capture"] --> R["rekep.IOBase"]
     R --> T["rekep.TextOptions"]
     T --> M[("logs.messages")]
-    M --> C["rekep.fix.parse_arrow_reader"]
+    M --> C["FixCodec.parse_text_arrow_reader"]
     D[["bundled FIX registry"]] -.types.-> C
     C --> F[("fix.messages")]
     F --> P["orders · executions · book"]
@@ -22,7 +22,7 @@ flowchart LR
 | resource | URI binding, local and object-store traversal, decompression, bounded reads |
 | text | physical-line framing, header capture, source URL and row number |
 | field | schema metadata, casts, digests, partitions, Arrow conversion |
-| FIX | dictionary, branches, code sets, line classification, parsing, fixed Arrow projection |
+| FIX | dictionary, dialect membership, code sets, line classification, parsing, fixed Arrow projection |
 | Iceberg | table conversion, identifiers, snapshots, scan planning, commits |
 | tasks | application parameters, stage boundaries, counts, and orchestration |
 
@@ -34,7 +34,7 @@ compatibility classes.
 from rekep import Field, IOBase, Message, TextOptions
 from rekep.fix import FixCodec, FixRegistry, fix_registry
 
-assert isinstance(Message.field(), Field)
+assert isinstance(Message.into_field(), Field)
 assert isinstance(Message.text_options(), TextOptions)
 assert isinstance(fix_registry(), FixRegistry)
 assert FixCodec(fix_registry())
@@ -58,7 +58,7 @@ both products. That pair is the primary key and the lossless join:
 logs.messages(url, rownum) == fix.messages(url, rownum)
 ```
 
-`bodyhash` identifies exact source bytes. `msghash` identifies the parsed FIX
+`bodyhash` identifies exact source bytes. `uuid` identifies the parsed FIX
 arrival record after session-envelope exclusions. They intentionally answer
 different questions.
 

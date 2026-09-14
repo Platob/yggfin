@@ -40,7 +40,7 @@ flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["native FIX codec<br/>ULBridge vocabulary"]
-    F --> O[("fix.messages<br/>111 columns")]
+    F --> O[("fix.messages<br/>118 columns")]
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
@@ -52,7 +52,7 @@ present.
 ```python
 from rekep import Message
 
-print(Message.field().into_arrow_schema())
+print(Message.into_field().into_arrow_schema())
 ```
 
 ## Where to go

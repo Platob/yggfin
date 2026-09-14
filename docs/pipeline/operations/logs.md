@@ -45,8 +45,9 @@ mapping of exactly `start` and `end`.
 
 - A first immutable-capture run normally has `read == written`.
 - A complete replay normally has `read == skipped` and `written == 0`.
-- `parse_fix.read` should equal the selected `logs.messages` row count when
-  `dedup=false`.
+- `parse_fix.read` should equal the selected `logs.messages` row count, and
+  its own `messages` key the rows it published: a line carries none, one or
+  several messages.
 - A successful zero-row run is not a failure.
 - Missing result JSON, non-zero child exit, or mismatched task name fails the
   operator.

@@ -530,6 +530,29 @@ def one_array(column: Any) -> Any:
     return column.chunk(0) if column.num_chunks == 1 else column.combine_chunks()
 
 
+def storage_of(column: Any) -> Any:
+    """An extension column as its storage, in the shape it arrived in.
+
+    An extension type carries no Arrow kernels of its own, and every reading
+    of a key here is an equality, an order, a grouping or a literal a store
+    is handed: storage holds the same values in the same order, so a UUID key
+    joins, sorts and groups as the bytes it is -- and a column read back
+    without its extension compares against a freshly parsed one.
+    """
+    if not isinstance(column.type, pyarrow.BaseExtensionType):
+        return column
+    if isinstance(column, pyarrow.ChunkedArray):
+        return pyarrow.chunked_array(
+            [chunk.storage for chunk in column.chunks], type=column.type.storage_type
+        )
+    return column.storage
+
+
+def comparable(column: Any) -> Any:
+    """One Arrow array the equality, ordering and grouping kernels accept."""
+    return storage_of(one_array(column))
+
+
 def in_sort_order(
     rows: pyarrow.RecordBatch | pyarrow.Table,
     columns: Sequence[str] | Sequence[tuple[str, str]],
@@ -538,7 +561,7 @@ def in_sort_order(
     compute = pyarrow.compute
     ordered = None
     for name, direction in reversed(sort_order_fields(columns)):
-        column = one_array(rows.column(name))
+        column = comparable(rows.column(name))
         before, after = column[:-1], column[1:]
         before_null, after_null = compute.is_null(before), compute.is_null(after)
         if pyarrow.types.is_floating(column.type):
@@ -604,7 +627,7 @@ def keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.T
     """
     columns = []
     for name in join:
-        column = table.column(name).combine_chunks()
+        column = comparable(table.column(name))
         if pyarrow.types.is_floating(column.type):
             zero = pyarrow.scalar(0.0, column.type)
             column = pyarrow.compute.if_else(pyarrow.compute.equal(column, zero), zero, column)
@@ -711,7 +734,7 @@ def _repeats_its_neighbour(table: pyarrow.Table, join: Sequence[str]) -> Any:
     compute = pyarrow.compute
     same = None
     for name in join:
-        column = one_array(table.column(name))
+        column = comparable(table.column(name))
         before, after = column[:-1], column[1:]
         equal = compute.fill_null(compute.equal(before, after), False)
         equal = compute.or_(

@@ -12,7 +12,7 @@ from typing import Any
 import pyarrow
 
 from rekep import Field
-from rekep.fix import FixRegistry, fix_crate_fields, fix_ulbridge_fields
+from rekep.fix import FixRegistry, fix_plugin_fields
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOL = ROOT / "tools" / "fix_registry.py"
@@ -55,11 +55,11 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
 
     rows = setup["into_registry_rows"](dictionary)
     assert next(row for row in rows if row["tag"] == 55) == {
-        "_id": "55:",
+        "_id": dictionary.field_by_tag(55).fix.id,
         "_search": "55 symbol symbol ticker instrument identifier",
         "tag": 55,
         "name": "Symbol",
-        "branch": "standard",
+        "dialect": "standard",
         "shape": "field",
         "Arrow kind": "text",
         "FIX type": "String",
@@ -67,7 +67,10 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
         "aliases": "ticker",
         "description": "Instrument identifier",
     }
-    assert len(rows) == 1 + len(fix_crate_fields()) + len(fix_ulbridge_fields())
+    # A bare registry is already the crate's own fields and the standard
+    # clocks seeded beside them, so the store contributes one row and the
+    # bridge vocabulary the rest.
+    assert len(rows) == 1 + len(FixRegistry()) + len(fix_plugin_fields())
     assert setup["metadata_records"](_field(), "codes", "codes") == [
         {"value": "AAPL", "name": "Apple"}
     ]
@@ -95,11 +98,9 @@ def test_tool_uses_native_shape_and_schema_operations() -> None:
     schema = setup["into_fixmsg_schema"](FixRegistry.from_fields([_field()]))
     assert schema.name == "FixMsg"
     assert schema["symbol"].display == "Symbol"
-    assert {member.name for member in schema} >= {
-        "symbol",
-        "nofixentries",
-        "nounmappedfixentries",
-    }
+    # A pair no dictionary explains is an entry of tag 0 inside the arrival
+    # record, so one record column holds everything that arrived.
+    assert {member.name for member in schema} >= {"symbol", "nofixentries"}
     assert Field.from_json(schema.into_json()) == schema
 
 
@@ -113,7 +114,7 @@ def test_tool_is_strict_marimo_and_uses_the_rekep_fix_surface() -> None:
     source = TOOL.read_text(encoding="utf-8")
 
     assert checked.returncode == 0, checked.stdout + checked.stderr
-    assert "from rekep.fix import FixRegistry, fix_registry, parse_arrow_reader" in source
+    assert "from rekep.fix import FixRegistry, fix_codec, fix_registry" in source
     assert "yggdryl" not in source.casefold()
     assert "Task" not in source
     assert "Iceberg" not in source
@@ -126,7 +127,7 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
     assert "Standalone tool" in page
     assert "uv run --project python --group runner --frozen" in page
     assert "fix_registry" in page
-    assert "6,265" in page
+    assert "6,303" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
     assert "empty Arrow reader" in page

@@ -21,7 +21,7 @@ assert message.to_bytes(ord("|")) == wire
 | nested group occurrences | yes, in normalized path spelling when decoded from packed bridge groups |
 | unknown fields | yes |
 | source `url`, `rownum`, `plugin`, or timestamp | no |
-| derived `msghash`, market timestamp, MIC, state | no |
+| derived `uuid`, market timestamp, MIC, state | no |
 | typed-column canonical value | only through its original arrival pair |
 
 A message constructed only from pairs has no obligation to synthesize

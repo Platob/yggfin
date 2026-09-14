@@ -36,8 +36,12 @@ class Message(Convertible):
     threadId: int | None = None
     """Bridge thread identifier captured from the line header."""
 
-    sessionUid: str | None = None
-    """Bridge session identifier captured from a message-context header."""
+    senderSessionId: str | None = None
+    """Bridge session instance the line was handled on, from its header.
+
+    Spelled as the FIX `sendersessionid` (65007) column folds, so the codec
+    fills that column from this one instead of carrying a second spelling.
+    """
 
     msgCtxId: str | None = None
     """Bridge message-context identifier captured from the line header."""
@@ -45,8 +49,8 @@ class Message(Convertible):
     seqNum: int | None = None
     """Bridge sequence number captured from a message-context header."""
 
-    plugin: str | None = None
-    """Bridge plugin that wrote the line."""
+    pluginid: str | None = None
+    """Bridge plugin that wrote the line, filling `pluginid` (65009)."""
 
     level: str | None = None
     """Severity spelling captured from the line header."""
@@ -87,7 +91,7 @@ class Message(Convertible):
         options.rowheader = MESSAGE_HEADER
         options.timezone = "UTC"
         options.safe = False
-        options.field = cls.field()
+        options.field = cls.into_field()
         return options
 
     @classmethod

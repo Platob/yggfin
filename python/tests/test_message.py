@@ -9,7 +9,7 @@ from rekep.times import MESSAGE_HEADER
 
 
 def test_message_declares_the_text_row_and_its_storage_columns() -> None:
-    field = Message.field()
+    field = Message.into_field()
 
     assert [member.name for member in field] == [
         "url",
@@ -17,10 +17,10 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
         "timestamp",
         "timepartition",
         "threadId",
-        "sessionUid",
+        "senderSessionId",
         "msgCtxId",
         "seqNum",
-        "plugin",
+        "pluginid",
         "level",
         "bodyhash",
         "body",
@@ -40,14 +40,14 @@ def test_message_text_options_own_the_complete_native_read() -> None:
     assert options.rowheader == MESSAGE_HEADER
     assert str(options.timezone) == "UTC"
     assert options.safe is False
-    assert options.field == Message.field()
+    assert options.field == Message.into_field()
     assert options.capture_names == (
         "timestamp",
         "threadId",
-        "sessionUid",
+        "senderSessionId",
         "msgCtxId",
         "seqNum",
-        "plugin",
+        "pluginid",
         "level",
     )
 
@@ -66,27 +66,27 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
     finally:
         reader.close()
 
-    assert table.schema.equals(Message.field().into_arrow_schema(), check_metadata=True)
+    assert table.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
     assert table.select(
-        ("rownum", "timestamp", "threadId", "sessionUid", "msgCtxId", "seqNum", "plugin")
+        ("rownum", "timestamp", "threadId", "senderSessionId", "msgCtxId", "seqNum", "pluginid")
     ).to_pylist() == [
         {
             "rownum": 1,
             "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=datetime.UTC),
             "threadId": 250,
-            "sessionUid": "e7256476",
+            "senderSessionId": "e7256476",
             "msgCtxId": "9effef3e6a",
             "seqNum": 72504,
-            "plugin": "ULBridge",
+            "pluginid": "ULBridge",
         },
         {
             "rownum": 2,
             "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=datetime.UTC),
             "threadId": 653,
-            "sessionUid": None,
+            "senderSessionId": None,
             "msgCtxId": None,
             "seqNum": None,
-            "plugin": "Spot_FX_TradeCapture",
+            "pluginid": "Spot_FX_TradeCapture",
         },
     ]
     assert table.column("timepartition").equals(table.column("timestamp"))
@@ -111,7 +111,14 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
     assert row["rownum"] == 1
     assert all(
         row[name] is None
-        for name in ("timestamp", "timepartition", "threadId", "sessionUid", "msgCtxId", "seqNum")
+        for name in (
+            "timestamp",
+            "timepartition",
+            "threadId",
+            "senderSessionId",
+            "msgCtxId",
+            "seqNum",
+        )
     )
 
 

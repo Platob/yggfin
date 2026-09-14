@@ -10,7 +10,7 @@ with app.setup:
     import pyarrow
 
     from rekep import Field
-    from rekep.fix import FixRegistry, fix_registry, parse_arrow_reader
+    from rekep.fix import FixRegistry, fix_codec, fix_registry
 
     def open_registry(location):
         """Open one registry location; blank selects rekep's bundled registry."""
@@ -41,7 +41,7 @@ with app.setup:
                     ).casefold(),
                     "tag": fix.tag,
                     "name": name,
-                    "branch": fix.branch or "standard",
+                    "dialect": ", ".join(fix.branches) or "standard",
                     "shape": "group" if field.dtype.is_nested else "field",
                     "Arrow kind": field.dtype.kind,
                     "FIX type": lineage[-1].get("type", "") if lineage else "",
@@ -74,9 +74,14 @@ with app.setup:
         ]
 
     def into_fixmsg_schema(dictionary):
-        """The registry's full parser schema without reading a row."""
-        source = pyarrow.RecordBatchReader.from_batches(pyarrow.schema([]), [])
-        parsed = parse_arrow_reader(source, registry=dictionary)
+        """The registry's full parser schema without reading a row.
+
+        The codec answers a schema from the carrier and the dictionary alone,
+        so a carrier of nothing but the payload column is the whole input.
+        """
+        carrier = pyarrow.schema([pyarrow.field("body", pyarrow.string(), False)])
+        source = pyarrow.RecordBatchReader.from_batches(carrier, [])
+        parsed = fix_codec(dictionary).parse_text_arrow_reader(source)
         try:
             return Field.from_arrow_schema(parsed.schema, name="FixMsg")
         finally:
@@ -131,14 +136,14 @@ def _(registry_error, registry_rows, registry_source):
         _status = mo.callout(registry_error, kind="danger")
     else:
         _groups = sum(row["shape"] == "group" for row in registry_rows)
-        _branches = len({row["branch"] for row in registry_rows})
+        _dialects = len({row["dialect"] for row in registry_rows})
         _typed = sum(bool(row["FIX type"]) for row in registry_rows)
         _status = mo.vstack(
             [
                 mo.tree({"source": registry_source}),
                 mo.md(
                     f"**{len(registry_rows):,} definitions** · "
-                    f"{_groups:,} repeating groups · {_branches:,} branches · "
+                    f"{_groups:,} repeating groups · {_dialects:,} dialects · "
                     f"{_typed:,} typed definitions"
                 ),
             ]
@@ -187,16 +192,16 @@ def _(fixmsg_schema, fixmsg_schema_json):
 
 @app.cell
 def _(registry_rows):
-    _branches = sorted({row["branch"] for row in registry_rows})
+    _dialects = sorted({row["dialect"] for row in registry_rows})
     query = mo.ui.text(
         placeholder="Tag, name, alias, or description",
         label="Search",
         debounce=250,
         full_width=True,
     )
-    branch = mo.ui.dropdown(
-        {"All branches": None, **{name: name for name in _branches}},
-        value="All branches",
+    dialect = mo.ui.dropdown(
+        {"All dialects": None, **{name: name for name in _dialects}},
+        value="All dialects",
         label="Branch",
         full_width=True,
     )
@@ -206,21 +211,21 @@ def _(registry_rows):
         label="Shape",
         full_width=True,
     )
-    return branch, query, shape
+    return dialect, query, shape
 
 
 @app.cell(hide_code=True)
-def _(branch, query, shape):
-    mo.hstack([query, branch, shape], widths=[3, 1, 1], align="end")
+def _(dialect, query, shape):
+    mo.hstack([query, dialect, shape], widths=[3, 1, 1], align="end")
 
 
 @app.cell
-def _(branch, query, registry_rows, shape):
+def _(dialect, query, registry_rows, shape):
     _terms = query.value.casefold().split()
     visible_registry_rows = [
         row
         for row in registry_rows
-        if (branch.value is None or row["branch"] == branch.value)
+        if (dialect.value is None or row["dialect"] == dialect.value)
         and (shape.value is None or row["shape"] == shape.value)
         and all(term in row["_search"] for term in _terms)
     ]
@@ -241,7 +246,7 @@ def _(branch, query, registry_rows, shape):
         visible_columns=[
             "tag",
             "name",
-            "branch",
+            "dialect",
             "shape",
             "Arrow kind",
             "FIX type",
@@ -270,7 +275,7 @@ def _(dictionary, registry_table):
                 "identifier": _fix.id,
                 "name": _field.display or _field.name,
                 "storage name": _field.name,
-                "branch": _fix.branch or "standard",
+                "dialect": ", ".join(_fix.branches) or "standard",
                 "Arrow type": str(_field.dtype.into_arrow()),
                 "nullable": _field.nullable,
                 "description": _fix.description or _field.comment or "",

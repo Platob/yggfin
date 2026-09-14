@@ -1,0 +1,34 @@
+{
+  "name": "trdcoll",
+  "dtype": {
+    "type": "struct",
+    "fields": [
+      {
+        "name": "tradereportid",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "fix:field": "tradereportid"
+        }
+      },
+      {
+        "name": "secondarytradereportid",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "fix:field": "secondarytradereportid"
+        }
+      }
+    ]
+  },
+  "nullable": false,
+  "metadata": {
+    "display": "TrdColl",
+    "fix:identifiers": "tradereportid,secondarytradereportid",
+    "fix:tag": "278824"
+  }
+}

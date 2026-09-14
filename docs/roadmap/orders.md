@@ -20,7 +20,7 @@ a guessed order.
 | `url` | `string` | no | source object |
 | `rownum` | `int64` | no | source line |
 | `eventindex` | `int32` | no | zero for one-event messages; supports future exploded groups |
-| `msghash` | `fixed_size_binary[16]` | no | parsed source identity |
+| `uuid` | `uuid` | no | parsed source identity |
 | `eventtime` | `timestamp[us, UTC]` | no | `transacttime`, then fixed market timestamp |
 | `timepartition` | `timestamp[us, UTC]` | no | Iceberg day transform of `eventtime` |
 | `sessionid` | `string` | yes | protocol/bridge session |

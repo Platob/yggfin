@@ -1604,7 +1604,9 @@ class IcebergDataset(Dataset):
                         ]
                     )
                     fresh = fresh.join(
-                        stored.select(list(join)), keys=list(join), join_type="left anti"
+                        keys_of(stored, join, TARGET_INDEX).select(list(join)),
+                        keys=list(join),
+                        join_type="left anti",
                     )
                     if not fresh.num_rows:
                         break
@@ -3141,6 +3143,13 @@ def _column_term(column: str, values: Any) -> Any | None:
     """One conjunct covering every value `column` takes in the chunk, or None."""
     from pyiceberg.expressions import And, GreaterThanOrEqual, In, LessThanOrEqual, Or
 
+    if isinstance(values.type, pyarrow.BaseExtensionType):
+        # A store reads the same literal from an extension as from its storage,
+        # but the scan evaluates the predicate with Arrow's own kernels, which
+        # an extension type carries none of. A missing term is a wider filter,
+        # which is the direction this one is allowed to be wrong in, and the
+        # semi-join still matches the key exactly.
+        return None
     distinct = _distinct_under(values, MERGE_IN_LIMIT)
     if distinct is None:
         # Neither bound can be null here: the column has rows, no nulls and no

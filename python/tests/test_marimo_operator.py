@@ -159,8 +159,6 @@ def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
     assert [asset.name for asset in fixed.outlets] == ["fix.messages"]
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
-    assert dag.params["branch"] == "ulbridge"
-    assert dag.params["dedup"] is False
 
 
 # -- the command it builds ---------------------------------------------------
@@ -512,10 +510,10 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 #: what a replay of the same capture returns.
 LANDED = {
     "parse_messages": {"read": 111, "written": 111, "skipped": 0},
-    "parse_fix": {"read": 111, "written": 111, "skipped": 0},
+    "parse_fix": {"read": 111, "written": 71, "skipped": 0},
 }
 REPLAYED = {
-    name: {"read": counts["read"], "written": 0, "skipped": counts["read"]}
+    name: {"read": counts["read"], "written": 0, "skipped": counts["written"]}
     for name, counts in LANDED.items()
 }
 
@@ -621,12 +619,12 @@ def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
         assert landed[name]["assets"] == {
             table: {"task": name, **LANDED[name]},
         }
-    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 111}
+    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 71}
 
     replayed = _pass(catalog)
 
     assert {name: counted(held["result"]) for name, held in replayed.items()} == REPLAYED
-    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 111}
+    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 71}
     assert _snapshots(catalog) == {"logs.messages": 1, "fix.messages": 1}, (
         "a replayed schedule commits no empty snapshot"
     )
@@ -793,4 +791,4 @@ def test_a_real_dag_run_publishes_both_tables_from_its_conf(
         }
     finally:
         store.close()
-    assert stored == {"logs.messages": 111, "fix.messages": 111}
+    assert stored == {"logs.messages": 111, "fix.messages": 71}

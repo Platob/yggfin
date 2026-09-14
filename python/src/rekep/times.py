@@ -226,10 +226,16 @@ SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 MESSAGE_HEADER = (
     r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
     r"\[(?P<threadId>[1-9]\d*)"
-    r"(?:-(?P<sessionUid>[0-9a-f]{8}):(?P<msgCtxId>[0-9a-f]{10}):(?P<seqNum>\d+))?\] "
-    r"\[(?P<plugin>[^\]]+)\] \((?P<level>[A-Z]+)\) "
+    r"(?:-(?P<senderSessionId>[0-9a-f]{8}):(?P<msgCtxId>[0-9a-f]{10}):(?P<seqNum>\d+))?\] "
+    r"\[(?P<pluginid>[^\]]+)\] \((?P<level>[A-Z]+)\) "
 )
-"""The ULBridge row-header expression for physical message records."""
+"""The ULBridge row-header expression for physical message records.
+
+The same text as Yggdryl's own `ULBRIDGE_ROWHEADER`, captures included: a
+capture is named for the FIX column it fills, so `senderSessionId`,
+`msgCtxId`, `seqNum` and `pluginid` reach `sendersessionid`, `msgctxid`,
+`msgseqnum` and `pluginid` when the stored row goes on through the codec.
+"""
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are
 #: tried. The three shapes above lead, because they are what a capture

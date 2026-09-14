@@ -19,7 +19,7 @@ and descriptions. Branch and shape filters narrow to standard/bridge fields or
 scalar/repeating-group definitions.
 
 The summary reports definition, group, branch, and typed-field counts. The
-bundled registry should report 6,265 definitions across two branches.
+bundled dictionary should report 6,303 definitions across two dialects.
 
 ## Definition views
 
@@ -33,17 +33,19 @@ bundled registry should report 6,265 definitions across two branches.
 | Field JSON | deterministic `Field.into_json(indent=2)` |
 
 The full-schema panel creates an empty Arrow reader and asks
-`parse_arrow_reader` for its output schema. It therefore displays the actual
-registry-dependent `FixMsg` projection without parsing or fabricating a row.
+`FixCodec.parse_text_arrow_reader` for its output schema. It therefore displays
+the actual registry-dependent `FixMsg` projection without parsing or
+fabricating a row.
 
 ```python
 import pyarrow
 
 from rekep import Field
-from rekep.fix import fix_registry, parse_arrow_reader
+from rekep.fix import fix_codec, fix_registry
 
-empty = pyarrow.RecordBatchReader.from_batches(pyarrow.schema([]), [])
-parsed = parse_arrow_reader(empty, registry=fix_registry())
+carrier = pyarrow.schema([pyarrow.field("body", pyarrow.string(), False)])
+empty = pyarrow.RecordBatchReader.from_batches(carrier, [])
+parsed = fix_codec(fix_registry()).parse_text_arrow_reader(empty)
 field = Field.from_arrow_schema(parsed.schema, name="FixMsg")
 
 print(field.into_json(indent=2))
