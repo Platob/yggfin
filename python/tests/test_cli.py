@@ -541,3 +541,55 @@ def test_a_parameters_file_that_is_not_an_object_is_refused(
 
     assert run("task", "run", task(tmp_path), "--parameters-file", str(overrides)) == 1
     assert "JSON object of parameters" in capsys.readouterr().err
+
+
+def test_a_command_result_never_prints_a_credential(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """A deploy result is read in a terminal, a CI log and an Airflow task log.
+
+    `--dry-run` matters most: its output is what an operator pastes into a
+    ticket, so a secret there outlives the run that printed it.
+    """
+    secret = "sUp3r-s3cr3t-do-not-print"
+    argv = [
+        "iceberg",
+        "deploy",
+        "--property",
+        f"uri=sqlite:///{tmp_path / 'catalog.db'}",
+        "--property",
+        f"warehouse={tmp_path / 'warehouse'}",
+        "--property",
+        "s3.access-key-id=AKIAEXAMPLEKEYID",
+        "--property",
+        f"s3.secret-access-key={secret}",
+        "--dry-run",
+    ]
+
+    assert cli.main(argv) == 0
+
+    captured = capsys.readouterr()
+    assert secret not in captured.out
+    assert secret not in captured.err
+    document = json.loads(captured.out[captured.out.index("{") :])
+    properties = document["catalog"]["properties"]
+    assert properties["s3.secret-access-key"] == cli.MASKED
+    # A setting is not a credential: the rest of the catalog still reads back.
+    assert properties["s3.access-key-id"] == "AKIAEXAMPLEKEYID"
+    assert properties["warehouse"].endswith("warehouse")
+
+
+def test_redaction_reaches_a_credential_wherever_it_sits() -> None:
+    """The mask is on the whole result, because a result grows keys over time."""
+    held = cli._redacted(  # noqa: SLF001
+        {
+            "catalog": {"properties": {"s3.secret-access-key": "a", "s3.region": "eu-west-1"}},
+            "nested": [{"password": "b"}, {"AWS_SESSION_TOKEN": "c"}],
+            "tables": {"logs.messages": "created"},
+        }
+    )
+
+    assert held["catalog"]["properties"]["s3.secret-access-key"] == cli.MASKED
+    assert held["catalog"]["properties"]["s3.region"] == "eu-west-1"
+    assert held["nested"] == [{"password": cli.MASKED}, {"AWS_SESSION_TOKEN": cli.MASKED}]
+    assert held["tables"] == {"logs.messages": "created"}

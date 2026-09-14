@@ -9,6 +9,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import sys
 import traceback
 import urllib.parse
@@ -151,9 +152,37 @@ def _imported(spec: str) -> Any:
         raise AttributeError(f"{module_name} has no {attribute!r}") from error
 
 
+#: What a catalog property is called when it carries a credential rather than a
+#: setting. A deploy result is read in a terminal, a CI log and an Airflow task
+#: log, which is exactly where the operations guide says a key must not be.
+SECRET_PROPERTY = re.compile(r"secret|password|token|credential", re.IGNORECASE)
+
+#: What stands in its place, the way a bound resource masks a URI's own secret.
+MASKED = "***"
+
+
+def _redacted(document: Any) -> Any:
+    """One command result with every credential property masked.
+
+    Applied to the whole document rather than to the catalog alone: a result
+    grows keys over time, and a secret that reaches stdout cannot be recalled
+    from the log that already holds it.
+    """
+    if isinstance(document, Mapping):
+        return {
+            key: MASKED
+            if isinstance(key, str) and SECRET_PROPERTY.search(key)
+            else _redacted(value)
+            for key, value in document.items()
+        }
+    if isinstance(document, list):
+        return [_redacted(value) for value in document]
+    return document
+
+
 def _write_json(document: Any) -> None:
-    """Write one machine-readable command result to stdout."""
-    json.dump(document, sys.stdout, indent=2, ensure_ascii=False)
+    """Write one machine-readable command result to stdout, credentials masked."""
+    json.dump(_redacted(document), sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")
 
 
