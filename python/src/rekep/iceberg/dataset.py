@@ -298,9 +298,6 @@ class IcebergDataset(Dataset):
     retry_backoff: float = 0.25
     retry_max_backoff: float = 8.0
 
-    #: Target files one streamed rewrite commit may replace.
-    rewrite_file_count: int = 16
-
     @classmethod
     def from_dict(cls, mapping: Mapping[str, Any]) -> IcebergDataset:
         """Build a dataset document containing a native field declaration."""
@@ -331,8 +328,6 @@ class IcebergDataset(Dataset):
             self.commit_row_size = _positive_int(self.commit_row_size, "commit_row_size")
         if self.commit_retries < 0:
             raise ValueError("commit_retries cannot be negative")
-        if self.rewrite_file_count <= 0:
-            raise ValueError("rewrite_file_count must be positive")
         if self.retry_backoff < 0 or self.retry_max_backoff < self.retry_backoff:
             raise ValueError("retry backoff must be non-negative and capped above its start")
         if self.branch in ROOT_BRANCHES:
@@ -1107,7 +1102,14 @@ class IcebergDataset(Dataset):
         reference: str,
         properties: Mapping[str, str],
     ) -> Any:
-        """Rewrite matching files in bounded commits, adding values in the last.
+        """Replace every file this partition's merge matched, in one commit.
+
+        The rows replacing a stored row have to land in the commit that drops
+        the file holding it, or the table is durably short them until a later
+        commit arrives -- and holds none at all if that commit never does. So
+        the whole rewrite is one `overwrite`, whose file count is a metadata
+        bound and not a memory one: reading is one file at a time and the
+        stager holds one local file, whatever the commit replaces.
 
         Neither part is sorted here. Whatever these rows land in is written by
         the stager, which sorts what it is given and starts a new file where
@@ -1119,9 +1121,8 @@ class IcebergDataset(Dataset):
         )
         scan = table.scan(row_filter=predicate)
         scan = self._branch_scan(table, scan, reference)
-        groups = iter(_delete_task_groups(scan.plan_files(), self.rewrite_file_count))
-        pending = next(groups, None)
-        if pending is None:
+        tasks = tuple(scan.plan_files())
+        if not tasks:
             return self._append_chunk(
                 table,
                 additions,
@@ -1129,19 +1130,9 @@ class IcebergDataset(Dataset):
                 properties,
                 rebuild=False,
             )
-        for following in groups:
-            table = self._rewrite_delete_tasks(
-                table,
-                pending,
-                predicate,
-                reference,
-                properties,
-                True,
-            )
-            pending = following
         return self._rewrite_delete_tasks(
             table,
-            pending,
+            tasks,
             predicate,
             reference,
             properties,
@@ -1193,11 +1184,13 @@ class IcebergDataset(Dataset):
         runs = _partition_run_tables(chunk, partitions) if partitions else iter([(None, chunk)])
         # Every partition resolves against the head this chunk started on. The
         # parts that turn out to be pure inserts are staged as they resolve and
-        # land in one commit; a part that has to rewrite files keeps its own
-        # bounded commit, because the files it replaces are its own. Only the
-        # commit is batched: each part still streams its planned files one at a
-        # time, and is taken out of the chunk only when its turn comes -- what
-        # this holds past the chunk is one part, not every part's rows.
+        # land in one commit; a part that has to rewrite files keeps a commit
+        # of its own, because the files it replaces are its own and the rows
+        # replacing them have to land with the drop. Each part still streams
+        # its planned files one at a time, and is taken out of the chunk only
+        # when its turn comes -- what this holds past the chunk is one part,
+        # not every part's rows. A merge spanning several partitions is
+        # therefore one commit each rather than one for all of them.
         rewrites: list[tuple[pyarrow.Table, pyarrow.Table, Any]] = []
         updated = inserted = 0
         with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
@@ -1963,7 +1956,7 @@ class IcebergDataset(Dataset):
         case_sensitive: bool,
         additions: pyarrow.Table | None = None,
     ) -> Any:
-        """Rewrite a bounded group of candidate files as streamed batches."""
+        """Rewrite candidate files as streamed batches, in one commit."""
         from pyiceberg.expressions import AlwaysTrue
         from pyiceberg.expressions.visitors import ROWS_MUST_MATCH, _StrictMetricsEvaluator, bind
         from pyiceberg.io.pyarrow import ArrowScan, _expression_to_complementary_pyarrow
@@ -1974,8 +1967,10 @@ class IcebergDataset(Dataset):
         preserve = _expression_to_complementary_pyarrow(bound, schema)
         strict = _StrictMetricsEvaluator(schema, expression, case_sensitive).eval
         scanner = ArrowScan(table.metadata, table.io, schema, AlwaysTrue(), case_sensitive)
+        # A staged file is sized by a max over its inputs and never by their
+        # sum, so the number of files one commit replaces cannot grow it.
         file_rows = max(
-            *(int(task.file.record_count) for task in tasks),
+            max((int(task.file.record_count) for task in tasks), default=0),
             additions.num_rows if additions is not None else 0,
             1,
         )

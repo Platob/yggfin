@@ -47,9 +47,13 @@ by path. What the write holds past the chunk it was handed is one partition
 rather than every partition's rows.
 
 Everything a chunk *adds* lands in one commit, whatever the partition count.
-A keyed overwrite additionally keeps one bounded commit per partition whose
-stored files it has to rewrite, because the rows replacing a stored row must
-land in the commit that removes it.
+A keyed overwrite additionally keeps one commit per partition whose stored
+files it has to rewrite, because the rows replacing a stored row must land in
+the commit that removes it -- however many files that partition holds. So a
+merge interrupted between two partitions leaves whole partitions merged or
+whole partitions untouched, never a partition short a row. Reading stays one
+file at a time and the stage holds one local file, so what the commit covers
+is a count of metadata rather than of rows held.
 
 Measured on a 70 MiB chunk of 524,288 rows, as the Arrow high-water mark over
 one commit divided by the chunk:

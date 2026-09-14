@@ -1204,6 +1204,97 @@ def test_a_merge_key_no_kernel_can_read_is_refused_by_name(tmp_path: Path) -> No
             verb()
 
 
+@pytest.mark.parametrize("files", [1, 17])
+def test_a_merge_replaces_every_file_it_matched_in_one_commit(
+    dataset: IcebergDataset, files: int
+) -> None:
+    """A row's replacement lands in the commit that drops the file holding it.
+
+    Seventeen because the merge used to rewrite its matched files in groups of
+    sixteen and add the replacing rows to the last group only: every commit
+    before it dropped rows nothing had put back, so a reader in between -- and
+    a crash, for good -- saw the table short them. The final state was right,
+    which is why every merge test that changes a whole small table missed it.
+    """
+    day = datetime.date(2026, 8, 14)
+    seeded = {f"S{index}": index for index in range(files)}
+    for symbol, size in seeded.items():
+        dataset.append_arrow_table(
+            pyarrow.Table.from_pydict(
+                {"symbol": [symbol], "day": [day], "size": [size], "venue": ["XPAR"]},
+                schema=Quote.into_field().into_arrow_schema(),
+            )
+        )
+    assert len(dataset.data_files().to_pylist()) == files, "one file per append"
+    before = dataset.iceberg_table.inspect.snapshots().num_rows
+
+    dataset.merge_arrow_table(
+        pyarrow.Table.from_pydict(
+            {
+                "symbol": list(seeded),
+                "day": [day] * files,
+                "size": list(seeded.values()),
+                "venue": ["XETR"] * files,
+            },
+            schema=Quote.into_field().into_arrow_schema(),
+        ),
+        True,
+    )
+
+    held = dataset.iceberg_table.inspect.snapshots()
+    assert held.num_rows == before + 1, "one partition, one commit"
+    for identifier in held.column("snapshot_id").to_pylist():
+        seen = dataset.read_arrow_table(snapshot_id=identifier)
+        if seen.num_rows < files:
+            continue  # a seeding append, before every row was there to hold
+        assert set(seen.column("symbol").to_pylist()) == set(seeded), (
+            "no committed state is ever short a row"
+        )
+    stored = dataset.read_arrow_table()
+    assert stored.num_rows == files
+    assert set(stored.column("venue").to_pylist()) == {"XETR"}
+
+
+def test_a_merge_on_an_unpartitioned_table_is_one_commit_too(tmp_path: Path) -> None:
+    """The shape the old grouping split on partition identity, with none to split."""
+    field = field_of(
+        replace_field(Quote.into_field(), name="flat").without_partition_fields(), "flat"
+    )
+    rows = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.flat", field=field
+    )
+    day = datetime.date(2026, 8, 14)
+    seeded = {f"S{index}": index for index in range(17)}
+    for symbol, size in seeded.items():
+        rows.append_arrow_table(
+            pyarrow.Table.from_pydict(
+                {"symbol": [symbol], "day": [day], "size": [size], "venue": ["XPAR"]},
+                schema=field.into_arrow_schema(),
+            ),
+            field,
+            merge_by=True,
+        )
+    before = rows.iceberg_table.inspect.snapshots().num_rows
+
+    rows.merge_arrow_table(
+        pyarrow.Table.from_pydict(
+            {
+                "symbol": list(seeded),
+                "day": [day] * len(seeded),
+                "size": list(seeded.values()),
+                "venue": ["XETR"] * len(seeded),
+            },
+            schema=field.into_arrow_schema(),
+        ),
+        True,
+    )
+
+    assert rows.iceberg_table.inspect.snapshots().num_rows == before + 1
+    stored = rows.read_arrow_table()
+    assert stored.num_rows == len(seeded)
+    assert set(stored.column("venue").to_pylist()) == {"XETR"}
+
+
 def test_a_falsy_merge_by_replaces_complete_partitions_from_a_stream(
     dataset: IcebergDataset,
 ) -> None:
