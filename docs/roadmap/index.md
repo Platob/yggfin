@@ -24,7 +24,7 @@ flowchart LR
 ## Rules shared by every product
 
 1. Read `fix.messages` as a `RecordBatchReader`; never re-open captures.
-2. Retain `url`, `rownum`, and `msghash` as source lineage.
+2. Retain `url`, `rownum`, and `uuid` as source lineage.
 3. Make the row grain and key explicit before adding columns.
 4. Keep stated protocol values separate from derived identities or state.
 5. Preserve corrections, cancels, rejects, and unknown states as events; do

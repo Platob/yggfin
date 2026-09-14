@@ -10,8 +10,8 @@ and no environment variable. `tasks/parse_fix/parse_fix.json` therefore
 declares `"registry": null`, and `parse_fix` is the only task that takes a
 `registry` parameter at all.
 
-To parse against another dictionary — the canonical `primitive/` and `nested/`
-JSON shards `FixRegistry.write_into` emits, read back by
+To parse against another dictionary — the canonical `fields/`, `components/`
+and `groups/` JSON documents `FixRegistry.write_into` emits, read back by
 `FixRegistry.from_handle` — write it anywhere, here included, and point that
 one parameter at it:
 

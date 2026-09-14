@@ -7,7 +7,7 @@ its datatype, nullability, metadata, and protocol views.
 ```python
 from rekep import Field, Message
 
-field = Message.field()
+field = Message.into_field()
 assert isinstance(field, Field)
 assert field.name == "Message"
 assert field["url"].nullable is False
@@ -54,9 +54,9 @@ import pyarrow
 
 from rekep import Message
 
-source = pyarrow.RecordBatchReader.from_batches(Message.field().into_arrow_schema(), [])
-applied = Message.field().apply_arrow_reader(source, nullability="strict")
-assert applied.schema.equals(Message.field().into_arrow_schema(), check_metadata=True)
+source = pyarrow.RecordBatchReader.from_batches(Message.into_field().into_arrow_schema(), [])
+applied = Message.into_field().apply_arrow_reader(source, nullability="strict")
+assert applied.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
 ```
 
 `safe=True` refuses lossy casts. The FIX-to-Iceberg boundary explicitly uses
@@ -79,7 +79,7 @@ snapshots under `schemas/` hold. `iceberg_contract_field` reads one back.
 from rekep import Message
 from rekep.iceberg import iceberg_contract, iceberg_contract_field
 
-document = iceberg_contract(Message.field())
+document = iceberg_contract(Message.into_field())
 assert iceberg_contract(iceberg_contract_field(document, "Message")) == document
 ```
 

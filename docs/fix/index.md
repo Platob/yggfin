@@ -10,7 +10,7 @@ configuration JSON, FIXML, and already-split pairs through one builder.
 | [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, and `fix.messages`? |
 | [Encode](encode.md) | how is the lossless arrival record emitted again? |
 | [Quality](quality.md) | what survives malformed input, replay, and registry change? |
-| [Registry browser](../tools/fix-registry.md) | how do I search and inspect all 6,265 loaded definitions? |
+| [Registry browser](../tools/fix-registry.md) | how do I search and inspect all 6,303 loaded definitions? |
 
 ## Default registry
 
@@ -53,7 +53,8 @@ original spellings in `entries()`.
 
 ## Stream contract
 
-`parse_arrow_reader` exposes its output schema before reading its first batch.
+`FixCodec.parse_text_arrow_reader` exposes its output schema before reading its
+first batch.
 Source columns lead the fixed projection unless a fixed field claims the same
 folded name. By default one input row produces one output row, including prose
 and rows with values that fail conversion.

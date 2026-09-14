@@ -81,9 +81,11 @@ filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 
 Each task directory contains one Marimo application beside its JSON document.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, applies
-`Message.field()` to each batch, and writes one schema-bearing reader directly
-to Iceberg. `parse_fix` passes that stored reader through Yggdryl's native FIX
-Arrow reader and writes its registry-defined schema without a yggfin FIX model.
+`Message.into_field()` to each batch, and writes one schema-bearing reader
+directly to Iceberg. `parse_fix` passes that stored reader through
+`FixCodec.parse_text_arrow_reader` and writes its registry-defined schema
+without a yggfin FIX model. A FIX row is a message and not a line, so
+`fix.messages` is keyed on `(url, rownum, uuid)`.
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI.
 

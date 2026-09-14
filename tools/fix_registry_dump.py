@@ -60,7 +60,7 @@ def main() -> int:
             "tag": fix.tag,
             "name": field.name,
             "display": field.display or field.name,
-            "branch": fix.branch or "standard",
+            "dialect": ", ".join(fix.branches) or "standard",
             "shape": "group" if field.dtype.is_nested else "field",
             "type": str(field.dtype.into_arrow()),
             "nullable": field.nullable,
@@ -88,7 +88,7 @@ def main() -> int:
     index.sort(key=lambda row: row["tag"] or 0)
     published = {
         "source": "rekep bundle",
-        "branches": sorted({row["branch"] for row in index}),
+        "dialects": sorted({row["dialect"] for row in index}),
         "fields": index,
     }
     for name, held in (("fix-registry.json", published), ("fix-details.json", detail)):

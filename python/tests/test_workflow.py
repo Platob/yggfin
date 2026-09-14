@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -22,24 +23,28 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fix-message.json"
 WORKFLOW = (("parse_messages", {}), ("parse_fix", {}))
+EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 
-#: What the bridge fixture's 111 physical rows produce, first run. The FIX
-#: codec preserves the one-input-row/one-output-row shape even for prose.
+#: What the bridge fixture's 111 physical rows produce, first run. A FIX row
+#: is a message and not a line: prose answers none, and the wildcard Jolokia
+#: response answers one per plugin it named, so 111 lines carry 71 messages.
 FIRST = {
     "parse_messages": {"read": 111, "written": 111, "skipped": 0},
-    "parse_fix": {"read": 111, "written": 111, "skipped": 0},
+    "parse_fix": {"read": 111, "written": 71, "skipped": 0},
 }
 
-#: What a replay of the same input produces: the same reads, no writes.
+#: What a replay of the same input produces: the same reads, no writes. What
+#: a stage skips is counted against what it answered, which for `parse_fix`
+#: is its messages rather than the lines it read.
 REPLAY = {
-    name: {"read": counts["read"], "written": 0, "skipped": counts["read"]}
+    name: {"read": counts["read"], "written": 0, "skipped": counts["written"]}
     for name, counts in FIRST.items()
 }
 
 #: Stored rows, and the one snapshot each table holds after both runs.
 STORED = {
     "logs.messages": 111,
-    "fix.messages": 111,
+    "fix.messages": 71,
 }
 
 
@@ -144,7 +149,7 @@ def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -
     assert {name: counted(result) for name, result in first.items()} == FIRST
     assert ran.rows() == STORED
     messages = ran.table("logs.messages")
-    assert messages.schema.equals(Message.field().into_arrow_schema(), check_metadata=False)
+    assert messages.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=False)
     assert messages.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
     timestamps = {
         row["rownum"]: row["timestamp"]
@@ -208,11 +213,19 @@ def test_parse_fix_narrows_a_nanosecond_clock_iceberg_cannot_store(
     registry.mkdir()
     sending_time = Field("sendingtime", pyarrow.timestamp("ns", tz="UTC"), nullable=True)
     sending_time.fix.tag = 52
-    FixRegistry.from_fields([sending_time]).write_into(registry)
+    # A bare registry already seeds the standard clocks, so a store holding
+    # nothing else reads as the empty one the task refuses. One specification
+    # field beside the clock is what makes it a dictionary.
+    symbol = Field("symbol", "utf8", nullable=True)
+    symbol.fix.tag = 55
+    FixRegistry.from_fields([sending_time, symbol]).write_into(registry)
 
     result = ran.task("parse_fix", registry=registry.as_uri())
 
-    assert counted(result) == {"read": 111, "written": 111, "skipped": 0}
+    # A message's identity is over the content a dictionary named, so the two
+    # configurations of the wildcard response are one identity to a dictionary
+    # that types neither of them and the merge keeps the first.
+    assert counted(result) == {"read": 111, "written": 70, "skipped": 1}
     fixes = ran.table("fix.messages")
     # The dictionary's own clock and the crate's derived one alike.
     assert fixes.schema.field("sendingtime").type == pyarrow.timestamp("us", tz="UTC")
@@ -232,9 +245,16 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
                 "rownum": 1,
                 "body": b"8=FIX.4.4|35=D|10=0|",
                 "beginstring": "FIX.4.4",
-                "msghash": bytes(16),
-                "timestamp": datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC),
+                "timestamp": EPOCH,
                 "unixpartition": 0,
+                # The settled bundle a parsed message always carries.
+                "sendingtime": EPOCH,
+                "updatedat": EPOCH,
+                "createdat": EPOCH,
+                "snapshotat": EPOCH,
+                "code": "",
+                "uuid": uuid.UUID(int=1),
+                "puuid": uuid.UUID(int=2),
             }
         ],
         schema=schema,
@@ -246,7 +266,7 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert fixes.append_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
-        assert stored.num_columns == 111
+        assert stored.num_columns == 118
         assert stored.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
         assert stored.select(("url", "rownum", "body")).to_pylist() == [
             {
@@ -317,12 +337,12 @@ def test_messages_stream_through_hour_partitions(
     result = ran.task("parse_messages", filesystem=capture.as_uri())
 
     assert counted(result) == {"read": 2, "written": 2, "skipped": 0}
-    assert handed_to_iceberg == [Message.field().into_arrow_schema()]
+    assert handed_to_iceberg == [Message.into_field().into_arrow_schema()]
 
     first = datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=datetime.UTC)
     second = datetime.datetime(2026, 8, 14, 15, 46, 39, 769000, tzinfo=datetime.UTC)
     store = IcebergCatalog.from_dict(ran.catalog)
-    messages = store.dataset("logs.messages", field=Message.field())
+    messages = store.dataset("logs.messages", field=Message.into_field())
     try:
         spec = messages.iceberg_table.spec()
         assert [(field.name, str(field.transform)) for field in spec.fields] == [
@@ -336,7 +356,7 @@ def test_messages_stream_through_hour_partitions(
         for timestamp in (first, second):
             assert messages.scan_plan(EqualTo("timepartition", timestamp))["skipped"] == 1
             reader = messages.read_arrow_reader(
-                Message.field(), row_filter=EqualTo("timepartition", timestamp)
+                Message.into_field(), row_filter=EqualTo("timepartition", timestamp)
             )
             try:
                 assert isinstance(reader, pyarrow.RecordBatchReader)
@@ -349,7 +369,7 @@ def test_messages_stream_through_hour_partitions(
 
     assert {row["timestamp"] for row in rows} == {first, second}
     assert {row["timepartition"] for row in rows} == {first, second}
-    assert {row["plugin"] for row in rows} == {"ULBridge"}
+    assert {row["pluginid"] for row in rows} == {"ULBridge"}
 
 
 def test_ulbridge_messages_flow_directly_through_the_fix_codec(
@@ -379,37 +399,34 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
     assert schema_modes == {"logs.messages": False, "fix.messages": True}
     assert len(handed_to_iceberg) == 1
     assert handed_to_iceberg[0].names == fixes.schema.names
-    assert fixes.num_rows == 111
-    assert fixes.num_columns == 111
+    assert fixes.num_rows == 71
+    assert fixes.num_columns == 118
     # Source identity and header facts the fixed schema does not own lead the
-    # row. `msgCtxId` and `timestamp` fold into the codec's own columns;
-    # `bodyhash` remains distinct from the codec's parsed-message `msghash`.
+    # row. A capture named after a field fills that field instead of leading
+    # the row, so `senderSessionId`, `msgCtxId` and `pluginid` are the codec's
+    # own columns and `bodyhash` is the line's exact-byte identity.
     assert fixes.column_names[:10] == [
         "url",
         "rownum",
+        "timestamp",
         "timepartition",
         "threadId",
-        "sessionUid",
         "seqNum",
-        "plugin",
         "level",
         "bodyhash",
         "body",
+        "beginstring",
     ]
-    assert {"msgtype", "msgseqnum", "msghash", "version", "timestamp", "unixpartition"} <= set(
+    assert {"msgtype", "msgseqnum", "uuid", "version", "unixpartition"} <= set(fixes.column_names)
+    # A pair no dictionary explains is an entry of tag 0 in the arrival record,
+    # so one record column closes the row.
+    assert fixes.column_names[-2:] == ["msgdirection", "nofixentries"]
+    assert not {"35", "30001", "entries", "unmapped", "msgCtxId", "msghash"} & set(
         fixes.column_names
     )
-    assert fixes.column_names[-2:] == ["nofixentries", "nounmappedfixentries"]
-    assert not {"35", "30001", "entries", "unmapped", "msgCtxId"} & set(fixes.column_names)
-    for required in ("beginstring", "msghash", "timestamp", "unixpartition"):
+    for required in ("beginstring", "sendingtime", "updatedat", "uuid", "unixpartition"):
         assert fixes.schema.field(required).nullable is False
         assert fixes.column(required).null_count == 0
-    messages = ran.table("logs.messages")
-    assert fixes.column("bodyhash").equals(messages.column("bodyhash"))
-    assert any(
-        raw.as_py() != parsed.as_py()
-        for raw, parsed in zip(fixes.column("bodyhash"), fixes.column("msghash"), strict=True)
-    )
     # Arrow field metadata is not what Iceberg stores: the hourly transform is
     # in the table's own partition spec, and that is where it is read back.
     assert ran.partitions("fix.messages") == {"timepartition": "hour"}
@@ -419,12 +436,11 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         assert {
             table.schema().find_column_name(field_id)
             for field_id in table.schema().identifier_field_ids
-        } == {"url", "rownum"}
+        } == {"url", "rownum", "uuid"}
     finally:
         store.close()
     msgtypes = {
-        row["rownum"]: None if row["msgtype"] is None else row["msgtype"].rstrip(b"\0").decode()
-        for row in fixes.select(("rownum", "msgtype")).to_pylist()
+        row["rownum"]: row["msgtype"] for row in fixes.select(("rownum", "msgtype")).to_pylist()
     }
     assert msgtypes[2] == "8"
     assert msgtypes[5] == "UL"

@@ -10,7 +10,7 @@ import polars
 from rekep import Message
 from rekep.iceberg import iceberg_schema
 
-field = Message.field()
+field = Message.into_field()
 arrow = field.into_arrow_schema()
 
 print(arrow)

@@ -75,10 +75,10 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
     a rename of the metadata key would leave the constant behind, still
     exported, still wrong, and nothing would fail.
     """
-    metadata = dict(Row.field().field("unix").metadata)
+    metadata = dict(Row.into_field().field("unix").metadata)
     assert metadata[SORT_KEY] == "asc"
     assert metadata[PRIMARY_KEY] == "true"
-    hour = Row.field().field("hour")
+    hour = Row.into_field().field("hour")
     assert hour.is_partition
     assert hour.metadata["field:partition"] == "true"
     assert PARTITION_KEY not in hour.metadata
@@ -94,7 +94,7 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     bundled = fix_registry()
 
     assert registry_path().is_dir()
-    assert len(bundled) == 6265
+    assert len(bundled) == 6303
     assert global_registry() == bundled
     assert IOBase.__module__.startswith("yggdryl")
     assert TextOptions.__module__.startswith("yggdryl")

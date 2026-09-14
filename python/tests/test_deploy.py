@@ -22,7 +22,7 @@ def run(*argv: str) -> int:
 def test_every_declared_table_builds_the_shape_it_names() -> None:
     """A table identifier is a namespace and a name, and it names its schema."""
     for shape in TABLES:
-        field = shape.field()
+        field = shape.into_field()
         assert field.name == shape.table
         assert "." in shape.table
         for column in shape.sort_by or ():

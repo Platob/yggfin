@@ -35,7 +35,8 @@ order.
 ## Raw before interpreted
 
 `logs.messages` preserves exact text bodies. `fix.messages` interprets every
-body while retaining `nofixentries` and `nounmappedfixentries`. A parser update
+body while retaining `nofixentries`, where a pair no dictionary explains is an
+entry of tag 0 under its own key. A parser update
 can therefore be replayed from Iceberg without rereading the original files.
 
 ## Replays are ordinary runs

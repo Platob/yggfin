@@ -11,7 +11,7 @@ components and repeating groups without another model.
 | bundled specification | 6,203 | standard |
 | runtime fields | 19 | standard, tags 65000–65018 |
 | bridge vocabulary | 43 | `ulbridge` |
-| process total | 6,265 | 2 branches |
+| process total | 6,303 | 2 dialects |
 
 ```python
 from rekep.fix import fix_registry
@@ -195,7 +195,7 @@ rejected, preventing a pipeline from silently creating a narrow table.
 
 ## Browser
 
-Search the same 6,265 definitions here, by tag, name, alias or description:
+Search the same 6,303 definitions here, by tag, name, alias or description:
 
 <div data-fix="registry"></div>
 

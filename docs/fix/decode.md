@@ -14,7 +14,7 @@ The text stage removes only the matched ULBridge header. For example:
 [OMS_X1_TradeCapture] (INFO) Receiving : 8=FIX.4.4|35=8|55=ABBN.S|...
 ```
 
-becomes one `Message` whose `timestamp`, `threadId`, `sessionUid`, `msgCtxId`,
+becomes one `Message` whose `timestamp`, `threadId`, `senderSessionId`, `msgCtxId`,
 `seqNum`, `plugin`, and `level` come from the header and whose `body` starts at
 `Receiving :`. The exact body digest is computed before `logs.messages` is
 written.
@@ -212,8 +212,8 @@ version. Version affects code spelling, not column identity.
 Resolved children are ordered as FIX header, body, trailer, then runtime
 fields. `beginstring` is supplied when the input did not state one. The market
 timestamp uses the source row clock first, then message clocks in precision
-order, then the Unix epoch. `unixpartition` follows it. `msghash` is computed
-from the arrival record with session-envelope tags excluded.
+order, then the Unix epoch. `unixpartition` follows it. `uuid` is computed
+from the message's named content with session-envelope tags excluded.
 
 Enrichment is opt-in. It can derive normalized symbol, ISIN, MIC, parent ids,
 and lifecycle state; a derived value is never silently presented as a stated
@@ -225,9 +225,9 @@ wire pair.
 import pyarrow
 
 from rekep import Message
-from rekep.fix import fix_registry, parse_arrow_reader
+from rekep.fix import dated_arrow_reader, fix_codec, fix_registry
 
-schema = Message.field().into_arrow_schema()
+schema = Message.into_field().into_arrow_schema()
 batch = pyarrow.RecordBatch.from_pylist(
     [
         {
@@ -236,10 +236,10 @@ batch = pyarrow.RecordBatch.from_pylist(
             "timestamp": None,
             "timepartition": None,
             "threadId": None,
-            "sessionUid": None,
+            "senderSessionId": None,
             "msgCtxId": None,
             "seqNum": 7,
-            "plugin": "OMS",
+            "pluginid": "OMS",
             "level": "INFO",
             "bodyhash": None,
             "body": b"Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
@@ -248,12 +248,12 @@ batch = pyarrow.RecordBatch.from_pylist(
     schema=schema,
 )
 source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
-parsed = parse_arrow_reader(source, fix_registry(), "body", branch="ulbridge")
+parsed = fix_codec(fix_registry()).parse_text_arrow_reader(dated_arrow_reader(source))
 table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL"]
 assert table.column("msgseqnum").to_pylist() == [7]
-assert table.schema.names[-2:] == ["nofixentries", "nounmappedfixentries"]
+assert table.schema.names[-2:] == ["msgdirection", "nofixentries"]
 ```
 
 Source columns lead the output unless a fixed column owns the same folded

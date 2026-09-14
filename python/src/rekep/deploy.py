@@ -38,14 +38,14 @@ class Deployed:
     #: Physical order is opt-in; pipeline reads request their logical order.
     sort_by: tuple[str, ...] | None = None
 
-    def field(self) -> Field:
+    def into_field(self) -> Field:
         """The shape this table carries, named as the table."""
         return field_of(self.shape(), self.table)
 
 
 #: The tables the supported ingestion graph writes, in production order.
 TABLES: tuple[Deployed, ...] = (
-    Deployed("logs.messages", Message.field),
+    Deployed("logs.messages", Message.into_field),
     Deployed("fix.messages", fix_message_field),
 )
 
@@ -90,7 +90,7 @@ def _deployed(
     """One table, through the catalog handle the whole deployment shares."""
     dataset: Any = store.dataset(
         shape.table,
-        field=shape.field(),
+        field=shape.into_field(),
         table_properties=dict(table_properties or {}),
         branch=branch,
         sort_by=shape.sort_by,

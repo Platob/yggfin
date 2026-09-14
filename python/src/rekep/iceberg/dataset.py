@@ -29,6 +29,7 @@ from rekep.dataset import (
     SOURCE_INDEX,
     TARGET_INDEX,
     Dataset,
+    _in_order,
     _positive_int,
     arrow_chunks,
     first_rows,
@@ -824,6 +825,10 @@ class IcebergDataset(Dataset):
                 if self.plan_merges or partitions:
                     self.merge_arrow_table(chunk, join, branch=reference, properties=properties)
                 else:
+                    # The planned path states this in `_checked_merge_chunk`;
+                    # pyiceberg's own upsert never reaches it, and would die in
+                    # an Arrow kernel instead of saying which column it was.
+                    _unnameable_key(chunk, join)
                     chunk = self.sorted(chunk)
                     table = self._commit_with_retry(
                         table,
@@ -1359,8 +1364,13 @@ class IcebergDataset(Dataset):
                     delete_rows.append(semi_join(candidate, changed, join).select(delete_columns))
         if exact_count != len(matched):
             raise RuntimeError("exact merge scan disagreed with its key scan")
+        # `sort_indices` answers ranks, not positions: taking the chunk by them
+        # rewrites whichever rows happen to sit at those ranks rather than the
+        # ones that changed, so the delete names one row and the re-insert
+        # another. `_in_order` is the same sort applied to the positions, which
+        # is what every other caller of this idiom here does.
         updates = (
-            chunk.take(pyarrow.compute.sort_indices(pyarrow.concat_arrays(changed_positions)))
+            chunk.take(_in_order(pyarrow.concat_arrays(changed_positions)))
             if changed_positions
             else chunk.slice(0, 0)
         )
@@ -1604,7 +1614,9 @@ class IcebergDataset(Dataset):
                         ]
                     )
                     fresh = fresh.join(
-                        stored.select(list(join)), keys=list(join), join_type="left anti"
+                        keys_of(stored, join, TARGET_INDEX).select(list(join)),
+                        keys=list(join),
+                        join_type="left anti",
                     )
                     if not fresh.num_rows:
                         break
@@ -3101,6 +3113,27 @@ def _key_ranges(
     return And(*terms) if len(terms) > 1 else terms[0]
 
 
+def _unnameable_key(chunk: pyarrow.Table, join: Sequence[str]) -> None:
+    """Refuse a merge key Arrow can hold but none of its kernels can read.
+
+    An extension type carries no equality, ordering or grouping kernel of its
+    own, and a row filter is lowered to exactly those: neither the join that
+    finds the stored row nor the predicate that replaces it could name a value
+    such a column holds. A read is still fine, which is why this refuses at the
+    merge rather than at the table.
+    """
+    for column in join:
+        dtype = chunk.schema.field(column).type
+        if isinstance(dtype, pyarrow.BaseExtensionType):
+            raise ValueError(
+                f"column {column!r} is a merge key of the Arrow extension type {dtype}, "
+                "which carries no equality, ordering or grouping kernel: no predicate "
+                "could name the rows this would replace. Store it as "
+                f"{dtype.storage_type}, the bytes it already holds -- an existing "
+                "column cannot be promoted, so recreate the table and replay"
+            )
+
+
 def _validate_merge_keys(chunk: pyarrow.Table, join: Sequence[str]) -> None:
     """Refuse merge keys no Iceberg predicate can name exactly."""
     for column in join:
@@ -3141,6 +3174,13 @@ def _column_term(column: str, values: Any) -> Any | None:
     """One conjunct covering every value `column` takes in the chunk, or None."""
     from pyiceberg.expressions import And, GreaterThanOrEqual, In, LessThanOrEqual, Or
 
+    if isinstance(values.type, pyarrow.BaseExtensionType):
+        # A store reads the same literal from an extension as from its storage,
+        # but the scan evaluates the predicate with Arrow's own kernels, which
+        # an extension type carries none of. A missing term is a wider filter,
+        # which is the direction this one is allowed to be wrong in, and the
+        # semi-join still matches the key exactly.
+        return None
     distinct = _distinct_under(values, MERGE_IN_LIMIT)
     if distinct is None:
         # Neither bound can be null here: the column has rows, no nulls and no
@@ -3314,6 +3354,7 @@ def _checked_merge_chunk(table: Any, chunk: pyarrow.Table, join: Sequence[str]) 
         raise ValueError(f"{SOURCE_INDEX} and {TARGET_INDEX} are reserved for joining DataFrames")
     chunk = normalised_keys(chunk, join)
     _validate_merge_keys(chunk, join)
+    _unnameable_key(chunk, join)
     if upsert_util.has_duplicate_rows(chunk, join):
         raise ValueError(
             "Duplicate rows found in source dataset based on the key columns. No upsert executed"

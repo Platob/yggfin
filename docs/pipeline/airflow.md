@@ -10,8 +10,8 @@ logs.messages     fix.messages
 ```
 
 The DAG exposes the union of both adjacent task documents as Params. A manual
-run can therefore replace `filesystem`, `catalog`, `registry`, `branch`,
-`version`, or `dedup` without creating another DAG.
+run can therefore replace `filesystem`, `catalog`, `registry` or `version`
+without creating another DAG.
 
 ## How a task runs
 
@@ -51,7 +51,7 @@ variable without putting it in Params or in task JSON.
 Parameters merge in one order, later winning: task document defaults, then the
 operator's `parameters`, then the DAG run's Params, then the data interval —
 and only for a name the task document already declares, so a task that does
-not take `branch` is never handed the scheduler's.
+not take `registry` is never handed the scheduler's.
 
 ### Assets and what a run returns
 
@@ -204,7 +204,8 @@ EKS web identity, or the worker's standard AWS credential chain.
    warehouse prefix.
 5. Trigger one immutable capture manually and compare stage counts.
 6. Replay it and require zero writes and zero new snapshots.
-7. Inspect `nounmappedfixentries` before enabling a recurring schedule.
+7. Inspect `nofixentries` for entries of tag 0 before enabling a recurring
+   schedule: those are the pairs no dictionary explained.
 8. Keep `max_active_runs=1` unless catalog and source-window ownership are
    designed for concurrent commits.
 9. Set `retries` and `retry_delay`; the default is no retry, and a retried

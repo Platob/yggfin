@@ -427,10 +427,10 @@
     for (const [label, value] of [["Fields and groups", ""], ["Fields", "field"], ["Repeating groups", "group"]]) {
       shape.appendChild(element("option", { value: value, text: label }));
     }
-    const branch = element("select", { class: "fix-input", "aria-label": "Branch" });
-    branch.appendChild(element("option", { value: "", text: "All branches" }));
-    for (const name of dictionary.branches) {
-      branch.appendChild(element("option", { value: name, text: name }));
+    const dialect = element("select", { class: "fix-input", "aria-label": "Dialect" });
+    dialect.appendChild(element("option", { value: "", text: "All dialects" }));
+    for (const name of dictionary.dialects) {
+      dialect.appendChild(element("option", { value: name, text: name }));
     }
     const count = element("p", { class: "fix-count" });
     const results = element("div");
@@ -439,7 +439,7 @@
       const terms = search.value.toLowerCase().split(/\s+/).filter(Boolean);
       const visible = dictionary.fields.filter((field) => {
         if (shape.value && field.shape !== shape.value) return false;
-        if (branch.value && field.branch !== branch.value) return false;
+        if (dialect.value && field.dialect !== dialect.value) return false;
         return terms.every((term) => field.search.includes(term));
       });
       const groups = visible.filter((field) => field.shape === "group").length;
@@ -461,12 +461,12 @@
 
     search.addEventListener("input", render);
     shape.addEventListener("change", render);
-    branch.addEventListener("change", render);
+    dialect.addEventListener("change", render);
     mount.appendChild(
       element("div", { class: "fix-controls" }, [
         element("div", { class: "fix-grow" }, [search]),
         shape,
-        branch,
+        dialect,
       ])
     );
     mount.appendChild(count);
@@ -498,7 +498,7 @@
           ["tag", field.tag],
           ["identifier", field.id],
           ["canonical name", field.name],
-          ["branch", field.branch],
+          ["dialect", field.dialect],
           ["Arrow type", field.type],
           ["nullable", String(field.nullable)],
           ["alternate tags", field.tags.join(", ")],
@@ -840,7 +840,7 @@
         String(field.tag),
         field.name,
         field.display,
-        field.branch,
+        field.dialect,
         field.description,
       ]
         .concat(field.aliases, field.tags.map(String))
@@ -851,7 +851,7 @@
       for (const alias of field.aliases) byName.set(alias.toLowerCase(), field);
       for (const tag of field.tags) if (!byTag.has(tag)) byTag.set(tag, field);
     }
-    return { fields: payload.fields, branches: payload.branches, byTag: byTag, byName: byName };
+    return { fields: payload.fields, dialects: payload.dialects, byTag: byTag, byName: byName };
   }
 
   function mountAll() {

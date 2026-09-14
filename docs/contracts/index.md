@@ -6,7 +6,7 @@ created table records itself:
 
 | snapshot | columns | runtime constructor |
 | --- | ---: | --- |
-| [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.field()` |
+| [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.into_field()` |
 | [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 111 | `fix_message_field()` |
 
 Each document has three keys — `schema`, `partition-spec` and `sort-order` —
@@ -60,7 +60,7 @@ from rekep.iceberg import iceberg_contract, iceberg_contract_field, partition_ke
 document = Path("schemas/rekep/message.json").read_text(encoding="utf-8")
 field = iceberg_contract_field(document, "Message")
 
-assert document == f"{iceberg_contract(Message.field())}\n"
+assert document == f"{iceberg_contract(Message.into_field())}\n"
 assert document == f"{iceberg_contract(field)}\n"
 assert partition_keys(field) == {"timepartition": "hour"}
 ```
@@ -95,7 +95,8 @@ Path("schemas/rekep/fix-message.json").write_text(
 )
 ```
 
-The 111 columns are 10 carried source columns, 80 selected specification
-columns, 19 derived/runtime columns, `msgdirection`, and two arrival lists.
+The 118 columns are 9 carried source columns and 109 the dictionary decides:
+the specification fields it selects, the crate's own runtime columns,
+`msgdirection`, and the one arrival record that closes the row.
 The runtime registry remains authoritative; a registry change must produce a
 visible schema diff.

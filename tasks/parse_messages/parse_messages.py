@@ -58,7 +58,7 @@ def _(catalog, filesystem, records):
             sources={"capture": source_location},
             targets={"messages": TARGET},
         )
-        field = Message.field()
+        field = Message.into_field()
         options = Message.text_options()
         counts = {"read": 0}
         store = IcebergCatalog.from_dict(catalog)
