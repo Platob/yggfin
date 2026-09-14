@@ -1134,6 +1134,76 @@ def test_merge_by_names_upserts_on_those(dataset: IcebergDataset) -> None:
     assert dataset.read_arrow_table().num_rows == 2
 
 
+def test_a_merge_rewrites_the_rows_that_changed_not_the_ranks_they_sort_at(
+    dataset: IcebergDataset,
+) -> None:
+    """What a merge rewrites is chunk positions, and a take needs positions.
+
+    Every other merge test here changes every row, so each changed row's rank
+    among the changed equals its position in the chunk and a take by either
+    answers the same table. This one changes a strict, non-contiguous subset,
+    which is the only shape where the two part: taking by rank rewrites the
+    rows sitting at ranks 0 and 1 instead of the rows at positions 1 and 3, so
+    the delete names one row and the re-insert another and the key duplicates.
+    """
+    dataset.append_arrow_table(quotes(5, "XPAR"))
+    changed = quotes(5, "XPAR")
+    venues = changed.column("venue").to_pylist()
+    venues[1] = venues[3] = "XETR"
+    changed = changed.set_column(
+        changed.schema.get_field_index("venue"),
+        changed.schema.field("venue"),
+        pyarrow.array(venues, changed.schema.field("venue").type),
+    )
+
+    updated, inserted = dataset.merge_arrow_table(changed, True)
+
+    stored = dataset.read_arrow_table().sort_by("symbol")
+    assert (updated, inserted) == (2, 0)
+    assert stored.num_rows == 5, "a merge replaces rows, it never adds one"
+    assert len(set(stored.column("symbol").to_pylist())) == 5, "no key is duplicated"
+    assert stored.column("venue").to_pylist() == ["XPAR", "XETR", "XPAR", "XETR", "XPAR"]
+
+
+def test_a_merge_key_no_kernel_can_read_is_refused_by_name(tmp_path: Path) -> None:
+    """An extension type is a key Arrow holds and none of its kernels can read.
+
+    A read of such a column is fine, so the refusal is at the merge and not at
+    the table; an append that only skips existing keys still works, because its
+    filter is allowed to be too wide and the semi-join matches exactly.
+    """
+    import uuid as uuidlib
+
+    schema = pyarrow.schema(
+        [
+            pyarrow.field(
+                "id", pyarrow.uuid(), nullable=False, metadata={"iceberg:primary_key": "true"}
+            ),
+            pyarrow.field("size", pyarrow.int64()),
+        ]
+    )
+    field = Field.from_arrow_schema(schema, name="Held")
+    rows = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.held", field=field
+    )
+    keys = pyarrow.ExtensionArray.from_storage(
+        pyarrow.uuid(),
+        pyarrow.array([uuidlib.UUID(int=1).bytes, uuidlib.UUID(int=2).bytes], pyarrow.binary(16)),
+    )
+    table = pyarrow.table(
+        {"id": keys, "size": pyarrow.array([1, 2], pyarrow.int64())}, schema=schema
+    )
+
+    assert rows.append_arrow_table(table, field, merge_by=True) == 2
+    assert rows.append_arrow_table(table, field, merge_by=True) == 0, "a replay adds nothing"
+    for verb in (
+        lambda: rows.merge_arrow_table(table, True),
+        lambda: rows.overwrite_arrow_table(table, field, merge_by=True),
+    ):
+        with pytest.raises(ValueError, match="no equality, ordering or grouping kernel"):
+            verb()
+
+
 def test_a_falsy_merge_by_replaces_complete_partitions_from_a_stream(
     dataset: IcebergDataset,
 ) -> None:

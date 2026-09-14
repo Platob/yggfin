@@ -942,21 +942,21 @@
       {
         "id": 107,
         "name": "instuuid",
-        "type": "uuid",
+        "type": "fixed[16]",
         "required": false,
         "doc": "The instrument's version-8 UUID over the xxh128 digest of its market, its classification, its ISIN - else its symbol - and its currency."
       },
       {
         "id": 108,
         "name": "uuid",
-        "type": "uuid",
+        "type": "fixed[16]",
         "required": true,
         "doc": "The version-8 UUID of signed updatedat nanoseconds and 58 bits of the canonical named message content's XXH64."
       },
       {
         "id": 109,
         "name": "puuid",
-        "type": "uuid",
+        "type": "fixed[16]",
         "required": true,
         "doc": "The event chain's version-8 UUID over XXH3-128 of code alone."
       },
@@ -991,7 +991,7 @@
       {
         "id": 113,
         "name": "prevuuid",
-        "type": "uuid",
+        "type": "fixed[16]",
         "required": false,
         "doc": "The preceding message's UUID in the selected event chain."
       },

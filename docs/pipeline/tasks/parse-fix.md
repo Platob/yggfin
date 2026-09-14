@@ -87,9 +87,15 @@ parse ran, and the `uuid` computed from that clock is a different one on every
 read — so a replay would insert every such message again. `dated_arrow_reader`
 offers the stored capture `timestamp` as a `sendingtime` column, which
 outranks the codec's default; the column clashes with the FIX column of that
-name, so it lands there rather than beside it. A message that carried its own
+name, so it lands there rather than beside it.
+
+The column is filled, never merely cast. A line whose header the reader did not
+match carries no clock of its own either, and a null would hand that message
+straight back to the unrepeatable default — so those rows state the epoch,
+which is the instant that means none was read. A message that carried its own
 clock keeps it, replay recomputes the same identity either way, and the merge
-on `(url, rownum, uuid)` is idempotent.
+on `(url, rownum, uuid)` is idempotent for every capture rather than only for
+one whose every line the header matched.
 
 ## Schema and precision
 
@@ -122,6 +128,9 @@ creating a narrow table.
 - A conversion failure leaves the typed column null and preserves its arrival.
 - The source message wins over a same-field source-column fill.
 - The writer merges on `(url, rownum, uuid)` and can create a missing table.
+- `uuid` is stored as `fixed[16]`: an Arrow `uuid` carries no compute kernel,
+  so a column of it could appear in no predicate — including the one a merge
+  deletes by. A merge key of an extension type is refused by name.
 
 ## Run
 

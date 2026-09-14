@@ -687,8 +687,13 @@ def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str])
 
 
 def _in_order(taken: Any) -> Any:
-    """Row positions a join handed back, put back into the table's own order."""
-    positions = taken.combine_chunks()
+    """Row positions, put back into the table's own order.
+
+    The positions themselves are sorted, never the ranks `sort_indices` answers:
+    taking a table by ranks reads whichever rows sit at those ranks instead of
+    the ones that were found.
+    """
+    positions = one_array(taken)
     return positions.take(pyarrow.compute.sort_indices(positions))
 
 

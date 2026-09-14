@@ -15,7 +15,7 @@ instead of disappearing.
 | partition | `timepartition`, Iceberg `hour` transform |
 | columns | 118 with the bundled dictionary |
 | exact source identity | `bodyhash`, the line's own bytes |
-| message identity | `uuid`, and `puuid` for the chain it belongs to |
+| message identity | `uuid`, and `puuid` for the chain it belongs to; both stored as the sixteen bytes they are |
 | lossless protocol record | `nofixentries` |
 | reviewed contract | `schemas/rekep/fix-message.json` |
 
@@ -133,13 +133,13 @@ fields.
 | 104 | `isincode` | `fixed_size_binary[12]` | yes | 65013 | resolved ISIN |
 | 105 | `miccode` | `fixed_size_binary[4]` | yes | 65014 | resolved ISO 10383 MIC |
 | 106 | `state` | `fixed_size_binary[10]` | yes | 65015 | normalized order lifecycle state |
-| 107 | `instuuid` | `uuid` | yes | 65016 | The instrument's version-8 UUID over the xxh128 digest of its market, its c... |
-| 108 | `uuid` | `uuid` | no | 65017 | The version-8 UUID of signed updatedat nanoseconds and 58 bits of the canon... |
-| 109 | `puuid` | `uuid` | no | 65018 | The event chain's version-8 UUID over XXH3-128 of code alone. |
+| 107 | `instuuid` | `fixed_size_binary[16]` | yes | 65016 | The instrument's version-8 UUID over the xxh128 digest of its market, its c... |
+| 108 | `uuid` | `fixed_size_binary[16]` | no | 65017 | The version-8 UUID of signed updatedat nanoseconds and 58 bits of the canon... |
+| 109 | `puuid` | `fixed_size_binary[16]` | no | 65018 | The event chain's version-8 UUID over XXH3-128 of code alone. |
 | 110 | `targetsessionid` | `string` | yes | 65019 | The session a message went to, as the message states it. |
 | 111 | `altids` | `map<...>` | yes | 65020 | The identifiers this message states at its own level, keyed by canonical fi... |
 | 112 | `prevtimestamp` | `timestamp[us, tz=UTC]` | yes | 65021 | The preceding message's timestamp in the selected event chain. |
-| 113 | `prevuuid` | `uuid` | yes | 65022 | The preceding message's UUID in the selected event chain. |
+| 113 | `prevuuid` | `fixed_size_binary[16]` | yes | 65022 | The preceding message's UUID in the selected event chain. |
 | 114 | `createdat` | `timestamp[us, tz=UTC]` | no | 65023 | The creation instant, preserved after initial materialization. |
 | 115 | `code` | `string` | no | 65024 | The exact event-chain name; empty means unknown. |
 | 116 | `snapshotat` | `timestamp[us, tz=UTC]` | no | 65025 | The real event's instant, independent of the snapshot grid. |
@@ -183,7 +183,7 @@ Every message carries these columns, each non-null:
 | column | what settles it |
 | --- | --- |
 | `beginstring` | the wire's own, else the version the message was read at |
-| `sendingtime` | the message's own, else the capture clock the row carried |
+| `sendingtime` | the message's own, else the capture clock the row carried, else the epoch |
 | `snapshotat` | `TransactTime`, else `SendingTime` |
 | `updatedat`, `createdat` | both start at `snapshotat` |
 | `code` | the event-chain name; empty means unknown |
@@ -193,6 +193,21 @@ Every message carries these columns, each non-null:
 
 Combined with required `url`, `rownum` and `body`, this lets prose and damaged
 messages share one strict table without losing source position.
+
+## Why an identity is stored as bytes
+
+A UUID reaches Arrow as the canonical `arrow.uuid` extension type, and a row
+filter is lowered to Arrow's own compute kernels — which that type carries none
+of. A column of it can therefore appear in no predicate at all: not a read
+filter, not an ordering, and not the predicate a merge deletes by. Stored as
+`fixed_size_binary[16]` the same sixteen bytes name themselves in every one of
+them, which is what lets this table be filtered, overwritten, compacted and
+deleted from on its own key. The Iceberg type is `fixed[16]`; read a value back
+as a UUID with `uuid.UUID(bytes=...)`.
+
+The expression API names these columns with either the raw sixteen bytes or a
+`uuid.UUID`. PyIceberg's SQL-string grammar cannot name a `fixed[16]` literal,
+so filter them through `EqualTo` and `In` rather than through a filter string.
 
 ## The arrival record
 

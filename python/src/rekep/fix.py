@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import os
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,12 @@ MESSAGE_KEY = "uuid"
 #: precision it reads it at.
 SENDING_TIME = "sendingtime"
 SENDING_TIME_TYPE = pyarrow.timestamp("ns", tz="UTC")
+
+#: What dates a message no clock reached at all: neither its own `SendingTime`
+#: nor a capture clock, because the line carried no header the reader matched.
+#: An instant is what the field holds, so it holds the one that means none --
+#: reproducibly, which is the whole point of dating it here.
+UNDATED = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 
 
 def registry_path() -> Path:
@@ -109,30 +116,41 @@ def dated_arrow_reader(
     the capture recorded dates the message it carried and one line answers the
     same identities however often it is replayed. The column clashes with the
     FIX column of that name, so it lands there rather than beside it.
+
+    The column is filled, never merely cast: a line whose header the reader did
+    not match carries no clock either, and a null would hand that message back
+    to the same unrepeatable default. `UNDATED` is what those rows state.
     """
     if clock not in source.schema.names or SENDING_TIME in source.schema.names:
         return source
-    carried = source.schema.field(clock)
-    schema = source.schema.append(pyarrow.field(SENDING_TIME, SENDING_TIME_TYPE, carried.nullable))
+    stamped = pyarrow.field(SENDING_TIME, SENDING_TIME_TYPE, nullable=False)
+    schema = source.schema.append(stamped)
+    undated = pyarrow.scalar(UNDATED, SENDING_TIME_TYPE)
 
     def _dated():
         for batch in source:
             yield batch.append_column(
-                pyarrow.field(SENDING_TIME, SENDING_TIME_TYPE, carried.nullable),
-                batch.column(clock).cast(SENDING_TIME_TYPE),
+                stamped,
+                pyarrow.compute.fill_null(batch.column(clock).cast(SENDING_TIME_TYPE), undated),
             )
 
     return pyarrow.RecordBatchReader.from_batches(schema, _dated())
 
 
 def iceberg_fix_field(schema: pyarrow.Schema, name: str = "FixMessage") -> Field:
-    """A parser schema narrowed to the timestamp precision Iceberg v2 stores.
+    """A parser schema narrowed to what Iceberg v2 stores: precision, and identity.
 
     The message's own `uuid` joins the carrier's key here: the codec answers
     one row per message rather than one per line, so a line holding two frames
     would otherwise publish two rows under one identity.
+
+    That key is stored as the sixteen bytes it is. A UUID reaches Arrow as the
+    canonical `arrow.uuid` extension, which carries no equality, ordering or
+    grouping kernel, and a row filter is lowered to exactly those kernels -- so
+    a column of that type can appear in no predicate, including the one a merge
+    deletes by. Stored as its own storage type it names itself in every one.
     """
-    members = [_keyed(member.with_type(_microseconds(member.type))) for member in schema]
+    members = [_keyed(member.with_type(_stored(member.type))) for member in schema]
     return Field.from_arrow_schema(pyarrow.schema(members), name=name)
 
 
@@ -170,18 +188,22 @@ def fix_message_field(
         source.close()
 
 
-def _microseconds(dtype: pyarrow.DataType) -> pyarrow.DataType:
-    """Recursively narrow nanosecond timestamps for Iceberg v2."""
+def _stored(dtype: pyarrow.DataType) -> pyarrow.DataType:
+    """Recursively narrow a parsed type to the one Iceberg v2 stores."""
+    if isinstance(dtype, pyarrow.BaseExtensionType):
+        return _stored(dtype.storage_type)
     if pyarrow.types.is_timestamp(dtype) and dtype.unit == "ns":
         return pyarrow.timestamp("us", tz=dtype.tz)
     if pyarrow.types.is_list(dtype):
         item = dtype.field(0)
-        return pyarrow.list_(item.with_type(_microseconds(item.type)))
+        return pyarrow.list_(item.with_type(_stored(item.type)))
     if pyarrow.types.is_large_list(dtype):
         item = dtype.field(0)
-        return pyarrow.large_list(item.with_type(_microseconds(item.type)))
+        return pyarrow.large_list(item.with_type(_stored(item.type)))
+    if pyarrow.types.is_map(dtype):
+        return pyarrow.map_(_stored(dtype.key_type), _stored(dtype.item_type))
     if pyarrow.types.is_struct(dtype):
-        return pyarrow.struct([member.with_type(_microseconds(member.type)) for member in dtype])
+        return pyarrow.struct([member.with_type(_stored(member.type)) for member in dtype])
     return dtype
 
 
@@ -191,6 +213,7 @@ __all__ = [
     "PLUGIN_DIALECT",
     "SENDING_TIME",
     "SENDING_TIME_TYPE",
+    "UNDATED",
     "FixCodec",
     "FixLifecycle",
     "FixMessages",
