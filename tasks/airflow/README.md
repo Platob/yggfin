@@ -9,6 +9,16 @@ parse_messages -> parse_fix
 logs.messages     fix.messages
 ```
 
+`products.py` declares `rekep_products`, which is one node, `build_dbt`:
+
+```text
+fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
+```
+
+Its schedule is the `fix.messages` Asset the first DAG publishes, so a build
+starts when `parse_fix` writes and neither DAG names the other's tasks. dbt is
+in the `runner` group, so the same locked environment runs it.
+
 Each node is a `MarimoOperator`. The operator enters the repository's locked
 `runner` environment offline and starts `marimo_runner.py` directly; it never
 calls `rekep task run`:
@@ -45,8 +55,13 @@ and publishes that JSON atomically. Parameters and results live in a private
 directory unique to one Airflow attempt and are removed on success or failure.
 `on_kill` terminates the runner's process group.
 
-The DAG is intentionally unscheduled: its `filesystem` must name an immutable
-capture or prefix for each run. Configure `tasks/parse_messages/parse_messages.json`
-and `tasks/parse_fix/parse_fix.json`, then trigger the DAG. The local SQLite
-catalog is for one-host smoke tests; production catalog and S3 settings belong
-in those task documents.
+The ingestion DAG is intentionally unscheduled: its `filesystem` must name an
+immutable capture or prefix for each run. Configure
+`tasks/parse_messages/parse_messages.json` and `tasks/parse_fix/parse_fix.json`,
+then trigger the DAG. The local SQLite catalog is for one-host smoke tests;
+production catalog and S3 settings belong in those task documents.
+
+`build_dbt` takes its catalog from `tasks/build_dbt/build_dbt.json`, where
+`null` means the dbt profile's own. dbt writes `target/` and `logs/` under
+`data/dbt` unless `DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise, which is
+what `environment` is for on a worker whose checkout is read-only.

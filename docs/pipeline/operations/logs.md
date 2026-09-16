@@ -20,6 +20,9 @@ atomic result file.
 Anything else a task knows keeps its own name beside those fields. `parse_fix`
 returns one such key, `messages`: a row is a message and not a line, so what
 the codec answered is counted separately from the lines it was handed.
+`build_dbt` returns `models`, `tests` and `rows`, because its unit of work is a
+dbt node: `read` and `skipped` count nodes there, and `written` and `rows`
+count the rows its models committed.
 
 The closing INFO record and returned JSON agree on every field. A result is
 small enough for Airflow XCom because it contains no rows or schemas.

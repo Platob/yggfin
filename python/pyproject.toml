@@ -73,8 +73,22 @@ dev = [
 # the application and runs its cells, and Glue is the catalog a production
 # warehouse is behind. Nothing here is imported by `src/` -- a task is a job,
 # not a feature of the package -- so it is a group rather than an extra.
+#
+# dbt is here for the same reason and no other: `build_dbt` is a task, it runs
+# a build in its own process, and the plugin dbt loads to reach this package is
+# `rekep.dbt`, which nothing under `src/` imports. A runner that can execute one
+# task document can execute every one of them, so the group that runs a task is
+# the group that carries it.
+#
+# It narrows three pins the rest of the lock shares, because dbt states upper
+# bounds where Airflow states none: `protobuf<7` (dbt-adapters and dbt-common),
+# `pathspec<1.1` (dbt-core and dbt-common), and `more-itertools<11` through
+# metricflow. Each resolves to a release every other consumer already accepts,
+# and the whole suite -- Airflow's own tests included -- runs against them.
 runner = [
     "marimo>=0.16,<1",
+    "dbt-core>=1.10,<2",
+    "dbt-duckdb>=1.9,<2",
     "rekep[glue,iceberg,polars]",
 ]
 # What the Airflow DAG and its operator are tested against. Airflow is an

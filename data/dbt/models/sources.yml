@@ -1,0 +1,108 @@
+version: 2
+
+# The two tables ingestion publishes. Each is read through the `rekep` plugin,
+# which is one Iceberg read per source: `table` names the Iceberg table and
+# `columns` is the projection pushed into scan planning, so DuckDB holds the
+# columns the products read and not the 128 a FIX row has.
+#
+# Both are declared here because both are the repository's published contract;
+# only `fix.messages` is read by a model today.
+
+sources:
+  - name: fix
+    description: >
+      Typed FIX rows, one per message a captured line carried.
+    schema: fix
+    meta:
+      plugin: rekep
+    tables:
+      - name: messages
+        description: >
+          `fix.messages`, keyed on `(sourceurl, rownum, msghash)`.
+        meta:
+          table: fix.messages
+          columns:
+            - sourceurl
+            - rownum
+            - msghash
+            - msgphash
+            - code
+            - sendingtime
+            - transacttime
+            - bridgesessionid
+            - sendersessionid
+            - targetsessionid
+            - msgtype
+            - msgdirection
+            - account
+            - clordid
+            - origclordid
+            - orderid
+            - parentclordid
+            - parentorderid
+            - symbolticker
+            - isincode
+            - miccode
+            - side
+            - ordtype
+            - currency
+            - price
+            - orderqty
+            - cumqty
+            - leavesqty
+            - avgpx
+            - lastqty
+            - lastpx
+            - execid
+            - tradeid
+            - ordstatus
+            - exectype
+            - state
+            - ordrejreason
+            - text
+        columns:
+          - name: sourceurl
+            description: The capture object the line was read from.
+          - name: rownum
+            description: The physical line number inside that object.
+          - name: msghash
+            description: The message's sixteen identity bytes.
+          - name: msgphash
+            description: The event chain's sixteen identity bytes, over `code` alone.
+          - name: code
+            description: The exact event-chain name; empty means unknown.
+          - name: sendingtime
+            description: The settled message instant, never null.
+          - name: transacttime
+            description: The transaction instant the message stated, where it stated one.
+          - name: exectype
+            description: The normalized reason this message was sent.
+          - name: ordstatus
+            description: The normalized order state the message reported.
+          - name: state
+            description: The normalized lifecycle state the enrichment settled on.
+          - name: lastqty
+            description: The quantity this occurrence executed.
+          - name: lastpx
+            description: The price this occurrence executed at.
+
+  - name: logs
+    description: >
+      Raw capture lines, one per physical line, with their exact body bytes.
+    schema: logs
+    meta:
+      plugin: rekep
+    tables:
+      - name: messages
+        description: >
+          `logs.messages`, keyed on `(sourceurl, rownum)`. No model reads it
+          yet: every product here is derived from the typed FIX rows.
+        meta:
+          table: logs.messages
+        columns:
+          - name: sourceurl
+            description: The capture object the line was read from.
+          - name: rownum
+            description: The physical line number inside that object.
+          - name: body
+            description: The exact body bytes, after the row header was removed.

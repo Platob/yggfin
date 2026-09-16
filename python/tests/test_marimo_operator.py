@@ -46,6 +46,7 @@ def _module(name: str) -> ModuleType:
 OPERATOR = _module("marimo_operator")
 MarimoOperator = OPERATOR.MarimoOperator
 PIPELINE = _module("pipeline")
+PRODUCTS = _module("products")
 
 #: What one attempt returned, in the shape every task returns.
 RESULT = {
@@ -163,6 +164,24 @@ def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
     assert [asset.name for asset in fixed.outlets] == ["fix.messages"]
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
+
+
+def test_the_products_dag_starts_when_the_fix_table_is_written() -> None:
+    """The second DAG is scheduled on an Asset the first one publishes, so the
+    two are one route without either naming the other's tasks."""
+    dag = PRODUCTS.products
+
+    assert dag.dag_id == "rekep_products"
+    assert set(dag.task_dict) == {"build_dbt"}
+    assert [asset.name for asset in dag.timetable.asset_condition.objects] == ["fix.messages"]
+    built = dag.get_task("build_dbt")
+    assert [asset.name for asset in built.outlets] == [
+        "orders.events",
+        "orders.current",
+        "executions.fills",
+    ]
+    assert dag.params["project"] == "data/dbt"
+    assert dag.params["catalog"] is None
 
 
 # -- the command it builds ---------------------------------------------------

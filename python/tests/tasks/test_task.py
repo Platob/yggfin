@@ -15,8 +15,10 @@ ROOT = Path(__file__).resolve().parents[3]
 #: Every job this repository schedules, as the document that configures it.
 DOCUMENTS = sorted((ROOT / "tasks").glob("*/*.json"))
 
-#: Text ingestion, native FIX parsing, and generic Iceberg maintenance.
+#: Text ingestion, native FIX parsing, the dbt products derived from it, and
+#: generic Iceberg maintenance.
 NAMES = (
+    "build_dbt",
     "optimize_iceberg",
     "parse_fix",
     "parse_messages",
@@ -51,6 +53,15 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
         assert set(parameters) == {"filesystem", "rowheader", "catalog"}
     elif document.stem == "parse_fix":
         assert set(parameters) == {"registry", "lifecycle", "catalog"}
+    elif document.stem == "build_dbt":
+        assert set(parameters) == {
+            "project",
+            "profiles",
+            "target",
+            "select",
+            "catalog",
+            "log_level",
+        }
     else:
         assert "log_level" in parameters
 

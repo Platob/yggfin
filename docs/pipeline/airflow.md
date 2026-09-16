@@ -66,6 +66,27 @@ table this run did not write claims nothing.
 under `return_value`. Its fields are listed in
 [Logs and task results](operations/logs.md#result-schema); it is a summary, never rows.
 
+## The products DAG
+
+`tasks/airflow/products.py` declares `rekep_products`, which is one node,
+[`build_dbt`](tasks/build-dbt.md):
+
+```text
+fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
+```
+
+Its schedule is the `fix.messages` Asset the ingestion DAG publishes, so a
+build starts when `parse_fix` writes and the two DAGs are one route without
+either naming the other's tasks. The node declares one outlet per table the
+dbt models commit, so a third DAG can be scheduled on a product the same way.
+
+Its Params are the `build_dbt` document's own: `project`, `profiles`,
+`target`, `select`, `catalog` and `log_level`. A worker runs dbt out of the
+`runner` group, the same locked environment every other task runs in, and dbt
+writes `target/` and `logs/` under the project directory unless
+`DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise — which is what the
+operator's `environment` argument is for.
+
 ### Retries
 
 The DAG sets no `retries`, so every task is `retries=0` and one transient S3

@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: stg_fix_messages
+    description: >
+      One FIX message, narrowed to the columns the products read and dated by
+      the precedence both of them state. A view: it is never published.
+    columns:
+      - name: sourceurl
+        description: The capture object the message's line was read from.
+        data_tests:
+          - not_null
+      - name: rownum
+        description: The physical line number inside that object.
+        data_tests:
+          - not_null
+      - name: eventindex
+        description: >
+          The message's position inside its own line, from zero. A line
+          carrying two frames answers two rows.
+        data_tests:
+          - not_null
+      - name: msghash
+        description: The message's sixteen identity bytes.
+        data_tests:
+          - not_null
+      - name: msgphash
+        description: The event chain's sixteen identity bytes.
+        data_tests:
+          - not_null
+      - name: code
+        description: The exact event-chain name; empty means unknown.
+        data_tests:
+          - not_null
+      - name: eventtime
+        description: >
+          The transaction time the message stated, else the settled instant the
+          parser gave it. Never null, because the settled instant never is.
+        data_tests:
+          - not_null
+      - name: sessionid
+        description: >
+          The counterparty session the message names, else the bridge session
+          instance the capture recorded it on.

@@ -73,6 +73,7 @@ nav:
       - Overview: pipeline/index.md
       - Parse messages: pipeline/tasks/parse-messages.md
       - Parse FIX: pipeline/tasks/parse-fix.md
+      - Build dbt: pipeline/tasks/build-dbt.md
       - Airflow: pipeline/airflow.md
       - Run: pipeline/operations/run.md
       - Deploy: pipeline/operations/deploy.md
