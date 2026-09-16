@@ -15,7 +15,6 @@ with app.setup:
         fix_codec,
         fix_message_field,
         fix_registry,
-        fix_text_options,
     )
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
@@ -81,10 +80,14 @@ def _(catalog, lifecycle, records, registry):
             _batches(),
         )
         opened.callback(counted.close)
-        # The codec is the whole parse surface: the dictionary, the bridge's
-        # capture order and the instant an undated message takes are pinned on
-        # it once, and each of the three stages after it is a call.
-        codec = fix_codec(fix_registry(registry), options=fix_text_options())
+        # The codec is the whole parse surface: the dictionary and the instant
+        # an undated message takes are pinned on it once, and each of the three
+        # stages after it is a call. No capture order is among them -- this
+        # door reads stored rows, where a column named after a field fills it
+        # by that name, and a position is what the line door resolves. Pinning
+        # one here would be a reading of a header this task never sees, stale
+        # the moment the capture is read under one of its own.
+        codec = fix_codec(fix_registry(registry))
         # The published field is what the whole pipeline answers, read from the
         # dictionary alone rather than from the first batch -- so an empty
         # capture creates the same table a full one does.

@@ -97,8 +97,29 @@ class Message(Convertible):
         elif not isinstance(self.body, bytes):
             self.body = bytes(self.body)
 
+    #: What a row header does not fill, because something else does: the two
+    #: the traversal names, and the payload it frames.
+    READ_COLUMNS = frozenset({"sourceurl", "rownum", "body"})
+
     @classmethod
-    def text_options(cls) -> TextOptions:
+    def captures(cls) -> frozenset[str]:
+        """The columns a row header is expected to capture into this contract.
+
+        Every member this class declares except the three the read itself
+        fills and the ones a field apply derives -- and a derived member says
+        so, by naming the columns it is derived from, so adding one does not
+        mean remembering to exclude it here.
+        """
+        return frozenset(
+            member.name
+            for member in cls.into_field()
+            if member.name not in cls.READ_COLUMNS
+            and not member.partition.sources
+            and not member.digest.sources
+        )
+
+    @classmethod
+    def text_options(cls, rowheader: str | None = None) -> TextOptions:
         """The native text read that produces this exact contract.
 
         The bridge read of `rekep.fix.fix_text_options`, with this class's own
@@ -106,15 +127,37 @@ class Message(Convertible):
         capture this read frames and that one does not is a column the codec
         silently stops filling. It is spelled twice rather than imported so a
         raw text row stays readable without the dictionary behind it.
+
+        `rowheader` reads a bridge that writes these same facts in a layout of
+        its own: a different clock precision, a bracket ordered differently, a
+        level this logger omits. What it may not do is rename them. The
+        columns are the contract, and a capture named anything else is dropped
+        in silence by the read -- a whole column of nulls and no error -- so
+        the names are checked here, where the mismatch is still legible.
         """
         options = TextOptions()
         options.start_rownum = 1
         options.parse_mtime = False
-        options.rowheader = ULBRIDGE_ROWHEADER
+        options.rowheader = ULBRIDGE_ROWHEADER if rowheader is None else rowheader
         options.timezone = "UTC"
         options.safe = False
         options.field = cls.into_field()
+        if rowheader is not None:
+            cls._check_captures(options)
         return options
+
+    @classmethod
+    def _check_captures(cls, options: TextOptions) -> None:
+        """Refuse a header whose captures are not this contract's columns."""
+        declared = cls.captures()
+        found = frozenset(options.capture_names)
+        if found == declared:
+            return
+        unknown = sorted(found - declared)
+        missing = sorted(declared - found)
+        said = [f"captures nothing for {', '.join(missing)}" if missing else ""]
+        said += [f"captures {', '.join(unknown)}, which no column holds" if unknown else ""]
+        raise ValueError(f"row header {' and '.join(part for part in said if part)}")
 
     @classmethod
     def from_text(cls, text: str | bytes, **declared: Any) -> Self:

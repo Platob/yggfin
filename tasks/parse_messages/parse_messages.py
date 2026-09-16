@@ -34,8 +34,9 @@ def parameters():
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     filesystem = _defaults["filesystem"]
+    rowheader = _defaults["rowheader"]
     catalog = _defaults["catalog"]
-    return catalog, filesystem
+    return catalog, filesystem, rowheader
 
 
 @app.cell
@@ -45,7 +46,7 @@ def _():
 
 
 @app.cell
-def _(catalog, filesystem, records):
+def _(catalog, filesystem, records, rowheader):
     _ = records
     with ExitStack() as opened:
         source = IOBase.from_uri(filesystem)
@@ -59,7 +60,11 @@ def _(catalog, filesystem, records):
             targets={"messages": TARGET},
         )
         field = Message.into_field()
-        options = Message.text_options()
+        # A bridge writing these same facts in a layout of its own is read by
+        # naming its header here; the names it captures are still the columns
+        # that hold them, and a header that renames one is refused rather than
+        # stored as a column of nulls.
+        options = Message.text_options(rowheader)
         counts = {"read": 0}
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)

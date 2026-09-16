@@ -46,10 +46,16 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   physical-line batching.
 - A raw text row names its source only through Yggdryl `sourceurl` and
   `rownum`.
-- One row header serves every reader: `ULBRIDGE_ROWHEADER`, whose every capture
-  is named for the column it fills, so `capture_names` alone tells the codec
-  which bracket part is which. Never spell a second header, and never map a
-  capture spelling onto a tag.
+- Every capture a row header declares is named for the column it fills, so
+  `capture_names` alone tells the codec which bracket part is which. Never map
+  a capture spelling onto a tag.
+- `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
+  writing the same facts in a layout of its own is read by naming its header
+  in the task document, never by a second constant: the layout is a parameter
+  and the capture names are the contract. `Message.text_options` refuses a
+  header that renames or omits one, because the read drops a capture no column
+  holds in silence and the table lands complete, keyed, and empty down one
+  column.
 - Streams open one leaf at a time with bounded transport read-ahead and
   row-bounded batches. One record is unbounded until Yggdryl provides an
   error-on-overflow byte limit that preserves exact bodies.
@@ -85,9 +91,9 @@ filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 ```
 
 Each task directory contains one Marimo application beside its JSON document.
-`parse_messages` passes `filesystem` to `IOBase.from_uri`, applies
-`Message.into_field()` to each batch, and writes one schema-bearing reader
-directly to Iceberg. `parse_fix` passes that stored reader through the three
+`parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
+under the `rowheader` its document names, applies `Message.into_field()` to
+each batch, and writes one schema-bearing reader directly to Iceberg. `parse_fix` passes that stored reader through the three
 stages one codec exposes, in this order and no other:
 
 ```text
@@ -99,13 +105,14 @@ a message and not a line -- a line carrying two frames answers two rows and a
 line carrying none answers none -- so `fix.messages` is keyed on
 `(sourceurl, rownum, msghash)`.
 
-The codec is the whole parse surface: the dictionary, the bridge's capture
-order and the instant an undated message takes are pinned on it once, and each
-stage after it is a call rather than another pin. The row header and every
-capture name come from `ULBRIDGE_ROWHEADER` rather than a spelling per reader.
-A version is not among the pins -- what a message was read at is what its own
-`beginstring` said -- and `fix_codec` refuses by name any keyword that is not
-one of its seven.
+The codec is the whole parse surface: the dictionary and the instant an undated
+message takes are pinned on it once, and each stage after it is a call rather
+than another pin. A capture order is pinned only where a door resolves one by
+position, which is the line door; the batch door fills from a column named
+after the field, so `parse_fix` pins none and cannot go stale against a header
+it never sees. A version is not among the pins -- what a message was read at
+is what its own `beginstring` said -- and `fix_codec` refuses by name any
+keyword that is not one of its seven.
 
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI.

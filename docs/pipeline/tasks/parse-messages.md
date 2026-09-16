@@ -11,6 +11,7 @@ publishes one raw row per physical line to `logs.messages`.
   "application": "parse_messages.py",
   "parameters": {
     "filesystem": "file:data/capture",
+    "rowheader": null,
     "catalog": {
       "name": "rekep",
       "properties": {
@@ -26,6 +27,7 @@ publishes one raw row per physical line to `logs.messages`.
 | parameter | required | meaning |
 | --- | :---: | --- |
 | `filesystem` | yes | one file, directory, or object-store prefix |
+| `rowheader` | no | the row header to frame each line with; `null` is the bridge's own |
 | `catalog.name` | yes | catalog instance name |
 | `catalog.properties` | yes | PyIceberg catalog and FileIO settings |
 
@@ -70,6 +72,53 @@ counterparty are two instances, so they are two facts. `msgctxid` fills 65008,
 `msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none, and `sourceurl`
 fills 65026. A stored row therefore goes on through the FIX codec without one
 spelling being translated into another.
+
+## A bridge that writes the header its own way
+
+`rowheader` reads one. A capture is written by several loggers and they do not
+always agree on the clock: the shipped 14-line sample spells its fraction
+`.147`, `,148` and `.147_250` in one file, and the default header reads only
+the first of those, so twelve of its fourteen lines carry no clock at all.
+Widening the fraction is a parameter rather than an edit:
+
+```python
+from rekep import IOBase, Message
+from rekep.times import ULBRIDGE_ROWHEADER
+
+widened = ULBRIDGE_ROWHEADER.replace(
+    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
+    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
+)
+source = IOBase.from_uri("file:data/capture")
+plain = source.read_arrow_reader(options=Message.text_options()).read_all()
+read = source.read_arrow_reader(options=Message.text_options(widened)).read_all()
+
+# Every physical line is a row either way; what changes is how many it dated.
+assert plain.num_rows == read.num_rows == 14
+assert plain.num_rows - plain.column("timestamp").null_count == 2
+assert read.num_rows - read.column("timestamp").null_count == 10
+```
+
+What a header may change is the layout. What it may not change is the names:
+the columns above are the contract, and a read drops a capture no column holds
+without a word — a table that lands complete, keyed, and empty down one
+column. So the names are checked where the mismatch is still legible, and a
+header that renames or omits one is refused by name:
+
+```python
+from rekep import Message
+from rekep.times import ULBRIDGE_ROWHEADER
+
+renamed = ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)")
+try:
+    Message.text_options(renamed)
+except ValueError as refusal:
+    assert "captures nothing for level" in str(refusal)
+    assert "captures severity, which no column holds" in str(refusal)
+```
+
+`Message.captures()` is the set it is checked against, stated by the contract
+rather than beside it.
 
 See the [complete 12-column schema](../../products/message.md#complete-schema).
 

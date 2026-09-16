@@ -48,7 +48,7 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
     assert all(isinstance(name, str) for name in parameters)
     assert "catalog" in parameters
     if document.stem == "parse_messages":
-        assert set(parameters) == {"filesystem", "catalog"}
+        assert set(parameters) == {"filesystem", "rowheader", "catalog"}
     elif document.stem == "parse_fix":
         assert set(parameters) == {"registry", "lifecycle", "catalog"}
     else:

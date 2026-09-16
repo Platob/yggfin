@@ -1,7 +1,10 @@
 """The raw Message contract is the native ULBridge text read."""
 
 import datetime
+import re
+from pathlib import Path
 
+import pytest
 from yggdryl import IOBase
 
 from rekep import Message
@@ -165,3 +168,93 @@ def test_the_raw_read_is_the_bridge_read_the_codec_is_pinned_against() -> None:
     # The one difference, and the reason there are two: the field.
     assert raw.field == Message.into_field()
     assert bridge.field != raw.field
+
+
+#: The same header with its fraction widened to what this capture's several
+#: loggers actually write: a comma decimal sign, and a micro suffix after the
+#: millis. The names it captures are unchanged, which is the whole rule.
+WIDENED = ULBRIDGE_ROWHEADER.replace(
+    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
+    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
+)
+
+#: Every line of the shipped sample, and the two spellings of its clock: the
+#: default header reads the plain millis, and a widened one reads the rest.
+SAMPLE = Path(__file__).resolve().parents[2] / "data" / "capture"
+
+
+def test_the_row_header_defaults_to_the_bridge_s_own() -> None:
+    """Naming none is naming the one this package ships."""
+    assert Message.text_options().rowheader == ULBRIDGE_ROWHEADER
+    assert Message.text_options(None).rowheader == ULBRIDGE_ROWHEADER
+    assert Message.text_options(ULBRIDGE_ROWHEADER).rowheader == ULBRIDGE_ROWHEADER
+
+
+def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently() -> None:
+    """What the parameter is for: one capture, several loggers, and a fraction
+    they do not agree on. The columns are the same columns either way."""
+    handle = IOBase.from_uri(SAMPLE.as_uri())
+    try:
+        plain = handle.read_arrow_reader(options=Message.text_options()).read_all()
+        widened = handle.read_arrow_reader(options=Message.text_options(WIDENED)).read_all()
+    finally:
+        handle.close()
+
+    # A header frames every physical line either way -- what changes is how
+    # many of them it could date.
+    assert plain.num_rows == widened.num_rows
+    assert plain.schema.equals(widened.schema, check_metadata=True)
+    assert plain.num_rows - plain.column("timestamp").null_count == 2
+    assert widened.num_rows - widened.column("timestamp").null_count == 10
+
+
+@pytest.mark.parametrize(
+    ("spelled", "refused"),
+    [
+        (
+            ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)"),
+            "captures nothing for level and captures severity, which no column holds",
+        ),
+        (
+            ULBRIDGE_ROWHEADER.replace(r" \((?P<level>[A-Z]+)\) ", r" \([A-Z]+\) "),
+            "captures nothing for level",
+        ),
+    ],
+    ids=["renamed", "dropped"],
+)
+def test_a_header_that_renames_a_column_is_refused_rather_than_stored_as_nulls(
+    spelled: str, refused: str
+) -> None:
+    """The failure this check exists for: the read drops a capture no column
+    holds without a word, so the table lands complete, keyed, and empty down
+    one column. The names have to be checked where the mismatch is legible."""
+    with pytest.raises(ValueError, match=re.escape(refused)):
+        Message.text_options(spelled)
+
+
+def test_the_columns_a_header_is_expected_to_fill_are_the_contract_s_own() -> None:
+    """Stated by the contract rather than beside it, so a column added to one
+    is a column the other expects."""
+    assert Message.captures() == frozenset(Message.text_options().capture_names)
+    # Spelled out once here, so a column that stops being captured is a
+    # failing test rather than a silently empty one.
+    assert Message.captures() == {
+        "timestamp",
+        "threadId",
+        "bridgesessionid",
+        "msgctxid",
+        "msgseqnum",
+        "pluginid",
+        "level",
+    }
+    # A member the read fills or a field apply derives is not a capture, and
+    # says so itself rather than being remembered in a list.
+    assert Message.READ_COLUMNS == {"sourceurl", "rownum", "body"}
+    field = Message.into_field()
+    assert {member.name for member in field} - Message.captures() == {
+        *Message.READ_COLUMNS,
+        "timepartition",
+        "bodyhash",
+    }
+    assert field["timepartition"].partition.sources == ["timestamp"]
+    assert field["bodyhash"].digest.sources == ["body"]

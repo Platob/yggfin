@@ -55,6 +55,7 @@ the command line.
 | parameter | task | default | contract |
 | --- | --- | --- | --- |
 | `filesystem` | messages | `file:data/capture` | local object/file tree or object-store prefix |
+| `rowheader` | messages | `null` | the row header each line is framed with; `null` is the bridge's own |
 | `catalog.name` | both | `rekep` | PyIceberg catalog name |
 | `catalog.properties.type` | both | `sql` | `sql`, `glue`, or another installed PyIceberg catalog |
 | `catalog.properties.uri` | both | local SQLite | SQL catalog URI; not used by Glue |

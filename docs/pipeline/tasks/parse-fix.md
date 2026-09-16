@@ -77,7 +77,7 @@ flowchart LR
     M[("logs.messages")] --> R["RecordBatchReader"]
     R --> T["dated_arrow_reader"]
     T --> P["parse_text_arrow_reader"]
-    D[["fix_codec(fix_registry(), options=fix_text_options())"]] --> P
+    D[["fix_codec(fix_registry())"]] --> P
     P --> E["enrich_messages"]
     E --> L["lifecycle"]
     L --> A["Field.apply_arrow_reader"]
@@ -85,16 +85,17 @@ flowchart LR
     A --> F[("fix.messages")]
 ```
 
-The codec is the whole parse surface: the dictionary, the bridge's capture
-order and the instant an undated message takes are pinned on it once, and each
-stage after it is a call rather than another pin. `fix_text_options()` is the
-bridge text read the whole pipeline is pinned against — its row header is
-`ULBRIDGE_ROWHEADER`, the one ULBridge header every reader here takes, stated
-by the native core and spelled once in `rekep.times` because the constant has
-not reached the Python extension yet, and every capture it declares is named
-for the field it fills, so `capture_names` alone tells the codec which bracket
-part is which. `body` is the payload column it reads by default, text or bytes alike.
-Source columns lead the result unless a fixed field owns the same folded name.
+The codec is the whole parse surface: the dictionary and the instant an undated
+message takes are pinned on it once, and each stage after it is a call rather
+than another pin. No capture order is among them. This door reads stored rows,
+where a column named after a field fills that field *by name*; a capture
+position is what the line door resolves, and pinning one here would be a
+reading of a header this task never sees — stale the moment the capture is read
+under a header of its own, which
+[`parse_messages`](parse-messages.md#a-bridge-that-writes-the-header-its-own-way)
+now takes as a parameter. `body` is the payload column the codec reads by
+default, text or bytes alike. Source columns lead the result unless a fixed
+field owns the same folded name.
 
 The published field is read from the carrier and the dictionary alone, before
 the first batch: `fix_message_field(codec, carrier)` runs the whole pipeline
@@ -111,7 +112,6 @@ from rekep.fix import (
     fix_codec,
     fix_message_field,
     fix_registry,
-    fix_text_options,
 )
 from rekep.iceberg import IcebergCatalog
 from rekep.text import Message
@@ -127,7 +127,7 @@ catalog = {
 }
 
 carrier = Message.into_field()
-codec = fix_codec(fix_registry(registry), options=fix_text_options())
+codec = fix_codec(fix_registry(registry))
 field = fix_message_field(codec, carrier)
 
 store = IcebergCatalog.from_dict(catalog)

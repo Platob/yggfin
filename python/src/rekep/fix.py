@@ -140,18 +140,24 @@ def fix_registry(location: str | os.PathLike[str] | None = None) -> FixRegistry:
     return _DEFAULT_REGISTRY if location is None else _load_registry(location)
 
 
-def fix_text_options(field: Field | None = None) -> TextOptions:
+def fix_text_options(
+    field: Field | None = None,
+    rowheader: str | None = None,
+) -> TextOptions:
     """The bridge text read every stage of this pipeline is pinned against.
 
-    The row header is the bridge's own, taken from the native surface that
-    owns it: every capture it declares is named for the field it fills, so
+    Every capture a row header declares is named for the field it fills, so
     `capture_names` alone is what tells the codec which bracket part is which
-    and nothing maps a spelling onto a tag.
+    and nothing maps a spelling onto a tag. `rowheader` reads a bridge writing
+    those same facts in a layout of its own; the default is the one this
+    package ships. A reader that also stores its rows takes the header through
+    `Message.text_options`, which additionally checks the names against the
+    columns that hold them.
     """
     options = TextOptions()
     options.start_rownum = 1
     options.parse_mtime = False
-    options.rowheader = ULBRIDGE_ROWHEADER
+    options.rowheader = ULBRIDGE_ROWHEADER if rowheader is None else rowheader
     options.timezone = "UTC"
     options.safe = False
     if field is not None:

@@ -10,7 +10,7 @@ logs.messages     fix.messages
 ```
 
 The DAG exposes the union of both adjacent task documents as Params. A manual
-run can therefore replace `filesystem`, `catalog`, `registry` or `lifecycle`
+run can therefore replace `filesystem`, `rowheader`, `catalog`, `registry` or `lifecycle`
 without creating another DAG. There is no `version` Param: what a message was
 read at is what its own `beginstring` said.
 
