@@ -17,7 +17,7 @@ import typing
 import uuid
 from collections.abc import Iterator, Mapping, Sequence
 from types import MappingProxyType
-from typing import Any, Self, Union, get_args, get_origin, get_type_hints
+from typing import Any, Union, get_args, get_origin, get_type_hints
 
 import pyarrow.fs
 
@@ -26,6 +26,7 @@ from rekep.annotations import (
     NONE_TYPE,
     SEQUENCE_ORIGINS,
     SET_ORIGINS,
+    Self,
     item_annotation,
     unwrap_annotated,
 )

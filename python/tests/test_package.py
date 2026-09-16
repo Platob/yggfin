@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import importlib
 import pathlib
-import tomllib
+import sys
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # pragma: no cover - the back-port is what the older interpreter has
+    import tomli as tomllib
 from typing import Annotated
 
 import pytest

@@ -6,6 +6,7 @@ imports it -- the same way `tests/test_ci.py` reaches the release script.
 
 from __future__ import annotations
 
+import datetime
 import importlib.util
 import json
 import os
@@ -58,6 +59,9 @@ RESULT = {
     "elapsed_ms": 5,
 }
 
+
+#: The zone every instant here is spelled in.
+UTC = datetime.timezone.utc
 
 #: An application that outlives the test unless the process group is signalled.
 SLEEPER = """
@@ -285,10 +289,8 @@ def test_a_param_the_task_does_not_declare_is_not_injected(kept: Held) -> None:
 
 
 def test_the_interval_fills_only_a_declared_start_and_end(kept: Held) -> None:
-    import datetime
-
-    lower = datetime.datetime(2026, 8, 21, 10, tzinfo=datetime.UTC)
-    upper = datetime.datetime(2026, 8, 21, 11, tzinfo=datetime.UTC)
+    lower = datetime.datetime(2026, 8, 21, 10, tzinfo=UTC)
+    upper = datetime.datetime(2026, 8, 21, 11, tzinfo=UTC)
 
     operator().execute(context(data_interval_start=lower, data_interval_end=upper))
     parameters = written()

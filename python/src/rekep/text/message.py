@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import datetime
-from typing import Annotated, Any, Self
+from typing import Annotated, Any
 
 import pyarrow
 from yggdryl import TextOptions, scalar
 
+from rekep.annotations import Self
 from rekep.convert import Convertible
 from rekep.fields import derived_from, digest_key, partition_key, primary_key
 from rekep.times import ULBRIDGE_ROWHEADER, datetime_of

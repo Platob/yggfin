@@ -18,8 +18,12 @@ import json
 import os
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # pragma: no cover - the back-port is what the older interpreter has
+    import tomli as tomllib
 
 from packaging.version import InvalidVersion, Version
 

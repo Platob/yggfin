@@ -17,13 +17,16 @@ from rekep import Field, Message, cli
 from rekep.fix import FixRegistry
 from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_contract_field, partition_keys
 
+#: The zone every instant here is spelled in.
+UTC = datetime.timezone.utc
+
 pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fix-message.json"
 WORKFLOW = (("parse_messages", {}), ("parse_fix", {}))
-EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
 #: What the bridge fixture's 111 physical rows produce, first run. A FIX row
 #: is a message and not a line: prose answers none, and the wildcard Jolokia
@@ -155,7 +158,7 @@ def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -
         row["rownum"]: row["timestamp"]
         for row in messages.select(("rownum", "timestamp")).to_pylist()
     }
-    assert timestamps[1] == datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=datetime.UTC)
+    assert timestamps[1] == datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
     assert all(timestamp is not None for timestamp in timestamps.values())
 
     replay = ran.workflow()
@@ -338,8 +341,8 @@ def test_messages_stream_through_hour_partitions(
     assert counted(result) == {"read": 2, "written": 2, "skipped": 0}
     assert handed_to_iceberg == [Message.into_field().into_arrow_schema()]
 
-    first = datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=datetime.UTC)
-    second = datetime.datetime(2026, 8, 14, 15, 46, 39, 769000, tzinfo=datetime.UTC)
+    first = datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
+    second = datetime.datetime(2026, 8, 14, 15, 46, 39, 769000, tzinfo=UTC)
     store = IcebergCatalog.from_dict(ran.catalog)
     messages = store.dataset("logs.messages", field=Message.into_field())
     try:

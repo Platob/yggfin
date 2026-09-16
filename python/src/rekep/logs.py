@@ -29,6 +29,8 @@ import time
 from collections.abc import Mapping
 from typing import Any
 
+from rekep.times import UTC
+
 #: The parent of every logger in the package. Each module holds its own
 #: `logging.getLogger(__name__)`, so a record says which module emitted it and
 #: a grep for that name reaches the emitting line; this is what an operator
@@ -52,6 +54,22 @@ FORMAT = "%(levelname)s %(name)s %(message)s"
 LOGGER = logging.getLogger(__name__)
 
 
+def _level(level: str | int) -> int:
+    """`level` as the number it names, refusing a name nothing registered.
+
+    `getLevelName` is the reverse lookup every supported interpreter has, and
+    it answers a custom level a caller added as readily as a standard one. It
+    reports an unregistered name by handing back the text `Level <name>`
+    rather than raising, so the type of what it answers is the check.
+    """
+    if not isinstance(level, str):
+        return level
+    found = logging.getLevelName(level)
+    if not isinstance(found, int):
+        raise KeyError(level)
+    return found
+
+
 def configure(level: str | int = TASK_LEVEL) -> logging.Logger:
     """Send this package's records to `stderr` at `level`, once.
 
@@ -61,7 +79,7 @@ def configure(level: str | int = TASK_LEVEL) -> logging.Logger:
     runs two tasks does not print every record twice.
     """
     logger = logging.getLogger(ROOT)
-    logger.setLevel(logging.getLevelNamesMapping()[level] if isinstance(level, str) else level)
+    logger.setLevel(_level(level))
     for handler in list(logger.handlers):
         logger.removeHandler(handler)
     # Resolved now rather than held: a handler built at import would keep
@@ -222,5 +240,5 @@ def _instant(value: int | None) -> str:
     """One epoch-nanosecond bound, or the open end it stands for."""
     if value is None:
         return "-"
-    moment = datetime.datetime.fromtimestamp(value / 1_000_000_000, tz=datetime.UTC)
+    moment = datetime.datetime.fromtimestamp(value / 1_000_000_000, tz=UTC)
     return moment.isoformat(timespec="seconds").replace("+00:00", "Z")

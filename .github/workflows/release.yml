@@ -51,8 +51,11 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Decide
         id: decide
+        # `--no-project` reads no `requires-python`, so the interpreter here is
+        # whichever one the runner has. `tomllib` is 3.11's, and the check
+        # reads this project's own metadata with it.
         run: >-
-          uv run --with packaging --no-project
+          uv run --with packaging --with "tomli; python_version < '3.11'" --no-project
           python .github/scripts/release_version.py --notes release-notes.md
       # `gh release create` creates the tag as well, so nothing here needs a
       # credential persisted into `.git` to push one.

@@ -6,11 +6,29 @@ build-backend = "hatchling.build"
 name = "rekep"
 version = "1.0.0"
 description = "Arrow-native text ingestion into Iceberg"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = "Apache-2.0"
+# The floor and everything above it that CI runs. A classifier is a claim, so
+# the matrix in `.github/workflows/ci.yml` runs the ends of this range.
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "pyarrow>=17.0",
     "yggdryl>=0.1.6",
+    # `Self` is 3.11's, and the return annotation of every builder here names
+    # it. The dependency is the typing back-port rather than a second spelling
+    # of every one of those signatures.
+    "typing_extensions>=4.4; python_version < '3.11'",
+    # `BaseExceptionGroup` is 3.11's too, and the partition stager raises one
+    # where more than one cleanup failed. The back-port is a module rather
+    # than a patch of `builtins`, so the import needs the distribution named:
+    # pytest happens to pull it, which is pytest's business and not this
+    # package's, and an install without it fails on `import rekep.iceberg`.
+    "exceptiongroup>=1.2; python_version < '3.11'",
     # Windows ships no IANA time zone database, so `zoneinfo` -- and through
     # it every pyarrow conversion that names a zone, "UTC" included -- needs
     # the package there. Everywhere else the system database serves.
@@ -47,6 +65,8 @@ dev = [
     "pyyaml>=6.0",
     "pytest>=8.0",
     "ruff>=0.6",
+    # `tomllib` is 3.11's, and the packaging test reads this file with it.
+    "tomli>=2.0; python_version < '3.11'",
     "rekep[iceberg,polars]",
 ]
 # What either task runner needs to execute a Marimo document: Marimo imports
@@ -85,6 +105,13 @@ bench = [
 # them: the runner group is what a task executes under, and the airflow group
 # is what the DAG and its operator are tested against.
 default-groups = ["dev", "runner", "airflow"]
+# `pygtrie` reaches this project only through Airflow's logging, and 2.6.0 was
+# yanked for the reason that bites here: it declares no `requires-python` while
+# annotating `typing.Self`, so a resolver installs it on 3.10 and every Airflow
+# import then fails with `module 'typing' has no attribute 'Self'`. 2.6.1 is
+# the release that states `>=3.11`, so pinning below it on an older interpreter
+# is what makes the resolution honest. Nothing constrains a newer one.
+constraint-dependencies = ["pygtrie<2.6; python_version < '3.11'"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

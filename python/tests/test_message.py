@@ -8,6 +8,9 @@ from rekep import Message
 from rekep.fix import fix_text_options
 from rekep.times import ULBRIDGE_ROWHEADER
 
+#: The zone every instant here is spelled in.
+UTC = datetime.timezone.utc
+
 
 def test_message_declares_the_text_row_and_its_storage_columns() -> None:
     field = Message.into_field()
@@ -73,7 +76,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
     ).to_pylist() == [
         {
             "rownum": 1,
-            "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=datetime.UTC),
+            "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
             "threadId": 250,
             "bridgesessionid": "e7256476",
             "msgctxid": "9effef3e6a",
@@ -82,7 +85,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
         },
         {
             "rownum": 2,
-            "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=datetime.UTC),
+            "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
             "threadId": 653,
             "bridgesessionid": None,
             "msgctxid": None,
@@ -139,7 +142,7 @@ def test_message_instance_normalizes_scalar_inputs() -> None:
         5,
         1,
         147250,
-        tzinfo=datetime.UTC,
+        tzinfo=UTC,
     )
     assert (message.threadId, message.msgseqnum) == (250, 72504)
 

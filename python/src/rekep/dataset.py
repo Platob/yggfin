@@ -7,11 +7,12 @@ import functools
 import importlib
 from collections.abc import Iterator, Mapping, Sequence
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Any
 
 import pyarrow
 import pyarrow.compute
 
+from rekep.annotations import Self
 from rekep.convert import Convertible
 from rekep.fields import Field, field_of
 

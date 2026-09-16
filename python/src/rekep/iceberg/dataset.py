@@ -12,6 +12,7 @@ import math
 import os
 import random
 import sqlite3
+import sys
 import tempfile
 import time
 import uuid
@@ -57,6 +58,10 @@ from rekep.iceberg.fields import (
     partition_keys,
     sort_keys,
 )
+from rekep.times import UTC
+
+if sys.version_info < (3, 11):  # pragma: no cover - the builtin is 3.11's
+    from exceptiongroup import BaseExceptionGroup
 
 LOGGER = logging.getLogger(__name__)
 
@@ -2388,7 +2393,7 @@ class IcebergDataset(Dataset):
     ) -> list[tuple[Any, str, str, int]]:
         """`orphan_files`, as `(filesystem, path, location, size)`."""
         table = self.iceberg_table
-        cutoff = datetime.datetime.now(datetime.UTC) - older_than
+        cutoff = datetime.datetime.now(UTC) - older_than
         # One live set guards every listing. `write.data.path` may overlap the
         # metadata root, so a file is live when anything live names it, never
         # because of the directory listing that happened to find it.
@@ -4950,7 +4955,7 @@ def _cutoff_ms(older_than: datetime.datetime | datetime.timedelta | None) -> int
     if older_than is None:
         return None
     if isinstance(older_than, datetime.timedelta):
-        older_than = datetime.datetime.now(datetime.UTC) - older_than
+        older_than = datetime.datetime.now(UTC) - older_than
     return int(older_than.timestamp() * 1000)
 
 
@@ -4999,5 +5004,5 @@ def _expiry_value(value: SnapshotExpiry, table: Any) -> datetime.datetime | date
 def _expiry_cutoff(value: datetime.datetime | datetime.timedelta) -> datetime.datetime:
     """A validated expiry declaration as one absolute UTC cutoff."""
     if isinstance(value, datetime.timedelta):
-        return datetime.datetime.now(datetime.UTC) - value
+        return datetime.datetime.now(UTC) - value
     return value

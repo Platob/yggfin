@@ -23,8 +23,12 @@ jobs:
        github.event.comment.author_association))
     strategy:
       fail-fast: false
+      # The floor as well as the newest release: the Airflow leg is the one
+      # that reaches furthest into the dependency tree, and a transitive pin
+      # that cannot be installed on 3.10 shows up here first.
       matrix:
         os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.13"]
     runs-on: ${{ matrix.os }}
     # The native dependency is a published wheel on every leg, so nothing is
     # compiled before the suite starts. The room left here is for the full
@@ -44,6 +48,6 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Sync
-        run: uv sync --frozen
+        run: uv sync --frozen --python ${{ matrix.python }}
       - name: Test integration suite
         run: uv run pytest -q -m integration

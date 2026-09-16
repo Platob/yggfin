@@ -11,14 +11,19 @@ jobs:
   test:
     strategy:
       fail-fast: false
+      # The floor and the newest release, on both platforms. A floor nothing
+      # runs is a claim rather than a promise: `datetime.UTC`, `typing.Self`,
+      # `tomllib` and `BaseExceptionGroup` are all 3.11's, and each of them
+      # imports cleanly on 3.12 while failing on 3.10.
       matrix:
         os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - name: Sync
-        run: uv sync
+        run: uv sync --python ${{ matrix.python }}
       - name: Lint
         run: uv run ruff check .
       - name: Format

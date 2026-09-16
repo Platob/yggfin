@@ -41,6 +41,44 @@ def test_every_spelling_of_one_instant_reads_as_that_instant(spelled: str | byte
     assert unix_of(spelled) == STAMP
 
 
+#: One instant, in every short spelling ISO 8601 allows and `fromisoformat`
+#: only learned at 3.11: a basic date, a basic clock, a clock stopping at the
+#: hour or the minute, a fraction of any width, a military `Z`, an offset of
+#: whole hours, an offset with no colon in it, and any separator at all.
+SHORT: tuple[tuple[str, str], ...] = (
+    ("20260814T093000", "2026-08-14T09:30:00+00:00"),
+    ("20260814T0930", "2026-08-14T09:30:00+00:00"),
+    ("20260814T09", "2026-08-14T09:00:00+00:00"),
+    ("2026-08-14T09:30:00Z", "2026-08-14T09:30:00+00:00"),
+    ("2026-08-14T09:30:00z", "2026-08-14T09:30:00+00:00"),
+    ("2026-08-14T11:30:00+02", "2026-08-14T09:30:00+00:00"),
+    ("2026-08-14T11:30:00+0200", "2026-08-14T09:30:00+00:00"),
+    ("2026-08-14T11:30+0200", "2026-08-14T09:30:00+00:00"),
+    ("2026-08-14 11+02", "2026-08-14T09:00:00+00:00"),
+    ("2026-08-14x09:30:00", "2026-08-14T09:30:00+00:00"),
+    ("2026-08-14T09:30:00.1Z", "2026-08-14T09:30:00.100000+00:00"),
+    ("2026-08-14T09:30:00.1234Z", "2026-08-14T09:30:00.123400+00:00"),
+    ("2026-08-14T09:30:00.123456789Z", "2026-08-14T09:30:00.123456+00:00"),
+    ("2026-08-14T09:30:00,1234+02:00", "2026-08-14T07:30:00.123400+00:00"),
+    ("2026-W33", "2026-08-10T00:00:00+00:00"),
+    ("2026W335", "2026-08-14T00:00:00+00:00"),
+    ("2026-W33-5", "2026-08-14T00:00:00+00:00"),
+)
+
+
+@pytest.mark.parametrize(("spelled", "means"), SHORT, ids=[held for held, _ in SHORT])
+def test_the_reading_is_the_module_s_and_not_the_interpreter_s(spelled: str, means: str) -> None:
+    """`fromisoformat` learned every one of these at 3.11, and a window cannot
+    mean one thing on one interpreter and another on the next -- so the module
+    expands them itself rather than asking whichever parser it was imported on.
+
+    The instant is asserted and not merely that one was read: a compact clock
+    handed to `strptime` splits greedily, and `20260814T0930` read that way is
+    nine minutes past nine rather than half past.
+    """
+    assert datetime_of(spelled) == datetime.datetime.fromisoformat(means)
+
+
 @pytest.mark.parametrize("spelled", ["2026-08-14", "20260814", "2026/08/14", "14 Aug 2026"])
 def test_a_day_is_its_own_midnight(spelled: str) -> None:
     assert unix_of(spelled) == MIDNIGHT

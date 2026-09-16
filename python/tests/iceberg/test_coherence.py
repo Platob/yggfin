@@ -20,6 +20,9 @@ from rekep.iceberg.dataset import MERGE_IN_LIMIT
 
 from ..conftest import catalog_properties
 
+#: The zone every instant here is spelled in.
+UTC = datetime.timezone.utc
+
 pytestmark = pytest.mark.integration
 
 
@@ -1079,7 +1082,7 @@ def test_the_comparison_agrees_or_hands_back(case: str) -> None:
             {
                 "k": [1],
                 "t": pyarrow.array(
-                    [dt.datetime(2026, 8, 14, tzinfo=dt.UTC)], pyarrow.timestamp("us", tz="UTC")
+                    [dt.datetime(2026, 8, 14, tzinfo=UTC)], pyarrow.timestamp("us", tz="UTC")
                 ),
             }
         )
@@ -1114,7 +1117,7 @@ class Event(Convertible):
 
 def events(indexes: range, version: int) -> pyarrow.Table:
     """Rows five hours apart, so every partition holds several."""
-    start = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
+    start = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
     return pyarrow.Table.from_pydict(
         {
             "at": [start + datetime.timedelta(hours=index * 5) for index in indexes],

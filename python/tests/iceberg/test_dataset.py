@@ -15,6 +15,9 @@ import pyarrow
 import pyarrow.fs
 import pyarrow.parquet
 import pytest
+
+if sys.version_info < (3, 11):  # pragma: no cover - the builtin is 3.11's
+    from exceptiongroup import ExceptionGroup
 from pyiceberg.conversions import from_bytes
 from pyiceberg.expressions import EqualTo
 from pyiceberg.transforms import BucketTransform, IdentityTransform
@@ -49,6 +52,9 @@ from rekep.iceberg.dataset import MERGE_IN_LIMIT, _applied_projection
 from rekep.iceberg.file_io import IcebergFileIO
 
 from ..conftest import catalog_properties
+
+#: The zone every instant here is spelled in.
+UTC = datetime.timezone.utc
 
 pytestmark = pytest.mark.integration
 
@@ -1670,7 +1676,7 @@ def test_a_transformed_partition_scopes_identity_without_joining_on_its_source(
         catalog_properties=catalog_properties(tmp_path),
     )
     schema = Daily.into_field().into_arrow_schema()
-    first = datetime.datetime(2026, 8, 14, 1, tzinfo=datetime.UTC)
+    first = datetime.datetime(2026, 8, 14, 1, tzinfo=UTC)
     next_day = first + datetime.timedelta(days=1)
     daily.append_arrow_table(
         pyarrow.Table.from_pydict(
@@ -1922,8 +1928,8 @@ def test_a_day_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path) -> N
         catalog_properties=catalog_properties(tmp_path),
     )
     schema = Daily.into_field().into_arrow_schema()
-    first = datetime.datetime(2026, 8, 14, 1, tzinfo=datetime.UTC)
-    second = datetime.datetime(2026, 8, 15, 1, tzinfo=datetime.UTC)
+    first = datetime.datetime(2026, 8, 14, 1, tzinfo=UTC)
+    second = datetime.datetime(2026, 8, 15, 1, tzinfo=UTC)
     daily.append_arrow_table(
         pyarrow.Table.from_pydict(
             {"code": ["old-a", "old-b", "kept"], "at": [first, first.replace(hour=2), second]},
@@ -2673,8 +2679,8 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         {
             "sourceurl": "capture.log",
             "rownum": 7,
-            "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
-            "timepartition": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
+            "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
+            "timepartition": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
             "threadId": 250,
             "bridgesessionid": "e7256476",
             "msgctxid": "9effef3e6a",
@@ -2688,7 +2694,7 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     try:
         assert projected.schema.names == ["timepartition"]
         assert projected.read_all().column("timepartition").to_pylist() == [
-            datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC)
+            datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
         ]
     finally:
         projected.close()
@@ -3252,7 +3258,7 @@ def test_a_transformed_partition_settles(tmp_path: Path) -> None:
     catalog = IcebergCatalog(name="daily", properties=catalog_properties(tmp_path))
     daily = catalog.dataset("trading.daily", field=Event.into_field())
     schema = Event.into_field().into_arrow_schema()
-    base = datetime.datetime(2026, 8, 14, tzinfo=datetime.UTC)
+    base = datetime.datetime(2026, 8, 14, tzinfo=UTC)
     for index in range(4):
         daily.append_arrow(
             pyarrow.Table.from_pydict(

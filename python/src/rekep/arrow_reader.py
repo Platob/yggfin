@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from typing import Any, Self
+from typing import Any
 
 import pyarrow
+
+from rekep.annotations import Self
 
 
 class _OwnedIterator:

@@ -55,7 +55,7 @@ from yggdryl.fix import (
 )
 
 from rekep.fields import PRIMARY_KEY, Field
-from rekep.times import ULBRIDGE_ROWHEADER
+from rekep.times import ULBRIDGE_ROWHEADER, UTC
 
 _REGISTRY_PATH = Path(__file__).with_name("_data") / "fix"
 
@@ -74,7 +74,7 @@ SENDING_TIME_TYPE = pyarrow.timestamp("ns", tz="UTC")
 #: nor a capture clock, because the line carried no header the reader matched.
 #: An instant is what the field holds, so it holds the one that means none --
 #: reproducibly, which is the whole point of dating it here.
-UNDATED = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+UNDATED = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
 #: What the codec accepts as a pin. Stated here because a pin that is not one
 #: used to be forwarded silently: `version` was a legal pin until a version

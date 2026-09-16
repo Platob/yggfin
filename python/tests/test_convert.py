@@ -14,7 +14,14 @@ import pytest
 from rekep import Convertible
 
 
-class Side(enum.StrEnum):
+class Side(str, enum.Enum):
+    """A str-mixin enum, which is what `StrEnum` is and 3.10 also has.
+
+    The round trip below is what this fixture is for, and a `str` subclass
+    serializes as its value on every interpreter, so the two spellings are
+    the same document.
+    """
+
     BUY = "BUY"
     SELL = "SELL"
 

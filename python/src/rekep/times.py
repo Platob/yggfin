@@ -13,7 +13,11 @@ import functools
 import re
 from typing import Any
 
-UTC = datetime.UTC
+#: The one zone this package reads and writes instants in. `datetime.UTC` is
+#: 3.11's alias for this very object, so the two are the same singleton where
+#: both exist and this is the spelling the oldest supported interpreter has.
+#: Nothing else names the zone: a module wanting it imports it from here.
+UTC = datetime.timezone.utc
 
 #: The epoch in the three shapes a caller needs it in, and only here: an aware
 #: instant to subtract from, the day a `*unix` of zero falls on, and the
@@ -257,6 +261,14 @@ message names. Naming the captures for the fields retires both mistakes.
 FORMATS: tuple[str, ...] = (
     *(f"{stamp.format}.%f" for stamp in SHAPES),
     *(stamp.format for stamp in SHAPES),
+    # Two the ISO parser learned at 3.11, read here so every interpreter
+    # answers the same instant: a whole day with no separators in it, and a
+    # week date. Nothing wider belongs in this list -- `%H`, `%M` and `%S`
+    # each match one digit or two, so a compact clock handed to `strptime`
+    # splits greedily and `0930` reads as nine minutes past nine. The basic
+    # spellings are normalised into the extended ones instead, above.
+    "%Y%m%d",
+    "%G-W%V-%u",
     "%Y%m%d-%H:%M",
     "%Y/%m/%d %H:%M:%S",
     "%Y/%m/%d",
@@ -268,6 +280,27 @@ FORMATS: tuple[str, ...] = (
 #: Everything that is not a digit, for reading a fraction whatever a logger
 #: wrote inside it.
 _DIGITS = re.compile(r"[^0-9]", re.ASCII)
+
+#: One stamp taken apart: a date, a clock, a fraction and an offset, in the
+#: basic spelling or the extended one or any mixture, each part optional after
+#: the date. `fromisoformat` learned most of these at 3.11, and what a window
+#: means cannot depend on which interpreter read it -- so the parts are read
+#: here and handed back in the one spelling every supported parser accepts.
+#: The date is written one way or the other and never half of each, which is
+#: what fixes where it ends -- and the character after it is the separator,
+#: whatever it is, exactly as the parser itself reads one.
+_ISO = re.compile(
+    r"^(?:(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})"
+    r"|(?P<basicyear>[0-9]{4})(?P<basicmonth>[0-9]{2})(?P<basicday>[0-9]{2}))"
+    r"(?:(?P<sep>.)(?P<hour>[0-9]{2}):?(?P<minute>[0-9]{2})?:?(?P<second>[0-9]{2})?"
+    r"(?:[.,](?P<fraction>[0-9]+))?)?"
+    r"(?:(?P<zulu>[Zz])|(?P<sign>[+-])(?P<offhour>[0-9]{2}):?(?P<offminute>[0-9]{2})?)?$",
+    re.ASCII,
+)
+
+#: A week date in any spelling 3.11's parser learned, in the one `%G-W%V-%u`
+#: reads. A week naming no day is its Monday, which is what that parser says.
+_WEEK = re.compile(r"^([0-9]{4})-?W([0-9]{2})(?:-?([1-7]))?$", re.ASCII)
 
 #: A value that names a whole day and no time within it. `upper` rolls one of
 #: these to the next midnight, which is what makes `end: 2026-08-14` mean "all
@@ -349,15 +382,57 @@ def _parsed(text: str) -> datetime.datetime | None:
         if found is not None:
             return found
     try:
-        return _aware(datetime.datetime.fromisoformat(stripped))
+        return _aware(datetime.datetime.fromisoformat(_isoform(stripped)))
     except ValueError:
         pass
+    week = _WEEK.match(stripped)
+    if week is not None:
+        stripped = f"{week[1]}-W{week[2]}-{week[3] or 1}"
     for spelling in FORMATS:
         try:
             return _aware(datetime.datetime.strptime(stripped, spelling))
         except ValueError:
             continue
     return None
+
+
+def _isoform(text: str) -> str:
+    """`text` in the one ISO spelling every supported `fromisoformat` accepts.
+
+    The parser learned the short spellings at 3.11 -- a basic date or clock
+    with no separators in it, a clock stopping at the hour or the minute, a
+    fraction of any width, a military `Z`, an offset of whole hours, an offset
+    with no colon in it -- and what a window means cannot depend on which
+    interpreter read it. Every one of them is the same instant written
+    shorter, so each is expanded rather than guessed at: a part ISO 8601 lets
+    a stamp leave out is zero, which is what the wider parser also answers.
+
+    Text this does not recognise is handed back untouched, for `FORMATS`.
+    """
+    found = _ISO.match(text)
+    if found is None:
+        return text
+    year = found["year"] or found["basicyear"]
+    month = found["month"] or found["basicmonth"]
+    day = found["day"] or found["basicday"]
+    clock = ""
+    if found["hour"] is not None:
+        # A fraction is padded to the six digits a microsecond holds and cut
+        # there: the parser reads exactly three digits or six, and what is
+        # finer than a microsecond is dropped here rather than in a cast.
+        fraction = found["fraction"]
+        clock = "T{}:{}:{}{}".format(
+            found["hour"],
+            found["minute"] or "00",
+            found["second"] or "00",
+            f".{fraction.ljust(6, '0')[:6]}" if fraction else "",
+        )
+    offset = ""
+    if found["zulu"] is not None:
+        offset = "+00:00"
+    elif found["sign"] is not None:
+        offset = f"{found['sign']}{found['offhour']}:{found['offminute'] or '00'}"
+    return f"{year}-{month}-{day}{clock}{offset}"
 
 
 def _aware(found: datetime.datetime) -> datetime.datetime:

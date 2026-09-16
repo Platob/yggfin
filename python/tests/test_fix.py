@@ -38,6 +38,9 @@ LINES = (
     b"sending >> 8=FIX.4.2|35=D|11=A2|55=TTF|10=0|\n"
 )
 
+#: The zone every instant here is spelled in.
+UTC = datetime.timezone.utc
+
 
 def _capture(tmp_path: Path) -> IOBase:
     source = tmp_path / "bridge.log"
@@ -86,7 +89,7 @@ def test_every_row_carries_a_sending_time_even_where_no_clock_was_read(tmp_path)
     # The matched line keeps its own capture instant; the unmatched one states
     # the instant that means none was read.
     clocks = held.column(SENDING_TIME).to_pylist()
-    assert clocks[0] == datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=datetime.UTC)
+    assert clocks[0] == datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC)
     assert clocks[1] == UNDATED
 
 
