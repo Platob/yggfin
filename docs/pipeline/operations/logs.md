@@ -17,6 +17,10 @@ atomic result file.
 | `window` | object | `start` and `end`, each epoch nanoseconds or null |
 | `elapsed_ms` | integer | wall-clock stage duration |
 
+Anything else a task knows keeps its own name beside those fields. `parse_fix`
+returns one such key, `messages`: a row is a message and not a line, so what
+the codec answered is counted separately from the lines it was handed.
+
 The closing INFO record and returned JSON agree on every field. A result is
 small enough for Airflow XCom because it contains no rows or schemas.
 
@@ -26,12 +30,13 @@ small enough for Airflow XCom because it contains no rows or schemas.
 {
   "task": "parse_fix",
   "read": 111,
-  "written": 111,
+  "written": 71,
   "skipped": 0,
   "sources": {"messages": "logs.messages"},
   "targets": {"fix": "fix.messages"},
   "window": {"start": null, "end": null},
-  "elapsed_ms": 208
+  "elapsed_ms": 208,
+  "messages": 71
 }
 ```
 
@@ -44,9 +49,11 @@ mapping of exactly `start` and `end`.
 ## Monitoring rules
 
 - A first immutable-capture run normally has `read == written`.
-- A complete replay normally has `read == skipped` and `written == 0`.
+- A complete replay normally has `read == skipped` and `written == 0` — except
+  in `parse_fix`, which counts messages and not lines, where a complete replay
+  has `skipped == messages` and `written == 0`.
 - `parse_fix.read` should equal the selected `logs.messages` row count, and
-  its own `messages` key the rows it published: a line carries none, one or
+  its own `messages` key what the codec answered: a line carries none, one or
   several messages.
 - A successful zero-row run is not a failure.
 - Missing result JSON, non-zero child exit, or mismatched task name fails the

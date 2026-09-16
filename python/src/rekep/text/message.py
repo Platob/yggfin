@@ -10,21 +10,33 @@ from yggdryl import TextOptions, scalar
 
 from rekep.convert import Convertible
 from rekep.fields import derived_from, digest_key, partition_key, primary_key
-from rekep.times import MESSAGE_HEADER, datetime_of
+from rekep.times import ULBRIDGE_ROWHEADER, datetime_of
 
 
 @scalar(slots=True)
 class Message(Convertible):
-    """One ULBridge text line, before the FIX codec reads its body."""
+    """One ULBridge text line, before the FIX codec reads its body.
 
-    url: Annotated[str, primary_key()] = ""
-    """Canonical URI of the source text object."""
+    Every column but `timepartition` and `bodyhash` is named for what the
+    native text read already calls it, and the bridge's own captures are named
+    for the FIX columns they fill -- so a stored row goes on through the codec
+    without one spelling being translated into another.
+    """
+
+    sourceurl: Annotated[str, primary_key()] = ""
+    """Canonical URI of the source text object, filling `sourceurl` (65026)."""
 
     rownum: Annotated[int, primary_key()] = 0
     """1-based physical line number within the source object."""
 
     timestamp: datetime.datetime | None = None
-    """UTC instant captured from the line header, at microsecond resolution."""
+    """UTC instant captured from the line header, at microsecond resolution.
+
+    Capture context, and only that: it is the clock the bridge stamped the
+    *line* with, so it dates no message on its own. What dates a message is
+    stated by the FIX seam, which offers this instant as the `SendingTime` a
+    message carrying none of its own takes.
+    """
 
     timepartition: Annotated[
         datetime.datetime | None,
@@ -36,18 +48,20 @@ class Message(Convertible):
     threadId: int | None = None
     """Bridge thread identifier captured from the line header."""
 
-    senderSessionId: str | None = None
-    """Bridge session instance the line was handled on, from its header.
+    bridgesessionid: str | None = None
+    """Bridge session instance the line was handled on, filling 65032.
 
-    Spelled as the FIX `sendersessionid` (65007) column folds, so the codec
-    fills that column from this one instead of carrying a second spelling.
+    The session *instance*, which is the bracket's own first part -- never
+    `sendersessionid` (65007), which is what a bridge row spells for the
+    counterparty session the message names. Two connections to one
+    counterparty are two instances, so they are two facts.
     """
 
-    msgCtxId: str | None = None
-    """Bridge message-context identifier captured from the line header."""
+    msgctxid: str | None = None
+    """Bridge message-context identifier, filling `msgctxid` (65008)."""
 
-    seqNum: int | None = None
-    """Bridge sequence number captured from a message-context header."""
+    msgseqnum: int | None = None
+    """Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."""
 
     pluginid: str | None = None
     """Bridge plugin that wrote the line, filling `pluginid` (65009)."""
@@ -66,7 +80,7 @@ class Message(Convertible):
 
     def __post_init__(self) -> None:
         """Normalize the raw scalar values once."""
-        self.url = str(self.url)
+        self.sourceurl = str(self.sourceurl)
         self.rownum = int(self.rownum)
         if self.timestamp is not None:
             timestamp = datetime_of(self.timestamp)
@@ -75,8 +89,8 @@ class Message(Convertible):
             self.timestamp = timestamp
         if self.threadId is not None:
             self.threadId = int(self.threadId)
-        if self.seqNum is not None:
-            self.seqNum = int(self.seqNum)
+        if self.msgseqnum is not None:
+            self.msgseqnum = int(self.msgseqnum)
         if isinstance(self.body, str):
             self.body = self.body.encode("utf-8")
         elif not isinstance(self.body, bytes):
@@ -84,11 +98,18 @@ class Message(Convertible):
 
     @classmethod
     def text_options(cls) -> TextOptions:
-        """The native text read that produces this exact contract."""
+        """The native text read that produces this exact contract.
+
+        The bridge read of `rekep.fix.fix_text_options`, with this class's own
+        field on it -- the two are pinned equal by `test_message.py`, because a
+        capture this read frames and that one does not is a column the codec
+        silently stops filling. It is spelled twice rather than imported so a
+        raw text row stays readable without the dictionary behind it.
+        """
         options = TextOptions()
         options.start_rownum = 1
         options.parse_mtime = False
-        options.rowheader = MESSAGE_HEADER
+        options.rowheader = ULBRIDGE_ROWHEADER
         options.timezone = "UTC"
         options.safe = False
         options.field = cls.into_field()

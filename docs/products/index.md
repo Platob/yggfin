@@ -14,12 +14,12 @@ flowchart LR
 
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |
-| [`logs.messages`](message.md) | one physical source line | `(url, rownum)` | exact replayable capture record |
-| [`fix.messages`](fix-message.md) | one message that line carried | `(url, rownum, uuid)` | typed protocol record plus its lossless arrival record |
+| [`logs.messages`](message.md) | one physical source line | `(sourceurl, rownum)` | exact replayable capture record |
+| [`fix.messages`](fix-message.md) | one message that line carried | `(sourceurl, rownum, msghash)` | typed protocol record plus its lossless arrival record |
 
 Both tables are partitioned by the UTC hour derived from the capture
 timestamp. Both keep the raw `body` and `bodyhash`; the FIX table additionally
-has `uuid`, normalized identifiers, message direction, and every parsed or
+has `msghash`, normalized identifiers, message direction, and every parsed or
 unmapped pair.
 
 ## Read products
@@ -45,10 +45,15 @@ store.close()
 ## Join and audit
 
 ```python
-joined = fixed.join(messages, keys=["url", "rownum"], right_suffix="_raw")
+audit = fixed.select(["sourceurl", "rownum", "msghash", "bodyhash"])
+joined = audit.join(messages, keys=["sourceurl", "rownum"], right_suffix="_raw")
 assert joined.column("bodyhash").equals(joined.column("bodyhash_raw"))
 ```
 
-`bodyhash` is an exact-byte identity and `uuid` is a parsed-message
-identity. The roadmap uses both: source corrections track the former; protocol
-deduplication and downstream event identity use the latter.
+The audit projects before it joins: a join carries no map or list column, and
+a FIX row has both.
+
+`bodyhash` is an exact-byte identity and `msghash` is a parsed-message
+identity: sixteen ordered bytes over the message's settled instant and its
+named content. The roadmap uses both: source corrections track the former;
+protocol deduplication and downstream event identity use the latter.

@@ -6,30 +6,57 @@ components and repeating groups without another model.
 
 ## Loaded inventory
 
-| source | count | branch |
+| source | count | dialect |
 | --- | ---: | --- |
-| bundled specification | 6,203 | standard |
-| runtime fields | 19 | standard, tags 65000–65018 |
-| bridge vocabulary | 43 | `ulbridge` |
-| process total | 6,303 | 2 dialects |
+| crate fields | 37 | standard, tags 65001–65038 |
+| bundled specification | 6,239 | standard |
+| plugin vocabulary | 38 | `plugin` |
+| process total | 6,314 | 1 dialect |
+
+```python
+from rekep.fix import fix_crate_fields, fix_plugin_fields, fix_registry
+
+registry = fix_registry()
+
+assert len(registry) == 6314
+assert registry.dialects() == ["plugin"]
+assert len(fix_crate_fields()) == 37
+assert len(fix_plugin_fields()) == 38
+```
+
+Scalar fields are one shape of definition among four. Components and repeating
+groups are declarations the same dictionary holds; a message type is what a
+`MsgType(35)` value names:
+
+| shape | count | read by |
+| --- | ---: | --- |
+| scalar fields | 6,314 | `registry.definitions("fields")` |
+| components | 930 | `registry.definitions("components")` |
+| repeating groups | 581 | `registry.definitions("groups")` |
+| message types | 182 | `registry.msgtypes()` |
 
 ```python
 from rekep.fix import fix_registry
 
 registry = fix_registry()
-assert [branch.name for branch in registry.branches()] == ["", "ulbridge"]
+
+assert sum(1 for _ in registry.definitions("fields")) == 6314
+assert sum(1 for _ in registry.definitions("components")) == 930
+assert sum(1 for _ in registry.definitions("groups")) == 581
+assert sum(1 for _ in registry.msgtypes()) == 182
 ```
 
 ## What a field carries
 
 | property | API | meaning |
 | --- | --- | --- |
-| canonical id | `field.fix.id` | tag plus branch identity |
+| canonical id | `field.fix.id` | stable integer identity of the definition |
 | canonical tag | `field.fix.tag` | integer protocol tag |
 | alternate tags | `field.fix.tags` | historical or equivalent identifiers |
 | storage name | `field.name` | folded canonical Arrow column name |
 | display name | `field.display` | specification capitalization |
 | aliases | `field.fix.aliases` | alternate folded name lookups |
+| dialects | `field.fix.branches` | the named dialects claiming it; empty is standard |
 | datatype | `field.dtype` | scalar, struct, or list storage shape |
 | description | `field.fix.description` | specification meaning |
 | code set | `field.fix["codes"]` | versioned wire value/name translations |
@@ -42,12 +69,13 @@ from rekep.fix import fix_registry
 
 registry = fix_registry()
 side = registry.field_by_tag(54)
-codes = json.loads(side.fix["codes"])["codes"]
+codes = json.loads(side.fix["codes"])
 
 assert side.name == "side"
 assert side.display == "Side"
-assert side.fix.id == "54:"
-assert str(side.dtype.into_arrow()) == "fixed_size_binary[4]"
+assert side.fix.tag == 54
+assert side.fix.branches == []
+assert str(side.dtype.into_arrow()) == "string"
 assert codes[0]["value"] == "1"
 assert codes[0]["name"] == "Buy"
 ```
@@ -60,10 +88,11 @@ methods return `None` for exploratory code.
 | strict | optional | key |
 | --- | --- | --- |
 | `field(key)` / `registry[key]` | `get_field(key)` / `get(key)` | integer tag or string name |
-| `field_by_id(id)` | `get_field_by_id(id)` | exact branch-qualified identifier |
+| `field_by_id(id)` | `get_field_by_id(id)` | exact definition identity |
 | `field_by_tag(tag)` | `get_field_by_tag(tag)` | canonical or alternate tag |
-| `field_by_name(name, branch)` | `get_field_by_name(...)` | canonical name or alias |
-| `field_by_path(path, branch)` | `get_field_by_path(...)` | nested component/group path |
+| `field_by_name(name)` | `get_field_by_name(name)` | canonical name or alias |
+| `field_by_path(path)` | `get_field_by_path(path)` | nested component/group path |
+| `group_by_tag(tag)` | `get_group_by_tag(tag)` | the list a counter tag declares |
 
 ```python
 from rekep.fix import fix_registry
@@ -78,63 +107,71 @@ assert "Symbol" in registry
 ```
 
 Name lookup is ASCII case-insensitive and ignores the separators used by the
-FIX name fold. Tag lookup never guesses from a textual name. An exact id does
-not fall through to another branch.
+FIX name fold. Tag lookup never guesses from a textual name. An exact id names
+one definition and falls through to nothing.
 
 ## Resolution tiers
 
-For a message read on a named branch, a bare key resolves in this order:
+The registry is one namespace, so a bare key resolves in this order:
 
-1. the message branch;
-2. the standard branch;
-3. for capture-column fill only, any declared branch;
-4. bridge capture aliases such as `seqNum` → `MsgSeqNum`.
+1. a numeric key, against the tag it is;
+2. a folded name, against the canonical names and their aliases — a plugin
+   name and a standard name are read the same way;
+3. nothing, which is an unknown pair rather than a failure.
 
-A branch-qualified identifier bypasses those tiers. Standard tags remain
-standard even while a message is read under `ulbridge`; named branches may
-claim only their user-tag range.
+A capture is no exception: it is named for the field it fills, so the bridge's
+`msgseqnum` bracket part *is* `msgseqnum` and fills `MsgSeqNum(34)`, with no
+alias table mapping a spelling onto a tag in between. Standard tags remain
+standard whatever dialect claims a field beside them; a named dialect may
+claim only its own user-tag range.
 
 ```python
-from rekep.fix import STANDARD_BRANCH, fix_registry
+from rekep.fix import PLUGIN_DIALECT, fix_registry
 
 registry = fix_registry()
-standard = registry.field_by_name("MsgType", STANDARD_BRANCH)
-bridge = registry.field_by_name("PriorityLevel", "ulbridge")
+standard = registry.field_by_name("MsgType")
+plugin = registry.field_by_name("PriorityLevel")
 
 assert standard.fix.tag == 35
-assert bridge.fix.branch == "ulbridge"
+assert standard.fix.branches == []
+assert plugin.fix.branches == [PLUGIN_DIALECT]
 ```
 
 ## Repeating groups and paths
 
-A counter field is a list whose item is a struct. Inspect the declaration
+A counter field counts; the group it counts is a list whose item is a struct,
+and `group_by_tag` answers it under the same tag. Inspect the declaration
 instead of reconstructing members from names:
 
 ```python
 from rekep.fix import fix_registry
 
 registry = fix_registry()
-parties = registry.field_by_tag(453)
+counter = registry.field_by_tag(453)
+parties = registry.group_by_tag(453)
 members = [
     member.name
     for expanded in parties.explode_fields()
     for member in expanded.unnest_fields()
 ]
 
-assert parties.name == "nopartyids"
-assert members == ["partyid", "partyidsource", "partyrole", "partyrolequalifier"]
+assert counter.name == "nopartyids"
+assert parties.name == "parties"
+assert members[:4] == ["partyid", "partyidsource", "partyrole", "partyrolequalifier"]
 ```
 
-`field_by_path` walks component and group declarations. `FixMsg.by_path`
-walks values and therefore requires a numeric occurrence when entering a list,
-for example `NoPartyIDs.0.PartyID`.
+`field_by_path` walks component and group declarations, for example
+`Parties.PartyID`. `FixMsg.by_path` walks values and therefore requires an
+occurrence when entering a list, spelled the way the one grammar spells it:
+`Parties[0].PartyID`.
 
 ## Code sets and version lineage
 
 Code translation happens before datatype conversion. For `Side(54)`, both
 `1` and `buy` can resolve to the stored code `1`; for `MsgType(35)`,
-`executionreport` resolves to `8`. A pinned version selects the code spellings
-valid at that version without renaming the Arrow column.
+`executionreport` resolves to `8`. No version is pinned anywhere: the version
+a row itself states selects the code spellings valid at it, without renaming
+the Arrow column.
 
 Lineage explains how one field evolved while preserving one current identity:
 
@@ -144,7 +181,7 @@ import json
 from rekep.fix import fix_registry
 
 msgtype = fix_registry().field_by_tag(35)
-lineage = json.loads(msgtype.fix["lineage"])["entries"]
+lineage = json.loads(msgtype.fix["lineage"])
 
 assert lineage[0]["since"] == "2.7"
 assert lineage[-1]["name"] == "msgtype"
@@ -152,21 +189,31 @@ assert lineage[-1]["name"] == "msgtype"
 
 ## Runtime fields
 
-Every registry starts with tags 65000–65018. They are generated by the codec
-and are not stored in dictionary shards.
+Every registry starts with the crate's own fields: tags 65001–65038, with
+65004 permanently retired. They are generated by the codec and are not stored
+in dictionary shards.
 
 | tag range | fields |
 | --- | --- |
-| 65000–65004 | message digest, version, normalized symbol, market time, Unix partition |
-| 65005–65008 | parent order ids, session id, message context |
-| 65009–65012 | sender/target plugin ids and sessions |
+| 65001–65003 | version, normalized symbol, settled instant |
+| 65005–65008 | parent order ids, stated sender session, message context |
+| 65009–65012 | plugin ids and session names |
 | 65013–65015 | resolved ISIN, MIC, and lifecycle state |
-| 65016–65018 | instrument, message, and order-chain identities |
+| 65016–65019 | instrument, message, and chain identities, stated target session |
+| 65020–65026 | declared identifiers, chain links, creation and snapshot instants, source object |
+| 65027–65029 | arrival counter, capture and expiry instants |
+| 65030–65038 | lane currencies, bridge session instance, instrument codes, session message ids |
+
+65004 is a retired slot and stays empty: a FIX row materializes no partition
+column of its own, and `timepartition` — rekep's own hour transform over
+`timestamp` — remains the only layout column either table carries.
 
 ```python
 from rekep.fix import fix_crate_fields
 
-assert [field.fix.tag for field in fix_crate_fields()] == list(range(65000, 65019))
+assert [field.fix.tag for field in fix_crate_fields()] == [
+    tag for tag in range(65001, 65039) if tag != 65004
+]
 ```
 
 ## Iterate, filter, and export
@@ -177,7 +224,7 @@ from pathlib import Path
 from rekep.fix import fix_registry
 
 registry = fix_registry()
-groups = [field for field in registry if field.dtype.is_nested]
+groups = [field for field in registry.definitions("groups")]
 priced = [
     field
     for field in registry
@@ -189,13 +236,15 @@ assert groups
 assert priced
 ```
 
-An explicit registry loaded with `fix_registry(path_or_uri)` receives the same
-runtime and bridge fields. A location containing no specification fields is
-rejected, preventing a pipeline from silently creating a narrow table.
+Iterating the registry itself walks its scalar fields; the other three shapes
+are reached through `definitions` and `msgtypes`. An explicit registry loaded
+with `fix_registry(path_or_uri)` receives the same crate and plugin fields. A
+location containing no specification fields is rejected, preventing a pipeline
+from silently creating a narrow table.
 
 ## Browser
 
-Search the same 6,303 definitions here, by tag, name, alias or description:
+Search the same 6,314 definitions here, by tag, name, alias or description:
 
 <div data-fix="registry"></div>
 

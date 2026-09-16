@@ -2643,13 +2643,13 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         catalog_properties=catalog_properties(tmp_path),
     )
     row = Message(
-        url="capture.log",
+        sourceurl="capture.log",
         rownum=7,
         timestamp="2026-08-14 09:30:00.123",
         threadId=250,
-        senderSessionId="e7256476",
-        msgCtxId="9effef3e6a",
-        seqNum=72504,
+        bridgesessionid="e7256476",
+        msgctxid="9effef3e6a",
+        msgseqnum=72504,
         pluginid="ULBridge",
         level="INFO",
         body=b"opaque",
@@ -2671,14 +2671,14 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     assert isinstance(digest, bytes) and len(digest) == 16
     assert stored == [
         {
-            "url": "capture.log",
+            "sourceurl": "capture.log",
             "rownum": 7,
             "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
             "timepartition": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=datetime.UTC),
             "threadId": 250,
-            "senderSessionId": "e7256476",
-            "msgCtxId": "9effef3e6a",
-            "seqNum": 72504,
+            "bridgesessionid": "e7256476",
+            "msgctxid": "9effef3e6a",
+            "msgseqnum": 72504,
             "pluginid": "ULBridge",
             "level": "INFO",
             "body": b"opaque",

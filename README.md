@@ -30,6 +30,19 @@ The supported ingestion graph is deliberately short:
 capture URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 ```
 
+`parse_fix` is three native stages over one codec, in this order and no other:
+
+```text
+parse -> enrich -> lifecycle
+```
+
+`parse` reads every frame a line carried, `enrich` fills what a message implied
+but did not carry -- including the session pair a bridge configuration
+announced earlier in the same stream -- and `lifecycle` names the chains: the
+`code` a message belongs to, its `updatedat` on the snapshot grid, the
+`createdat` its chain opened at, and the `prevmsghash` linking it to the
+message before it.
+
 Run it locally from the repository root:
 
 ```bash
@@ -40,11 +53,11 @@ uv run --project python rekep task run tasks/parse_fix/parse_fix.json
 ```
 
 `logs.messages` stores one physical line with its exact body bytes and source
-identity, keyed on `(url, rownum)`. `fix.messages` stores one row per message
-that line carried -- typed columns, the complete arrival record, and derived
-identities -- keyed on `(url, rownum, uuid)`, because a line can carry more
-than one message. A message that stated no clock of its own is dated by the
-instant its line was captured, so both replay idempotently.
+identity, keyed on `(sourceurl, rownum)`. `fix.messages` stores one row per
+message that line carried -- typed columns, the complete arrival record, and
+derived identities -- keyed on `(sourceurl, rownum, msghash)`, because a line
+can carry more than one message. A message that stated no clock of its own is
+dated by the instant its line was captured, so both replay idempotently.
 
 The reviewed contracts are [Message](schemas/rekep/message.json) and
 [FixMessage](schemas/rekep/fix-message.json), each the Iceberg schema,

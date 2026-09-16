@@ -8,15 +8,15 @@ kept byte-for-byte.
 
 | # | column | Arrow type | null | contract |
 | -: | --- | --- | :---: | --- |
-| 1 | `url` | `string` | no | canonical source URI; primary-key member |
+| 1 | `sourceurl` | `string` | no | canonical source URI, filling `sourceurl` (65026) downstream; primary-key member |
 | 2 | `rownum` | `int64` | no | 1-based physical line number; primary-key member |
 | 3 | `timestamp` | `timestamp[us, UTC]` | yes | UTC header timestamp |
 | 4 | `timepartition` | `timestamp[us, UTC]` | yes | derived from `timestamp`; Iceberg hour partition |
 | 5 | `threadId` | `int64` | yes | bridge thread identifier |
-| 6 | `senderSessionId` | `string` | yes | bridge session instance, filling `sendersessionid` downstream |
-| 7 | `msgCtxId` | `string` | yes | message-context identifier |
-| 8 | `seqNum` | `int64` | yes | context sequence number |
-| 9 | `pluginid` | `string` | yes | plugin that wrote the line, filling `pluginid` downstream |
+| 6 | `bridgesessionid` | `string` | yes | bridge session instance, filling `bridgesessionid` (65032) downstream |
+| 7 | `msgctxid` | `string` | yes | message-context identifier, filling `msgctxid` (65008) downstream |
+| 8 | `msgseqnum` | `int64` | yes | context sequence number, filling `MsgSeqNum` (34) where a frame stated none |
+| 9 | `pluginid` | `string` | yes | plugin that wrote the line, filling `pluginid` (65009) downstream |
 | 10 | `level` | `string` | yes | header severity spelling |
 | 11 | `bodyhash` | `fixed_size_binary[16]` | yes | XXH3-128 of exact `body` bytes |
 | 12 | `body` | `binary` | no | every byte after the matched header |
@@ -29,6 +29,9 @@ The digest and derived-partition rules above are declared in
 
 Every header capture is named for the FIX column it fills when the stored row
 goes on through the codec, so `parse_fix` needs no renaming pass of its own.
+`bridgesessionid` is the session *instance* the bridge handled the line on, and
+not `sendersessionid` (65007), which is the counterparty session a message
+names for itself.
 
 ## Header transcription
 
@@ -43,15 +46,15 @@ becomes:
 | --- | --- |
 | `timestamp` | `2026-08-14T14:46:39.769000Z` |
 | `threadId` | `15255` |
-| `senderSessionId` | `e7254b12` |
-| `msgCtxId` | `9f03166699` |
-| `seqNum` | `40218` |
+| `bridgesessionid` | `e7254b12` |
+| `msgctxid` | `9f03166699` |
+| `msgseqnum` | `40218` |
 | `pluginid` | `OMS_X1_TradeCapture` |
 | `level` | `INFO` |
 | `body` | `Receiving : 8=FIX.4.4\|35=8\|...` as bytes |
 
-`url` and `rownum` come from traversal rather than the header. A line whose
-header does not match still has those two columns and its complete body;
+`sourceurl` and `rownum` come from traversal rather than the header. A line
+whose header does not match still has those two columns and its complete body;
 header-derived columns are null.
 
 ## Read with the same parser as the task
@@ -77,6 +80,6 @@ source.close()
 - gzip and zstd are decompressed while streaming. Concatenated gzip members
   remain subject to the decoder support documented on the task page.
 - `bodyhash` is computed during field application, not in a Python row loop.
-- The writer merges on `(url, rownum)`, so a replay writes nothing new.
+- The writer merges on `(sourceurl, rownum)`, so a replay writes nothing new.
 - Remote objects remain remote; local staging is not part of the production
   path.

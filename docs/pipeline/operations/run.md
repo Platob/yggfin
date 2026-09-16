@@ -26,12 +26,26 @@ uv run --project python rekep task run \
   --parameter 'filesystem="file:/srv/capture/2026-08-14"'
 ```
 
-Pin FIX translation to a version:
+Point the FIX parse at a candidate dictionary:
 
 ```bash
 uv run --project python rekep task run \
   tasks/parse_fix/parse_fix.json \
-  --parameter 'version="4.4"'
+  --parameter 'registry="file:///srv/fix"'
+```
+
+There is no version left to pin: what a message was read at is what its own
+`beginstring` said, and `fix_codec` refuses by name any keyword that is not one
+of its seven pins. `version` is no longer a task parameter either, so a
+`--parameter 'version="4.4"'` names nothing the document declares — the CLI
+carries it into an unused definition and Airflow's operator fails the task
+outright. To publish parsed and enriched rows without naming the event chains,
+turn the last stage off instead:
+
+```bash
+uv run --project python rekep task run \
+  tasks/parse_fix/parse_fix.json \
+  --parameter 'lifecycle=false'
 ```
 
 ## Parameters file
@@ -78,6 +92,6 @@ never table rows. A non-zero exit means no valid result was published.
 
 Run the same two commands again. Both stages read the same number of rows,
 report those rows as skipped, write zero, and create no empty Iceberg snapshot.
-Changing the registry or parser while retaining `(url, rownum)` is a controlled
-rebuild: use a new target table or an explicit overwrite procedure when typed
-rows must be replaced rather than skipped.
+Changing the registry or parser while retaining `(sourceurl, rownum)` is a
+controlled rebuild: use a new target table or an explicit overwrite procedure
+when typed rows must be replaced rather than skipped.

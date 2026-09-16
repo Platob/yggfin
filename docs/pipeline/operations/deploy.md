@@ -1,8 +1,11 @@
 # Deploy Iceberg tables
 
 `rekep iceberg deploy` creates both current products—`logs.messages` and
-`fix.messages`—with the same runtime fields their tasks use. Deployment is
-idempotent: an existing table is reported as `present` and is not rewritten.
+`fix.messages`—with the same runtime fields their tasks use: `Message` for the
+raw product, and `fix_message_field` for the fixed one, which answers all 128
+columns from the carrier and the dictionary alone without consuming a capture
+row. Deployment is idempotent: an existing table is reported as `present` and
+is not rewritten.
 
 ## Local SQLite and files
 

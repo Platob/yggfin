@@ -15,17 +15,28 @@ and bridge fields are added exactly as they are for parsing.
 ## Search and filter
 
 Search covers canonical tags, alternate tags, storage/display names, aliases,
-and descriptions. Branch and shape filters narrow to standard/bridge fields or
-scalar/repeating-group definitions.
+and descriptions. Branch and category filters narrow to one dialect, or to one
+of the three categories a dictionary stores: `fields`, `components` and
+`groups`. A scalar field, a component and a repeating group are one kind of
+thing under three names, so the browser reads all three through one projection
+and the `shape` column says which of them is nested.
 
-The summary reports definition, group, branch, and typed-field counts. The
-bundled dictionary should report 6,303 definitions across two dialects.
+The summary reports the counts per category, the dialects, and the message
+types. The bundled dictionary should report 6,314 field definitions, 930
+components and 581 repeating groups, in one dialect, `plugin`.
+
+## Message types
+
+One table above the browser lists every message type the dictionary defines,
+by the wire code `MsgType(35)` carries: its display name, its storage name,
+the identifiers the type declares, and its description. The bundled dictionary
+defines 182 of them.
 
 ## Definition views
 
 | view | source |
 | --- | --- |
-| Overview | identity, branch, type, nullability, description |
+| Overview | identity, dialect, type, shape, description |
 | Members | `Field.explode_fields()` and `Field.unnest_fields()` |
 | Lineage | validated version history metadata |
 | Codes | validated wire-value/name translations |

@@ -6,15 +6,21 @@ The supported graph has two streaming tasks and two Iceberg products:
 flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>12 columns")]
-    M --> F["parse_fix"]
-    R[["bundled dictionary<br/>6,303 definitions"]] -.types.-> F
-    F --> X[("fix.messages<br/>118 columns")]
+    M --> F["parse_fix<br/>parse"]
+    R[["bundled dictionary<br/>6,314 definitions"]] -.types.-> F
+    F --> E["enrich"]
+    E --> L["lifecycle"]
+    L --> X[("fix.messages<br/>128 columns")]
 ```
+
+`parse_fix` is three native stages over one codec, in this order and no other:
+parse reads every frame a line carried, enrich fills what a message implied but
+did not carry, and lifecycle names the chains it belongs to.
 
 | task | reads | writes | key | default behavior |
 | --- | --- | --- | --- | --- |
-| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem` | `logs.messages` | `(url, rownum)` | header capture, exact body retention |
-| [`parse_fix`](tasks/parse-fix.md) | every row of `logs.messages` | `fix.messages` | `(url, rownum, uuid)` | bundled dictionary, one row per message |
+| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem` | `logs.messages` | `(sourceurl, rownum)` | header capture, exact body retention |
+| [`parse_fix`](tasks/parse-fix.md) | every row of `logs.messages` | `fix.messages` | `(sourceurl, rownum, msghash)` | bundled dictionary, one row per message, chains named |
 
 Each task is a Marimo application beside a JSON document that owns its
 defaults. The CLI and Airflow execute that same document; there is no separate
@@ -54,7 +60,7 @@ the command line.
 | `catalog.properties.uri` | both | local SQLite | SQL catalog URI; not used by Glue |
 | `catalog.properties.warehouse` | both | `data/warehouse` | local path or `s3://` Iceberg root |
 | `registry` | FIX | `null` | bundled dictionary; explicit URI overrides it |
-| `version` | FIX | `null` | infer per row; a value pins code translation |
+| `lifecycle` | FIX | `true` | name the event chains; `false` stops after enrichment |
 
 ## Run semantics
 

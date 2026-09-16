@@ -73,7 +73,7 @@ def test_contract_matches_the_message_declaration() -> None:
     # the published shape loses `digest:*` and `partition:sources` and gains an
     # `iceberg:field_id` on every column. Types, names and nullability agree.
     assert published.into_arrow_schema().equals(declared.into_arrow_schema())
-    assert primary_keys(published) == primary_keys(declared) == ["url", "rownum"]
+    assert primary_keys(published) == primary_keys(declared) == ["sourceurl", "rownum"]
     assert partition_keys(published) == partition_keys(declared) == {"timepartition": "hour"}
     assert metrics_for(published) == metrics_for(declared)
 
@@ -110,10 +110,10 @@ def test_fix_contract_is_a_table_contract_for_iceberg_simulation() -> None:
 
     assert document == f"{iceberg_contract(fix_message_field())}\n"
     assert document == f"{iceberg_contract(fixed)}\n"
-    assert len(fixed) == 118
+    assert len(fixed) == 128
     # A capture line answers one row per message, so the line's own key is
     # joined by the message's own identity.
-    assert primary_keys(fixed) == ["url", "rownum", "uuid"]
+    assert primary_keys(fixed) == ["rownum", "msghash", "sourceurl"]
     assert partition_keys(fixed) == {"timepartition": "hour"}
     schema = fixed.into_arrow_schema()
     # Columns use the dictionary's folded names; their tags are metadata, so
@@ -121,28 +121,29 @@ def test_fix_contract_is_a_table_contract_for_iceberg_simulation() -> None:
     assert "35" not in schema.names
     assert "msgtype" in schema.names
     # A pair no dictionary explains is an entry of tag 0 inside the arrival
-    # record, so the record is the last column and there is no second one.
-    assert schema.names[-2:] == ["msgdirection", "nofixentries"]
+    # record, so the record closes the row: one group named after itself,
+    # under the counter that counts it, and there is no second one.
+    assert schema.names[-3:] == ["msgdirection", "nofixentries", "fixentries"]
     # Every timestamp is microseconds, which is what Iceberg v2 stores
     # without a precision shim -- the codec's market clock included.
     assert schema.field("sendingtime").type.unit == "us"
     assert schema.field("timestamp").type.unit == "us"
-    # The carrier's own keys and body, then the settled bundle every message
-    # carries; a capture `timestamp` is context and stays nullable.
+    # The settled bundle every replayable row carries, then the carrier's own
+    # keys and body; a capture `timestamp` is context and stays nullable, and
+    # so is `snapshotat`, because only a snapshot stamps it.
     assert [member.name for member in fixed if not member.nullable] == [
-        "url",
         "rownum",
         "body",
+        "updatedat",
+        "createdat",
+        "msghash",
+        "msgphash",
+        "code",
+        "sourceurl",
         "beginstring",
         "sendingtime",
-        "updatedat",
-        "unixpartition",
-        "uuid",
-        "puuid",
-        "createdat",
-        "code",
-        "snapshotat",
     ]
+    assert fixed["snapshotat"].nullable
 
 
 def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
@@ -152,19 +153,19 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     assert schema.field("msgtype").metadata[b"fix:tag"] == b"35"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"iceberg:field_id": b"12",
+        b"iceberg:field_id": b"46",
     }
 
 
 def test_raw_message_contract_keeps_source_keys() -> None:
     message = load_contract()
-    assert primary_keys(message) == ["url", "rownum"]
+    assert primary_keys(message) == ["sourceurl", "rownum"]
     assert partition_keys(message) == {"timepartition": "hour"}
     assert [member.name for member in message][4:10] == [
         "threadId",
-        "senderSessionId",
-        "msgCtxId",
-        "seqNum",
+        "bridgesessionid",
+        "msgctxid",
+        "msgseqnum",
         "pluginid",
         "level",
     ]

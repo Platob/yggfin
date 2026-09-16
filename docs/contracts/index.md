@@ -7,7 +7,7 @@ created table records itself:
 | snapshot | columns | runtime constructor |
 | --- | ---: | --- |
 | [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.into_field()` |
-| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 111 | `fix_message_field()` |
+| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 128 | `fix_message_field()` |
 
 Each document has three keys — `schema`, `partition-spec` and `sort-order` —
 holding a `pyiceberg.schema.Schema`, a `pyiceberg.partitioning.PartitionSpec`
@@ -20,10 +20,10 @@ and a `pyiceberg.table.sorting.SortOrder`.
     "fields": [
       {
         "id": 1,
-        "name": "url",
+        "name": "sourceurl",
         "type": "string",
         "required": true,
-        "doc": "Canonical URI of the source text object."
+        "doc": "Canonical URI of the source text object, filling `sourceurl` (65026)."
       }
     ],
     "schema-id": 0,
@@ -95,8 +95,11 @@ Path("schemas/rekep/fix-message.json").write_text(
 )
 ```
 
-The 118 columns are 9 carried source columns and 109 the dictionary decides:
+The 128 columns are 7 carried source columns and 121 the dictionary decides:
 the specification fields it selects, the crate's own runtime columns,
-`msgdirection`, and the one arrival record that closes the row.
+`msgdirection`, and the arrival record that closes the row — `fixentries`,
+under the `nofixentries` that counts it. A capture column named after the
+field it fills folds onto that field, so `sourceurl` is carried and counted
+with the dictionary's own, not beside it.
 The runtime registry remains authoritative; a registry change must produce a
 visible schema diff.

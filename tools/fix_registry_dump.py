@@ -26,10 +26,14 @@ from rekep.fix import fix_registry
 ASSETS = pathlib.Path("docs/assets")
 
 
-def records(field: Field, key: str, collection: str) -> list[dict[str, Any]]:
-    """One validated FIX metadata document as rows, or none."""
+def records(field: Field, key: str) -> list[dict[str, Any]]:
+    """One validated FIX metadata document as rows, or none.
+
+    The document is the collection itself, in the order the specification
+    states it, so nothing is unwrapped out of a named member first.
+    """
     held = field.fix.get(key)
-    return [] if held is None else json.loads(held).get(collection, [])
+    return [] if held is None else json.loads(held)
 
 
 def members(field: Field) -> list[dict[str, Any]]:
@@ -77,8 +81,8 @@ def main() -> int:
             key: value
             for key, value in (
                 ("members", members(field)),
-                ("codes", records(field, "codes", "codes")),
-                ("lineage", records(field, "lineage", "entries")),
+                ("codes", records(field, "codes")),
+                ("lineage", records(field, "lineage")),
             )
             if value
         }

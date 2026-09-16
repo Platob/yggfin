@@ -15,8 +15,8 @@ behavior.
 ## Ownership
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
-  streams, codecs, decompression, text media, FIX registries, and FIX batch
-  parsing.
+  streams, codecs, decompression, text media, FIX registries, FIX batch
+  parsing, and the enrichment and lifecycle stages after it.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
 - Yggfin owns the raw `Message` contract and its narrow PyArrow/PyIceberg seam.
@@ -44,7 +44,12 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   identity and opaque paths.
 - `IOBase` and `TextOptions` own traversal, header capture, decompression, and
   physical-line batching.
-- A raw text row names its source only through Yggdryl `url` and `rownum`.
+- A raw text row names its source only through Yggdryl `sourceurl` and
+  `rownum`.
+- One row header serves every reader: `ULBRIDGE_ROWHEADER`, whose every capture
+  is named for the column it fills, so `capture_names` alone tells the codec
+  which bracket part is which. Never spell a second header, and never map a
+  capture spelling onto a tag.
 - Streams open one leaf at a time with bounded transport read-ahead and
   row-bounded batches. One record is unbounded until Yggdryl provides an
   error-on-overflow byte limit that preserves exact bodies.
@@ -82,10 +87,26 @@ filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 Each task directory contains one Marimo application beside its JSON document.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, applies
 `Message.into_field()` to each batch, and writes one schema-bearing reader
-directly to Iceberg. `parse_fix` passes that stored reader through
-`FixCodec.parse_text_arrow_reader` and writes its registry-defined schema
-without a yggfin FIX model. A FIX row is a message and not a line, so
-`fix.messages` is keyed on `(url, rownum, uuid)`.
+directly to Iceberg. `parse_fix` passes that stored reader through the three
+stages one codec exposes, in this order and no other:
+
+```text
+parse -> enrich -> lifecycle
+```
+
+It writes the registry-defined schema without a yggfin FIX model. A FIX row is
+a message and not a line -- a line carrying two frames answers two rows and a
+line carrying none answers none -- so `fix.messages` is keyed on
+`(sourceurl, rownum, msghash)`.
+
+The codec is the whole parse surface: the dictionary, the bridge's capture
+order and the instant an undated message takes are pinned on it once, and each
+stage after it is a call rather than another pin. The row header and every
+capture name come from `ULBRIDGE_ROWHEADER` rather than a spelling per reader.
+A version is not among the pins -- what a message was read at is what its own
+`beginstring` said -- and `fix_codec` refuses by name any keyword that is not
+one of its seven.
+
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI.
 
@@ -110,6 +131,8 @@ python/src/rekep/
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
   tasks/        application configuration only
   text/         raw Message declaration
+  fix.py        the bundled registry and the three-stage pipeline surface
+  times.py      instant readings and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
 tasks/
   airflow/
@@ -117,4 +140,5 @@ tasks/
   parse_messages/
   optimize_iceberg/
 schemas/rekep/message.json
+schemas/rekep/fix-message.json
 ```

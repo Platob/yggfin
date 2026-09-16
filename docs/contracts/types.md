@@ -10,7 +10,7 @@ from rekep import Field, Message
 field = Message.into_field()
 assert isinstance(field, Field)
 assert field.name == "Message"
-assert field["url"].nullable is False
+assert field["sourceurl"].nullable is False
 assert field["bodyhash"].digest.sources == ["body"]
 ```
 

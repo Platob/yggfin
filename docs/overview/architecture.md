@@ -9,7 +9,7 @@ flowchart LR
     U["local or S3 capture"] --> R["rekep.IOBase"]
     R --> T["rekep.TextOptions"]
     T --> M[("logs.messages")]
-    M --> C["FixCodec.parse_text_arrow_reader"]
+    M --> C["parse · enrich · lifecycle"]
     D[["bundled FIX registry"]] -.types.-> C
     C --> F[("fix.messages")]
     F --> P["orders · executions · book"]
@@ -22,7 +22,7 @@ flowchart LR
 | resource | URI binding, local and object-store traversal, decompression, bounded reads |
 | text | physical-line framing, header capture, source URL and row number |
 | field | schema metadata, casts, digests, partitions, Arrow conversion |
-| FIX | dictionary, dialect membership, code sets, line classification, parsing, fixed Arrow projection |
+| FIX | dictionary, dialect membership, code sets, line classification, parsing, enrichment, lifecycle, fixed Arrow projection |
 | Iceberg | table conversion, identifiers, snapshots, scan planning, commits |
 | tasks | application parameters, stage boundaries, counts, and orchestration |
 
@@ -38,29 +38,34 @@ assert isinstance(Message.into_field(), Field)
 assert isinstance(Message.text_options(), TextOptions)
 assert isinstance(fix_registry(), FixRegistry)
 assert FixCodec(fix_registry())
-assert IOBase.from_uri("file:data/capture")
+assert IOBase.from_uri("file:data/capture").exists()
 ```
 
 ## Streaming boundary
 
 The text reader yields `RecordBatch` objects. `parse_messages` applies the
 `Message` field and gives one `RecordBatchReader` directly to Iceberg.
-`parse_fix` reads that table as another reader, passes it to the FIX parser,
-applies the parser's field once, and writes it. No production stage converts
-rows through Python dictionaries or stages an S3 object on local disk.
+`parse_fix` reads that table as another reader, passes it through the codec's
+three stages — parse, enrich, lifecycle — applies the published field once, and
+writes it. No production stage converts rows through Python dictionaries or
+stages an S3 object on local disk.
 
 ## Stable identity
 
 The source object URI and 1-based physical row number are retained through
-both products. That pair is the primary key and the lossless join:
+both products. That pair is the primary key of the raw product and the lossless
+join:
 
 ```text
-logs.messages(url, rownum) == fix.messages(url, rownum)
+logs.messages(sourceurl, rownum) == fix.messages(sourceurl, rownum)
 ```
 
-`bodyhash` identifies exact source bytes. `uuid` identifies the parsed FIX
-arrival record after session-envelope exclusions. They intentionally answer
-different questions.
+A parse answers one row per message rather than one per line, so the fixed
+product adds `msghash` and is keyed on `(sourceurl, rownum, msghash)`.
+
+`bodyhash` identifies exact source bytes. `msghash` identifies the parsed
+message: sixteen ordered bytes over its settled instant and its named content.
+They intentionally answer different questions.
 
 ## Repository layout
 

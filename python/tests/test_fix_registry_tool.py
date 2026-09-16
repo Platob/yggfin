@@ -34,12 +34,15 @@ def _field() -> Field:
     symbol.fix.tag = 55
     symbol.fix.aliases = ["ticker"]
     symbol.fix.description = "Instrument identifier"
+    # Both documents are the collection itself, in the order the
+    # specification states it, rather than one named member of an object, and
+    # a lineage entry types its field with a datatype rather than a spelling.
     symbol.fix["lineage"] = json.dumps(
-        {"entries": [{"since": "2.7", "name": "symbol", "type": "String"}]},
+        [{"since": "2.7", "name": "symbol", "type": {"type": "string"}}],
         separators=(",", ":"),
     )
     symbol.fix["codes"] = json.dumps(
-        {"codes": [{"value": "AAPL", "name": "Apple"}]},
+        [{"value": "AAPL", "name": "Apple"}],
         separators=(",", ":"),
     )
     return symbol
@@ -57,12 +60,14 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
     assert next(row for row in rows if row["tag"] == 55) == {
         "_id": dictionary.field_by_tag(55).fix.id,
         "_search": "55 symbol symbol ticker instrument identifier",
+        "_name": "symbol",
         "tag": 55,
         "name": "Symbol",
         "dialect": "standard",
         "shape": "field",
+        "category": "fields",
         "Arrow kind": "text",
-        "FIX type": "String",
+        "FIX type": "string",
         "since": "2.7",
         "aliases": "ticker",
         "description": "Instrument identifier",
@@ -71,9 +76,7 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
     # clocks seeded beside them, so the store contributes one row and the
     # bridge vocabulary the rest.
     assert len(rows) == 1 + len(FixRegistry()) + len(fix_plugin_fields())
-    assert setup["metadata_records"](_field(), "codes", "codes") == [
-        {"value": "AAPL", "name": "Apple"}
-    ]
+    assert setup["metadata_records"](_field(), "codes") == [{"value": "AAPL", "name": "Apple"}]
 
 
 def test_tool_uses_native_shape_and_schema_operations() -> None:
@@ -127,7 +130,7 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
     assert "Standalone tool" in page
     assert "uv run --project python --group runner --frozen" in page
     assert "fix_registry" in page
-    assert "6,303" in page
+    assert "6,314" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
     assert "empty Arrow reader" in page

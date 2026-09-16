@@ -2,10 +2,10 @@
 
 Both checked files are Iceberg table contracts, serialized by PyIceberg:
 
-| file | runtime owner | product |
-| --- | --- | --- |
-| `rekep/message.json` | `rekep.Message.into_field()` | `logs.messages` |
-| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` |
+| file | runtime owner | product | columns |
+| --- | --- | --- | ---: |
+| `rekep/message.json` | `rekep.Message.into_field()` | `logs.messages` | 12 |
+| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` | 128 |
 
 They are review artifacts, not alternate implementations. Runtime fields
 remain authoritative and tests require byte-for-byte agreement.
@@ -78,7 +78,11 @@ and names the shape after the file, since a contract names no struct.
 The FIX snapshot uses the registry bundled at
 `python/src/rekep/_data/fix`, includes the bridge vocabulary, carries the raw
 `Message` schema, and narrows all nested and top-level nanosecond timestamps to
-the microsecond precision Iceberg v2 stores.
+the microsecond precision Iceberg v2 stores. It also drops the semantic
+extension name a datatype crossed Arrow on, since a table stores the storage
+type, and restores the carrier's own key members beside `msghash`: a FIX row
+is a message and not a line, so the shape is identified by
+`(sourceurl, rownum, msghash)`.
 
 Dataset documents are unaffected: `IcebergDataset` embeds a `Field` mapping
 because `derived_columns()` reads the derived sources off it to prune a merge,

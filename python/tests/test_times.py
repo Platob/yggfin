@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 import datetime
+import re
+from pathlib import Path
 
 import pyarrow
 import pytest
 
-from rekep.times import UTC, datetime_of, unix_of
+from rekep.times import ULBRIDGE_ROWHEADER, UTC, datetime_of, unix_of
+
+#: Where the core states the same expression, when its checkout is beside
+#: this one. The constant reaches Rust but not yet the Python extension, so
+#: the text is spelled in both places and this is what keeps them one text.
+CORE_ROWHEADER = (
+    Path(__file__).resolve().parents[3] / "yggdryl" / "rust" / "src" / "fix" / "ulbridge.rs"
+)
 
 #: 2026-08-14 09:30:00.123456 UTC, in the nanoseconds every `*unix` holds.
 STAMP = 1_786_699_800_123_456_000
@@ -101,3 +110,31 @@ def test_a_wrapped_value_is_asked_what_it_holds() -> None:
     """So a bound read out of a batch does not have to be unwrapped at the call site."""
     assert unix_of(pyarrow.scalar("2026-08-14")) == MIDNIGHT
     assert unix_of(pyarrow.scalar(STAMP, pyarrow.timestamp("ns"))) == STAMP
+
+
+def test_the_bridge_row_header_is_the_text_the_core_states() -> None:
+    """The one copy nobody can drift: a capture reaches its column because it
+    is called what the column is called, so a renamed capture there is a
+    column that stops being filled here."""
+    if not CORE_ROWHEADER.is_file():
+        pytest.skip(f"the core checkout is not beside this one: {CORE_ROWHEADER}")
+    stated = re.search(
+        r'pub const ULBRIDGE_ROWHEADER: &str = r"(?P<pattern>.*)";',
+        CORE_ROWHEADER.read_text(encoding="utf-8"),
+    )
+
+    assert stated is not None, f"{CORE_ROWHEADER} no longer states the constant"
+    assert ULBRIDGE_ROWHEADER == stated["pattern"]
+
+
+def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
+    """Spelled out here so a rename is a failing test and not a null column."""
+    assert re.findall(r"\(\?P<([A-Za-z]+)>", ULBRIDGE_ROWHEADER) == [
+        "timestamp",
+        "threadId",
+        "bridgesessionid",
+        "msgctxid",
+        "msgseqnum",
+        "pluginid",
+        "level",
+    ]

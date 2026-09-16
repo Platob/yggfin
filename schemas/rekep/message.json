@@ -4,10 +4,10 @@
     "fields": [
       {
         "id": 1,
-        "name": "url",
+        "name": "sourceurl",
         "type": "string",
         "required": true,
-        "doc": "Canonical URI of the source text object."
+        "doc": "Canonical URI of the source text object, filling `sourceurl` (65026)."
       },
       {
         "id": 2,
@@ -21,7 +21,7 @@
         "name": "timestamp",
         "type": "timestamptz",
         "required": false,
-        "doc": "UTC instant captured from the line header, at microsecond resolution."
+        "doc": "UTC instant captured from the line header, at microsecond resolution. Capture context, and only that: it is the clock the bridge stamped the *line* with, so it dates no message on its own. What dates a message is stated by the FIX seam, which offers this instant as the `SendingTime` a message carrying none of its own takes."
       },
       {
         "id": 4,
@@ -39,24 +39,24 @@
       },
       {
         "id": 6,
-        "name": "senderSessionId",
+        "name": "bridgesessionid",
         "type": "string",
         "required": false,
-        "doc": "Bridge session instance the line was handled on, from its header. Spelled as the FIX `sendersessionid` (65007) column folds, so the codec fills that column from this one instead of carrying a second spelling."
+        "doc": "Bridge session instance the line was handled on, filling 65032. The session *instance*, which is the bracket's own first part -- never `sendersessionid` (65007), which is what a bridge row spells for the counterparty session the message names. Two connections to one counterparty are two instances, so they are two facts."
       },
       {
         "id": 7,
-        "name": "msgCtxId",
+        "name": "msgctxid",
         "type": "string",
         "required": false,
-        "doc": "Bridge message-context identifier captured from the line header."
+        "doc": "Bridge message-context identifier, filling `msgctxid` (65008)."
       },
       {
         "id": 8,
-        "name": "seqNum",
+        "name": "msgseqnum",
         "type": "long",
         "required": false,
-        "doc": "Bridge sequence number captured from a message-context header."
+        "doc": "Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."
       },
       {
         "id": 9,

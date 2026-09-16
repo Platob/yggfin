@@ -241,20 +241,19 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
     batch = pyarrow.RecordBatch.from_pylist(
         [
             {
-                "url": "file:///mock/fix.log",
+                "sourceurl": "file:///mock/fix.log",
                 "rownum": 1,
                 "body": b"8=FIX.4.4|35=D|10=0|",
                 "beginstring": "FIX.4.4",
                 "timestamp": EPOCH,
-                "unixpartition": 0,
-                # The settled bundle a parsed message always carries.
+                # The settled bundle a replayable row always carries. Only a
+                # snapshot stamps `snapshotat`, so this row leaves it null.
                 "sendingtime": EPOCH,
                 "updatedat": EPOCH,
                 "createdat": EPOCH,
-                "snapshotat": EPOCH,
                 "code": "",
-                "uuid": uuid.UUID(int=1),
-                "puuid": uuid.UUID(int=2),
+                "msghash": uuid.UUID(int=1).bytes,
+                "msgphash": uuid.UUID(int=2).bytes,
             }
         ],
         schema=schema,
@@ -266,11 +265,11 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert fixes.append_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
-        assert stored.num_columns == 118
+        assert stored.num_columns == 128
         assert stored.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
-        assert stored.select(("url", "rownum", "body")).to_pylist() == [
+        assert stored.select(("sourceurl", "rownum", "body")).to_pylist() == [
             {
-                "url": "file:///mock/fix.log",
+                "sourceurl": "file:///mock/fix.log",
                 "rownum": 1,
                 "body": b"8=FIX.4.4|35=D|10=0|",
             }
@@ -400,31 +399,33 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
     assert len(handed_to_iceberg) == 1
     assert handed_to_iceberg[0].names == fixes.schema.names
     assert fixes.num_rows == 71
-    assert fixes.num_columns == 118
-    # Source identity and header facts the fixed schema does not own lead the
-    # row. A capture named after a field fills that field instead of leading
-    # the row, so `senderSessionId`, `msgCtxId` and `pluginid` are the codec's
-    # own columns and `bodyhash` is the line's exact-byte identity.
+    assert fixes.num_columns == 128
+    # Header facts the fixed schema does not own lead the row. A capture named
+    # after a field fills that field instead of leading the row, so
+    # `sourceurl`, `bridgesessionid`, `msgctxid`, `msgseqnum` and `pluginid`
+    # are the codec's own columns and `bodyhash` is the line's exact-byte
+    # identity. The settled bundle opens the dictionary's half of the row.
     assert fixes.column_names[:10] == [
-        "url",
         "rownum",
         "timestamp",
         "timepartition",
         "threadId",
-        "seqNum",
         "level",
         "bodyhash",
         "body",
-        "beginstring",
+        "updatedat",
+        "prevupdatedat",
+        "createdat",
     ]
-    assert {"msgtype", "msgseqnum", "uuid", "version", "unixpartition"} <= set(fixes.column_names)
+    assert {"msgtype", "msgseqnum", "msghash", "version", "sourceurl"} <= set(fixes.column_names)
     # A pair no dictionary explains is an entry of tag 0 in the arrival record,
-    # so one record column closes the row.
-    assert fixes.column_names[-2:] == ["msgdirection", "nofixentries"]
-    assert not {"35", "30001", "entries", "unmapped", "msgCtxId", "msghash"} & set(
+    # so one record group named after itself closes the row, under the counter
+    # that counts it.
+    assert fixes.column_names[-3:] == ["msgdirection", "nofixentries", "fixentries"]
+    assert not {"35", "30001", "entries", "unmapped", "msgCtxId", "uuid", "unixpartition"} & set(
         fixes.column_names
     )
-    for required in ("beginstring", "sendingtime", "updatedat", "uuid", "unixpartition"):
+    for required in ("beginstring", "sendingtime", "updatedat", "msghash", "sourceurl"):
         assert fixes.schema.field(required).nullable is False
         assert fixes.column(required).null_count == 0
     # Arrow field metadata is not what Iceberg stores: the hourly transform is
@@ -436,7 +437,7 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         assert {
             table.schema().find_column_name(field_id)
             for field_id in table.schema().identifier_field_ids
-        } == {"url", "rownum", "uuid"}
+        } == {"sourceurl", "rownum", "msghash"}
     finally:
         store.close()
     msgtypes = {

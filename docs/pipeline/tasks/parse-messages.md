@@ -54,10 +54,22 @@ reader = source.read_arrow_reader(options=Message.text_options())
 assert reader.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
 ```
 
-The header parser captures timestamp, thread, session, message context,
-sequence, plugin, and level. `body` starts immediately after the matched
-header. `url` and `rownum` come from traversal, and `bodyhash` is computed from
-the exact body bytes during field application.
+The row header is the bridge's own `ULBRIDGE_ROWHEADER`, stated by the native
+core and spelled once in `rekep.times` — pinned against the core's own text
+rather than respelled per reader — and every capture it declares is named for
+the column it fills: `timestamp`, `threadId`,
+`bridgesessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body`
+starts immediately after the matched header. `sourceurl` and `rownum` come from
+traversal, and `bodyhash` is computed from the exact body bytes during field
+application.
+
+`bridgesessionid` is the session *instance* the bridge handled the line on
+(65032) — never `sendersessionid` (65007), which is what a bridge row spells
+for the counterparty session a message names; two connections to one
+counterparty are two instances, so they are two facts. `msgctxid` fills 65008,
+`msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none, and `sourceurl`
+fills 65026. A stored row therefore goes on through the FIX codec without one
+spelling being translated into another.
 
 See the [complete 12-column schema](../../products/message.md#complete-schema).
 
@@ -80,8 +92,8 @@ for a streaming decoder fix.
 ## Write step
 
 The task opens `logs.messages` with `Message.into_field()` and appends the reader
-with `merge_by=True`. A missing table is created. Existing `(url, rownum)` keys
-are skipped; new keys are inserted.
+with `merge_by=True`. A missing table is created. Existing `(sourceurl, rownum)`
+keys are skipped; new keys are inserted.
 
 ## Run
 

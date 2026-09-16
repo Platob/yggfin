@@ -12,50 +12,102 @@ with app.setup:
     from rekep import Field
     from rekep.fix import FixRegistry, fix_codec, fix_registry
 
+    #: What a dictionary holds beside its scalar fields. A definition is a
+    #: field whatever its category, so one projection reads all three.
+    CATEGORIES = ("fields", "components", "groups")
+
     def open_registry(location):
         """Open one registry location; blank selects rekep's bundled registry."""
         return fix_registry(location)
 
+    def metadata_records(field, key):
+        """One validated FIX metadata document as table rows.
+
+        The document is the collection itself -- an array, in the order the
+        specification states it -- so nothing is unwrapped out of a named
+        member first.
+        """
+        document = field.fix.get(key)
+        return [] if document is None else json.loads(document)
+
+    def _typing(field):
+        """What the lineage says this definition was first and last typed as."""
+        lineage = metadata_records(field, "lineage")
+        if not lineage:
+            return "", ""
+        held = lineage[-1].get("type", "")
+        # A version that retyped a field spells the type as a document; the
+        # one it names is what a reader of this table wants to see.
+        if isinstance(held, dict):
+            held = held.get("type", "")
+        return held, lineage[0].get("since", "")
+
+    def _definition_row(field, category):
+        """One display row over any definition the registry holds."""
+        fix = field.fix
+        aliases = fix.aliases
+        name = field.display or field.name
+        description = fix.description or field.comment or ""
+        typed, since = _typing(field)
+        return {
+            "_id": fix.id,
+            "_name": field.name,
+            "_search": " ".join(
+                (
+                    str(fix.tag or ""),
+                    *(str(tag) for tag in fix.tags),
+                    name,
+                    field.name,
+                    *aliases,
+                    description,
+                )
+            ).casefold(),
+            "tag": fix.tag,
+            "name": name,
+            "dialect": ", ".join(fix.branches) or "standard",
+            "shape": "group" if field.dtype.is_nested else "field",
+            "category": category,
+            "Arrow kind": field.dtype.kind,
+            "FIX type": typed,
+            "since": since,
+            "aliases": ", ".join(aliases),
+            "description": description,
+        }
+
     def into_registry_rows(dictionary):
         """Small display rows over the native registry iterator."""
+        return [_definition_row(field, "fields") for field in dictionary]
+
+    def into_definition_rows(dictionary, categories=CATEGORIES):
+        """The same rows over every category a dictionary stores.
+
+        A scalar field, a component and a repeating group are one kind of
+        thing stored under three names, so a browser of a complete dictionary
+        reads them through one projection rather than three.
+        """
+        return [
+            _definition_row(field, category)
+            for category in categories
+            for field in dictionary.definitions(category)
+        ]
+
+    def into_msgtype_rows(dictionary):
+        """Every message type the dictionary defines, by its wire code."""
         rows = []
-        for field in dictionary:
-            fix = field.fix
-            lineage = json.loads(fix.get("lineage", '{"entries":[]}'))["entries"]
-            aliases = fix.aliases
-            tags = fix.tags
-            name = field.display or field.name
-            description = fix.description or field.comment or ""
+        for msgtype in dictionary.msgtypes():
+            field = msgtype.field
             rows.append(
                 {
-                    "_id": fix.id,
-                    "_search": " ".join(
-                        (
-                            str(fix.tag or ""),
-                            *(str(tag) for tag in tags),
-                            name,
-                            field.name,
-                            *aliases,
-                            description,
-                        )
-                    ).casefold(),
-                    "tag": fix.tag,
-                    "name": name,
-                    "dialect": ", ".join(fix.branches) or "standard",
-                    "shape": "group" if field.dtype.is_nested else "field",
-                    "Arrow kind": field.dtype.kind,
-                    "FIX type": lineage[-1].get("type", "") if lineage else "",
-                    "since": lineage[0].get("since", "") if lineage else "",
-                    "aliases": ", ".join(aliases),
-                    "description": description,
+                    "_search": f"{msgtype.value} {msgtype.name}".casefold(),
+                    "code": msgtype.value,
+                    "name": field.display or msgtype.name,
+                    "storage name": msgtype.name,
+                    "identifiers": ", ".join(field.fix.identifiers or ()),
+                    "description": field.fix.description or field.comment or "",
                 }
             )
+        rows.sort(key=lambda row: row["code"])
         return rows
-
-    def metadata_records(field, key, collection):
-        """One validated FIX metadata document as table rows."""
-        document = field.fix.get(key)
-        return [] if document is None else json.loads(document).get(collection, [])
 
     def member_rows(field):
         """Native collection explosion followed by native struct flattening."""
@@ -126,29 +178,58 @@ def _(registry_location):
         dictionary = FixRegistry()
         registry_error = f"{type(_error).__name__}: {_error}"
     registry_source = "rekep bundle" if _location is None else str(_location)
-    registry_rows = into_registry_rows(dictionary)
-    return dictionary, registry_error, registry_rows, registry_source
+    registry_rows = into_definition_rows(dictionary)
+    msgtype_rows = into_msgtype_rows(dictionary)
+    return dictionary, msgtype_rows, registry_error, registry_rows, registry_source
 
 
 @app.cell(hide_code=True)
-def _(registry_error, registry_rows, registry_source):
+def _(dictionary, msgtype_rows, registry_error, registry_rows, registry_source):
     if registry_error:
         _status = mo.callout(registry_error, kind="danger")
     else:
-        _groups = sum(row["shape"] == "group" for row in registry_rows)
-        _dialects = len({row["dialect"] for row in registry_rows})
-        _typed = sum(bool(row["FIX type"]) for row in registry_rows)
+        _counts = {
+            category: sum(row["category"] == category for row in registry_rows)
+            for category in CATEGORIES
+        }
+        _dialects = dictionary.dialects()
         _status = mo.vstack(
             [
-                mo.tree({"source": registry_source}),
+                mo.tree(
+                    {
+                        "source": registry_source,
+                        "dialects": ", ".join(_dialects) or "standard only",
+                    }
+                ),
                 mo.md(
                     f"**{len(registry_rows):,} definitions** · "
-                    f"{_groups:,} repeating groups · {_dialects:,} dialects · "
-                    f"{_typed:,} typed definitions"
+                    f"{_counts['fields']:,} fields · "
+                    f"{_counts['components']:,} components · "
+                    f"{_counts['groups']:,} repeating groups · "
+                    f"{len(msgtype_rows):,} message types"
                 ),
             ]
         )
     mo.vstack([_status])
+
+
+@app.cell
+def _(msgtype_rows):
+    mo.stop(not msgtype_rows, mo.callout("This registry defines no message type."))
+    msgtype_table = mo.ui.table(
+        msgtype_rows,
+        selection=None,
+        page_size=10,
+        show_column_summaries=False,
+        show_data_types=False,
+        show_search=True,
+        show_download=True,
+        freeze_columns_left=["code"],
+        visible_columns=["code", "name", "storage name", "identifiers", "description"],
+        wrapped_columns=["identifiers", "description"],
+        max_height=420,
+    )
+    mo.accordion({f"Message types · {len(msgtype_rows):,}": msgtype_table})
 
 
 @app.cell
@@ -205,28 +286,28 @@ def _(registry_rows):
         label="Branch",
         full_width=True,
     )
-    shape = mo.ui.dropdown(
-        {"Fields and groups": None, "Fields": "field", "Repeating groups": "group"},
-        value="Fields and groups",
-        label="Shape",
+    category = mo.ui.dropdown(
+        {"Every category": None, **{name.title(): name for name in CATEGORIES}},
+        value="Every category",
+        label="Category",
         full_width=True,
     )
-    return dialect, query, shape
+    return category, dialect, query
 
 
 @app.cell(hide_code=True)
-def _(dialect, query, shape):
-    mo.hstack([query, dialect, shape], widths=[3, 1, 1], align="end")
+def _(category, dialect, query):
+    mo.hstack([query, dialect, category], widths=[3, 1, 1], align="end")
 
 
 @app.cell
-def _(dialect, query, registry_rows, shape):
+def _(category, dialect, query, registry_rows):
     _terms = query.value.casefold().split()
     visible_registry_rows = [
         row
         for row in registry_rows
         if (dialect.value is None or row["dialect"] == dialect.value)
-        and (shape.value is None or row["shape"] == shape.value)
+        and (category.value is None or row["category"] == category.value)
         and all(term in row["_search"] for term in _terms)
     ]
     mo.stop(
@@ -246,6 +327,7 @@ def _(dialect, query, registry_rows, shape):
         visible_columns=[
             "tag",
             "name",
+            "category",
             "dialect",
             "shape",
             "Arrow kind",
@@ -266,7 +348,15 @@ def _(dialect, query, registry_rows, shape):
 def _(dictionary, registry_table):
     _selected = registry_table.value
     mo.stop(not _selected, mo.callout("Select one definition to inspect it."))
-    _field = dictionary.field_by_id(_selected[0]["_id"])
+    _row = _selected[0]
+    # A scalar field is addressed by the identifier its tag and name make; a
+    # component or a group has no tag of its own to be found by, so it is
+    # addressed by name inside the category that stores it.
+    _field = (
+        dictionary.field_by_id(_row["_id"])
+        if _row["category"] == "fields"
+        else dictionary.definition(_row["category"], _row["_name"])
+    )
     _fix = _field.fix
     _overview = mo.ui.table(
         [
@@ -304,7 +394,7 @@ def _(dictionary, registry_table):
         if _members
         else mo.callout("This definition has no nested members.")
     )
-    _lineage = metadata_records(_field, "lineage", "entries")
+    _lineage = metadata_records(_field, "lineage")
     _lineage_view = (
         mo.ui.table(
             _lineage,
@@ -318,7 +408,7 @@ def _(dictionary, registry_table):
         if _lineage
         else mo.callout("This definition carries no FIX lineage.")
     )
-    _codes = metadata_records(_field, "codes", "codes")
+    _codes = metadata_records(_field, "codes")
     _codes_view = (
         mo.ui.table(
             _codes,

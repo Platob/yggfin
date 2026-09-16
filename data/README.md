@@ -14,9 +14,9 @@ the tasks from the repository root, or override `catalog` to name absolute
 locations. Airflow's operator starts its child with the checkout as the working
 directory, so the same relative defaults land here.
 
-`parse_messages` reads captures through Yggdryl and requires no bundled
-protocol registry; the FIX dictionary `parse_fix` types against ships inside
-the package.
+`parse_messages` reads captures through the native text reader and requires no
+bundled protocol registry; the FIX dictionary `parse_fix` types against ships
+inside the package.
 
 The larger 111-line fixture the test suite and every documented count use is
 `python/tests/data/ulbridge.log`, not this sample.

@@ -32,22 +32,25 @@ The checked ULBridge fixture demonstrates the complete contract:
 
 ```text
 parse_messages  111 read, 111 written, 0 skipped  → logs.messages
-parse_fix        111 read, 111 written, 0 skipped  → fix.messages
+parse_fix        111 read,  71 written, 0 skipped  → fix.messages
 ```
 
 ```mermaid
 flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
     T --> M[("logs.messages<br/>12 columns")]
-    M --> F["native FIX codec<br/>ULBridge vocabulary"]
-    F --> O[("fix.messages<br/>118 columns")]
+    M --> F["native FIX codec<br/>parse · enrich · lifecycle"]
+    F --> O[("fix.messages<br/>128 columns")]
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
 `timepartition` is derived, and `bodyhash` is filled before the first Iceberg
-boundary. The FIX codec consumes that reader directly. It preserves every row,
-including prose, and stamps the four required FIX columns even when no frame is
-present.
+boundary. The FIX codec consumes that reader directly, through three stages
+over one codec: parse reads every frame a line carried, enrich fills what a
+message implied but did not carry, and lifecycle names the chains it belongs
+to. A row is a message and not a line, so the fixture's 111 lines settle as 71
+messages: a line carrying prose answers none, and a line carrying many frames
+answers one row per frame.
 
 ```python
 from rekep import Message

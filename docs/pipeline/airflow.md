@@ -10,8 +10,9 @@ logs.messages     fix.messages
 ```
 
 The DAG exposes the union of both adjacent task documents as Params. A manual
-run can therefore replace `filesystem`, `catalog`, `registry` or `version`
-without creating another DAG.
+run can therefore replace `filesystem`, `catalog`, `registry` or `lifecycle`
+without creating another DAG. There is no `version` Param: what a message was
+read at is what its own `beginstring` said.
 
 ## How a task runs
 
@@ -71,8 +72,9 @@ The DAG sets no `retries`, so every task is `retries=0` and one transient S3
 or catalog error fails the run. Raising it is safe and is the recommended
 configuration: each attempt writes into its own private directory keyed on the
 try number, that directory is removed whether the attempt lands or raises, and
-both writers merge on `(url, rownum)` — so a retry re-reads the same rows,
-reports them as skipped and commits nothing.
+both writers merge on their field-declared key — `(sourceurl, rownum)` for
+`logs.messages` and `(sourceurl, rownum, msghash)` for `fix.messages` — so a
+retry re-reads the same rows, reports them as skipped and commits nothing.
 
 ## Install a worker checkout
 
@@ -204,8 +206,9 @@ EKS web identity, or the worker's standard AWS credential chain.
    warehouse prefix.
 5. Trigger one immutable capture manually and compare stage counts.
 6. Replay it and require zero writes and zero new snapshots.
-7. Inspect `nofixentries` for entries of tag 0 before enabling a recurring
-   schedule: those are the pairs no dictionary explained.
+7. Inspect `fixentries` for entries of tag 0 before enabling a recurring
+   schedule: those are the pairs no dictionary explained, and `nofixentries`
+   is how many the message carried.
 8. Keep `max_active_runs=1` unless catalog and source-window ownership are
    designed for concurrent commits.
 9. Set `retries` and `retry_delay`; the default is no retry, and a retried

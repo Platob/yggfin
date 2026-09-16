@@ -13,11 +13,11 @@ entry, addressed by source position and entry index.
 
 | column | Arrow type | null | contract |
 | --- | --- | :---: | --- |
-| `updatekey` | `fixed_size_binary[16]` | no | `(url,rownum,entryindex)` digest; primary key |
-| `url` | `string` | no | source object |
+| `updatekey` | `fixed_size_binary[16]` | no | `(sourceurl,rownum,entryindex)` digest; primary key |
+| `sourceurl` | `string` | no | source object |
 | `rownum` | `int64` | no | source line |
 | `entryindex` | `int32` | no | occurrence index in arrival order |
-| `uuid` | `uuid` | no | parsed source identity |
+| `msghash` | `fixed_size_binary[16]` | no | parsed message identity |
 | `eventtime` | `timestamp[us, UTC]` | no | exchange time, then market timestamp |
 | `timepartition` | `timestamp[us, UTC]` | no | Iceberg hour transform |
 | `sequence` | `int64` | yes | market-data sequence |

@@ -10,7 +10,13 @@ with app.setup:
     import marimo as mo
     import pyarrow
 
-    from rekep.fix import dated_arrow_reader, fix_codec, fix_registry, iceberg_fix_field
+    from rekep.fix import (
+        fix_arrow_reader,
+        fix_codec,
+        fix_message_field,
+        fix_registry,
+        fix_text_options,
+    )
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
@@ -25,7 +31,8 @@ def _():
     mo.md("""
     # Parse FIX
 
-    Parse raw message bodies into the fixed rekep FIX Arrow schema.
+    Read stored capture lines into settled FIX rows: parse every frame a line
+    carried, enrich what a message implied, and name the chains it belongs to.
     """)
 
 
@@ -35,9 +42,9 @@ def parameters():
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     registry = _defaults["registry"]
-    version = _defaults["version"]
+    lifecycle = _defaults["lifecycle"]
     catalog = _defaults["catalog"]
-    return catalog, registry, version
+    return catalog, lifecycle, registry
 
 
 @app.cell
@@ -47,7 +54,7 @@ def _():
 
 
 @app.cell
-def _(catalog, records, registry, version):
+def _(catalog, lifecycle, records, registry):
     _ = records
     with ExitStack() as opened:
         stage = Stage(
@@ -57,9 +64,10 @@ def _(catalog, records, registry, version):
         )
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
-        messages = store.dataset(SOURCE, field=Message.into_field())
+        carrier = Message.into_field()
+        messages = store.dataset(SOURCE, field=carrier)
         opened.callback(messages.close)
-        source = messages.read_arrow_reader(Message.into_field())
+        source = messages.read_arrow_reader(carrier)
         opened.callback(source.close)
         counts = {"read": 0, "messages": 0}
 
@@ -73,16 +81,18 @@ def _(catalog, records, registry, version):
             _batches(),
         )
         opened.callback(counted.close)
-        # The codec is the whole parse surface: the dictionary and what holds
-        # for the run are pinned on it once, and the read is one call.
-        codec = fix_codec(fix_registry(registry), version=version)
-        # A message stating no clock of its own is dated by the line's capture
-        # instant, so the identity the codec computes is the same on a replay.
-        dated = dated_arrow_reader(counted)
-        opened.callback(dated.close)
-        parsed = codec.parse_text_arrow_reader(dated)
+        # The codec is the whole parse surface: the dictionary, the bridge's
+        # capture order and the instant an undated message takes are pinned on
+        # it once, and each of the three stages after it is a call.
+        codec = fix_codec(fix_registry(registry), options=fix_text_options())
+        # The published field is what the whole pipeline answers, read from the
+        # dictionary alone rather than from the first batch -- so an empty
+        # capture creates the same table a full one does.
+        field = fix_message_field(codec, carrier)
+        # parse -> enrich -> lifecycle, over the stored capture's batches. A
+        # row is a message, so one line carrying two frames answers two.
+        parsed = fix_arrow_reader(codec, counted, lifecycle=lifecycle)
         opened.callback(parsed.close)
-        field = iceberg_fix_field(parsed.schema)
 
         def _parsed():
             for batch in parsed:

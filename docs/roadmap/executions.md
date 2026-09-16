@@ -17,9 +17,9 @@ cancels retain both their own event identity and the execution they reference.
 | `executionkey` | `fixed_size_binary[16]` | no | scoped execution identity; primary key |
 | `eventkey` | `fixed_size_binary[16]` | no | source-event identity |
 | `originalexecutionkey` | `fixed_size_binary[16]` | yes | corrected/cancelled execution |
-| `url` | `string` | no | source object |
+| `sourceurl` | `string` | no | source object |
 | `rownum` | `int64` | no | source line |
-| `uuid` | `uuid` | no | parsed source identity |
+| `msghash` | `fixed_size_binary[16]` | no | parsed message identity |
 | `executiontime` | `timestamp[us, UTC]` | no | transaction time, then market timestamp |
 | `timepartition` | `timestamp[us, UTC]` | no | Iceberg day transform |
 | `sessionid` | `string` | yes | scoped session |
@@ -53,7 +53,7 @@ cancels retain both their own event identity and the execution they reference.
   checks, not the source of occurrence quantity.
 - Currency and unit mismatches are quality failures, not automatic conversion.
 - Duplicate source positions are skipped; separately captured relay copies may
-  share `uuid` and are reconciled by `executionkey` plus provenance.
+  share `msghash` and are reconciled by `executionkey` plus provenance.
 
 ## Reconciliation
 

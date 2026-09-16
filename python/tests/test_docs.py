@@ -68,14 +68,14 @@ def test_docs_publish_the_native_message_contracts() -> None:
 
     assert Field.__name__ == "Field"
     assert [member.name for member in Message.into_field()] == [
-        "url",
+        "sourceurl",
         "rownum",
         "timestamp",
         "timepartition",
         "threadId",
-        "senderSessionId",
-        "msgCtxId",
-        "seqNum",
+        "bridgesessionid",
+        "msgctxid",
+        "msgseqnum",
         "pluginid",
         "level",
         "bodyhash",

@@ -129,9 +129,9 @@ def expected(index: int) -> dict[str, object]:
         "timestamp": instant,
         "timepartition": instant,
         "threadId": index % 16 + 1,
-        "senderSessionId": f"{index % 2**32:08x}",
-        "msgCtxId": f"{index % 2**40:010x}",
-        "seqNum": index,
+        "bridgesessionid": f"{index % 2**32:08x}",
+        "msgctxid": f"{index % 2**40:010x}",
+        "msgseqnum": index,
         "pluginid": f"feed-{index % 4}",
         "level": "WARN" if index % 7 == 0 else "INFO",
         "body": body(index),
@@ -149,7 +149,7 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     assert first_batch(case) == min(rows, BATCH_ROW_SIZE)
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
-        url = row.pop("url")
+        url = row.pop("sourceurl")
         digest = row.pop("bodyhash")
         assert isinstance(url, str) and url.endswith(case.filename)
         assert isinstance(digest, bytes) and len(digest) == 16
@@ -189,7 +189,7 @@ def sweep(rows: int, repeat: int) -> None:
         selected, encoded_size = cases(pathlib.Path(directory), decoded)
         verified = [verify(case, rows) for case in selected]
         comparable = [
-            table.select([name for name in table.schema.names if name != "url"])
+            table.select([name for name in table.schema.names if name != "sourceurl"])
             for table in verified
         ]
         assert comparable[0].equals(comparable[1]), "plain and gzip rows differ"

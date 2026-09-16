@@ -28,11 +28,14 @@ written = messages.append_arrow_reader(
 )
 ```
 
-`merge_by=True` uses the primary key declared on the native Field. Existing
-keys are skipped; a missing table is created. `commit_batch_num` and the
-optional `commit_row_size` bound each storage commit independently from input
-batch size, however many partitions the bounded chunk spans: its parts are
-resolved one at a time and committed together.
+`merge_by=True` uses the primary key declared on the native Field:
+`(sourceurl, rownum)` for `logs.messages`, and `(sourceurl, rownum, msghash)`
+for `fix.messages`, where a parse answers one row per message and a source URL
+and row number alone therefore name no row. Existing keys are skipped; a
+missing table is created. `commit_batch_num` and the optional `commit_row_size`
+bound each storage commit independently from input batch size, however many
+partitions the bounded chunk spans: its parts are resolved one at a time and
+committed together.
 
 `overwrite_arrow_reader` replaces rows matching the declared key and inserts
 the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
@@ -119,7 +122,9 @@ table directly from its Field. Schema updates are table-wide even when rows are
 written to a branch. A write with no new column makes no schema commit.
 
 Before either write, the native `Field` applies its declarations in dependency
-order: **cast → derived partition columns → digest holders**.
+order: **cast → derived partition columns → digest holders**. Both published
+tables lay out on `timepartition` alone — the hour transform over the capture
+`timestamp` — and neither materializes a second layout column beside it.
 
 Three declarations look similar and are not:
 
@@ -141,7 +146,7 @@ authoritative for storage planning.
 
 ```python
 reader = messages.read_arrow_reader(
-    columns=("url", "rownum", "body"),
+    columns=("sourceurl", "rownum", "body"),
     row_filter="rownum >= 1000",
     limit=100,
 )
@@ -185,11 +190,11 @@ never in committed task documents.
 
 ## Message schema replacement
 
-The current raw contract uses `url`, `rownum`, the ULBridge header fields,
-`bodyhash`, and a derived `timepartition` with an Iceberg `hour` transform.
-Recreate an older messages table from `Message.into_field()` and reingest its source
-captures; rekep carries no legacy name, timestamp-type, digest-name, or
-partition-layout compatibility path.
+The current raw contract uses `sourceurl`, `rownum`, the ULBridge header
+fields, `bodyhash`, and a derived `timepartition` with an Iceberg `hour`
+transform. Recreate an older messages table from `Message.into_field()` and
+reingest its source captures; rekep carries no legacy name, timestamp-type,
+digest-name, or partition-layout compatibility path.
 
 ## Maintenance
 

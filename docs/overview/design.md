@@ -35,14 +35,17 @@ order.
 ## Raw before interpreted
 
 `logs.messages` preserves exact text bodies. `fix.messages` interprets every
-body while retaining `nofixentries`, where a pair no dictionary explains is an
-entry of tag 0 under its own key. A parser update
-can therefore be replayed from Iceberg without rereading the original files.
+body while retaining the arrival record in `fixentries`, under the
+`nofixentries` that counts it, where a pair no dictionary explains is an entry
+of tag 0 under its own key. A parser update can therefore be replayed from
+Iceberg without rereading the original files.
 
 ## Replays are ordinary runs
 
-Both current products merge on `(url, rownum)`. Reprocessing the same capture
-reads the rows, writes zero new rows, and does not create an empty snapshot.
+`logs.messages` merges on `(sourceurl, rownum)`; `fix.messages` merges on
+`(sourceurl, rownum, msghash)`, because a line can carry more than one message.
+Reprocessing the same capture reads the rows, writes zero new rows, and does
+not create an empty snapshot.
 
 ## Documentation names contracts
 
