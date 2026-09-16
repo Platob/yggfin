@@ -1,0 +1,34 @@
+# The one profile this project ships. DuckDB is the compute and holds nothing:
+# every source is read out of Iceberg at the start of a build and every product
+# is committed back into Iceberg at the end of one, so `:memory:` is the whole
+# database and a build leaves no second copy of the warehouse behind.
+#
+# The catalog below is the local default a clone already has: the same SQLite
+# catalog and file warehouse every task document names, spelled the same way.
+# Like them it is relative, so a build runs from the repository root -- and
+# `REKEP_DBT_CATALOG` replaces the whole mapping with the JSON a deployment
+# names, which is how `build_dbt` passes a catalog of its own through.
+rekep:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: ":memory:"
+      schema: main
+      # One thread: a build's models are three, its plugin holds one catalog
+      # handle, and what each one committed is read back off that handle.
+      threads: 1
+      # Where a model is staged as Parquet before it is committed, when the run
+      # names no target path of its own. dbt makes this directory itself, and
+      # nothing under it is tracked; `--target-path` takes the staging with it.
+      external_root: data/dbt/target
+      plugins:
+        - module: rekep.dbt
+          alias: rekep
+          config:
+            catalog:
+              name: rekep
+              properties:
+                type: sql
+                uri: sqlite:///data/catalog.db
+                warehouse: data/warehouse

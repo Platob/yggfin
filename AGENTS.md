@@ -88,6 +88,7 @@ The supported graph is:
 
 ```text
 filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
+fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
 ```
 
 Each task directory contains one Marimo application beside its JSON document.
@@ -114,8 +115,18 @@ it never sees. A version is not among the pins -- what a message was read at
 is what its own `beginstring` said -- and `fix_codec` refuses by name any
 keyword that is not one of its seven.
 
+`build_dbt` runs the dbt project under `data/dbt`. dbt owns the SQL a product
+is written in and nothing else: `rekep.dbt` is the one seam, a source is one
+`IcebergDataset` read and a model is one commit through the same dataset, and
+the DuckDB database is `:memory:` because Iceberg holds the state. A model's
+`config()` block is its Iceberg declaration -- table, key, partition, sort
+order and the storage types SQL cannot spell -- so no second Field, catalog or
+warehouse is declared anywhere under `data/dbt`.
+
 Airflow launches the adjacent standalone runner through the locked `uv`
-`runner` group; the operator never calls the Rekep CLI.
+`runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
+the two streaming stages; `rekep_products` is `build_dbt`, scheduled on the
+`fix.messages` Asset the first one publishes.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
@@ -141,11 +152,14 @@ python/src/rekep/
   fix.py        the bundled registry and the three-stage pipeline surface
   times.py      instant readings and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
+  dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
 tasks/
   airflow/
   parse_fix/
   parse_messages/
   optimize_iceberg/
+  build_dbt/
+data/dbt/       the dbt project: models, schemas, macros and its one profile
 schemas/rekep/message.json
 schemas/rekep/fix-message.json
 ```

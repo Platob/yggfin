@@ -82,6 +82,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "body",
     ]
     assert "pipeline/tasks/parse-fix.md" in config
+    assert "pipeline/tasks/build-dbt.md" in config
     assert "market/" not in config
     assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
         "fix-message.json",
@@ -137,12 +138,13 @@ def test_each_task_page_publishes_its_document_verbatim() -> None:
     """A pasted document is only documentation while it still matches.
 
     `mkdocs.yml` enables `pymdownx.snippets` so a page can include a file from
-    the checkout, but these two pages paste the JSON instead, which nothing
-    stops from drifting. This is what stops it.
+    the checkout, but these pages paste the JSON instead, which nothing stops
+    from drifting. This is what stops it.
     """
     pages = {
         "pipeline/tasks/parse-messages.md": "parse_messages",
         "pipeline/tasks/parse-fix.md": "parse_fix",
+        "pipeline/tasks/build-dbt.md": "build_dbt",
     }
 
     for page, name in pages.items():

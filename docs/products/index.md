@@ -1,16 +1,23 @@
 # Data products
 
-rekep currently publishes two immutable-grain Iceberg products. Every later
-product starts from `fix.messages`, never by reparsing source files.
+rekep publishes two immutable-grain Iceberg products, and these are the two
+contracts a reader reviews. Every later product starts from `fix.messages`,
+never by reparsing source files.
 
 ```mermaid
 flowchart LR
     C["capture objects"] --> M[("logs.messages")]
     M --> F[("fix.messages")]
-    F -.planned.-> O[("orders")]
-    F -.planned.-> E[("executions")]
+    F --> O[("orders.events<br/>orders.current")]
+    F --> E[("executions.fills")]
     F -.planned.-> B[("book")]
 ```
+
+The order and execution tables are the first cut of the
+[roadmap](../roadmap/index.md)'s products, derived in SQL by the dbt project
+[`build_dbt`](../pipeline/tasks/build-dbt.md) runs. Their shape is the model's
+own configuration rather than a reviewed `Field` declaration, which is what
+the two products below have and the gate the roadmap still holds them to.
 
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |

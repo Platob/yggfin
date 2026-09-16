@@ -65,6 +65,7 @@ print(Message.into_field().into_arrow_schema())
 | what the two tables hold | [Data products](products/index.md) |
 | how the parts fit | [Architecture](overview/architecture.md) |
 | the exact task contracts | [Pipeline](pipeline/index.md) |
+| the order and execution products | [Build dbt](pipeline/tasks/build-dbt.md) |
 | the runtime FIX dictionary | [Registry](fix/registry.md) |
 | to decode or encode a frame | [Decode](fix/decode.md) · [Encode](fix/encode.md) |
 | to schedule it | [Airflow](pipeline/airflow.md) |

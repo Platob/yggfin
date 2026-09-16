@@ -7,6 +7,11 @@ columns from the carrier and the dictionary alone without consuming a capture
 row. Deployment is idempotent: an existing table is reported as `present` and
 is not rewritten.
 
+The products the dbt project derives are not deployed here: a model declares
+its own shape, and the dataset creates the table on the model's first commit.
+`rekep iceberg deploy` is for a catalog the runner may not write to, which is
+where ingestion lands.
+
 ## Local SQLite and files
 
 The checked task document already names a SQLite catalog and local warehouse:

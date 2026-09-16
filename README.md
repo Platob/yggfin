@@ -30,6 +30,12 @@ The supported ingestion graph is deliberately short:
 capture URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
 ```
 
+and one dbt build derives the business products from its end:
+
+```text
+fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
+```
+
 `parse_fix` is three native stages over one codec, in this order and no other:
 
 ```text
@@ -50,6 +56,7 @@ uv sync --project python --all-extras --dev
 uv run --project python rekep iceberg deploy tasks/parse_messages/parse_messages.json
 uv run --project python rekep task run tasks/parse_messages/parse_messages.json
 uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+uv run --project python rekep task run tasks/build_dbt/build_dbt.json
 ```
 
 `logs.messages` stores one physical line with its exact body bytes and source
@@ -58,6 +65,10 @@ message that line carried -- typed columns, the complete arrival record, and
 derived identities -- keyed on `(sourceurl, rownum, msghash)`, because a line
 can carry more than one message. A message that stated no clock of its own is
 dated by the instant its line was captured, so both replay idempotently.
+
+`build_dbt` runs the [dbt project](data/dbt/README.md) under `data/dbt`: DuckDB
+owns the SQL, and every read and commit goes through the same Iceberg dataset
+the tasks write through, so there is no second catalog and no extract.
 
 The reviewed contracts are [Message](schemas/rekep/message.json) and
 [FixMessage](schemas/rekep/fix-message.json), each the Iceberg schema,

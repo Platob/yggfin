@@ -73,15 +73,22 @@ They intentionally answer different questions.
 python/src/rekep/       public package and bundled registry
 tasks/parse_messages/   raw-line Marimo application + JSON parameters
 tasks/parse_fix/        FIX Marimo application + JSON parameters
+tasks/build_dbt/        dbt Marimo application + JSON parameters
 tasks/optimize_iceberg/ maintenance Marimo application + JSON parameters
-tasks/airflow/          DAG, operator, and standalone child runner
+tasks/airflow/          DAGs, operator, and standalone child runner
 schemas/rekep/          reviewed table contracts
 docs/                   contracts, operations, products, and roadmap
 tools/                  registry browser and documentation projection
 data/                   default capture, catalog and warehouse locations
+data/dbt/               the dbt project: models, schemas, macros, one profile
 config/                 an operator's own FIX dictionary, when one is used
 ```
 
 `optimize_iceberg` is maintenance rather than ingestion: it is not in the
 scheduled graph, and it is documented with the storage it settles, under
 [Iceberg maintenance](../storage/iceberg.md#maintenance).
+
+`build_dbt` is derivation rather than ingestion: dbt owns the SQL its products
+are written in, and `rekep.dbt` is the one seam that makes a source an Iceberg
+read and a model an Iceberg commit through the dataset above. It is documented
+with the task that runs it, under [Build dbt](../pipeline/tasks/build-dbt.md).

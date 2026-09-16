@@ -31,6 +31,7 @@ PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 
 PACKAGES = (
     "rekep",
+    "rekep.dbt",
     "rekep.fields",
     "rekep.fix",
     "rekep.iceberg",

@@ -10,10 +10,12 @@ stderr.
 ```bash
 uv run --project python rekep task run tasks/parse_messages/parse_messages.json
 uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+uv run --project python rekep task run tasks/build_dbt/build_dbt.json
 ```
 
 The order is required: `parse_fix` reads `logs.messages` rather than source
-files.
+files, and [`build_dbt`](../tasks/build-dbt.md) reads `fix.messages` rather
+than either.
 
 ## One override
 
