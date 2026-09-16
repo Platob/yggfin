@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from dbt.cli.main import dbtRunner
 from rekep import cli
 from rekep.dbt import COMMITTED, catalog_settings, committed, declared_field
 from rekep.deploy import TABLES
+from rekep.fix import FixCodec, fix_registry
 from rekep.iceberg import IcebergCatalog, partition_keys, primary_keys, sort_keys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,6 +45,25 @@ PRODUCTS = {
 #: The whole route, in order: capture to raw rows, raw rows to FIX, FIX to
 #: products.
 WORKFLOW = ("parse_messages", "parse_fix", "build_dbt")
+
+#: What the codec answers for one `OrdStatus(39)` code. The normalized
+#: spellings the macros fold on are the codec's and this repository holds no
+#: list of them, so a parsed message is the only thing that can say what they
+#: are -- which is what makes the mapping below a reading rather than a guess.
+SETTLED = {
+    "0": "20NEW",
+    "2": "80FILLED",
+    "3": "80DONEDAY",
+    "4": "90CANCELED",
+    "5": "70REPLACED",
+    "8": "95REJECTED",
+    "B": "80CALCULAT",
+    "C": "95EXPIRED",
+    "D": "20ACCEPTED",
+}
+
+#: The macro file the folds read their vocabulary out of.
+MACROS = PROJECT / "macros" / "rekep.sql"
 
 
 @pytest.fixture(scope="session")
@@ -216,6 +237,63 @@ def test_the_products_dag_announces_the_tables_the_models_commit(manifest: Any) 
     )
 
     assert set(announced) == set(published(manifest))
+
+
+def spelled(macro: str) -> set[str]:
+    """The values one state macro names."""
+    body = MACROS.read_text(encoding="utf-8").split(f"macro {macro}()", 1)[1]
+    return set(re.findall(r"\'([^\']+)\'", body.split("endmacro", 1)[0]))
+
+
+def test_the_states_a_fold_names_are_the_ones_the_codec_answers() -> None:
+    """A hand-written vocabulary drifts silently; this is what notices.
+
+    The codec is the oracle: one message per status code, parsed by the
+    bundled dictionary, against the spellings `orders.current` opens and closes
+    on. `5` Replaced is deliberately not terminal -- a replaced chain continues
+    under its replacement -- so its absence is pinned too.
+    """
+    codec = FixCodec(fix_registry())
+    answered = {}
+    for code in SETTLED:
+        line = b"8=FIX.4.4|35=8|11=X|37=Y|17=Z|150=F|39=" + code.encode() + b"|10=000|"
+        (message,) = codec.parse_line(line)
+        answered[code] = message.by_name("ordstatus").as_py()
+
+    assert answered == SETTLED
+    terminal = spelled("rekep_terminal_states")
+    opening = spelled("rekep_opening_states")
+    assert terminal == {SETTLED[code] for code in ("2", "3", "B", "4", "8", "C")}, (
+        "a state no longer settles the way the fold reads it"
+    )
+    assert opening == {SETTLED[code] for code in ("0", "D")}
+    assert SETTLED["5"] not in terminal, "a replaced chain continues under its replacement"
+
+
+def test_the_drift_check_lists_every_state_the_folds_name(manifest: Any) -> None:
+    """The reported vocabulary covers the one the folds act on, so a capture
+    carrying a state this project reads is never reported as drift."""
+    listed = {
+        value
+        for node in manifest.nodes.values()
+        if getattr(node, "test_metadata", None) is not None
+        and node.test_metadata.name == "accepted_values"
+        for value in node.test_metadata.kwargs.get("values", ())
+    }
+
+    assert listed, "no accepted_values test reports an unexpected state"
+    assert spelled("rekep_terminal_states") | spelled("rekep_opening_states") <= listed
+    assert all(str(node.config.severity).casefold() == "warn" for node in _accepted(manifest))
+
+
+def _accepted(manifest: Any) -> list[Any]:
+    """Every `accepted_values` test the project declares."""
+    return [
+        node
+        for node in manifest.nodes.values()
+        if getattr(node, "test_metadata", None) is not None
+        and node.test_metadata.name == "accepted_values"
+    ]
 
 
 # -- the declaration a model's configuration builds --------------------------

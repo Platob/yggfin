@@ -22,10 +22,12 @@ readings both products share — the event's time and the session it was seen
 on — and is never published.
 
 Every model's key is tested as one, `unique` and `not_null`, beside the column
-documentation in each `schema.yml`. `tests/` holds the one check that spans two
-products — a fill whose chain produced no order event — and it warns rather
-than fails: a capture that starts mid-stream holds executions whose order was
-accepted before its first line.
+documentation in each `schema.yml`. Two checks warn rather than fail, because
+each reports something about the capture rather than about the build: the one
+in `tests/` finds a fill whose chain produced no order event, and the accepted
+values of `state` find a lifecycle state these products have no reading for.
+The states they do read are pinned against the codec in
+`python/tests/test_dbt.py`, so the vocabulary cannot drift unnoticed.
 
 ## Run it
 

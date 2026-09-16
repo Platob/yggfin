@@ -187,7 +187,7 @@ build starts when `parse_fix` writes.
 ```json
 {
   "task": "build_dbt",
-  "read": 39,
+  "read": 40,
   "written": 75,
   "skipped": 0,
   "sources": {"project": "data/dbt"},
@@ -199,7 +199,7 @@ build starts when `parse_fix` writes.
   "window": {"start": null, "end": null},
   "elapsed_ms": 2417,
   "models": 4,
-  "tests": 35,
+  "tests": 36,
   "warned": [],
   "rows": {"orders.events": 62, "orders.current": 6, "executions.fills": 7}
 }
@@ -216,9 +216,13 @@ A failing node fails the task, and the record names it. Every model's own
 tests run in the same build: `dbt build` runs a model and then the tests
 attached to it, so a product that broke its key is reported by the run that
 built it. A test the project declares as a warning is a quality signal rather
-than a failure — `every_fill_belongs_to_a_known_order` is one, because a
-capture that starts mid-stream holds executions whose order was accepted before
-its first line — and `warned` names the ones that fired.
+than a failure, and `warned` names the ones that fired. Two are declared that
+way: `every_fill_belongs_to_a_known_order`, because a capture that starts
+mid-stream holds executions whose order was accepted before its first line, and
+the accepted values of `state`, because the normalized vocabulary is the
+codec's and this repository cannot enumerate it — a state the products have no
+reading for is worth reporting and is not a reason to stop. What the folds do
+read is pinned against the codec itself in `python/tests/test_dbt.py`.
 
 ## The project
 

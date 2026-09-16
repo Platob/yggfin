@@ -75,7 +75,30 @@ models:
       - name: avgpx
         description: The average fill price this event stated.
       - name: state
-        description: The normalized lifecycle state after this event.
+        description: >
+          The normalized lifecycle state after this event. The values below are
+          the ones this project has a reading for -- the states `orders.current`
+          opens and closes on, and the in-flight ones an order passes through.
+          They are not the codec's whole vocabulary, which this repository
+          cannot enumerate, so an unlisted state is reported and not refused.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - "10PENDNEW"
+                  - "20NEW"
+                  - "20ACCEPTED"
+                  - "40PARTFILL"
+                  - "40TRADE"
+                  - "70REPLACED"
+                  - "80FILLED"
+                  - "80DONEDAY"
+                  - "80CALCULAT"
+                  - "90CANCELED"
+                  - "95REJECTED"
+                  - "95EXPIRED"
+              config:
+                severity: warn
       - name: exectype
         description: The normalized reason this event was sent.
       - name: ordrejreason
