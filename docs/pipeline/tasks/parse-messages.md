@@ -1,7 +1,7 @@
 # parse_messages
 
 `parse_messages` recursively reads a local or object-store text source and
-publishes one raw row per physical line to `logs.messages`.
+publishes one raw row per physical line the window covers to `logs.messages`.
 
 ## Task document
 
@@ -12,6 +12,8 @@ publishes one raw row per physical line to `logs.messages`.
   "parameters": {
     "filesystem": "file:data/capture",
     "rowheader": null,
+    "start": null,
+    "end": null,
     "catalog": {
       "name": "rekep",
       "properties": {
@@ -28,6 +30,8 @@ publishes one raw row per physical line to `logs.messages`.
 | --- | :---: | --- |
 | `filesystem` | yes | one file, directory, or object-store prefix |
 | `rowheader` | no | the row header to frame each line with; `null` is the bridge's own |
+| `start` | no | the window's inclusive start; `null` is one day before `end` |
+| `end` | no | the window's exclusive end; `null` is the instant the run starts, and a whole day such as `2026-08-14` is the end of that day |
 | `catalog.name` | yes | catalog instance name |
 | `catalog.properties` | yes | PyIceberg catalog and FileIO settings |
 
@@ -138,19 +142,48 @@ batch size. The decoder's support for concatenated gzip members should be
 validated before production use because staging locally is not a substitute
 for a streaming decoder fix.
 
+## The window
+
+Every line is read and counted, and the ones the window covers go on: those
+whose `timepartition` -- the capture clock, and the column the table is laid
+out by -- falls in `[start, end)`, and those with no clock at all, which a
+header that did not match leaves and no window could place. The window is
+the last day, ending at the instant the run starts, when the document names
+neither bound; `start` and `end` read the way every instant here does, and
+`end` naming a whole day means the end of that day.
+
+```python
+from rekep.times import window_of
+
+lower, upper = window_of("2026-08-14", "2026-08-14")
+assert (lower.isoformat(), upper.isoformat()) == (
+    "2026-08-14T00:00:00+00:00",
+    "2026-08-15T00:00:00+00:00",
+)
+```
+
+Under Airflow the operator hands each run its data interval as `start` and
+`end`; a bound the run's own conf names wins over the interval.
+
 ## Write step
 
-The task opens `logs.messages` with `Message.into_field()` and appends the reader
-with `merge_by=True`. A missing table is created. Existing `(sourceurl, rownum)`
-keys are skipped; new keys are inserted.
+The task opens `logs.messages` with `Message.into_field()` and replaces the
+reader's rows on `(sourceurl, rownum)`: a stored row carrying one of the
+window's keys is taken out and the window's row lands, in one commit per
+bounded chunk. A missing table is created. A replay of the window lands the
+same rows again and the table holds each line once.
 
 ## Run
 
 ```bash
 uv run --project python rekep task run \
   tasks/parse_messages/parse_messages.json \
-  --parameter 'filesystem="file:/srv/captures/2026-08-14"'
+  --parameter 'filesystem="file:/srv/captures/2026-08-14"' \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```
+
+Without `start` and `end` the run covers the last day, which is what a
+scheduled run over a live capture wants and what a dated capture is outside.
 
 For S3:
 
@@ -163,6 +196,7 @@ uv run --project python rekep task run \
 
 ## Failures
 
-A missing source, unreadable object, invalid URI, malformed catalog, or failed
-commit fails the task. A line whose header does not match is data: its source
-identity and body are retained with null header fields.
+A missing source, unreadable object, invalid URI, malformed catalog, a bound
+that names no instant, an empty window, or a failed commit fails the task. A
+line whose header does not match is data: its source identity and body are
+retained with null header fields, and it is in every window.

@@ -21,7 +21,7 @@ messages = catalog.dataset("logs.messages", field=Message.into_field())
 ## Stream writes
 
 ```python
-written = messages.append_arrow_reader(
+written = messages.overwrite_arrow_reader(
     reader,
     Message.into_field(),
     merge_by=True,
@@ -31,15 +31,32 @@ written = messages.append_arrow_reader(
 `merge_by=True` uses the primary key declared on the native Field:
 `(sourceurl, rownum)` for `logs.messages`, and `(sourceurl, rownum, msghash)`
 for `fix.messages`, where a parse answers one row per message and a source URL
-and row number alone therefore name no row. Existing keys are skipped; a
-missing table is created. `commit_batch_num` and the optional `commit_row_size`
-bound each storage commit independently from input batch size, however many
-partitions the bounded chunk spans: its parts are resolved one at a time and
-committed together.
+and row number alone therefore name no row. A missing table is created.
+`commit_batch_num` and the optional `commit_row_size` bound each storage
+commit independently from input batch size, however many partitions the
+bounded chunk spans: its parts are staged one at a time and committed together.
 
-`overwrite_arrow_reader` replaces rows matching the declared key and inserts
-the remainder. Both APIs require a schema-bearing `RecordBatchReader` and
-consume one batch at a time. The batch and table helpers build that reader.
+Two verbs, and each returns the rows it wrote:
+
+- `append_arrow_reader` is blind: every row lands, whatever the table holds.
+- `overwrite_arrow_reader` replaces. Each bounded chunk is staged locally, the
+  stored rows it replaces are taken out, and the staged files are appended in
+  the same commit. Under `merge_by` those rows are the ones carrying the
+  chunk's keys in the same transformed partition -- the same key on two days
+  is two rows, and a null partition value is a partition of its own; with
+  `merge_by=False` on a partitioned table they are every row of the
+  partitions the chunk touches, emptied once per write and only added to
+  after that.
+
+Both APIs require a schema-bearing `RecordBatchReader` and consume one batch
+at a time. The batch and table helpers build that reader.
+
+A replay of a window is therefore a commit that lands the same rows: the table
+holds each key once however often the window runs, and `written` reports what
+the run carried rather than what it changed. A key that recurs within a chunk
+keeps its first row; one that recurs in a later chunk replaces the row the
+earlier chunk landed. A null or NaN key is refused, because no join finds the
+row it would replace.
 
 ### What a commit holds
 
@@ -49,24 +66,30 @@ Parquet file, uploaded through the table's configured `FileIO`, and committed
 by path. What the write holds past the chunk it was handed is one partition
 rather than every partition's rows.
 
-Everything a chunk *adds* lands in one commit, whatever the partition count.
-A keyed overwrite additionally keeps one bounded commit per partition whose
-stored files it has to rewrite, because the rows replacing a stored row must
-land in the commit that removes it.
+A keyed replace plans the stored files to read from the chunk's key bounds --
+between each key column's least and greatest value, and between the partition
+source's, widened to the hours or days a time transform partitions by -- keeps
+the ones in the partitions the chunk carries, and reads each one a batch at a
+time, writing it back through the same stager without the rows an Arrow
+anti-join on the keys drops. A file every row of which survives stands
+as it was; one that loses rows is replaced by its rewrite; one that loses
+every row is deleted unread the next time round. One commit per chunk carries
+the deletions, the rewrites and the chunk together.
 
-Measured on a 70 MiB chunk of 524,288 rows, as the Arrow high-water mark over
-one commit divided by the chunk:
+Measured on pyiceberg 0.12 over 20,000 rows of 200-byte payload in eight
+batches, as the Arrow high-water mark over one commit divided by the chunk:
 
-| verb | 1 partition | 4 partitions | 24 partitions |
-| --- | ---: | ---: | ---: |
-| `append_arrow_*`, no keys | 1.07 | 1.52 | 1.15 |
-| `append_arrow_*`, `merge_by` | 1.23 | 1.52 | 1.12 |
-| `overwrite_arrow_*`, `merge_by` | 1.17 | 1.52 | 1.12 |
+| verb | 1 partition | 2 partitions | 4 partitions | 16 partitions |
+| --- | ---: | ---: | ---: | ---: |
+| `append_arrow_*` | 1.55 | 1.06 | 0.80 | 0.55 |
+| `overwrite_arrow_*`, `merge_by`, replaying every row | 1.55 | 1.11 | 1.11 | 1.11 |
 
-Those are chunks of keys the table does not hold, which is what a stream
-brings. A chunk that overlaps what is stored also keeps the rows it decided
-to write, so it holds about two chunks rather than one; a replay that matches
-everything holds neither, because it writes nothing.
+Under 2.25 chunks in every case, which is what
+`test_a_bounded_write_holds_a_bounded_multiple_of_its_chunk` pins. A chunk
+that overlaps what is stored reads the keys of each stored file it plans
+first, so a file it replaces whole is never decoded past them; one it keeps
+part of is then streamed one batch at a time, so what it holds beside the
+chunk is one batch of that file rather than the file.
 
 Staged files record the order they were written in, which is what lets
 `order_by` read them back without sorting each one again. A table whose

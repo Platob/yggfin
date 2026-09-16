@@ -2,7 +2,8 @@
 
 A window written `2026-08-14`, `20260814-09:30:00.123`,
 `20260828135029258000` or `utcnow` means the same instant wherever it is
-configured.
+configured -- and a window written nowhere is the last day, ending at the
+instant the run reads it.
 """
 
 from __future__ import annotations
@@ -12,6 +13,9 @@ import datetime
 import functools
 import re
 from typing import Any
+
+import pyarrow
+import pyarrow.compute
 
 #: The one zone this package reads and writes instants in. `datetime.UTC` is
 #: 3.11's alias for this very object, so the two are the same singleton where
@@ -26,6 +30,11 @@ UTC = datetime.timezone.utc
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 EPOCH_DATE = EPOCH.date()
 EPOCH_ORDINAL = EPOCH_DATE.toordinal()
+
+#: How far back a run reaches when its document names no `start`: one day
+#: before the instant it ends at. A task that names neither bound covers the
+#: last day, and a schedule that names both covers exactly its interval.
+WINDOW = datetime.timedelta(days=1)
 
 #: Instants a configuration may name instead of spelling. Read when the value
 #: is read, not when the document is: a schedule that says `utcnow` means the
@@ -333,6 +342,51 @@ def unix_of(value: Any, *, upper: bool = False) -> int | None:
     if found is None:
         return None
     return (found - EPOCH) // datetime.timedelta(microseconds=1) * 1_000
+
+
+def window_of(start: Any = None, end: Any = None) -> tuple[datetime.datetime, datetime.datetime]:
+    """The half-open interval a run covers, `[start, end)`, as aware UTC instants.
+
+    `end` unspelled is the instant this is read at, and `start` unspelled is
+    `WINDOW` before `end`, so a run that names neither covers the last day.
+    Each bound is read the way every instant here is: a whole-day `end` is the
+    exclusive end of that day, and a bound that names no instant is refused
+    rather than read as the epoch. An empty or inverted window is refused too:
+    a run that would read nothing by construction is a configuration mistake,
+    not a quiet day.
+    """
+    upper = datetime.datetime.now(UTC) if end is None else datetime_of(end, upper=True)
+    if upper is None:
+        raise ValueError(f"end={end!r} is not an instant")
+    lower = upper - WINDOW if start is None else datetime_of(start)
+    if lower is None:
+        raise ValueError(f"start={start!r} is not an instant")
+    if not lower < upper:
+        raise ValueError(
+            f"window [{lower.isoformat()}, {upper.isoformat()}) is empty; start must be before end"
+        )
+    return lower, upper
+
+
+def within(
+    values: pyarrow.Array | pyarrow.ChunkedArray,
+    window: tuple[datetime.datetime, datetime.datetime],
+) -> pyarrow.Array | pyarrow.ChunkedArray:
+    """Which of `values` a window covers: `start <= value < end`, or no value at all.
+
+    A row that carries no instant cannot be placed in any window, so it is in
+    every one: a capture line whose header did not match keeps its body and
+    its source position under a null clock, and a window that dropped it
+    would lose the line for good rather than for a day. Replacing it on every
+    run is the harmless direction to be wrong in.
+    """
+    compute = pyarrow.compute
+    lower, upper = (pyarrow.scalar(bound, values.type) for bound in window)
+    covered = compute.and_(
+        compute.greater_equal(values, lower),
+        compute.less(values, upper),
+    )
+    return compute.or_(compute.fill_null(covered, False), compute.is_null(values))
 
 
 def _instant(value: Any) -> datetime.datetime | None:

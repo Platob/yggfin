@@ -66,9 +66,13 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 
 - Primary APIs consume and return `RecordBatchReader`; table helpers explicitly
   require memory-sized data.
-- `append_*` inserts and optionally skips existing keys; `overwrite_*` replaces
-  matching keys and inserts the rest. Both create a missing table.
-- `merge_by=True` means the native Field's declared primary key.
+- `append_*` is blind; `overwrite_*` replaces: each bounded chunk is staged
+  locally, the stored rows it replaces are taken out -- those carrying its keys
+  in the same transformed partition, or every row of the partitions it touches
+  when `merge_by` names nothing -- and the staged files are appended, in one
+  commit. Both create a missing table and return the rows they wrote.
+- `merge_by=True` means the native Field's declared primary key. A key is
+  scoped to its partition: the same key on two days is two rows.
 - Commit after `commit_batch_num` input batches or the earlier optional
   `commit_row_size` bound.
 - Every write stages one transformed partition at a time as a local Parquet
@@ -94,8 +98,12 @@ fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
 Each task directory contains one Marimo application beside its JSON document.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
 under the `rowheader` its document names, applies `Message.into_field()` to
-each batch, and writes one schema-bearing reader directly to Iceberg. `parse_fix` passes that stored reader through the three
-stages one codec exposes, in this order and no other:
+each batch, keeps the lines whose `timepartition` falls in the run's window,
+and writes one schema-bearing reader directly to Iceberg. The window is
+`[start, end)`; a task given neither takes the last day up to now, and a run
+over a window replaces what an earlier run of it landed. `parse_fix` reads the
+stored rows of the same window and passes them through the three stages one
+codec exposes, in this order and no other:
 
 ```text
 parse -> enrich -> lifecycle
@@ -125,8 +133,9 @@ warehouse is declared anywhere under `data/dbt`.
 
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
-the two streaming stages; `rekep_products` is `build_dbt`, scheduled on the
-`fix.messages` Asset the first one publishes.
+the two streaming stages, daily, each run over its own data interval unless
+the run's conf names `start` or `end`; `rekep_products` is `build_dbt`,
+scheduled on the `fix.messages` Asset the first one publishes.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
@@ -150,7 +159,7 @@ python/src/rekep/
   tasks/        application configuration only
   text/         raw Message declaration
   fix.py        the bundled registry and the three-stage pipeline surface
-  times.py      instant readings and the ULBridge row header
+  times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
   dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
 tasks/

@@ -82,6 +82,8 @@ def test_the_runner_runs_the_shipped_application_and_publishes_its_result(
         json.dumps(
             {
                 "filesystem": (ROOT / "python/tests/data/ulbridge.log").as_uri(),
+                "start": "2026-08-14",
+                "end": "2026-08-14",
                 "catalog": {
                     "name": "rekep",
                     "properties": {
@@ -101,5 +103,8 @@ def test_the_runner_runs_the_shipped_application_and_publishes_its_result(
     assert result["task"] == "parse_messages"
     assert (result["read"], result["written"], result["skipped"]) == (111, 111, 0)
     assert result["targets"] == {"messages": "logs.messages"}
-    assert result["window"] == {"start": None, "end": None}
+    assert result["window"] == {
+        "start": 1_786_665_600_000_000_000,
+        "end": 1_786_752_000_000_000_000,
+    }, "the day the parameters named, as the instants it spans"
     assert not list(tmp_path.glob("*.partial"))

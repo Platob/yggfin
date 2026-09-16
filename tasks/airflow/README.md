@@ -1,6 +1,6 @@
 # Airflow
 
-`pipeline.py` declares the manually triggered `rekep_ingestion` DAG:
+`pipeline.py` declares the daily `rekep_ingestion` DAG:
 
 ```text
 parse_messages -> parse_fix
@@ -55,11 +55,14 @@ and publishes that JSON atomically. Parameters and results live in a private
 directory unique to one Airflow attempt and are removed on success or failure.
 `on_kill` terminates the runner's process group.
 
-The ingestion DAG is intentionally unscheduled: its `filesystem` must name an
-immutable capture or prefix for each run. Configure
+The ingestion DAG runs daily, and each run covers its data interval: the
+operator hands it to both tasks as `start` and `end`, so a day's run reads the
+day's lines under `filesystem` and replaces them in both tables. A manual
+trigger covers the last complete day unless its conf names `start` and `end`,
+which win over the interval. Configure
 `tasks/parse_messages/parse_messages.json` and `tasks/parse_fix/parse_fix.json`,
-then trigger the DAG. The local SQLite catalog is for one-host smoke tests;
-production catalog and S3 settings belong in those task documents.
+then let it run or trigger it. The local SQLite catalog is for one-host smoke
+tests; production catalog and S3 settings belong in those task documents.
 
 `build_dbt` takes its catalog from `tasks/build_dbt/build_dbt.json`, where
 `null` means the dbt profile's own. dbt writes `target/` and `logs/` under

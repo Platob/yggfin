@@ -155,6 +155,7 @@ def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
     dag = PIPELINE.ingestion
 
     assert dag.dag_id == "rekep_ingestion"
+    assert dag.schedule == "@daily", "one run a day, covering its own interval"
     assert set(dag.task_dict) == {"parse_messages", "parse_fix"}
     messages = dag.get_task("parse_messages")
     fixed = dag.get_task("parse_fix")
@@ -164,6 +165,7 @@ def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
     assert [asset.name for asset in fixed.outlets] == ["fix.messages"]
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
+    assert dag.params["start"] is None and dag.params["end"] is None, "the interval fills them"
 
 
 def test_the_products_dag_starts_when_the_fix_table_is_written() -> None:
@@ -307,13 +309,46 @@ def test_a_param_the_task_does_not_declare_is_not_injected(kept: Held) -> None:
     assert "branch" not in parameters
 
 
-def test_the_interval_fills_only_a_declared_start_and_end(kept: Held) -> None:
+def test_the_interval_fills_a_declared_start_and_end(kept: Held) -> None:
     lower = datetime.datetime(2026, 8, 21, 10, tzinfo=UTC)
     upper = datetime.datetime(2026, 8, 21, 11, tzinfo=UTC)
 
     operator().execute(context(data_interval_start=lower, data_interval_end=upper))
     parameters = written()
-    assert "start" not in parameters and "end" not in parameters
+    assert parameters["start"] == "2026-08-21T10:00:00+00:00"
+    assert parameters["end"] == "2026-08-21T11:00:00+00:00"
+
+    built = operator(task_id="build_dbt", document="tasks/build_dbt/build_dbt.json")
+    built.execute(context(data_interval_start=lower, data_interval_end=upper))
+    parameters = written()
+    assert "start" not in parameters and "end" not in parameters, "a task that declares none"
+
+
+def test_an_interval_with_no_width_leaves_the_task_its_own_window(kept: Held) -> None:
+    """A manual run of an unscheduled DAG infers a point, which is no interval."""
+    moment = datetime.datetime(2026, 8, 21, 10, tzinfo=UTC)
+
+    operator().execute(context(data_interval_start=moment, data_interval_end=moment))
+    parameters = written()
+    assert parameters["start"] is None and parameters["end"] is None
+
+
+def test_a_bound_the_run_conf_names_wins_over_the_interval(kept: Held) -> None:
+    """A person triggering a run for one day means that day."""
+    lower = datetime.datetime(2026, 8, 21, 10, tzinfo=UTC)
+    upper = datetime.datetime(2026, 8, 21, 11, tzinfo=UTC)
+    conf = {"start": "2026-08-14", "end": "2026-08-14"}
+
+    operator().execute(
+        context(
+            params={**conf},
+            dag_run=SimpleNamespace(conf=conf),
+            data_interval_start=lower,
+            data_interval_end=upper,
+        )
+    )
+    parameters = written()
+    assert (parameters["start"], parameters["end"]) == ("2026-08-14", "2026-08-14")
 
 
 def test_an_explicit_parameter_is_overridden_by_the_param_of_the_same_name(
@@ -527,16 +562,17 @@ def test_a_document_that_is_not_there_is_refused() -> None:
 #: so scheduling it changes the counts nowhere.
 FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 
+#: The day the fixture was captured on, named because a task covers the last
+#: day when nothing says otherwise. `end: 2026-08-14` is the exclusive end of it.
+WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
+
 #: What each stage returns the first time it sees those 111 physical rows, and
-#: what a replay of the same capture returns.
+#: what a replay of the same window returns: the same rows, replaced.
 LANDED = {
     "parse_messages": {"read": 111, "written": 111, "skipped": 0},
     "parse_fix": {"read": 111, "written": 71, "skipped": 0},
 }
-REPLAYED = {
-    name: {"read": counts["read"], "written": 0, "skipped": counts["written"]}
-    for name, counts in LANDED.items()
-}
+REPLAYED = LANDED
 
 #: The table each node publishes, which is also the Asset it declares.
 PUBLISHED = {"parse_messages": "logs.messages", "parse_fix": "fix.messages"}
@@ -568,7 +604,7 @@ def _pass(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]:
     landed = {}
     for task_id in [task.task_id for task in PIPELINE.ingestion.topological_sort()]:
         node = PIPELINE.ingestion.get_task(task_id)
-        held: dict[str, Any] = {"catalog": catalog}
+        held: dict[str, Any] = {"catalog": catalog, **WINDOW}
         if task_id == "parse_messages":
             held["filesystem"] = FIXTURE.as_uri()
         built = MarimoOperator(
@@ -646,8 +682,8 @@ def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
 
     assert {name: counted(held["result"]) for name, held in replayed.items()} == REPLAYED
     assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 71}
-    assert _snapshots(catalog) == {"logs.messages": 1, "fix.messages": 1}, (
-        "a replayed schedule commits no empty snapshot"
+    assert _snapshots(catalog) == {"logs.messages": 2, "fix.messages": 2}, (
+        "a replayed schedule replaces its window in one commit per table"
     )
 
 
@@ -668,7 +704,10 @@ def test_a_scheduled_result_is_the_shape_a_route_reads(
         assert result["task"] == name
         # `window` is a mapping in every result, never null: both the runner
         # and the operator validate it, so the contract is the same both ways.
-        assert result["window"] == {"start": None, "end": None}
+        assert result["window"] == {
+            "start": 1_786_665_600_000_000_000,
+            "end": 1_786_752_000_000_000_000,
+        }, "the day the run was handed, in epoch nanoseconds"
         assert len(json.dumps(result)) < 4096, "XCom carries a summary, never a payload"
 
 
@@ -786,7 +825,7 @@ def test_a_real_dag_run_publishes_both_tables_from_its_conf(
             "test",
             "rekep_ingestion",
             "--conf",
-            json.dumps({"filesystem": FIXTURE.as_uri(), "catalog": catalog}),
+            json.dumps({"filesystem": FIXTURE.as_uri(), "catalog": catalog, **WINDOW}),
         ],
         env=environment,
         cwd=str(ROOT),

@@ -46,6 +46,10 @@ PRODUCTS = {
 #: products.
 WORKFLOW = ("parse_messages", "parse_fix", "build_dbt")
 
+#: The day the fixture was captured on, which the two ingestion tasks are
+#: told because each covers the last day when nothing says otherwise.
+WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
+
 #: What the codec answers for one `OrdStatus(39)` code. The normalized
 #: spellings the macros fold on are the codec's and this repository holds no
 #: list of them, so a parsed message is the only thing that can say what they
@@ -161,7 +165,7 @@ def test_the_published_models_are_the_declared_products(manifest: Any) -> None:
     for table, node in published(manifest).items():
         declared = node.config.extra
         assert declared["plugin"] == "rekep"
-        assert declared["mode"] in ("append", "overwrite")
+        assert declared["mode"] == "overwrite", f"{table} is replaced on its key on a rebuild"
         assert declared["primary_key"], f"{table} is committed on a key"
 
 
@@ -399,6 +403,9 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
         ]
         if name == "parse_messages":
             argv += ["--parameter", f"filesystem={json.dumps(FIXTURE.as_uri())}"]
+        if name != "build_dbt":
+            for bound, value in WINDOW.items():
+                argv += ["--parameter", f"{bound}={json.dumps(value)}"]
         assert cli.main(argv) == 0, name
         return json.loads(capsys.readouterr().out)
 
@@ -434,12 +441,9 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
 
     replayed = ran("build_dbt")
 
-    assert replayed["rows"] == {
-        "orders.events": 0,
-        "executions.fills": 0,
-        # An overwrite carries every row it built, and lands the same six.
-        "orders.current": PRODUCTS["orders.current"],
-    }
+    # Every model is committed on its key, so a rebuild carries every row it
+    # built and the tables hold each one once.
+    assert replayed["rows"] == PRODUCTS
     store = IcebergCatalog.from_dict(catalog)
     try:
         assert {

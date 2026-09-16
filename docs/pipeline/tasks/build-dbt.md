@@ -70,9 +70,9 @@ row of nulls is not a row this would commit.
 
 | model | table | grain | key | mode |
 | --- | --- | --- | --- | --- |
-| `orders_events` | `orders.events` | one normalized order event | `eventkey` | append |
+| `orders_events` | `orders.events` | one normalized order event | `eventkey` | overwrite |
 | `orders_current` | `orders.current` | latest settled state per order | `orderkey` | overwrite |
-| `executions_fills` | `executions.fills` | one economic execution occurrence | `executionkey` | append |
+| `executions_fills` | `executions.fills` | one economic execution occurrence | `executionkey` | overwrite |
 
 An identity the parser already named is reused rather than computed again:
 `orderkey` is `msgphash`, the sixteen bytes over the event chain `code`, which
@@ -104,7 +104,7 @@ written.
 | key | meaning |
 | --- | --- |
 | `table` | the Iceberg table to commit to; `{schema}.{identifier}` by default |
-| `mode` | `append` inserts and skips existing keys, `overwrite` replaces matching keys and inserts the rest |
+| `mode` | `append` adds every row the model built; `overwrite` replaces the rows whose keys match -- or the partitions the model touches, when it has no key -- and adds the rest |
 | `primary_key` | the identifier columns; each becomes non-null, and the merge is on them |
 | `not_null` | further columns a row must carry |
 | `partition_by` | column to Iceberg transform, such as `{'timepartition': 'day'}` |
@@ -207,10 +207,11 @@ build starts when `parse_fix` writes.
 
 A build's unit of work is a node, so `read` is the nodes dbt ran — models,
 tests and all — and `skipped` is the nodes it skipped. `written` is rows: what
-the plugin committed, and `rows` says which table each went to. An append
-states the rows it added, so a replay of the same capture states none; an
-overwrite states the rows it carried, because replacing a key that already held
-those values changes nothing to count.
+the plugin committed, and `rows` says which table each went to. Every shipped
+model is an overwrite, and an overwrite states the rows it carried: a replay of
+the same capture builds the same rows and lands them over the ones it landed
+before, so the count is what the build produced and not what changed in the
+table. An append would state the rows it added, which is the same number.
 
 A failing node fails the task, and the record names it. Every model's own
 tests run in the same build: `dbt build` runs a model and then the tests

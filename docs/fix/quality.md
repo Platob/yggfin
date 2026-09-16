@@ -63,8 +63,8 @@ bundle.
 
 `(sourceurl, rownum)` joins a fixed row back to the line it came from, and
 `msghash` tells two messages of one line apart — which is why the fixed table's
-key is `(sourceurl, rownum, msghash)`. A replay writes no duplicate and no
-empty snapshot, because a message that stated no clock of its own is dated by
-what the capture recorded, or by the codec's `UNDATED` floor where it recorded
-nothing, and never by the instant the parse ran: the identity is the same one
-every time that line is read.
+key is `(sourceurl, rownum, msghash)`. A replay of a window lands the same
+messages over the ones it landed and leaves no duplicate, because a message
+that stated no clock of its own is dated by what the capture recorded, or by
+the codec's `UNDATED` floor where it recorded nothing, and never by the instant
+the parse ran: the identity is the same one every time that line is read.

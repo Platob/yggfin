@@ -120,10 +120,11 @@ class Dataset(Convertible, abc.ABC):
         return self.into_struct_field() if schema is None else field_of(schema)
 
     def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
-        """Columns a write merges on: the primary key for True, else what is named.
+        """Columns a write replaces on: the primary key for True, else what is named.
 
-        `False`/`None`/`[]` all mean "append", which is what makes `merge_by` a
-        single argument rather than a flag and a list.
+        `False`/`None`/`[]` all name nothing, which is what makes `merge_by` a
+        single argument rather than a flag and a list; what a store does with
+        an overwrite that names nothing is the store's to say.
         """
         if not merge_by:
             return []
@@ -229,24 +230,26 @@ class Dataset(Convertible, abc.ABC):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] = True,
+        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
-    ) -> None:
-        """Replaces the rows whose keys match and inserts the rest.
+    ) -> int:
+        """Replace what the stream carries, and return the rows it wrote.
 
-        Creates the dataset if it is not there. `schema` is the shape to cast
-        onto on the way in, defaulting to this dataset's own. `merge_by` is
-        True to match on the primary key or a list of column names to match on
-        those. A store may give false `merge_by` a bounded replacement meaning
-        -- Iceberg replaces the touched identity partitions -- otherwise an
-        overwrite needs keys; `append_arrow_*` is the blind insert.
-        `commit_row_size` bounds how many rows one commit carries. None uses
-        the store's default; a store with no configured default writes the
-        whole stream as one.
+        The stored rows whose keys match are taken out and every row of the
+        stream lands, so a replay of the same rows leaves the store holding
+        them once. Creates the dataset if it is not there. `schema` is the
+        shape to cast onto on the way in, defaulting to this dataset's own.
+        `merge_by` is True to match on the primary key or a list of column
+        names to match on those; a store may give a `merge_by` naming nothing
+        a bounded meaning of its own -- Iceberg replaces the partitions the
+        stream touches -- and otherwise refuses it, because `append_arrow_*`
+        is the blind write. `commit_row_size` bounds how many rows one commit
+        carries. None uses the store's default; a store with no configured
+        default writes the whole stream as one.
         """
 
-    def overwrite_arrow(self, source: Any, *args: Any, **kwargs: Any) -> None:
-        """Replaces the rows whose keys match and inserts the rest, whatever the shape.
+    def overwrite_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
+        """`overwrite_arrow_reader`, whatever the shape.
 
         A batch, table, or schema-bearing reader each has its own
         `overwrite_arrow_*`; this redirects to the one that fits rather than
@@ -260,47 +263,49 @@ class Dataset(Convertible, abc.ABC):
         self,
         batch: pyarrow.RecordBatch,
         schema: Any = None,
-        merge_by: bool | Sequence[str] = True,
+        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         **kwargs: Any,
-    ) -> None:
-        """Replaces the rows whose keys match and inserts the rest, for one batch."""
+    ) -> int:
+        """`overwrite_arrow_reader` for one batch."""
         reader = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
-        self.overwrite_arrow_reader(reader, schema, merge_by, commit_row_size, **kwargs)
+        return self.overwrite_arrow_reader(reader, schema, merge_by, commit_row_size, **kwargs)
 
     def overwrite_arrow_table(
         self,
         table: pyarrow.Table,
         schema: Any = None,
-        merge_by: bool | Sequence[str] = True,
+        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         **kwargs: Any,
-    ) -> None:
-        """Replaces the rows whose keys match and inserts the rest, from memory.
+    ) -> int:
+        """`overwrite_arrow_reader` for a table already in memory.
 
         Whatever else an implementation takes -- a branch, snapshot properties
         -- goes straight through, so the generic `overwrite_arrow` can hand any
         shape to any dataset without knowing what it supports.
         """
-        self.overwrite_arrow_reader(table.to_reader(), schema, merge_by, commit_row_size, **kwargs)
+        return self.overwrite_arrow_reader(
+            table.to_reader(), schema, merge_by, commit_row_size, **kwargs
+        )
 
     def overwrite_polars(
         self,
         source: Any,
         schema: Any = None,
-        merge_by: bool | Sequence[str] = True,
+        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
         batch_row_size: int = POLARS_BATCH_ROW_SIZE,
         **kwargs: Any,
-    ) -> None:
-        """Replaces the rows whose keys match and inserts the rest, from a Polars frame.
+    ) -> int:
+        """`overwrite_arrow_reader` for a Polars frame.
 
         Streamed through bounded, schema-checked Arrow batches.
         """
         target = self.target_field(schema)
         reader = _polars_reader(source, target, batch_row_size)
-        self.overwrite_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
+        return self.overwrite_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
 
     # -- appending -----------------------------------------------------------
 
@@ -309,20 +314,17 @@ class Dataset(Convertible, abc.ABC):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
-        """Append a stream and return how many rows were inserted.
+        """Append a stream blindly, and return how many rows it added.
 
-        A false `merge_by` blindly appends every row. True inserts only rows
-        whose declared primary key is absent; a sequence names alternate key
-        columns. Implementations keep lookup beside their storage engine so it
-        can be pushed down instead of collecting stored keys here.
+        Every row lands, whatever the store already holds; a write that has to
+        replace what it carries is `overwrite_arrow_reader`.
         """
 
     def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
-        """Append the inferred Arrow shape and return rows inserted."""
+        """Append the inferred Arrow shape and return rows added."""
         return getattr(self, f"append_{self.redirect_of(source, _OVERWRITES)}")(
             source, *args, **kwargs
         )
@@ -331,32 +333,27 @@ class Dataset(Convertible, abc.ABC):
         self,
         batch: pyarrow.RecordBatch,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
         """`append_arrow_reader` for one batch."""
         reader = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
-        return self.append_arrow_reader(reader, schema, merge_by, commit_row_size, **kwargs)
+        return self.append_arrow_reader(reader, schema, commit_row_size, **kwargs)
 
     def append_arrow_table(
         self,
         table: pyarrow.Table,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
         """`append_arrow_reader` for a table already in memory."""
-        return self.append_arrow_reader(
-            table.to_reader(), schema, merge_by, commit_row_size, **kwargs
-        )
+        return self.append_arrow_reader(table.to_reader(), schema, commit_row_size, **kwargs)
 
     def append_polars(
         self,
         source: Any,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         *,
         batch_row_size: int = POLARS_BATCH_ROW_SIZE,
@@ -365,7 +362,7 @@ class Dataset(Convertible, abc.ABC):
         """Append a Polars frame through bounded, schema-checked Arrow batches."""
         target = self.target_field(schema)
         reader = _polars_reader(source, target, batch_row_size)
-        return self.append_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
+        return self.append_arrow_reader(reader, target, commit_row_size, **kwargs)
 
 
 def _polars_reader(source: Any, target: Field, batch_row_size: int) -> pyarrow.RecordBatchReader:
@@ -609,11 +606,11 @@ def in_sort_order(
 
 # -- key joins ---------------------------------------------------------------
 #
-# The vocabulary every merge-shaped write is made of, shared here so a store
-# never grows a second copy: which stored rows a chunk references, which of a
-# chunk's rows are new, and one row per key. All of it is Arrow joins over the
-# key columns and an index -- never the whole row, because Acero refuses
-# nested columns as join payload, and never a Python row loop.
+# The vocabulary a keyed write is made of, shared here so a store never grows
+# a second copy: which of a stored file's rows a chunk replaces, and one row
+# per key. All of it is Arrow joins over the key columns and an index -- never
+# the whole row, because Acero refuses nested columns as join payload, and
+# never a Python row loop.
 
 
 def keys_of(table: pyarrow.Table, join: Sequence[str], marker: str) -> pyarrow.Table:
@@ -658,33 +655,29 @@ def normalised_keys(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     return pyarrow.Table.from_arrays(columns, schema=table.schema) if changed else table
 
 
-def semi_join(matched: pyarrow.Table, chunk: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """The rows of `matched` whose key the chunk references, in its own order."""
-    if matched.num_rows == 0:
-        return matched
-    kept = keys_of(matched, join, TARGET_INDEX).join(
-        keys_of(chunk, join, SOURCE_INDEX).select(list(join)),
-        keys=list(join),
-        join_type="left semi",
-    )
-    return matched.take(_in_order(kept.column(TARGET_INDEX)))
+def anti_join(rows: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """The rows of `rows` no row of `matched` shares a key with, in their own order.
 
-
-def anti_join(chunk: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
-    """The rows of `chunk` no row of `matched` shares a key with, in its own order.
-
-    One Arrow anti-join over the keys alone, rather than binding a per-row
-    equality expression and filtering with it once per batch, which is what
-    makes the insert half of a merge linear instead of quadratic.
+    One Arrow anti-join over the keys alone, rather than a per-row equality
+    expression evaluated once per batch, which is what keeps taking a chunk's
+    keys out of a stored file linear rather than quadratic. `matched`'s keys
+    are brought onto `rows`' types first: a scan hands a stored `string` back
+    as `large_string`, and Acero refuses to join the two.
     """
-    if matched.num_rows == 0:
-        return chunk
-    fresh = keys_of(chunk, join, SOURCE_INDEX).join(
-        keys_of(matched, join, TARGET_INDEX).select(list(join)),
-        keys=list(join),
-        join_type="left anti",
-    )
-    return chunk.take(_in_order(fresh.column(SOURCE_INDEX)))
+    if matched.num_rows == 0 or rows.num_rows == 0:
+        return rows
+    stored = keys_of(rows, join, SOURCE_INDEX)
+    wanted = keys_of(matched, join, TARGET_INDEX).select(list(join))
+    for index, name in enumerate(join):
+        kind = stored.schema.field(name).type
+        if wanted.schema.field(name).type != kind:
+            wanted = wanted.set_column(
+                index, wanted.schema.field(index).with_type(kind), wanted.column(name).cast(kind)
+            )
+    fresh = stored.join(wanted, keys=list(join), join_type="left anti")
+    if fresh.num_rows == rows.num_rows:
+        return rows
+    return rows.take(_in_order(fresh.column(SOURCE_INDEX)))
 
 
 def _in_order(taken: Any) -> Any:
@@ -701,9 +694,9 @@ def _in_order(taken: Any) -> Any:
 def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     """One row per distinct key -- the first -- in the table's own order.
 
-    What makes an insert-only append idempotent *within* a stream: by the
-    time a duplicate key arrives, the dataset already holds that key, so
-    keeping the first row is the same answer the replay would produce.
+    What makes a keyed replace idempotent *within* a chunk: a stream that
+    carries a line twice means the line once, and the first row is the one
+    an earlier write of the same stream would have landed.
 
     A table already ordered on `join` is answered by comparing neighbours,
     because a sort is what puts equal keys next to each other: the first of

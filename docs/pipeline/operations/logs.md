@@ -10,8 +10,8 @@ atomic result file.
 | --- | --- | --- |
 | `task` | string | stage name |
 | `read` | integer | source rows consumed |
-| `written` | integer | new target rows committed |
-| `skipped` | integer | read rows not inserted |
+| `written` | integer | target rows the run carried into the table |
+| `skipped` | integer | read rows not written: outside the window, or answering nothing |
 | `sources` | object | logical source names to masked locations |
 | `targets` | object | logical target names to table identifiers |
 | `window` | object | `start` and `end`, each epoch nanoseconds or null |
@@ -37,24 +37,28 @@ small enough for Airflow XCom because it contains no rows or schemas.
   "skipped": 0,
   "sources": {"messages": "logs.messages"},
   "targets": {"fix": "fix.messages"},
-  "window": {"start": null, "end": null},
+  "window": {"start": 1786665600000000000, "end": 1786752000000000000},
   "elapsed_ms": 208,
   "messages": 71
 }
 ```
 
-`window` is always an object. A task that declares no interval reports the
-open one, `{"start": null, "end": null}`; it is never `null`, and
+`window` is always an object. A streaming task reports the window it ran, as
+epoch nanoseconds -- the bounds it was given, or the last day up to now when
+it was given none; `build_dbt` declares no window and reports the open one,
+`{"start": null, "end": null}`. It is never `null`, and
 `Stage.validated` — which both the runner and the operator call before a
 result is published or pushed to XCom — refuses anything that is not a
 mapping of exactly `start` and `end`.
 
 ## Monitoring rules
 
-- A first immutable-capture run normally has `read == written`.
-- A complete replay normally has `read == skipped` and `written == 0` — except
-  in `parse_fix`, which counts messages and not lines, where a complete replay
-  has `skipped == messages` and `written == 0`.
+- A run over a capture's own day normally has `read == written`: every line's
+  clock is in the window.
+- A replay of the same window reports the same numbers as the run it repeats:
+  what a run writes is what it carried, and the table holds each row once
+  either way. A run whose `skipped` grew is one whose window covers fewer of
+  the lines it read.
 - `parse_fix.read` should equal the selected `logs.messages` row count, and
   its own `messages` key what the codec answered: a line carries none, one or
   several messages.

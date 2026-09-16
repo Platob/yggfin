@@ -29,7 +29,7 @@ import time
 from collections.abc import Mapping
 from typing import Any
 
-from rekep.times import UTC
+from rekep.times import UTC, unix_of
 
 #: The parent of every logger in the package. Each module holds its own
 #: `logging.getLogger(__name__)`, so a record says which module emitted it and
@@ -132,11 +132,14 @@ class Stage:
     sources: dict[str, str] = dataclasses.field(default_factory=dict)
     targets: dict[str, str] = dataclasses.field(default_factory=dict)
 
-    #: The half-open interval this run covers, in nanoseconds since the epoch.
-    #: `(None, None)` is every row the source holds.
-    window: tuple[int | None, int | None] = (None, None)
+    #: The half-open interval this run covers, `(start, end)`. Given as the
+    #: instants `rekep.times.window_of` answers or as the nanoseconds since
+    #: the epoch a `*unix` column holds, and held as the latter, which is what
+    #: the result reports. `(None, None)` is every row the source holds.
+    window: tuple[Any, Any] = (None, None)
 
     def __post_init__(self) -> None:
+        self.window = (unix_of(self.window[0]), unix_of(self.window[1]))
         self.__dict__["_opened"] = time.monotonic()
         LOGGER.info(
             "%s reading %s%s",

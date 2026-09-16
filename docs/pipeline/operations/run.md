@@ -8,14 +8,26 @@ stderr.
 ## Whole pipeline
 
 ```bash
-uv run --project python rekep task run tasks/parse_messages/parse_messages.json
-uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
+uv run --project python rekep task run tasks/parse_fix/parse_fix.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run tasks/build_dbt/build_dbt.json
 ```
 
 The order is required: `parse_fix` reads `logs.messages` rather than source
 files, and [`build_dbt`](../tasks/build-dbt.md) reads `fix.messages` rather
 than either.
+
+## One window
+
+The two streaming tasks parse one window, `[start, end)`. Each bound is an
+instant or a date -- a date as `end` is the end of that day -- and a task
+given neither takes the last day up to now, which is the window a nightly run
+means. The sample capture is dated 2026-08-14, so the runs above name that
+day; a run without the two parameters would read every line and write none,
+because none falls in the last day. `parse_fix` reads the stored rows of the
+window it is given, so the two stages are run over the same one.
 
 ## One override
 
@@ -77,7 +89,8 @@ uv run --project python rekep task run \
 
 Precedence is task defaults, parameters file, then repeated command-line
 parameters. Airflow uses task defaults, operator parameters, DAG-run Params,
-then data-interval values for tasks that declare them.
+then the run's data interval for `start` and `end`, unless the run's conf
+names them.
 
 ## Capture a result
 
@@ -92,8 +105,11 @@ never table rows. A non-zero exit means no valid result was published.
 
 ## Replay
 
-Run the same two commands again. Both stages read the same number of rows,
-report those rows as skipped, write zero, and create no empty Iceberg snapshot.
-Changing the registry or parser while retaining `(sourceurl, rownum)` is a
-controlled rebuild: use a new target table or an explicit overwrite procedure
-when typed rows must be replaced rather than skipped.
+Run the same two commands again, over the same window. Both stages read the
+same rows, land them over the rows the first run landed, and report them as
+written: the table holds each line and each message once, and the replay is
+one more snapshot. Running a window again after a registry or parser change
+is therefore the rebuild -- the new reading of every message lands over the
+old one on the same `(sourceurl, rownum, msghash)` key. A reading that changes
+a message's `msghash` is a new key, and the old row stays: delete the window
+first, or use a new target table, when the identity itself changes.

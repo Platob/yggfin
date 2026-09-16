@@ -51,8 +51,9 @@ BATCH_ROW_SIZE = 65_536
 COMMITTED: dict[str, int] = {}
 
 #: What `mode` may say, and what the dataset verb each one names did. An append
-#: states the rows it added; an overwrite states the rows it carried, because
-#: replacing a key that already held those values changes nothing to count.
+#: adds every row the model built; an overwrite replaces the rows whose keys
+#: match -- or, for a model with no key, the partitions it touches -- and adds
+#: the rest. Both state the rows they carried.
 MODES = {"append": "appended", "overwrite": "overwrote"}
 
 
@@ -227,10 +228,9 @@ class Plugin(BasePlugin):
             applied = field.apply_arrow_reader(reader, safe=False, nullability="strict")
             opened.callback(applied.close)
             if mode == "append":
-                written = dataset.append_arrow_reader(applied, field, merge_by=merge_by)
+                written = dataset.append_arrow_reader(applied, field)
             else:
-                dataset.overwrite_arrow_reader(applied, field, merge_by=merge_by)
-                written = staged.metadata.num_rows
+                written = dataset.overwrite_arrow_reader(applied, field, merge_by=merge_by)
         COMMITTED[table] = COMMITTED.get(table, 0) + written
         LOGGER.info("%s %s %d rows into %s", relation.identifier, MODES[mode], written, table)
 

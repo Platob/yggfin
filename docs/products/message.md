@@ -80,6 +80,9 @@ source.close()
 - gzip and zstd are decompressed while streaming. Concatenated gzip members
   remain subject to the decoder support documented on the task page.
 - `bodyhash` is computed during field application, not in a Python row loop.
-- The writer merges on `(sourceurl, rownum)`, so a replay writes nothing new.
+- Only the lines whose `timepartition` falls in the run's window are written;
+  a line with no clock is in every window.
+- The writer replaces on `(sourceurl, rownum)` within a line's hour partition,
+  so a replay of a window lands the same lines once.
 - Remote objects remain remote; local staging is not part of the production
   path.

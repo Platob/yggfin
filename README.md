@@ -54,10 +54,18 @@ Run it locally from the repository root:
 ```bash
 uv sync --project python --all-extras --dev
 uv run --project python rekep iceberg deploy tasks/parse_messages/parse_messages.json
-uv run --project python rekep task run tasks/parse_messages/parse_messages.json
-uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
+uv run --project python rekep task run tasks/parse_fix/parse_fix.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run tasks/build_dbt/build_dbt.json
 ```
+
+A streaming task parses one window, `[start, end)`, and given neither bound
+takes the last day up to now; the sample capture under `data/capture` is dated
+2026-08-14, which is why the two runs above name that day. A run over a window
+lands its rows over what an earlier run of the same window landed, so a replay
+leaves the table holding each line once.
 
 `logs.messages` stores one physical line with its exact body bytes and source
 identity, keyed on `(sourceurl, rownum)`. `fix.messages` stores one row per
