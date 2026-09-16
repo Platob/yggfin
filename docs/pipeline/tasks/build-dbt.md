@@ -241,7 +241,9 @@ Nothing here needs `dbt deps`: there is no package file, and every macro a
 model reads is in the checkout. A build writes `data/dbt/target/` — its
 compiled project, its run artifacts and the Parquet each model was staged as —
 and `data/dbt/logs/`; neither is tracked. `DBT_TARGET_PATH` and `DBT_LOG_PATH`
-move them, which is what the Airflow operator's `environment` argument is for.
+move them, and the staging follows the target path, so a worker whose checkout
+is read-only writes nothing into it. That is what the Airflow operator's
+`environment` argument is for.
 
 ## What these products are not yet
 

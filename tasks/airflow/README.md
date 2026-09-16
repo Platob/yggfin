@@ -63,5 +63,6 @@ production catalog and S3 settings belong in those task documents.
 
 `build_dbt` takes its catalog from `tasks/build_dbt/build_dbt.json`, where
 `null` means the dbt profile's own. dbt writes `target/` and `logs/` under
-`data/dbt` unless `DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise, which is
-what `environment` is for on a worker whose checkout is read-only.
+`data/dbt` unless `DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise -- and a
+model is staged under the target path, so setting those two through
+`environment` is what a worker with a read-only checkout needs.

@@ -18,8 +18,9 @@ rekep:
       # One thread: a build's models are three, its plugin holds one catalog
       # handle, and what each one committed is read back off that handle.
       threads: 1
-      # Where a model is staged as Parquet before it is committed. dbt makes
-      # this directory itself, and nothing under it is tracked.
+      # Where a model is staged as Parquet before it is committed, when the run
+      # names no target path of its own. dbt makes this directory itself, and
+      # nothing under it is tracked; `--target-path` takes the staging with it.
       external_root: data/dbt/target
       plugins:
         - module: rekep.dbt

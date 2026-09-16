@@ -72,4 +72,5 @@ page, beside what these products do not carry yet.
 
 `target/` holds the compiled project, the run artifacts and the Parquet file
 each model was staged as on its way into Iceberg; `logs/` holds dbt's own log.
-Neither is tracked, and `DBT_TARGET_PATH` and `DBT_LOG_PATH` move them.
+Neither is tracked, and `DBT_TARGET_PATH` and `DBT_LOG_PATH` move them --
+staging included, so a read-only checkout stays read-only.

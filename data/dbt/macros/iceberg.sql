@@ -18,7 +18,17 @@
 {% materialization iceberg, adapter="duckdb", supported_languages=["sql"] %}
 
   {%- set plugin_name = config.get("plugin", "rekep") -%}
-  {%- set staged = render(config.get("location", default=external_location(this, config))) -%}
+  {#
+    Where the model is staged on its way into Iceberg. dbt makes its own target
+    directory and nothing makes this one, so the run's own target path is the
+    first answer and the profile's `external_root` is the second: moving dbt's
+    artifacts with `--target-path` or `DBT_TARGET_PATH` moves the staging with
+    them, which is what a worker whose checkout is read-only needs.
+  #}
+  {%- set staging = flags.TARGET_PATH or adapter.external_root() -%}
+  {%- set staged = render(
+        config.get("location", default=staging ~ "/" ~ this.identifier ~ ".parquet")
+     ) -%}
   {%- set target_relation = this.incorporate(type="table") -%}
   {%- set existing_relation = load_cached_relation(this) -%}
 
